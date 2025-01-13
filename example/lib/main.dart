@@ -2,7 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:ism_video_reel_player/ism_video_reel_player.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:ism_video_reel_player/export.dart';
 
 void main() {
   runApp(const MyApp());
@@ -47,16 +48,27 @@ class _MyAppState extends State<MyApp> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Plugin example app'),
+  Widget build(BuildContext context) => ScreenUtilInit(
+        useInheritedMediaQuery: true,
+        designSize: const Size(375, 812),
+        minTextAdapt: true,
+        splitScreenMode: true,
+        builder: (_, child) => child!,
+        child: LayoutBuilder(
+          builder: (context, constraints) => OrientationBuilder(
+            builder: (context, orientation) {
+              SizeConfig().init(constraints, orientation);
+              return GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: Utility.hideKeyboard,
+                child: MaterialApp.router(
+                  debugShowCheckedModeBanner: false,
+                  theme: kTheme,
+                  routerConfig: AppRouter.router,
+                ),
+              );
+            },
+          ),
         ),
-        body: Center(
-          child: Text('Running on: $_platformVersion\n'),
-        ),
-      ),
-    );
-  }
+      );
 }
