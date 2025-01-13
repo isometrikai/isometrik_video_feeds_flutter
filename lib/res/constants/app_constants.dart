@@ -25,7 +25,7 @@ class AppConstants {
 }
 
 abstract class AppUrl {
-  static String appBaseUrl = 'https://api-staging.meolaa.com';
+  static String appBaseUrl = '';
   static const String gumletUrl = 'https://meolaa-cdn.gumlet.io';
 }
 
