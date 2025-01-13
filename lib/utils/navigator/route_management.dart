@@ -11,9 +11,9 @@ class RouteManagement {
     return result;
   }
 
-  static void goToNewPostView({PostAttributeClass? postAttributeClass}) {
+  static void goToPostAttributeView({PostAttributeClass? postAttributeClass}) {
     kNavigatorKey.currentContext!.pushNamed(
-      RouteNames.newPostView,
+      RouteNames.postAttributeView,
       extra: {
         'postAttributeClass': postAttributeClass,
       },

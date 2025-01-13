@@ -4,21 +4,21 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/export.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
-class PostView extends StatefulWidget {
-  const PostView({super.key});
+class IsmPostView extends StatefulWidget {
+  const IsmPostView({super.key});
 
   @override
-  State<PostView> createState() => _PostViewState();
+  State<IsmPostView> createState() => _PostViewState();
 }
 
-class _PostViewState extends State<PostView> with TickerProviderStateMixin {
+class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   final _postBloc = kGetIt<PostBloc>();
   TabController? _postTabController;
-  final followingRefreshController = RefreshController(
+  final _followingRefreshController = RefreshController(
     initialRefresh: false,
     initialLoadStatus: LoadStatus.idle,
   );
-  final trendingRefreshController = RefreshController(
+  final _trendingRefreshController = RefreshController(
     initialRefresh: false,
     initialLoadStatus: LoadStatus.idle,
   );
@@ -49,13 +49,13 @@ class _PostViewState extends State<PostView> with TickerProviderStateMixin {
                   controller: _postTabController,
                   children: [
                     SmartRefresher(
-                      controller: followingRefreshController,
+                      controller: _followingRefreshController,
                       physics: const ClampingScrollPhysics(),
                       onRefresh: () async {},
                       child: FollowingPostWidget(),
                     ),
                     SmartRefresher(
-                      controller: trendingRefreshController,
+                      controller: _trendingRefreshController,
                       physics: const ClampingScrollPhysics(),
                       onRefresh: () async {},
                       child: TrendingPostWidget(),

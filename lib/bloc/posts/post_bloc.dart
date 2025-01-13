@@ -76,10 +76,10 @@ class PostBloc extends Bloc<PostEvent, PostState> {
       if (mediaSource != null && mediaSource == MediaSource.gallery && mediaType == PostType.video) {
         postAttributeClass = await RouteManagement.goToVideoTrimView(postAttributeClass: postAttributeClass);
         if (postAttributeClass != null) {
-          RouteManagement.goToNewPostView(postAttributeClass: postAttributeClass);
+          RouteManagement.goToPostAttributeView(postAttributeClass: postAttributeClass);
         }
       } else {
-        RouteManagement.goToNewPostView(postAttributeClass: postAttributeClass);
+        RouteManagement.goToPostAttributeView(postAttributeClass: postAttributeClass);
       }
     }
   }
