@@ -16,7 +16,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
+  flutter_screenutil: ^5.9.3
   ism_video_reel_player:
     # When depending on this package from a real application you should use:
     #   ism_video_reel_player: ^x.y.z
