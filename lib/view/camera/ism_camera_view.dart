@@ -6,12 +6,12 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ism_video_reel_player/export.dart';
 
-class CameraView extends StatefulWidget {
+class IsmCameraView extends StatefulWidget {
   @override
-  State<CameraView> createState() => _CameraViewState();
+  State<IsmCameraView> createState() => _CameraViewState();
 }
 
-class _CameraViewState extends State<CameraView> {
+class _CameraViewState extends State<IsmCameraView> {
   CameraController? _cameraController;
   late List<CameraDescription> _cameras;
   bool _isRecording = false;

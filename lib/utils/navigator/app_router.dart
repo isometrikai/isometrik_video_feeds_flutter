@@ -7,13 +7,28 @@ class AppRouter {
   AppRouter._();
 
   static GoRouter router = GoRouter(
-    initialLocation: AppRoutes.cameraView,
+    initialLocation: AppRoutes.postView,
     navigatorKey: kNavigatorKey,
     routes: [
       GoRoute(
         path: AppRoutes.cameraView,
         name: RouteNames.cameraView,
-        builder: (_, state) => CameraView(),
+        builder: (_, state) => IsmCameraView(),
+      ),
+      GoRoute(
+        path: AppRoutes.postView,
+        name: RouteNames.postView,
+        builder: (_, __) => const IsmPostView(),
+      ),
+      GoRoute(
+        path: AppRoutes.postAttributeView,
+        name: RouteNames.postAttributeView,
+        builder: (_, state) {
+          final extraMap = state.extra as Map;
+          return PostAttributeView(
+            postAttributeClass: extraMap['postAttributeClass'] as PostAttributeClass?,
+          );
+        },
       ),
     ],
   );
