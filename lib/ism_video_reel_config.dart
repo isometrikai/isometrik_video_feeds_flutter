@@ -4,15 +4,9 @@ import 'package:ism_video_reel_player/export.dart';
 
 @lazySingleton
 class IsmVideoReelConfig {
-  IsmVideoReelConfig({
-    required this.baseUrl,
-  });
-
-  final String? baseUrl;
-
   static Future<void> initializeSdk({
-    String? baseUrl,
+    required String baseUrl,
   }) async {
-    AppUrl.appBaseUrl = baseUrl ?? AppUrl.appBaseUrl;
+    AppUrl.appBaseUrl = baseUrl;
   }
 }
