@@ -54,7 +54,7 @@ class Utility {
     isLoading = true;
     await showDialog(
       barrierColor: loaderType == LoaderType.withBackGround ? null : Colors.transparent,
-      context: kNavigatorKey.currentContext!,
+      context: ismNavigatorKey.currentContext!,
       builder: (_) => AppLoader(
         message: message,
         loaderType: loaderType,
@@ -65,9 +65,9 @@ class Utility {
 
   // closes dialog for progress bar
   static void closeProgressDialog() {
-    if (isLoading == true && kNavigatorKey.currentContext!.canPop()) {
+    if (isLoading == true && ismNavigatorKey.currentContext!.canPop()) {
       isLoading = false;
-      kNavigatorKey.currentContext!.pop();
+      ismNavigatorKey.currentContext!.pop();
     }
   }
 
@@ -109,7 +109,7 @@ class Utility {
     Function()? onPressNegativeButton,
   }) {
     showDialog(
-      context: kNavigatorKey.currentContext!,
+      context: ismNavigatorKey.currentContext!,
       builder: (_) => Dialog(
         shape: RoundedRectangleBorder(
           borderRadius: Dimens.borderRadiusAll(Dimens.twelve),
@@ -198,14 +198,14 @@ class Utility {
     bool isScrollControlled = true,
   }) =>
       showModalBottomSheet<T>(
-        context: kNavigatorKey.currentContext!,
+        context: ismNavigatorKey.currentContext!,
         builder: (_) => child,
         enableDrag: false,
         showDragHandle: false,
         useSafeArea: false,
         isDismissible: isDismissible,
         isScrollControlled: isScrollControlled,
-        backgroundColor: isDarkBG ? Theme.of(kNavigatorKey.currentContext!).primaryColor : AppColors.white,
+        backgroundColor: isDarkBG ? Theme.of(ismNavigatorKey.currentContext!).primaryColor : AppColors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(
             top: Radius.circular(Dimens.sixteen),
@@ -432,8 +432,8 @@ class Utility {
 
   // closes opened dialog
   static void closeOpenDialog() {
-    if (kNavigatorKey.currentContext!.canPop()) {
-      kNavigatorKey.currentContext!.pop();
+    if (ismNavigatorKey.currentContext!.canPop()) {
+      ismNavigatorKey.currentContext!.pop();
     }
   }
 
