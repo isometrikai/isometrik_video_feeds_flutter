@@ -26,6 +26,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    _checkSdkInitialization();
     _postBloc.add(const StartPost());
     _postBloc.add(GetFollowingPostEvent(isLoading: false));
     _postTabController = TabController(length: 2, vsync: this);
@@ -173,4 +174,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           ),
         ),
       );
+
+  void _checkSdkInitialization() {
+    if (AppUrl.appBaseUrl.isEmptyOrNull) {
+      Utility.showToastMessage('please initialize reels sdk');
+      return;
+    }
+  }
 }
