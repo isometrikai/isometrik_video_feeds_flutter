@@ -7,12 +7,12 @@ class RouteManagement {
   RouteManagement._();
 
   static Future<Map<String, dynamic>?> goToCameraView() async {
-    final result = kNavigatorKey.currentContext!.pushNamed<Map<String, dynamic>>(RouteNames.cameraView);
+    final result = ismNavigatorKey.currentContext!.pushNamed<Map<String, dynamic>>(RouteNames.cameraView);
     return result;
   }
 
   static void goToPostAttributeView({PostAttributeClass? postAttributeClass}) {
-    kNavigatorKey.currentContext!.pushNamed(
+    ismNavigatorKey.currentContext!.pushNamed(
       RouteNames.postAttributeView,
       extra: {
         'postAttributeClass': postAttributeClass,
@@ -21,7 +21,7 @@ class RouteManagement {
   }
 
   static Future<PostAttributeClass?> goToVideoTrimView({required PostAttributeClass postAttributeClass}) async =>
-      await kNavigatorKey.currentContext!.pushNamed<PostAttributeClass>(
+      await ismNavigatorKey.currentContext!.pushNamed<PostAttributeClass>(
         RouteNames.videoTrimView,
         extra: {
           'postAttributeClass': postAttributeClass,

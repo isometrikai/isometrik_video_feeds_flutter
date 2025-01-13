@@ -8,7 +8,7 @@ class AppRouter {
 
   static GoRouter router = GoRouter(
     initialLocation: AppRoutes.postView,
-    navigatorKey: kNavigatorKey,
+    navigatorKey: ismNavigatorKey,
     routes: [
       GoRoute(
         path: AppRoutes.cameraView,
