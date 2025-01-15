@@ -207,7 +207,7 @@ class _Network extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final optimizedImageUrl = AppConstants.isGumletEnable
-        ? Utility.buildGumletImageUrl(imageUrl: imageUrl, width: width, height: height)
+        ? IsmVideoReelUtility.buildGumletImageUrl(imageUrl: imageUrl, width: width, height: height)
         : imageUrl;
     return CachedNetworkImage(
       width: width,

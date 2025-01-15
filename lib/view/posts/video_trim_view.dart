@@ -42,7 +42,7 @@ class _VideoTrimViewState extends State<VideoTrimView> {
     try {
       await trimmer.loadVideo(videoFile: _newPostAttributeClass.file!);
     } catch (e) {
-      Utility.debugCatchLog(error: e);
+      IsmVideoReelUtility.debugCatchLog(error: e);
     }
     mountUpdate();
     trimmer.videoPlayerController?.addListener(checkVideo);

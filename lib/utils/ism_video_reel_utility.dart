@@ -16,8 +16,8 @@ import 'package:ism_video_reel_player/export.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class Utility {
-  Utility._();
+class IsmVideoReelUtility {
+  IsmVideoReelUtility._();
 
   static bool isLoading = false;
   static final Connectivity _connectivity = Connectivity();
@@ -479,7 +479,7 @@ class Utility {
     var document = html_parser.parse(htmlContent);
 
     // Extract the text content (ignores the HTML tags)
-    return Utility.cleanText(document.body?.text ?? ''); // Use null-aware operator in case of no body.
+    return IsmVideoReelUtility.cleanText(document.body?.text ?? ''); // Use null-aware operator in case of no body.
   }
 
   /// remove escape sequences
@@ -502,7 +502,7 @@ class Utility {
                 alignment: Alignment.topRight,
                 child: TapHandler(
                   padding: Dimens.four,
-                  onTap: Utility.closeOpenDialog,
+                  onTap: IsmVideoReelUtility.closeOpenDialog,
                   child: AppImage.svg(
                     AssetConstants.icCrossIcon,
                     height: Dimens.twelve,
