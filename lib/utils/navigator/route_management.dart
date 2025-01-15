@@ -6,6 +6,10 @@ import 'package:ism_video_reel_player/export.dart';
 class RouteManagement {
   RouteManagement._();
 
+  static void goToPostView() {
+    ismNavigatorKey.currentContext!.go(AppRoutes.postView);
+  }
+
   static Future<Map<String, dynamic>?> goToCameraView() async {
     final result = ismNavigatorKey.currentContext!.pushNamed<Map<String, dynamic>>(RouteNames.cameraView);
     return result;

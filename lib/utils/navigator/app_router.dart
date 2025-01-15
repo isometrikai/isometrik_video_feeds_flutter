@@ -7,9 +7,14 @@ class AppRouter {
   AppRouter._();
 
   static GoRouter router = GoRouter(
-    initialLocation: AppRoutes.postView,
+    initialLocation: AppRoutes.landingView,
     navigatorKey: ismNavigatorKey,
     routes: [
+      GoRoute(
+        path: AppRoutes.landingView,
+        name: RouteNames.landingView,
+        builder: (_, state) => const IsmLandingView(),
+      ),
       GoRoute(
         path: AppRoutes.cameraView,
         name: RouteNames.cameraView,

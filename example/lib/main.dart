@@ -5,13 +5,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:ism_video_reel_player/export.dart';
 
-void main() {
-  _initializeReelsSdk();
+void main() async {
+  await _initializeReelsSdk();
   runApp(const MyApp());
 }
 
-void _initializeReelsSdk() async {
-  IsmVideoReelConfig.initializeSdk(
+Future<void> _initializeReelsSdk() async {
+  await IsmVideoReelConfig.initializeSdk(
     baseUrl: 'https://api-staging.meolaa.com',
     userInfo: UserInfoClass(
       userId: '37483783493',
