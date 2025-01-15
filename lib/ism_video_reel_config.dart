@@ -14,8 +14,8 @@ class IsmVideoReelConfig {
     AppUrl.appBaseUrl = baseUrl;
     WidgetsFlutterBinding.ensureInitialized();
     configureInjection();
-    await kGetIt<SharedPreferencesManager>().init();
-    await _saveUserInformation(userInfo: userInfo);
+    // await kGetIt<SharedPreferencesManager>().init();
+    // await _saveUserInformation(userInfo: userInfo);
     isSdkInitialize = true;
   }
 

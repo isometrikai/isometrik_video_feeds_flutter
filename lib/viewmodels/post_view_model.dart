@@ -12,7 +12,7 @@ class PostViewModel extends BaseViewModel {
   Future<PostResponse?> getFollowingPost({required bool isLoading}) async {
     try {
       // await rootBundle.loadString('AssetManifest.json').then(print);
-      final jsonString = await rootBundle.loadString('assets/loader/post_response.json');
+      final jsonString = await rootBundle.loadString(AssetConstants.postResponseJson);
       return postResponseFromJson(jsonString);
     } catch (e, stackTrace) {
       printLog(this, e.toString(), stackTrace: stackTrace);
