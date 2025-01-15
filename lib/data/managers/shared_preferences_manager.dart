@@ -42,7 +42,7 @@ class SharedPreferencesManager {
           (key == LocalStorageKeys.language
               ? DefaultValues.defaultLanguage
               : key == LocalStorageKeys.currencySymbol
-                  ? Utility.encodeChar(DefaultValues.defaultCurrencySymbol)
+                  ? IsmVideoReelUtility.encodeChar(DefaultValues.defaultCurrencySymbol)
                   : key == LocalStorageKeys.currencyCode
                       ? DefaultValues.defaultCurrencyCode
                       : key == LocalStorageKeys.latitude

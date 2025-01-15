@@ -73,7 +73,7 @@ class _MyAppState extends State<MyApp> {
               SizeConfig().init(constraints, orientation);
               return GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onTap: Utility.hideKeyboard,
+                onTap: IsmVideoReelUtility.hideKeyboard,
                 child: MaterialApp.router(
                   debugShowCheckedModeBanner: false,
                   theme: kTheme,

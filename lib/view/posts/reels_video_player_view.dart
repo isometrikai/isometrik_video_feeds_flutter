@@ -142,7 +142,7 @@ class _ReelsVideoPlayerViewState extends State<ReelsVideoPlayerView> {
     try {
       await videoPlayerController?.initialize();
     } catch (e) {
-      Utility.debugCatchLog(error: e);
+      IsmVideoReelUtility.debugCatchLog(error: e);
     }
     await videoPlayerController?.setLooping(true);
     if (url.isNotEmpty) {

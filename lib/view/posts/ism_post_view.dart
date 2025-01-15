@@ -146,7 +146,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                                 children: [
                                   IconButton(
                                     onPressed: () {
-                                      Utility.showBottomSheet(
+                                      IsmVideoReelUtility.showBottomSheet(
                                         CreatePostBottomSheet(
                                           onCreateNewPost: () {
                                             kGetIt<PostBloc>().add(CameraEvent());
@@ -179,7 +179,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       );
 
   void _onStartInit() {
-    if (!IsmVideoReelConfig.isSdkInitialize) return;
+    if (!IsmVideoReelConfig.isSdkInitialize) {
+      IsmVideoReelUtility.showToastMessage('sdk not initialized');
+      return;
+    }
+    ;
     _postBloc = kGetIt<PostBloc>();
     _postBloc?.add(const StartPost());
     _postBloc?.add(GetFollowingPostEvent(isLoading: false));

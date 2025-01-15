@@ -41,7 +41,7 @@ class DataSourceImpl extends DataSource {
 
     final country = '';
 
-    final platForm = Utility.platFormType();
+    final platForm = IsmVideoReelUtility.platFormType();
 
     final timeZone = '';
 

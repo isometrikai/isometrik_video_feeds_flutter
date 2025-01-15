@@ -30,7 +30,7 @@ class PostViewModel extends BaseViewModel {
         createPostRequest: createPostRequest,
       );
       if (response.hasError) {
-        Utility.showInfoDialog(response);
+        IsmVideoReelUtility.showInfoDialog(response);
         return null;
       }
       return createPostResponseFromJson(response.data);

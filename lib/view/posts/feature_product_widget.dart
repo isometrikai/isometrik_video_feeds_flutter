@@ -39,7 +39,7 @@ class FeatureProductWidget extends StatelessWidget {
                     ),
                     Dimens.boxHeight(Dimens.five),
                     Text(
-                      Utility.getFormattedPrice(
+                      IsmVideoReelUtility.getFormattedPrice(
                           productData?.finalPriceList?.finalPrice?.toDouble() ?? 0, productData?.currencySymbol),
                       style: Styles.secondaryText12.copyWith(
                         fontWeight: FontWeight.w500,
