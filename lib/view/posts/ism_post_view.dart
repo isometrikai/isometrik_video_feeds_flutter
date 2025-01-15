@@ -12,7 +12,7 @@ class IsmPostView extends StatefulWidget {
 }
 
 class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
-  final _postBloc = kGetIt<PostBloc>();
+  PostBloc? _postBloc;
   TabController? _postTabController;
   final _followingRefreshController = RefreshController(
     initialRefresh: false,
@@ -180,8 +180,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       IsmVideoReelUtility.showToastMessage('sdk not initialized');
       return;
     }
-    _postBloc.add(const StartPost());
-    _postBloc.add(GetFollowingPostEvent(isLoading: false));
+    _postBloc = kGetIt<PostBloc>();
+    _postBloc?.add(const StartPost());
+    _postBloc?.add(GetFollowingPostEvent(isLoading: false));
     _postTabController = TabController(length: 2, vsync: this);
   }
 }
