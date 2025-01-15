@@ -17,7 +17,7 @@ class _IsmLandingViewState extends State<IsmLandingView> {
     if (!mounted) return;
 
     if (!IsmVideoReelConfig.isSdkInitialize) {
-      IsmVideoReelUtility.showToastMessage('sdk not initialized');
+      IsmVideoReelUtility.showAppDialog(message: 'sdk not initialized');
       return;
     }
 
@@ -38,7 +38,7 @@ class _IsmLandingViewState extends State<IsmLandingView> {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (context) => kGetIt<PostBloc>(),
+          create: (context) => ismGetIt<PostBloc>(),
         ),
       ],
       child: const SizedBox.shrink(),

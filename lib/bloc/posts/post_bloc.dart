@@ -27,7 +27,7 @@ class PostBloc extends Bloc<PostEvent, PostState> {
   var _userProfilePic = '';
   var _userProfileName = '';
   var reelsPageTrendingController = PageController();
-  final _postViewModel = kGetIt<PostViewModel>();
+  final _postViewModel = ismGetIt<PostViewModel>();
 
   void _onStartPost(StartPost event, Emitter<PostState> emit) async {
     _userProfilePic = '';

@@ -7,7 +7,7 @@ class LocalStorageManager {
   /// initialize flutter secure storage
   final _flutterSecureStorage = const FlutterSecureStorage();
 
-  final _sharedPreferencesManager = kGetIt<SharedPreferencesManager>();
+  final _sharedPreferencesManager = ismGetIt<SharedPreferencesManager>();
 
   /// Get data from secure storage
   Future<String> getSecuredValue(String key) async {

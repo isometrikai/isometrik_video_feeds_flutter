@@ -12,7 +12,7 @@ class NetworkClient with AppMixin {
   });
 
   final String baseUrl;
-  final localStorageManager = kGetIt<LocalStorageManager>();
+  final localStorageManager = ismGetIt<LocalStorageManager>();
 
   final networkClient = http.Client();
 
