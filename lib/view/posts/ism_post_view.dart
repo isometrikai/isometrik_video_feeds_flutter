@@ -30,10 +30,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   }
 
   @override
-  Widget build(BuildContext context) => MultiBlocProvider(
-        providers: [
-          BlocProvider(create: (_) => kGetIt<PostBloc>()),
-        ],
+  Widget build(BuildContext context) => BlocProvider(
+        create: (_) => kGetIt<PostBloc>(),
         child: AnnotatedRegion(
           value: const SystemUiOverlayStyle(
             statusBarColor: AppColors.transparent,
