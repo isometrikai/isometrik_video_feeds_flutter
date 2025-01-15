@@ -52,7 +52,61 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
-
+  assets:
+    - assets/icons/
+    - assets/fonts/
+    - assets/json/
+  fonts:
+    - family: Rubik
+      fonts:
+        - asset: assets/fonts/Rubik/Rubik-Light.ttf
+          weight: 300
+        - asset: assets/fonts/Rubik/Rubik-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Rubik/Rubik-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Rubik/Rubik-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Rubik/Rubik-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Rubik/Rubik-ExtraBold.ttf
+          weight: 800
+        - asset: assets/fonts/Rubik/Rubik-Black.ttf
+          weight: 900
+    - family: PlayFairDisplay
+      fonts:
+        - asset: assets/fonts/PlayFair/PlayfairDisplay-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/PlayFair/PlayfairDisplay-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/PlayFair/PlayfairDisplay-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/PlayFair/PlayfairDisplay-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/PlayFair/PlayfairDisplay-ExtraBold.ttf
+          weight: 800
+        - asset: assets/fonts/PlayFair/PlayfairDisplay-Black.ttf
+          weight: 900
+    - family: Agenda
+      fonts:
+        - asset: assets/fonts/Agenda/Agenda-Light.ttf
+          weight: 300
+        - asset: assets/fonts/Agenda/Agenda-Black.ttf
+          weight: 900
+        - asset: assets/fonts/Agenda/Agenda-Bold.ttf
+          weight: 700
+    - family: Satoshi
+      fonts:
+        - asset: assets/fonts/Satoshi/Satoshi-Light.otf
+          weight: 300
+        - asset: assets/fonts/Satoshi/Satoshi-Regular.otf
+          weight: 300
+        - asset: assets/fonts/Satoshi/Satoshi-Medium.otf
+          weight: 500
+        - asset: assets/fonts/Satoshi/Satoshi-Black.otf
+          weight: 900
+        - asset: assets/fonts/Satoshi/Satoshi-Bold.otf
+          weight: 700
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

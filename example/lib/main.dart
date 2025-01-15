@@ -6,7 +6,20 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:ism_video_reel_player/export.dart';
 
 void main() {
+  _initializeReelsSdk();
   runApp(const MyApp());
+}
+
+void _initializeReelsSdk() async {
+  IsmVideoReelConfig.initializeSdk(
+    baseUrl: 'https://api-staging.meolaa.com',
+    userInfo: UserInfoClass(
+      userId: '37483783493',
+      userName: 'asjad',
+      firstName: 'Asjad',
+      lastName: 'Ibrahim',
+    ),
+  );
 }
 
 class MyApp extends StatefulWidget {

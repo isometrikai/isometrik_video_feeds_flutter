@@ -58,8 +58,6 @@ class SharedPreferencesManager {
       return sharedPreferences?.getInt(key) ?? 0;
     } else if (getValueDataType == SavedValueDataType.double) {
       return sharedPreferences?.getDouble(key) ?? 0;
-    } else if (getValueDataType == SavedValueDataType.bool) {
-      return sharedPreferences?.getBool(key) ?? key == LocalStorageKeys.isFirstTimeVisit ? true : false;
     } else if (getValueDataType == SavedValueDataType.stringList) {
       return sharedPreferences?.getStringList(key) ?? <String>[];
     }

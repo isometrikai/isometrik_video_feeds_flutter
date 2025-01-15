@@ -11,7 +11,8 @@ class AssetConstants {
   static const unmuteRoundedSvg = 'assets/icons/unmute_rounded.svg';
   static const greenTickIcon = 'assets/icons/green_tick.svg';
   static const verifiedSVG = 'assets/icons/ic_verified.svg';
-  static const heartAnimation = 'assets/loader/heart_animation.json';
+  static const heartAnimation = 'assets/json/heart_animation.json';
   static const pausedRoundedSvg = 'assets/icons/pause_rounded.svg';
   static const reelsPlaySvg = 'assets/icons/reels_play.svg';
+  static const postResponseJson = 'packages/ism_video_reel_player/assets/loader/post_response.json';
 }

@@ -163,341 +163,346 @@ class _ReelsVideoPlayerViewState extends State<ReelsVideoPlayerView> {
   @override
   Widget build(context) {
     videoPlayerController?.setVolume(widget.isReelsMuted ? 0.0 : 1.0);
-    return Center(
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          SizedBox(
-            width: Dimens.getScreenWidth(context),
-            child: GestureDetector(
-              onTap: () {
-                if (widget.showBlur == true) return;
-                isPlaying = !isPlaying;
-                if (isPlaying) {
-                  videoPlayerController?.pause();
-                  playPause();
-                } else {
-                  videoPlayerController?.play();
-                  playPause();
-                }
-              },
-              onDoubleTap: () async {
-                widget.onDoubleTap();
-                isDoubleTapped = true;
-                mountUpdate();
-                await Future<void>.delayed(const Duration(seconds: 1));
-                isDoubleTapped = false;
-                mountUpdate();
-              },
-              onLongPressStart: (details) {
-                videoPlayerController?.pause();
-                widget.onLongPressStart();
-                mountUpdate();
-              },
-              onLongPressEnd: (value) {
-                videoPlayerController?.play();
-                widget.onLongPressEnd();
-                mountUpdate();
-              },
-              child: VisibilityDetector(
-                key: Key('${widget.videoUrl}'),
-                onVisibilityChanged: (info) {
+    return SafeArea(
+      child: Center(
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            SizedBox(
+              width: Dimens.getScreenWidth(context),
+              child: GestureDetector(
+                onTap: () {
                   if (widget.showBlur == true) return;
-                  if (info.visibleFraction > 0.1) {
-                    isVideoVisible = true;
-                    mountUpdate();
-                    if (videoPlayerController?.value.isPlaying == false) {
-                      videoPlayerController?.seekTo(Duration.zero);
-                      videoPlayerController?.play();
-                      isPlaying = !isPlaying;
-                      mountUpdate();
-                    }
+                  isPlaying = !isPlaying;
+                  if (isPlaying) {
+                    videoPlayerController?.pause();
+                    playPause();
                   } else {
-                    isVideoVisible = false;
-                    mountUpdate();
-                    if (videoPlayerController?.value.isPlaying == true) {
-                      videoPlayerController?.pause();
-                      isPlaying = !isPlaying;
-                      mountUpdate();
-                    }
+                    videoPlayerController?.play();
+                    playPause();
                   }
                 },
-                child: Stack(
-                  fit: StackFit.expand,
-                  alignment: Alignment.center,
-                  children: [
-                    widget.showBlur == true
-                        ? AppImage.network(
-                            widget.thumbnail,
-                            width: Dimens.getScreenWidth(context),
-                            height: Dimens.getScreenHeight(context),
-                          )
-                        : videoPlayerController != null && videoPlayerController?.value.isInitialized == true
-                            ? FittedBox(
-                                fit: BoxFit.cover,
-                                child: SizedBox(
-                                  height: videoPlayerController?.value.size.height,
-                                  width: videoPlayerController?.value.size.width,
-                                  child: VideoPlayer(videoPlayerController!),
+                onDoubleTap: () async {
+                  widget.onDoubleTap();
+                  isDoubleTapped = true;
+                  mountUpdate();
+                  await Future<void>.delayed(const Duration(seconds: 1));
+                  isDoubleTapped = false;
+                  mountUpdate();
+                },
+                onLongPressStart: (details) {
+                  videoPlayerController?.pause();
+                  widget.onLongPressStart();
+                  mountUpdate();
+                },
+                onLongPressEnd: (value) {
+                  videoPlayerController?.play();
+                  widget.onLongPressEnd();
+                  mountUpdate();
+                },
+                child: VisibilityDetector(
+                  key: Key('${widget.videoUrl}'),
+                  onVisibilityChanged: (info) {
+                    if (widget.showBlur == true) return;
+                    if (info.visibleFraction > 0.1) {
+                      isVideoVisible = true;
+                      mountUpdate();
+                      if (videoPlayerController?.value.isPlaying == false) {
+                        videoPlayerController?.seekTo(Duration.zero);
+                        videoPlayerController?.play();
+                        isPlaying = !isPlaying;
+                        mountUpdate();
+                      }
+                    } else {
+                      isVideoVisible = false;
+                      mountUpdate();
+                      if (videoPlayerController?.value.isPlaying == true) {
+                        videoPlayerController?.pause();
+                        isPlaying = !isPlaying;
+                        mountUpdate();
+                      }
+                    }
+                  },
+                  child: Stack(
+                    fit: StackFit.expand,
+                    alignment: Alignment.center,
+                    children: [
+                      widget.showBlur == true
+                          ? AppImage.network(
+                              widget.thumbnail,
+                              width: Dimens.getScreenWidth(context),
+                              height: Dimens.getScreenHeight(context),
+                            )
+                          : videoPlayerController != null && videoPlayerController?.value.isInitialized == true
+                              ? FittedBox(
+                                  fit: BoxFit.cover,
+                                  child: SizedBox(
+                                    height: videoPlayerController?.value.size.height,
+                                    width: videoPlayerController?.value.size.width,
+                                    child: VideoPlayer(videoPlayerController!),
+                                  ),
+                                )
+                              : const SizedBox(),
+                      ClipRRect(
+                        borderRadius: BorderRadius.zero,
+                        child: SizedBox(
+                          width: Dimens.getScreenWidth(context),
+                          child: AnimatedOpacity(
+                            opacity: widget.isReelsLongPressed ? 0.0 : 1.0,
+                            duration: const Duration(milliseconds: 100),
+                            child: Container(
+                              height: Dimens.getScreenHeight(context),
+                              width: Dimens.getScreenWidth(context),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    AppColors.black.applyOpacity(.6),
+                                    AppColors.black.applyOpacity(.0),
+                                    AppColors.black.applyOpacity(.0),
+                                    AppColors.black.applyOpacity(.4),
+                                  ],
                                 ),
-                              )
-                            : const SizedBox(),
-                    ClipRRect(
-                      borderRadius: BorderRadius.zero,
-                      child: SizedBox(
-                        width: Dimens.getScreenWidth(context),
-                        child: AnimatedOpacity(
-                          opacity: widget.isReelsLongPressed ? 0.0 : 1.0,
-                          duration: const Duration(milliseconds: 100),
-                          child: Container(
-                            height: Dimens.getScreenHeight(context),
-                            width: Dimens.getScreenWidth(context),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  AppColors.black.applyOpacity(.6),
-                                  AppColors.black.applyOpacity(.0),
-                                  AppColors.black.applyOpacity(.0),
-                                  AppColors.black.applyOpacity(.4),
-                                ],
                               ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          // SafeArea(
-          //   top: false,
-          //   right: false,
-          //   left: false,
-          //   child: AnimatedOpacity(
-          //     opacity: widget.isReelsLongPressed ? 0.0 : 1.0,
-          //     duration: const Duration(milliseconds: 100),
-          //     child: Align(
-          //       alignment: Alignment.bottomRight,
-          //       child: Padding(
-          //         padding: Dimens.edgeInsets(right: Dimens.sixteen).copyWith(
-          //           bottom: widget.needBottomPadding == true ? Dimens.twentyFour : null,
-          //         ),
-          //         child: Column(
-          //           mainAxisAlignment: MainAxisAlignment.end,
-          //           children: [
-          //             if (widget.onCreatePost != null) ...[
-          //               InkWell(
-          //                 borderRadius: BorderRadius.circular(
-          //                   Dimens.hundred,
-          //                 ),
-          //                 onTap: widget.onCreatePost,
-          //                 child: const AppImage.svg(
-          //                   AssetConstants.icHomePlaceHolder,
-          //                 ),
-          //               ),
-          //               Dimens.boxHeight(Dimens.twenty),
-          //             ],
-          //             InkWell(
-          //               borderRadius: BorderRadius.circular(
-          //                 Dimens.hundred,
-          //               ),
-          //               onTap: () {
-          //                 if (widget.isReelsMuted == true) {
-          //                   videoPlayerController?.setVolume(1.0);
-          //                 } else {
-          //                   videoPlayerController?.setVolume(0.0);
-          //                 }
-          //                 widget.onTapVolume();
-          //                 mountUpdate();
-          //               },
-          //               child: AppImage.svg(
-          //                 widget.isReelsMuted == true ? AssetConstants.muteRoundedSvg : AssetConstants.unmuteRoundedSvg,
-          //               ),
-          //             ),
-          //           ],
-          //         ),
-          //       ),
-          //     ),
-          //   ),
-          // ),
-          Container(
-            alignment: Alignment.bottomCenter,
-            padding: Dimens.edgeInsets(left: Dimens.ten, right: Dimens.ten, bottom: Dimens.ten),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.end,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            TapHandler(
-                              onTap: widget.onTapUserProfilePic,
-                              child: Text(
-                                '${widget.name}'.replaceAll('', '\u{200B}'),
-                                overflow: TextOverflow.ellipsis,
-                                softWrap: false,
-                                style: Styles.white16.copyWith(
-                                    fontWeight: FontWeight.w600, fontFamily: AppConstants.secondaryFontFamily),
+            // SafeArea(
+            //   top: false,
+            //   right: false,
+            //   left: false,
+            //   child: AnimatedOpacity(
+            //     opacity: widget.isReelsLongPressed ? 0.0 : 1.0,
+            //     duration: const Duration(milliseconds: 100),
+            //     child: Align(
+            //       alignment: Alignment.bottomRight,
+            //       child: Padding(
+            //         padding: Dimens.edgeInsets(right: Dimens.sixteen).copyWith(
+            //           bottom: widget.needBottomPadding == true ? Dimens.twentyFour : null,
+            //         ),
+            //         child: Column(
+            //           mainAxisAlignment: MainAxisAlignment.end,
+            //           children: [
+            //             if (widget.onCreatePost != null) ...[
+            //               InkWell(
+            //                 borderRadius: BorderRadius.circular(
+            //                   Dimens.hundred,
+            //                 ),
+            //                 onTap: widget.onCreatePost,
+            //                 child: const AppImage.svg(
+            //                   AssetConstants.icHomePlaceHolder,
+            //                 ),
+            //               ),
+            //               Dimens.boxHeight(Dimens.twenty),
+            //             ],
+            //             InkWell(
+            //               borderRadius: BorderRadius.circular(
+            //                 Dimens.hundred,
+            //               ),
+            //               onTap: () {
+            //                 if (widget.isReelsMuted == true) {
+            //                   videoPlayerController?.setVolume(1.0);
+            //                 } else {
+            //                   videoPlayerController?.setVolume(0.0);
+            //                 }
+            //                 widget.onTapVolume();
+            //                 mountUpdate();
+            //               },
+            //               child: AppImage.svg(
+            //                 widget.isReelsMuted == true ? AssetConstants.muteRoundedSvg : AssetConstants.unmuteRoundedSvg,
+            //               ),
+            //             ),
+            //           ],
+            //         ),
+            //       ),
+            //     ),
+            //   ),
+            // ),
+            Container(
+              alignment: Alignment.bottomCenter,
+              padding: Dimens.edgeInsets(left: Dimens.ten, right: Dimens.ten, bottom: Dimens.ten),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              TapHandler(
+                                onTap: widget.onTapUserProfilePic,
+                                child: Text(
+                                  '${widget.name}'.replaceAll('', '\u{200B}'),
+                                  overflow: TextOverflow.ellipsis,
+                                  softWrap: false,
+                                  style: Styles.white16.copyWith(
+                                      fontWeight: FontWeight.w600, fontFamily: AppConstants.secondaryFontFamily),
+                                ),
                               ),
-                            ),
-                            if (!widget.isSelfProfile) ...[
-                              Dimens.boxWidth(Dimens.eight),
-                              isFollowLoading
-                                  ? Container(
-                                      height: Dimens.forty,
-                                      width: Dimens.forty,
-                                      padding: Dimens.edgeInsetsAll(Dimens.eight),
-                                      decoration: const BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: AppColors.appColor,
-                                      ),
-                                      child: Center(
-                                        child: CircularProgressIndicator(
-                                          color: AppColors.white,
-                                          strokeWidth: Dimens.two,
+                              if (!widget.isSelfProfile) ...[
+                                Dimens.boxWidth(Dimens.eight),
+                                isFollowLoading
+                                    ? Container(
+                                        height: Dimens.forty,
+                                        width: Dimens.forty,
+                                        padding: Dimens.edgeInsetsAll(Dimens.eight),
+                                        decoration: const BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: AppColors.appColor,
                                         ),
-                                      ),
-                                    )
-                                  : AppButton(
-                                      height: Dimens.twentyFour,
-                                      titleWidget: Center(
-                                        child: Text(
-                                          widget.isFollow == true ? TranslationFile.following : TranslationFile.follow,
-                                          style: Styles.white12.copyWith(
-                                            fontWeight: FontWeight.w500,
+                                        child: Center(
+                                          child: CircularProgressIndicator(
+                                            color: AppColors.white,
+                                            strokeWidth: Dimens.two,
                                           ),
                                         ),
+                                      )
+                                    : CustomButton(
+                                        height: Dimens.twentyFive,
+                                        color: widget.isFollow == true ? AppColors.white : AppColors.appColor,
+                                        titleWidget: Center(
+                                          child: Text(
+                                            widget.isFollow == true
+                                                ? TranslationFile.following
+                                                : TranslationFile.follow,
+                                            style: Styles.white12.copyWith(
+                                                fontWeight: FontWeight.w500,
+                                                color: widget.isFollow == true ? AppColors.appColor : AppColors.white),
+                                          ),
+                                        ),
+                                        width: Dimens.eighty,
+                                        onPress: () {
+                                          if (widget.isFollow) {
+                                          } else {
+                                            callFollowingFunction();
+                                          }
+                                        },
                                       ),
-                                      width: Dimens.eighty,
-                                      onPress: () {
-                                        if (widget.isFollow) {
-                                        } else {
-                                          callFollowingFunction();
-                                        }
-                                      },
-                                    ),
+                              ],
                             ],
+                          ),
+                          if (widget.hasTags.isEmptyOrNull == false)
+                            Text(
+                              widget.hasTags!.join(' '),
+                              style: Styles.white14.copyWith(
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                        ],
+                      ),
+                      const Spacer(),
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: AppColors.white,
+                            width: Dimens.one,
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(
+                                Dimens.ninety,
+                              ),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(
+                                  Dimens.hundred,
+                                ),
+                                onTap: widget.onTapUserProfilePic,
+                                child: AppImage.network(
+                                  widget.profilePhoto,
+                                  isProfileImage: true,
+                                  height: Dimens.forty,
+                                  width: Dimens.forty,
+                                ),
+                              ),
+                            ),
                           ],
                         ),
-                        if (widget.hasTags.isEmptyOrNull == false)
-                          Text(
-                            widget.hasTags!.join(' '),
-                            style: Styles.white14.copyWith(
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                      ],
-                    ),
-                    const Spacer(),
-                    Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: AppColors.white,
-                          width: Dimens.one,
-                        ),
-                        shape: BoxShape.circle,
                       ),
-                      child: Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(
-                              Dimens.ninety,
-                            ),
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(
-                                Dimens.hundred,
-                              ),
-                              onTap: widget.onTapUserProfilePic,
-                              child: AppImage.network(
-                                widget.profilePhoto,
-                                isProfileImage: true,
-                                height: Dimens.forty,
-                                width: Dimens.forty,
-                              ),
-                            ),
-                          ),
-                        ],
+                    ],
+                  ),
+                  if (widget.productList.isEmptyOrNull == false) ...[
+                    Dimens.boxHeight(Dimens.ten),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        spacing: Dimens.ten,
+                        children: widget.productList!
+                            .map((product) => FeatureProductWidget(productData: product))
+                            .toList(), // Using map
                       ),
                     ),
                   ],
-                ),
-                if (widget.productList.isEmptyOrNull == false) ...[
-                  Dimens.boxHeight(Dimens.ten),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      spacing: Dimens.ten,
-                      children: widget.productList!
-                          .map((product) => FeatureProductWidget(productData: product))
-                          .toList(), // Using map
-                    ),
-                  ),
                 ],
-              ],
-            ),
-          ),
-          AnimatedOpacity(
-            opacity: playPausedAction ? 1.0 : 0.0,
-            duration: const Duration(
-              milliseconds: 500,
-            ),
-            child: GestureDetector(
-              onTap: () {
-                if (isPlaying) {
-                  videoPlayerController?.pause();
-                  playPause();
-                } else {
-                  videoPlayerController?.play();
-                  playPause();
-                }
-                isPlaying = !isPlaying;
-                mountUpdate();
-              },
-              onDoubleTap: () async {
-                widget.onDoubleTap();
-                isDoubleTapped = true;
-                mountUpdate();
-                await Future<void>.delayed(
-                  const Duration(milliseconds: 1000),
-                );
-                isDoubleTapped = false;
-                mountUpdate();
-              },
-              onLongPressStart: (details) {
-                videoPlayerController?.pause();
-                widget.onLongPressStart();
-                mountUpdate();
-              },
-              onLongPressEnd: (value) {
-                videoPlayerController?.play();
-                widget.onLongPressEnd();
-                mountUpdate();
-              },
-              child: AppImage.svg(
-                isPlaying ? AssetConstants.pausedRoundedSvg : AssetConstants.reelsPlaySvg,
               ),
             ),
-          ),
-          if (isDoubleTapped)
-            Lottie.asset(
-              AssetConstants.heartAnimation,
-              width: Dimens.oneHundredFifty,
-              height: Dimens.oneHundredFifty,
-              animate: true,
+            AnimatedOpacity(
+              opacity: playPausedAction ? 1.0 : 0.0,
+              duration: const Duration(
+                milliseconds: 500,
+              ),
+              child: GestureDetector(
+                onTap: () {
+                  if (isPlaying) {
+                    videoPlayerController?.pause();
+                    playPause();
+                  } else {
+                    videoPlayerController?.play();
+                    playPause();
+                  }
+                  isPlaying = !isPlaying;
+                  mountUpdate();
+                },
+                onDoubleTap: () async {
+                  widget.onDoubleTap();
+                  isDoubleTapped = true;
+                  mountUpdate();
+                  await Future<void>.delayed(
+                    const Duration(milliseconds: 1000),
+                  );
+                  isDoubleTapped = false;
+                  mountUpdate();
+                },
+                onLongPressStart: (details) {
+                  videoPlayerController?.pause();
+                  widget.onLongPressStart();
+                  mountUpdate();
+                },
+                onLongPressEnd: (value) {
+                  videoPlayerController?.play();
+                  widget.onLongPressEnd();
+                  mountUpdate();
+                },
+                child: AppImage.svg(
+                  isPlaying ? AssetConstants.pausedRoundedSvg : AssetConstants.reelsPlaySvg,
+                ),
+              ),
             ),
-        ],
+            if (isDoubleTapped)
+              Lottie.asset(
+                AssetConstants.heartAnimation,
+                width: Dimens.oneHundredFifty,
+                height: Dimens.oneHundredFifty,
+                animate: true,
+              ),
+          ],
+        ),
       ),
     );
   }
