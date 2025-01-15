@@ -61,7 +61,7 @@ class _PostAttributeViewState extends State<PostAttributeView> {
             margin: Dimens.edgeInsetsSymmetric(horizontal: Dimens.fifteen, vertical: Dimens.ten),
             title: TranslationFile.post,
             onPress: () {
-              ismGetIt<PostBloc>().add(CreatePostEvent(createPostRequest: _createPostRequest));
+              isrGetIt<PostBloc>().add(CreatePostEvent(createPostRequest: _createPostRequest));
             },
           ),
         ),

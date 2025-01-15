@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/export.dart';
@@ -38,10 +37,13 @@ class _IsmLandingViewState extends State<IsmLandingView> {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (context) => ismGetIt<PostBloc>(),
+          create: (context) => isrGetIt<PostBloc>(),
         ),
       ],
-      child: const SizedBox.shrink(),
+      child: const Scaffold(
+        backgroundColor: Colors.black26,
+        body: SizedBox.shrink(),
+      ),
     );
   }
 }

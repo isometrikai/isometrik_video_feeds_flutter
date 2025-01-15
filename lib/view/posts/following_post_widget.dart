@@ -8,7 +8,7 @@ class FollowingPostWidget extends StatefulWidget {
 }
 
 class _FollowingPostWidgetState extends State<FollowingPostWidget> {
-  final _postBloc = ismGetIt<PostBloc>();
+  final _postBloc = isrGetIt<PostBloc>();
   List<PostData> _followingPostList = [];
   @override
   Widget build(BuildContext context) => BlocBuilder<PostBloc, PostState>(

@@ -4,7 +4,7 @@ import 'package:ism_video_reel_player/export.dart';
 
 @lazySingleton
 class PostViewModel extends BaseViewModel {
-  final _repository = ismGetIt<PostRepository>();
+  final _repository = isrGetIt<PostRepository>();
 
   @override
   BaseRepository getRepository() => _repository;
