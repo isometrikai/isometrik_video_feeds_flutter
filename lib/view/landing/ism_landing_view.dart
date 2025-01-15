@@ -1,0 +1,47 @@
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ism_video_reel_player/export.dart';
+
+class IsmLandingView extends StatefulWidget {
+  const IsmLandingView({super.key});
+
+  @override
+  State<IsmLandingView> createState() => _IsmLandingViewState();
+}
+
+class _IsmLandingViewState extends State<IsmLandingView> {
+  bool _isFirstBuild = true;
+
+  void _handleInitialRoute() {
+    if (!mounted) return;
+
+    if (!IsmVideoReelConfig.isSdkInitialize) {
+      IsmVideoReelUtility.showToastMessage('sdk not initialized');
+      return;
+    }
+
+    // Here you can add your routing conditions
+    RouteManagement.goToPostView();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Schedule the routing check after the first build
+    if (_isFirstBuild) {
+      _isFirstBuild = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _handleInitialRoute();
+      });
+    }
+
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (context) => kGetIt<PostBloc>(),
+        ),
+      ],
+      child: const SizedBox.shrink(),
+    );
+  }
+}
