@@ -31,7 +31,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) => BlocProvider(
-        create: (_) => kGetIt<PostBloc>(),
+        create: (_) => ismGetIt<PostBloc>(),
         child: AnnotatedRegion(
           value: const SystemUiOverlayStyle(
             statusBarColor: AppColors.transparent,
@@ -145,7 +145,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                                     IsmVideoReelUtility.showBottomSheet(
                                       CreatePostBottomSheet(
                                         onCreateNewPost: () {
-                                          kGetIt<PostBloc>().add(CameraEvent());
+                                          ismGetIt<PostBloc>().add(CameraEvent());
                                         },
                                       ),
                                     );
@@ -178,7 +178,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       IsmVideoReelUtility.showToastMessage('sdk not initialized');
       return;
     }
-    _postBloc = kGetIt<PostBloc>();
+    _postBloc = ismGetIt<PostBloc>();
     _postBloc?.add(const StartPost());
     _postBloc?.add(GetFollowingPostEvent(isLoading: false));
     _postTabController = TabController(length: 2, vsync: this);
