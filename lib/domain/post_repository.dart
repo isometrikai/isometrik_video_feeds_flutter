@@ -3,7 +3,7 @@ import 'package:ism_video_reel_player/export.dart';
 
 @lazySingleton
 class PostRepository extends BaseRepository {
-  final _dataSource = ismGetIt<DataSourceImpl>();
+  final _dataSource = isrGetIt<DataSourceImpl>();
 
   Future<ResponseModel> createPost({
     required bool isLoading,

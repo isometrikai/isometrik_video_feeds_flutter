@@ -154,7 +154,7 @@ class IsmVideoReelUtility {
                     child: AppButton(
                       width: Dimens.twoHundredFifty,
                       height: Dimens.fortyFour,
-                      title: positiveButtonText ?? TranslationFile.yes,
+                      title: positiveButtonText ?? TranslationFile.ok,
                       onPress: () {
                         closeOpenDialog();
                         if (onPressPositiveButton != null) {
@@ -169,7 +169,7 @@ class IsmVideoReelUtility {
                       child: AppButton(
                         width: Dimens.twoHundredFifty,
                         height: Dimens.fortyFour,
-                        title: negativeButtonText ?? TranslationFile.no,
+                        title: negativeButtonText ?? TranslationFile.cancel,
                         onPress: () {
                           closeOpenDialog();
                           if (onPressNegativeButton != null) {

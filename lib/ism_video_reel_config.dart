@@ -13,14 +13,14 @@ class IsmVideoReelConfig {
   }) async {
     AppUrl.appBaseUrl = baseUrl;
     WidgetsFlutterBinding.ensureInitialized();
-    configureInjection();
-    await ismGetIt<SharedPreferencesManager>().init();
+    isrConfigureInjection();
+    await isrGetIt<SharedPreferencesManager>().init();
     await _saveUserInformation(userInfo: userInfo);
     isSdkInitialize = true;
   }
 
   static Future<void> _saveUserInformation({UserInfoClass? userInfo}) async {
-    final _localStorageManager = ismGetIt<LocalStorageManager>();
+    final _localStorageManager = isrGetIt<LocalStorageManager>();
     final userInfoString = userInfo.toString();
     _localStorageManager.saveValue(LocalStorageKeys.userInfo, userInfoString, SavedValueDataType.string);
   }
