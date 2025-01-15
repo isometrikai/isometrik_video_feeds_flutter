@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/widgets.dart';
@@ -31,6 +32,14 @@ class PostBloc extends Bloc<PostEvent, PostState> {
   void _onStartPost(StartPost event, Emitter<PostState> emit) async {
     _userProfilePic = '';
     _userProfileName = '';
+    final userInfoString =
+        await _postViewModel.getRepository().getValue(LocalStorageKeys.userInfo, SavedValueDataType.string) as String;
+    if (userInfoString.isEmptyOrNull == false) {
+      final userModel = UserInfoClass.fromJson(jsonDecode(userInfoString) as Map<String, dynamic>);
+      _userProfilePic = userModel.profilePic ?? '';
+      _userProfileName = '${userModel.firstName}' '${userModel.lastName}' ?? '';
+      debugPrint('userModel $userModel');
+    }
   }
 
   FutureOr<void> _getFollowingPost(GetFollowingPostEvent event, Emitter<PostState> emit) async {

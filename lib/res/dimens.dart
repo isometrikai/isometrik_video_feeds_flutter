@@ -94,10 +94,10 @@ class Dimens {
     double? bottomLeftRadius,
   }) =>
       BorderRadius.only(
-        topLeft: Radius.circular(topLeftRadius ?? Dimens.twelve),
-        topRight: Radius.circular(topRightRadius ?? Dimens.twelve),
-        bottomLeft: Radius.circular(bottomLeftRadius ?? Dimens.twelve),
-        bottomRight: Radius.circular(bottomRightRadius ?? Dimens.twelve),
+        topLeft: Radius.circular(topLeftRadius ?? Dimens.eight),
+        topRight: Radius.circular(topRightRadius ?? Dimens.eight),
+        bottomLeft: Radius.circular(bottomLeftRadius ?? Dimens.eight),
+        bottomRight: Radius.circular(bottomRightRadius ?? Dimens.eight),
       );
 
   static final double appButtonHeight = 50.sp;
