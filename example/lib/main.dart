@@ -51,7 +51,7 @@ class _MyAppState extends State<MyApp> {
                 child: MaterialApp.router(
                   debugShowCheckedModeBanner: false,
                   theme: isrTheme,
-                  routerConfig: AppRouter.router,
+                  routerConfig: IsrAppRouter.router,
                 ),
               );
             },

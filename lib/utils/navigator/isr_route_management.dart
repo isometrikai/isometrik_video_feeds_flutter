@@ -10,17 +10,17 @@ class RouteManagement {
   RouteManagement._();
 
   static void goToPostView() {
-    ismNavigatorKey.currentContext?.go(AppRoutes.postView);
+    ismNavigatorKey.currentContext?.go(IsrAppRoutes.postView);
   }
 
   static Future<Map<String, dynamic>?> goToCameraView() async {
-    final result = ismNavigatorKey.currentContext?.pushNamed<Map<String, dynamic>>(RouteNames.cameraView);
+    final result = ismNavigatorKey.currentContext?.pushNamed<Map<String, dynamic>>(IsrRouteNames.cameraView);
     return result;
   }
 
   static void goToPostAttributeView({PostAttributeClass? postAttributeClass}) {
     ismNavigatorKey.currentContext!.pushNamed(
-      RouteNames.postAttributeView,
+      IsrRouteNames.postAttributeView,
       extra: {
         'postAttributeClass': postAttributeClass,
       },
@@ -29,7 +29,7 @@ class RouteManagement {
 
   static Future<PostAttributeClass?> goToVideoTrimView({required PostAttributeClass postAttributeClass}) async =>
       await ismNavigatorKey.currentContext!.pushNamed<PostAttributeClass>(
-        RouteNames.videoTrimView,
+        IsrRouteNames.videoTrimView,
         extra: {
           'postAttributeClass': postAttributeClass,
         },

@@ -1,33 +1,33 @@
 import 'package:go_router/go_router.dart';
 import 'package:ism_video_reel_player/export.dart';
 
-part 'app_routes.dart';
+part 'isr_app_routes.dart';
 
-class AppRouter {
-  AppRouter._();
+class IsrAppRouter {
+  IsrAppRouter._();
 
   static GoRouter router = GoRouter(
-    initialLocation: AppRoutes.landingView,
+    initialLocation: IsrAppRoutes.landingView,
     navigatorKey: ismNavigatorKey,
     routes: [
       GoRoute(
-        path: AppRoutes.landingView,
-        name: RouteNames.landingView,
+        path: IsrAppRoutes.landingView,
+        name: IsrRouteNames.landingView,
         builder: (_, state) => const IsmLandingView(isFromExample: true),
       ),
       GoRoute(
-        path: AppRoutes.cameraView,
-        name: RouteNames.cameraView,
+        path: IsrAppRoutes.cameraView,
+        name: IsrRouteNames.cameraView,
         builder: (_, state) => IsmCameraView(),
       ),
       GoRoute(
-        path: AppRoutes.postView,
-        name: RouteNames.postView,
+        path: IsrAppRoutes.postView,
+        name: IsrRouteNames.postView,
         builder: (_, __) => const IsmPostView(),
       ),
       GoRoute(
-        path: AppRoutes.postAttributeView,
-        name: RouteNames.postAttributeView,
+        path: IsrAppRoutes.postAttributeView,
+        name: IsrRouteNames.postAttributeView,
         builder: (_, state) {
           final extraMap = state.extra as Map;
           return PostAttributeView(
