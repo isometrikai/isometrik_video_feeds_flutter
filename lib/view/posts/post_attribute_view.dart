@@ -58,7 +58,7 @@ class _PostAttributeViewState extends State<PostAttributeView> {
         // ),
         bottomNavigationBar: SafeArea(
           child: AppButton(
-            margin: Dimens.edgeInsetsSymmetric(horizontal: Dimens.fifteen, vertical: Dimens.ten),
+            margin: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.fifteen, vertical: IsrDimens.ten),
             title: TranslationFile.post,
             onPress: () {
               isrGetIt<PostBloc>().add(CreatePostEvent(createPostRequest: _createPostRequest));
@@ -67,32 +67,32 @@ class _PostAttributeViewState extends State<PostAttributeView> {
         ),
         body: SafeArea(
           child: SingleChildScrollView(
-            padding: Dimens.edgeInsetsSymmetric(vertical: Dimens.twenty),
+            padding: IsrDimens.edgeInsetsSymmetric(vertical: IsrDimens.twenty),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: Dimens.edgeInsetsSymmetric(horizontal: Dimens.twenty, vertical: Dimens.ten),
+                  padding: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twenty, vertical: IsrDimens.ten),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Center(
                         child: SizedBox(
-                          width: Dimens.seventy,
-                          height: Dimens.hundred,
+                          width: IsrDimens.seventy,
+                          height: IsrDimens.hundred,
                           child: widget.postAttributeClass?.postType == PostType.photo
                               ? AppImage.file(
                                   widget.postAttributeClass?.url ?? '',
                                   fit: BoxFit.cover,
-                                  width: Dimens.seventy,
-                                  height: Dimens.hundred,
+                                  width: IsrDimens.seventy,
+                                  height: IsrDimens.hundred,
                                 )
                               : _isVideoInitializing
                                   ? AppImage.file(
                                       widget.postAttributeClass?.thumbnailUrl ?? '',
                                       fit: BoxFit.cover,
-                                      width: Dimens.seventy,
-                                      height: Dimens.hundred,
+                                      width: IsrDimens.seventy,
+                                      height: IsrDimens.hundred,
                                     )
                                   : TapHandler(
                                       onTap: () async {
@@ -119,21 +119,21 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                                                   alignment: Alignment.center,
                                                   children: [
                                                     Container(
-                                                      height: Dimens.hundred,
-                                                      width: Dimens.seventy,
+                                                      height: IsrDimens.hundred,
+                                                      width: IsrDimens.seventy,
                                                       decoration: BoxDecoration(
                                                         gradient: LinearGradient(
                                                           begin: Alignment.topCenter,
                                                           end: Alignment.bottomCenter,
                                                           colors: [
-                                                            AppColors.blackColor.applyOpacity(.25),
-                                                            AppColors.blackColor.applyOpacity(.1),
-                                                            AppColors.blackColor.applyOpacity(.1),
-                                                            AppColors.blackColor.applyOpacity(.1),
-                                                            AppColors.blackColor.applyOpacity(.1),
-                                                            AppColors.blackColor.applyOpacity(.1),
-                                                            AppColors.blackColor.applyOpacity(.1),
-                                                            AppColors.blackColor.applyOpacity(.25),
+                                                            IsrColors.blackColor.applyOpacity(.25),
+                                                            IsrColors.blackColor.applyOpacity(.1),
+                                                            IsrColors.blackColor.applyOpacity(.1),
+                                                            IsrColors.blackColor.applyOpacity(.1),
+                                                            IsrColors.blackColor.applyOpacity(.1),
+                                                            IsrColors.blackColor.applyOpacity(.1),
+                                                            IsrColors.blackColor.applyOpacity(.1),
+                                                            IsrColors.blackColor.applyOpacity(.25),
                                                           ],
                                                         ),
                                                         image: DecorationImage(
@@ -146,22 +146,22 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                                                     if (_videoPlayerController?.value.isInitialized == true &&
                                                         _videoPlayerController?.value.isPlaying == false)
                                                       Container(
-                                                        padding: Dimens.edgeInsetsAll(Dimens.five),
+                                                        padding: IsrDimens.edgeInsetsAll(IsrDimens.five),
                                                         decoration: BoxDecoration(
                                                           shape: BoxShape.circle,
                                                           gradient: LinearGradient(
                                                             begin: Alignment.topCenter,
                                                             end: Alignment.bottomCenter,
                                                             colors: [
-                                                              AppColors.white.applyOpacity(.7),
-                                                              AppColors.white.applyOpacity(.9),
-                                                              AppColors.white.applyOpacity(.9),
+                                                              IsrColors.white.applyOpacity(.7),
+                                                              IsrColors.white.applyOpacity(.9),
+                                                              IsrColors.white.applyOpacity(.9),
                                                             ],
                                                           ),
                                                         ),
                                                         child: const Icon(
                                                           Icons.play_arrow,
-                                                          color: AppColors.black,
+                                                          color: IsrColors.black,
                                                         ),
                                                       ),
                                                   ],
@@ -171,7 +171,7 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                                     ),
                         ),
                       ),
-                      Dimens.boxWidth(Dimens.ten),
+                      IsrDimens.boxWidth(IsrDimens.ten),
                       Expanded(
                         child: TextFormField(
                           maxLines: 5,
@@ -180,7 +180,7 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                           },
                           decoration: InputDecoration(
                             hintText: TranslationFile.writeCaption,
-                            hintStyle: Styles.primaryText12,
+                            hintStyle: IsrStyles.primaryText12,
                             border: InputBorder.none,
                           ),
                         ),
@@ -188,31 +188,31 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                     ],
                   ),
                 ),
-                CustomDivider(thickness: Dimens.five),
+                CustomDivider(thickness: IsrDimens.five),
                 TapHandler(
                   onTap: () {},
                   child: Padding(
-                    padding: Dimens.edgeInsetsSymmetric(horizontal: Dimens.twenty, vertical: Dimens.ten),
+                    padding: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twenty, vertical: IsrDimens.ten),
                     child: Row(
                       children: [
                         Text(
                           TranslationFile.category,
-                          style: Styles.primaryText14.copyWith(
-                            color: AppColors.color2783FB,
+                          style: IsrStyles.primaryText14.copyWith(
+                            color: IsrColors.color2783FB,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                         const Spacer(),
                         Text(
                           TranslationFile.selectCategory,
-                          style: Styles.primaryText14.copyWith(
-                            color: AppColors.color2783FB,
+                          style: IsrStyles.primaryText14.copyWith(
+                            color: IsrColors.color2783FB,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                         const Icon(
                           Icons.chevron_right,
-                          color: AppColors.color2783FB,
+                          color: IsrColors.color2783FB,
                         ),
                       ],
                     ),
@@ -226,13 +226,13 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                     });
                   },
                   child: Padding(
-                    padding: Dimens.edgeInsetsSymmetric(horizontal: Dimens.twenty, vertical: Dimens.ten),
+                    padding: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twenty, vertical: IsrDimens.ten),
                     child: Row(
                       children: [
                         Text(
                           TranslationFile.allowComments,
-                          style: Styles.primaryText14.copyWith(
-                            color: AppColors.color2783FB,
+                          style: IsrStyles.primaryText14.copyWith(
+                            color: IsrColors.color2783FB,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -257,13 +257,13 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                     });
                   },
                   child: Padding(
-                    padding: Dimens.edgeInsetsSymmetric(horizontal: Dimens.twenty, vertical: Dimens.ten),
+                    padding: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twenty, vertical: IsrDimens.ten),
                     child: Row(
                       children: [
                         Text(
                           TranslationFile.allowDownloads,
-                          style: Styles.primaryText14.copyWith(
-                            color: AppColors.color2783FB,
+                          style: IsrStyles.primaryText14.copyWith(
+                            color: IsrColors.color2783FB,
                             fontWeight: FontWeight.w500,
                           ),
                         ),

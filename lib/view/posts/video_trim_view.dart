@@ -65,17 +65,17 @@ class _VideoTrimViewState extends State<VideoTrimView> {
 
   @override
   Widget build(context) => Scaffold(
-        backgroundColor: AppColors.blackColor,
+        backgroundColor: IsrColors.blackColor,
         extendBodyBehindAppBar: true,
         appBar: PreferredSize(
           preferredSize: Size.fromHeight(
-            Dimens.oneHundredForty + Dimens.three,
+            IsrDimens.oneHundredForty + IsrDimens.three,
           ),
           child: Padding(
-            padding: Dimens.edgeInsets(
-              left: Dimens.twenty,
-              top: Dimens.fifty,
-              right: Dimens.twenty,
+            padding: IsrDimens.edgeInsets(
+              left: IsrDimens.twenty,
+              top: IsrDimens.fifty,
+              right: IsrDimens.twenty,
             ),
             child: Column(
               children: [
@@ -83,7 +83,7 @@ class _VideoTrimViewState extends State<VideoTrimView> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     InkWell(
-                      borderRadius: BorderRadius.circular(Dimens.hundred),
+                      borderRadius: BorderRadius.circular(IsrDimens.hundred),
                       onTap: () async {
                         await trimmer.videoPlayerController?.setVolume(
                           _isMuted ? 1.0 : 0.0,
@@ -92,43 +92,43 @@ class _VideoTrimViewState extends State<VideoTrimView> {
                         mountUpdate();
                       },
                       child: Container(
-                        width: Dimens.thirtySix,
-                        height: Dimens.thirtySix,
+                        width: IsrDimens.thirtySix,
+                        height: IsrDimens.thirtySix,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: AppColors.white.applyOpacity(.1),
+                          color: IsrColors.white.applyOpacity(.1),
                         ),
                         child: Icon(
                           !_isMuted ? Icons.volume_up_rounded : Icons.volume_off,
-                          color: AppColors.white,
+                          color: IsrColors.white,
                         ),
                       ),
                     ),
                     InkWell(
-                      borderRadius: BorderRadius.circular(Dimens.hundred),
+                      borderRadius: BorderRadius.circular(IsrDimens.hundred),
                       onTap: context.pop,
                       child: Container(
-                        width: Dimens.thirtySix,
-                        height: Dimens.thirtySix,
+                        width: IsrDimens.thirtySix,
+                        height: IsrDimens.thirtySix,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: AppColors.white.applyOpacity(.1),
+                          color: IsrColors.white.applyOpacity(.1),
                         ),
                         child: const Icon(
                           Icons.close,
-                          color: AppColors.white,
+                          color: IsrColors.white,
                         ),
                       ),
                     ),
                   ],
                 ),
-                Dimens.boxHeight(Dimens.eight),
+                IsrDimens.boxHeight(IsrDimens.eight),
                 SizedBox(
-                  width: Dimens.percentWidth(.95),
+                  width: IsrDimens.percentWidth(.95),
                   child: TrimViewer(
                     showDuration: true,
                     trimmer: trimmer,
-                    viewerWidth: Dimens.percentWidth(.95),
+                    viewerWidth: IsrDimens.percentWidth(.95),
                     maxVideoLength: const Duration(seconds: 60),
                     onChangeStart: (value) {
                       _startValue = value;
@@ -176,10 +176,10 @@ class _VideoTrimViewState extends State<VideoTrimView> {
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
                               colors: [
-                                AppColors.blackColor.applyOpacity(.6),
-                                AppColors.blackColor.applyOpacity(.0),
-                                AppColors.blackColor.applyOpacity(.0),
-                                AppColors.blackColor.applyOpacity(.4),
+                                IsrColors.blackColor.applyOpacity(.6),
+                                IsrColors.blackColor.applyOpacity(.0),
+                                IsrColors.blackColor.applyOpacity(.0),
+                                IsrColors.blackColor.applyOpacity(.4),
                               ],
                             ),
                           ),
@@ -191,8 +191,8 @@ class _VideoTrimViewState extends State<VideoTrimView> {
                             trimmer.videoPlayerController?.value.isPlaying == true
                                 ? AssetConstants.pausedRoundedSvg
                                 : AssetConstants.reelsPlaySvg,
-                            height: Dimens.thirty,
-                            width: Dimens.thirty,
+                            height: IsrDimens.thirty,
+                            width: IsrDimens.thirty,
                           ),
                         ),
                       ],
@@ -204,8 +204,8 @@ class _VideoTrimViewState extends State<VideoTrimView> {
                 Align(
                   alignment: Alignment.bottomCenter,
                   child: Padding(
-                    padding: Dimens.edgeInsetsSymmetric(horizontal: Dimens.sixteen).copyWith(
-                      bottom: Dimens.twenty,
+                    padding: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.sixteen).copyWith(
+                      bottom: IsrDimens.twenty,
                     ),
                     child: AppButton(
                       title: TranslationFile.continues,

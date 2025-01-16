@@ -65,18 +65,18 @@ class CustomButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final borderRadius = BorderRadius.all(
       Radius.circular(
-        radius ?? Dimens.four,
+        radius ?? IsrDimens.four,
       ),
     );
     return Container(
       margin: margin,
       width: width,
-      height: height ?? Dimens.fifty,
+      height: height ?? IsrDimens.fifty,
       constraints: BoxConstraints(
-        maxHeight: Dimens.sixtyFour,
+        maxHeight: IsrDimens.sixtyFour,
       ),
       child: Material(
-        elevation: elevation ?? Dimens.zero,
+        elevation: elevation ?? IsrDimens.zero,
         color: Colors.transparent,
         child: InkWell(
           onTap: isDisable
@@ -91,25 +91,25 @@ class CustomButton extends StatelessWidget {
           borderRadius: borderRadius,
           child: Ink(
             width: width ?? double.infinity,
-            padding: padding ?? Dimens.edgeInsetsAll(Dimens.zero),
+            padding: padding ?? IsrDimens.edgeInsetsAll(IsrDimens.zero),
             decoration: BoxDecoration(
               color: isDisable
                   ? disableColor != null
                       ? disableColor
-                      : AppColors.accent
-                  : color ?? AppColors.secondaryColor,
+                      : IsrColors.accent
+                  : color ?? IsrColors.secondaryColor,
               borderRadius: borderRadius,
               border: Border.all(
                 width: borderWidth ?? 0,
                 color: isDisable
-                    ? AppColors.accent
+                    ? IsrColors.accent
                     : borderColor != null
                         ? borderColor!
                         : color != null
-                            ? color == AppColors.white
-                                ? AppColors.secondaryColor
+                            ? color == IsrColors.white
+                                ? IsrColors.secondaryColor
                                 : color!
-                            : AppColors.secondaryColor,
+                            : IsrColors.secondaryColor,
               ),
             ),
             child: Opacity(
@@ -121,15 +121,15 @@ class CustomButton extends StatelessWidget {
                       children: [
                         if (isButtonWithCenterIcon != null && isButtonWithCenterIcon!) ...[
                           centerIcon!,
-                          Dimens.boxWidth(Dimens.twelve),
+                          IsrDimens.boxWidth(IsrDimens.twelve),
                         ],
                         Text(
                           '$title',
                           style: textStyle != null
                               ? textStyle
                               : textColor != null
-                                  ? Styles.secondaryText14.copyWith(fontWeight: FontWeight.w700)
-                                  : Styles.white14.copyWith(fontWeight: FontWeight.w700),
+                                  ? IsrStyles.secondaryText14.copyWith(fontWeight: FontWeight.w700)
+                                  : IsrStyles.white14.copyWith(fontWeight: FontWeight.w700),
                           textAlign: textAlign,
                         ),
                       ],

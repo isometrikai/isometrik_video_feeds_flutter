@@ -169,7 +169,7 @@ class _ReelsVideoPlayerViewState extends State<ReelsVideoPlayerView> {
           alignment: Alignment.center,
           children: [
             SizedBox(
-              width: Dimens.getScreenWidth(context),
+              width: IsrDimens.getScreenWidth(context),
               child: GestureDetector(
                 onTap: () {
                   if (widget.showBlur == true) return;
@@ -230,8 +230,8 @@ class _ReelsVideoPlayerViewState extends State<ReelsVideoPlayerView> {
                       widget.showBlur == true
                           ? AppImage.network(
                               widget.thumbnail,
-                              width: Dimens.getScreenWidth(context),
-                              height: Dimens.getScreenHeight(context),
+                              width: IsrDimens.getScreenWidth(context),
+                              height: IsrDimens.getScreenHeight(context),
                             )
                           : videoPlayerController != null && videoPlayerController?.value.isInitialized == true
                               ? FittedBox(
@@ -246,22 +246,22 @@ class _ReelsVideoPlayerViewState extends State<ReelsVideoPlayerView> {
                       ClipRRect(
                         borderRadius: BorderRadius.zero,
                         child: SizedBox(
-                          width: Dimens.getScreenWidth(context),
+                          width: IsrDimens.getScreenWidth(context),
                           child: AnimatedOpacity(
                             opacity: widget.isReelsLongPressed ? 0.0 : 1.0,
                             duration: const Duration(milliseconds: 100),
                             child: Container(
-                              height: Dimens.getScreenHeight(context),
-                              width: Dimens.getScreenWidth(context),
+                              height: IsrDimens.getScreenHeight(context),
+                              width: IsrDimens.getScreenWidth(context),
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   begin: Alignment.topCenter,
                                   end: Alignment.bottomCenter,
                                   colors: [
-                                    AppColors.black.applyOpacity(.6),
-                                    AppColors.black.applyOpacity(.0),
-                                    AppColors.black.applyOpacity(.0),
-                                    AppColors.black.applyOpacity(.4),
+                                    IsrColors.black.applyOpacity(.6),
+                                    IsrColors.black.applyOpacity(.0),
+                                    IsrColors.black.applyOpacity(.0),
+                                    IsrColors.black.applyOpacity(.4),
                                   ],
                                 ),
                               ),
@@ -284,8 +284,8 @@ class _ReelsVideoPlayerViewState extends State<ReelsVideoPlayerView> {
             //     child: Align(
             //       alignment: Alignment.bottomRight,
             //       child: Padding(
-            //         padding: Dimens.edgeInsets(right: Dimens.sixteen).copyWith(
-            //           bottom: widget.needBottomPadding == true ? Dimens.twentyFour : null,
+            //         padding: IsrDimens.edgeInsets(right: IsrDimens.sixteen).copyWith(
+            //           bottom: widget.needBottomPadding == true ? IsrDimens.twentyFour : null,
             //         ),
             //         child: Column(
             //           mainAxisAlignment: MainAxisAlignment.end,
@@ -293,18 +293,18 @@ class _ReelsVideoPlayerViewState extends State<ReelsVideoPlayerView> {
             //             if (widget.onCreatePost != null) ...[
             //               InkWell(
             //                 borderRadius: BorderRadius.circular(
-            //                   Dimens.hundred,
+            //                   IsrDimens.hundred,
             //                 ),
             //                 onTap: widget.onCreatePost,
             //                 child: const AppImage.svg(
             //                   AssetConstants.icHomePlaceHolder,
             //                 ),
             //               ),
-            //               Dimens.boxHeight(Dimens.twenty),
+            //               IsrDimens.boxHeight(IsrDimens.twenty),
             //             ],
             //             InkWell(
             //               borderRadius: BorderRadius.circular(
-            //                 Dimens.hundred,
+            //                 IsrDimens.hundred,
             //               ),
             //               onTap: () {
             //                 if (widget.isReelsMuted == true) {
@@ -327,7 +327,7 @@ class _ReelsVideoPlayerViewState extends State<ReelsVideoPlayerView> {
             // ),
             Container(
               alignment: Alignment.bottomCenter,
-              padding: Dimens.edgeInsets(left: Dimens.ten, right: Dimens.ten, bottom: Dimens.ten),
+              padding: IsrDimens.edgeInsets(left: IsrDimens.ten, right: IsrDimens.ten, bottom: IsrDimens.ten),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -349,42 +349,42 @@ class _ReelsVideoPlayerViewState extends State<ReelsVideoPlayerView> {
                                   '${widget.name}'.replaceAll('', '\u{200B}'),
                                   overflow: TextOverflow.ellipsis,
                                   softWrap: false,
-                                  style: Styles.white16.copyWith(
+                                  style: IsrStyles.white16.copyWith(
                                       fontWeight: FontWeight.w600, fontFamily: AppConstants.secondaryFontFamily),
                                 ),
                               ),
                               if (!widget.isSelfProfile) ...[
-                                Dimens.boxWidth(Dimens.eight),
+                                IsrDimens.boxWidth(IsrDimens.eight),
                                 isFollowLoading
                                     ? Container(
-                                        height: Dimens.forty,
-                                        width: Dimens.forty,
-                                        padding: Dimens.edgeInsetsAll(Dimens.eight),
+                                        height: IsrDimens.forty,
+                                        width: IsrDimens.forty,
+                                        padding: IsrDimens.edgeInsetsAll(IsrDimens.eight),
                                         decoration: const BoxDecoration(
                                           shape: BoxShape.circle,
-                                          color: AppColors.appColor,
+                                          color: IsrColors.appColor,
                                         ),
                                         child: Center(
                                           child: CircularProgressIndicator(
-                                            color: AppColors.white,
-                                            strokeWidth: Dimens.two,
+                                            color: IsrColors.white,
+                                            strokeWidth: IsrDimens.two,
                                           ),
                                         ),
                                       )
                                     : CustomButton(
-                                        height: Dimens.twentyFive,
-                                        color: widget.isFollow == true ? AppColors.white : AppColors.appColor,
+                                        height: IsrDimens.twentyFive,
+                                        color: widget.isFollow == true ? IsrColors.white : IsrColors.appColor,
                                         titleWidget: Center(
                                           child: Text(
                                             widget.isFollow == true
                                                 ? TranslationFile.following
                                                 : TranslationFile.follow,
-                                            style: Styles.white12.copyWith(
+                                            style: IsrStyles.white12.copyWith(
                                                 fontWeight: FontWeight.w500,
-                                                color: widget.isFollow == true ? AppColors.appColor : AppColors.white),
+                                                color: widget.isFollow == true ? IsrColors.appColor : IsrColors.white),
                                           ),
                                         ),
-                                        width: Dimens.eighty,
+                                        width: IsrDimens.eighty,
                                         onPress: () {
                                           if (widget.isFollow) {
                                           } else {
@@ -398,7 +398,7 @@ class _ReelsVideoPlayerViewState extends State<ReelsVideoPlayerView> {
                           if (widget.hasTags.isEmptyOrNull == false)
                             Text(
                               widget.hasTags!.join(' '),
-                              style: Styles.white14.copyWith(
+                              style: IsrStyles.white14.copyWith(
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -408,8 +408,8 @@ class _ReelsVideoPlayerViewState extends State<ReelsVideoPlayerView> {
                       Container(
                         decoration: BoxDecoration(
                           border: Border.all(
-                            color: AppColors.white,
-                            width: Dimens.one,
+                            color: IsrColors.white,
+                            width: IsrDimens.one,
                           ),
                           shape: BoxShape.circle,
                         ),
@@ -417,18 +417,18 @@ class _ReelsVideoPlayerViewState extends State<ReelsVideoPlayerView> {
                           children: [
                             ClipRRect(
                               borderRadius: BorderRadius.circular(
-                                Dimens.ninety,
+                                IsrDimens.ninety,
                               ),
                               child: InkWell(
                                 borderRadius: BorderRadius.circular(
-                                  Dimens.hundred,
+                                  IsrDimens.hundred,
                                 ),
                                 onTap: widget.onTapUserProfilePic,
                                 child: AppImage.network(
                                   widget.profilePhoto,
                                   isProfileImage: true,
-                                  height: Dimens.forty,
-                                  width: Dimens.forty,
+                                  height: IsrDimens.forty,
+                                  width: IsrDimens.forty,
                                 ),
                               ),
                             ),
@@ -438,11 +438,11 @@ class _ReelsVideoPlayerViewState extends State<ReelsVideoPlayerView> {
                     ],
                   ),
                   if (widget.productList.isEmptyOrNull == false) ...[
-                    Dimens.boxHeight(Dimens.ten),
+                    IsrDimens.boxHeight(IsrDimens.ten),
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
-                        spacing: Dimens.ten,
+                        spacing: IsrDimens.ten,
                         children: widget.productList!
                             .map((product) => FeatureProductWidget(productData: product))
                             .toList(), // Using map
@@ -497,8 +497,8 @@ class _ReelsVideoPlayerViewState extends State<ReelsVideoPlayerView> {
             if (isDoubleTapped)
               Lottie.asset(
                 AssetConstants.heartAnimation,
-                width: Dimens.oneHundredFifty,
-                height: Dimens.oneHundredFifty,
+                width: IsrDimens.oneHundredFifty,
+                height: IsrDimens.oneHundredFifty,
                 animate: true,
               ),
           ],

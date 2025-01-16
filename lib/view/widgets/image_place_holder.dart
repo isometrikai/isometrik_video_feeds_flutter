@@ -32,7 +32,7 @@ class ImagePlaceHolder extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         alignment: Alignment.center,
-        padding: Dimens.edgeInsetsAll(padding ?? Dimens.zero),
+        padding: IsrDimens.edgeInsetsAll(padding ?? IsrDimens.zero),
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: backgroundColor ?? Colors.transparent,

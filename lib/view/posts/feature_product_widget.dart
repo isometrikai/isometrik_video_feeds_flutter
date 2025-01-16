@@ -10,45 +10,45 @@ class FeatureProductWidget extends StatelessWidget {
   Widget build(BuildContext context) => TapHandler(
         onTap: () {},
         child: Container(
-          height: Dimens.ninety,
-          width: Dimens.twoHundredTwenty,
-          padding: Dimens.edgeInsetsSymmetric(
-            vertical: Dimens.five,
-            horizontal: Dimens.ten,
+          height: IsrDimens.ninety,
+          width: IsrDimens.twoHundredTwenty,
+          padding: IsrDimens.edgeInsetsSymmetric(
+            vertical: IsrDimens.five,
+            horizontal: IsrDimens.ten,
           ),
           decoration: BoxDecoration(
-            color: AppColors.white,
-            borderRadius: Dimens.borderRadiusAll(Dimens.eight),
+            color: IsrColors.white,
+            borderRadius: IsrDimens.borderRadiusAll(IsrDimens.eight),
           ),
           child: Row(
             children: [
               AppImage.network(
                 productData?.images?.first.small ?? '',
-                height: Dimens.forty,
-                width: Dimens.forty,
+                height: IsrDimens.forty,
+                width: IsrDimens.forty,
               ),
-              Dimens.boxWidth(Dimens.ten),
+              IsrDimens.boxWidth(IsrDimens.ten),
               Flexible(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       productData?.productName ?? '',
-                      style: Styles.secondaryText12,
+                      style: IsrStyles.secondaryText12,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    Dimens.boxHeight(Dimens.five),
+                    IsrDimens.boxHeight(IsrDimens.five),
                     Text(
                       IsmVideoReelUtility.getFormattedPrice(
                           productData?.finalPriceList?.finalPrice?.toDouble() ?? 0, productData?.currencySymbol),
-                      style: Styles.secondaryText12.copyWith(
+                      style: IsrStyles.secondaryText12.copyWith(
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    Dimens.boxHeight(Dimens.ten),
+                    IsrDimens.boxHeight(IsrDimens.ten),
                     // AddToCartButton(
                     //   isDisable: false,
-                    //   width: Dimens.eighty,
+                    //   width: IsrDimens.eighty,
                     //   productCartStatus: ProductCartStatus(
                     //     productId: productData?.childProductId,
                     //     cartQuantity: 0,
@@ -56,8 +56,8 @@ class FeatureProductWidget extends StatelessWidget {
                     //     maxAllowedQuantity: 100,
                     //     offerDetails: {},
                     //   ),
-                    //   height: Dimens.twentySix,
-                    //   radius: Dimens.four,
+                    //   height: IsrDimens.twentySix,
+                    //   radius: IsrDimens.four,
                     // ),
                   ],
                 ),

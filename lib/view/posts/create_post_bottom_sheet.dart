@@ -8,8 +8,8 @@ class CreatePostBottomSheet extends StatelessWidget {
   final Function()? onCreateNewPost;
   @override
   Widget build(BuildContext context) => Padding(
-        padding: Dimens.edgeInsetsSymmetric(vertical: Dimens.sixteen, horizontal: Dimens.eighteen)
-            .copyWith(top: Dimens.twentyFour, bottom: Dimens.thirty),
+        padding: IsrDimens.edgeInsetsSymmetric(vertical: IsrDimens.sixteen, horizontal: IsrDimens.eighteen)
+            .copyWith(top: IsrDimens.twentyFour, bottom: IsrDimens.thirty),
         child: Stack(
           clipBehavior: Clip.none,
           children: [
@@ -19,17 +19,17 @@ class CreatePostBottomSheet extends StatelessWidget {
               children: [
                 Text(
                   TranslationFile.create,
-                  style: Styles.secondaryText16.copyWith(
+                  style: IsrStyles.secondaryText16.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                Dimens.boxHeight(Dimens.fifteen),
+                IsrDimens.boxHeight(IsrDimens.fifteen),
                 Divider(
-                  height: Dimens.zero,
-                  color: AppColors.colorD4D4D4,
-                  thickness: Dimens.one,
+                  height: IsrDimens.zero,
+                  color: IsrColors.colorD4D4D4,
+                  thickness: IsrDimens.one,
                 ),
-                Dimens.boxHeight(Dimens.fifteen),
+                IsrDimens.boxHeight(IsrDimens.fifteen),
                 TapHandler(
                   onTap: () {
                     context.pop();
@@ -37,39 +37,39 @@ class CreatePostBottomSheet extends StatelessWidget {
                       onCreateNewPost!();
                     }
                   },
-                  padding: Dimens.five,
+                  padding: IsrDimens.five,
                   child: Row(
                     children: [
                       const Icon(
                         Icons.post_add,
-                        color: AppColors.black,
+                        color: IsrColors.black,
                       ),
-                      Dimens.boxWidth(Dimens.ten),
+                      IsrDimens.boxWidth(IsrDimens.ten),
                       Text(
                         TranslationFile.createAPost,
-                        style: Styles.secondaryText16.copyWith(
+                        style: IsrStyles.secondaryText16.copyWith(
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
                   ),
                 ),
-                Dimens.boxHeight(Dimens.fifteen),
+                IsrDimens.boxHeight(IsrDimens.fifteen),
                 TapHandler(
                   onTap: () {
                     context.pop();
                   },
-                  padding: Dimens.five,
+                  padding: IsrDimens.five,
                   child: Row(
                     children: [
                       const Icon(
                         Icons.format_list_bulleted,
-                        color: AppColors.black,
+                        color: IsrColors.black,
                       ),
-                      Dimens.boxWidth(Dimens.ten),
+                      IsrDimens.boxWidth(IsrDimens.ten),
                       Text(
                         TranslationFile.addAProduct,
-                        style: Styles.secondaryText16.copyWith(
+                        style: IsrStyles.secondaryText16.copyWith(
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -79,23 +79,23 @@ class CreatePostBottomSheet extends StatelessWidget {
               ],
             ),
             Positioned(
-              top: -Dimens.sixtyFour,
-              right: Dimens.zero,
+              top: -IsrDimens.sixtyFour,
+              right: IsrDimens.zero,
               child: InkWell(
                 onTap: () {
                   context.pop();
                 },
-                borderRadius: Dimens.borderRadiusAll(Dimens.fifty),
+                borderRadius: IsrDimens.borderRadiusAll(IsrDimens.fifty),
                 child: Container(
-                  width: Dimens.twentyEight,
-                  height: Dimens.twentyEight,
+                  width: IsrDimens.twentyEight,
+                  height: IsrDimens.twentyEight,
                   decoration: BoxDecoration(
-                    color: AppColors.white,
-                    borderRadius: Dimens.borderRadiusAll(Dimens.fifty),
+                    color: IsrColors.white,
+                    borderRadius: IsrDimens.borderRadiusAll(IsrDimens.fifty),
                   ),
                   child: const Icon(
                     Icons.close_rounded,
-                    color: AppColors.black,
+                    color: IsrColors.black,
                   ),
                 ),
               ),

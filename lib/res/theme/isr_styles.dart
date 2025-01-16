@@ -3,129 +3,129 @@ import 'package:ism_video_reel_player/export.dart';
 
 /// A chunk of styles used in the application.
 /// Will be ignored for test since all are static values and would not change.
-abstract class Styles {
+abstract class IsrStyles {
   static TextStyle primaryText10 = TextStyle(
-    color: AppColors.primaryTextColor,
-    fontSize: Dimens.ten,
+    color: IsrColors.primaryTextColor,
+    fontSize: IsrDimens.ten,
     fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );
 
   static TextStyle primaryText12 = TextStyle(
-    color: AppColors.primaryTextColor,
-    fontSize: Dimens.twelve,
+    color: IsrColors.primaryTextColor,
+    fontSize: IsrDimens.twelve,
     fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );
 
   static TextStyle primaryText14 = TextStyle(
-    color: AppColors.primaryTextColor,
-    fontSize: Dimens.fourteen,
+    color: IsrColors.primaryTextColor,
+    fontSize: IsrDimens.fourteen,
     fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );
 
   static TextStyle primaryText14Bold = TextStyle(
-    color: AppColors.primaryTextColor,
-    fontSize: Dimens.fourteen,
+    color: IsrColors.primaryTextColor,
+    fontSize: IsrDimens.fourteen,
     fontWeight: FontWeight.bold,
     fontFamily: AppConstants.primaryFontFamily,
   );
 
   static TextStyle primaryText16 = TextStyle(
-    color: AppColors.primaryTextColor,
-    fontSize: Dimens.sixteen,
+    color: IsrColors.primaryTextColor,
+    fontSize: IsrDimens.sixteen,
     fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );
 
   static TextStyle primaryText16Bold = TextStyle(
-    color: AppColors.primaryTextColor,
-    fontSize: Dimens.sixteen,
+    color: IsrColors.primaryTextColor,
+    fontSize: IsrDimens.sixteen,
     fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.bold,
   );
 
   static TextStyle primaryText18 = TextStyle(
-    color: AppColors.primaryTextColor,
-    fontSize: Dimens.eighteen,
+    color: IsrColors.primaryTextColor,
+    fontSize: IsrDimens.eighteen,
     fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );
 
   static TextStyle secondaryText10 = TextStyle(
-    color: AppColors.secondaryTextColor,
-    fontSize: Dimens.ten,
+    color: IsrColors.secondaryTextColor,
+    fontSize: IsrDimens.ten,
     fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );
 
   static TextStyle secondaryText8 = TextStyle(
-    color: AppColors.secondaryTextColor,
-    fontSize: Dimens.eight,
+    color: IsrColors.secondaryTextColor,
+    fontSize: IsrDimens.eight,
     fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );
 
   static TextStyle secondaryText12 = TextStyle(
-    color: AppColors.secondaryTextColor,
-    fontSize: Dimens.twelve,
+    color: IsrColors.secondaryTextColor,
+    fontSize: IsrDimens.twelve,
     fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );
 
   static TextStyle secondaryText14 = TextStyle(
-    color: AppColors.secondaryTextColor,
-    fontSize: Dimens.fourteen,
+    color: IsrColors.secondaryTextColor,
+    fontSize: IsrDimens.fourteen,
     fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );
 
   static TextStyle secondaryText16 = TextStyle(
-    color: AppColors.secondaryTextColor,
-    fontSize: Dimens.sixteen,
+    color: IsrColors.secondaryTextColor,
+    fontSize: IsrDimens.sixteen,
     fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );
 
   static TextStyle secondaryText18 = TextStyle(
-    color: AppColors.secondaryTextColor,
-    fontSize: Dimens.eighteen,
+    color: IsrColors.secondaryTextColor,
+    fontSize: IsrDimens.eighteen,
     fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );
 
   static TextStyle secondaryText20 = TextStyle(
-    color: AppColors.secondaryTextColor,
-    fontSize: Dimens.twenty,
+    color: IsrColors.secondaryTextColor,
+    fontSize: IsrDimens.twenty,
     fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );
 
   static TextStyle white10 = TextStyle(
-    color: AppColors.white,
-    fontSize: Dimens.ten,
+    color: IsrColors.white,
+    fontSize: IsrDimens.ten,
     fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );
 
   static TextStyle white12 = TextStyle(
-    color: AppColors.white,
-    fontSize: Dimens.twelve,
+    color: IsrColors.white,
+    fontSize: IsrDimens.twelve,
     fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );
 
   static TextStyle white14 = TextStyle(
-    color: AppColors.white,
-    fontSize: Dimens.fourteen,
+    color: IsrColors.white,
+    fontSize: IsrDimens.fourteen,
     fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );
 
   static TextStyle white16 = TextStyle(
-    color: AppColors.white,
-    fontSize: Dimens.sixteen,
+    color: IsrColors.white,
+    fontSize: IsrDimens.sixteen,
     fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );
@@ -138,8 +138,8 @@ abstract class Styles {
     TextDecoration? underline,
   }) =>
       TextStyle(
-        color: color ?? AppColors.primaryTextColor,
-        fontSize: fontSize ?? Dimens.sixteen,
+        color: color ?? IsrColors.primaryTextColor,
+        fontSize: fontSize ?? IsrDimens.sixteen,
         fontWeight: fontWeight ?? FontWeight.w400,
         fontFamily: fontFamily ?? AppConstants.primaryFontFamily,
         decoration: underline ?? null,
@@ -147,15 +147,15 @@ abstract class Styles {
 
   /// app button text styles
   static TextStyle appButtonStyle = TextStyle(
-    color: AppColors.buttonTextColor,
-    fontSize: Dimens.fourteen,
+    color: IsrColors.buttonTextColor,
+    fontSize: IsrDimens.fourteen,
     fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );
 
   static TextStyle appButtonDisableStyle = TextStyle(
-    color: AppColors.buttonTextColor,
-    fontSize: Dimens.fourteen,
+    color: IsrColors.buttonTextColor,
+    fontSize: IsrDimens.fourteen,
     fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );

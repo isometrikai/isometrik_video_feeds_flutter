@@ -29,8 +29,8 @@ class AppButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         margin: margin,
-        width: width ?? Dimens.getScreenWidth(context),
-        height: height ?? Dimens.appButtonHeight,
+        width: width ?? IsrDimens.getScreenWidth(context),
+        height: height ?? IsrDimens.appButtonHeight,
         child: TextButton(
           onPressed: isDisable
               ? null
@@ -45,17 +45,17 @@ class AppButton extends StatelessWidget {
               Center(
                 child: Text(
                   title ?? '',
-                  style: isDisable ? Styles.appButtonDisableStyle : Styles.appButtonStyle,
+                  style: isDisable ? IsrStyles.appButtonDisableStyle : IsrStyles.appButtonStyle,
                   textAlign: TextAlign.center,
                 ),
               ),
         ),
       );
 /*Container(
-        width: Dimens.getScreenWidth(context),
-        height: Dimens.appButtonHeight,
+        width: IsrDimens.getScreenWidth(context),
+        height: IsrDimens.appButtonHeight,
         constraints: BoxConstraints(
-          maxHeight: Dimens.sixtyFour,
+          maxHeight: IsrDimens.sixtyFour,
         ),
         child: Material(
           color: Colors.transparent,
@@ -68,21 +68,21 @@ class AppButton extends StatelessWidget {
                       onPress!();
                     }
                   },
-            splashColor: isDisable ? null : AppColors.accent,
-            borderRadius: Dimens.appButtonBorderRadius(),
+            splashColor: isDisable ? null : IsrColors.accent,
+            borderRadius: IsrDimens.appButtonBorderRadius(),
             child: Ink(
               width: double.infinity,
-              padding: Dimens.edgeInsetsAll(Dimens.zero),
+              padding: IsrDimens.edgeInsetsAll(IsrDimens.zero),
               decoration: BoxDecoration(
                 color: isDisable
-                    ? AppColors.buttonDisabledBackgroundColor
-                    : AppColors.buttonBackgroundColor,
-                borderRadius: Dimens.appButtonBorderRadius(),
+                    ? IsrColors.buttonDisabledBackgroundColor
+                    : IsrColors.buttonBackgroundColor,
+                borderRadius: IsrDimens.appButtonBorderRadius(),
                 border: Border.all(
-                  width: Dimens.zero,
+                  width: IsrDimens.zero,
                   color: isDisable
-                      ? AppColors.buttonDisabledBackgroundColor
-                      : AppColors.buttonBackgroundColor,
+                      ? IsrColors.buttonDisabledBackgroundColor
+                      : IsrColors.buttonBackgroundColor,
                 ),
               ),
               child: Opacity(

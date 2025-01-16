@@ -13,7 +13,7 @@ class AppRouter {
       GoRoute(
         path: AppRoutes.landingView,
         name: RouteNames.landingView,
-        builder: (_, state) => const IsmLandingView(),
+        builder: (_, state) => const IsmLandingView(isFromExample: true),
       ),
       GoRoute(
         path: AppRoutes.cameraView,

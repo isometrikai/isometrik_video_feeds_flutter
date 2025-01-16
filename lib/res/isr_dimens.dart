@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-class Dimens {
-  const Dimens._();
+class IsrDimens {
+  const IsrDimens._();
 
   /// Get the height with the percent value of the screen height.
   static double percentHeight(double percentValue) => percentValue.sh;
@@ -94,10 +94,10 @@ class Dimens {
     double? bottomLeftRadius,
   }) =>
       BorderRadius.only(
-        topLeft: Radius.circular(topLeftRadius ?? Dimens.eight),
-        topRight: Radius.circular(topRightRadius ?? Dimens.eight),
-        bottomLeft: Radius.circular(bottomLeftRadius ?? Dimens.eight),
-        bottomRight: Radius.circular(bottomRightRadius ?? Dimens.eight),
+        topLeft: Radius.circular(topLeftRadius ?? IsrDimens.eight),
+        topRight: Radius.circular(topRightRadius ?? IsrDimens.eight),
+        bottomLeft: Radius.circular(bottomLeftRadius ?? IsrDimens.eight),
+        bottomRight: Radius.circular(bottomRightRadius ?? IsrDimens.eight),
       );
 
   static final double appButtonHeight = 50.sp;
@@ -111,10 +111,10 @@ class Dimens {
     double? bottomLeftRadius,
   }) =>
       BorderRadius.only(
-        topLeft: Radius.circular(topLeftRadius ?? Dimens.zero),
-        topRight: Radius.circular(topRightRadius ?? Dimens.zero),
-        bottomLeft: Radius.circular(bottomLeftRadius ?? Dimens.zero),
-        bottomRight: Radius.circular(bottomRightRadius ?? Dimens.zero),
+        topLeft: Radius.circular(topLeftRadius ?? IsrDimens.zero),
+        topRight: Radius.circular(topRightRadius ?? IsrDimens.zero),
+        bottomLeft: Radius.circular(bottomLeftRadius ?? IsrDimens.zero),
+        bottomRight: Radius.circular(bottomRightRadius ?? IsrDimens.zero),
       );
 
   /// Returns Box with requested height value

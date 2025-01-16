@@ -25,8 +25,8 @@ class AppLoader extends StatelessWidget {
                 color: Colors.white,
                 child: Padding(
                   padding: isDialog && message != null
-                      ? Dimens.edgeInsetsAll(Dimens.sixteen)
-                      : Dimens.edgeInsetsAll(Dimens.eight),
+                      ? IsrDimens.edgeInsetsAll(IsrDimens.sixteen)
+                      : IsrDimens.edgeInsetsAll(IsrDimens.eight),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     mainAxisSize: MainAxisSize.min,
@@ -36,7 +36,7 @@ class AppLoader extends StatelessWidget {
                         strokeWidth: 3,
                       ),
                       if (isDialog && message != null) ...[
-                        Dimens.boxWidth(Dimens.sixteen),
+                        IsrDimens.boxWidth(IsrDimens.sixteen),
                         Text(
                           message!,
                         ),

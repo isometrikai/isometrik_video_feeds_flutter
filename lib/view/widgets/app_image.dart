@@ -206,6 +206,9 @@ class _Network extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fullName = name.isEmptyOrNull == false ? name : '';
+    final words = fullName.split(' ');
+    final initials = words.map((word) => word.isNotEmpty ? word[0] : '').join('');
     final optimizedImageUrl = AppConstants.isGumletEnable
         ? IsmVideoReelUtility.buildGumletImageUrl(imageUrl: imageUrl, width: width, height: height)
         : imageUrl;
@@ -231,12 +234,27 @@ class _Network extends StatelessWidget {
         ),
       ),
       placeholder: (context, url) => ImagePlaceHolder(
+        child: name.isEmptyOrNull == false
+            ? Text(
+                initials,
+                style: IsrStyles.secondaryText20.copyWith(fontWeight: FontWeight.w500, color: IsrColors.white),
+              )
+            : null,
         borderRadius: borderRadius,
         placeHolderName: placeHolderName,
+        width: width,
+        height: height,
         boxShape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
       ),
       errorWidget: (context, url, error) => ImagePlaceHolder(
+        child: name.isEmptyOrNull == false
+            ? Text(
+                initials,
+                style: IsrStyles.secondaryText20.copyWith(fontWeight: FontWeight.w500, color: IsrColors.white),
+              )
+            : null,
         width: width,
+        height: height,
         borderRadius: borderRadius,
         placeHolderName: placeHolderName,
         boxShape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,

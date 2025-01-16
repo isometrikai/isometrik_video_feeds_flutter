@@ -107,55 +107,53 @@ class IsmVideoReelUtility {
     String? negativeButtonText,
     Function()? onPressPositiveButton,
     Function()? onPressNegativeButton,
-    BuildContext? buildContext,
   }) {
-    _context = buildContext;
     showDialog(
       context: context!,
       builder: (_) => Dialog(
         shape: RoundedRectangleBorder(
-          borderRadius: Dimens.borderRadiusAll(Dimens.twelve),
+          borderRadius: IsrDimens.borderRadiusAll(IsrDimens.twelve),
         ),
         backgroundColor: Colors.white,
         child: Padding(
-          padding: Dimens.edgeInsetsAll(Dimens.fourteen),
+          padding: IsrDimens.edgeInsetsAll(IsrDimens.fourteen),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Align(
                 alignment: Alignment.topRight,
                 child: TapHandler(
-                  padding: Dimens.four,
+                  padding: IsrDimens.four,
                   onTap: closeOpenDialog,
                   child: AppImage.svg(
                     AssetConstants.icCrossIcon,
-                    height: Dimens.twelve,
-                    width: Dimens.twelve,
+                    height: IsrDimens.twelve,
+                    width: IsrDimens.twelve,
                   ),
                 ),
               ),
-              Dimens.boxHeight(Dimens.twenty),
+              IsrDimens.boxHeight(IsrDimens.twenty),
               if (isToShowTitle == true)
                 Text(
                   titleText ?? TranslationFile.alert,
-                  style: Styles.secondaryText14.copyWith(fontWeight: FontWeight.w700),
+                  style: IsrStyles.secondaryText14.copyWith(fontWeight: FontWeight.w700),
                 ),
               if (message.isEmptyOrNull == false) ...[
-                Dimens.boxHeight(Dimens.eight),
+                IsrDimens.boxHeight(IsrDimens.eight),
                 Text(
                   message.toString(),
-                  style: Styles.primaryText14,
+                  style: IsrStyles.primaryText14,
                   textAlign: TextAlign.center,
                 ),
               ],
-              Dimens.boxHeight(Dimens.twenty),
+              IsrDimens.boxHeight(IsrDimens.twenty),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   Expanded(
                     child: AppButton(
-                      width: Dimens.twoHundredFifty,
-                      height: Dimens.fortyFour,
+                      width: IsrDimens.twoHundredFifty,
+                      height: IsrDimens.fortyFour,
                       title: positiveButtonText ?? TranslationFile.ok,
                       onPress: () {
                         closeOpenDialog();
@@ -166,11 +164,11 @@ class IsmVideoReelUtility {
                     ),
                   ),
                   if (isTwoButtons == true) ...[
-                    Dimens.boxWidth(Dimens.five),
+                    IsrDimens.boxWidth(IsrDimens.five),
                     Expanded(
                       child: AppButton(
-                        width: Dimens.twoHundredFifty,
-                        height: Dimens.fortyFour,
+                        width: IsrDimens.twoHundredFifty,
+                        height: IsrDimens.fortyFour,
                         title: negativeButtonText ?? TranslationFile.cancel,
                         onPress: () {
                           closeOpenDialog();
@@ -183,7 +181,7 @@ class IsmVideoReelUtility {
                   ],
                 ],
               ),
-              Dimens.boxHeight(Dimens.ten),
+              IsrDimens.boxHeight(IsrDimens.ten),
             ],
           ),
         ),
@@ -207,10 +205,10 @@ class IsmVideoReelUtility {
         useSafeArea: false,
         isDismissible: isDismissible,
         isScrollControlled: isScrollControlled,
-        backgroundColor: isDarkBG ? Theme.of(context!).primaryColor : AppColors.white,
+        backgroundColor: isDarkBG ? Theme.of(context!).primaryColor : IsrColors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(
-            top: Radius.circular(Dimens.sixteen),
+            top: Radius.circular(IsrDimens.sixteen),
           ),
         ),
       );
@@ -297,9 +295,9 @@ class IsmVideoReelUtility {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: backgroundColor ?? Theme.of(context).primaryColor,
-        margin: Dimens.edgeInsetsAll(Dimens.ten),
+        margin: IsrDimens.edgeInsetsAll(IsrDimens.ten),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(Dimens.twelve),
+          borderRadius: BorderRadius.circular(IsrDimens.twelve),
         ),
         behavior: SnackBarBehavior.floating,
         duration: duration ?? const Duration(seconds: 2),
@@ -308,14 +306,14 @@ class IsmVideoReelUtility {
             if (isSuccessIcon == true) ...[
               Icon(
                 Icons.check,
-                color: foregroundColor ?? AppColors.white,
+                color: foregroundColor ?? IsrColors.white,
               ),
-              Dimens.boxWidth(Dimens.ten),
+              IsrDimens.boxWidth(IsrDimens.ten),
             ],
             Flexible(
               child: Text(
                 message,
-                style: Styles.primaryText14.copyWith(color: foregroundColor ?? AppColors.white),
+                style: IsrStyles.primaryText14.copyWith(color: foregroundColor ?? IsrColors.white),
               ),
             ),
           ],
@@ -335,7 +333,10 @@ class IsmVideoReelUtility {
   }
 
   static Widget loaderWidget({bool? isAdaptive = true}) => Center(
-      child: isAdaptive == true ? const CircularProgressIndicator.adaptive() : const CircularProgressIndicator());
+        child: isAdaptive == true
+            ? const CircularProgressIndicator.adaptive(backgroundColor: Colors.white)
+            : const CircularProgressIndicator(color: Colors.white),
+      );
 
   /// get formated date
   static String getFormattedDateWithNumberOfDays(int? numberOfDays, {String? dataFormat = 'EEEE, dd MMM'}) =>
@@ -353,7 +354,7 @@ class IsmVideoReelUtility {
       return Color.fromRGBO(r, g, b, 1.0); // Alpha is set to 1.0 (fully opaque)
     }
 
-    return AppColors.transparent;
+    return IsrColors.transparent;
   }
 
   static String getFormattedPrice(double price, String? currencySymbol) => NumberFormat.currency(
@@ -368,33 +369,33 @@ class IsmVideoReelUtility {
   }) =>
       showModalBottomSheet(
         context: context,
-        backgroundColor: AppColors.white,
+        backgroundColor: IsrColors.white,
         shape: RoundedRectangleBorder(
-          borderRadius: Dimens.borderRadius(
-            topLeftRadius: Dimens.sixteen,
-            topRightRadius: Dimens.sixteen,
+          borderRadius: IsrDimens.borderRadius(
+            topLeftRadius: IsrDimens.sixteen,
+            topRightRadius: IsrDimens.sixteen,
           ),
         ),
         builder: (context) => Padding(
-          padding: Dimens.edgeInsetsSymmetric(vertical: Dimens.sixteen, horizontal: Dimens.eighteen)
-              .copyWith(top: Dimens.twentyFour),
+          padding: IsrDimens.edgeInsetsSymmetric(vertical: IsrDimens.sixteen, horizontal: IsrDimens.eighteen)
+              .copyWith(top: IsrDimens.twentyFour),
           child: Stack(
             clipBehavior: Clip.none,
             children: [
               builder(context),
               Positioned(
-                top: -Dimens.sixtyEight,
-                right: Dimens.one,
+                top: -IsrDimens.sixtyEight,
+                right: IsrDimens.one,
                 child: InkWell(
                   onTap: () {
                     context.pop();
                   },
-                  borderRadius: Dimens.borderRadiusAll(Dimens.fifty),
+                  borderRadius: IsrDimens.borderRadiusAll(IsrDimens.fifty),
                   child: Container(
-                    height: Dimens.thirtySix,
-                    width: Dimens.thirtySix,
+                    height: IsrDimens.thirtySix,
+                    width: IsrDimens.thirtySix,
                     decoration: BoxDecoration(
-                      borderRadius: Dimens.borderRadiusAll(Dimens.fifty),
+                      borderRadius: IsrDimens.borderRadiusAll(IsrDimens.fifty),
                     ),
                     child: isBackButton
                         ? const AppImage.svg(
@@ -427,8 +428,8 @@ class IsmVideoReelUtility {
       msg: msg,
       toastLength: Toast.LENGTH_SHORT,
       gravity: gravity ?? ToastGravity.BOTTOM,
-      backgroundColor: AppColors.black,
-      textColor: AppColors.white,
+      backgroundColor: IsrColors.black,
+      textColor: IsrColors.white,
     );
   }
 
@@ -439,9 +440,7 @@ class IsmVideoReelUtility {
     }
   }
 
-  static BuildContext? _context;
-  static BuildContext? get context =>
-      ismNavigatorKey.currentContext == null ? _context! : ismNavigatorKey.currentContext;
+  static BuildContext? get context => ismNavigatorKey.currentContext;
 
   // Define a function to convert a character to its base64Encode
   static String encodeChar(String char) => base64Encode(utf8.encode(char));
@@ -496,23 +495,23 @@ class IsmVideoReelUtility {
   static Future<void> showCustomDialog({required BuildContext context, required Widget child}) => showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          contentPadding: Dimens.edgeInsetsAll(Dimens.twelve),
+          contentPadding: IsrDimens.edgeInsetsAll(IsrDimens.twelve),
           shape: RoundedRectangleBorder(
-            borderRadius: Dimens.borderRadiusAll(Dimens.twelve),
+            borderRadius: IsrDimens.borderRadiusAll(IsrDimens.twelve),
           ),
-          backgroundColor: AppColors.dialogColor,
+          backgroundColor: IsrColors.dialogColor,
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Align(
                 alignment: Alignment.topRight,
                 child: TapHandler(
-                  padding: Dimens.four,
+                  padding: IsrDimens.four,
                   onTap: IsmVideoReelUtility.closeOpenDialog,
                   child: AppImage.svg(
                     AssetConstants.icCrossIcon,
-                    height: Dimens.twelve,
-                    width: Dimens.twelve,
+                    height: IsrDimens.twelve,
+                    width: IsrDimens.twelve,
                   ),
                 ),
               ),

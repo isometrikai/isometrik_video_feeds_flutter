@@ -57,7 +57,7 @@ class _CameraViewState extends State<IsmCameraView> {
           // Recording Progress Indicator
           if (_isRecording)
             Positioned(
-              top: Dimens.sixty,
+              top: IsrDimens.sixty,
               left: 0,
               right: 0,
               child: LinearProgressIndicator(
@@ -69,14 +69,14 @@ class _CameraViewState extends State<IsmCameraView> {
 
           // Top Controls
           Positioned(
-            top: _isRecording ? Dimens.seventy : Dimens.sixty,
+            top: _isRecording ? IsrDimens.seventy : IsrDimens.sixty,
             left: 0,
             right: 0,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.close, color: AppColors.white),
+                  icon: const Icon(Icons.close, color: IsrColors.white),
                   onPressed: () => Navigator.pop(context),
                 ),
                 const Spacer(),
@@ -84,18 +84,18 @@ class _CameraViewState extends State<IsmCameraView> {
                   onTap: () {},
                   child: Container(
                     padding: EdgeInsets.symmetric(
-                      horizontal: Dimens.sixteen,
-                      vertical: Dimens.eight,
+                      horizontal: IsrDimens.sixteen,
+                      vertical: IsrDimens.eight,
                     ),
                     decoration: BoxDecoration(
                       color: Colors.black38,
-                      borderRadius: BorderRadius.circular(Dimens.ten),
+                      borderRadius: BorderRadius.circular(IsrDimens.ten),
                     ),
                     child: Text(
                       TranslationFile.addASound,
                       style: TextStyle(
-                        color: AppColors.white,
-                        fontSize: Dimens.sixteen,
+                        color: IsrColors.white,
+                        fontSize: IsrDimens.sixteen,
                       ),
                     ),
                   ),
@@ -107,28 +107,28 @@ class _CameraViewState extends State<IsmCameraView> {
 
           // Right Side Controls
           Positioned(
-            right: Dimens.sixteen,
+            right: IsrDimens.sixteen,
             top: MediaQuery.of(context).size.height * 0.3,
             child: Column(
               children: [
                 TapHandler(
                   onTap: _switchCamera,
                   child: Container(
-                    child: const Icon(Icons.refresh_rounded, color: AppColors.white),
-                    padding: Dimens.edgeInsetsAll(Dimens.ten),
+                    child: const Icon(Icons.refresh_rounded, color: IsrColors.white),
+                    padding: IsrDimens.edgeInsetsAll(IsrDimens.ten),
                     decoration: const BoxDecoration(
                       color: Colors.black12,
                       shape: BoxShape.circle,
                     ),
                   ),
                 ),
-                Dimens.boxHeight(Dimens.twenty),
+                IsrDimens.boxHeight(IsrDimens.twenty),
                 TapHandler(
                   onTap: _toggleFlash,
                   child: Container(
                     alignment: Alignment.center,
                     child: _getFlashIcon(),
-                    padding: Dimens.edgeInsetsAll(Dimens.ten),
+                    padding: IsrDimens.edgeInsetsAll(IsrDimens.ten),
                     decoration: const BoxDecoration(
                       color: Colors.black12,
                       shape: BoxShape.circle,
@@ -145,7 +145,7 @@ class _CameraViewState extends State<IsmCameraView> {
             left: 0,
             right: 0,
             child: Container(
-              padding: EdgeInsets.symmetric(vertical: Dimens.twenty),
+              padding: EdgeInsets.symmetric(vertical: IsrDimens.twenty),
               color: Colors.black12,
               child: Column(
                 children: [
@@ -154,14 +154,14 @@ class _CameraViewState extends State<IsmCameraView> {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.photo_library, color: AppColors.white),
+                        icon: const Icon(Icons.photo_library, color: IsrColors.white),
                         onPressed: _pickFromGallery,
                       ),
                       GestureDetector(
                         onTap: _isRecording ? _stopRecording : _startRecording,
                         child: Container(
-                          width: Dimens.eighty,
-                          height: Dimens.eighty,
+                          width: IsrDimens.eighty,
+                          height: IsrDimens.eighty,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(color: Colors.red, width: 4),
@@ -171,18 +171,18 @@ class _CameraViewState extends State<IsmCameraView> {
                       ),
                     ],
                   ),
-                  Dimens.boxHeight(Dimens.twenty),
+                  IsrDimens.boxHeight(IsrDimens.twenty),
                   // Duration Options
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    spacing: Dimens.twenty,
+                    spacing: IsrDimens.twenty,
                     children: List.generate(
                       _durationList.length,
                       (index) =>
                           _buildDurationOption('${_durationList[index]}s', _selectedDuration == _durationList[index]),
                     ),
                   ),
-                  Dimens.boxHeight(Dimens.fifteen),
+                  IsrDimens.boxHeight(IsrDimens.fifteen),
                 ],
               ),
             ),
@@ -202,18 +202,18 @@ class _CameraViewState extends State<IsmCameraView> {
           });
         },
         child: Container(
-          padding: EdgeInsets.symmetric(horizontal: Dimens.twenty, vertical: Dimens.eight),
+          padding: EdgeInsets.symmetric(horizontal: IsrDimens.twenty, vertical: IsrDimens.eight),
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
-                color: isSelected ? AppColors.white : Colors.transparent,
+                color: isSelected ? IsrColors.white : Colors.transparent,
                 width: 2,
               ),
             ),
           ),
           child: Text(
             text,
-            style: Styles.white16.copyWith(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal),
+            style: IsrStyles.white16.copyWith(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal),
           ),
         ),
       );
@@ -326,11 +326,11 @@ class _CameraViewState extends State<IsmCameraView> {
   Icon _getFlashIcon() {
     switch (_currentFlashState) {
       case FlashState.auto:
-        return const Icon(Icons.flash_auto, color: AppColors.white);
+        return const Icon(Icons.flash_auto, color: IsrColors.white);
       case FlashState.always:
-        return const Icon(Icons.flash_on, color: AppColors.white);
+        return const Icon(Icons.flash_on, color: IsrColors.white);
       case FlashState.off:
-        return const Icon(Icons.flash_off, color: AppColors.white);
+        return const Icon(Icons.flash_off, color: IsrColors.white);
     }
   }
 

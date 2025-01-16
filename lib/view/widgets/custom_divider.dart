@@ -19,11 +19,11 @@ class CustomDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         child: Divider(
-          height: height ?? Dimens.five + (thickness ?? Dimens.one),
+          height: height ?? IsrDimens.five + (thickness ?? IsrDimens.one),
           color: color ?? Theme.of(context).dividerColor,
-          thickness: thickness ?? Dimens.one,
-          indent: endIndent ?? Dimens.zero,
-          endIndent: endIndent ?? Dimens.zero,
+          thickness: thickness ?? IsrDimens.one,
+          indent: endIndent ?? IsrDimens.zero,
+          endIndent: endIndent ?? IsrDimens.zero,
         ),
       );
 }

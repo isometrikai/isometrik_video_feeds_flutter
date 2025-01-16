@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class AppColors {
-  AppColors._();
+class IsrColors {
+  IsrColors._();
 
   // static const Color appColor = Color(0xFFF27C73);
   static const Color appColor = Color(0xFF486640);
@@ -22,7 +22,6 @@ class AppColors {
   static const Color navigationBar = Color(0xFFFFFFFF);
 
   static const Color paymentBackgroundColor = Color(0xFFFFEAE8);
-
 
   /// colors for dialog
   static const Color dialogColor = Color(0xFFFFFFFF);

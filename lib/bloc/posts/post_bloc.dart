@@ -15,7 +15,7 @@ part 'post_state.dart';
 
 @lazySingleton
 class PostBloc extends Bloc<PostEvent, PostState> {
-  PostBloc() : super(PostInitial()) {
+  PostBloc() : super(PostInitial(isLoading: true)) {
     on<StartPost>(_onStartPost);
     on<GetFollowingPostEvent>(_getFollowingPost);
     on<CreatePostEvent>(_createPost);
@@ -24,22 +24,18 @@ class PostBloc extends Bloc<PostEvent, PostState> {
 
   final List<PostData> _followingPostList = [];
   var reelsPageFollowingController = PageController();
-  var _userProfilePic = '';
-  var _userProfileName = '';
+  UserInfoClass? _userInfoClass;
   var reelsPageTrendingController = PageController();
   final _postViewModel = isrGetIt<PostViewModel>();
 
   void _onStartPost(StartPost event, Emitter<PostState> emit) async {
-    _userProfilePic = '';
-    _userProfileName = '';
     final userInfoString =
         await _postViewModel.getRepository().getValue(LocalStorageKeys.userInfo, SavedValueDataType.string) as String;
     if (userInfoString.isEmptyOrNull == false) {
-      final userModel = UserInfoClass.fromJson(jsonDecode(userInfoString) as Map<String, dynamic>);
-      _userProfilePic = userModel.profilePic ?? '';
-      _userProfileName = '${userModel.firstName}' '${userModel.lastName}' ?? '';
-      debugPrint('userModel $userModel');
+      _userInfoClass = UserInfoClass.fromJson(jsonDecode(userInfoString) as Map<String, dynamic>);
+      emit(UserInformationLoaded(userInfoClass: _userInfoClass));
     }
+    add(GetFollowingPostEvent(isLoading: false));
   }
 
   FutureOr<void> _getFollowingPost(GetFollowingPostEvent event, Emitter<PostState> emit) async {
@@ -50,10 +46,6 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     }
     emit(PostDataLoadedState(postDataList: _followingPostList));
   }
-
-  String getProfileImageUrl() => _userProfilePic;
-
-  String getProfileName() => _userProfileName;
 
   FutureOr<void> _goToCamera(CameraEvent event, Emitter<PostState> emit) async {
     final result = await RouteManagement.goToCameraView();

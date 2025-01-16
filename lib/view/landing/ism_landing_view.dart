@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/export.dart';
 
 class IsmLandingView extends StatefulWidget {
-  const IsmLandingView({super.key, this.isFromExample = true});
+  const IsmLandingView({super.key, this.isFromExample = false});
 
   final bool? isFromExample;
 
@@ -18,7 +18,7 @@ class _IsmLandingViewState extends State<IsmLandingView> {
     if (!mounted) return;
 
     if (!IsmVideoReelConfig.isSdkInitialize) {
-      IsmVideoReelUtility.showAppDialog(message: 'sdk not initialized', buildContext: context);
+      IsmVideoReelUtility.showAppDialog(message: 'sdk not initialized');
       return;
     }
 

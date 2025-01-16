@@ -25,12 +25,12 @@ class TapHandler extends StatelessWidget {
   Widget build(BuildContext context) => Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: Dimens.borderRadiusAll(borderRadius ?? Dimens.zero),
+          borderRadius: IsrDimens.borderRadiusAll(borderRadius ?? IsrDimens.zero),
           splashColor: Theme.of(context).splashColor,
           onTap: onTap,
           onDoubleTap: onDoubleTap,
           child: Padding(
-            padding: Dimens.edgeInsetsAll(padding ?? Dimens.zero),
+            padding: IsrDimens.edgeInsetsAll(padding ?? IsrDimens.zero),
             child: child,
           ),
           onLongPress: onLongPress,
