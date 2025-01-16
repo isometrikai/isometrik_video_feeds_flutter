@@ -54,7 +54,7 @@ class IsmVideoReelUtility {
     isLoading = true;
     await showDialog(
       barrierColor: loaderType == LoaderType.withBackGround ? null : Colors.transparent,
-      context: ismNavigatorKey.currentContext!,
+      context: context!,
       builder: (_) => AppLoader(
         message: message,
         loaderType: loaderType,
@@ -65,9 +65,9 @@ class IsmVideoReelUtility {
 
   // closes dialog for progress bar
   static void closeProgressDialog() {
-    if (isLoading == true && ismNavigatorKey.currentContext!.canPop()) {
+    if (isLoading == true && context?.canPop() == true) {
       isLoading = false;
-      ismNavigatorKey.currentContext!.pop();
+      context?.pop();
     }
   }
 
@@ -107,10 +107,11 @@ class IsmVideoReelUtility {
     String? negativeButtonText,
     Function()? onPressPositiveButton,
     Function()? onPressNegativeButton,
-    BuildContext? context,
+    BuildContext? buildContext,
   }) {
+    _context = buildContext;
     showDialog(
-      context: context ?? ismNavigatorKey.currentContext!,
+      context: context!,
       builder: (_) => Dialog(
         shape: RoundedRectangleBorder(
           borderRadius: Dimens.borderRadiusAll(Dimens.twelve),
@@ -199,14 +200,14 @@ class IsmVideoReelUtility {
     bool isScrollControlled = true,
   }) =>
       showModalBottomSheet<T>(
-        context: ismNavigatorKey.currentContext!,
+        context: context!,
         builder: (_) => child,
         enableDrag: false,
         showDragHandle: false,
         useSafeArea: false,
         isDismissible: isDismissible,
         isScrollControlled: isScrollControlled,
-        backgroundColor: isDarkBG ? Theme.of(ismNavigatorKey.currentContext!).primaryColor : AppColors.white,
+        backgroundColor: isDarkBG ? Theme.of(context!).primaryColor : AppColors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(
             top: Radius.circular(Dimens.sixteen),
@@ -433,10 +434,14 @@ class IsmVideoReelUtility {
 
   // closes opened dialog
   static void closeOpenDialog() {
-    if (ismNavigatorKey.currentContext!.canPop()) {
-      ismNavigatorKey.currentContext!.pop();
+    if (context?.canPop() == true) {
+      context?.pop();
     }
   }
+
+  static BuildContext? _context;
+  static BuildContext? get context =>
+      ismNavigatorKey.currentContext == null ? _context! : ismNavigatorKey.currentContext;
 
   // Define a function to convert a character to its base64Encode
   static String encodeChar(String char) => base64Encode(utf8.encode(char));
