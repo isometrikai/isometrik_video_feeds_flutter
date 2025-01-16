@@ -49,7 +49,7 @@ class _IsmLandingViewState extends State<IsmLandingView> {
             )
           : MaterialApp.router(
               debugShowCheckedModeBanner: false,
-              theme: kTheme,
+              theme: isrTheme,
               routerConfig: AppRouter.router,
             ),
     );

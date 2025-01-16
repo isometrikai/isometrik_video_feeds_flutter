@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:ism_video_reel_player/export.dart';
 
-ThemeData kTheme = ThemeData(
+ThemeData isrTheme = ThemeData(
   pageTransitionsTheme: const PageTransitionsTheme(
     builders: <TargetPlatform, PageTransitionsBuilder>{
       TargetPlatform.android: ZoomPageTransitionsBuilder(

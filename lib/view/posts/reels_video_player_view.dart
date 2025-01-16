@@ -377,8 +377,8 @@ class _ReelsVideoPlayerViewState extends State<ReelsVideoPlayerView> {
                                         titleWidget: Center(
                                           child: Text(
                                             widget.isFollow == true
-                                                ? TranslationFile.following
-                                                : TranslationFile.follow,
+                                                ? IsrTranslationFile.following
+                                                : IsrTranslationFile.follow,
                                             style: IsrStyles.white12.copyWith(
                                                 fontWeight: FontWeight.w500,
                                                 color: widget.isFollow == true ? IsrColors.appColor : IsrColors.white),

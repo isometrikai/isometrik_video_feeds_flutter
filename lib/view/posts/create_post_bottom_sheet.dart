@@ -18,7 +18,7 @@ class CreatePostBottomSheet extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  TranslationFile.create,
+                  IsrTranslationFile.create,
                   style: IsrStyles.secondaryText16.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -46,7 +46,7 @@ class CreatePostBottomSheet extends StatelessWidget {
                       ),
                       IsrDimens.boxWidth(IsrDimens.ten),
                       Text(
-                        TranslationFile.createAPost,
+                        IsrTranslationFile.createAPost,
                         style: IsrStyles.secondaryText16.copyWith(
                           fontWeight: FontWeight.w500,
                         ),
@@ -68,7 +68,7 @@ class CreatePostBottomSheet extends StatelessWidget {
                       ),
                       IsrDimens.boxWidth(IsrDimens.ten),
                       Text(
-                        TranslationFile.addAProduct,
+                        IsrTranslationFile.addAProduct,
                         style: IsrStyles.secondaryText16.copyWith(
                           fontWeight: FontWeight.w500,
                         ),

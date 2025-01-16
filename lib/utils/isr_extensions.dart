@@ -48,7 +48,7 @@ extension DateExtension on DateTime {
 extension IntExtension on int {
   String get weekDayString {
     if (this > 7 || this < 1) {
-      throw AppException('Value should be between 1 & 7');
+      throw IsrAppException('Value should be between 1 & 7');
     }
     var weekDays = {
       1: 'Monday',

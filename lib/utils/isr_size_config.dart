@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-class SizeConfig {
-  factory SizeConfig() => _instance;
+class IsrSizeConfig {
+  factory IsrSizeConfig() => _instance;
 
-  SizeConfig._internal();
+  IsrSizeConfig._internal();
   static late double screenWidth;
   static late double screenHeight;
   static late double defaultSize;
@@ -25,5 +25,5 @@ class SizeConfig {
   }
 
   ///Singleton factory
-  static final SizeConfig _instance = SizeConfig._internal();
+  static final IsrSizeConfig _instance = IsrSizeConfig._internal();
 }

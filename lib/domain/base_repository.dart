@@ -1,6 +1,6 @@
 import 'package:ism_video_reel_player/export.dart';
 
-abstract class BaseRepository with AppMixin {
+abstract class BaseRepository with IsrAppMixin {
   Future<String> getSecuredValue(String key);
 
   void saveValueSecurely(String key, String value);

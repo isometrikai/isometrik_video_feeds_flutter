@@ -1,5 +1,5 @@
-class TranslationFile {
-  TranslationFile._();
+class IsrTranslationFile {
+  IsrTranslationFile._();
 
   static const String timeoutError =
       'Oops! The request took too long to process. Please check your internet connection and try again. If the issue persists, you can contact our support team for assistance.';

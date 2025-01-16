@@ -1,2 +1,2 @@
-export 'translation_file.dart';
-export 'translation_util.dart';
+export 'isr_translation_file.dart';
+export 'isr_translation_util.dart';

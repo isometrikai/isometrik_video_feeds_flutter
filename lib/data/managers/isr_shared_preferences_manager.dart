@@ -3,7 +3,7 @@ import 'package:ism_video_reel_player/export.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 @lazySingleton
-class SharedPreferencesManager {
+class IsrSharedPreferencesManager {
   // Obtain shared preferences.
   SharedPreferences? sharedPreferences;
 

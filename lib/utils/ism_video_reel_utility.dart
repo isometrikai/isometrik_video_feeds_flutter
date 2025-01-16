@@ -135,7 +135,7 @@ class IsmVideoReelUtility {
               IsrDimens.boxHeight(IsrDimens.twenty),
               if (isToShowTitle == true)
                 Text(
-                  titleText ?? TranslationFile.alert,
+                  titleText ?? IsrTranslationFile.alert,
                   style: IsrStyles.secondaryText14.copyWith(fontWeight: FontWeight.w700),
                 ),
               if (message.isEmptyOrNull == false) ...[
@@ -154,7 +154,7 @@ class IsmVideoReelUtility {
                     child: AppButton(
                       width: IsrDimens.twoHundredFifty,
                       height: IsrDimens.fortyFour,
-                      title: positiveButtonText ?? TranslationFile.ok,
+                      title: positiveButtonText ?? IsrTranslationFile.ok,
                       onPress: () {
                         closeOpenDialog();
                         if (onPressPositiveButton != null) {
@@ -169,7 +169,7 @@ class IsmVideoReelUtility {
                       child: AppButton(
                         width: IsrDimens.twoHundredFifty,
                         height: IsrDimens.fortyFour,
-                        title: negativeButtonText ?? TranslationFile.cancel,
+                        title: negativeButtonText ?? IsrTranslationFile.cancel,
                         onPress: () {
                           closeOpenDialog();
                           if (onPressNegativeButton != null) {
@@ -246,19 +246,19 @@ class IsmVideoReelUtility {
   /// password regex for strong password
   static String? passwordValidate(String? value) {
     if (value == null || value.isEmpty) {
-      return TranslationFile.required;
+      return IsrTranslationFile.required;
     }
     final regex = RegExp(AppConstants.passwordPattern);
-    return regex.hasMatch(value) == true ? null : TranslationFile.passwordValidationString;
+    return regex.hasMatch(value) == true ? null : IsrTranslationFile.passwordValidationString;
   }
 
   /// email validator to verify email is valid or not
   static String? emailValidator(String? value) {
     if (value == null || value.isEmpty) {
-      return TranslationFile.required;
+      return IsrTranslationFile.required;
     }
     final regex = RegExp(AppConstants.emailPattern);
-    return regex.hasMatch(value) == true ? null : TranslationFile.invalidEmail;
+    return regex.hasMatch(value) == true ? null : IsrTranslationFile.invalidEmail;
   }
 
   /// email validator to verify email is valid or not

@@ -59,7 +59,7 @@ class _PostAttributeViewState extends State<PostAttributeView> {
         bottomNavigationBar: SafeArea(
           child: AppButton(
             margin: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.fifteen, vertical: IsrDimens.ten),
-            title: TranslationFile.post,
+            title: IsrTranslationFile.post,
             onPress: () {
               isrGetIt<PostBloc>().add(CreatePostEvent(createPostRequest: _createPostRequest));
             },
@@ -179,7 +179,7 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                             _createPostRequest.description = value;
                           },
                           decoration: InputDecoration(
-                            hintText: TranslationFile.writeCaption,
+                            hintText: IsrTranslationFile.writeCaption,
                             hintStyle: IsrStyles.primaryText12,
                             border: InputBorder.none,
                           ),
@@ -196,7 +196,7 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                     child: Row(
                       children: [
                         Text(
-                          TranslationFile.category,
+                          IsrTranslationFile.category,
                           style: IsrStyles.primaryText14.copyWith(
                             color: IsrColors.color2783FB,
                             fontWeight: FontWeight.w500,
@@ -204,7 +204,7 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                         ),
                         const Spacer(),
                         Text(
-                          TranslationFile.selectCategory,
+                          IsrTranslationFile.selectCategory,
                           style: IsrStyles.primaryText14.copyWith(
                             color: IsrColors.color2783FB,
                             fontWeight: FontWeight.w500,
@@ -230,7 +230,7 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                     child: Row(
                       children: [
                         Text(
-                          TranslationFile.allowComments,
+                          IsrTranslationFile.allowComments,
                           style: IsrStyles.primaryText14.copyWith(
                             color: IsrColors.color2783FB,
                             fontWeight: FontWeight.w500,
@@ -261,7 +261,7 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                     child: Row(
                       children: [
                         Text(
-                          TranslationFile.allowDownloads,
+                          IsrTranslationFile.allowDownloads,
                           style: IsrStyles.primaryText14.copyWith(
                             color: IsrColors.color2783FB,
                             fontWeight: FontWeight.w500,

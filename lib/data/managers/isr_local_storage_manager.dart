@@ -3,11 +3,11 @@ import 'package:injectable/injectable.dart';
 import 'package:ism_video_reel_player/export.dart';
 
 @lazySingleton
-class LocalStorageManager {
+class IsrLocalStorageManager {
   /// initialize flutter secure storage
   final _flutterSecureStorage = const FlutterSecureStorage();
 
-  final _sharedPreferencesManager = isrGetIt<SharedPreferencesManager>();
+  final _sharedPreferencesManager = isrGetIt<IsrSharedPreferencesManager>();
 
   /// Get data from secure storage
   Future<String> getSecuredValue(String key) async {

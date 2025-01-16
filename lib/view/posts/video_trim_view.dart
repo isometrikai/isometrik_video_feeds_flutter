@@ -208,7 +208,7 @@ class _VideoTrimViewState extends State<VideoTrimView> {
                       bottom: IsrDimens.twenty,
                     ),
                     child: AppButton(
-                      title: TranslationFile.continues,
+                      title: IsrTranslationFile.continues,
                       onPress: () async {
                         await trimmer.saveTrimmedVideo(
                           startValue: _startValue,

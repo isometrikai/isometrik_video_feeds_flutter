@@ -1,4 +1,4 @@
-part of 'app_router.dart';
+part of 'isr_app_router.dart';
 
 class AppRoutes {
   const AppRoutes._();

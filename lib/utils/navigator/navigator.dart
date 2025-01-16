@@ -1,2 +1,2 @@
-export 'app_router.dart';
-export 'route_management.dart';
+export 'isr_app_router.dart';
+export 'isr_route_management.dart';

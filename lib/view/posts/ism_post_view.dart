@@ -119,7 +119,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                                                     child: Padding(
                                                       padding: IsrDimens.edgeInsetsSymmetric(vertical: IsrDimens.five),
                                                       child: const Text(
-                                                        TranslationFile.following,
+                                                        IsrTranslationFile.following,
                                                         softWrap: false,
                                                         textAlign: TextAlign.center,
                                                         overflow: TextOverflow.visible,
@@ -134,7 +134,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                                                     child: Padding(
                                                       padding: IsrDimens.edgeInsetsAll(IsrDimens.five),
                                                       child: const Text(
-                                                        TranslationFile.trending,
+                                                        IsrTranslationFile.trending,
                                                         softWrap: false,
                                                         textAlign: TextAlign.center,
                                                         overflow: TextOverflow.visible,

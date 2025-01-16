@@ -5,5 +5,5 @@ abstract class DataSource {
 
   Future<Header> getHeader();
 
-  LocalStorageManager getStorageManager();
+  IsrLocalStorageManager getStorageManager();
 }

@@ -3,7 +3,7 @@ import 'package:ism_video_reel_player/export.dart';
 
 @lazySingleton
 class DataSourceImpl extends DataSource {
-  final storageManager = LocalStorageManager();
+  final storageManager = IsrLocalStorageManager();
 
   late Header header;
 
@@ -14,7 +14,7 @@ class DataSourceImpl extends DataSource {
   Future<Header> getHeader() async => await initializeHeader();
 
   @override
-  LocalStorageManager getStorageManager() => storageManager;
+  IsrLocalStorageManager getStorageManager() => storageManager;
 
   Future<Header> initializeHeader() async {
     final language = '';

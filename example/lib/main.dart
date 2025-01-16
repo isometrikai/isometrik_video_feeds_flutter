@@ -44,13 +44,13 @@ class _MyAppState extends State<MyApp> {
         child: LayoutBuilder(
           builder: (context, constraints) => OrientationBuilder(
             builder: (context, orientation) {
-              SizeConfig().init(constraints, orientation);
+              IsrSizeConfig().init(constraints, orientation);
               return GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: IsmVideoReelUtility.hideKeyboard,
                 child: MaterialApp.router(
                   debugShowCheckedModeBanner: false,
-                  theme: kTheme,
+                  theme: isrTheme,
                   routerConfig: AppRouter.router,
                 ),
               );

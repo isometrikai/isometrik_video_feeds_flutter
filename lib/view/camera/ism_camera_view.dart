@@ -92,7 +92,7 @@ class _CameraViewState extends State<IsmCameraView> {
                       borderRadius: BorderRadius.circular(IsrDimens.ten),
                     ),
                     child: Text(
-                      TranslationFile.addASound,
+                      IsrTranslationFile.addASound,
                       style: TextStyle(
                         color: IsrColors.white,
                         fontSize: IsrDimens.sixteen,

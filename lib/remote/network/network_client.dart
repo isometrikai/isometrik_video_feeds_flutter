@@ -6,13 +6,13 @@ import 'package:http/http.dart' as http;
 import 'package:ism_video_reel_player/export.dart';
 
 /// handles network call for all the APIs and handle the error status codes
-class NetworkClient with AppMixin {
+class NetworkClient with IsrAppMixin {
   NetworkClient({
     required this.baseUrl,
   });
 
   final String baseUrl;
-  final localStorageManager = isrGetIt<LocalStorageManager>();
+  final localStorageManager = isrGetIt<IsrLocalStorageManager>();
 
   final networkClient = http.Client();
 
@@ -100,7 +100,7 @@ class NetworkClient with AppMixin {
       if (isLoading) IsmVideoReelUtility.closeProgressDialog();
       IsmVideoReelUtility.debugCatchLog(error: error, stackTrace: stackTrace);
       return const ResponseModel(
-        data: '{"message": ${TranslationFile.timeoutError}}',
+        data: '{"message": ${IsrTranslationFile.timeoutError}}',
         hasError: true,
       );
     }

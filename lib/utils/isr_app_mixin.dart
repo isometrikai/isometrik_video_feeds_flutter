@@ -1,6 +1,6 @@
 import 'dart:developer';
 
-mixin AppMixin {
+mixin IsrAppMixin {
   void printLog<T>(
     T classname,
     String message, {
