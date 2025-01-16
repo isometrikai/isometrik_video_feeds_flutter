@@ -107,10 +107,11 @@ class IsmVideoReelUtility {
     String? negativeButtonText,
     Function()? onPressPositiveButton,
     Function()? onPressNegativeButton,
-    BuildContext? context,
+    BuildContext? buildContext,
   }) {
+    _context = buildContext;
     showDialog(
-      context: context ?? ismNavigatorKey.currentContext!,
+      context: context!,
       builder: (_) => Dialog(
         shape: RoundedRectangleBorder(
           borderRadius: Dimens.borderRadiusAll(Dimens.twelve),
@@ -437,6 +438,10 @@ class IsmVideoReelUtility {
       ismNavigatorKey.currentContext!.pop();
     }
   }
+
+  static BuildContext? _context;
+  static BuildContext? get context =>
+      ismNavigatorKey.currentContext == null ? _context! : ismNavigatorKey.currentContext;
 
   // Define a function to convert a character to its base64Encode
   static String encodeChar(String char) => base64Encode(utf8.encode(char));
