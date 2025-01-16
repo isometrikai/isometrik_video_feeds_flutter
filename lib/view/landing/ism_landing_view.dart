@@ -3,7 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/export.dart';
 
 class IsmLandingView extends StatefulWidget {
-  const IsmLandingView({super.key});
+  const IsmLandingView({super.key, this.isFromExample = true});
+
+  final bool? isFromExample;
 
   @override
   State<IsmLandingView> createState() => _IsmLandingViewState();
@@ -40,10 +42,16 @@ class _IsmLandingViewState extends State<IsmLandingView> {
           create: (context) => isrGetIt<PostBloc>(),
         ),
       ],
-      child: const Scaffold(
-        backgroundColor: Colors.black26,
-        body: SizedBox.shrink(),
-      ),
+      child: widget.isFromExample == true
+          ? const Scaffold(
+              backgroundColor: Colors.black26,
+              body: SizedBox.shrink(),
+            )
+          : MaterialApp.router(
+              debugShowCheckedModeBanner: false,
+              theme: kTheme,
+              routerConfig: AppRouter.router,
+            ),
     );
   }
 }
