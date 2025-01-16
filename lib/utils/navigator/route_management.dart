@@ -10,6 +10,8 @@ class RouteManagement {
   RouteManagement._();
 
   static void goToPostView() {
+    print('goToPostView1...$ismNavigatorKey');
+    print('goToPostView2...${ismNavigatorKey.currentContext}');
     ismNavigatorKey.currentContext!.go(AppRoutes.postView);
   }
 
