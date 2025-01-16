@@ -107,9 +107,10 @@ class IsmVideoReelUtility {
     String? negativeButtonText,
     Function()? onPressPositiveButton,
     Function()? onPressNegativeButton,
+    BuildContext? context,
   }) {
     showDialog(
-      context: ismNavigatorKey.currentContext!,
+      context: context ?? ismNavigatorKey.currentContext!,
       builder: (_) => Dialog(
         shape: RoundedRectangleBorder(
           borderRadius: Dimens.borderRadiusAll(Dimens.twelve),

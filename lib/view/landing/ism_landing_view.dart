@@ -16,7 +16,7 @@ class _IsmLandingViewState extends State<IsmLandingView> {
     if (!mounted) return;
 
     if (!IsmVideoReelConfig.isSdkInitialize) {
-      IsmVideoReelUtility.showAppDialog(message: 'sdk not initialized');
+      IsmVideoReelUtility.showAppDialog(message: 'sdk not initialized', context: context);
       return;
     }
 

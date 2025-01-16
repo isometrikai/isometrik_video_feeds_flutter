@@ -6,7 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:ism_video_reel_player/export.dart';
 
 void main() async {
-  await _initializeReelsSdk();
+  // await _initializeReelsSdk();
   runApp(const MyApp());
 }
 
