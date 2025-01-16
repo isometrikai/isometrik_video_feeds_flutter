@@ -1,7 +1,10 @@
 import 'dart:async';
 
+import 'package:flutter/cupertino.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ism_video_reel_player/export.dart';
+
+final GlobalKey<NavigatorState> ismNavigatorKey = GlobalKey<NavigatorState>();
 
 class RouteManagement {
   RouteManagement._();

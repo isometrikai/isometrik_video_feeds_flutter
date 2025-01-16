@@ -6,7 +6,6 @@ import 'package:ism_video_reel_player/export.dart';
 @lazySingleton
 class IsmVideoReelConfig {
   static var isSdkInitialize = false;
-
   static Future<void> initializeSdk({
     required String baseUrl,
     UserInfoClass? userInfo,
