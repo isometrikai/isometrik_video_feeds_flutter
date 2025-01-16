@@ -13,7 +13,7 @@ class IsrAppRouter {
       GoRoute(
         path: IsrAppRoutes.landingView,
         name: IsrRouteNames.landingView,
-        builder: (_, state) => const IsmLandingView(isFromExample: true),
+        builder: (_, state) => IsmLandingView(isFromExample: true),
       ),
       GoRoute(
         path: IsrAppRoutes.cameraView,

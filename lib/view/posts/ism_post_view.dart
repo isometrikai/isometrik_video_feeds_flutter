@@ -163,12 +163,17 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                                                 },
                                                 icon: const Icon(Icons.add_circle_outline),
                                               ),
-                                              AppImage.network(
-                                                _userInfoClass?.profilePic ?? '',
-                                                isProfileImage: true,
-                                                name: '${_userInfoClass?.firstName} ${_userInfoClass?.lastName}',
-                                                height: IsrDimens.thirty,
-                                                width: IsrDimens.thirty,
+                                              TapHandler(
+                                                onTap: () {
+                                                  IsrReelsProperties.isValid?.call(true);
+                                                },
+                                                child: AppImage.network(
+                                                  _userInfoClass?.profilePic ?? '',
+                                                  isProfileImage: true,
+                                                  name: '${_userInfoClass?.firstName} ${_userInfoClass?.lastName}',
+                                                  height: IsrDimens.thirty,
+                                                  width: IsrDimens.thirty,
+                                                ),
                                               ),
                                             ],
                                           ),

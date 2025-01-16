@@ -3,9 +3,22 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/export.dart';
 
 class IsmLandingView extends StatefulWidget {
-  const IsmLandingView({super.key, this.isFromExample = false});
+  IsmLandingView({
+    super.key,
+    this.isFromExample = false,
+    this.onBackPress,
+    this.isValid,
+    this.isProp,
+  }) {
+    IsrReelsProperties.onBackPress = onBackPress;
+    IsrReelsProperties.isValid = isValid;
+    IsrReelsProperties.isProp = isProp;
+  }
 
   final bool? isFromExample;
+  final VoidCallback? onBackPress;
+  final Function(bool)? isValid;
+  final bool Function(bool)? isProp;
 
   @override
   State<IsmLandingView> createState() => _IsmLandingViewState();
