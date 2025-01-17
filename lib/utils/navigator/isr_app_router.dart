@@ -7,7 +7,7 @@ class IsrAppRouter {
   IsrAppRouter._();
 
   static GoRouter router = GoRouter(
-    initialLocation: IsrAppRoutes.landingView,
+    initialLocation: IsrAppRoutes.postView,
     navigatorKey: ismNavigatorKey,
     routes: [
       GoRoute(
