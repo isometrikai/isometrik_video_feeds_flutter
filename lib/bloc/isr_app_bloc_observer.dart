@@ -1,8 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/export.dart';
 
-class AppBlocObserver extends BlocObserver {
-  final tag = 'AppBlocObserver';
+class IsrAppBlocObserver extends BlocObserver {
+  final tag = 'IsrAppBlocObserver';
   @override
   void onCreate(BlocBase<dynamic> bloc) {
     AppLog.success('$tag: ${bloc.runtimeType} created');

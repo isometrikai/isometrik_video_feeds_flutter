@@ -14,7 +14,7 @@ class IsrVideoReelConfig {
     AppUrl.appBaseUrl = baseUrl;
     WidgetsFlutterBinding.ensureInitialized();
     isrConfigureInjection();
-    Bloc.observer = AppBlocObserver();
+    Bloc.observer = IsrAppBlocObserver();
     await isrGetIt<IsrSharedPreferencesManager>().init();
     await _saveUserInformation(userInfo: userInfo);
     isSdkInitialize = true;
