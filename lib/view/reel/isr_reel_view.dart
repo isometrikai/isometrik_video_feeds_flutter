@@ -2,36 +2,36 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/export.dart';
 
-class IsmLandingView extends StatefulWidget {
-  IsmLandingView({
+class IsrReelView extends StatefulWidget {
+  IsrReelView({
     super.key,
     this.isFromExample = false,
-    this.onBackPress,
-    this.isValid,
-    this.isProp,
+    this.onTapProfilePic,
+    this.onTapShare,
+    this.onTapProduct,
   }) {
-    IsrReelsProperties.onBackPress = onBackPress;
-    IsrReelsProperties.isValid = isValid;
-    IsrReelsProperties.isProp = isProp;
+    IsrReelsProperties.onTapProfilePic = onTapProfilePic;
+    IsrReelsProperties.onTapShare = onTapShare;
+    IsrReelsProperties.onTapProduct = onTapProduct;
   }
 
   final bool? isFromExample;
-  final VoidCallback? onBackPress;
-  final Function(bool)? isValid;
-  final bool Function(bool)? isProp;
+  final Function(String)? onTapProfilePic;
+  final Function(String)? onTapShare;
+  final Function(String)? onTapProduct;
 
   @override
-  State<IsmLandingView> createState() => _IsmLandingViewState();
+  State<IsrReelView> createState() => _IsrReelViewState();
 }
 
-class _IsmLandingViewState extends State<IsmLandingView> {
+class _IsrReelViewState extends State<IsrReelView> {
   bool _isFirstBuild = true;
 
   void _handleInitialRoute() {
     if (!mounted) return;
 
-    if (!IsmVideoReelConfig.isSdkInitialize) {
-      IsmVideoReelUtility.showAppDialog(message: 'sdk not initialized');
+    if (!IsrVideoReelConfig.isSdkInitialize) {
+      IsrVideoReelUtility.showAppDialog(message: 'sdk not initialized');
       return;
     }
 

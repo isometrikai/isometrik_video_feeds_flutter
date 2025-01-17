@@ -1,9 +1,7 @@
-import 'dart:ui';
-
 class IsrReelsProperties {
   IsrReelsProperties._();
 
-  static VoidCallback? onBackPress;
-  static Function(bool)? isValid;
-  static bool Function(bool)? isProp;
+  static Function(String)? onTapProfilePic;
+  static Function(String)? onTapShare;
+  static Function(String)? onTapProduct;
 }

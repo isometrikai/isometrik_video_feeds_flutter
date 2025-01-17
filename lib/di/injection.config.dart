@@ -19,7 +19,7 @@ import 'package:ism_video_reel_player/data/managers/isr_local_storage_manager.da
 import 'package:ism_video_reel_player/data/managers/isr_shared_preferences_manager.dart'
     as _i279;
 import 'package:ism_video_reel_player/domain/post_repository.dart' as _i432;
-import 'package:ism_video_reel_player/ism_video_reel_config.dart' as _i922;
+import 'package:ism_video_reel_player/isr_video_reel_config.dart' as _i227;
 import 'package:ism_video_reel_player/viewmodels/post_view_model.dart' as _i102;
 
 extension GetItInjectableX on _i174.GetIt {
@@ -34,16 +34,16 @@ extension GetItInjectableX on _i174.GetIt {
       environmentFilter,
     );
     gh.lazySingleton<_i102.PostViewModel>(() => _i102.PostViewModel());
-    gh.lazySingleton<_i922.IsmVideoReelConfig>(
-        () => _i922.IsmVideoReelConfig());
-    gh.lazySingleton<_i593.DataSourceImpl>(() => _i593.DataSourceImpl());
-    gh.lazySingleton<_i432.PostRepository>(() => _i432.PostRepository());
-    gh.lazySingleton<_i934.IsmLandingBloc>(() => _i934.IsmLandingBloc());
-    gh.lazySingleton<_i187.PostBloc>(() => _i187.PostBloc());
+    gh.lazySingleton<_i227.IsrVideoReelConfig>(
+        () => _i227.IsrVideoReelConfig());
     gh.lazySingleton<_i356.IsrLocalStorageManager>(
         () => _i356.IsrLocalStorageManager());
     gh.lazySingleton<_i279.IsrSharedPreferencesManager>(
         () => _i279.IsrSharedPreferencesManager());
+    gh.lazySingleton<_i593.DataSourceImpl>(() => _i593.DataSourceImpl());
+    gh.lazySingleton<_i432.PostRepository>(() => _i432.PostRepository());
+    gh.lazySingleton<_i934.IsmLandingBloc>(() => _i934.IsmLandingBloc());
+    gh.lazySingleton<_i187.PostBloc>(() => _i187.PostBloc());
     return this;
   }
 }

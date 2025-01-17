@@ -42,7 +42,7 @@ class IsrSharedPreferencesManager {
           (key == LocalStorageKeys.language
               ? DefaultValues.defaultLanguage
               : key == LocalStorageKeys.currencySymbol
-                  ? IsmVideoReelUtility.encodeChar(DefaultValues.defaultCurrencySymbol)
+                  ? IsrVideoReelUtility.encodeChar(DefaultValues.defaultCurrencySymbol)
                   : key == LocalStorageKeys.currencyCode
                       ? DefaultValues.defaultCurrencyCode
                       : key == LocalStorageKeys.latitude

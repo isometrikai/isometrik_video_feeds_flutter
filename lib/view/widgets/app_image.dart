@@ -210,7 +210,7 @@ class _Network extends StatelessWidget {
     final words = fullName.split(' ');
     final initials = words.map((word) => word.isNotEmpty ? word[0] : '').join('');
     final optimizedImageUrl = AppConstants.isGumletEnable
-        ? IsmVideoReelUtility.buildGumletImageUrl(imageUrl: imageUrl, width: width, height: height)
+        ? IsrVideoReelUtility.buildGumletImageUrl(imageUrl: imageUrl, width: width, height: height)
         : imageUrl;
     return CachedNetworkImage(
       width: width,

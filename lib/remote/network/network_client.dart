@@ -28,7 +28,7 @@ class NetworkClient with IsrAppMixin {
     Map<String, String>? headers,
     bool isLoading,
   ) async {
-    final isNetworkAvailable = await IsmVideoReelUtility.isNetworkAvailable;
+    final isNetworkAvailable = await IsrVideoReelUtility.isNetworkAvailable;
     if (isNetworkAvailable) {
       while (_isRefreshing) {
         await Future.delayed(const Duration(milliseconds: 50));
@@ -76,7 +76,7 @@ class NetworkClient with IsrAppMixin {
     bool isLoading,
     Map<String, String>? headers,
   ) async {
-    if (!(await IsmVideoReelUtility.isNetworkAvailable)) {
+    if (!(await IsrVideoReelUtility.isNetworkAvailable)) {
       return const ResponseModel(
         data: '{"message": "No internet"}',
         hasError: true,
@@ -87,18 +87,18 @@ class NetworkClient with IsrAppMixin {
     var uri = baseUrl + url;
     final finalUrl = Uri.parse(uri).replace(queryParameters: queryParameters);
 
-    if (isLoading) IsmVideoReelUtility.showLoader();
+    if (isLoading) IsrVideoReelUtility.showLoader();
 
     try {
       final response = await getFinalResponse(finalUrl, headers, data, request);
-      if (isLoading) IsmVideoReelUtility.closeProgressDialog();
+      if (isLoading) IsrVideoReelUtility.closeProgressDialog();
 
       var res = returnResponse(response);
       _logRequest(response, data, finalUrl, headers, res);
       return res;
     } catch (error, stackTrace) {
-      if (isLoading) IsmVideoReelUtility.closeProgressDialog();
-      IsmVideoReelUtility.debugCatchLog(error: error, stackTrace: stackTrace);
+      if (isLoading) IsrVideoReelUtility.closeProgressDialog();
+      IsrVideoReelUtility.debugCatchLog(error: error, stackTrace: stackTrace);
       return const ResponseModel(
         data: '{"message": ${IsrTranslationFile.timeoutError}}',
         hasError: true,
@@ -193,9 +193,9 @@ class NetworkClient with IsrAppMixin {
     List<http.MultipartFile>? multipartFiles,
     Map<String, String> headers,
   ) async {
-    if (await IsmVideoReelUtility.isNetworkAvailable) {
+    if (await IsrVideoReelUtility.isNetworkAvailable) {
       var uri = baseUrl + apiUrl;
-      if (isLoading) IsmVideoReelUtility.showLoader();
+      if (isLoading) IsrVideoReelUtility.showLoader();
       final finalUrl = Uri.parse(uri).replace(queryParameters: queryParameters);
       var request = http.MultipartRequest('POST', finalUrl);
       if (multipartFiles != null && multipartFiles.isNotEmpty) {
@@ -208,7 +208,7 @@ class NetworkClient with IsrAppMixin {
 
       final streamedResponse = await request.send();
       var response = await http.Response.fromStream(streamedResponse);
-      if (isLoading) IsmVideoReelUtility.closeProgressDialog();
+      if (isLoading) IsrVideoReelUtility.closeProgressDialog();
       var res = returnResponse(response);
       if (multipartFiles != null && multipartFiles.isNotEmpty) {
         printLog(

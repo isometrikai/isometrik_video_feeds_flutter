@@ -64,7 +64,7 @@ class IsrLocalStorageManager {
       await _flutterSecureStorage.delete(key: key);
       await _flutterSecureStorage.write(key: key, value: value);
     } catch (e, st) {
-      IsmVideoReelUtility.debugCatchLog(error: e, stackTrace: st);
+      IsrVideoReelUtility.debugCatchLog(error: e, stackTrace: st);
     }
   }
 }

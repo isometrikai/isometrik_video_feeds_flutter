@@ -1,10 +1,11 @@
 // sdk_config.dart
 import 'package:flutter/widgets.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import 'package:ism_video_reel_player/export.dart';
 
 @lazySingleton
-class IsmVideoReelConfig {
+class IsrVideoReelConfig {
   static var isSdkInitialize = false;
   static Future<void> initializeSdk({
     required String baseUrl,
@@ -13,6 +14,7 @@ class IsmVideoReelConfig {
     AppUrl.appBaseUrl = baseUrl;
     WidgetsFlutterBinding.ensureInitialized();
     isrConfigureInjection();
+    Bloc.observer = AppBlocObserver();
     await isrGetIt<IsrSharedPreferencesManager>().init();
     await _saveUserInformation(userInfo: userInfo);
     isSdkInitialize = true;

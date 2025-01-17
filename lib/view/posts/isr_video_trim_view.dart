@@ -6,16 +6,16 @@ import 'package:ism_video_reel_player/export.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:video_trimmer/video_trimmer.dart';
 
-class VideoTrimView extends StatefulWidget {
-  const VideoTrimView({super.key, this.postAttributeClass});
+class IsrVideoTrimView extends StatefulWidget {
+  const IsrVideoTrimView({super.key, this.postAttributeClass});
 
   final PostAttributeClass? postAttributeClass;
 
   @override
-  State<VideoTrimView> createState() => _VideoTrimViewState();
+  State<IsrVideoTrimView> createState() => _IsrVideoTrimViewState();
 }
 
-class _VideoTrimViewState extends State<VideoTrimView> {
+class _IsrVideoTrimViewState extends State<IsrVideoTrimView> {
   final Trimmer trimmer = Trimmer();
   var _startValue = 0.0;
   var _endValue = 0.0;
@@ -42,7 +42,7 @@ class _VideoTrimViewState extends State<VideoTrimView> {
     try {
       await trimmer.loadVideo(videoFile: _newPostAttributeClass.file!);
     } catch (e) {
-      IsmVideoReelUtility.debugCatchLog(error: e);
+      IsrVideoReelUtility.debugCatchLog(error: e);
     }
     mountUpdate();
     trimmer.videoPlayerController?.addListener(checkVideo);

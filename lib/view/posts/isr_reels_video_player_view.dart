@@ -7,8 +7,8 @@ import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 /// Custom Reels Player
-class ReelsVideoPlayerView extends StatefulWidget {
-  const ReelsVideoPlayerView({
+class IsrReelsVideoPlayerView extends StatefulWidget {
+  const IsrReelsVideoPlayerView({
     Key? key,
     required this.videoUrl,
     required this.onDoubleTap,
@@ -62,10 +62,10 @@ class ReelsVideoPlayerView extends StatefulWidget {
   final List<FeaturedProductDataItem>? productList;
 
   @override
-  State<ReelsVideoPlayerView> createState() => _ReelsVideoPlayerViewState();
+  State<IsrReelsVideoPlayerView> createState() => _IsrReelsVideoPlayerViewState();
 }
 
-class _ReelsVideoPlayerViewState extends State<ReelsVideoPlayerView> {
+class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
   VideoPlayerController? videoPlayerController;
 
   var isPlaying = true;
@@ -142,7 +142,7 @@ class _ReelsVideoPlayerViewState extends State<ReelsVideoPlayerView> {
     try {
       await videoPlayerController?.initialize();
     } catch (e) {
-      IsmVideoReelUtility.debugCatchLog(error: e);
+      IsrVideoReelUtility.debugCatchLog(error: e);
     }
     await videoPlayerController?.setLooping(true);
     if (url.isNotEmpty) {
@@ -415,6 +415,47 @@ class _ReelsVideoPlayerViewState extends State<ReelsVideoPlayerView> {
                         ),
                         child: Stack(
                           children: [
+                            // Add this before your profile image container
+                            Positioned(
+                              right: IsrDimens.ten,
+                              bottom: IsrDimens.sixty, // Adjust this value to position above profile image
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    onPressed: () {
+                                      // Handle share action
+                                    },
+                                    icon: const Icon(
+                                      Icons.share,
+                                      color: IsrColors.white,
+                                      size: 24,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    onPressed: () {
+                                      // Handle forward action
+                                    },
+                                    icon: const Icon(
+                                      Icons.forward,
+                                      color: IsrColors.white,
+                                      size: 24,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    onPressed: () {
+                                      // Handle more options
+                                    },
+                                    icon: const Icon(
+                                      Icons.more_vert,
+                                      color: IsrColors.white,
+                                      size: 24,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8), // Space between icons and profile image
+                                ],
+                              ),
+                            ),
                             ClipRRect(
                               borderRadius: BorderRadius.circular(
                                 IsrDimens.ninety,

@@ -31,7 +31,7 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
                     onPageChanged: setFollowingPageIndex,
                     itemCount: _followingPostList.length,
                     scrollDirection: Axis.vertical,
-                    itemBuilder: (context, index) => ReelsVideoPlayerView(
+                    itemBuilder: (context, index) => IsrReelsVideoPlayerView(
                       thumbnail: _followingPostList[index].thumbnailUrl1 ?? '',
                       key: Key(_followingPostList[index].postId ?? ''),
                       onCreatePost: () async {},

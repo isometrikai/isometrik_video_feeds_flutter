@@ -4,14 +4,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/export.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
-class IsmPostView extends StatefulWidget {
-  const IsmPostView({super.key});
+class IsrPostView extends StatefulWidget {
+  const IsrPostView({super.key});
 
   @override
-  State<IsmPostView> createState() => _PostViewState();
+  State<IsrPostView> createState() => _PostViewState();
 }
 
-class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
+class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
   PostBloc? _postBloc;
   TabController? _postTabController;
   UserInfoClass? _userInfoClass;
@@ -47,7 +47,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                 _userInfoClass = state is UserInformationLoaded ? state.userInfoClass : null;
                 return state is PostInitial
                     ? state.isLoading == true
-                        ? Center(child: IsmVideoReelUtility.loaderWidget())
+                        ? Center(child: IsrVideoReelUtility.loaderWidget())
                         : const SizedBox.shrink()
                     : state is UserInformationLoaded
                         ? DefaultTabController(
@@ -153,7 +153,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                                             children: [
                                               IconButton(
                                                 onPressed: () {
-                                                  IsmVideoReelUtility.showBottomSheet(
+                                                  IsrVideoReelUtility.showBottomSheet(
                                                     CreatePostBottomSheet(
                                                       onCreateNewPost: () {
                                                         isrGetIt<PostBloc>().add(CameraEvent());
@@ -165,7 +165,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                                               ),
                                               TapHandler(
                                                 onTap: () {
-                                                  IsrReelsProperties.isValid?.call(true);
+                                                  IsrReelsProperties.onTapProfilePic
+                                                      ?.call(_userInfoClass?.profilePic ?? '');
                                                 },
                                                 child: AppImage.network(
                                                   _userInfoClass?.profilePic ?? '',
@@ -193,8 +194,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       );
 
   void _onStartInit() {
-    if (!IsmVideoReelConfig.isSdkInitialize) {
-      IsmVideoReelUtility.showToastMessage('sdk not initialized');
+    if (!IsrVideoReelConfig.isSdkInitialize) {
+      IsrVideoReelUtility.showToastMessage('sdk not initialized');
       return;
     }
     _postBloc = isrGetIt<PostBloc>();

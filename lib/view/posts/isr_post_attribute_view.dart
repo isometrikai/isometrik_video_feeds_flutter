@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/export.dart';
 import 'package:video_player/video_player.dart';
 
-class PostAttributeView extends StatefulWidget {
-  const PostAttributeView({
+class IsrPostAttributeView extends StatefulWidget {
+  const IsrPostAttributeView({
     super.key,
     required this.postAttributeClass,
   });
@@ -13,10 +13,10 @@ class PostAttributeView extends StatefulWidget {
   final PostAttributeClass? postAttributeClass;
 
   @override
-  State<PostAttributeView> createState() => _PostAttributeViewState();
+  State<IsrPostAttributeView> createState() => _IsrPostAttributeViewState();
 }
 
-class _PostAttributeViewState extends State<PostAttributeView> {
+class _IsrPostAttributeViewState extends State<IsrPostAttributeView> {
   final _createPostRequest = CreatePostRequest();
   VideoPlayerController? _videoPlayerController;
   var _isVideoInitializing = false;

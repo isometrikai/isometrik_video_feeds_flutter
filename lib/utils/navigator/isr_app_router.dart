@@ -13,7 +13,7 @@ class IsrAppRouter {
       GoRoute(
         path: IsrAppRoutes.landingView,
         name: IsrRouteNames.landingView,
-        builder: (_, state) => IsmLandingView(isFromExample: true),
+        builder: (_, state) => IsrReelView(isFromExample: true),
       ),
       GoRoute(
         path: IsrAppRoutes.cameraView,
@@ -23,14 +23,14 @@ class IsrAppRouter {
       GoRoute(
         path: IsrAppRoutes.postView,
         name: IsrRouteNames.postView,
-        builder: (_, __) => const IsmPostView(),
+        builder: (_, __) => const IsrPostView(),
       ),
       GoRoute(
         path: IsrAppRoutes.postAttributeView,
         name: IsrRouteNames.postAttributeView,
         builder: (_, state) {
           final extraMap = state.extra as Map;
-          return PostAttributeView(
+          return IsrPostAttributeView(
             postAttributeClass: extraMap['postAttributeClass'] as PostAttributeClass?,
           );
         },

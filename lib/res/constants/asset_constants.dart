@@ -6,13 +6,12 @@ class AssetConstants {
   static const String icRightArrowIcon = 'packages/ism_video_reel_player/assets/icons/ic_right_arrow.svg';
   static const String icBackArrowIcon = 'packages/ism_video_reel_player/assets/icons/ic_app_bar_back_icon.svg';
   static const String icCloseBottomSheet = 'packages/ism_video_reel_player/assets/icons/ic_close_bottom_sheet.svg';
-
-  static const muteRoundedSvg = 'packages/ism_video_reel_player/assets/icons/mute_rounded.svg';
-  static const unmuteRoundedSvg = 'packages/ism_video_reel_player/assets/icons/unmute_rounded.svg';
-  static const greenTickIcon = 'packages/ism_video_reel_player/assets/icons/green_tick.svg';
-  static const verifiedSVG = 'packages/ism_video_reel_player/assets/icons/ic_verified.svg';
-  static const heartAnimation = 'packages/ism_video_reel_player/assets/json/heart_animation.json';
-  static const pausedRoundedSvg = 'packages/ism_video_reel_player/assets/icons/pause_rounded.svg';
-  static const reelsPlaySvg = 'packages/ism_video_reel_player/assets/icons/reels_play.svg';
-  static const postResponseJson = 'packages/ism_video_reel_player/assets/loader/post_response.json';
+  static const String muteRoundedSvg = 'packages/ism_video_reel_player/assets/icons/ic_mute_rounded.svg';
+  static const String unMuteRoundedSvg = 'packages/ism_video_reel_player/assets/icons/ic_un_mute_rounded.svg';
+  static const String greenTickIcon = 'packages/ism_video_reel_player/assets/icons/ic_green_tick.svg';
+  static const String verifiedSVG = 'packages/ism_video_reel_player/assets/icons/ic_verified.svg';
+  static const String heartAnimation = 'packages/ism_video_reel_player/assets/json/heart_animation.json';
+  static const String pausedRoundedSvg = 'packages/ism_video_reel_player/assets/icons/ic_pause_rounded.svg';
+  static const String reelsPlaySvg = 'packages/ism_video_reel_player/assets/icons/ic_reels_play.svg';
+  static const String postResponseJson = 'packages/ism_video_reel_player/assets/loader/post_response.json';
 }

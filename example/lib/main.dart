@@ -10,7 +10,7 @@ void main() async {
 }
 
 Future<void> _initializeReelsSdk() async {
-  await IsmVideoReelConfig.initializeSdk(
+  await IsrVideoReelConfig.initializeSdk(
     baseUrl: 'https://api-staging.meolaa.com',
     userInfo: UserInfoClass(
       userId: '37483783493',
@@ -47,7 +47,7 @@ class _MyAppState extends State<MyApp> {
               IsrSizeConfig().init(constraints, orientation);
               return GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onTap: IsmVideoReelUtility.hideKeyboard,
+                onTap: IsrVideoReelUtility.hideKeyboard,
                 child: MaterialApp.router(
                   debugShowCheckedModeBanner: false,
                   theme: isrTheme,
