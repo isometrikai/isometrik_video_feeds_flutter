@@ -1,13 +1,19 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:injectable/injectable.dart';
-import 'package:ism_video_reel_player/export.dart';
+import 'package:ism_video_reel_player/data/data.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 
-@lazySingleton
 class IsrLocalStorageManager {
+  IsrLocalStorageManager(this._sharedPreferencesManager) {
+    _onInit();
+  }
+  final IsrSharedPreferencesManager _sharedPreferencesManager;
+
+  void _onInit() {
+    _sharedPreferencesManager.init();
+  }
+
   /// initialize flutter secure storage
   final _flutterSecureStorage = const FlutterSecureStorage();
-
-  final _sharedPreferencesManager = isrGetIt<IsrSharedPreferencesManager>();
 
   /// Get data from secure storage
   Future<String> getSecuredValue(String key) async {
@@ -23,8 +29,8 @@ class IsrLocalStorageManager {
   }
 
   /// Save data in secure storage
-  void saveValueSecurely(String key, String value) {
-    _flutterSecureStorage.write(key: key, value: value);
+  Future<void> saveValueSecurely(String key, String value) async {
+    await _flutterSecureStorage.write(key: key, value: value);
   }
 
   /// Delete data from secure storage
@@ -33,17 +39,19 @@ class IsrLocalStorageManager {
   }
 
   /// Delete all data from secure storage
-  void deleteAllSecuredValues() {
-    _flutterSecureStorage.deleteAll();
-  }
+  Future<void> deleteAllSecuredValues() => _flutterSecureStorage.deleteAll();
 
   //clear data
-  void clearData() {
-    _sharedPreferencesManager.clearData();
+  Future<void> clearData() async {
+    final userId = await getSecuredValue(IsrLocalStorageKeys.userId);
+    // Retrieve the value you want to keep
+    final preservedValue = _sharedPreferencesManager.getValue(userId, SavedValueDataType.string) as String;
+    await _sharedPreferencesManager.clearData();
+    await saveValue(userId, preservedValue, SavedValueDataType.string);
   }
 
-  void saveValue(String key, dynamic value, SavedValueDataType saveValueDataType) {
-    _sharedPreferencesManager.saveValue(key, value, saveValueDataType);
+  Future<void> saveValue(String key, dynamic value, SavedValueDataType saveValueDataType) async {
+    await _sharedPreferencesManager.saveValue(key, value, saveValueDataType);
   }
 
   dynamic getValue(String key, SavedValueDataType saveValueDataType) =>
@@ -55,7 +63,7 @@ class IsrLocalStorageManager {
 
   /// store the data
   void saveBooleanValue(String key, bool value) async {
-    _sharedPreferencesManager.saveValue(key, value, SavedValueDataType.bool);
+    await _sharedPreferencesManager.saveValue(key, value, SavedValueDataType.bool);
   }
 
   /// Method For Delete & Override from Secure Storage

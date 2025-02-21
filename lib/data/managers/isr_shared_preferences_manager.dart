@@ -1,8 +1,8 @@
-import 'package:injectable/injectable.dart';
-import 'package:ism_video_reel_player/export.dart';
+import 'package:ism_video_reel_player/data/data.dart';
+import 'package:ism_video_reel_player/res/res.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-@lazySingleton
 class IsrSharedPreferencesManager {
   // Obtain shared preferences.
   SharedPreferences? sharedPreferences;
@@ -12,7 +12,7 @@ class IsrSharedPreferencesManager {
     sharedPreferences = await SharedPreferences.getInstance();
   }
 
-  void clearData() async {
+  Future<void> clearData() async {
     await sharedPreferences?.clear();
   }
 
@@ -21,7 +21,7 @@ class IsrSharedPreferencesManager {
   }
 
   /// store the value with type
-  void saveValue(String key, dynamic value, SavedValueDataType saveValueDataType) async {
+  Future<void> saveValue(String key, dynamic value, SavedValueDataType saveValueDataType) async {
     if (saveValueDataType == SavedValueDataType.string) {
       await sharedPreferences?.setString(key, value == null ? '' : value as String);
     } else if (saveValueDataType == SavedValueDataType.int) {
@@ -39,19 +39,19 @@ class IsrSharedPreferencesManager {
   dynamic getValue(String key, SavedValueDataType? getValueDataType) {
     if (getValueDataType == SavedValueDataType.string) {
       return sharedPreferences?.getString(key) ??
-          (key == LocalStorageKeys.language
+          (key == IsrLocalStorageKeys.language
               ? DefaultValues.defaultLanguage
-              : key == LocalStorageKeys.currencySymbol
+              : key == IsrLocalStorageKeys.currencySymbol
                   ? IsrVideoReelUtility.encodeChar(DefaultValues.defaultCurrencySymbol)
-                  : key == LocalStorageKeys.currencyCode
+                  : key == IsrLocalStorageKeys.currencyCode
                       ? DefaultValues.defaultCurrencyCode
-                      : key == LocalStorageKeys.latitude
+                      : key == IsrLocalStorageKeys.latitude
                           ? DefaultValues.defaultLatitude
-                          : key == LocalStorageKeys.longitude
+                          : key == IsrLocalStorageKeys.longitude
                               ? DefaultValues.defaultLongitude
-                              : key == LocalStorageKeys.userIP
+                              : key == IsrLocalStorageKeys.userIP
                                   ? DefaultValues.defaultIpAddress
-                                  : key == LocalStorageKeys.countryId
+                                  : key == IsrLocalStorageKeys.countryId
                                       ? DefaultValues.defaultCountryId
                                       : '');
     } else if (getValueDataType == SavedValueDataType.int) {

@@ -22,6 +22,7 @@ enum LoaderType {
 }
 
 enum ErrorViewType {
+  none,
   dialog,
   snackBar,
   toast,

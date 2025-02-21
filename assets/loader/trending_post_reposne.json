@@ -1,0 +1,1727 @@
+{
+  "message": "successful",
+  "totalPosts": {
+    "value": 7,
+    "relation": "eq"
+  },
+  "data": [
+    {
+      "_id": "6745d15db489411fdc51934e",
+      "allowComment": true,
+      "allowDownload": true,
+      "allowDuet": true,
+      "categoryId": "",
+      "categoryName": "",
+      "categoryUrl": "",
+      "cloudinary_public_id": "null",
+      "commentCount": 0,
+      "firstName": "Pradeep",
+      "fullName": "PradeepKing",
+      "hashTags": [
+        "#sports",
+        "#makeup",
+        "#electronics"
+      ],
+      "imageUrl1": "https://soldliveapp.s3.eu-central-1.amazonaws.com/folder/stories/66ea76acf55cba839a2287ac/1000000507.mp4",
+      "imageUrl1Height": "",
+      "imageUrl1Width": "",
+      "isPrivate": 0,
+      "isStar": true,
+      "lastName": "King",
+      "likesCount": 0,
+      "location": {
+        "latitude": 0,
+        "longitude": 0
+      },
+      "mediaType1": 1,
+      "mentionedUsers": [],
+      "musicData": {},
+      "musicId": "",
+      "place": "",
+      "placeId": "",
+      "postStatus": 1,
+      "postViewsCount": 16,
+      "productData": [
+        {
+          "availableQuantity": 29,
+          "avgRatings": 0,
+          "bestOffer": {
+            "discountType": 0,
+            "discountValue": 10,
+            "offerFor": 1,
+            "offerId": "66f3e6ffbdd08bdf14ea90e5",
+            "offerName": {
+              "en": "pradipradi756's ['Mens Slim T Shirt']"
+            },
+            "status": 1
+          },
+          "brand": "",
+          "brandTitle": "Allen Solly",
+          "childProductId": "66f3e6ffbdd08bdf14ea90e6",
+          "currency": "PLN",
+          "currencySymbol": "zł",
+          "finalPriceList": {
+            "basePrice": 100,
+            "discount": 0,
+            "discountPercentage": 10,
+            "discountPrice": 10,
+            "discountType": 0,
+            "finalPrice": 90,
+            "msrpPrice": 0,
+            "taxRate": 0
+          },
+          "images": [
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/PaymentGatewayLogo/0/0/large/downloadQ5Fj5ObhE_1727260411.jpeg"
+            }
+          ],
+          "inStock": true,
+          "isAllVariantInStock": "1",
+          "isproductCondition": 0,
+          "parentProductId": "66f3e6ffbdd08bdf14ea90e4",
+          "productCondition": 10,
+          "productConditionText": "almost new",
+          "productName": "Mens Slim T Shirt",
+          "resellerCommission": 0,
+          "resellerCommissionType": 0,
+          "resellerFixedCommission": 0,
+          "resellerPercentageCommission": 0,
+          "slug": "mens-slim-t-shirt",
+          "status": 1,
+          "statusText": "active",
+          "storeId": "66ea76adf55cba839a2287ad",
+          "totalReview": 1,
+          "userStoreProduct": true,
+          "variantCount": 1
+        },
+        {
+          "availableQuantity": 25,
+          "avgRatings": 0,
+          "bestOffer": {
+            "discountType": 0,
+            "discountValue": 0,
+            "offerFor": 0,
+            "offerId": "",
+            "offerName": {
+              "en": ""
+            }
+          },
+          "brand": "",
+          "brandTitle": "",
+          "childProductId": "654a3cc07700dea52e6b1d0c",
+          "currency": "PLN",
+          "currencySymbol": "zł",
+          "finalPriceList": {
+            "basePrice": 526.28,
+            "discount": 0,
+            "discountPercentage": 0,
+            "discountPrice": 0,
+            "discountType": 1,
+            "finalPrice": 526.28,
+            "msrpPrice": 0,
+            "taxRate": 0
+          },
+          "images": [
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/brown-leatherette-criistiano-westido-brown-original-imafymf2ag3ygsvp_1697012019.webp"
+            }
+          ],
+          "inStock": true,
+          "isAllVariantInStock": "1",
+          "isproductCondition": 0,
+          "parentProductId": "65265b5176148455c3f16778",
+          "productCondition": 10,
+          "productConditionText": "New",
+          "productName": "WESTIDO Leatherette maroon1",
+          "resellerCommission": 0,
+          "resellerCommissionType": 1,
+          "resellerFixedCommission": 0,
+          "resellerPercentageCommission": 10,
+          "slug": "westido-leatherette-7341",
+          "status": 1,
+          "statusText": "active",
+          "storeId": "64b15273156e9e0f27ddd2a4",
+          "totalReview": 4,
+          "userStoreProduct": false,
+          "variantCount": 1
+        },
+        {
+          "availableQuantity": 985,
+          "avgRatings": 0,
+          "bestOffer": {
+            "discountType": 0,
+            "discountValue": 0,
+            "offerFor": 0,
+            "offerId": "",
+            "offerName": {
+              "en": ""
+            }
+          },
+          "brand": "",
+          "brandTitle": "Apple",
+          "childProductId": "6622849a3bb871ec02fcce2c",
+          "currency": "PLN",
+          "currencySymbol": "zł",
+          "finalPriceList": {
+            "basePrice": 2250,
+            "discount": 0,
+            "discountPercentage": 0,
+            "discountPrice": 0,
+            "discountType": 1,
+            "finalPrice": 2250,
+            "msrpPrice": 0,
+            "taxRate": 0
+          },
+          "images": [
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-14-128-GB1_1713537503.jpeg"
+            },
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-14-128-GB2_1713537516.jpeg"
+            },
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-14-128-GB3_1713537531.jpeg"
+            },
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-14-128-GB4_1713537544.jpeg"
+            }
+          ],
+          "inStock": true,
+          "isAllVariantInStock": "1",
+          "isproductCondition": 0,
+          "parentProductId": "662282723bb871ec02fccddf",
+          "productCondition": 10,
+          "productConditionText": "New",
+          "productName": "Apple iPhone 14 (128 GB) Midnightblue",
+          "resellerCommission": 10,
+          "resellerCommissionType": 0,
+          "resellerFixedCommission": 10,
+          "resellerPercentageCommission": 0,
+          "slug": "apple-iphone-14-128-gb-2568",
+          "status": 1,
+          "statusText": "active",
+          "storeId": "64b15273156e9e0f27ddd2a4",
+          "totalReview": 1,
+          "userStoreProduct": false,
+          "variantCount": 1
+        }
+      ],
+      "productIds": [],
+      "shareCount": 0,
+      "thumbnailUrl1": "https://soldliveapp.s3.eu-central-1.amazonaws.com/folder/stories/66ea76acf55cba839a2287ac/thumbnail_IMG_20241126_191707.jpg",
+      "timeStamp": 1732628829450,
+      "title": "#sports #makeup#electronics \nto check after posting reel products are displayed  out of stock",
+      "userId": "66ea76acf55cba839a2287ac",
+      "userName": "pradipradi756",
+      "userStoreId": "66ea76adf55cba839a2287ad",
+      "userType": 1,
+      "userTypeText": "Retailer",
+      "postId": "6745d15db489411fdc51934e",
+      "liked": false,
+      "productCount": 3,
+      "followStatus": 1,
+      "profilePic": "http://res.cloudinary.com/dedibgpdw/image/upload/v1728563559/android/users/profilePic/66ea76acf55cba839a2287ac/66ea76acf55cba839a2287ac.jpg",
+      "slugUrl": "Pradeep King/66ea76adf55cba839a2287ad",
+      "isBusinessUser": false,
+      "distinctViews": 16
+    },
+    {
+      "_id": "66c87127f17f9a70d50815bf",
+      "allowComment": true,
+      "allowDownload": true,
+      "allowDuet": true,
+      "categoryId": "6627e6ad0abbb216b0efc33d",
+      "categoryName": "Clothing",
+      "categoryUrl": "https://cdn.soldlive.eu/ProductCategory/0/0/large/admin_1713890982.webp",
+      "cloudinary_public_id": "null",
+      "commentCount": 1,
+      "firstName": "Roy",
+      "fullName": "RoySingh",
+      "hashTags": [
+        "#soldlive"
+      ],
+      "imageUrl1": "https://soldliveapp.s3.eu-central-1.amazonaws.com/folder/stories/66c8672520e9d16c2fdd8a46/1000000225.mp4",
+      "imageUrl1Height": "",
+      "imageUrl1Width": "",
+      "isPrivate": 0,
+      "isStar": true,
+      "lastName": "Singh",
+      "likesCount": 2,
+      "location": {
+        "latitude": 0,
+        "longitude": 0
+      },
+      "mediaType1": 1,
+      "mentionedUsers": [
+        {
+          "userId": "6628b1ff7cd4ad075e98ce5a",
+          "userName": "nareshy638"
+        }
+      ],
+      "musicData": {},
+      "musicId": "",
+      "place": "",
+      "placeId": "",
+      "postStatus": 1,
+      "postViewsCount": 42,
+      "productData": [
+        {
+          "availableQuantity": 14,
+          "avgRatings": 0,
+          "bestOffer": {
+            "discountType": 0,
+            "discountValue": 9,
+            "offerFor": 1,
+            "offerId": "66c86a813420e81c772a8c6b",
+            "offerName": {
+              "en": "roysingh743's ['Casual Shoes Men']"
+            },
+            "status": 1
+          },
+          "brand": "",
+          "brandTitle": "PUMA",
+          "childProductId": "66c86a823420e81c772a8c6c",
+          "currency": "PLN",
+          "currencySymbol": "zł",
+          "finalPriceList": {
+            "basePrice": 59,
+            "discount": 0,
+            "discountPercentage": 15.25,
+            "discountPrice": 9,
+            "discountType": 0,
+            "finalPrice": 50,
+            "msrpPrice": 0,
+            "taxRate": 0
+          },
+          "images": [
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/PaymentGatewayLogo/0/0/large/downloadsEuod36Cn_1724410241.png"
+            },
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/PaymentGatewayLogo/0/0/large/downloadsEuod36Cn_1724410251.png"
+            },
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/PaymentGatewayLogo/0/0/large/downloadsEuod36Cn_1724410261.png"
+            }
+          ],
+          "inStock": true,
+          "isAllVariantInStock": "1",
+          "isproductCondition": 0,
+          "parentProductId": "66c86a813420e81c772a8c6a",
+          "productCondition": 10,
+          "productConditionText": "almost new",
+          "productName": "Casual Shoes Men",
+          "resellerCommission": 0,
+          "resellerCommissionType": 0,
+          "resellerFixedCommission": 0,
+          "resellerPercentageCommission": 0,
+          "slug": "casual-shoes-men",
+          "status": 1,
+          "statusText": "active",
+          "storeId": "66c8672620e9d16c2fdd8a47",
+          "totalReview": 0,
+          "userStoreProduct": true,
+          "variantCount": 1
+        },
+        {
+          "availableQuantity": 56,
+          "avgRatings": 0,
+          "bestOffer": {
+            "discountType": 0,
+            "discountValue": 0,
+            "offerFor": 0,
+            "offerId": "",
+            "offerName": {
+              "en": ""
+            }
+          },
+          "brand": "",
+          "brandTitle": "",
+          "childProductId": "654a3cc07700dea52e6b1d0c",
+          "currency": "PLN",
+          "currencySymbol": "zł",
+          "finalPriceList": {
+            "basePrice": 519,
+            "discount": 0,
+            "discountPercentage": 0,
+            "discountPrice": 0,
+            "discountType": 1,
+            "finalPrice": 519,
+            "msrpPrice": 0,
+            "taxRate": 0
+          },
+          "images": [
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/brown-leatherette-criistiano-westido-brown-original-imafymf2ag3ygsvp_1697012019.webp"
+            }
+          ],
+          "inStock": true,
+          "isAllVariantInStock": "1",
+          "isproductCondition": 0,
+          "parentProductId": "65265b5176148455c3f16778",
+          "productCondition": 10,
+          "productConditionText": "New",
+          "productName": "WESTIDO Leatherette maroon1",
+          "resellerCommission": 0,
+          "resellerCommissionType": 1,
+          "resellerFixedCommission": 0,
+          "resellerPercentageCommission": 10,
+          "slug": "westido-leatherette-7341",
+          "status": 1,
+          "statusText": "active",
+          "storeId": "64b15273156e9e0f27ddd2a4",
+          "totalReview": 3,
+          "userStoreProduct": false,
+          "variantCount": 1
+        },
+        {
+          "availableQuantity": 994,
+          "avgRatings": 0,
+          "bestOffer": {
+            "discountType": 0,
+            "discountValue": 0,
+            "offerFor": 0,
+            "offerId": "",
+            "offerName": {
+              "en": ""
+            }
+          },
+          "brand": "",
+          "brandTitle": "Apple",
+          "childProductId": "6622849a3bb871ec02fcce2c",
+          "currency": "PLN",
+          "currencySymbol": "zł",
+          "finalPriceList": {
+            "basePrice": 2250,
+            "discount": 0,
+            "discountPercentage": 0,
+            "discountPrice": 0,
+            "discountType": 1,
+            "finalPrice": 2250,
+            "msrpPrice": 0,
+            "taxRate": 0
+          },
+          "images": [
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-14-128-GB1_1713537503.jpeg"
+            },
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-14-128-GB2_1713537516.jpeg"
+            },
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-14-128-GB3_1713537531.jpeg"
+            },
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-14-128-GB4_1713537544.jpeg"
+            }
+          ],
+          "inStock": true,
+          "isAllVariantInStock": "1",
+          "isproductCondition": 0,
+          "parentProductId": "662282723bb871ec02fccddf",
+          "productCondition": 10,
+          "productConditionText": "New",
+          "productName": "Apple iPhone 14 (128 GB) Midnightblue",
+          "resellerCommission": 10,
+          "resellerCommissionType": 0,
+          "resellerFixedCommission": 10,
+          "resellerPercentageCommission": 0,
+          "slug": "apple-iphone-14-128-gb-2568",
+          "status": 1,
+          "statusText": "active",
+          "storeId": "64b15273156e9e0f27ddd2a4",
+          "totalReview": 0,
+          "userStoreProduct": false,
+          "variantCount": 1
+        }
+      ],
+      "productIds": [],
+      "shareCount": 0,
+      "thumbnailUrl1": "https://soldliveapp.s3.eu-central-1.amazonaws.com/folder/stories/66c8672520e9d16c2fdd8a46/thumbnail_IMG_20240823_165316.jpg",
+      "timeStamp": 1724412199784,
+      "title": "@nareshy638 #soldlive New sale on sold",
+      "userId": "66c8672520e9d16c2fdd8a46",
+      "userName": "roysingh743",
+      "userStoreId": "66c8672620e9d16c2fdd8a47",
+      "userType": 1,
+      "userTypeText": "Retailer",
+      "postId": "66c87127f17f9a70d50815bf",
+      "liked": false,
+      "productCount": 3,
+      "followStatus": 0,
+      "profilePic": "",
+      "slugUrl": "Roy Singh/66c8672620e9d16c2fdd8a47",
+      "isBusinessUser": false,
+      "distinctViews": 42
+    },
+    {
+      "_id": "66c875c7f17f9a05af0815eb",
+      "allowComment": true,
+      "allowDownload": true,
+      "allowDuet": true,
+      "categoryId": "6627e6ad0abbb216b0efc33d",
+      "categoryName": "Clothing",
+      "categoryUrl": "https://cdn.soldlive.eu/ProductCategory/0/0/large/admin_1713890982.webp",
+      "cloudinary_public_id": "null",
+      "commentCount": 6,
+      "firstName": "Roy",
+      "fullName": "RoySingh",
+      "hashTags": [
+        "#soldlive"
+      ],
+      "imageUrl1": "https://soldliveapp.s3.eu-central-1.amazonaws.com/folder/stories/66c8672520e9d16c2fdd8a46/1000000224.mp4",
+      "imageUrl1Height": "",
+      "imageUrl1Width": "",
+      "isPrivate": 0,
+      "isStar": true,
+      "lastName": "Singh",
+      "likesCount": 3,
+      "location": {
+        "latitude": 0,
+        "longitude": 0
+      },
+      "mediaType1": 1,
+      "mentionedUsers": [
+        {
+          "userId": "66b45fd4b689c9d7ae73ef17",
+          "userName": "rajr735"
+        }
+      ],
+      "musicData": {},
+      "musicId": "",
+      "place": "",
+      "placeId": "",
+      "postStatus": 1,
+      "postViewsCount": 66,
+      "productData": [
+        {
+          "availableQuantity": 14,
+          "avgRatings": 0,
+          "bestOffer": {
+            "discountType": 0,
+            "discountValue": 9,
+            "offerFor": 1,
+            "offerId": "66c86a813420e81c772a8c6b",
+            "offerName": {
+              "en": "roysingh743's ['Casual Shoes Men']"
+            },
+            "status": 1
+          },
+          "brand": "",
+          "brandTitle": "PUMA",
+          "childProductId": "66c86a823420e81c772a8c6c",
+          "currency": "PLN",
+          "currencySymbol": "zł",
+          "finalPriceList": {
+            "basePrice": 59,
+            "discount": 0,
+            "discountPercentage": 15.25,
+            "discountPrice": 9,
+            "discountType": 0,
+            "finalPrice": 50,
+            "msrpPrice": 0,
+            "taxRate": 0
+          },
+          "images": [
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/PaymentGatewayLogo/0/0/large/downloadsEuod36Cn_1724410241.png"
+            },
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/PaymentGatewayLogo/0/0/large/downloadsEuod36Cn_1724410251.png"
+            },
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/PaymentGatewayLogo/0/0/large/downloadsEuod36Cn_1724410261.png"
+            }
+          ],
+          "inStock": true,
+          "isAllVariantInStock": "1",
+          "isproductCondition": 0,
+          "parentProductId": "66c86a813420e81c772a8c6a",
+          "productCondition": 10,
+          "productConditionText": "almost new",
+          "productName": "Casual Shoes Men",
+          "resellerCommission": 0,
+          "resellerCommissionType": 0,
+          "resellerFixedCommission": 0,
+          "resellerPercentageCommission": 0,
+          "slug": "casual-shoes-men",
+          "status": 1,
+          "statusText": "active",
+          "storeId": "66c8672620e9d16c2fdd8a47",
+          "totalReview": 0,
+          "userStoreProduct": true,
+          "variantCount": 1
+        },
+        {
+          "availableQuantity": 56,
+          "avgRatings": 0,
+          "bestOffer": {
+            "discountType": 0,
+            "discountValue": 0,
+            "offerFor": 0,
+            "offerId": "",
+            "offerName": {
+              "en": ""
+            }
+          },
+          "brand": "",
+          "brandTitle": "",
+          "childProductId": "654a3cc07700dea52e6b1d0c",
+          "currency": "PLN",
+          "currencySymbol": "zł",
+          "finalPriceList": {
+            "basePrice": 519,
+            "discount": 0,
+            "discountPercentage": 0,
+            "discountPrice": 0,
+            "discountType": 1,
+            "finalPrice": 519,
+            "msrpPrice": 0,
+            "taxRate": 0
+          },
+          "images": [
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/brown-leatherette-criistiano-westido-brown-original-imafymf2ag3ygsvp_1697012019.webp"
+            }
+          ],
+          "inStock": true,
+          "isAllVariantInStock": "1",
+          "isproductCondition": 0,
+          "parentProductId": "65265b5176148455c3f16778",
+          "productCondition": 10,
+          "productConditionText": "New",
+          "productName": "WESTIDO Leatherette maroon1",
+          "resellerCommission": 0,
+          "resellerCommissionType": 1,
+          "resellerFixedCommission": 0,
+          "resellerPercentageCommission": 10,
+          "slug": "westido-leatherette-7341",
+          "status": 1,
+          "statusText": "active",
+          "storeId": "64b15273156e9e0f27ddd2a4",
+          "totalReview": 3,
+          "userStoreProduct": false,
+          "variantCount": 1
+        },
+        {
+          "availableQuantity": 994,
+          "avgRatings": 0,
+          "bestOffer": {
+            "discountType": 0,
+            "discountValue": 0,
+            "offerFor": 0,
+            "offerId": "",
+            "offerName": {
+              "en": ""
+            }
+          },
+          "brand": "",
+          "brandTitle": "Apple",
+          "childProductId": "6622849a3bb871ec02fcce2c",
+          "currency": "PLN",
+          "currencySymbol": "zł",
+          "finalPriceList": {
+            "basePrice": 2250,
+            "discount": 0,
+            "discountPercentage": 0,
+            "discountPrice": 0,
+            "discountType": 1,
+            "finalPrice": 2250,
+            "msrpPrice": 0,
+            "taxRate": 0
+          },
+          "images": [
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-14-128-GB1_1713537503.jpeg"
+            },
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-14-128-GB2_1713537516.jpeg"
+            },
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-14-128-GB3_1713537531.jpeg"
+            },
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-14-128-GB4_1713537544.jpeg"
+            }
+          ],
+          "inStock": true,
+          "isAllVariantInStock": "1",
+          "isproductCondition": 0,
+          "parentProductId": "662282723bb871ec02fccddf",
+          "productCondition": 10,
+          "productConditionText": "New",
+          "productName": "Apple iPhone 14 (128 GB) Midnightblue",
+          "resellerCommission": 10,
+          "resellerCommissionType": 0,
+          "resellerFixedCommission": 10,
+          "resellerPercentageCommission": 0,
+          "slug": "apple-iphone-14-128-gb-2568",
+          "status": 1,
+          "statusText": "active",
+          "storeId": "64b15273156e9e0f27ddd2a4",
+          "totalReview": 0,
+          "userStoreProduct": false,
+          "variantCount": 1
+        }
+      ],
+      "productIds": [],
+      "shareCount": 0,
+      "thumbnailUrl1": "https://soldliveapp.s3.eu-central-1.amazonaws.com/folder/stories/66c8672520e9d16c2fdd8a46/thumbnail_IMG_20240823_171302.jpg",
+      "timeStamp": 1724413383934,
+      "title": "@rajr735 #soldlive the freedom sale is on sold now 🙌  do shopping 🛍 watch reels and start some live streams and sell your products in sold 😀 I will be in the same thing that to me in a meeting ",
+      "userId": "66c8672520e9d16c2fdd8a46",
+      "userName": "roysingh743",
+      "userStoreId": "66c8672620e9d16c2fdd8a47",
+      "userType": 1,
+      "userTypeText": "Retailer",
+      "postId": "66c875c7f17f9a05af0815eb",
+      "liked": false,
+      "productCount": 3,
+      "followStatus": 0,
+      "profilePic": "",
+      "slugUrl": "Roy Singh/66c8672620e9d16c2fdd8a47",
+      "isBusinessUser": false,
+      "distinctViews": 66
+    },
+    {
+      "_id": "66b0b41b3366167ee799fd2a",
+      "allowComment": true,
+      "allowDownload": true,
+      "allowDuet": true,
+      "categoryId": "6627e6ad0abbb216b0efc33d",
+      "categoryName": "Clothing",
+      "categoryUrl": "https://cdn.soldlive.eu/ProductCategory/0/0/large/admin_1713890982.webp",
+      "cloudinary_public_id": "null",
+      "commentCount": 7,
+      "firstName": "Vivek",
+      "fullName": "VivekC",
+      "hashTags": [
+        "#soldlive",
+        "#clothing"
+      ],
+      "imageUrl1": "https://soldliveapp.s3.eu-central-1.amazonaws.com/folder/stories/66b060b2d39e25b09c630815/1000000215.mp4",
+      "imageUrl1Height": "",
+      "imageUrl1Width": "",
+      "isPrivate": 0,
+      "isStar": true,
+      "lastName": "C",
+      "likesCount": 2,
+      "location": {
+        "latitude": 0,
+        "longitude": 0
+      },
+      "mediaType1": 1,
+      "mentionedUsers": [],
+      "musicData": {},
+      "musicId": "",
+      "place": "",
+      "placeId": "",
+      "postStatus": 1,
+      "postViewsCount": 117,
+      "productData": [
+        {
+          "availableQuantity": 14,
+          "avgRatings": 0,
+          "bestOffer": {
+            "discountType": 0,
+            "discountValue": 0.009999999999990905,
+            "offerFor": 1,
+            "offerId": "66b070ee3420e81c772a878c",
+            "offerName": {
+              "en": "vivekc728's [\"Men's Colorblock Shoes\"]"
+            },
+            "status": 1
+          },
+          "brand": "",
+          "brandTitle": "Levis",
+          "childProductId": "66b070ee3420e81c772a878d",
+          "currency": "PLN",
+          "currencySymbol": "zł",
+          "finalPriceList": {
+            "basePrice": 500,
+            "discount": 0,
+            "discountPercentage": 0,
+            "discountPrice": 0.01,
+            "discountType": 0,
+            "finalPrice": 499.99,
+            "msrpPrice": 0,
+            "taxRate": 0
+          },
+          "images": [
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/PaymentGatewayLogo/0/0/large/downloadsEuod36Cn_1722839058.png"
+            },
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/PaymentGatewayLogo/0/0/large/downloadsEuod36Cn_1722839065.png"
+            },
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/PaymentGatewayLogo/0/0/large/downloadsEuod36Cn_1722839081.png"
+            }
+          ],
+          "inStock": true,
+          "isAllVariantInStock": "1",
+          "isproductCondition": 0,
+          "parentProductId": "66b070ee3420e81c772a878b",
+          "productCondition": 10,
+          "productConditionText": "almost new",
+          "productName": "Men's Colorblock Shoes",
+          "resellerCommission": 0,
+          "resellerCommissionType": 0,
+          "resellerFixedCommission": 0,
+          "resellerPercentageCommission": 0,
+          "slug": "men-s-colorblock-shoes",
+          "status": 1,
+          "statusText": "active",
+          "storeId": "66b060b3d39e25b09c630816",
+          "totalReview": 0,
+          "userStoreProduct": true,
+          "variantCount": 1
+        },
+        {
+          "availableQuantity": 998,
+          "avgRatings": 0,
+          "bestOffer": {
+            "discountType": 0,
+            "discountValue": 0,
+            "offerFor": 0,
+            "offerId": "",
+            "offerName": {
+              "en": ""
+            }
+          },
+          "brand": "",
+          "brandTitle": "Apple",
+          "childProductId": "6622849a3bb871ec02fcce2c",
+          "currency": "PLN",
+          "currencySymbol": "zł",
+          "finalPriceList": {
+            "basePrice": 2250,
+            "discount": 0,
+            "discountPercentage": 0,
+            "discountPrice": 0,
+            "discountType": 1,
+            "finalPrice": 2250,
+            "msrpPrice": 0,
+            "taxRate": 0
+          },
+          "images": [
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-14-128-GB1_1713537503.jpeg"
+            },
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-14-128-GB2_1713537516.jpeg"
+            },
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-14-128-GB3_1713537531.jpeg"
+            },
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-14-128-GB4_1713537544.jpeg"
+            }
+          ],
+          "inStock": true,
+          "isAllVariantInStock": "1",
+          "isproductCondition": 0,
+          "parentProductId": "662282723bb871ec02fccddf",
+          "productCondition": 10,
+          "productConditionText": "New",
+          "productName": "Apple iPhone 14 (128 GB) Midnightblue",
+          "resellerCommission": 10,
+          "resellerCommissionType": 0,
+          "resellerFixedCommission": 10,
+          "resellerPercentageCommission": 0,
+          "slug": "apple-iphone-14-128-gb-2568",
+          "status": 1,
+          "statusText": "active",
+          "storeId": "64b15273156e9e0f27ddd2a4",
+          "totalReview": 0,
+          "userStoreProduct": false,
+          "variantCount": 1
+        },
+        {
+          "availableQuantity": 981,
+          "avgRatings": 0,
+          "bestOffer": {
+            "discountType": 0,
+            "discountValue": 0,
+            "offerFor": 0,
+            "offerId": "",
+            "offerName": {
+              "en": ""
+            }
+          },
+          "brand": "",
+          "brandTitle": "Mi ",
+          "childProductId": "65cd97ebb47a56357755cd56",
+          "currency": "PLN",
+          "currencySymbol": "zł",
+          "finalPriceList": {
+            "basePrice": 524,
+            "discount": 0,
+            "discountPercentage": 0,
+            "discountPrice": 0,
+            "discountType": 1,
+            "finalPrice": 524,
+            "msrpPrice": 0,
+            "taxRate": 0
+          },
+          "images": [
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Redmi-13C-5G4_1707928519.jpeg"
+            }
+          ],
+          "inStock": true,
+          "isAllVariantInStock": "1",
+          "isproductCondition": 0,
+          "parentProductId": "65cced0eb47a56357755cc36",
+          "productCondition": 10,
+          "productConditionText": "New",
+          "productName": "Redmi 13C 5G Black",
+          "resellerCommission": 1,
+          "resellerCommissionType": 0,
+          "resellerFixedCommission": 1,
+          "resellerPercentageCommission": 0,
+          "slug": "redmi-13c-5g-5290",
+          "status": 1,
+          "statusText": "active",
+          "storeId": "64b15273156e9e0f27ddd2a4",
+          "totalReview": 2,
+          "userStoreProduct": false,
+          "variantCount": 1
+        },
+        {
+          "availableQuantity": 65,
+          "avgRatings": 0,
+          "bestOffer": {
+            "discountType": 0,
+            "discountValue": 0,
+            "offerFor": 0,
+            "offerId": "",
+            "offerName": {
+              "en": ""
+            }
+          },
+          "brand": "",
+          "brandTitle": "Samsung ",
+          "childProductId": "654a4c4124e7858b6d2f6b8d",
+          "currency": "PLN",
+          "currencySymbol": "zł",
+          "finalPriceList": {
+            "basePrice": 861.47,
+            "discount": 0,
+            "discountPercentage": 0,
+            "discountPrice": 0,
+            "discountType": 1,
+            "finalPrice": 861.47,
+            "msrpPrice": 0,
+            "taxRate": 0
+          },
+          "images": [
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/-original-imagtyxcgmgvtm7y_1699367833.webp"
+            }
+          ],
+          "inStock": true,
+          "isAllVariantInStock": "1",
+          "isproductCondition": 0,
+          "parentProductId": "654a4c0a24e7858b6d2f6b7f",
+          "productCondition": 10,
+          "productConditionText": "New",
+          "productName": "SAMSUNG Galaxy F14 5G black",
+          "resellerCommission": 20,
+          "resellerCommissionType": 0,
+          "resellerFixedCommission": 20,
+          "resellerPercentageCommission": 0,
+          "slug": "samsung-galaxy-f14-5g-1659-1451",
+          "status": 1,
+          "statusText": "active",
+          "storeId": "64b15273156e9e0f27ddd2a4",
+          "totalReview": 0,
+          "userStoreProduct": false,
+          "variantCount": 2
+        }
+      ],
+      "productIds": [],
+      "shareCount": 0,
+      "thumbnailUrl1": "https://soldliveapp.s3.eu-central-1.amazonaws.com/folder/stories/66b060b2d39e25b09c630815/thumbnail_IMG_20240805_164433.jpg",
+      "timeStamp": 1722856475431,
+      "title": "#soldlive #clothing ",
+      "userId": "66b060b2d39e25b09c630815",
+      "userName": "vivekc728",
+      "userStoreId": "66b060b3d39e25b09c630816",
+      "userType": 1,
+      "userTypeText": "Retailer",
+      "postId": "66b0b41b3366167ee799fd2a",
+      "liked": false,
+      "productCount": 4,
+      "followStatus": 1,
+      "profilePic": "http://res.cloudinary.com/dedibgpdw/image/upload/v1722941398/android/users/profilePic/66b060b2d39e25b09c630815/66b060b2d39e25b09c630815.jpg",
+      "slugUrl": "Vivek C/66b060b3d39e25b09c630816",
+      "isBusinessUser": false,
+      "distinctViews": 117
+    },
+    {
+      "_id": "66558a69d7bc7996952642f7",
+      "allowComment": true,
+      "allowDownload": true,
+      "allowDuet": true,
+      "categoryId": "6627e6e40abbb216b0efc33e",
+      "categoryName": "Electronics",
+      "categoryUrl": "https://cdn.soldlive.eu/ProductCategory/0/0/large/admin_1713891034.webp",
+      "cloudinary_public_id": "",
+      "commentCount": 16,
+      "firstName": "Aditya",
+      "fullName": "AdityaVarma",
+      "hashTags": [
+        "#soldlive",
+        "#electronics",
+        "#apple"
+      ],
+      "imageUrl1": "https://sold-beta.gumlet.io/Sold/post/video/1716882019582/665579fe77c5172321f9f36d/1716882019954.mp4",
+      "imageUrl1Height": "100",
+      "imageUrl1Width": "100",
+      "isPrivate": 0,
+      "isStar": true,
+      "lastName": "Varma",
+      "likesCount": 3,
+      "location": {
+        "latitude": 0,
+        "longitude": 0
+      },
+      "mediaType1": 1,
+      "mentionedUsers": [],
+      "musicData": {},
+      "musicId": "",
+      "place": "",
+      "placeId": "",
+      "postStatus": 1,
+      "postViewsCount": 128,
+      "productData": [
+        {
+          "availableQuantity": 25,
+          "bestOffer": {
+            "discountType": 0,
+            "discountValue": 10,
+            "offerFor": 1,
+            "offerId": "665582ee0d9990e0a1f25f10",
+            "offerName": {
+              "en": "adityavarma682's ['Apple iPhone 11']"
+            },
+            "status": 1
+          },
+          "brandId": "64b7b997c8cdec4840c84192",
+          "brandTitle": "Apple",
+          "childProductId": "665582ef0d9990e0a1f25f11",
+          "currency": "PLN",
+          "currencySymbol": "zł",
+          "finalPriceList": {
+            "basePrice": 1500,
+            "discountPrice": 10,
+            "discountType": 0,
+            "finalPrice": 1490,
+            "msrpPrice": 1500,
+            "taxRate": 0
+          },
+          "images": [
+            {
+              "small": "https://cdn.soldlive.eu/PaymentGatewayLogo/0/0/large/downloadd1RH6UWM8_1716880090.jpeg"
+            },
+            {
+              "small": "https://cdn.soldlive.eu/PaymentGatewayLogo/0/0/large/downloadql7HTUPcr_1716880089.jpeg"
+            },
+            {
+              "small": "https://cdn.soldlive.eu/PaymentGatewayLogo/0/0/large/downloadAAoNfFdHQ_1716880090.jpeg"
+            }
+          ],
+          "inStock": true,
+          "isAllVariantInStock": "1",
+          "isproductCondition": 0,
+          "moderationStatus": "MODERATION_PASSED",
+          "outOfStock": false,
+          "parentProductId": "665582ee0d9990e0a1f25f0f",
+          "productCondition": 10,
+          "productName": "Apple iPhone 11",
+          "resellerCommission": 0,
+          "resellerCommissionType": 0,
+          "resellerFixedCommission": 0,
+          "resellerPercentageCommission": 0,
+          "slug": "apple-iphone-11",
+          "status": 1,
+          "statusText": "active",
+          "storeId": "665579fe77c5172321f9f36e",
+          "totalReview": 0,
+          "variantCount": 1,
+          "variants": []
+        },
+        {
+          "availableQuantity": 9882,
+          "bestOffer": {},
+          "brandId": "64b7b997c8cdec4840c84192",
+          "brandTitle": "Apple",
+          "childProductId": "64b77461ea79df4f90e336a0",
+          "currency": "PLN",
+          "currencySymbol": "zł",
+          "finalPriceList": {
+            "basePrice": 4066.78,
+            "discount": 0,
+            "discountPercentage": 0,
+            "discountPrice": 0,
+            "discountType": 1,
+            "finalPrice": 4066.78,
+            "msrpPrice": 4066.78,
+            "taxRate": 0
+          },
+          "images": [
+            {
+              "small": "https://cdn.soldlive.eu/products/0/0/large/iphone-13-mlpk3hn-a-apple-original-imag6vpyur6hjngg_1689686242.webp"
+            },
+            {
+              "small": "https://cdn.soldlive.eu/products/0/0/large/iphone-13-mlpk3hn-a-apple-original-imag6vpywdtyhbkr_1689686261.webp"
+            },
+            {
+              "small": "https://cdn.soldlive.eu/products/0/0/large/iphone-13-mlpk3hn-a-apple-original-imag6vpyggrjkms3_1689686282.webp"
+            },
+            {
+              "small": "https://cdn.soldlive.eu/products/0/0/large/iphone-13-mlpk3hn-a-apple-original-imag6vpybez53gfh_1689686308.webp"
+            }
+          ],
+          "inStock": true,
+          "isAllVariantInStock": "1",
+          "isproductCondition": 0,
+          "moderationStatus": "",
+          "outOfStock": false,
+          "parentProductId": "64b692d38b3da321f195885e",
+          "productCondition": 10,
+          "productName": "APPLE iPhone 13 NavyBlue",
+          "resellerCommission": 100,
+          "resellerCommissionType": 0,
+          "resellerFixedCommission": 100,
+          "resellerPercentageCommission": 0,
+          "slug": "apple-iphone-13-buy",
+          "status": 1,
+          "statusText": "active",
+          "storeId": "64b156a1156e9e0f27ddd2af",
+          "totalReview": 5,
+          "variantCount": 1,
+          "variants": []
+        },
+        {
+          "availableQuantity": 999,
+          "bestOffer": {},
+          "brandId": "64b7b997c8cdec4840c84192",
+          "brandTitle": "Apple",
+          "childProductId": "6622849a3bb871ec02fcce2c",
+          "currency": "PLN",
+          "currencySymbol": "zł",
+          "finalPriceList": {
+            "basePrice": 2250,
+            "discountPercentage": 0,
+            "discountPrice": 0,
+            "discountType": 1,
+            "finalPrice": 2250,
+            "msrpPrice": 2250,
+            "taxRate": 0
+          },
+          "images": [
+            {
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-14-128-GB1_1713537503.jpeg"
+            },
+            {
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-14-128-GB2_1713537516.jpeg"
+            },
+            {
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-14-128-GB3_1713537531.jpeg"
+            },
+            {
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-14-128-GB4_1713537544.jpeg"
+            }
+          ],
+          "inStock": true,
+          "isAllVariantInStock": "1",
+          "isproductCondition": 0,
+          "moderationStatus": "",
+          "outOfStock": false,
+          "parentProductId": "662282723bb871ec02fccddf",
+          "productCondition": 10,
+          "productName": "Apple iPhone 14 (128 GB) Midnightblue",
+          "resellerCommission": 10,
+          "resellerCommissionType": 0,
+          "resellerFixedCommission": 10,
+          "resellerPercentageCommission": 0,
+          "slug": "apple-iphone-14-128-gb-2568",
+          "status": 1,
+          "statusText": "active",
+          "storeId": "64b15273156e9e0f27ddd2a4",
+          "totalReview": 0,
+          "variantCount": 1,
+          "variants": []
+        }
+      ],
+      "productIds": [],
+      "shareCount": 0,
+      "thumbnailUrl1": "https://sold-beta.gumlet.io/Sold/post/image/1716882017093/665579fe77c5172321f9f36d/1716882017094.jpeg",
+      "timeStamp": 1716882026001,
+      "title": "#soldlive #electronics #apple",
+      "userId": "665579fe77c5172321f9f36d",
+      "userName": "adityavarma682",
+      "userStoreId": "665579fe77c5172321f9f36e",
+      "userType": 1,
+      "userTypeText": "Retailer",
+      "postId": "66558a69d7bc7996952642f7",
+      "liked": true,
+      "productCount": 3,
+      "followStatus": 0,
+      "profilePic": "https://sold-beta.gumlet.io/Sold/profile/Image/665579fe77c5172321f9f36d/1716881681139.jpeg",
+      "slugUrl": "Aditya Varm/665579fe77c5172321f9f36e",
+      "isBusinessUser": false,
+      "distinctViews": 128
+    },
+    {
+      "_id": "67407e0eb48941e9c9519148",
+      "allowComment": true,
+      "allowDownload": true,
+      "allowDuet": true,
+      "categoryId": "6627e7b00abbb216b0efc341",
+      "categoryName": "Mobiles",
+      "categoryUrl": "https://cdn.soldlive.eu/ProductCategory/0/0/large/admin_1713891239.webp",
+      "cloudinary_public_id": "null",
+      "commentCount": 0,
+      "firstName": "Rutvik",
+      "fullName": "RutvikAnd",
+      "hashTags": [
+        "#apple"
+      ],
+      "imageUrl1": "https://soldliveapp.s3.eu-central-1.amazonaws.com/folder/stories/67401ef38ab9c3785a5e3eca/1000112756.mp4",
+      "imageUrl1Height": "",
+      "imageUrl1Width": "",
+      "isPrivate": 0,
+      "isStar": false,
+      "lastName": "And",
+      "likesCount": 1,
+      "location": {
+        "latitude": 0,
+        "longitude": 0
+      },
+      "mediaType1": 1,
+      "mentionedUsers": [],
+      "musicData": {},
+      "musicId": "",
+      "place": "",
+      "placeId": "",
+      "postStatus": 1,
+      "postViewsCount": 4,
+      "productData": [
+        {
+          "availableQuantity": 996,
+          "avgRatings": 0,
+          "bestOffer": {
+            "discountType": 0,
+            "discountValue": 0,
+            "offerFor": 0,
+            "offerId": "",
+            "offerName": {
+              "en": ""
+            }
+          },
+          "brand": "",
+          "brandTitle": "Apple",
+          "childProductId": "662266363bb871ec02fccdb4",
+          "currency": "PLN",
+          "currencySymbol": "zł",
+          "finalPriceList": {
+            "basePrice": 4500,
+            "discount": 0,
+            "discountPercentage": 0,
+            "discountPrice": 0,
+            "discountType": 1,
+            "finalPrice": 4500,
+            "msrpPrice": 0,
+            "taxRate": 0
+          },
+          "images": [
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-15-Pro-128GB2_1713528852.jpeg"
+            },
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-15-Pro-128GB3_1713528869.jpeg"
+            },
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-15-Pro-128GB5_1713528885.jpeg"
+            }
+          ],
+          "inStock": true,
+          "isAllVariantInStock": "1",
+          "isproductCondition": 0,
+          "parentProductId": "662261053bb871ec02fccd81",
+          "productCondition": 10,
+          "productConditionText": "New",
+          "productName": "Apple iPhone 15 Pro Midnightblue",
+          "resellerCommission": 0,
+          "resellerCommissionType": 1,
+          "resellerFixedCommission": 0,
+          "resellerPercentageCommission": 25,
+          "slug": "apple-iphone-15-pro-3213",
+          "status": 1,
+          "statusText": "active",
+          "storeId": "65ae4db4d3ad0c64c50234a8",
+          "totalReview": 4,
+          "userStoreProduct": false,
+          "variantCount": 1
+        },
+        {
+          "availableQuantity": 998,
+          "avgRatings": 0,
+          "bestOffer": {
+            "discountType": 0,
+            "discountValue": 0,
+            "offerFor": 0,
+            "offerId": "",
+            "offerName": {
+              "en": ""
+            }
+          },
+          "brand": "",
+          "brandTitle": "Apple",
+          "childProductId": "662282743bb871ec02fccde1",
+          "currency": "PLN",
+          "currencySymbol": "zł",
+          "finalPriceList": {
+            "basePrice": 3846,
+            "discount": 0,
+            "discountPercentage": 0,
+            "discountPrice": 0,
+            "discountType": 1,
+            "finalPrice": 3846,
+            "msrpPrice": 0,
+            "taxRate": 0
+          },
+          "images": [
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-14-128-GB1_1713537503.jpeg"
+            },
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-14-128-GB2_1713537516.jpeg"
+            },
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-14-128-GB3_1713537531.jpeg"
+            },
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-14-128-GB4_1713537544.jpeg"
+            }
+          ],
+          "inStock": true,
+          "isAllVariantInStock": "1",
+          "isproductCondition": 0,
+          "parentProductId": "662282723bb871ec02fccddf",
+          "productCondition": 10,
+          "productConditionText": "New",
+          "productName": "Apple iPhone 14 (128 GB) Midnightblue",
+          "resellerCommission": 0,
+          "resellerCommissionType": 1,
+          "resellerFixedCommission": 0,
+          "resellerPercentageCommission": 10,
+          "slug": "apple-iphone-14-128-gb",
+          "status": 1,
+          "statusText": "active",
+          "storeId": "65ae4db4d3ad0c64c50234a8",
+          "totalReview": 1,
+          "userStoreProduct": false,
+          "variantCount": 1
+        },
+        {
+          "availableQuantity": 985,
+          "avgRatings": 0,
+          "bestOffer": {
+            "discountType": 0,
+            "discountValue": 0,
+            "offerFor": 0,
+            "offerId": "",
+            "offerName": {
+              "en": ""
+            }
+          },
+          "brand": "",
+          "brandTitle": "Apple",
+          "childProductId": "6622849a3bb871ec02fcce2c",
+          "currency": "PLN",
+          "currencySymbol": "zł",
+          "finalPriceList": {
+            "basePrice": 2250,
+            "discount": 0,
+            "discountPercentage": 0,
+            "discountPrice": 0,
+            "discountType": 1,
+            "finalPrice": 2250,
+            "msrpPrice": 0,
+            "taxRate": 0
+          },
+          "images": [
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-14-128-GB1_1713537503.jpeg"
+            },
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-14-128-GB2_1713537516.jpeg"
+            },
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-14-128-GB3_1713537531.jpeg"
+            },
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-14-128-GB4_1713537544.jpeg"
+            }
+          ],
+          "inStock": true,
+          "isAllVariantInStock": "1",
+          "isproductCondition": 0,
+          "parentProductId": "662282723bb871ec02fccddf",
+          "productCondition": 10,
+          "productConditionText": "New",
+          "productName": "Apple iPhone 14 (128 GB) Midnightblue",
+          "resellerCommission": 10,
+          "resellerCommissionType": 0,
+          "resellerFixedCommission": 10,
+          "resellerPercentageCommission": 0,
+          "slug": "apple-iphone-14-128-gb-2568",
+          "status": 1,
+          "statusText": "active",
+          "storeId": "64b15273156e9e0f27ddd2a4",
+          "totalReview": 1,
+          "userStoreProduct": false,
+          "variantCount": 1
+        }
+      ],
+      "productIds": [],
+      "shareCount": 0,
+      "thumbnailUrl1": "https://soldliveapp.s3.eu-central-1.amazonaws.com/folder/stories/67401ef38ab9c3785a5e3eca/thumbnail_IMG_20241122_182020.jpg",
+      "timeStamp": 1732279822479,
+      "title": "#Apple",
+      "userId": "67401ef38ab9c3785a5e3eca",
+      "userName": "rutvikand798",
+      "userStoreId": "67401ef48ab9c3785a5e3ecb",
+      "userType": 1,
+      "userTypeText": "Retailer",
+      "postId": "67407e0eb48941e9c9519148",
+      "liked": false,
+      "productCount": 3,
+      "followStatus": 0,
+      "profilePic": "",
+      "slugUrl": "Rutvik And/67401ef48ab9c3785a5e3ecb",
+      "isBusinessUser": false,
+      "distinctViews": 4
+    },
+    {
+      "_id": "67599b2861a91ced94d3a517",
+      "allowComment": true,
+      "allowDownload": true,
+      "allowDuet": true,
+      "categoryId": "",
+      "categoryName": "",
+      "categoryUrl": "",
+      "cloudinary_public_id": "null",
+      "commentCount": 0,
+      "firstName": "Pradeep",
+      "fullName": "PradeepKing",
+      "hashTags": [],
+      "imageUrl1": "https://soldliveapp.s3.eu-central-1.amazonaws.com/folder/stories/66ea76acf55cba839a2287ac/1000112756.mp4",
+      "imageUrl1Height": "",
+      "imageUrl1Width": "",
+      "isPrivate": 0,
+      "isStar": true,
+      "lastName": "King",
+      "likesCount": 3,
+      "location": {
+        "latitude": 0,
+        "longitude": 0
+      },
+      "mediaType1": 1,
+      "mentionedUsers": [],
+      "musicData": {},
+      "musicId": "",
+      "place": "",
+      "placeId": "",
+      "postStatus": 1,
+      "postViewsCount": 9,
+      "productData": [
+        {
+          "availableQuantity": 22,
+          "avgRating": 4.72,
+          "bestOffer": {
+            "discountType": 0,
+            "discountValue": 0,
+            "offerFor": 0,
+            "offerId": "",
+            "offerName": {
+              "en": ""
+            }
+          },
+          "brand": "",
+          "brandTitle": "",
+          "childProductId": "654a3cc07700dea52e6b1d0c",
+          "currency": "PLN",
+          "currencySymbol": "zł",
+          "finalPriceList": {
+            "basePrice": 532.2,
+            "discount": 0,
+            "discountPercentage": 0,
+            "discountPrice": 0,
+            "discountType": 1,
+            "finalPrice": 532.2,
+            "msrpPrice": 0,
+            "taxRate": 0
+          },
+          "images": [
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/brown-leatherette-criistiano-westido-brown-original-imafymf2ag3ygsvp_1697012019.webp"
+            }
+          ],
+          "inStock": true,
+          "isAllVariantInStock": "1",
+          "isproductCondition": 0,
+          "parentProductId": "65265b5176148455c3f16778",
+          "productCondition": 10,
+          "productConditionText": "New",
+          "productName": "WESTIDO Leatherette maroon1",
+          "resellerCommission": 0,
+          "resellerCommissionType": 1,
+          "resellerFixedCommission": 0,
+          "resellerPercentageCommission": 10,
+          "slug": "westido-leatherette-7341",
+          "status": 1,
+          "statusText": "active",
+          "storeId": "64b15273156e9e0f27ddd2a4",
+          "totalReview": 4,
+          "userStoreProduct": false,
+          "variantCount": 1
+        },
+        {
+          "availableQuantity": 985,
+          "avgRating": 5,
+          "bestOffer": {
+            "discountType": 0,
+            "discountValue": 0,
+            "offerFor": 0,
+            "offerId": "",
+            "offerName": {
+              "en": ""
+            }
+          },
+          "brand": "",
+          "brandTitle": "Apple",
+          "childProductId": "6622849a3bb871ec02fcce2c",
+          "currency": "PLN",
+          "currencySymbol": "zł",
+          "finalPriceList": {
+            "basePrice": 2250,
+            "discount": 0,
+            "discountPercentage": 0,
+            "discountPrice": 0,
+            "discountType": 1,
+            "finalPrice": 2250,
+            "msrpPrice": 0,
+            "taxRate": 0
+          },
+          "images": [
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-14-128-GB1_1713537503.jpeg"
+            },
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-14-128-GB2_1713537516.jpeg"
+            },
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-14-128-GB3_1713537531.jpeg"
+            },
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/Apple-iPhone-14-128-GB4_1713537544.jpeg"
+            }
+          ],
+          "inStock": true,
+          "isAllVariantInStock": "1",
+          "isproductCondition": 0,
+          "parentProductId": "662282723bb871ec02fccddf",
+          "productCondition": 10,
+          "productConditionText": "New",
+          "productName": "Apple iPhone 14 (128 GB) Midnightblue",
+          "resellerCommission": 10,
+          "resellerCommissionType": 0,
+          "resellerFixedCommission": 10,
+          "resellerPercentageCommission": 0,
+          "slug": "apple-iphone-14-128-gb-2568",
+          "status": 1,
+          "statusText": "active",
+          "storeId": "64b15273156e9e0f27ddd2a4",
+          "totalReview": 1,
+          "userStoreProduct": false,
+          "variantCount": 1
+        },
+        {
+          "availableQuantity": 61,
+          "avgRating": 0,
+          "bestOffer": {
+            "discountType": 0,
+            "discountValue": 0,
+            "offerFor": 0,
+            "offerId": "",
+            "offerName": {
+              "en": ""
+            }
+          },
+          "brand": "",
+          "brandTitle": "Samsung ",
+          "childProductId": "654a4c4124e7858b6d2f6b8d",
+          "currency": "PLN",
+          "currencySymbol": "zł",
+          "finalPriceList": {
+            "basePrice": 878.13,
+            "discount": 0,
+            "discountPercentage": 0,
+            "discountPrice": 0,
+            "discountType": 1,
+            "finalPrice": 878.13,
+            "msrpPrice": 0,
+            "taxRate": 0
+          },
+          "images": [
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/products/0/0/large/-original-imagtyxcgmgvtm7y_1699367833.webp"
+            }
+          ],
+          "inStock": true,
+          "isAllVariantInStock": "1",
+          "isproductCondition": 0,
+          "parentProductId": "654a4c0a24e7858b6d2f6b7f",
+          "productCondition": 10,
+          "productConditionText": "New",
+          "productName": "SAMSUNG Galaxy F14 5G black",
+          "resellerCommission": 20,
+          "resellerCommissionType": 0,
+          "resellerFixedCommission": 20,
+          "resellerPercentageCommission": 0,
+          "slug": "samsung-galaxy-f14-5g-1659-1451",
+          "status": 1,
+          "statusText": "active",
+          "storeId": "64b15273156e9e0f27ddd2a4",
+          "totalReview": 0,
+          "userStoreProduct": false,
+          "variantCount": 2
+        },
+        {
+          "availableQuantity": 24,
+          "avgRating": 4.75,
+          "bestOffer": {
+            "discountType": 0,
+            "discountValue": 10,
+            "offerFor": 1,
+            "offerId": "66f3e6ffbdd08bdf14ea90e5",
+            "offerName": {
+              "en": "pradipradi756's ['Mens Slim T Shirt']"
+            },
+            "status": 1
+          },
+          "brand": "",
+          "brandTitle": "Allen Solly",
+          "childProductId": "66f3e6ffbdd08bdf14ea90e6",
+          "currency": "PLN",
+          "currencySymbol": "zł",
+          "finalPriceList": {
+            "basePrice": 100,
+            "discount": 0,
+            "discountPercentage": 10,
+            "discountPrice": 10,
+            "discountType": 0,
+            "finalPrice": 90,
+            "msrpPrice": 0,
+            "taxRate": 0
+          },
+          "images": [
+            {
+              "filePath": "",
+              "small": "https://cdn.soldlive.eu/PaymentGatewayLogo/0/0/large/downloadQ5Fj5ObhE_1727260411.jpeg"
+            }
+          ],
+          "inStock": true,
+          "isAllVariantInStock": "1",
+          "isproductCondition": 0,
+          "parentProductId": "66f3e6ffbdd08bdf14ea90e4",
+          "productCondition": 10,
+          "productConditionText": "almost new",
+          "productName": "Mens Slim T Shirt",
+          "resellerCommission": 0,
+          "resellerCommissionType": 0,
+          "resellerFixedCommission": 0,
+          "resellerPercentageCommission": 0,
+          "slug": "mens-slim-t-shirt",
+          "status": 1,
+          "statusText": "active",
+          "storeId": "66ea76adf55cba839a2287ad",
+          "totalReview": 1,
+          "userStoreProduct": true,
+          "variantCount": 1
+        }
+      ],
+      "productIds": [],
+      "shareCount": 0,
+      "thumbnailUrl1": "https://soldliveapp.s3.eu-central-1.amazonaws.com/folder/stories/66ea76acf55cba839a2287ac/thumbnail_IMG_20241211_193107.jpg",
+      "timeStamp": 1733925672740,
+      "title": "",
+      "userId": "66ea76acf55cba839a2287ac",
+      "userName": "pradipradi756",
+      "userStoreId": "66ea76adf55cba839a2287ad",
+      "userType": 1,
+      "userTypeText": "Retailer",
+      "postId": "67599b2861a91ced94d3a517",
+      "liked": true,
+      "productCount": 4,
+      "followStatus": 1,
+      "profilePic": "http://res.cloudinary.com/dedibgpdw/image/upload/v1728563559/android/users/profilePic/66ea76acf55cba839a2287ac/66ea76acf55cba839a2287ac.jpg",
+      "slugUrl": "Pradeep King/66ea76adf55cba839a2287ad",
+      "isBusinessUser": false,
+      "distinctViews": 9
+    }
+  ]
+}

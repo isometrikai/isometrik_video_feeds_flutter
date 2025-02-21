@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ism_video_reel_player/export.dart';
+import 'package:ism_video_reel_player/res/res.dart';
 
 /// A chunk of styles used in the application.
 /// Will be ignored for test since all are static values and would not change.

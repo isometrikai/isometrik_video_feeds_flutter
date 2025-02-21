@@ -14,4 +14,5 @@ class AssetConstants {
   static const String pausedRoundedSvg = 'packages/ism_video_reel_player/assets/icons/ic_pause_rounded.svg';
   static const String reelsPlaySvg = 'packages/ism_video_reel_player/assets/icons/ic_reels_play.svg';
   static const String postResponseJson = 'packages/ism_video_reel_player/assets/loader/post_response.json';
+  // static const String postResponseJson = 'packages/ism_video_reel_player/assets/loader/trending_post_response.json';
 }

@@ -1,6 +1,6 @@
 import 'dart:developer';
 
-import 'package:ism_video_reel_player/export.dart';
+import 'package:ism_video_reel_player/res/res.dart';
 
 class AppLog {
   ///This Constructor of `AppLog` take 2 parameters

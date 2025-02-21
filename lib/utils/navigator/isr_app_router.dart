@@ -1,5 +1,7 @@
 import 'package:go_router/go_router.dart';
-import 'package:ism_video_reel_player/export.dart';
+import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/presentation/presentation.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 
 part 'isr_app_routes.dart';
 
