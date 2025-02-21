@@ -27,4 +27,7 @@ class IsrTranslationFile {
   static const String post = 'Post';
   static const String sdkNotInitialized = 'sdk not initialized';
   static const String noInternet = 'No Internet';
+  static const String shop = 'Shop';
+  static const String products = 'Products';
+  static const String more = 'More';
 }

@@ -7,5 +7,10 @@ abstract class PostRepository extends BaseRepository {
   });
   Future<CustomResponse<PostResponse?>> getFollowingPost({
     required bool isLoading,
+    required int page,
+    required int pageLimit,
+  });
+  Future<CustomResponse<PostResponse?>> getTrendingPost({
+    required bool isLoading,
   });
 }

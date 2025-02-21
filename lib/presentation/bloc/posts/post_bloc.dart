@@ -19,21 +19,29 @@ class PostBloc extends Bloc<PostEvent, PostState> {
   PostBloc(
     this._localDataUseCase,
     this._getFollowingPostUseCase,
+    this._getTrendingPostUseCase,
     this._createPostUseCase,
   ) : super(PostInitial(isLoading: true)) {
     on<StartPost>(_onStartPost);
     on<GetFollowingPostEvent>(_getFollowingPost);
+    on<GetTrendingPostEvent>(_getTrendingPost);
     on<CreatePostEvent>(_createPost);
     on<CameraEvent>(_goToCamera);
   }
 
   final LocalDataUseCase _localDataUseCase;
   final GetFollowingPostUseCase _getFollowingPostUseCase;
+  final GetTrendingPostUseCase _getTrendingPostUseCase;
   final CreatePostUseCase _createPostUseCase;
   final List<PostData> _followingPostList = [];
+  final List<PostData> _trendingPostList = [];
   var reelsPageFollowingController = PageController();
   UserInfoClass? _userInfoClass;
   var reelsPageTrendingController = PageController();
+  int _currentPage = 1;
+  static const int _pageSize = 10;
+  bool _hasMoreData = true;
+  bool _isLoadingMore = false;
 
   void _onStartPost(StartPost event, Emitter<PostState> emit) async {
     final userInfoString = await _localDataUseCase.getUserInfo();
@@ -41,14 +49,56 @@ class PostBloc extends Bloc<PostEvent, PostState> {
       _userInfoClass = UserInfoClass.fromJson(jsonDecode(userInfoString) as Map<String, dynamic>);
       emit(UserInformationLoaded(userInfoClass: _userInfoClass));
     }
-    add(GetFollowingPostEvent(isLoading: false));
+    add(GetFollowingPostEvent(isLoading: false, isPagination: false));
   }
 
   FutureOr<void> _getFollowingPost(GetFollowingPostEvent event, Emitter<PostState> emit) async {
-    final apiResult = await _getFollowingPostUseCase.executeGetFollowingPost(isLoading: event.isLoading);
-    _followingPostList.clear();
+    if (event.isPagination && (_isLoadingMore || !_hasMoreData)) {
+      return;
+    }
+
+    if (!event.isPagination) {
+      _currentPage = 1;
+      _hasMoreData = true;
+      _followingPostList.clear();
+    }
+
+    _isLoadingMore = true;
+
+    final apiResult = await _getFollowingPostUseCase.executeGetFollowingPost(
+      isLoading: event.isLoading,
+      page: _currentPage,
+      pageLimit: _pageSize,
+    );
+
     if (apiResult.isSuccess) {
-      _followingPostList.addAll(apiResult.data?.data as Iterable<PostData>);
+      final newPosts = apiResult.data?.data as List<PostData>;
+
+      if (newPosts.length < _pageSize) {
+        _hasMoreData = false;
+      }
+
+      if (event.isPagination) {
+        _followingPostList.addAll(newPosts);
+      } else {
+        _followingPostList.clear();
+        _followingPostList.addAll(newPosts);
+      }
+
+      _currentPage++;
+    } else {
+      ErrorHandler.showAppError(appError: apiResult.error);
+    }
+
+    _isLoadingMore = false;
+    emit(PostDataLoadedState(postDataList: _followingPostList));
+  }
+
+  FutureOr<void> _getTrendingPost(GetTrendingPostEvent event, Emitter<PostState> emit) async {
+    final apiResult = await _getTrendingPostUseCase.executeGetTrendingPost(isLoading: event.isLoading);
+    _trendingPostList.clear();
+    if (apiResult.isSuccess) {
+      _trendingPostList.addAll(apiResult.data?.data as Iterable<PostData>);
     } else {
       ErrorHandler.showAppError(appError: apiResult.error);
     }

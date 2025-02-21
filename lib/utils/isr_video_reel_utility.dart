@@ -199,16 +199,17 @@ class IsrVideoReelUtility {
     bool isDarkBG = false,
     bool isDismissible = true,
     bool isScrollControlled = true,
+    BuildContext? context,
   }) =>
       showModalBottomSheet<T>(
-        context: context!,
+        context: context ?? ismNavigatorKey.currentContext!,
         builder: (_) => child,
         enableDrag: false,
         showDragHandle: false,
         useSafeArea: false,
         isDismissible: isDismissible,
         isScrollControlled: isScrollControlled,
-        backgroundColor: isDarkBG ? Theme.of(context!).primaryColor : IsrColors.white,
+        backgroundColor: isDarkBG ? Theme.of(context ?? ismNavigatorKey.currentContext!).primaryColor : IsrColors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(
             top: Radius.circular(IsrDimens.sixteen),

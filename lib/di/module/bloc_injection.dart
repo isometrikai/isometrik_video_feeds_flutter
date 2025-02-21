@@ -14,6 +14,7 @@ class BlocInjection {
       () => PostBloc(
         _localDataUseCase,
         InjectionUtils.getUseCase<GetFollowingPostUseCase>(),
+        InjectionUtils.getUseCase<GetTrendingPostUseCase>(),
         InjectionUtils.getUseCase<CreatePostUseCase>(),
       ),
     );

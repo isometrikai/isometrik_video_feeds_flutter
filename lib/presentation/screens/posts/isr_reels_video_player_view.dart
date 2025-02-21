@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -86,6 +87,8 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
   var isFollowLoading = false;
 
   var isVideoVisible = false;
+
+  bool _isExpandedDescription = false;
 
   void playPause() async {
     if (widget.showBlur == true) {
@@ -205,333 +208,426 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
         : const SizedBox();
   }
 
+  Widget _buildRightSideActions() => Positioned(
+        right: IsrDimens.sixteen,
+        bottom: IsrDimens.forty,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: IsrDimens.forty,
+                  height: IsrDimens.forty,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Theme.of(context).primaryColor, // Blue background
+                  ),
+                  child: IconButton(
+                    onPressed: () async {
+                      await IsrVideoReelUtility.showBottomSheet(
+                        context: context,
+                        CreatePostBottomSheet(
+                          onCreateNewPost: () {
+                            InjectionUtils.getBloc<PostBloc>().add(CameraEvent());
+                          },
+                        ),
+                      );
+                    },
+                    icon: const Icon(
+                      Icons.add, // Simple plus icon
+                      color: IsrColors.white,
+                      size: 24,
+                    ),
+                  ),
+                ),
+                IsrDimens.boxHeight(IsrDimens.four),
+                Text(
+                  'Create',
+                  style: IsrStyles.white12,
+                ),
+              ],
+            ),
+            IsrDimens.boxHeight(IsrDimens.twenty),
+            _buildActionButton(
+              icon: Icons.favorite,
+              label: '40K',
+              onTap: widget.onDoubleTap,
+            ),
+            IsrDimens.boxHeight(IsrDimens.twenty),
+            _buildActionButton(
+              icon: Icons.chat_bubble_outline,
+              label: '10K',
+              onTap: () {},
+            ),
+            IsrDimens.boxHeight(IsrDimens.twenty),
+            _buildActionButton(
+              icon: Icons.share,
+              label: 'Share',
+              onTap: () {},
+            ),
+            IsrDimens.boxHeight(IsrDimens.twenty),
+            _buildActionButton(
+              icon: Icons.more_vert,
+              onTap: () {},
+            ),
+          ],
+        ),
+      );
+
+  Widget _buildActionButton({
+    required IconData icon,
+    String? label,
+    required VoidCallback onTap,
+  }) =>
+      Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: IsrDimens.forty,
+            height: IsrDimens.forty,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: IsrColors.black.applyOpacity(0.6),
+            ),
+            child: IconButton(
+              onPressed: onTap,
+              icon: Icon(icon, color: IsrColors.white),
+            ),
+          ),
+          if (label != null) ...[
+            IsrDimens.boxHeight(IsrDimens.four),
+            Text(
+              label,
+              style: IsrStyles.white12,
+            ),
+          ],
+        ],
+      );
+
+  Widget _buildBottomSection() => Positioned(
+        bottom: IsrDimens.forty,
+        left: IsrDimens.sixteen,
+        right: IsrDimens.sixteen,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Shop button
+            if (widget.productList?.isNotEmpty == true) ...[
+              Container(
+                padding: IsrDimens.edgeInsetsSymmetric(
+                  horizontal: IsrDimens.twelve,
+                  vertical: IsrDimens.eight,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFB4B4B4).applyOpacity(0.7),
+                  borderRadius: BorderRadius.circular(IsrDimens.twenty),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.shopping_cart_outlined,
+                      color: IsrColors.white,
+                      size: IsrDimens.twenty,
+                    ),
+                    IsrDimens.boxWidth(IsrDimens.eight),
+                    Text(
+                      IsrTranslationFile.shop,
+                      style: IsrStyles.white14.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    IsrDimens.boxWidth(IsrDimens.four),
+                    Text(
+                      '${widget.productList!.length} ${IsrTranslationFile.products}',
+                      style: IsrStyles.white14,
+                    ),
+                  ],
+                ),
+              ),
+              IsrDimens.boxHeight(IsrDimens.sixteen),
+            ],
+
+            // Profile info and description
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Left column - Profile image
+                AppImage.network(
+                  widget.profilePhoto,
+                  width: IsrDimens.thirty,
+                  height: IsrDimens.thirty,
+                  isProfileImage: true,
+                ),
+                IsrDimens.boxWidth(IsrDimens.eight),
+
+                // Right column - Username, follow button, and description
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Username and follow button
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    widget.name,
+                                    style: IsrStyles.white14.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (!widget.isSelfProfile) ...[
+                                  IsrDimens.boxWidth(IsrDimens.eight),
+                                  Container(
+                                    height: IsrDimens.twentyFour,
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).primaryColor,
+                                      borderRadius: BorderRadius.circular(IsrDimens.twenty),
+                                    ),
+                                    child: MaterialButton(
+                                      minWidth: IsrDimens.sixty,
+                                      height: IsrDimens.twentyFour,
+                                      padding: IsrDimens.edgeInsetsSymmetric(
+                                        horizontal: IsrDimens.twelve,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(IsrDimens.twenty),
+                                      ),
+                                      onPressed: callFollowingFunction,
+                                      child: Text(
+                                        IsrTranslationFile.follow,
+                                        style: IsrStyles.white12.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          if (!_isExpandedDescription && widget.description.isNotEmpty)
+                            Padding(
+                              padding: IsrDimens.edgeInsets(left: IsrDimens.eight),
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _isExpandedDescription = true;
+                                  });
+                                },
+                                child: Text(
+                                  IsrTranslationFile.more,
+                                  style: IsrStyles.white14.copyWith(
+                                    color: IsrColors.white.applyOpacity(0.6),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+
+                      // Description
+                      if (widget.description.isNotEmpty) ...[
+                        IsrDimens.boxHeight(IsrDimens.four),
+                        RichText(
+                          maxLines: _isExpandedDescription ? null : 1,
+                          overflow: _isExpandedDescription ? TextOverflow.visible : TextOverflow.ellipsis,
+                          text: TextSpan(
+                            children: [
+                              if (widget.hasTags?.isNotEmpty == true)
+                                ...widget.hasTags!.map(
+                                  (tag) => TextSpan(
+                                    text: '#$tag ',
+                                    style: IsrStyles.white14.copyWith(
+                                      color: IsrColors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              TextSpan(
+                                text: widget.description,
+                                style: IsrStyles.white14.copyWith(
+                                  color: IsrColors.white.applyOpacity(0.9),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
     if (widget.mediaType == kVideoType) {
       videoPlayerController?.setVolume(widget.isReelsMuted ? 0.0 : 1.0);
     }
 
-    return SafeArea(
-      child: Center(
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            SizedBox(
-              width: IsrDimens.getScreenWidth(context),
-              child: GestureDetector(
-                onTap: () {
-                  if (widget.showBlur == true || widget.mediaType == kPictureType) {
-                    return;
-                  }
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // Media content with gesture detection
+        GestureDetector(
+          onTap: () {
+            if (widget.showBlur == true || widget.mediaType == kPictureType) {
+              return;
+            }
+            isPlaying = !isPlaying;
+            if (isPlaying) {
+              videoPlayerController?.pause();
+              playPause();
+            } else {
+              videoPlayerController?.play();
+              playPause();
+            }
+          },
+          onDoubleTap: () async {
+            widget.onDoubleTap();
+            isDoubleTapped = true;
+            mountUpdate();
+            await Future<void>.delayed(const Duration(seconds: 1));
+            isDoubleTapped = false;
+            mountUpdate();
+          },
+          onLongPressStart: (details) {
+            if (widget.mediaType == kVideoType) {
+              videoPlayerController?.pause();
+            }
+            widget.onLongPressStart();
+            mountUpdate();
+          },
+          onLongPressEnd: (value) {
+            if (widget.mediaType == kVideoType) {
+              videoPlayerController?.play();
+            }
+            widget.onLongPressEnd();
+            mountUpdate();
+          },
+          child: VisibilityDetector(
+            key: Key('${widget.mediaUrl}'),
+            onVisibilityChanged: (info) {
+              if (widget.showBlur == true || widget.mediaType == kPictureType) {
+                return;
+              }
+              if (info.visibleFraction > 0.1) {
+                isVideoVisible = true;
+                mountUpdate();
+                if (videoPlayerController?.value.isPlaying == false) {
+                  videoPlayerController?.seekTo(Duration.zero);
+                  videoPlayerController?.play();
                   isPlaying = !isPlaying;
-                  if (isPlaying) {
-                    videoPlayerController?.pause();
-                    playPause();
-                  } else {
-                    videoPlayerController?.play();
-                    playPause();
-                  }
-                },
-                onDoubleTap: () async {
-                  widget.onDoubleTap();
-                  isDoubleTapped = true;
                   mountUpdate();
-                  await Future<void>.delayed(const Duration(seconds: 1));
-                  isDoubleTapped = false;
+                }
+              } else {
+                isVideoVisible = false;
+                mountUpdate();
+                if (videoPlayerController?.value.isPlaying == true) {
+                  videoPlayerController?.pause();
+                  isPlaying = !isPlaying;
                   mountUpdate();
-                },
-                onLongPressStart: (details) {
-                  if (widget.mediaType == kVideoType) {
-                    videoPlayerController?.pause();
-                  }
-                  widget.onLongPressStart();
-                  mountUpdate();
-                },
-                onLongPressEnd: (value) {
-                  if (widget.mediaType == kVideoType) {
-                    videoPlayerController?.play();
-                  }
-                  widget.onLongPressEnd();
-                  mountUpdate();
-                },
-                child: VisibilityDetector(
-                  key: Key('${widget.mediaUrl}'),
-                  onVisibilityChanged: (info) {
-                    if (widget.showBlur == true || widget.mediaType == kPictureType) return;
-                    if (info.visibleFraction > 0.1) {
-                      isVideoVisible = true;
-                      mountUpdate();
-                      if (videoPlayerController?.value.isPlaying == false) {
-                        videoPlayerController?.seekTo(Duration.zero);
-                        videoPlayerController?.play();
-                        isPlaying = !isPlaying;
-                        mountUpdate();
-                      }
-                    } else {
-                      isVideoVisible = false;
-                      mountUpdate();
-                      if (videoPlayerController?.value.isPlaying == true) {
-                        videoPlayerController?.pause();
-                        isPlaying = !isPlaying;
-                        mountUpdate();
-                      }
-                    }
-                  },
-                  child: Stack(
-                    fit: StackFit.expand,
-                    alignment: Alignment.center,
-                    children: [
-                      _buildMediaContent(),
-                      ClipRRect(
-                        borderRadius: BorderRadius.zero,
-                        child: SizedBox(
-                          width: IsrDimens.getScreenWidth(context),
-                          child: AnimatedOpacity(
-                            opacity: widget.isReelsLongPressed ? 0.0 : 1.0,
-                            duration: const Duration(milliseconds: 100),
-                            child: Container(
-                              height: IsrDimens.getScreenHeight(context),
-                              width: IsrDimens.getScreenWidth(context),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    IsrColors.black.applyOpacity(.6),
-                                    IsrColors.black.applyOpacity(.0),
-                                    IsrColors.black.applyOpacity(.0),
-                                    IsrColors.black.applyOpacity(.4),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            Container(
-              alignment: Alignment.bottomCenter,
-              padding: IsrDimens.edgeInsets(left: IsrDimens.ten, right: IsrDimens.ten, bottom: IsrDimens.ten),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.end,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              TapHandler(
-                                onTap: widget.onTapUserProfilePic,
-                                child: Text(
-                                  '${widget.name}'.replaceAll('', '\u{200B}'),
-                                  overflow: TextOverflow.ellipsis,
-                                  softWrap: false,
-                                  style: IsrStyles.white16.copyWith(
-                                      fontWeight: FontWeight.w600, fontFamily: AppConstants.secondaryFontFamily),
-                                ),
-                              ),
-                              if (!widget.isSelfProfile) ...[
-                                IsrDimens.boxWidth(IsrDimens.eight),
-                                isFollowLoading
-                                    ? Container(
-                                        height: IsrDimens.forty,
-                                        width: IsrDimens.forty,
-                                        padding: IsrDimens.edgeInsetsAll(IsrDimens.eight),
-                                        decoration: const BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: IsrColors.appColor,
-                                        ),
-                                        child: Center(
-                                          child: CircularProgressIndicator(
-                                            color: IsrColors.white,
-                                            strokeWidth: IsrDimens.two,
-                                          ),
-                                        ),
-                                      )
-                                    : CustomButton(
-                                        height: IsrDimens.twentyFive,
-                                        color: widget.isFollow == true ? IsrColors.white : IsrColors.appColor,
-                                        titleWidget: Center(
-                                          child: Text(
-                                            widget.isFollow == true
-                                                ? IsrTranslationFile.following
-                                                : IsrTranslationFile.follow,
-                                            style: IsrStyles.white12.copyWith(
-                                                fontWeight: FontWeight.w500,
-                                                color: widget.isFollow == true ? IsrColors.appColor : IsrColors.white),
-                                          ),
-                                        ),
-                                        width: IsrDimens.eighty,
-                                        onPress: () {
-                                          if (widget.isFollow) {
-                                          } else {
-                                            callFollowingFunction();
-                                          }
-                                        },
-                                      ),
-                              ],
+                }
+              }
+            },
+            child: Stack(
+              fit: StackFit.expand,
+              alignment: Alignment.center,
+              children: [
+                _buildMediaContent(),
+                ClipRRect(
+                  borderRadius: BorderRadius.zero,
+                  child: SizedBox(
+                    width: IsrDimens.getScreenWidth(context),
+                    child: AnimatedOpacity(
+                      opacity: widget.isReelsLongPressed ? 0.0 : 1.0,
+                      duration: const Duration(milliseconds: 100),
+                      child: Container(
+                        height: IsrDimens.getScreenHeight(context),
+                        width: IsrDimens.getScreenWidth(context),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              IsrColors.black.applyOpacity(.6),
+                              IsrColors.black.applyOpacity(.0),
+                              IsrColors.black.applyOpacity(.0),
+                              IsrColors.black.applyOpacity(.4),
                             ],
                           ),
-                          if (widget.hasTags.isEmptyOrNull == false)
-                            Text(
-                              widget.hasTags!.join(' '),
-                              style: IsrStyles.white14.copyWith(
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                        ],
-                      ),
-                      const Spacer(),
-                      Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: IsrColors.white,
-                            width: IsrDimens.one,
-                          ),
-                          shape: BoxShape.circle,
                         ),
-                        child: Stack(
-                          children: [
-                            // Add this before your profile image container
-                            Positioned(
-                              right: IsrDimens.ten,
-                              bottom: IsrDimens.sixty, // Adjust this value to position above profile image
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    onPressed: () {
-                                      // Handle share action
-                                    },
-                                    icon: const Icon(
-                                      Icons.share,
-                                      color: IsrColors.white,
-                                      size: 24,
-                                    ),
-                                  ),
-                                  IconButton(
-                                    onPressed: () {
-                                      // Handle forward action
-                                    },
-                                    icon: const Icon(
-                                      Icons.forward,
-                                      color: IsrColors.white,
-                                      size: 24,
-                                    ),
-                                  ),
-                                  IconButton(
-                                    onPressed: () {
-                                      // Handle more options
-                                    },
-                                    icon: const Icon(
-                                      Icons.more_vert,
-                                      color: IsrColors.white,
-                                      size: 24,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8), // Space between icons and profile image
-                                ],
-                              ),
-                            ),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(
-                                IsrDimens.ninety,
-                              ),
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(
-                                  IsrDimens.hundred,
-                                ),
-                                onTap: widget.onTapUserProfilePic,
-                                child: AppImage.network(
-                                  widget.profilePhoto,
-                                  isProfileImage: true,
-                                  height: IsrDimens.forty,
-                                  width: IsrDimens.forty,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (widget.productList.isEmptyOrNull == false) ...[
-                    IsrDimens.boxHeight(IsrDimens.ten),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        spacing: IsrDimens.ten,
-                        children: widget.productList!
-                            .map((product) => FeatureProductWidget(productData: product))
-                            .toList(), // Using map
                       ),
                     ),
-                  ],
-                ],
-              ),
-            ),
-            if (widget.mediaType == kVideoType)
-              AnimatedOpacity(
-                opacity: playPausedAction ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 500),
-                child: GestureDetector(
-                  onTap: () {
-                    if (isPlaying) {
-                      videoPlayerController?.pause();
-                      playPause();
-                    } else {
-                      videoPlayerController?.play();
-                      playPause();
-                    }
-                    isPlaying = !isPlaying;
-                    mountUpdate();
-                  },
-                  onDoubleTap: () async {
-                    widget.onDoubleTap();
-                    isDoubleTapped = true;
-                    mountUpdate();
-                    await Future<void>.delayed(
-                      const Duration(milliseconds: 1000),
-                    );
-                    isDoubleTapped = false;
-                    mountUpdate();
-                  },
-                  onLongPressStart: (details) {
-                    videoPlayerController?.pause();
-                    widget.onLongPressStart();
-                    mountUpdate();
-                  },
-                  onLongPressEnd: (value) {
-                    videoPlayerController?.play();
-                    widget.onLongPressEnd();
-                    mountUpdate();
-                  },
-                  child: AppImage.svg(
-                    isPlaying ? AssetConstants.pausedRoundedSvg : AssetConstants.reelsPlaySvg,
                   ),
                 ),
-              ),
-            if (isDoubleTapped)
-              Lottie.asset(
-                AssetConstants.heartAnimation,
-                width: IsrDimens.oneHundredFifty,
-                height: IsrDimens.oneHundredFifty,
-                animate: true,
-              ),
-          ],
+              ],
+            ),
+          ),
         ),
-      ),
+
+        // Gradient overlay
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                IsrColors.black.applyOpacity(0.4),
+                Colors.transparent,
+                Colors.transparent,
+                IsrColors.black.applyOpacity(0.4),
+              ],
+            ),
+          ),
+        ),
+
+        // Right side actions
+        _buildRightSideActions(),
+
+        // Bottom section
+        _buildBottomSection(),
+
+        // Video controls
+        if (widget.mediaType == kVideoType)
+          AnimatedOpacity(
+            opacity: playPausedAction ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 500),
+            child: Center(
+              child: AppImage.svg(
+                isPlaying ? AssetConstants.pausedRoundedSvg : AssetConstants.reelsPlaySvg,
+              ),
+            ),
+          ),
+
+        // Double tap heart animation
+        if (isDoubleTapped)
+          Center(
+            child: Lottie.asset(
+              AssetConstants.heartAnimation,
+              width: IsrDimens.oneHundredFifty,
+              height: IsrDimens.oneHundredFifty,
+              animate: true,
+            ),
+          ),
+      ],
     );
   }
 

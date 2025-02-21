@@ -13,6 +13,7 @@ class FollowingPostWidget extends StatefulWidget {
 class _FollowingPostWidgetState extends State<FollowingPostWidget> {
   final _postBloc = isrGetIt<PostBloc>();
   List<PostData> _followingPostList = [];
+
   @override
   Widget build(BuildContext context) => BlocBuilder<PostBloc, PostState>(
         buildWhen: (previousState, currentState) => currentState is PostDataLoadedState,
@@ -23,15 +24,22 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
           return state is PostDataLoadedState && state.postDataList.isEmptyOrNull == false
               ? RefreshIndicator(
                   onRefresh: () async {
-                    // _postBloc.resetValues();
-                    // await _postBloc.getPosts(isLoading: false, isFromPagination: true);
+                    _postBloc.add(GetFollowingPostEvent(isLoading: false, isPagination: false));
                   },
                   child: PageView.builder(
                     allowImplicitScrolling: true,
                     controller: _postBloc.reelsPageFollowingController,
                     clipBehavior: Clip.none,
                     physics: const ClampingScrollPhysics(),
-                    onPageChanged: setFollowingPageIndex,
+                    onPageChanged: (index) {
+                      // Check if we're at 75% of the list
+                      if (index >= (_followingPostList.length * 0.75).floor()) {
+                        _postBloc.add(GetFollowingPostEvent(
+                          isLoading: false,
+                          isPagination: true,
+                        ));
+                      }
+                    },
                     itemCount: _followingPostList.length,
                     scrollDirection: Axis.vertical,
                     itemBuilder: (context, index) => IsrReelsVideoPlayerView(
@@ -64,16 +72,4 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
                 );
         },
       );
-
-  /// This Variable Used In Reels Video Player
-  void setFollowingPageIndex(int index) {
-    // if (followerPostList.length >= postLimit &&
-    //     currentFollowingReelPage == followerPostList.length - 2) {
-    //   postOffset += postLimit;
-    //   getPosts(
-    //     isLoading: false,
-    //     isFromPagination: true,
-    //   );
-    // }
-  }
 }

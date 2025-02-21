@@ -31,16 +31,30 @@ class PostRepositoryImpl implements PostRepository {
   @override
   Future<CustomResponse<PostResponse?>> getFollowingPost({
     required bool isLoading,
+    required int page,
+    required int pageLimit,
   }) async {
-    // try {
-    //   final jsonString = await rootBundle.loadString(AssetConstants.postResponseJson);
-    //   return _postMapper.mapPostResponseData(jsonString);
-    // } catch (e) {
-    //   rethrow;
-    // }
     try {
       final header = await _dataSource.getHeader();
       final response = await _apiService.getFollowingPosts(
+        isLoading: isLoading,
+        header: header,
+        page: page,
+        pageLimit: pageLimit,
+      );
+      return _postMapper.mapPostResponseData(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<CustomResponse<PostResponse?>> getTrendingPost({
+    required bool isLoading,
+  }) async {
+    try {
+      final header = await _dataSource.getHeader();
+      final response = await _apiService.getTrendingPosts(
         isLoading: isLoading,
         header: header,
       );

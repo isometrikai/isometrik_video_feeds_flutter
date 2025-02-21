@@ -9,7 +9,14 @@ class StartPost extends PostEvent {
 }
 
 class GetFollowingPostEvent extends PostEvent {
-  GetFollowingPostEvent({required this.isLoading});
+  GetFollowingPostEvent({required this.isLoading, required this.isPagination});
+
+  final bool isLoading;
+  final bool isPagination;
+}
+
+class GetTrendingPostEvent extends PostEvent {
+  GetTrendingPostEvent({required this.isLoading});
 
   final bool isLoading;
 }

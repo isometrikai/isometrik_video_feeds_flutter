@@ -50,14 +50,17 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
             backgroundColor: Colors.black12,
             body: BlocBuilder<PostBloc, PostState>(
               buildWhen: (previousState, currentState) =>
-                  currentState is UserInformationLoaded || currentState is PostDataLoadedState,
+                  currentState is UserInformationLoaded ||
+                  currentState is PostDataLoadedState,
               builder: (context, state) {
-                _userInfoClass = state is UserInformationLoaded ? state.userInfoClass : null;
+                _userInfoClass =
+                    state is UserInformationLoaded ? state.userInfoClass : null;
                 return state is PostInitial
                     ? state.isLoading == true
                         ? Center(child: IsrVideoReelUtility.loaderWidget())
                         : const SizedBox.shrink()
-                    : state is UserInformationLoaded || state is PostDataLoadedState
+                    : state is UserInformationLoaded ||
+                            state is PostDataLoadedState
                         ? DefaultTabController(
                             length: 2,
                             child: Scaffold(
@@ -65,7 +68,8 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
                               body: Stack(
                                 children: [
                                   TabBarView(
-                                    physics: const NeverScrollableScrollPhysics(),
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
                                     controller: _postTabController,
                                     children: [
                                       SmartRefresher(
@@ -82,114 +86,7 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
                                       ),
                                     ],
                                   ),
-                                  Container(
-                                    width: IsrDimens.getScreenWidth(context),
-                                    margin: IsrDimens.edgeInsets(top: IsrDimens.fifty),
-                                    padding: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.fifteen),
-                                    child: Row(
-                                      children: [
-                                        SizedBox(
-                                          width: IsrDimens.percentWidth(.45),
-                                          height: IsrDimens.sixty,
-                                          child: Theme(
-                                            data: ThemeData(
-                                              splashColor: IsrColors.transparent,
-                                              highlightColor: IsrColors.transparent,
-                                            ),
-                                            child: TabBar(
-                                              dividerColor: IsrColors.transparent,
-                                              controller: _postTabController,
-                                              indicatorColor: IsrColors.primaryTextColor,
-                                              labelPadding: IsrDimens.edgeInsetsAll(IsrDimens.zero),
-                                              indicatorPadding: IsrDimens.edgeInsetsAll(IsrDimens.zero),
-                                              indicatorSize: TabBarIndicatorSize.label,
-                                              indicator: UnderlineTabIndicator(
-                                                borderSide: BorderSide(
-                                                  width: IsrDimens.two,
-                                                  color: IsrColors.white,
-                                                ),
-                                                insets: IsrDimens.edgeInsets(
-                                                  bottom: IsrDimens.ten,
-                                                ),
-                                              ),
-                                              unselectedLabelColor: IsrColors.white.applyOpacity(0.6),
-                                              labelColor: IsrColors.white,
-                                              padding: IsrDimens.edgeInsetsAll(IsrDimens.zero),
-                                              automaticIndicatorColorAdjustment: true,
-                                              unselectedLabelStyle:
-                                                  IsrStyles.white16.copyWith(fontWeight: FontWeight.w600),
-                                              labelStyle: IsrStyles.primaryText16.copyWith(fontWeight: FontWeight.w600),
-                                              tabs: [
-                                                SizedBox(
-                                                  height: IsrDimens.thirty,
-                                                  child: Tab(
-                                                    iconMargin: IsrDimens.edgeInsetsAll(IsrDimens.zero),
-                                                    child: Padding(
-                                                      padding: IsrDimens.edgeInsetsSymmetric(vertical: IsrDimens.five),
-                                                      child: const Text(
-                                                        IsrTranslationFile.following,
-                                                        softWrap: false,
-                                                        textAlign: TextAlign.center,
-                                                        overflow: TextOverflow.visible,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                                SizedBox(
-                                                  height: IsrDimens.thirty,
-                                                  child: Tab(
-                                                    iconMargin: IsrDimens.edgeInsetsAll(IsrDimens.zero),
-                                                    child: Padding(
-                                                      padding: IsrDimens.edgeInsetsAll(IsrDimens.five),
-                                                      child: const Text(
-                                                        IsrTranslationFile.trending,
-                                                        softWrap: false,
-                                                        textAlign: TextAlign.center,
-                                                        overflow: TextOverflow.visible,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                        const Spacer(),
-                                        Flexible(
-                                          child: Row(
-                                            mainAxisAlignment: MainAxisAlignment.end,
-                                            children: [
-                                              IconButton(
-                                                onPressed: () {
-                                                  IsrVideoReelUtility.showBottomSheet(
-                                                    CreatePostBottomSheet(
-                                                      onCreateNewPost: () {
-                                                        isrGetIt<PostBloc>().add(CameraEvent());
-                                                      },
-                                                    ),
-                                                  );
-                                                },
-                                                icon: const Icon(Icons.add_circle_outline),
-                                              ),
-                                              TapHandler(
-                                                onTap: () {
-                                                  IsrReelsProperties.onTapProfilePic
-                                                      ?.call(_userInfoClass?.profilePic ?? '');
-                                                },
-                                                child: AppImage.network(
-                                                  _userInfoClass?.profilePic ?? '',
-                                                  isProfileImage: true,
-                                                  name: '${_userInfoClass?.firstName} ${_userInfoClass?.lastName}',
-                                                  height: IsrDimens.thirty,
-                                                  width: IsrDimens.thirty,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+                                  _buildTabBar(),
                                 ],
                               ),
                             ),
@@ -198,6 +95,61 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
               },
             ),
           ),
+        ),
+      );
+
+  Widget _buildTabBar() => Container(
+        color: Colors.transparent,
+        padding: EdgeInsets.only(
+          top: MediaQuery.of(context).padding.top + IsrDimens.twenty,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: IsrDimens.getScreenWidth(context) * 0.7,
+              child: Theme(
+                data: ThemeData(
+                  splashColor: Colors.transparent,
+                  highlightColor: Colors.transparent,
+                ),
+                child: TabBar(
+                  controller: _postTabController,
+                  labelColor: IsrColors.white,
+                  unselectedLabelColor: IsrColors.white.applyOpacity(0.6),
+                  indicatorColor: IsrColors.white,
+                  indicatorWeight: 2,
+                  dividerColor: Colors.transparent,
+                  indicatorSize: TabBarIndicatorSize.label,
+                  labelPadding: IsrDimens.edgeInsetsSymmetric(
+                    horizontal: IsrDimens.sixteen,
+                  ),
+                  labelStyle: IsrStyles.white16.copyWith(
+                    fontWeight: FontWeight.w600,
+                    height: 1.5,
+                  ),
+                  unselectedLabelStyle: IsrStyles.white16.copyWith(
+                    fontWeight: FontWeight.w400,
+                    height: 1.5,
+                  ),
+                  tabs: [
+                    const Tab(
+                      child: Text(
+                        IsrTranslationFile.following,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    const Tab(
+                      child: Text(
+                        IsrTranslationFile.trending,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       );
 
