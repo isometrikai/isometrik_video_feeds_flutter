@@ -1,8 +1,6 @@
-import 'package:ism_video_reel_player/export.dart';
+import 'package:ism_video_reel_player/data/data.dart';
 
 abstract class DataSource {
-  Services getNetworkManager();
-
   Future<Header> getHeader();
 
   IsrLocalStorageManager getStorageManager();

@@ -4,6 +4,8 @@
 
 analyzer:
   exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
     - lib/**/*.g.dart
     - lib/domain/entities/*.dart
     - lib/app/utils/strings/polyglot.dart
@@ -17,6 +19,7 @@ analyzer:
     missing_return: error
     todo: warning
     must_be_immutable: ignore
+    invalid_annotation_target: ignore
 
 linter:
   rules:
@@ -56,7 +59,6 @@ linter:
     - omit_local_variable_types
     - only_throw_errors
     - overridden_fields
-    - package_api_docs
     - package_names
     - package_prefixed_library_names
     - prefer_adjacent_string_concatenation
@@ -96,3 +98,5 @@ linter:
     - sort_pub_dependencies
     - sized_box_for_whitespace
     - always_use_package_imports
+    - always_declare_return_types
+    - sort_child_properties_last

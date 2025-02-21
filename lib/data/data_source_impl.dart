@@ -1,25 +1,24 @@
-import 'package:injectable/injectable.dart';
-import 'package:ism_video_reel_player/export.dart';
+import 'package:ism_video_reel_player/data/data.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 
-@lazySingleton
 class DataSourceImpl extends DataSource {
-  final storageManager = IsrLocalStorageManager();
+  DataSourceImpl(
+    this._localStorageManager,
+  );
 
+  final IsrLocalStorageManager _localStorageManager;
   late Header header;
-
-  @override
-  Services getNetworkManager() => ServiceProvider();
 
   @override
   Future<Header> getHeader() async => await initializeHeader();
 
   @override
-  IsrLocalStorageManager getStorageManager() => storageManager;
+  IsrLocalStorageManager getStorageManager() => _localStorageManager;
 
   Future<Header> initializeHeader() async {
     final language = '';
 
-    final accessToken = '';
+    final accessToken = await _localStorageManager.getSecuredValue(IsrLocalStorageKeys.accessToken);
 
     final refreshToken = '';
 

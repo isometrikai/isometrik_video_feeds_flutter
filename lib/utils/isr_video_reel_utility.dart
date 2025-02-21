@@ -12,7 +12,10 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:go_router/go_router.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'package:intl/intl.dart';
-import 'package:ism_video_reel_player/export.dart';
+import 'package:ism_video_reel_player/data/data.dart';
+import 'package:ism_video_reel_player/presentation/presentation.dart';
+import 'package:ism_video_reel_player/res/res.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -109,7 +112,7 @@ class IsrVideoReelUtility {
     Function()? onPressNegativeButton,
   }) {
     showDialog(
-      context: context!,
+      context: context ?? ismNavigatorKey.currentContext!,
       builder: (_) => Dialog(
         shape: RoundedRectangleBorder(
           borderRadius: IsrDimens.borderRadiusAll(IsrDimens.twelve),
@@ -420,7 +423,7 @@ class IsrVideoReelUtility {
       }).join(' ');
 
   //Flutter toast message
-  static showToastMessage(
+  static void showToastMessage(
     String msg, {
     ToastGravity? gravity,
   }) {
@@ -520,34 +523,36 @@ class IsrVideoReelUtility {
           ),
         ),
       );
-}
 
-class NoFirstSpaceFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
-    if (newValue.text.startsWith(' ')) {
-      return oldValue;
+  static bool _isErrorShowing = false; // Flag to track if an error is currently displayed
+
+  static void showAppError({
+    BuildContext? context,
+    required String message,
+    ErrorViewType? errorViewType = ErrorViewType.none,
+  }) {
+    if (errorViewType == ErrorViewType.none || _isErrorShowing) {
+      return; // Do not show if no error type or if an error is already showing
     }
-    return newValue;
-  }
-}
 
-// Suggestion Caching Mechanism
-class SuggestionCache {
-  final _cache = <String, List<String>>{};
-  static const int _maxCacheSize = 50;
+    _isErrorShowing = true; // Set the flag to true when showing an error
 
-  List<String>? get(String query) => _cache[query];
-
-  void set(String query, List<String> suggestions) {
-    // Implement LRU cache eviction if needed
-    if (_cache.length >= _maxCacheSize) {
-      _cache.remove(_cache.keys.first);
+    if (errorViewType == ErrorViewType.dialog) {
+      showAppDialog(
+        message: message,
+        positiveButtonText: IsrTranslationFile.ok,
+      );
+    } else if (errorViewType == ErrorViewType.snackBar) {
+      showInSnackBar(message, context ?? ismNavigatorKey.currentContext!);
+    } else if (errorViewType == ErrorViewType.toast) {
+      showToastMessage(message);
+      _isErrorShowing = false; // Reset the flag immediately for toast
     }
-    _cache[query] = suggestions;
   }
 
-  void clear() {
-    _cache.clear();
-  }
+  static String getErrorMessage(ResponseModel data) => data.data.isNotEmpty
+      ? jsonDecode(data.data)['message'] == null
+          ? ''
+          : jsonDecode(data.data)['message'] as String
+      : data.statusCode.toString();
 }

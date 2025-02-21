@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:ism_video_reel_player/export.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 
 extension ContextExtension on BuildContext {
   ThemeData get theme => Theme.of(this);

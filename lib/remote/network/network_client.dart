@@ -3,7 +3,11 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
-import 'package:ism_video_reel_player/export.dart';
+import 'package:ism_video_reel_player/core/core.dart';
+import 'package:ism_video_reel_player/data/data.dart';
+import 'package:ism_video_reel_player/di/di.dart';
+import 'package:ism_video_reel_player/res/res.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 
 /// handles network call for all the APIs and handle the error status codes
 class NetworkClient with IsrAppMixin {
@@ -59,11 +63,7 @@ class NetworkClient with IsrAppMixin {
       }
       return responseModel;
     } else {
-      return const ResponseModel(
-        data: '{"message":"No internet"}',
-        hasError: true,
-        statusCode: 1000,
-      );
+      throw NetworkError(IsrTranslationFile.noInternet);
     }
   }
 
@@ -92,17 +92,34 @@ class NetworkClient with IsrAppMixin {
     try {
       final response = await getFinalResponse(finalUrl, headers, data, request);
       if (isLoading) IsrVideoReelUtility.closeProgressDialog();
-
-      var res = returnResponse(response);
+      final res = returnResponse(response);
       _logRequest(response, data, finalUrl, headers, res);
+      if (res.hasError) {
+        return _proceedWithErrorResponse(res, response);
+      }
       return res;
+    } on TimeoutException {
+      throw TimeoutError(IsrTranslationFile.timeoutError);
     } catch (error, stackTrace) {
       if (isLoading) IsrVideoReelUtility.closeProgressDialog();
       IsrVideoReelUtility.debugCatchLog(error: error, stackTrace: stackTrace);
-      return const ResponseModel(
-        data: '{"message": ${IsrTranslationFile.timeoutError}}',
-        hasError: true,
-      );
+      if (error is AppError) {
+        rethrow;
+      }
+      throw NetworkError(error.toString());
+    }
+  }
+
+  ResponseModel _proceedWithErrorResponse(ResponseModel res, http.Response response) {
+    final message = IsrVideoReelUtility.getErrorMessage(res);
+    if (res.statusCode == 401) {
+      return res;
+    } else {
+      if (response.statusCode == 204) {
+        return res;
+      } else {
+        throw ApiError(message, statusCode: res.statusCode);
+      }
     }
   }
 

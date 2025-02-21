@@ -2,23 +2,26 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:go_router/go_router.dart';
-import 'package:ism_video_reel_player/export.dart';
+import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 
 final GlobalKey<NavigatorState> ismNavigatorKey = GlobalKey<NavigatorState>();
 
-class RouteManagement {
-  RouteManagement._();
+class IsrRouteManagement {
+  IsrRouteManagement(this._navigationService);
 
-  static void goToPostView() {
-    ismNavigatorKey.currentContext?.go(IsrAppRoutes.postView);
+  final IsrNavigationService _navigationService;
+
+  void goToPostView() {
+    _navigationService.go(IsrAppRoutes.postView);
   }
 
-  static Future<Map<String, dynamic>?> goToCameraView() async {
-    final result = ismNavigatorKey.currentContext?.pushNamed<Map<String, dynamic>>(IsrRouteNames.cameraView);
+  Future<Map<String, dynamic>?> goToCameraView() async {
+    final result = await _navigationService.pushNamed(IsrRouteNames.cameraView) as Map<String, dynamic>;
     return result;
   }
 
-  static void goToPostAttributeView({PostAttributeClass? postAttributeClass}) {
+  void goToPostAttributeView({PostAttributeClass? postAttributeClass}) {
     ismNavigatorKey.currentContext!.pushNamed(
       IsrRouteNames.postAttributeView,
       extra: {
@@ -27,10 +30,10 @@ class RouteManagement {
     );
   }
 
-  static Future<PostAttributeClass?> goToVideoTrimView({required PostAttributeClass postAttributeClass}) async =>
-      await ismNavigatorKey.currentContext!.pushNamed<PostAttributeClass>(
+  Future<PostAttributeClass?> goToVideoTrimView({required PostAttributeClass postAttributeClass}) async =>
+      await _navigationService.pushNamed<PostAttributeClass>(
         IsrRouteNames.videoTrimView,
-        extra: {
+        arguments: {
           'postAttributeClass': postAttributeClass,
         },
       );
