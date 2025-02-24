@@ -13,19 +13,19 @@ class IsrAppRouter {
     navigatorKey: ismNavigatorKey,
     routes: [
       GoRoute(
-        path: IsrAppRoutes.landingView,
-        name: IsrRouteNames.landingView,
-        builder: (_, state) => IsrReelView(isFromExample: true),
-      ),
-      GoRoute(
-        path: IsrAppRoutes.cameraView,
-        name: IsrRouteNames.cameraView,
-        builder: (_, state) => IsmCameraView(),
-      ),
-      GoRoute(
         path: IsrAppRoutes.postView,
         name: IsrRouteNames.postView,
         builder: (_, __) => const IsrPostView(),
+      ),
+      // GoRoute(
+      //   path: IsrAppRoutes.landingView,
+      //   name: IsrRouteNames.landingView,
+      //   builder: (_, state) => IsrReelView(isFromExample: true),
+      // ),
+      GoRoute(
+        path: IsrAppRoutes.cameraView,
+        name: IsrRouteNames.cameraView,
+        builder: (_, state) => const IsmCameraView(),
       ),
       GoRoute(
         path: IsrAppRoutes.postAttributeView,

@@ -50,3 +50,8 @@ enum MediaSource {
   gallery,
   camera,
 }
+
+enum LikeAction {
+  like,
+  unlike,
+}

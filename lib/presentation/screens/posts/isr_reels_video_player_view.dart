@@ -13,7 +13,7 @@ import 'package:visibility_detector/visibility_detector.dart';
 /// Custom Reels Player for both Video and Photo content
 class IsrReelsVideoPlayerView extends StatefulWidget {
   const IsrReelsVideoPlayerView({
-    Key? key,
+    super.key,
     required this.mediaUrl,
     required this.mediaType, // 0 for picture, 1 for video
     required this.onDoubleTap,
@@ -38,8 +38,13 @@ class IsrReelsVideoPlayerView extends StatefulWidget {
     required this.thumbnail,
     this.needBottomPadding,
     this.isAssetUploading = false,
+    this.isSavedPost,
     this.productList,
-  }) : super(key: key);
+    this.onPressSave,
+    this.isLiked = false,
+    this.likesCount = 0,
+    this.onPressLike,
+  });
 
   final String? mediaUrl;
   final int mediaType; // 0 for picture, 1 for video
@@ -54,7 +59,7 @@ class IsrReelsVideoPlayerView extends StatefulWidget {
   final String name;
   final bool? isVerifiedUser;
   final bool isFollow;
-  final Function()? onPressFollowFollowing;
+  final Future<bool> Function()? onPressFollowFollowing;
   final String description;
   final bool isSelfProfile;
   final Function() onTapUserProfilePic;
@@ -65,7 +70,12 @@ class IsrReelsVideoPlayerView extends StatefulWidget {
   final String thumbnail;
   final bool? needBottomPadding;
   final bool isAssetUploading;
+  final bool? isSavedPost;
   final List<FeaturedProductDataItem>? productList;
+  final Future<bool> Function()? onPressSave;
+  final bool isLiked;
+  final num likesCount;
+  final Future<bool> Function()? onPressLike;
 
   @override
   State<IsrReelsVideoPlayerView> createState() => _IsrReelsVideoPlayerViewState();
@@ -89,6 +99,10 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
   var isVideoVisible = false;
 
   bool _isExpandedDescription = false;
+
+  var isSaveLoading = false;
+
+  var isLikeLoading = false;
 
   void playPause() async {
     if (widget.showBlur == true) {
@@ -219,6 +233,27 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
+                  decoration: BoxDecoration(
+                    color: Colors.transparent, // Background color for the shadow
+                    borderRadius: BorderRadius.circular(IsrDimens.thirty), // Match the image's radius
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.applyOpacity(0.2), // Shadow color
+                        spreadRadius: 2, // Spread radius
+                        blurRadius: 5, // Blur radius
+                        offset: const Offset(0, 2), // Shadow offset
+                      ),
+                    ],
+                  ),
+                  child: AppImage.network(
+                    widget.profilePhoto,
+                    width: IsrDimens.forty,
+                    height: IsrDimens.forty,
+                    isProfileImage: true,
+                  ),
+                ),
+                IsrDimens.boxHeight(IsrDimens.ten),
+                Container(
                   width: IsrDimens.forty,
                   height: IsrDimens.forty,
                   decoration: BoxDecoration(
@@ -231,7 +266,7 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
                         context: context,
                         CreatePostBottomSheet(
                           onCreateNewPost: () {
-                            InjectionUtils.getBloc<PostBloc>().add(CameraEvent());
+                            InjectionUtils.getBloc<PostBloc>().add(CameraEvent(context: context));
                           },
                         ),
                       );
@@ -243,34 +278,42 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
                     ),
                   ),
                 ),
-                IsrDimens.boxHeight(IsrDimens.four),
+                IsrDimens.boxHeight(IsrDimens.five),
                 Text(
-                  'Create',
+                  IsrTranslationFile.create,
                   style: IsrStyles.white12,
                 ),
               ],
             ),
             IsrDimens.boxHeight(IsrDimens.twenty),
             _buildActionButton(
-              icon: Icons.favorite,
-              label: '40K',
-              onTap: widget.onDoubleTap,
+              icon: widget.isLiked ? AssetConstants.icLikeSelected : AssetConstants.icLikeUnSelected,
+              label: widget.likesCount.toString(),
+              onTap: _callLikeFunction,
+              isLoading: isLikeLoading,
             ),
             IsrDimens.boxHeight(IsrDimens.twenty),
             _buildActionButton(
-              icon: Icons.chat_bubble_outline,
+              icon: AssetConstants.icCommentIcon,
               label: '10K',
               onTap: () {},
             ),
             IsrDimens.boxHeight(IsrDimens.twenty),
             _buildActionButton(
-              icon: Icons.share,
-              label: 'Share',
+              icon: AssetConstants.icShareIcon,
+              label: IsrTranslationFile.share,
               onTap: () {},
             ),
             IsrDimens.boxHeight(IsrDimens.twenty),
             _buildActionButton(
-              icon: Icons.more_vert,
+              icon: widget.isSavedPost == true ? AssetConstants.icSaveSelected : AssetConstants.icSaveUnSelected,
+              label: widget.isSavedPost == true ? IsrTranslationFile.saved : IsrTranslationFile.save,
+              onTap: _callSaveFunction,
+              isLoading: isSaveLoading,
+            ),
+            IsrDimens.boxHeight(IsrDimens.twenty),
+            _buildActionButton(
+              icon: AssetConstants.icMoreIcon,
               onTap: () {},
             ),
           ],
@@ -278,24 +321,30 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
       );
 
   Widget _buildActionButton({
-    required IconData icon,
+    required String icon,
     String? label,
     required VoidCallback onTap,
+    bool isLoading = false,
   }) =>
       Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: IsrDimens.forty,
-            height: IsrDimens.forty,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: IsrColors.black.applyOpacity(0.6),
-            ),
-            child: IconButton(
-              onPressed: onTap,
-              icon: Icon(icon, color: IsrColors.white),
-            ),
+          GestureDetector(
+            onTap: onTap,
+            child: isLoading
+                ? SizedBox(
+                    width: IsrDimens.twentyFour,
+                    height: IsrDimens.twentyFour,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
+                    ),
+                  )
+                : AppImage.svg(
+                    icon,
+                    width: IsrDimens.twentyFour,
+                    height: IsrDimens.twentyFour,
+                  ),
           ),
           if (label != null) ...[
             IsrDimens.boxHeight(IsrDimens.four),
@@ -323,28 +372,37 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
                   vertical: IsrDimens.eight,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFB4B4B4).applyOpacity(0.7),
-                  borderRadius: BorderRadius.circular(IsrDimens.twenty),
+                  color: Colors.white, // Set to white for the background
+                  borderRadius: BorderRadius.circular(IsrDimens.ten), // Rounded corners
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.applyOpacity(0.1), // Light shadow
+                      spreadRadius: 1,
+                      blurRadius: 4,
+                      offset: const Offset(0, 2), // Shadow offset
+                    ),
+                  ],
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      Icons.shopping_cart_outlined,
-                      color: IsrColors.white,
-                      size: IsrDimens.twenty,
-                    ),
+                    const AppImage.svg(AssetConstants.icCartIcon),
                     IsrDimens.boxWidth(IsrDimens.eight),
-                    Text(
-                      IsrTranslationFile.shop,
-                      style: IsrStyles.white14.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    IsrDimens.boxWidth(IsrDimens.four),
-                    Text(
-                      '${widget.productList!.length} ${IsrTranslationFile.products}',
-                      style: IsrStyles.white14,
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          IsrTranslationFile.shop,
+                          style: IsrStyles.primaryText12
+                              .copyWith(color: IsrColors.color0F1E91, fontWeight: FontWeight.w700),
+                        ),
+                        IsrDimens.boxHeight(IsrDimens.four),
+                        Text(
+                          '${widget.productList!.length} ${IsrTranslationFile.products}',
+                          style: IsrStyles.primaryText10
+                              .copyWith(color: IsrColors.color0F1E91, fontWeight: FontWeight.w500),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -356,15 +414,6 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Left column - Profile image
-                AppImage.network(
-                  widget.profilePhoto,
-                  width: IsrDimens.thirty,
-                  height: IsrDimens.thirty,
-                  isProfileImage: true,
-                ),
-                IsrDimens.boxWidth(IsrDimens.eight),
-
                 // Right column - Username, follow button, and description
                 Expanded(
                   child: Column(
@@ -380,7 +429,7 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
                               children: [
                                 Flexible(
                                   child: Text(
-                                    widget.name,
+                                    widget.name.length > 15 ? '${widget.name.substring(0, 10)}...' : widget.name,
                                     style: IsrStyles.white14.copyWith(
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -390,30 +439,58 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
                                 ),
                                 if (!widget.isSelfProfile) ...[
                                   IsrDimens.boxWidth(IsrDimens.eight),
-                                  Container(
-                                    height: IsrDimens.twentyFour,
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context).primaryColor,
-                                      borderRadius: BorderRadius.circular(IsrDimens.twenty),
-                                    ),
-                                    child: MaterialButton(
-                                      minWidth: IsrDimens.sixty,
+                                  // Check if the user is verified
+                                  if (widget.isVerifiedUser == false) ...[
+                                    // Add the verified user icon
+                                    SizedBox(
                                       height: IsrDimens.twentyFour,
-                                      padding: IsrDimens.edgeInsetsSymmetric(
-                                        horizontal: IsrDimens.twelve,
-                                      ),
-                                      shape: RoundedRectangleBorder(
+                                      width: IsrDimens.twentyFour,
+                                      child: const AppImage.svg(AssetConstants.icVerifiedIcon),
+                                    ),
+                                    IsrDimens.boxWidth(IsrDimens.eight),
+                                  ],
+                                  // Only show follow button if not following
+                                  if (!widget.isFollow && !isFollowLoading)
+                                    Container(
+                                      height: IsrDimens.twentyFour,
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).primaryColor,
                                         borderRadius: BorderRadius.circular(IsrDimens.twenty),
                                       ),
-                                      onPressed: callFollowingFunction,
-                                      child: Text(
-                                        IsrTranslationFile.follow,
-                                        style: IsrStyles.white12.copyWith(
-                                          fontWeight: FontWeight.w600,
+                                      child: MaterialButton(
+                                        minWidth: IsrDimens.sixty,
+                                        height: IsrDimens.twentyFour,
+                                        padding: IsrDimens.edgeInsetsSymmetric(
+                                          horizontal: IsrDimens.twelve,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(IsrDimens.twenty),
+                                        ),
+                                        onPressed: _callFollowFunction,
+                                        child: Text(
+                                          IsrTranslationFile.follow,
+                                          style: IsrStyles.white12.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
+                                  // Show loading indicator while API call is in progress
+                                  if (isFollowLoading)
+                                    SizedBox(
+                                      width: IsrDimens.sixty,
+                                      height: IsrDimens.twentyFour,
+                                      child: Center(
+                                        child: SizedBox(
+                                          width: IsrDimens.sixteen,
+                                          height: IsrDimens.sixteen,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                 ],
                               ],
                             ),
@@ -632,13 +709,52 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
   }
 
   //calls api to follow and unfollow user
-  void callFollowingFunction() async {
+  Future<void> _callFollowFunction() async {
+    if (widget.onPressFollowFollowing == null) return;
     isFollowLoading = true;
     mountUpdate();
-    if (widget.onPressFollowFollowing != null) {
-      await widget.onPressFollowFollowing!();
+
+    try {
+      final success = await widget.onPressFollowFollowing!();
+      if (!success) {
+        // Reset loading if follow failed
+        isFollowLoading = false;
+      }
+    } finally {
+      isFollowLoading = false;
+      mountUpdate();
     }
-    isFollowLoading = false;
+  }
+
+  Future<void> _callSaveFunction() async {
+    if (widget.onPressSave == null) return;
+    isSaveLoading = true;
     mountUpdate();
+
+    try {
+      final success = await widget.onPressSave!();
+      if (!success) {
+        isSaveLoading = false;
+      }
+    } finally {
+      isSaveLoading = false;
+      mountUpdate();
+    }
+  }
+
+  Future<void> _callLikeFunction() async {
+    if (widget.onPressLike == null) return;
+    isLikeLoading = true;
+    mountUpdate();
+
+    try {
+      final success = await widget.onPressLike!();
+      if (!success) {
+        isLikeLoading = false;
+      }
+    } finally {
+      isLikeLoading = false;
+      mountUpdate();
+    }
   }
 }

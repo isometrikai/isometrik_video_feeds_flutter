@@ -38,7 +38,9 @@ class _HomeScreenState extends State<HomeScreen> {
               }
 
               if (state is HomeLoaded) {
-                return const IsrPostView();
+                return IsrReelView(
+                  context: context,
+                );
               }
 
               return const SizedBox.shrink();

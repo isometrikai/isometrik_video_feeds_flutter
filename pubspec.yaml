@@ -4,7 +4,6 @@ publish_to: none
 homepage: https://github.com/isometrikai/isometrik_video_feeds_flutter.git
 environment:
   sdk: '>=3.4.0 <4.0.0'
-  flutter: '>=3.3.0'
 description: A new Flutter plugin project.
 dependencies:
   cached_network_image: '^3.4.0'
@@ -24,6 +23,7 @@ dependencies:
   http: '^1.2.1'
   image_picker: ^1.1.2
   injectable: '^2.5.0'
+  intl: ^0.18.1
   lottie: ^3.3.0
   package_info_plus: ^8.1.2
   path: '^1.9.0'
@@ -69,6 +69,9 @@ flutter:
     - assets/fonts/
     - assets/loader/
   fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter/InterVariableFonts.ttf
     - family: Rubik
       fonts:
         - asset: assets/fonts/Rubik/Rubik-Light.ttf

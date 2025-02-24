@@ -218,7 +218,7 @@ class _IsrVideoTrimViewState extends State<IsrVideoTrimView> {
                           endValue: _endValue,
                           onSave: (value) async {
                             if (value == null || value.isEmpty) return;
-                            _handleTrimmedVideo(value);
+                            _handleTrimmedVideo(value, context);
                           },
                         );
                       },
@@ -230,7 +230,7 @@ class _IsrVideoTrimViewState extends State<IsrVideoTrimView> {
         ),
       );
 
-  void _handleTrimmedVideo(String path) async {
+  void _handleTrimmedVideo(String path, BuildContext context) async {
     _newPostAttributeClass.thumbnailUrl = await VideoThumbnail.thumbnailFile(video: path);
     _newPostAttributeClass.url = path;
     // final _videoController = VideoPlayerController.file(File(path));
@@ -238,6 +238,8 @@ class _IsrVideoTrimViewState extends State<IsrVideoTrimView> {
     final duration = _endValue ~/ 1000 - _startValue ~/ 1000;
     _newPostAttributeClass.duration = duration;
     _newPostAttributeClass.thumbnailBytes = await File(_newPostAttributeClass.thumbnailUrl ?? '').readAsBytes();
-    context.pop(_newPostAttributeClass);
+    if (context.mounted) {
+      context.pop(_newPostAttributeClass);
+    }
   }
 }

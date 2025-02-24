@@ -11,8 +11,8 @@ class AppConstants {
 
   static const int pinCodeLength = 6;
   static const int couponCodeLength = 5;
-  static const String primaryFontFamily = 'Satoshi';
-  static const String secondaryFontFamily = 'Agenda';
+  static const String primaryFontFamily = 'Inter';
+  static const String secondaryFontFamily = 'Inter';
 
   static const String emailPattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
 

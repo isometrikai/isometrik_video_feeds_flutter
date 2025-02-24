@@ -3,9 +3,8 @@ import 'package:flutter/material.dart';
 class IsrColors {
   IsrColors._();
 
-  // static const Color appColor = Color(0xFFF27C73);
-  static const Color appColor = Color(0xFF486640);
-  static const Color secondaryColor = Color(0xFFE8424A);
+  static const Color appColor = Color(0xFF2962FF);
+  static const Color secondaryColor = Color(0xFF2962FF);
 
   static const Color primaryTextColor = Color(0xFF4C4C4C);
 
@@ -277,6 +276,8 @@ class IsrColors {
   static const Color color082800 = Color(0xFF082800);
 
   static const Color color668A5C = Color(0xFF668A5C);
+
+  static const Color color0F1E91 = Color(0xFF0F1E91);
 
   static const List<Color> lightBlueGradient = [
     Color(0xFFE2F6FB),

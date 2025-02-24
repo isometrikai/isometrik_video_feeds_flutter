@@ -30,4 +30,7 @@ class IsrTranslationFile {
   static const String shop = 'Shop';
   static const String products = 'Products';
   static const String more = 'More';
+  static const String save = 'Save';
+  static const String saved = 'Saved';
+  static const String share = 'Share';
 }

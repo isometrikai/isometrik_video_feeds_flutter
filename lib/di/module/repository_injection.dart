@@ -11,10 +11,10 @@ class RepositoryInjection {
   static void inject() {
     // Retrieve the data source instance from the service locator
     final dataSource = InjectionUtils.getOtherClass<DataSource>();
-    final _localStorageManager = InjectionUtils.getOtherClass<IsrLocalStorageManager>();
+    final localStorageManager = InjectionUtils.getOtherClass<IsrLocalStorageManager>();
 
     // Register the repositories with their respective implementations
-    InjectionUtils.registerRepo<IsrLocalStorageRepository>(() => IsrLocalStorageRepositoryImpl(_localStorageManager));
+    InjectionUtils.registerRepo<IsrLocalStorageRepository>(() => IsrLocalStorageRepositoryImpl(localStorageManager));
     InjectionUtils.registerRepo<PostRepository>(
         () => PostRepositoryImpl(InjectionUtils.getApiService<PostApiService>(), dataSource));
   }

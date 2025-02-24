@@ -34,66 +34,52 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
   }
 
   @override
-  Widget build(BuildContext context) => MultiBlocProvider(
-        providers: [
-          BlocProvider(
-            create: (_) => InjectionUtils.getBloc<PostBloc>(),
-          ),
-        ],
-        child: AnnotatedRegion(
-          value: const SystemUiOverlayStyle(
-            statusBarColor: IsrColors.transparent,
-            statusBarBrightness: Brightness.dark,
-            statusBarIconBrightness: Brightness.light,
-          ),
-          child: Scaffold(
-            backgroundColor: Colors.black12,
-            body: BlocBuilder<PostBloc, PostState>(
-              buildWhen: (previousState, currentState) =>
-                  currentState is UserInformationLoaded ||
-                  currentState is PostDataLoadedState,
-              builder: (context, state) {
-                _userInfoClass =
-                    state is UserInformationLoaded ? state.userInfoClass : null;
-                return state is PostInitial
-                    ? state.isLoading == true
-                        ? Center(child: IsrVideoReelUtility.loaderWidget())
-                        : const SizedBox.shrink()
-                    : state is UserInformationLoaded ||
-                            state is PostDataLoadedState
-                        ? DefaultTabController(
-                            length: 2,
-                            child: Scaffold(
-                              backgroundColor: Colors.black,
-                              body: Stack(
+  Widget build(BuildContext context) => AnnotatedRegion(
+        value: const SystemUiOverlayStyle(
+          statusBarColor: IsrColors.transparent,
+          statusBarBrightness: Brightness.dark,
+          statusBarIconBrightness: Brightness.light,
+        ),
+        child: Scaffold(
+          backgroundColor: Colors.black12,
+          body: BlocBuilder<PostBloc, PostState>(
+            buildWhen: (previousState, currentState) =>
+                currentState is UserInformationLoaded || currentState is PostDataLoadedState,
+            builder: (context, state) {
+              _userInfoClass = state is UserInformationLoaded ? state.userInfoClass : null;
+              return state is PostInitial
+                  ? state.isLoading == true
+                      ? Center(child: IsrVideoReelUtility.loaderWidget())
+                      : const SizedBox.shrink()
+                  : state is UserInformationLoaded || state is PostDataLoadedState
+                      ? DefaultTabController(
+                          length: 2,
+                          child: Stack(
+                            children: [
+                              TabBarView(
+                                physics: const NeverScrollableScrollPhysics(),
+                                controller: _postTabController,
                                 children: [
-                                  TabBarView(
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
-                                    controller: _postTabController,
-                                    children: [
-                                      SmartRefresher(
-                                        controller: _followingRefreshController,
-                                        physics: const ClampingScrollPhysics(),
-                                        onRefresh: () async {},
-                                        child: FollowingPostWidget(),
-                                      ),
-                                      SmartRefresher(
-                                        controller: _trendingRefreshController,
-                                        physics: const ClampingScrollPhysics(),
-                                        onRefresh: () async {},
-                                        child: TrendingPostWidget(),
-                                      ),
-                                    ],
+                                  SmartRefresher(
+                                    controller: _followingRefreshController,
+                                    physics: const ClampingScrollPhysics(),
+                                    onRefresh: () async {},
+                                    child: const FollowingPostWidget(),
                                   ),
-                                  _buildTabBar(),
+                                  SmartRefresher(
+                                    controller: _trendingRefreshController,
+                                    physics: const ClampingScrollPhysics(),
+                                    onRefresh: () async {},
+                                    child: const TrendingPostWidget(),
+                                  ),
                                 ],
                               ),
-                            ),
-                          )
-                        : const SizedBox.shrink();
-              },
-            ),
+                              _buildTabBar(),
+                            ],
+                          ),
+                        )
+                      : const SizedBox.shrink();
+            },
           ),
         ),
       );
@@ -122,10 +108,10 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
                   dividerColor: Colors.transparent,
                   indicatorSize: TabBarIndicatorSize.label,
                   labelPadding: IsrDimens.edgeInsetsSymmetric(
-                    horizontal: IsrDimens.sixteen,
+                    horizontal: IsrDimens.eight,
                   ),
                   labelStyle: IsrStyles.white16.copyWith(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                     height: 1.5,
                   ),
                   unselectedLabelStyle: IsrStyles.white16.copyWith(
@@ -158,8 +144,8 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
       IsrVideoReelUtility.showToastMessage('sdk not initialized');
       return;
     }
-    final _postBloc = InjectionUtils.getBloc<PostBloc>();
+    final postBloc = InjectionUtils.getBloc<PostBloc>();
     _postTabController = TabController(length: 2, vsync: this);
-    _postBloc.add(const StartPost());
+    postBloc.add(const StartPost());
   }
 }

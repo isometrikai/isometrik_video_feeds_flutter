@@ -21,10 +21,44 @@ class GetTrendingPostEvent extends PostEvent {
   final bool isLoading;
 }
 
+class FollowUserEvent extends PostEvent {
+  const FollowUserEvent({
+    required this.followingId,
+    required this.onComplete,
+  });
+  final String followingId;
+  final Function(bool) onComplete;
+}
+
 class CreatePostEvent extends PostEvent {
   CreatePostEvent({required this.createPostRequest});
 
   final CreatePostRequest? createPostRequest;
 }
 
-class CameraEvent extends PostEvent {}
+class CameraEvent extends PostEvent {
+  CameraEvent({required this.context});
+  final BuildContext context;
+}
+
+class SavePostEvent extends PostEvent {
+  const SavePostEvent({
+    required this.postId,
+    required this.onComplete,
+  });
+  final String postId;
+  final Function(bool) onComplete;
+}
+
+class LikePostEvent extends PostEvent {
+  const LikePostEvent({
+    required this.postId,
+    required this.userId,
+    required this.likeAction,
+    required this.onComplete,
+  });
+  final String postId;
+  final String userId;
+  final LikeAction likeAction;
+  final Function(bool) onComplete;
+}

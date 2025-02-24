@@ -1,4 +1,5 @@
 import 'package:go_router/go_router.dart';
+import 'package:ism_video_reel_player/utils/navigator/isr_app_router.dart';
 import 'package:ism_video_reel_player_example/example_export.dart';
 import 'package:ism_video_reel_player_example/presentation/presentation.dart';
 
@@ -37,6 +38,7 @@ class AppRouter {
         name: RouteNames.home,
         builder: (_, __) => const HomeScreen(),
       ),
+      ...IsrAppRouter.router.configuration.routes,
     ],
   );
 }

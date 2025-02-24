@@ -1,18 +1,27 @@
 class AssetConstants {
   AssetConstants._();
 
-  static const String icAppBarIcon = 'packages/ism_video_reel_player/assets/icons/ic_app_bar_icon.svg';
-  static const String icCrossIcon = 'packages/ism_video_reel_player/assets/icons/ic_cross_icon.svg';
-  static const String icRightArrowIcon = 'packages/ism_video_reel_player/assets/icons/ic_right_arrow.svg';
-  static const String icBackArrowIcon = 'packages/ism_video_reel_player/assets/icons/ic_app_bar_back_icon.svg';
-  static const String icCloseBottomSheet = 'packages/ism_video_reel_player/assets/icons/ic_close_bottom_sheet.svg';
-  static const String muteRoundedSvg = 'packages/ism_video_reel_player/assets/icons/ic_mute_rounded.svg';
-  static const String unMuteRoundedSvg = 'packages/ism_video_reel_player/assets/icons/ic_un_mute_rounded.svg';
-  static const String greenTickIcon = 'packages/ism_video_reel_player/assets/icons/ic_green_tick.svg';
-  static const String verifiedSVG = 'packages/ism_video_reel_player/assets/icons/ic_verified.svg';
-  static const String heartAnimation = 'packages/ism_video_reel_player/assets/json/heart_animation.json';
-  static const String pausedRoundedSvg = 'packages/ism_video_reel_player/assets/icons/ic_pause_rounded.svg';
-  static const String reelsPlaySvg = 'packages/ism_video_reel_player/assets/icons/ic_reels_play.svg';
-  static const String postResponseJson = 'packages/ism_video_reel_player/assets/loader/post_response.json';
-  // static const String postResponseJson = 'packages/ism_video_reel_player/assets/loader/trending_post_response.json';
+  static const String packageName = 'packages/ism_video_reel_player/';
+  static const String icAppBarIcon = '${packageName}assets/icons/ic_app_bar_icon.svg';
+  static const String icCrossIcon = '${packageName}assets/icons/ic_cross_icon.svg';
+  static const String icRightArrowIcon = '${packageName}assets/icons/ic_right_arrow.svg';
+  static const String icBackArrowIcon = '${packageName}assets/icons/ic_app_bar_back_icon.svg';
+  static const String icCloseBottomSheet = '${packageName}assets/icons/ic_close_bottom_sheet.svg';
+  static const String muteRoundedSvg = '${packageName}assets/icons/ic_mute_rounded.svg';
+  static const String unMuteRoundedSvg = '${packageName}assets/icons/ic_un_mute_rounded.svg';
+  static const String greenTickIcon = '${packageName}assets/icons/ic_green_tick.svg';
+  static const String verifiedSVG = '${packageName}assets/icons/ic_verified.svg';
+  static const String heartAnimation = '${packageName}assets/json/heart_animation.json';
+  static const String pausedRoundedSvg = '${packageName}assets/icons/ic_pause_rounded.svg';
+  static const String reelsPlaySvg = '${packageName}assets/icons/ic_reels_play.svg';
+  static const String postResponseJson = '${packageName}assets/loader/post_response.json';
+  static const String icLikeSelected = '${packageName}assets/icons/ic_like_selected_icon.svg';
+  static const String icLikeUnSelected = '${packageName}assets/icons/ic_like_un_selected_icon.svg';
+  static const String icCommentIcon = '${packageName}assets/icons/ic_comment_icon.svg';
+  static const String icMoreIcon = '${packageName}assets/icons/ic_more_icon.svg';
+  static const String icShareIcon = '${packageName}assets/icons/ic_share_icon.svg';
+  static const String icSaveSelected = '${packageName}assets/icons/ic_save_selected_icon.svg';
+  static const String icSaveUnSelected = '${packageName}assets/icons/ic_save_un_selected_icon.svg';
+  static const String icVerifiedIcon = '${packageName}assets/icons/ic_verified_icon.svg';
+  static const String icCartIcon = '${packageName}assets/icons/ic_cart_icon.svg';
 }

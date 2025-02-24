@@ -1,9 +1,9 @@
 part of 'ism_landing_bloc.dart';
 
-abstract class LandingState {}
+abstract class IsmLandingState {}
 
-class StartLandingState extends LandingState {
-  StartLandingState({required this.isLoading});
+class StartIsmLandingState extends IsmLandingState {
+  StartIsmLandingState({required this.isLoading});
 
   final bool isLoading;
 }

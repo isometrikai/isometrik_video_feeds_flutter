@@ -17,13 +17,11 @@ class CustomDivider extends StatelessWidget {
   final double? endIndent;
   final Color? color;
   @override
-  Widget build(BuildContext context) => Container(
-        child: Divider(
-          height: height ?? IsrDimens.five + (thickness ?? IsrDimens.one),
-          color: color ?? Theme.of(context).dividerColor,
-          thickness: thickness ?? IsrDimens.one,
-          indent: endIndent ?? IsrDimens.zero,
-          endIndent: endIndent ?? IsrDimens.zero,
-        ),
+  Widget build(BuildContext context) => Divider(
+        height: height ?? IsrDimens.five + (thickness ?? IsrDimens.one),
+        color: color ?? Theme.of(context).dividerColor,
+        thickness: thickness ?? IsrDimens.one,
+        indent: endIndent ?? IsrDimens.zero,
+        endIndent: endIndent ?? IsrDimens.zero,
       );
 }

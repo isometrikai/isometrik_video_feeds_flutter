@@ -1,4 +1,5 @@
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 
 abstract class PostRepository extends BaseRepository {
   Future<CustomResponse<ResponseClass?>> createPost({
@@ -12,5 +13,19 @@ abstract class PostRepository extends BaseRepository {
   });
   Future<CustomResponse<PostResponse?>> getTrendingPost({
     required bool isLoading,
+  });
+  Future<CustomResponse<ResponseClass?>> followPost({
+    required bool isLoading,
+    required String followingId,
+  });
+  Future<CustomResponse<ResponseClass?>> savePost({
+    required bool isLoading,
+    required String postId,
+  });
+  Future<CustomResponse<ResponseClass?>> likePost({
+    required bool isLoading,
+    required String postId,
+    required String userId,
+    required LikeAction likeAction,
   });
 }

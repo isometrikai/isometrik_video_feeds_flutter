@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
@@ -9,27 +10,55 @@ import 'package:ism_video_reel_player/utils/utils.dart';
 class IsrReelView extends StatefulWidget {
   IsrReelView({
     super.key,
-    this.isFromExample = false,
     this.onTapProfilePic,
     this.onTapShare,
     this.onTapProduct,
+    required this.context,
   }) {
     IsrReelsProperties.onTapProfilePic = onTapProfilePic;
     IsrReelsProperties.onTapShare = onTapShare;
     IsrReelsProperties.onTapProduct = onTapProduct;
+    IsrVideoReelConfig.buildContext = context;
   }
 
-  final bool? isFromExample;
   final Function(String)? onTapProfilePic;
   final Function(String)? onTapShare;
   final Function(String)? onTapProduct;
+  final BuildContext context;
 
   @override
   State<IsrReelView> createState() => _IsrReelViewState();
 }
 
 class _IsrReelViewState extends State<IsrReelView> {
-  bool _isFirstBuild = true;
+  @override
+  Widget build(BuildContext context) => MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (context) => isrGetIt<IsmLandingBloc>()),
+          BlocProvider(create: (context) => isrGetIt<PostBloc>()),
+        ],
+        child: BlocListener<IsmLandingBloc, IsmLandingState>(
+          listener: (context, state) {
+            // Call _handleInitialRoute when the BLoC is created or in a specific state
+            if (state is StartIsmLandingState) {
+              // Adjust this condition based on your BLoC's initial state
+              _handleInitialRoute();
+            }
+          },
+          child: AnnotatedRegion(
+            value: const SystemUiOverlayStyle(
+              statusBarColor: IsrColors.transparent,
+              statusBarBrightness: Brightness.dark,
+              statusBarIconBrightness: Brightness.light,
+            ),
+            child: MaterialApp.router(
+              debugShowCheckedModeBanner: false,
+              theme: isrTheme,
+              routerConfig: IsrAppRouter.router,
+            ),
+          ),
+        ),
+      );
 
   void _handleInitialRoute() {
     if (!mounted) return;
@@ -40,35 +69,6 @@ class _IsrReelViewState extends State<IsrReelView> {
     }
 
     // Here you can add your routing conditions
-    InjectionUtils.getRouteManagement().goToPostView();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Schedule the routing check after the first build
-    if (_isFirstBuild) {
-      _isFirstBuild = false;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _handleInitialRoute();
-      });
-    }
-
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider(
-          create: (context) => isrGetIt<PostBloc>(),
-        ),
-      ],
-      child: widget.isFromExample == true
-          ? const Scaffold(
-              backgroundColor: Colors.black26,
-              body: SizedBox.shrink(),
-            )
-          : MaterialApp.router(
-              debugShowCheckedModeBanner: false,
-              theme: isrTheme,
-              routerConfig: IsrAppRouter.router,
-            ),
-    );
+    InjectionUtils.getRouteManagement().goToPostView(context: context);
   }
 }

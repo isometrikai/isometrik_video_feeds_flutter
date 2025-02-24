@@ -16,8 +16,6 @@ import 'package:html/parser.dart' as html_parser;
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:ism_video_reel_player_example/data/data.dart';
-import 'package:ism_video_reel_player_example/di/di.dart';
-import 'package:ism_video_reel_player_example/domain/domain.dart';
 import 'package:ism_video_reel_player_example/presentation/presentation.dart';
 import 'package:ism_video_reel_player_example/res/res.dart';
 import 'package:ism_video_reel_player_example/utils/utils.dart';
@@ -26,8 +24,6 @@ import 'package:url_launcher/url_launcher.dart';
 
 class Utility {
   Utility._();
-
-  static final _localDataUseCase = InjectionUtils.getUseCase<LocalDataUseCase>();
 
   static bool isLoading = false;
   static final Connectivity _connectivity = Connectivity();

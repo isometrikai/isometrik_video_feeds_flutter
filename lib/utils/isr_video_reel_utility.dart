@@ -10,9 +10,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:go_router/go_router.dart';
-import 'package:html/parser.dart' as html_parser;
 import 'package:intl/intl.dart';
 import 'package:ism_video_reel_player/data/data.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -112,7 +112,7 @@ class IsrVideoReelUtility {
     Function()? onPressNegativeButton,
   }) {
     showDialog(
-      context: context ?? ismNavigatorKey.currentContext!,
+      context: context ?? IsrVideoReelConfig.buildContext!,
       builder: (_) => Dialog(
         shape: RoundedRectangleBorder(
           borderRadius: IsrDimens.borderRadiusAll(IsrDimens.twelve),
@@ -202,14 +202,15 @@ class IsrVideoReelUtility {
     BuildContext? context,
   }) =>
       showModalBottomSheet<T>(
-        context: context ?? ismNavigatorKey.currentContext!,
+        context: context ?? IsrVideoReelConfig.buildContext!,
         builder: (_) => child,
         enableDrag: false,
         showDragHandle: false,
         useSafeArea: false,
         isDismissible: isDismissible,
         isScrollControlled: isScrollControlled,
-        backgroundColor: isDarkBG ? Theme.of(context ?? ismNavigatorKey.currentContext!).primaryColor : IsrColors.white,
+        backgroundColor:
+            isDarkBG ? Theme.of(context ?? IsrVideoReelConfig.buildContext!).primaryColor : IsrColors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(
             top: Radius.circular(IsrDimens.sixteen),
@@ -437,14 +438,7 @@ class IsrVideoReelUtility {
     );
   }
 
-  // closes opened dialog
-  static void closeOpenDialog() {
-    if (context?.canPop() == true) {
-      context?.pop();
-    }
-  }
-
-  static BuildContext? get context => ismNavigatorKey.currentContext;
+  static BuildContext? get context => IsrVideoReelConfig.buildContext!;
 
   // Define a function to convert a character to its base64Encode
   static String encodeChar(String char) => base64Encode(utf8.encode(char));
@@ -480,15 +474,6 @@ class IsrVideoReelUtility {
     // Find the first '/' after the identified domain
     final finalIndex = url.indexOf('/', startIndex);
     return url.substring(finalIndex + 1);
-  }
-
-  /// extract text from html content
-  static String? extractTextFromHtmlContent(String? htmlContent) {
-    // Parse the HTML
-    var document = html_parser.parse(htmlContent);
-
-    // Extract the text content (ignores the HTML tags)
-    return IsrVideoReelUtility.cleanText(document.body?.text ?? ''); // Use null-aware operator in case of no body.
   }
 
   /// remove escape sequences
@@ -544,10 +529,18 @@ class IsrVideoReelUtility {
         positiveButtonText: IsrTranslationFile.ok,
       );
     } else if (errorViewType == ErrorViewType.snackBar) {
-      showInSnackBar(message, context ?? ismNavigatorKey.currentContext!);
+      showInSnackBar(message, context ?? IsrVideoReelConfig.buildContext!);
     } else if (errorViewType == ErrorViewType.toast) {
       showToastMessage(message);
       _isErrorShowing = false; // Reset the flag immediately for toast
+    }
+  }
+
+  // closes opened dialog
+  static void closeOpenDialog() {
+    _isErrorShowing = false;
+    if (context?.canPop() == true) {
+      context?.pop();
     }
   }
 

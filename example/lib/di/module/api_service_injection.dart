@@ -10,7 +10,7 @@ class ApiServiceInjection {
     // Create instances of network clients with base URLs
     final networkClient = NetworkClient(baseUrl: AppUrl.appBaseUrl);
     final deviceInfoManager = InjectionUtils.getOtherClass<DeviceInfoManager>();
-    final _localStorageManager = InjectionUtils.getOtherClass<LocalStorageManager>();
+    InjectionUtils.getOtherClass<LocalStorageManager>();
 
     // Register the API services with their respective providers
     InjectionUtils.registerApiService<AuthApiService>(() => AuthApiServiceProvider(deviceInfoManager, networkClient));

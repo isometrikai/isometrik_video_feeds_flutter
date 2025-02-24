@@ -9,6 +9,8 @@ import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
 class IsmCameraView extends StatefulWidget {
+  const IsmCameraView({super.key});
+
   @override
   State<IsmCameraView> createState() => _CameraViewState();
 }
@@ -126,7 +128,9 @@ class _CameraViewState extends State<IsmCameraView> {
                 ),
                 IsrDimens.boxHeight(IsrDimens.twenty),
                 TapHandler(
-                  onTap: _toggleFlash,
+                  onTap: () {
+                    _toggleFlash(context);
+                  },
                   child: Container(
                     alignment: Alignment.center,
                     padding: IsrDimens.edgeInsetsAll(IsrDimens.ten),
@@ -157,7 +161,9 @@ class _CameraViewState extends State<IsmCameraView> {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.photo_library, color: IsrColors.white),
-                        onPressed: _pickFromGallery,
+                        onPressed: () {
+                          _pickFromGallery(context);
+                        },
                       ),
                       GestureDetector(
                         onTap: _isRecording ? _stopRecording : _startRecording,
@@ -298,7 +304,7 @@ class _CameraViewState extends State<IsmCameraView> {
     });
   }
 
-  Future<void> _toggleFlash() async {
+  Future<void> _toggleFlash(BuildContext context) async {
     try {
       switch (_currentFlashState) {
         case FlashState.off:
@@ -316,12 +322,14 @@ class _CameraViewState extends State<IsmCameraView> {
       }
     } catch (e, stackTrace) {
       debugPrintStack(stackTrace: stackTrace);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Error toggling flash'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error toggling flash'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     }
   }
 
@@ -343,7 +351,7 @@ class _CameraViewState extends State<IsmCameraView> {
   }
 
 // Add this method in _CameraViewState
-  Future<void> _pickFromGallery() async {
+  Future<void> _pickFromGallery(BuildContext context) async {
     final picker = ImagePicker();
     try {
       final file = await picker.pickVideo(
@@ -357,12 +365,14 @@ class _CameraViewState extends State<IsmCameraView> {
         _handleSelectedMedia(file);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Error picking video from gallery'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error picking video from gallery'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
       debugPrint('Error picking video: $e');
     }
   }

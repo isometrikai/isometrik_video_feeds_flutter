@@ -18,13 +18,15 @@ class LocalStorageManager {
       await _sharedPreferencesManager.init();
       await checkFirstLaunch();
       _isInitialized = true;
+    } else {
+      return;
     }
   }
 
   Future<void> checkFirstLaunch() async {
     try {
       // Check if the flag is set
-      final isFirstLaunch = _sharedPreferencesManager.getValue(
+      final isFirstLaunch = await _sharedPreferencesManager.getValue(
         LocalStorageKeys.isFirstTimeVisit,
         SavedValueDataType.bool,
       ) as bool?;
@@ -84,13 +86,10 @@ class LocalStorageManager {
     await saveValue(userId, preservedValue, SavedValueDataType.string);
   }
 
-  Future<T?> getValue<T>(String key, SavedValueDataType saveValueDataType) async {
-    await initializeStorage(); // Ensure initialization before access
-    return _sharedPreferencesManager.getValue(key, saveValueDataType) as T?;
-  }
+  Future<T?> getValue<T>(String key, SavedValueDataType saveValueDataType) async =>
+      await _sharedPreferencesManager.getValue(key, saveValueDataType) as T?;
 
   Future<void> saveValue(String key, dynamic value, SavedValueDataType saveValueDataType) async {
-    await initializeStorage(); // Ensure initialization before access
     await _sharedPreferencesManager.saveValue(key, value, saveValueDataType);
   }
 

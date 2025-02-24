@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/di/di.dart';
@@ -6,6 +8,8 @@ import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
 class FollowingPostWidget extends StatefulWidget {
+  const FollowingPostWidget({super.key});
+
   @override
   State<FollowingPostWidget> createState() => _FollowingPostWidgetState();
 }
@@ -33,7 +37,8 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
                     physics: const ClampingScrollPhysics(),
                     onPageChanged: (index) {
                       // Check if we're at 75% of the list
-                      if (index >= (_followingPostList.length * 0.75).floor()) {
+                      final threshold = (_followingPostList.length * 0.75).floor();
+                      if (index >= threshold) {
                         _postBloc.add(GetFollowingPostEvent(
                           isLoading: false,
                           isPagination: true,
@@ -64,6 +69,92 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
                       mediaType: _followingPostList[index].mediaType1?.toInt() ?? 0,
                       onTapUserProfilePic: () => {},
                       productList: _followingPostList[index].productData,
+                      isSavedPost: _followingPostList[index].isSavedPost,
+                      onPressFollowFollowing: () async {
+                        if (_followingPostList[index].userId != null) {
+                          try {
+                            final completer = Completer<bool>();
+
+                            _postBloc.add(FollowUserEvent(
+                              followingId: _followingPostList[index].userId!,
+                              onComplete: (success) {
+                                if (success) {
+                                  setState(() {
+                                    _followingPostList[index] = _followingPostList[index].copyWith(
+                                      followStatus: 1,
+                                    );
+                                  });
+                                }
+                                completer.complete(success);
+                              },
+                            ));
+
+                            return await completer.future;
+                          } catch (e) {
+                            return false;
+                          }
+                        }
+                        return false;
+                      },
+                      onPressSave: () async {
+                        if (_followingPostList[index].postId != null) {
+                          try {
+                            final completer = Completer<bool>();
+
+                            _postBloc.add(SavePostEvent(
+                              postId: _followingPostList[index].postId!,
+                              onComplete: (success) {
+                                if (success) {
+                                  setState(() {
+                                    _followingPostList[index] = _followingPostList[index].copyWith(
+                                      isSavedPost: true,
+                                    );
+                                  });
+                                }
+                                completer.complete(success);
+                              },
+                            ));
+
+                            return await completer.future;
+                          } catch (e) {
+                            return false;
+                          }
+                        }
+                        return false;
+                      },
+                      isLiked: _followingPostList[index].liked ?? false,
+                      likesCount: _followingPostList[index].likesCount ?? 0,
+                      onPressLike: () async {
+                        if (_followingPostList[index].postId != null) {
+                          try {
+                            final completer = Completer<bool>();
+
+                            _postBloc.add(LikePostEvent(
+                              postId: _followingPostList[index].postId!,
+                              userId: _followingPostList[index].userId!,
+                              likeAction: _followingPostList[index].liked == true ? LikeAction.unlike : LikeAction.like,
+                              onComplete: (success) {
+                                if (success) {
+                                  setState(() {
+                                    _followingPostList[index] = _followingPostList[index].copyWith(
+                                      liked: !(_followingPostList[index].liked ?? false),
+                                      likesCount: (_followingPostList[index].liked ?? false)
+                                          ? (_followingPostList[index].likesCount ?? 0) - 1
+                                          : (_followingPostList[index].likesCount ?? 0) + 1,
+                                    );
+                                  });
+                                }
+                                completer.complete(success);
+                              },
+                            ));
+
+                            return await completer.future;
+                          } catch (e) {
+                            return false;
+                          }
+                        }
+                        return false;
+                      },
                     ),
                   ),
                 )

@@ -93,11 +93,7 @@ class CustomButton extends StatelessWidget {
             width: width ?? double.infinity,
             padding: padding ?? IsrDimens.edgeInsetsAll(IsrDimens.zero),
             decoration: BoxDecoration(
-              color: isDisable
-                  ? disableColor != null
-                      ? disableColor
-                      : IsrColors.accent
-                  : color ?? IsrColors.secondaryColor,
+              color: isDisable ? disableColor ?? IsrColors.accent : color ?? IsrColors.secondaryColor,
               borderRadius: borderRadius,
               border: Border.all(
                 width: borderWidth ?? 0,
@@ -125,11 +121,10 @@ class CustomButton extends StatelessWidget {
                         ],
                         Text(
                           '$title',
-                          style: textStyle != null
-                              ? textStyle
-                              : textColor != null
+                          style: textStyle ??
+                              (textColor != null
                                   ? IsrStyles.secondaryText14.copyWith(fontWeight: FontWeight.w700)
-                                  : IsrStyles.white14.copyWith(fontWeight: FontWeight.w700),
+                                  : IsrStyles.white14.copyWith(fontWeight: FontWeight.w700)),
                           textAlign: textAlign,
                         ),
                       ],

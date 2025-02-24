@@ -1,8 +1,10 @@
+import 'package:flutter/cupertino.dart';
+
 abstract class IsrNavigationService {
-  Future<T?> pushNamed<T>(String routeName, {Object? arguments});
-  void pushReplacementNamed<T>(String routeName, {Object? arguments});
-  void goNamed(String routeName, {Object? arguments});
-  void go(String routeName, {Object? arguments});
-  void pop([Object? result]);
-  void popUntil(String routeName, {Object? arguments});
+  Future<T?> pushNamed<T>(BuildContext context, String routeName, {Object? arguments});
+  void pushReplacementNamed<T>(BuildContext context, String routeName, {Object? arguments});
+  void goNamed(BuildContext context, String routeName, {Object? arguments});
+  void go(BuildContext context, String routeName, {Object? arguments});
+  void pop(BuildContext context, [Object? result]);
+  void popUntil(BuildContext context, String routeName, {Object? arguments});
 }

@@ -51,9 +51,9 @@ class SharedPreferencesManager {
   }
 
   /// return value
-  dynamic getValue(String key, SavedValueDataType? getValueDataType) {
+  dynamic getValue(String key, SavedValueDataType? getValueDataType) async {
     if (!isInitialized) {
-      throw StateError('SharedPreferences not initialized. Call init() first.');
+      await init();
     }
 
     switch (getValueDataType) {

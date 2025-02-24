@@ -47,7 +47,7 @@ class PostApiServiceProvider extends PostApiService {
         NetworkRequestType.get,
         {},
         {
-          'page': page.toString(),
+          'offset': page.toString(),
           'limit': pageLimit.toString(),
         },
         {
@@ -73,6 +73,90 @@ class PostApiServiceProvider extends PostApiService {
         PostApiEndPoints.getTrendingPosts,
         NetworkRequestType.get,
         {},
+        {},
+        {
+          'Accept': AppConstants.headerAccept,
+          'Content-Type': AppConstants.headerContentType,
+          'Authorization': header.accessToken,
+          'language': header.language,
+          'currencySymbol': header.currencySymbol,
+          'currencyCode': header.currencyCode,
+          'platform': header.platForm.toString(),
+          'latitude': header.latitude.toString(),
+          'longitude': header.longitude.toString(),
+        },
+        isLoading,
+      );
+
+  @override
+  Future<ResponseModel> followPost({
+    required bool isLoading,
+    required String followingId,
+    required Header header,
+  }) async =>
+      await networkClient.makeRequest(
+        PostApiEndPoints.postFollowPost,
+        NetworkRequestType.post,
+        {
+          'followingId': followingId,
+        },
+        {},
+        {
+          'Accept': AppConstants.headerAccept,
+          'Content-Type': AppConstants.headerContentType,
+          'Authorization': header.accessToken,
+          'language': header.language,
+          'currencySymbol': header.currencySymbol,
+          'currencyCode': header.currencyCode,
+          'platform': header.platForm.toString(),
+          'latitude': header.latitude.toString(),
+          'longitude': header.longitude.toString(),
+        },
+        isLoading,
+      );
+
+  @override
+  Future<ResponseModel> savePost({
+    required bool isLoading,
+    required String postId,
+    required Header header,
+  }) async =>
+      await networkClient.makeRequest(
+        PostApiEndPoints.postSavePost,
+        NetworkRequestType.post,
+        {
+          'postId': postId,
+        },
+        {},
+        {
+          'Accept': AppConstants.headerAccept,
+          'Content-Type': AppConstants.headerContentType,
+          'Authorization': header.accessToken,
+          'language': header.language,
+          'currencySymbol': header.currencySymbol,
+          'currencyCode': header.currencyCode,
+          'platform': header.platForm.toString(),
+          'latitude': header.latitude.toString(),
+          'longitude': header.longitude.toString(),
+        },
+        isLoading,
+      );
+
+  @override
+  Future<ResponseModel> likePost({
+    required bool isLoading,
+    required String postId,
+    required String userId,
+    required LikeAction likeAction,
+    required Header header,
+  }) async =>
+      await networkClient.makeRequest(
+        likeAction == LikeAction.like ? PostApiEndPoints.postLike : PostApiEndPoints.postUnLike,
+        NetworkRequestType.post,
+        {
+          'postId': postId,
+          'userId': userId,
+        },
         {},
         {
           'Accept': AppConstants.headerAccept,

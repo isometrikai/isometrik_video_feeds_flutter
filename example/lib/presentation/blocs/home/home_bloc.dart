@@ -29,15 +29,16 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   Future<void> _initializeReelsSdk() async {
     final accessToken = await _localDataUseCase.getAccessToken();
     await reels_sdk.IsrVideoReelConfig.initializeSdk(
-        baseUrl: AppUrl.appBaseUrl,
-        postInfo: reels_sdk.PostInfoClass(
-          accessToken: accessToken,
-          userInformation: reels_sdk.UserInfoClass(
-            userId: '37483783493',
-            userName: 'asjad',
-            firstName: 'Asjad',
-            lastName: 'Ibrahim',
-          ),
-        ));
+      baseUrl: AppUrl.appBaseUrl,
+      postInfo: reels_sdk.PostInfoClass(
+        accessToken: accessToken,
+        userInformation: reels_sdk.UserInfoClass(
+          userId: '37483783493',
+          userName: 'asjad',
+          firstName: 'Asjad',
+          lastName: 'Ibrahim',
+        ),
+      ),
+    );
   }
 }

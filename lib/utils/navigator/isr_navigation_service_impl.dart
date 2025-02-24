@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
 class IsrNavigationServiceImpl implements IsrNavigationService {
@@ -8,34 +9,34 @@ class IsrNavigationServiceImpl implements IsrNavigationService {
   final GlobalKey<NavigatorState> navigatorKey;
 
   @override
-  Future<T?> pushNamed<T>(String routeName, {Object? arguments}) async {
-    final result = await navigatorKey.currentContext!.pushNamed(routeName, extra: arguments);
+  Future<T?> pushNamed<T>(BuildContext context, String routeName, {Object? arguments}) async {
+    final result = await IsrVideoReelConfig.buildContext?.pushNamed(routeName, extra: arguments);
     return result as T?; // Cast the result to the expected type
   }
 
   @override
-  void pushReplacementNamed<T>(String routeName, {Object? arguments}) async {
-    navigatorKey.currentContext!.pushReplacementNamed(routeName, extra: arguments);
+  void pushReplacementNamed<T>(BuildContext context, String routeName, {Object? arguments}) async {
+    IsrVideoReelConfig.buildContext?.pushReplacementNamed(routeName, extra: arguments);
   }
 
   @override
-  void pop([Object? result]) {
-    Navigator.pop(navigatorKey.currentContext!, result);
+  void pop(BuildContext context, [Object? result]) {
+    Navigator.pop(context, result);
   }
 
   @override
-  void popUntil(String routeName, {Object? arguments}) {
-    Navigator.popUntil(navigatorKey.currentContext!, ModalRoute.withName(routeName));
+  void popUntil(BuildContext context, String routeName, {Object? arguments}) {
+    Navigator.popUntil(context, ModalRoute.withName(routeName));
   }
 
   @override
-  void goNamed(String routeName, {Object? arguments}) {
-    navigatorKey.currentContext!.goNamed(routeName, extra: arguments);
+  void goNamed(BuildContext context, String routeName, {Object? arguments}) {
+    IsrVideoReelConfig.buildContext?.goNamed(routeName, extra: arguments);
   }
 
   @override
-  void go(String routeName, {Object? arguments}) {
-    navigatorKey.currentContext!.go(
+  void go(BuildContext context, String routeName, {Object? arguments}) {
+    IsrVideoReelConfig.buildContext?.go(
       routeName,
       extra: arguments,
     );

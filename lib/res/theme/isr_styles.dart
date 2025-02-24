@@ -142,7 +142,7 @@ abstract class IsrStyles {
         fontSize: fontSize ?? IsrDimens.sixteen,
         fontWeight: fontWeight ?? FontWeight.w400,
         fontFamily: fontFamily ?? AppConstants.primaryFontFamily,
-        decoration: underline ?? null,
+        decoration: underline,
       );
 
   /// app button text styles
