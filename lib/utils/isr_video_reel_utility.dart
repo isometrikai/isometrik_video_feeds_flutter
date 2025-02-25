@@ -156,7 +156,6 @@ class IsrVideoReelUtility {
                   Expanded(
                     child: AppButton(
                       width: IsrDimens.twoHundredFifty,
-                      height: IsrDimens.fortyFour,
                       title: positiveButtonText ?? IsrTranslationFile.ok,
                       onPress: () {
                         closeOpenDialog();
@@ -171,7 +170,6 @@ class IsrVideoReelUtility {
                     Expanded(
                       child: AppButton(
                         width: IsrDimens.twoHundredFifty,
-                        height: IsrDimens.fortyFour,
                         title: negativeButtonText ?? IsrTranslationFile.cancel,
                         onPress: () {
                           closeOpenDialog();

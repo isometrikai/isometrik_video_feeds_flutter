@@ -5,6 +5,7 @@ class IsrAppRoutes {
   static const String landingView = '/${IsrRouteNames.landingView}';
   static const String cameraView = '/${IsrRouteNames.cameraView}';
   static const String postView = '/${IsrRouteNames.postView}';
+  static const String createPostView = '/${IsrRouteNames.createPostView}';
   static const String videoTrimView = '/${IsrRouteNames.videoTrimView}';
   static const String postAttributeView = '/${IsrRouteNames.postAttributeView}';
 }
@@ -14,6 +15,7 @@ class IsrRouteNames {
   static const String landingView = 'landingView';
   static const String cameraView = 'CameraView';
   static const String postView = 'postView';
+  static const String createPostView = 'createPostView';
   static const String videoTrimView = 'videoTrimView';
   static const String postAttributeView = 'postAttributeView';
 }

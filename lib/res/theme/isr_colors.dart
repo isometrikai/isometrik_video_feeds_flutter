@@ -6,9 +6,9 @@ class IsrColors {
   static const Color appColor = Color(0xFF2962FF);
   static const Color secondaryColor = Color(0xFF2962FF);
 
-  static const Color primaryTextColor = Color(0xFF4C4C4C);
+  static const Color primaryTextColor = Color(0xFF333333);
 
-  static const Color secondaryTextColor = Color(0xFF1E1E1E);
+  static const Color secondaryTextColor = Color(0xFF505050);
 
   /// colors for button
   // static const Color buttonBackgroundColor = Color(0xFFF27C73);
@@ -278,6 +278,12 @@ class IsrColors {
   static const Color color668A5C = Color(0xFF668A5C);
 
   static const Color color0F1E91 = Color(0xFF0F1E91);
+
+  static const Color color909090 = Color(0xFF909090);
+
+  static const Color colorBBBBBB = Color(0xFFBBBBBB);
+
+  static const Color colorCCCCCC = Color(0xFFCCCCCC);
 
   static const List<Color> lightBlueGradient = [
     Color(0xFFE2F6FB),

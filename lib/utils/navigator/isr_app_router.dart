@@ -17,6 +17,11 @@ class IsrAppRouter {
         name: IsrRouteNames.postView,
         builder: (_, __) => const IsrPostView(),
       ),
+      GoRoute(
+        path: IsrAppRoutes.createPostView,
+        name: IsrRouteNames.createPostView,
+        builder: (_, __) => const IsmCreatePostView(),
+      ),
       // GoRoute(
       //   path: IsrAppRoutes.landingView,
       //   name: IsrRouteNames.landingView,

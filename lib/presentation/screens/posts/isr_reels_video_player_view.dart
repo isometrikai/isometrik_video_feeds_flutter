@@ -274,14 +274,7 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
               ),
               child: IconButton(
                 onPressed: () async {
-                  await IsrVideoReelUtility.showBottomSheet(
-                    context: context,
-                    CreatePostBottomSheet(
-                      onCreateNewPost: () {
-                        InjectionUtils.getBloc<PostBloc>().add(CameraEvent(context: context));
-                      },
-                    ),
-                  );
+                  InjectionUtils.getRouteManagement().goToCreatePostView();
                 },
                 icon: const Icon(
                   Icons.add, // Simple plus icon

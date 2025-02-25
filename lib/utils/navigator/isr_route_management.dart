@@ -1,8 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
-import 'package:ism_video_reel_player/domain/domain.dart';
-import 'package:ism_video_reel_player/utils/utils.dart';
+import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 
 final GlobalKey<NavigatorState> ismNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -18,6 +17,13 @@ class IsrRouteManagement {
   Future<Map<String, dynamic>?> goToCameraView({required BuildContext context}) async {
     final result = await _navigationService.pushNamed(context, IsrRouteNames.cameraView) as Map<String, dynamic>;
     return result;
+  }
+
+  void goToCreatePostView() {
+    _navigationService.pushNamed(
+      IsrVideoReelConfig.buildContext!,
+      IsrRouteNames.createPostView,
+    );
   }
 
   void goToPostAttributeView({required BuildContext context, PostAttributeClass? postAttributeClass}) {

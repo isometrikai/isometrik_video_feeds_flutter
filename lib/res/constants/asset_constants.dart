@@ -5,6 +5,7 @@ class AssetConstants {
   static const String icAppBarIcon = '${packageName}assets/icons/ic_app_bar_icon.svg';
   static const String icCrossIcon = '${packageName}assets/icons/ic_cross_icon.svg';
   static const String icRightArrowIcon = '${packageName}assets/icons/ic_right_arrow.svg';
+  static const String icLeftArrowIcon = '${packageName}assets/icons/ic_left_arrow.svg';
   static const String icBackArrowIcon = '${packageName}assets/icons/ic_app_bar_back_icon.svg';
   static const String icCloseBottomSheet = '${packageName}assets/icons/ic_close_bottom_sheet.svg';
   static const String muteRoundedSvg = '${packageName}assets/icons/ic_mute_rounded.svg';
@@ -27,4 +28,6 @@ class AssetConstants {
   static const String icVolumeMute = '${packageName}assets/icons/ic_volume_mute.svg';
   static const String icVolumeUp = '${packageName}assets/icons/ic_volume_up.svg';
   static const String icReportIcon = '${packageName}assets/icons/ic_report_icon.svg';
+  static const String icCoverImagePlaceHolder = '${packageName}assets/icons/ic_cover_image_place_holder.svg';
+  static const String icCloudUploadIcon = '${packageName}assets/icons/ic_cloud_upload_icon.svg';
 }
