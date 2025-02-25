@@ -30,4 +30,13 @@ abstract class PostRepository extends BaseRepository {
     required String userId,
     required LikeAction likeAction,
   });
+  Future<CustomResponse<ResponseClass?>> reportPost({
+    required bool isLoading,
+    required String postId,
+    required String message,
+    required String reason,
+  });
+  Future<CustomResponse<List<String>?>> getReportReasons({
+    required bool isLoading,
+  });
 }

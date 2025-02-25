@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
+import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
 class TrendingPostWidget extends StatefulWidget {
@@ -86,6 +87,8 @@ class _TrendingPostWidgetState extends State<TrendingPostWidget> {
                       isAssetUploading: false,
                       isFollow: _trendingPostList[index].followStatus == 1,
                       isSelfProfile: false,
+                      firstName: _trendingPostList[index].firstName ?? '',
+                      lastName: _trendingPostList[index].lastName ?? '',
                       name: '@${_trendingPostList[index].userName ?? ''}',
                       hasTags: _trendingPostList[index].hashTags ?? [],
                       profilePhoto: _trendingPostList[index].profilePic ?? '',
@@ -184,6 +187,42 @@ class _TrendingPostWidgetState extends State<TrendingPostWidget> {
                           }
                         }
                         return false;
+                      },
+                      onPressReport: ({String message = '', String reason = ''}) async {
+                        try {
+                          final completer = Completer<bool>();
+
+                          _postBloc.add(ReportPostEvent(
+                            postId: _trendingPostList[index].postId!,
+                            message: reason,
+                            reason: reason,
+                            onComplete: (success) {
+                              if (success) {
+                                IsrVideoReelUtility.showToastMessage(
+                                  IsrTranslationFile.postReportedSuccessfully,
+                                );
+
+                                // Remove post from list
+                                setState(() {
+                                  _trendingPostList.removeAt(index);
+                                });
+
+                                // Only scroll if there are more posts
+                                if (_trendingPostList.isNotEmpty && index < _trendingPostList.length) {
+                                  _postBloc.reelsPageTrendingController.nextPage(
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeInOut,
+                                  );
+                                }
+                              }
+                              completer.complete(success);
+                            },
+                          ));
+
+                          return await completer.future;
+                        } catch (e) {
+                          return false;
+                        }
                       },
                     ),
                   ),

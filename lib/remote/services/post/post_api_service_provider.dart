@@ -176,4 +176,59 @@ class PostApiServiceProvider extends PostApiService {
         },
         isLoading,
       );
+
+  @override
+  Future<ResponseModel> reportPost({
+    required bool isLoading,
+    required String postId,
+    required String message,
+    required String reason,
+    required Header header,
+  }) async =>
+      await networkClient.makeRequest(
+        PostApiEndPoints.reportPost,
+        NetworkRequestType.post,
+        {
+          'postId': postId,
+          'message': message,
+          'reason': reason,
+        }.removeEmptyValues(),
+        {},
+        {
+          'Accept': AppConstants.headerAccept,
+          'Content-Type': AppConstants.headerContentType,
+          'Authorization': header.accessToken,
+          'language': header.language,
+          'currencySymbol': header.currencySymbol,
+          'currencyCode': header.currencyCode,
+          'platform': header.platForm.toString(),
+          'latitude': header.latitude.toString(),
+          'longitude': header.longitude.toString(),
+        },
+        isLoading,
+      );
+
+  @override
+  Future<ResponseModel> getReportReasons({
+    required bool isLoading,
+    required Header header,
+  }) async =>
+      await networkClient.makeRequest(
+        PostApiEndPoints.getReportReasons,
+        NetworkRequestType.get,
+        null,
+        null,
+        {
+          'Accept': AppConstants.headerAccept,
+          'Content-Type': AppConstants.headerContentType,
+          'Authorization': header.accessToken,
+          'lang': header.language,
+          'currencySymbol': header.currencySymbol,
+          'currencyCode': header.currencyCode,
+          'platform': header.platForm.toString(),
+          'latitude': header.latitude.toString(),
+          'longitude': header.longitude.toString(),
+        },
+        isLoading,
+      );
 }

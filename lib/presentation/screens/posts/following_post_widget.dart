@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
+import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
 class FollowingPostWidget extends StatefulWidget {
@@ -63,6 +64,8 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
                       isAssetUploading: false,
                       isFollow: _followingPostList[index].followStatus == 1,
                       isSelfProfile: false,
+                      firstName: _followingPostList[index].firstName ?? '',
+                      lastName: _followingPostList[index].lastName ?? '',
                       name: '@${_followingPostList[index].userName ?? ''}',
                       hasTags: _followingPostList[index].hashTags ?? [],
                       profilePhoto: _followingPostList[index].profilePic ?? '',
@@ -161,6 +164,42 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
                           }
                         }
                         return false;
+                      },
+                      onPressReport: ({String message = '', String reason = ''}) async {
+                        try {
+                          final completer = Completer<bool>();
+
+                          _postBloc.add(ReportPostEvent(
+                            postId: _followingPostList[index].postId!,
+                            message: reason,
+                            reason: reason,
+                            onComplete: (success) {
+                              if (success) {
+                                IsrVideoReelUtility.showToastMessage(
+                                  IsrTranslationFile.postReportedSuccessfully,
+                                );
+
+                                // Remove post from list
+                                setState(() {
+                                  _followingPostList.removeAt(index);
+                                });
+
+                                // Only scroll if there are more posts
+                                if (_followingPostList.isNotEmpty && index < _followingPostList.length) {
+                                  _postBloc.reelsPageFollowingController.nextPage(
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeInOut,
+                                  );
+                                }
+                              }
+                              completer.complete(success);
+                            },
+                          ));
+
+                          return await completer.future;
+                        } catch (e) {
+                          return false;
+                        }
                       },
                     ),
                   ),

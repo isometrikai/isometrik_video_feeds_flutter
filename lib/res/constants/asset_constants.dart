@@ -24,4 +24,7 @@ class AssetConstants {
   static const String icSaveUnSelected = '${packageName}assets/icons/ic_save_un_selected_icon.svg';
   static const String icVerifiedIcon = '${packageName}assets/icons/ic_verified_icon.svg';
   static const String icCartIcon = '${packageName}assets/icons/ic_cart_icon.svg';
+  static const String icVolumeMute = '${packageName}assets/icons/ic_volume_mute.svg';
+  static const String icVolumeUp = '${packageName}assets/icons/ic_volume_up.svg';
+  static const String icReportIcon = '${packageName}assets/icons/ic_report_icon.svg';
 }

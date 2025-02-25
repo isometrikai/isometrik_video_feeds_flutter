@@ -12,8 +12,8 @@ class IsrColors {
 
   /// colors for button
   // static const Color buttonBackgroundColor = Color(0xFFF27C73);
-  static const Color buttonBackgroundColor = Color(0xFFE34245);
-  static const Color buttonDisabledBackgroundColor = Color(0xFFE88688);
+  static const Color buttonBackgroundColor = appColor;
+  static const Color buttonDisabledBackgroundColor = Color(0xFF808688);
   static const Color buttonTextColor = Color(0xFFFFFFFF);
 
   /// colors for status bar and navigation bar background

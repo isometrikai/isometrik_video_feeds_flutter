@@ -126,4 +126,42 @@ class PostRepositoryImpl implements PostRepository {
       rethrow;
     }
   }
+
+  @override
+  Future<CustomResponse<ResponseClass?>> reportPost({
+    required bool isLoading,
+    required String postId,
+    required String message,
+    required String reason,
+  }) async {
+    try {
+      final response = await _apiService.reportPost(
+        isLoading: isLoading,
+        postId: postId,
+        message: message,
+        reason: reason,
+        header: await _dataSource.getHeader(),
+      );
+
+      return _mapper.mapResponseData(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<CustomResponse<List<String>?>> getReportReasons({
+    required bool isLoading,
+  }) async {
+    try {
+      final response = await _apiService.getReportReasons(
+        isLoading: isLoading,
+        header: await _dataSource.getHeader(),
+      );
+
+      return _mapper.mapReasonData(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

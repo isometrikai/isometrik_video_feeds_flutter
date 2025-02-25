@@ -16,17 +16,21 @@ class DataSourceImpl extends DataSource {
   IsrLocalStorageManager getStorageManager() => _localStorageManager;
 
   Future<Header> initializeHeader() async {
-    final language = '';
+    final language =
+        await _localStorageManager.getValue(IsrLocalStorageKeys.language, SavedValueDataType.string) as String;
 
     final accessToken = await _localStorageManager.getSecuredValue(IsrLocalStorageKeys.accessToken);
 
-    final refreshToken = '';
+    final refreshToken = await _localStorageManager.getSecuredValue(IsrLocalStorageKeys.refreshToken);
 
-    final latitude = 0.0;
+    final latitude =
+        await _localStorageManager.getValue(IsrLocalStorageKeys.latitude, SavedValueDataType.double) as double;
 
-    final longitude = 0.0;
+    final longitude =
+        await _localStorageManager.getValue(IsrLocalStorageKeys.longitude, SavedValueDataType.double) as double;
 
-    final ipAddress = '';
+    final ipAddress =
+        await _localStorageManager.getValue(IsrLocalStorageKeys.userIP, SavedValueDataType.string) as String;
 
     final city = '';
 
@@ -44,9 +48,11 @@ class DataSourceImpl extends DataSource {
 
     final timeZone = '';
 
-    final currencySymbol = '';
+    final currencySymbol =
+        await _localStorageManager.getValue(IsrLocalStorageKeys.currencySymbol, SavedValueDataType.string) as String;
 
-    final currencyCode = '';
+    final currencyCode =
+        await _localStorageManager.getValue(IsrLocalStorageKeys.currencyCode, SavedValueDataType.string) as String;
 
     return Header(
       accessToken: accessToken,

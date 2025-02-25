@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -16,15 +17,17 @@ class IsrReelsVideoPlayerView extends StatefulWidget {
     super.key,
     required this.mediaUrl,
     required this.mediaType, // 0 for picture, 1 for video
-    required this.onDoubleTap,
-    required this.onLongPressStart,
-    required this.onLongPressEnd,
-    required this.isReelsLongPressed,
-    required this.isReelsMuted,
+    this.onDoubleTap,
+    this.onLongPressStart,
+    this.onLongPressEnd,
+    this.isReelsLongPressed,
+    this.isReelsMuted,
     required this.onTapVolume,
     required this.profilePhoto,
     this.hasTags,
     required this.name,
+    this.firstName,
+    this.lastName,
     this.isVerifiedUser = false,
     required this.isFollow,
     this.onPressFollowFollowing,
@@ -44,19 +47,22 @@ class IsrReelsVideoPlayerView extends StatefulWidget {
     this.isLiked = false,
     this.likesCount = 0,
     this.onPressLike,
+    this.onPressReport,
   });
 
   final String? mediaUrl;
   final int mediaType; // 0 for picture, 1 for video
-  final void Function() onDoubleTap;
-  final void Function() onLongPressStart;
-  final void Function() onLongPressEnd;
-  final bool isReelsLongPressed;
-  final bool isReelsMuted;
-  final Function() onTapVolume;
+  final void Function()? onDoubleTap;
+  final void Function()? onLongPressStart;
+  final void Function()? onLongPressEnd;
+  final bool? isReelsLongPressed;
+  final bool? isReelsMuted;
+  final VoidCallback? onTapVolume;
   final String profilePhoto;
   final List<String>? hasTags;
   final String name;
+  final String? firstName;
+  final String? lastName;
   final bool? isVerifiedUser;
   final bool isFollow;
   final Future<bool> Function()? onPressFollowFollowing;
@@ -76,6 +82,7 @@ class IsrReelsVideoPlayerView extends StatefulWidget {
   final bool isLiked;
   final num likesCount;
   final Future<bool> Function()? onPressLike;
+  final Future<bool> Function({String message, String reason})? onPressReport;
 
   @override
   State<IsrReelsVideoPlayerView> createState() => _IsrReelsVideoPlayerViewState();
@@ -104,6 +111,10 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
 
   var isLikeLoading = false;
 
+  var isMuted = false;
+
+  var isReportLoading = false;
+
   void playPause() async {
     if (widget.showBlur == true) {
       return;
@@ -119,12 +130,12 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
 
   @override
   void initState() {
+    super.initState();
+    // Always start unmuted
+    isMuted = false;
     if (widget.mediaType == kVideoType) {
       initializeVideoPlayer();
-    } else {
-      mountUpdate();
     }
-    super.initState();
   }
 
   void pauseVideoPlayer() {
@@ -172,6 +183,8 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
     if (videoPlayerController == null) return;
     try {
       await videoPlayerController?.initialize();
+      // Always start with volume on
+      await videoPlayerController?.setVolume(1.0);
     } catch (e) {
       IsrVideoReelUtility.debugCatchLog(error: e);
     }
@@ -185,7 +198,7 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
   @override
   void dispose() {
     videoPlayerController?.pause();
-    videoPlayerController?.setVolume(0.0);
+    // Don't mute on dispose
     videoPlayerController?.dispose();
     videoPlayerController = null;
     super.dispose();
@@ -229,63 +242,68 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.transparent, // Background color for the shadow
-                    borderRadius: BorderRadius.circular(IsrDimens.thirty), // Match the image's radius
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.applyOpacity(0.2), // Shadow color
-                        spreadRadius: 2, // Spread radius
-                        blurRadius: 5, // Blur radius
-                        offset: const Offset(0, 2), // Shadow offset
-                      ),
-                    ],
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(IsrDimens.thirty),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.applyOpacity(0.2),
+                    spreadRadius: 2,
+                    blurRadius: 5,
+                    offset: const Offset(0, 2),
                   ),
-                  child: AppImage.network(
-                    widget.profilePhoto,
-                    width: IsrDimens.forty,
-                    height: IsrDimens.forty,
-                    isProfileImage: true,
-                  ),
-                ),
-                IsrDimens.boxHeight(IsrDimens.ten),
-                Container(
-                  width: IsrDimens.forty,
-                  height: IsrDimens.forty,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Theme.of(context).primaryColor, // Blue background
-                  ),
-                  child: IconButton(
-                    onPressed: () async {
-                      await IsrVideoReelUtility.showBottomSheet(
-                        context: context,
-                        CreatePostBottomSheet(
-                          onCreateNewPost: () {
-                            InjectionUtils.getBloc<PostBloc>().add(CameraEvent(context: context));
-                          },
-                        ),
-                      );
-                    },
-                    icon: const Icon(
-                      Icons.add, // Simple plus icon
-                      color: IsrColors.white,
-                      size: 24,
-                    ),
-                  ),
-                ),
-                IsrDimens.boxHeight(IsrDimens.five),
-                Text(
-                  IsrTranslationFile.create,
-                  style: IsrStyles.white12,
-                ),
-              ],
+                ],
+              ),
+              child: AppImage.network(
+                widget.profilePhoto,
+                width: IsrDimens.thirtyFive,
+                height: IsrDimens.thirtyFive,
+                isProfileImage: true,
+                name: '${widget.firstName ?? ''} ${widget.lastName ?? ''}',
+              ),
             ),
-            IsrDimens.boxHeight(IsrDimens.twenty),
+            IsrDimens.boxHeight(IsrDimens.fifteen),
+            Container(
+              alignment: Alignment.center,
+              width: IsrDimens.thirtyFive,
+              height: IsrDimens.thirtyFive,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Theme.of(context).primaryColor, // Blue background
+              ),
+              child: IconButton(
+                onPressed: () async {
+                  await IsrVideoReelUtility.showBottomSheet(
+                    context: context,
+                    CreatePostBottomSheet(
+                      onCreateNewPost: () {
+                        InjectionUtils.getBloc<PostBloc>().add(CameraEvent(context: context));
+                      },
+                    ),
+                  );
+                },
+                icon: const Icon(
+                  Icons.add, // Simple plus icon
+                  color: IsrColors.white,
+                  size: 24,
+                ),
+              ),
+            ),
+            IsrDimens.boxHeight(IsrDimens.five),
+            Text(
+              IsrTranslationFile.create,
+              style: IsrStyles.white12,
+            ),
+            IsrDimens.boxHeight(IsrDimens.ten),
+            // if (widget.mediaType == kVideoType) ...[
+            //   _buildActionButton(
+            //     icon: isMuted ? AssetConstants.icVolumeMute : AssetConstants.icVolumeUp,
+            //     label: isMuted ? IsrTranslationFile.unmute : IsrTranslationFile.mute,
+            //     onTap: _toggleSound,
+            //   ),
+            //   IsrDimens.boxHeight(IsrDimens.twenty),
+            // ],
             _buildActionButton(
               icon: widget.isLiked ? AssetConstants.icLikeSelected : AssetConstants.icLikeUnSelected,
               label: widget.likesCount.toString(),
@@ -314,7 +332,8 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
             IsrDimens.boxHeight(IsrDimens.twenty),
             _buildActionButton(
               icon: AssetConstants.icMoreIcon,
-              onTap: () {},
+              label: '',
+              onTap: _showMoreOptionsDialog,
             ),
           ],
         ),
@@ -554,159 +573,159 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
       );
 
   @override
-  Widget build(BuildContext context) {
-    if (widget.mediaType == kVideoType) {
-      videoPlayerController?.setVolume(widget.isReelsMuted ? 0.0 : 1.0);
-    }
-
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        // Media content with gesture detection
-        GestureDetector(
-          onTap: () {
-            if (widget.showBlur == true || widget.mediaType == kPictureType) {
-              return;
-            }
-            isPlaying = !isPlaying;
-            if (isPlaying) {
-              videoPlayerController?.pause();
-              playPause();
-            } else {
-              videoPlayerController?.play();
-              playPause();
-            }
-          },
-          onDoubleTap: () async {
-            widget.onDoubleTap();
-            isDoubleTapped = true;
-            mountUpdate();
-            await Future<void>.delayed(const Duration(seconds: 1));
-            isDoubleTapped = false;
-            mountUpdate();
-          },
-          onLongPressStart: (details) {
-            if (widget.mediaType == kVideoType) {
-              videoPlayerController?.pause();
-            }
-            widget.onLongPressStart();
-            mountUpdate();
-          },
-          onLongPressEnd: (value) {
-            if (widget.mediaType == kVideoType) {
-              videoPlayerController?.play();
-            }
-            widget.onLongPressEnd();
-            mountUpdate();
-          },
-          child: VisibilityDetector(
-            key: Key('${widget.mediaUrl}'),
-            onVisibilityChanged: (info) {
+  Widget build(BuildContext context) => Stack(
+        fit: StackFit.expand,
+        children: [
+          // Media content with gesture detection
+          GestureDetector(
+            onTap: () {
               if (widget.showBlur == true || widget.mediaType == kPictureType) {
                 return;
               }
-              if (info.visibleFraction > 0.1) {
-                isVideoVisible = true;
-                mountUpdate();
-                if (videoPlayerController?.value.isPlaying == false) {
-                  videoPlayerController?.seekTo(Duration.zero);
-                  videoPlayerController?.play();
-                  isPlaying = !isPlaying;
-                  mountUpdate();
-                }
+              isPlaying = !isPlaying;
+              if (isPlaying) {
+                videoPlayerController?.pause();
+                playPause();
               } else {
-                isVideoVisible = false;
-                mountUpdate();
-                if (videoPlayerController?.value.isPlaying == true) {
-                  videoPlayerController?.pause();
-                  isPlaying = !isPlaying;
-                  mountUpdate();
-                }
+                videoPlayerController?.play();
+                playPause();
               }
             },
-            child: Stack(
-              fit: StackFit.expand,
-              alignment: Alignment.center,
-              children: [
-                _buildMediaContent(),
-                ClipRRect(
-                  borderRadius: BorderRadius.zero,
-                  child: SizedBox(
-                    width: IsrDimens.getScreenWidth(context),
-                    child: AnimatedOpacity(
-                      opacity: widget.isReelsLongPressed ? 0.0 : 1.0,
-                      duration: const Duration(milliseconds: 100),
-                      child: Container(
-                        height: IsrDimens.getScreenHeight(context),
-                        width: IsrDimens.getScreenWidth(context),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              IsrColors.black.applyOpacity(.6),
-                              IsrColors.black.applyOpacity(.0),
-                              IsrColors.black.applyOpacity(.0),
-                              IsrColors.black.applyOpacity(.4),
-                            ],
+            onDoubleTap: () async {
+              if (widget.onDoubleTap != null) {
+                widget.onDoubleTap!();
+                isDoubleTapped = true;
+                mountUpdate();
+                await Future<void>.delayed(const Duration(seconds: 1));
+                isDoubleTapped = false;
+                mountUpdate();
+              }
+            },
+            onLongPressStart: (details) {
+              if (widget.mediaType == kVideoType) {
+                videoPlayerController?.pause();
+              }
+              if (widget.onLongPressStart != null) {
+                widget.onLongPressStart!();
+              }
+              mountUpdate();
+            },
+            onLongPressEnd: (value) {
+              if (widget.mediaType == kVideoType) {
+                videoPlayerController?.play();
+              }
+              if (widget.onLongPressEnd != null) {
+                widget.onLongPressEnd!();
+              }
+              mountUpdate();
+            },
+            child: VisibilityDetector(
+              key: Key('${widget.mediaUrl}'),
+              onVisibilityChanged: (info) {
+                if (widget.showBlur == true || widget.mediaType == kPictureType) {
+                  return;
+                }
+                if (info.visibleFraction > 0.1) {
+                  isVideoVisible = true;
+                  mountUpdate();
+                  if (videoPlayerController?.value.isPlaying == false) {
+                    videoPlayerController?.seekTo(Duration.zero);
+                    videoPlayerController?.play();
+                    isPlaying = !isPlaying;
+                    mountUpdate();
+                  }
+                } else {
+                  isVideoVisible = false;
+                  mountUpdate();
+                  if (videoPlayerController?.value.isPlaying == true) {
+                    videoPlayerController?.pause();
+                    isPlaying = !isPlaying;
+                    mountUpdate();
+                  }
+                }
+              },
+              child: Stack(
+                fit: StackFit.expand,
+                alignment: Alignment.center,
+                children: [
+                  _buildMediaContent(),
+                  ClipRRect(
+                    borderRadius: BorderRadius.zero,
+                    child: SizedBox(
+                      width: IsrDimens.getScreenWidth(context),
+                      child: AnimatedOpacity(
+                        opacity: widget.isReelsLongPressed == true ? 0.0 : 1.0,
+                        duration: const Duration(milliseconds: 100),
+                        child: Container(
+                          height: IsrDimens.getScreenHeight(context),
+                          width: IsrDimens.getScreenWidth(context),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                IsrColors.black.applyOpacity(.6),
+                                IsrColors.black.applyOpacity(.0),
+                                IsrColors.black.applyOpacity(.0),
+                                IsrColors.black.applyOpacity(.4),
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // Gradient overlay
-        Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                IsrColors.black.applyOpacity(0.4),
-                Colors.transparent,
-                Colors.transparent,
-                IsrColors.black.applyOpacity(0.4),
-              ],
-            ),
-          ),
-        ),
-
-        // Right side actions
-        _buildRightSideActions(),
-
-        // Bottom section
-        _buildBottomSection(),
-
-        // Video controls
-        if (widget.mediaType == kVideoType)
-          AnimatedOpacity(
-            opacity: playPausedAction ? 1.0 : 0.0,
-            duration: const Duration(milliseconds: 500),
-            child: Center(
-              child: AppImage.svg(
-                isPlaying ? AssetConstants.pausedRoundedSvg : AssetConstants.reelsPlaySvg,
+                ],
               ),
             ),
           ),
 
-        // Double tap heart animation
-        if (isDoubleTapped)
-          Center(
-            child: Lottie.asset(
-              AssetConstants.heartAnimation,
-              width: IsrDimens.oneHundredFifty,
-              height: IsrDimens.oneHundredFifty,
-              animate: true,
+          // Gradient overlay
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  IsrColors.black.applyOpacity(0.4),
+                  Colors.transparent,
+                  Colors.transparent,
+                  IsrColors.black.applyOpacity(0.4),
+                ],
+              ),
             ),
           ),
-      ],
-    );
-  }
+
+          // Right side actions
+          _buildRightSideActions(),
+
+          // Bottom section
+          _buildBottomSection(),
+
+          // Video controls
+          if (widget.mediaType == kVideoType)
+            AnimatedOpacity(
+              opacity: playPausedAction ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 500),
+              child: Center(
+                child: AppImage.svg(
+                  isPlaying ? AssetConstants.pausedRoundedSvg : AssetConstants.reelsPlaySvg,
+                ),
+              ),
+            ),
+
+          // Double tap heart animation
+          if (isDoubleTapped)
+            Center(
+              child: Lottie.asset(
+                AssetConstants.heartAnimation,
+                width: IsrDimens.oneHundredFifty,
+                height: IsrDimens.oneHundredFifty,
+                animate: true,
+              ),
+            ),
+        ],
+      );
 
   //calls api to follow and unfollow user
   Future<void> _callFollowFunction() async {
@@ -756,5 +775,28 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
       isLikeLoading = false;
       mountUpdate();
     }
+  }
+
+  void _toggleSound() {
+    if (widget.mediaType != kVideoType) return;
+
+    setState(() {
+      isMuted = !isMuted;
+      videoPlayerController?.setVolume(isMuted ? 0.0 : 1.0);
+    });
+    widget.onTapVolume?.call();
+  }
+
+  void _showMoreOptionsDialog() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isDismissible: true,
+      enableDrag: true,
+      builder: (dialogContext) => IsrMoreOptionsBottomSheet(
+        onPressSave: widget.onPressSave,
+        onPressReport: widget.onPressReport,
+      ),
+    );
   }
 }

@@ -33,4 +33,11 @@ class IsrTranslationFile {
   static const String save = 'Save';
   static const String saved = 'Saved';
   static const String share = 'Share';
+  static const mute = 'Mute';
+  static const unmute = 'Unmute';
+  static const moreOptions = 'More Options';
+  static const reportPost = 'Report Post';
+  static const postReportedSuccessfully = 'Post reported successfully';
+  static const report = 'Report';
+  static const confirm = 'Confirm';
 }

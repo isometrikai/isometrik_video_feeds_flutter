@@ -6,4 +6,6 @@ class PostApiEndPoints {
   static const postSavePost = '/social/v1/post/save';
   static const postLike = '/social/v1/like';
   static const postUnLike = '/social/v1/unlike';
+  static const String reportPost = '/social/v1/reportReasons';
+  static const String getReportReasons = '/social/v1/reportReasons';
 }

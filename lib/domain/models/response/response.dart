@@ -6,3 +6,4 @@ export 'images.dart';
 export 'location.dart';
 export 'offer_name.dart';
 export 'post_response.dart';
+export 'report_reason_response.dart';

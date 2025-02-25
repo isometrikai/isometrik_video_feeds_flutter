@@ -45,6 +45,7 @@ class IsrDimens {
   static final double twentyEight = 28.sp;
   static final double thirty = 30.sp;
   static final double thirtyTwo = 32.sp;
+  static final double thirtyFive = 35.sp;
   static final double thirtySix = 36.sp;
   static final double thirtySeven = 37.sp;
   static final double thirtyEight = 38.sp;

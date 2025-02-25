@@ -40,4 +40,17 @@ abstract class PostApiService extends BaseService {
     required LikeAction likeAction,
     required Header header,
   });
+
+  Future<ResponseModel> reportPost({
+    required bool isLoading,
+    required String postId,
+    required String message,
+    required String reason,
+    required Header header,
+  });
+
+  Future<ResponseModel> getReportReasons({
+    required bool isLoading,
+    required Header header,
+  });
 }

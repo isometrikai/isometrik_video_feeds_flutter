@@ -21,5 +21,9 @@ class UseCaseInjection {
         () => FollowPostUseCase(InjectionUtils.getRepo<PostRepository>()));
     InjectionUtils.registerUseCase<SavePostUseCase>(() => SavePostUseCase(InjectionUtils.getRepo<PostRepository>()));
     InjectionUtils.registerUseCase<LikePostUseCase>(() => LikePostUseCase(InjectionUtils.getRepo<PostRepository>()));
+    InjectionUtils.registerUseCase<ReportPostUseCase>(
+        () => ReportPostUseCase(InjectionUtils.getRepo<PostRepository>()));
+    InjectionUtils.registerUseCase<GetReportReasonsUseCase>(
+        () => GetReportReasonsUseCase(InjectionUtils.getRepo<PostRepository>()));
   }
 }

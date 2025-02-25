@@ -18,34 +18,32 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => BlocBuilder<HomeBloc, HomeState>(
-        builder: (context, state) => Scaffold(
-          body: BlocBuilder<HomeBloc, HomeState>(
-            builder: (context, state) {
-              if (state is HomeLoading) {
-                return const Center(
-                  child: CircularProgressIndicator(),
-                );
-              }
+  Widget build(BuildContext context) => Scaffold(
+        body: BlocBuilder<HomeBloc, HomeState>(
+          builder: (context, state) {
+            if (state is HomeLoading) {
+              return const Center(
+                child: CircularProgressIndicator(),
+              );
+            }
 
-              if (state is HomeError) {
-                return Center(
-                  child: Text(
-                    'Error: ${state.message}',
-                    style: const TextStyle(color: Colors.red),
-                  ),
-                );
-              }
+            if (state is HomeError) {
+              return Center(
+                child: Text(
+                  'Error: ${state.message}',
+                  style: const TextStyle(color: Colors.red),
+                ),
+              );
+            }
 
-              if (state is HomeLoaded) {
-                return IsrReelView(
-                  context: context,
-                );
-              }
+            if (state is HomeLoaded) {
+              return IsrReelView(
+                context: context,
+              );
+            }
 
-              return const SizedBox.shrink();
-            },
-          ),
+            return const SizedBox.shrink();
+          },
         ),
       );
 }

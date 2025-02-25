@@ -21,6 +21,8 @@ class BlocInjection {
         InjectionUtils.getUseCase<FollowPostUseCase>(),
         InjectionUtils.getUseCase<SavePostUseCase>(),
         InjectionUtils.getUseCase<LikePostUseCase>(),
+        InjectionUtils.getUseCase<ReportPostUseCase>(),
+        InjectionUtils.getUseCase<GetReportReasonsUseCase>(),
       ),
     );
   }

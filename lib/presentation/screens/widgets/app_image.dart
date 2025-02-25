@@ -252,6 +252,7 @@ class _Network extends StatelessWidget {
         width: width,
         height: height,
         borderRadius: borderRadius,
+        backgroundColor: Theme.of(context).primaryColor,
         placeHolderName: placeHolderName,
         boxShape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
         child: name.isEmptyOrNull == false

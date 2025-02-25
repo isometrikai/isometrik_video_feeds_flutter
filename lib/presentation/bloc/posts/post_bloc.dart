@@ -24,6 +24,8 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     this._followPostUseCase,
     this._savePostUseCase,
     this._likePostUseCase,
+    this._reportPostUseCase,
+    this._getReportReasonsUseCase,
   ) : super(PostInitial(isLoading: true)) {
     on<StartPost>(_onStartPost);
     on<GetFollowingPostEvent>(_getFollowingPost);
@@ -33,6 +35,8 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     on<FollowUserEvent>(_followUser);
     on<SavePostEvent>(_savePost);
     on<LikePostEvent>(_likePost);
+    on<ReportPostEvent>(_reportPost);
+    on<GetReasonEvent>(_getReason);
   }
 
   final LocalDataUseCase _localDataUseCase;
@@ -42,6 +46,9 @@ class PostBloc extends Bloc<PostEvent, PostState> {
   final FollowPostUseCase _followPostUseCase;
   final SavePostUseCase _savePostUseCase;
   final LikePostUseCase _likePostUseCase;
+  final ReportPostUseCase _reportPostUseCase;
+  final GetReportReasonsUseCase _getReportReasonsUseCase;
+
   final List<PostData> _followingPostList = [];
   final List<PostData> _trendingPostList = [];
   var reelsPageFollowingController = PageController();
@@ -59,23 +66,31 @@ class PostBloc extends Bloc<PostEvent, PostState> {
   void _onStartPost(StartPost event, Emitter<PostState> emit) async {
     final userInfoString = await _localDataUseCase.getUserInfo();
     if (userInfoString.isEmptyOrNull == false) {
-      _userInfoClass = UserInfoClass.fromJson(
-          jsonDecode(userInfoString) as Map<String, dynamic>);
+      _userInfoClass = UserInfoClass.fromJson(jsonDecode(userInfoString) as Map<String, dynamic>);
       emit(UserInformationLoaded(userInfoClass: _userInfoClass));
     }
+
+    // Load initial posts without pagination
     add(GetFollowingPostEvent(isLoading: false, isPagination: false));
     add(GetTrendingPostEvent(isLoading: false, isPagination: false));
   }
 
-  FutureOr<void> _getFollowingPost(
-      GetFollowingPostEvent event, Emitter<PostState> emit) async {
-    if (!event.isPagination) {
+  FutureOr<void> _getFollowingPost(GetFollowingPostEvent event, Emitter<PostState> emit) async {
+    // For refresh, clear cache and start from page 0
+    if (event.isRefresh) {
+      _followingPostList.clear();
       _currentPage = 0;
       _hasMoreData = true;
-      _followingPostList.clear();
+      _isLoadingMore = false;
+    } else if (!event.isPagination && _followingPostList.isNotEmpty) {
+      // If we have cached posts and it's not a refresh, emit them immediately
+      emit(FollowingPostsLoadedState(followingPosts: _followingPostList));
     }
 
-    if (event.isPagination && (_isLoadingMore || !_hasMoreData)) {
+    if (!event.isPagination) {
+      _currentPage = event.isRefresh ? 0 : 1;
+      _hasMoreData = true;
+    } else if (_isLoadingMore || !_hasMoreData) {
       return;
     }
 
@@ -97,29 +112,36 @@ class PostBloc extends Bloc<PostEvent, PostState> {
       if (event.isPagination) {
         _followingPostList.addAll(newPosts);
       } else {
-        _followingPostList.clear();
-        _followingPostList.addAll(newPosts);
+        _followingPostList
+          ..clear()
+          ..addAll(newPosts);
       }
 
       _currentPage++;
+      emit(FollowingPostsLoadedState(followingPosts: _followingPostList));
     } else {
       ErrorHandler.showAppError(appError: apiResult.error);
     }
 
     _isLoadingMore = false;
-    emit(FollowingPostsLoadedState(followingPosts: _followingPostList));
   }
 
-  FutureOr<void> _getTrendingPost(
-      GetTrendingPostEvent event, Emitter<PostState> emit) async {
-    if (!event.isPagination) {
+  FutureOr<void> _getTrendingPost(GetTrendingPostEvent event, Emitter<PostState> emit) async {
+    // For refresh, clear cache and start from page 0
+    if (event.isRefresh) {
+      _trendingPostList.clear();
       _trendingCurrentPage = 0;
       _hasTrendingMoreData = true;
-      _trendingPostList.clear();
+      _isTrendingLoadingMore = false;
+    } else if (!event.isPagination && _trendingPostList.isNotEmpty) {
+      // If we have cached posts and it's not a refresh, emit them immediately
+      emit(TrendingPostsLoadedState(trendingPosts: _trendingPostList));
     }
 
-    if (event.isPagination &&
-        (_isTrendingLoadingMore || !_hasTrendingMoreData)) {
+    if (!event.isPagination) {
+      _trendingCurrentPage = event.isRefresh ? 0 : 1;
+      _hasTrendingMoreData = true;
+    } else if (_isTrendingLoadingMore || !_hasTrendingMoreData) {
       return;
     }
 
@@ -136,13 +158,14 @@ class PostBloc extends Bloc<PostEvent, PostState> {
       if (newPosts.isEmpty) {
         _hasTrendingMoreData = false;
       } else {
-        _trendingCurrentPage++;
         if (event.isPagination) {
           _trendingPostList.addAll(newPosts);
         } else {
-          _trendingPostList.clear();
-          _trendingPostList.addAll(newPosts);
+          _trendingPostList
+            ..clear()
+            ..addAll(newPosts);
         }
+        _trendingCurrentPage++;
         emit(TrendingPostsLoadedState(trendingPosts: _trendingPostList));
       }
     } else {
@@ -153,8 +176,7 @@ class PostBloc extends Bloc<PostEvent, PostState> {
   }
 
   FutureOr<void> _goToCamera(CameraEvent event, Emitter<PostState> emit) async {
-    final result = await InjectionUtils.getRouteManagement()
-        .goToCameraView(context: event.context);
+    final result = await InjectionUtils.getRouteManagement().goToCameraView(context: event.context);
     PostAttributeClass? postAttributeClass = PostAttributeClass();
     if (result != null) {
       final mediaSource = result['mediaSource'] as MediaSource?;
@@ -174,48 +196,40 @@ class PostBloc extends Bloc<PostEvent, PostState> {
             ) ??
             '';
         if (trimmedVideoThumbnailPath.isEmpty) return;
-        final trimmedVideoThumbnailBytes =
-            await File(trimmedVideoThumbnailPath).readAsBytes();
+        final trimmedVideoThumbnailBytes = await File(trimmedVideoThumbnailPath).readAsBytes();
         postAttributeClass.thumbnailUrl = trimmedVideoThumbnailPath;
         postAttributeClass.thumbnailBytes = trimmedVideoThumbnailBytes;
         postAttributeClass.duration = result['duration'] as int? ?? 0;
         postAttributeClass.postType = mediaType;
       }
       if (event.context.mounted) {
-        if (mediaSource != null &&
-            mediaSource == MediaSource.gallery &&
-            mediaType == PostType.video) {
+        if (mediaSource != null && mediaSource == MediaSource.gallery && mediaType == PostType.video) {
           postAttributeClass = await InjectionUtils.getRouteManagement()
-              .goToVideoTrimView(
-                  context: event.context,
-                  postAttributeClass: postAttributeClass);
+              .goToVideoTrimView(context: event.context, postAttributeClass: postAttributeClass);
           if (postAttributeClass != null && event.context.mounted) {
-            InjectionUtils.getRouteManagement().goToPostAttributeView(
-                context: event.context, postAttributeClass: postAttributeClass);
+            InjectionUtils.getRouteManagement()
+                .goToPostAttributeView(context: event.context, postAttributeClass: postAttributeClass);
           }
         } else {
-          InjectionUtils.getRouteManagement().goToPostAttributeView(
-              context: event.context, postAttributeClass: postAttributeClass);
+          InjectionUtils.getRouteManagement()
+              .goToPostAttributeView(context: event.context, postAttributeClass: postAttributeClass);
         }
       }
     }
   }
 
-  FutureOr<void> _createPost(
-      CreatePostEvent event, Emitter<PostState> emit) async {
+  FutureOr<void> _createPost(CreatePostEvent event, Emitter<PostState> emit) async {
     final apiResult = await _createPostUseCase.executeCreatePost(
       isLoading: true,
       createPostRequest: event.createPostRequest?.toJson(),
     );
     if (apiResult.isSuccess) {
     } else {
-      ErrorHandler.showAppError(
-          appError: apiResult.error, isNeedToShowError: true);
+      ErrorHandler.showAppError(appError: apiResult.error, isNeedToShowError: true);
     }
   }
 
-  FutureOr<void> _followUser(
-      FollowUserEvent event, Emitter<PostState> emit) async {
+  FutureOr<void> _followUser(FollowUserEvent event, Emitter<PostState> emit) async {
     final apiResult = await _followPostUseCase.executeFollowPost(
       isLoading: false,
       followingId: event.followingId,
@@ -262,6 +276,35 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     } else {
       ErrorHandler.showAppError(appError: apiResult.error);
       event.onComplete.call(false);
+    }
+  }
+
+  FutureOr<void> _reportPost(ReportPostEvent event, Emitter<PostState> emit) async {
+    final apiResult = await _reportPostUseCase.executeReportPost(
+      isLoading: false,
+      postId: event.postId,
+      message: event.message,
+      reason: event.reason,
+    );
+
+    if (apiResult.isSuccess) {
+      event.onComplete.call(true);
+    } else {
+      ErrorHandler.showAppError(appError: apiResult.error);
+      event.onComplete.call(false);
+    }
+  }
+
+  FutureOr<void> _getReason(GetReasonEvent event, Emitter<PostState> emit) async {
+    final apiResult = await _getReportReasonsUseCase.executeGetReportReasons(
+      isLoading: false,
+    );
+
+    if (apiResult.isSuccess) {
+      event.onComplete.call(apiResult.data);
+    } else {
+      ErrorHandler.showAppError(appError: apiResult.error);
+      event.onComplete.call([]);
     }
   }
 }
