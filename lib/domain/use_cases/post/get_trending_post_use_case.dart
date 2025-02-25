@@ -8,11 +8,15 @@ class GetTrendingPostUseCase extends BaseUseCase {
 
   Future<ApiResult<PostResponse?>> executeGetTrendingPost({
     required bool isLoading,
+    required int page,
+    required int pageLimit,
     Map<String, dynamic>? createPostRequest,
   }) async =>
       await super.execute(() async {
         final response = await _repository.getTrendingPost(
           isLoading: isLoading,
+          page: page,
+          pageLimit: pageLimit,
         );
         return ApiResult(data: response.responseCode == 200 ? response.data : null);
       });

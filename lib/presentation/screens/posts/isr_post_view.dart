@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/di/di.dart';
+import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -43,15 +44,14 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
         child: Scaffold(
           backgroundColor: Colors.black12,
           body: BlocBuilder<PostBloc, PostState>(
-            buildWhen: (previousState, currentState) =>
-                currentState is UserInformationLoaded || currentState is PostDataLoadedState,
+            buildWhen: (previousState, currentState) => currentState is UserInformationLoaded,
             builder: (context, state) {
               _userInfoClass = state is UserInformationLoaded ? state.userInfoClass : null;
               return state is PostInitial
                   ? state.isLoading == true
                       ? Center(child: IsrVideoReelUtility.loaderWidget())
                       : const SizedBox.shrink()
-                  : state is UserInformationLoaded || state is PostDataLoadedState
+                  : state is UserInformationLoaded
                       ? DefaultTabController(
                           length: 2,
                           child: Stack(

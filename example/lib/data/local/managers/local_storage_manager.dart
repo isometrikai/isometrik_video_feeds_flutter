@@ -35,16 +35,8 @@ class LocalStorageManager {
         // First launch, so app might have been reinstalled
         // Clean stored data (e.g., token) if needed
         await clearData();
-        await deleteAllSecuredValues();
         final token = await getSecuredValue(LocalStorageKeys.accessToken);
         debugPrint('token....$token');
-
-        // Set first launch flag to false
-        await _sharedPreferencesManager.saveValue(
-          LocalStorageKeys.isFirstTimeVisit,
-          false,
-          SavedValueDataType.bool,
-        );
       }
     } catch (e, st) {
       Utility.debugCatchLog(error: e, stackTrace: st);
@@ -79,11 +71,10 @@ class LocalStorageManager {
 
   //clear data
   Future<void> clearData() async {
-    final userId = await getSecuredValue(LocalStorageKeys.userId);
-    // Retrieve the value you want to keep
-    final preservedValue = _sharedPreferencesManager.getValue(userId, SavedValueDataType.string) as String;
+    await deleteAllSecuredValues();
     await _sharedPreferencesManager.clearData();
-    await saveValue(userId, preservedValue, SavedValueDataType.string);
+    // Set first launch flag to false
+    await saveValue(LocalStorageKeys.isFirstTimeVisit, false, SavedValueDataType.bool);
   }
 
   Future<T?> getValue<T>(String key, SavedValueDataType saveValueDataType) async =>

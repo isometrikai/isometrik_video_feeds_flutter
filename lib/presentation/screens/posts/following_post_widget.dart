@@ -20,12 +20,19 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
 
   @override
   Widget build(BuildContext context) => BlocBuilder<PostBloc, PostState>(
-        buildWhen: (previousState, currentState) => currentState is PostDataLoadedState,
+        buildWhen: (previousState, currentState) => currentState is FollowingPostsLoadedState,
         builder: (context, state) {
-          if (state is PostDataLoadedState && state.postDataList.isEmptyOrNull == false) {
-            _followingPostList = state.postDataList;
+          if (state is FollowingPostsLoadedState) {
+            _followingPostList = state.followingPosts;
+          } else if (state is SavePostSuccessState) {
+            // ... handle save state
+          } else if (state is FollowSuccessState) {
+            // ... handle follow state
+          } else if (state is LikeSuccessState) {
+            // ... handle like state
           }
-          return state is PostDataLoadedState && state.postDataList.isEmptyOrNull == false
+
+          return _followingPostList.isEmptyOrNull == false
               ? RefreshIndicator(
                   onRefresh: () async {
                     _postBloc.add(GetFollowingPostEvent(isLoading: false, isPagination: false));

@@ -8,8 +8,6 @@ import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
-export 'domain/domain.dart';
-
 class IsrVideoReelConfig {
   static BuildContext? buildContext;
   static var isSdkInitialize = false;

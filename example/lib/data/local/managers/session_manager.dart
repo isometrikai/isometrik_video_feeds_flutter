@@ -122,7 +122,5 @@ class SessionManager {
 
   void clearSession() async {
     await _localStorageManager.clearData();
-    await _localStorageManager.deleteAllSecuredValues();
-    await _localStorageManager.saveValue(LocalStorageKeys.isFirstTimeVisit, false, SavedValueDataType.bool);
   }
 }

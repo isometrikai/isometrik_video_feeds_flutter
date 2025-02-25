@@ -8,16 +8,22 @@ class PostInitial extends PostState {
   final bool? isLoading;
 }
 
-class PostDataLoadedState extends PostState {
-  PostDataLoadedState({required this.postDataList});
-
-  final List<PostData> postDataList;
-}
-
 class UserInformationLoaded extends PostState {
   UserInformationLoaded({this.userInfoClass});
 
   final UserInfoClass? userInfoClass;
+}
+
+// Following Posts States
+class FollowingPostsLoadedState extends PostState {
+  FollowingPostsLoadedState({required this.followingPosts});
+  final List<PostData> followingPosts;
+}
+
+// Trending Posts States
+class TrendingPostsLoadedState extends PostState {
+  TrendingPostsLoadedState({required this.trendingPosts});
+  final List<PostData> trendingPosts;
 }
 
 class FollowLoadingState extends PostState {

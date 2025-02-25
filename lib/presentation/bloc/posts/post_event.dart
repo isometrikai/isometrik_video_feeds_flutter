@@ -16,9 +16,13 @@ class GetFollowingPostEvent extends PostEvent {
 }
 
 class GetTrendingPostEvent extends PostEvent {
-  GetTrendingPostEvent({required this.isLoading});
+  GetTrendingPostEvent({
+    required this.isLoading,
+    this.isPagination = false,
+  });
 
   final bool isLoading;
+  final bool isPagination;
 }
 
 class FollowUserEvent extends PostEvent {

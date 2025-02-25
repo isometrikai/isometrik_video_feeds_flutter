@@ -52,12 +52,16 @@ class PostRepositoryImpl implements PostRepository {
   @override
   Future<CustomResponse<PostResponse?>> getTrendingPost({
     required bool isLoading,
+    required int page,
+    required int pageLimit,
   }) async {
     try {
       final header = await _dataSource.getHeader();
       final response = await _apiService.getTrendingPosts(
         isLoading: isLoading,
         header: header,
+        page: page,
+        pageLimit: pageLimit,
       );
       return _postMapper.mapPostResponseData(response);
     } catch (e) {

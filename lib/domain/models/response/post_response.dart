@@ -19,18 +19,18 @@ class PostResponse {
 
   factory PostResponse.fromJson(Map<String, dynamic> json) => PostResponse(
         message: json['message'] as String? ?? '',
-        totalPosts: json['totalPosts'] == null ? null : TotalPosts.fromJson(json['totalPosts'] as Map<String, dynamic>),
+        totalPosts: json['totalPosts'] as num? ?? 0,
         data: json['data'] == null
             ? []
             : List<PostData>.from((json['data'] as List).map((x) => PostData.fromJson(x as Map<String, dynamic>))),
       );
   String? message;
-  TotalPosts? totalPosts;
+  num? totalPosts;
   List<PostData>? data;
 
   Map<String, dynamic> toJson() => {
         'message': message,
-        'totalPosts': totalPosts?.toJson(),
+        'totalPosts': totalPosts,
         'data': data == null ? [] : List<dynamic>.from(data!.map((x) => x.toJson())),
       };
 }

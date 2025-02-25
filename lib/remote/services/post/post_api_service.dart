@@ -17,6 +17,8 @@ abstract class PostApiService extends BaseService {
   Future<ResponseModel> getTrendingPosts({
     required bool isLoading,
     required Header header,
+    required int page,
+    required int pageLimit,
   });
 
   Future<ResponseModel> followPost({

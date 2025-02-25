@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:ism_video_reel_player/isr_video_reel_config.dart' as reels_sdk;
+import 'package:ism_video_reel_player/ism_video_reel_player.dart' as isr;
 import 'package:ism_video_reel_player_example/domain/domain.dart';
 import 'package:ism_video_reel_player_example/res/res.dart';
 
@@ -28,11 +28,11 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
   Future<void> _initializeReelsSdk() async {
     final accessToken = await _localDataUseCase.getAccessToken();
-    await reels_sdk.IsrVideoReelConfig.initializeSdk(
+    await isr.IsrVideoReelConfig.initializeSdk(
       baseUrl: AppUrl.appBaseUrl,
-      postInfo: reels_sdk.PostInfoClass(
+      postInfo: isr.PostInfoClass(
         accessToken: accessToken,
-        userInformation: reels_sdk.UserInfoClass(
+        userInformation: isr.UserInfoClass(
           userId: '37483783493',
           userName: 'asjad',
           firstName: 'Asjad',

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/di/di.dart';
+import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -34,8 +35,8 @@ class _IsrReelViewState extends State<IsrReelView> {
   @override
   Widget build(BuildContext context) => MultiBlocProvider(
         providers: [
-          BlocProvider(create: (context) => isrGetIt<IsmLandingBloc>()),
-          BlocProvider(create: (context) => isrGetIt<PostBloc>()),
+          BlocProvider(create: (context) => InjectionUtils.getBloc<IsmLandingBloc>()),
+          BlocProvider(create: (context) => InjectionUtils.getBloc<PostBloc>()),
         ],
         child: BlocListener<IsmLandingBloc, IsmLandingState>(
           listener: (context, state) {

@@ -68,12 +68,17 @@ class PostApiServiceProvider extends PostApiService {
   Future<ResponseModel> getTrendingPosts({
     required bool isLoading,
     required Header header,
+    required int page,
+    required int pageLimit,
   }) async =>
       await networkClient.makeRequest(
         PostApiEndPoints.getTrendingPosts,
         NetworkRequestType.get,
         {},
-        {},
+        {
+          'offset': page.toString(),
+          'limit': pageLimit.toString(),
+        },
         {
           'Accept': AppConstants.headerAccept,
           'Content-Type': AppConstants.headerContentType,
