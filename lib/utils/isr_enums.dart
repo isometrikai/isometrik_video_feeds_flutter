@@ -41,9 +41,10 @@ enum PostSectionType {
   trending,
 }
 
-enum PostType {
+enum MediaType {
   video,
   photo,
+  both,
 }
 
 enum MediaSource {

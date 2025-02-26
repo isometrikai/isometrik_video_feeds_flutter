@@ -53,4 +53,11 @@ abstract class PostApiService extends BaseService {
     required bool isLoading,
     required Header header,
   });
+
+  Future<ResponseModel> getCloudDetails({
+    required bool isLoading,
+    required String key,
+    required String value,
+    required Header header,
+  });
 }

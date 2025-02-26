@@ -231,4 +231,32 @@ class PostApiServiceProvider extends PostApiService {
         },
         isLoading,
       );
+
+  @override
+  Future<ResponseModel> getCloudDetails({
+    required bool isLoading,
+    required String key,
+    required String value,
+    required Header header,
+  }) async =>
+      await networkClient.makeRequest(
+        PostApiEndPoints.getCloudDetails,
+        NetworkRequestType.get,
+        null,
+        {
+          key: value,
+        },
+        {
+          'Accept': AppConstants.headerAccept,
+          'Content-Type': AppConstants.headerContentType,
+          'Authorization': header.accessToken,
+          'language': header.language,
+          'currencySymbol': header.currencySymbol,
+          'currencyCode': header.currencyCode,
+          'platform': header.platForm.toString(),
+          'latitude': header.latitude.toString(),
+          'longitude': header.longitude.toString(),
+        },
+        isLoading,
+      );
 }

@@ -57,4 +57,13 @@ class IsrTranslationFile {
   static const noProductsLinkedYet = 'No products linked yet!';
   static const connectProductsToPost = 'Connect products to posts for better visibility and engagement';
   static const addProducts = 'Add Products';
+  static const String choosePhotoOrVideo = 'Choose photo or video';
+  static const String noNakedPicture = 'No naked picture. No soliciting. No escort services';
+  static const String takePhoto = 'Take photo';
+  static const String selectImageFromGallery = 'Select image from gallery';
+  static const String takeVideo = 'Take video';
+  static const String selectVideoFromGallery = 'Select video from gallery';
+  static const String change = 'Change';
+  static const String size = 'Size';
+  static const String duration = 'Duration';
 }

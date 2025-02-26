@@ -36,7 +36,7 @@ class _IsrPostAttributeViewState extends State<IsrPostAttributeView> {
   Future<void> initializeVideoPlayer(
     String path,
   ) async {
-    if (widget.postAttributeClass?.postType == PostType.video) {
+    if (widget.postAttributeClass?.postType == MediaType.video) {
       _isVideoInitializing = true;
       setState(() {});
       _videoPlayerController = VideoPlayerController.file(File(path));
@@ -84,7 +84,7 @@ class _IsrPostAttributeViewState extends State<IsrPostAttributeView> {
                         child: SizedBox(
                           width: IsrDimens.seventy,
                           height: IsrDimens.hundred,
-                          child: widget.postAttributeClass?.postType == PostType.photo
+                          child: widget.postAttributeClass?.postType == MediaType.photo
                               ? AppImage.file(
                                   widget.postAttributeClass?.url ?? '',
                                   fit: BoxFit.cover,
@@ -303,7 +303,7 @@ class _IsrPostAttributeViewState extends State<IsrPostAttributeView> {
     _createPostRequest.description = widget.postAttributeClass?.description;
     _createPostRequest.url = widget.postAttributeClass?.url;
     _createPostRequest.thumbnailUrl = widget.postAttributeClass?.thumbnailUrl;
-    _createPostRequest.mediaType = widget.postAttributeClass?.postType == PostType.video ? 2 : 1;
+    _createPostRequest.mediaType = widget.postAttributeClass?.postType == MediaType.video ? 2 : 1;
     _createPostRequest.imageUrl = widget.postAttributeClass?.url;
     _createPostRequest.duration = widget.postAttributeClass?.duration;
     _createPostRequest.mediaType = widget.postAttributeClass?.postType?.mediaType;

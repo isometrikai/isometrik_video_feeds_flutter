@@ -14,8 +14,12 @@ class IsrRouteManagement {
     _navigationService.go(context, IsrAppRoutes.postView);
   }
 
-  Future<Map<String, dynamic>?> goToCameraView({required BuildContext context}) async {
-    final result = await _navigationService.pushNamed(context, IsrRouteNames.cameraView) as Map<String, dynamic>;
+  Future<MediaInfoClass?> goToCameraView({required BuildContext context, MediaType mediaType = MediaType.photo}) async {
+    final result = await _navigationService.pushNamed(
+      context,
+      IsrRouteNames.cameraView,
+      arguments: {'mediaType': mediaType},
+    ) as MediaInfoClass?;
     return result;
   }
 

@@ -23,6 +23,7 @@ class BlocInjection {
         InjectionUtils.getUseCase<LikePostUseCase>(),
         InjectionUtils.getUseCase<ReportPostUseCase>(),
         InjectionUtils.getUseCase<GetReportReasonsUseCase>(),
+        InjectionUtils.getUseCase<GetCloudDetailsUseCase>(),
       ),
     );
   }

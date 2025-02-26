@@ -12,6 +12,7 @@ class PostAttributeClass {
     this.url,
     this.imageBaseUrl,
     this.thumbnailUrl,
+    this.coverImage,
     this.duration,
     this.isCaptionRequired,
     this.videoBytes,
@@ -24,9 +25,10 @@ class PostAttributeClass {
   String? url;
   String? imageBaseUrl;
   String? thumbnailUrl;
+  String? coverImage;
   int? duration;
   bool? isCaptionRequired;
   Uint8List? videoBytes;
   Uint8List? thumbnailBytes;
-  PostType? postType;
+  MediaType? postType;
 }

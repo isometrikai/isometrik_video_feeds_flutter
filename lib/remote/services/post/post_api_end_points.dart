@@ -8,4 +8,5 @@ class PostApiEndPoints {
   static const postUnLike = '/social/v1/unlike';
   static const String reportPost = '/social/v1/reportReasons';
   static const String getReportReasons = '/social/v1/reportReasons';
+  static const String getCloudDetails = '/v1/cloudinary';
 }

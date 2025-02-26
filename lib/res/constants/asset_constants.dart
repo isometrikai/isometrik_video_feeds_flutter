@@ -30,4 +30,6 @@ class AssetConstants {
   static const String icReportIcon = '${packageName}assets/icons/ic_report_icon.svg';
   static const String icCoverImagePlaceHolder = '${packageName}assets/icons/ic_cover_image_place_holder.svg';
   static const String icCloudUploadIcon = '${packageName}assets/icons/ic_cloud_upload_icon.svg';
+  static const String icCameraIcon = '${packageName}assets/icons/ic_camera_icon.svg';
+  static const String icGalleryIcon = '${packageName}assets/icons/ic_gallery_icon.svg';
 }

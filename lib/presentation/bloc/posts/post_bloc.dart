@@ -5,10 +5,8 @@ import 'dart:io';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:ism_video_reel_player/core/core.dart';
-import 'package:ism_video_reel_player/di/di.dart';
-import 'package:ism_video_reel_player/domain/domain.dart';
-import 'package:ism_video_reel_player/utils/utils.dart';
+import 'package:ism_video_reel_player/ism_video_reel_player.dart';
+import 'package:ism_video_reel_player/res/res.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
@@ -26,17 +24,19 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     this._likePostUseCase,
     this._reportPostUseCase,
     this._getReportReasonsUseCase,
+    this._getCloudDetailsUseCase,
   ) : super(PostInitial(isLoading: true)) {
     on<StartPost>(_onStartPost);
     on<GetFollowingPostEvent>(_getFollowingPost);
     on<GetTrendingPostEvent>(_getTrendingPost);
     on<CreatePostEvent>(_createPost);
-    on<CameraEvent>(_goToCamera);
+    on<MediaSourceEvent>(_openMediaSource);
     on<FollowUserEvent>(_followUser);
     on<SavePostEvent>(_savePost);
     on<LikePostEvent>(_likePost);
     on<ReportPostEvent>(_reportPost);
     on<GetReasonEvent>(_getReason);
+    on<GetCloudDetailsEvent>(_getCloudDetails);
   }
 
   final LocalDataUseCase _localDataUseCase;
@@ -48,6 +48,7 @@ class PostBloc extends Bloc<PostEvent, PostState> {
   final LikePostUseCase _likePostUseCase;
   final ReportPostUseCase _reportPostUseCase;
   final GetReportReasonsUseCase _getReportReasonsUseCase;
+  final GetCloudDetailsUseCase _getCloudDetailsUseCase;
 
   final List<PostData> _followingPostList = [];
   final List<PostData> _trendingPostList = [];
@@ -62,6 +63,7 @@ class PostBloc extends Bloc<PostEvent, PostState> {
   bool _hasTrendingMoreData = true;
   bool _isTrendingLoadingMore = false;
   final _trendingPageSize = 20;
+  CloudDetailsData? cloudDetailsData;
 
   void _onStartPost(StartPost event, Emitter<PostState> emit) async {
     final userInfoString = await _localDataUseCase.getUserInfo();
@@ -73,6 +75,11 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     // Load initial posts without pagination
     add(GetFollowingPostEvent(isLoading: false, isPagination: false));
     add(GetTrendingPostEvent(isLoading: false, isPagination: false));
+    InjectionUtils.getBloc<PostBloc>().add(GetCloudDetailsEvent(
+      isLoading: false,
+      key: 'folder',
+      value: '${AppConstants.cloudinaryFolder}/${DateTime.now().millisecondsSinceEpoch}',
+    ));
   }
 
   FutureOr<void> _getFollowingPost(GetFollowingPostEvent event, Emitter<PostState> emit) async {
@@ -175,19 +182,76 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     _isTrendingLoadingMore = false;
   }
 
-  FutureOr<void> _goToCamera(CameraEvent event, Emitter<PostState> emit) async {
-    final result = await InjectionUtils.getRouteManagement().goToCameraView(context: event.context);
+  FutureOr<void> _openMediaSource(MediaSourceEvent event, Emitter<PostState> emit) async {
+    MediaInfoClass? mediaInfoClass;
+    if (event.mediaSource == MediaSource.camera) {
+      mediaInfoClass =
+          await InjectionUtils.getRouteManagement().goToCameraView(context: event.context, mediaType: event.mediaType);
+    }
+    if (event.mediaSource == MediaSource.gallery && event.context.mounted) {
+      mediaInfoClass = await _pickFromGallery(event.context, event.mediaType, event.mediaSource);
+    }
+    if (mediaInfoClass != null) {
+      final postAttributeClass = await _processMediaInfo(event.context, mediaInfoClass, emit);
+      emit(
+        event.isCoverImage
+            ? CoverImageSelected(coverImage: postAttributeClass?.url)
+            : MediaSelectedState(postAttributeClass: postAttributeClass),
+      );
+    }
+  }
+
+  // Add this method in _CameraViewState
+  Future<MediaInfoClass?> _pickFromGallery(BuildContext context, MediaType mediaType, MediaSource mediaSource) async {
+    final picker = ImagePicker();
+    try {
+      XFile? file;
+      if (mediaType == MediaType.video) {
+        file = await picker.pickVideo(
+          source: ImageSource.gallery,
+          maxDuration: const Duration(seconds: 30),
+        );
+      } else if (mediaType == MediaType.photo) {
+        file = await picker.pickImage(
+          source: ImageSource.gallery,
+        );
+      }
+
+      if (file != null && file.path.isEmptyOrNull == false) {
+        debugPrint('Selected media path: ${file.path}');
+        final mediaInfoClass = MediaInfoClass(
+          duration: 0,
+          mediaType: mediaType,
+          mediaSource: mediaSource,
+          mediaFile: file,
+        );
+        return mediaInfoClass;
+      }
+    } catch (e) {
+      if (context.mounted) {
+        IsrVideoReelUtility.showInSnackBar('Error picking video from gallery', context);
+      }
+      debugPrint('Error picking video: $e');
+    }
+    return null;
+  }
+
+  FutureOr<PostAttributeClass?> _processMediaInfo(
+      BuildContext context, MediaInfoClass mediaInfoClass, Emitter<PostState> emit) async {
     PostAttributeClass? postAttributeClass = PostAttributeClass();
-    if (result != null) {
-      final mediaSource = result['mediaSource'] as MediaSource?;
-      final mediaType = result['mediaType'] as PostType?;
-      final mediaFile = result['mediaFile'] as XFile?;
-      if (mediaFile?.path.isEmptyOrNull == false) {
-        postAttributeClass.file = File(mediaFile?.path ?? '');
-        postAttributeClass.url = mediaFile?.path;
-        if (postAttributeClass.file == null) return;
-        if (postAttributeClass.file?.path == null) return;
-        if (postAttributeClass.file?.path.isEmpty == true) return;
+    final mediaType = mediaInfoClass.mediaType;
+    final mediaFile = mediaInfoClass.mediaFile;
+    if (mediaFile?.path.isEmptyOrNull == false) {
+      postAttributeClass.file = File(mediaFile?.path ?? '');
+      postAttributeClass.url = mediaFile?.path;
+      postAttributeClass.coverImage = mediaFile?.path;
+
+      if (postAttributeClass.file == null || postAttributeClass.file?.path.isEmptyOrNull == true) return null;
+
+      postAttributeClass.duration = mediaInfoClass.duration;
+      postAttributeClass.postType = mediaType;
+
+      if (mediaType == MediaType.video) {
         final trimmedVideoThumbnailPath = await VideoThumbnail.thumbnailFile(
               video: postAttributeClass.file?.path ?? '',
               imageFormat: ImageFormat.PNG,
@@ -195,27 +259,18 @@ class PostBloc extends Bloc<PostEvent, PostState> {
               thumbnailPath: (await getTemporaryDirectory()).path,
             ) ??
             '';
-        if (trimmedVideoThumbnailPath.isEmpty) return;
+        if (trimmedVideoThumbnailPath.isEmpty) return null;
         final trimmedVideoThumbnailBytes = await File(trimmedVideoThumbnailPath).readAsBytes();
         postAttributeClass.thumbnailUrl = trimmedVideoThumbnailPath;
+        postAttributeClass.coverImage = trimmedVideoThumbnailPath;
         postAttributeClass.thumbnailBytes = trimmedVideoThumbnailBytes;
-        postAttributeClass.duration = result['duration'] as int? ?? 0;
-        postAttributeClass.postType = mediaType;
-      }
-      if (event.context.mounted) {
-        if (mediaSource != null && mediaSource == MediaSource.gallery && mediaType == PostType.video) {
-          postAttributeClass = await InjectionUtils.getRouteManagement()
-              .goToVideoTrimView(context: event.context, postAttributeClass: postAttributeClass);
-          if (postAttributeClass != null && event.context.mounted) {
-            InjectionUtils.getRouteManagement()
-                .goToPostAttributeView(context: event.context, postAttributeClass: postAttributeClass);
-          }
-        } else {
-          InjectionUtils.getRouteManagement()
-              .goToPostAttributeView(context: event.context, postAttributeClass: postAttributeClass);
-        }
+        // if (context.mounted) {
+        //   postAttributeClass = await InjectionUtils.getRouteManagement()
+        //       .goToVideoTrimView(context: context, postAttributeClass: postAttributeClass);
+        // }
       }
     }
+    return postAttributeClass;
   }
 
   FutureOr<void> _createPost(CreatePostEvent event, Emitter<PostState> emit) async {
@@ -305,6 +360,17 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     } else {
       ErrorHandler.showAppError(appError: apiResult.error);
       event.onComplete.call([]);
+    }
+  }
+
+  FutureOr<void> _getCloudDetails(GetCloudDetailsEvent event, Emitter<PostState> emit) async {
+    final apiResult = await _getCloudDetailsUseCase.executeGetCloudDetails(
+      key: event.key,
+      value: event.value,
+      isLoading: false,
+    );
+    if (apiResult.isSuccess) {
+      cloudDetailsData = apiResult.data?.data;
     }
   }
 }

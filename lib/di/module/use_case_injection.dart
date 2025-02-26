@@ -25,5 +25,7 @@ class UseCaseInjection {
         () => ReportPostUseCase(InjectionUtils.getRepo<PostRepository>()));
     InjectionUtils.registerUseCase<GetReportReasonsUseCase>(
         () => GetReportReasonsUseCase(InjectionUtils.getRepo<PostRepository>()));
+    InjectionUtils.registerUseCase<GetCloudDetailsUseCase>(
+        () => GetCloudDetailsUseCase(InjectionUtils.getRepo<PostRepository>()));
   }
 }

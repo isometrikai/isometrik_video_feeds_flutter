@@ -30,7 +30,11 @@ class IsrAppRouter {
       GoRoute(
         path: IsrAppRoutes.cameraView,
         name: IsrRouteNames.cameraView,
-        builder: (_, state) => const IsmCameraView(),
+        builder: (_, state) {
+          final extras = state.extra as Map<String, dynamic>;
+          final mediaType = extras['mediaType'] as MediaType? ?? MediaType.photo;
+          return IsmCameraView(mediaType: mediaType);
+        },
       ),
       GoRoute(
         path: IsrAppRoutes.postAttributeView,

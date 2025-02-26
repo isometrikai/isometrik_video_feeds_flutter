@@ -22,6 +22,7 @@ class AppConstants {
   static const String headerContentType = 'application/json';
 
   static const bool isGumletEnable = false;
+  static const String cloudinaryFolder = 'ShopAR/post/image';
 }
 
 abstract class AppUrl {

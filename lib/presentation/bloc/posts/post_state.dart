@@ -55,3 +55,17 @@ class LikeSuccessState extends PostState {
   final String postId;
   final LikeAction likeAction;
 }
+
+class MediaSelectedState extends PostState {
+  MediaSelectedState({
+    this.postAttributeClass,
+  });
+  final PostAttributeClass? postAttributeClass;
+}
+
+class CoverImageSelected extends PostState {
+  CoverImageSelected({
+    this.coverImage,
+  });
+  final String? coverImage;
+}

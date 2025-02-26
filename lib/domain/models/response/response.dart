@@ -1,4 +1,5 @@
 export 'best_offer.dart';
+export 'cloud__details_response.dart';
 export 'create_post_response.dart';
 export 'final_price_list.dart';
 export 'image_data.dart';

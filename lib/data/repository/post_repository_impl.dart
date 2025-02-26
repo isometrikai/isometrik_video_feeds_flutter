@@ -164,4 +164,24 @@ class PostRepositoryImpl implements PostRepository {
       rethrow;
     }
   }
+
+  @override
+  Future<CustomResponse<CloudDetailsResponse?>> getCloudDetails({
+    required bool isLoading,
+    required String key,
+    required String value,
+  }) async {
+    try {
+      final response = await _apiService.getCloudDetails(
+        isLoading: isLoading,
+        key: key,
+        value: value,
+        header: await _dataSource.getHeader(),
+      );
+
+      return _postMapper.mapCloudinaryData(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
