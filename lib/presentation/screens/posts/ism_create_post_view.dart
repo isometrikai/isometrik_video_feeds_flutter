@@ -14,22 +14,24 @@ class IsmCreatePostView extends StatefulWidget {
 }
 
 class _IsmCreatePostViewState extends State<IsmCreatePostView> {
-  final _descriptionController = TextEditingController();
   bool _isNowSelected = true;
   int _descriptionLength = 0;
   final int _maxLength = 200;
   PostAttributeClass? postAttributeClass;
   var coverImage = '';
+  final _postBloc = InjectionUtils.getBloc<PostBloc>();
+  final descriptionController = TextEditingController();
 
   @override
   void initState() {
+    _postBloc.descriptionController = descriptionController;
     coverImage = '';
     super.initState();
   }
 
   @override
   void dispose() {
-    _descriptionController.dispose();
+    descriptionController.dispose();
     super.dispose();
   }
 
@@ -85,7 +87,7 @@ class _IsmCreatePostViewState extends State<IsmCreatePostView> {
                       ),
                       IsrDimens.boxHeight(IsrDimens.eight),
                       TextField(
-                        controller: _descriptionController,
+                        controller: descriptionController,
                         maxLength: _maxLength,
                         maxLines: 4,
                         style: IsrStyles.primaryText14,

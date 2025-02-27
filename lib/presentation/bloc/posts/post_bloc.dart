@@ -2,11 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cloudinary/cloudinary.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/res/res.dart';
+import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
@@ -36,7 +38,6 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     on<LikePostEvent>(_likePost);
     on<ReportPostEvent>(_reportPost);
     on<GetReasonEvent>(_getReason);
-    on<GetCloudDetailsEvent>(_getCloudDetails);
   }
 
   final LocalDataUseCase _localDataUseCase;
@@ -64,6 +65,8 @@ class PostBloc extends Bloc<PostEvent, PostState> {
   bool _isTrendingLoadingMore = false;
   final _trendingPageSize = 20;
   CloudDetailsData? cloudDetailsData;
+  TextEditingController? descriptionController;
+  final _createPostRequest = CreatePostRequest();
 
   void _onStartPost(StartPost event, Emitter<PostState> emit) async {
     final userInfoString = await _localDataUseCase.getUserInfo();
@@ -75,11 +78,6 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     // Load initial posts without pagination
     add(GetFollowingPostEvent(isLoading: false, isPagination: false));
     add(GetTrendingPostEvent(isLoading: false, isPagination: false));
-    InjectionUtils.getBloc<PostBloc>().add(GetCloudDetailsEvent(
-      isLoading: false,
-      key: 'folder',
-      value: '${AppConstants.cloudinaryFolder}/${DateTime.now().millisecondsSinceEpoch}',
-    ));
   }
 
   FutureOr<void> _getFollowingPost(GetFollowingPostEvent event, Emitter<PostState> emit) async {
@@ -198,7 +196,36 @@ class PostBloc extends Bloc<PostEvent, PostState> {
             ? CoverImageSelected(coverImage: postAttributeClass?.url)
             : MediaSelectedState(postAttributeClass: postAttributeClass),
       );
+      if (cloudDetailsData == null) {
+        await _getCloudDetails();
+      }
+      if (cloudDetailsData == null) return;
+      if (event.isCoverImage) {
+        final fileName = _getFileName(postAttributeClass?.coverImage, 'thumbnail');
+        _createPostRequest.thumbnailUrl = await _uploadImageToCloud(postAttributeClass?.coverImage, fileName);
+      } else {
+        final fileName =
+            _getFileName(postAttributeClass?.url, postAttributeClass?.postType == MediaType.photo ? 'photo' : 'video');
+        _createPostRequest.fileName = fileName;
+        if (postAttributeClass?.postType == MediaType.photo) {
+          _createPostRequest.imageUrl = await _uploadImageToCloud(postAttributeClass?.url, fileName);
+          _createPostRequest.thumbnailUrl = _createPostRequest.imageUrl;
+          if (_createPostRequest.thumbnailUrl?.contains('media_') == true) {
+            _createPostRequest.thumbnailUrl = _createPostRequest.thumbnailUrl!.replaceAll('photo_', 'thumbnail_');
+          }
+        } else {
+          _createPostRequest.url = await _uploadImageToCloud(postAttributeClass?.url, fileName);
+          final coverFileName = _getFileName(postAttributeClass?.thumbnailUrl, 'thumbnail');
+          _createPostRequest.thumbnailUrl = await _uploadImageToCloud(postAttributeClass?.thumbnailUrl, coverFileName);
+        }
+        _createPostRequest.mediaType = postAttributeClass?.postType?.mediaType;
+        _createPostRequest.duration = postAttributeClass?.duration;
+        _createPostRequest.description = descriptionController?.text;
+        _createPostRequest.cloudinaryPublicId = cloudDetailsData?.publicId;
+      }
     }
+
+    debugPrint('createPostRequest: ${_createPostRequest.toJson()}');
   }
 
   // Add this method in _CameraViewState
@@ -363,14 +390,59 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     }
   }
 
-  FutureOr<void> _getCloudDetails(GetCloudDetailsEvent event, Emitter<PostState> emit) async {
+  Future<void> _getCloudDetails() async {
     final apiResult = await _getCloudDetailsUseCase.executeGetCloudDetails(
-      key: event.key,
-      value: event.value,
+      key: 'folder',
+      value: '${AppConstants.cloudinaryFolder}/${DateTime.now().millisecondsSinceEpoch}',
       isLoading: false,
     );
     if (apiResult.isSuccess) {
       cloudDetailsData = apiResult.data?.data;
     }
+  }
+
+  Future<String> _uploadImageToCloud(String? coverImage, String fileName) async {
+    var finalUrl = '';
+    final cloudinary = CloudinaryHandler.getCloudinary(
+      apiKey: cloudDetailsData?.apiKey ?? '',
+      apiSecret: cloudDetailsData?.apiSecretKey ?? '',
+      cloudName: cloudDetailsData?.cloudName ?? '',
+    );
+
+    if (cloudinary != null) {
+      final response = await CloudinaryHandler.uploadMedia(
+        cloudinary: cloudinary,
+        file: File(coverImage!),
+        fileName: fileName,
+        cloudinaryCustomFolder: AppConstants.cloudinaryFolder,
+        resourceType: CloudinaryResourceType.image,
+        progressCallback: (count, total) {
+          debugPrint('Upload progress: ${(count * 100) / total}');
+        },
+      );
+      if (response != null) {
+        finalUrl = response.secureUrl ?? '';
+        return finalUrl;
+      }
+    }
+    return finalUrl;
+  }
+
+  String _getFileName(String? file, String fileType) {
+    // Example local path
+    // Example Output: cover-1615564937000-photo-2025.jpg
+
+    // Extract the file name
+    var fileName = path.basename(file!);
+
+    // Get the current timestamp (in milliseconds)
+    var timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+
+    // Modify the file name (convert to lowercase and replace spaces with hyphens)
+    var modifiedFileName = fileName.toLowerCase().replaceAll(' ', '-');
+
+    // Combine the file type, timestamp, and modified file name
+    var newFileName = '$fileType-$timestamp-$modifiedFileName';
+    return newFileName;
   }
 }

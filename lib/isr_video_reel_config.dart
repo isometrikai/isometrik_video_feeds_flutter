@@ -1,4 +1,5 @@
 // sdk_config.dart
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/data/data.dart';
@@ -18,6 +19,7 @@ class IsrVideoReelConfig {
   }) async {
     AppUrl.appBaseUrl = baseUrl;
     WidgetsFlutterBinding.ensureInitialized();
+    await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     isrConfigureInjection();
     Bloc.observer = IsrAppBlocObserver();
     await _saveUserInformation(postInfo: postInfo);

@@ -11,10 +11,10 @@ class IsmCameraView extends StatefulWidget {
   final MediaType mediaType;
 
   @override
-  _IsmCameraViewState createState() => _IsmCameraViewState();
+  IsmCameraViewState createState() => IsmCameraViewState();
 }
 
-class _IsmCameraViewState extends State<IsmCameraView> {
+class IsmCameraViewState extends State<IsmCameraView> {
   CameraController? _cameraController;
   List<CameraDescription>? _cameras;
   bool _isRecording = false;
@@ -80,48 +80,45 @@ class _IsmCameraViewState extends State<IsmCameraView> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: _cameraController == null
-          ? Center(child: CircularProgressIndicator())
-          : Stack(
-              fit: StackFit.expand,
-              children: [
-                // Full-screen camera preview
-                CameraPreview(_cameraController!),
-                // Overlay with close button
-                Positioned(
-                  top: 50,
-                  left: 16,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle, // Make the container round
-                    ),
-                    child: IconButton(
-                      icon: Icon(Icons.close, color: Colors.black),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ),
-                ),
-                // Floating action button for taking picture or recording
-                Positioned(
-                  bottom: 50, // Adjust as needed
-                  left: MediaQuery.of(context).size.width / 2 -
-                      28, // Center the button
-                  child: FloatingActionButton(
-                    onPressed: widget.mediaType == MediaType.photo
-                        ? _takePicture
-                        : (_isRecording ? _stopRecording : _startRecording),
-                    child: Icon(
-                      widget.mediaType == MediaType.photo
-                          ? Icons.camera
-                          : (_isRecording ? Icons.stop : Icons.videocam),
+  Widget build(BuildContext context) => Scaffold(
+        body: _cameraController == null
+            ? const Center(child: CircularProgressIndicator())
+            : Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Full-screen camera preview
+                  CameraPreview(_cameraController!),
+                  // Overlay with close button
+                  Positioned(
+                    top: 50,
+                    left: 16,
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle, // Make the container round
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.close, color: Colors.black),
+                        onPressed: () => Navigator.pop(context),
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-    );
-  }
+                  // Floating action button for taking picture or recording
+                  Positioned(
+                    bottom: 50, // Adjust as needed
+                    left: MediaQuery.of(context).size.width / 2 - 28, // Center the button
+                    child: FloatingActionButton(
+                      onPressed: widget.mediaType == MediaType.photo
+                          ? _takePicture
+                          : (_isRecording ? _stopRecording : _startRecording),
+                      child: Icon(
+                        widget.mediaType == MediaType.photo
+                            ? Icons.camera
+                            : (_isRecording ? Icons.stop : Icons.videocam),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+      );
 }

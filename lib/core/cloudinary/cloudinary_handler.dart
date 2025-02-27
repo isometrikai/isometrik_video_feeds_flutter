@@ -4,7 +4,7 @@ import 'package:cloudinary/cloudinary.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 
 class CloudinaryHandler {
-  Cloudinary? getCloudinary({
+  static Cloudinary? getCloudinary({
     required String apiKey,
     required String apiSecret,
     required String cloudName,
@@ -20,7 +20,7 @@ class CloudinaryHandler {
     }
   }
 
-  Future<CloudinaryResponse?> uploadMedia({
+  static Future<CloudinaryResponse?> uploadMedia({
     required Cloudinary cloudinary,
     required File file,
     required String fileName,
@@ -35,16 +35,18 @@ class CloudinaryHandler {
         folder: cloudinaryCustomFolder,
         fileName: fileName,
         progressCallback: (count, total) {
-          AppLog('Uploading image from file with progress: $count/$total');
+          progressCallback(count, total);
         });
 
     if (response.isSuccessful) {
       AppLog('Get your image from with ${response.secureUrl}');
+      return response;
+    } else {
+      return null;
     }
-    return response;
   }
 
-  Future<bool> deleteMedia({
+  static Future<bool> deleteMedia({
     required Cloudinary cloudinary,
     required String cloudinaryPublicId,
     required String mediaUrl,

@@ -11,6 +11,10 @@ class CreatePostRequest {
     this.story = false,
     this.hasAudio = 0,
     this.imageUrl,
+    this.fileName,
+    this.size,
+    this.scheduleTime,
+    this.cloudinaryPublicId,
   });
 
   String? description;
@@ -24,6 +28,10 @@ class CreatePostRequest {
   bool? story;
   int? hasAudio;
   String? imageUrl;
+  String? fileName;
+  double? size;
+  int? scheduleTime;
+  String? cloudinaryPublicId;
 
   Map<String, dynamic> toJson() => {
         'description': description,
@@ -37,5 +45,9 @@ class CreatePostRequest {
         'story': story,
         'title': title,
         'hasAudio1': hasAudio,
+        'fileName': fileName,
+        'size': size,
+        'scheduleTime': scheduleTime,
+        'cloudinary_public_id': cloudinaryPublicId,
       };
 }
