@@ -3,8 +3,6 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 
-final GlobalKey<NavigatorState> ismNavigatorKey = GlobalKey<NavigatorState>();
-
 class IsrRouteManagement {
   IsrRouteManagement(this._navigationService);
 
@@ -23,11 +21,12 @@ class IsrRouteManagement {
     return result;
   }
 
-  void goToCreatePostView() {
-    _navigationService.pushNamed(
+  Future<String?> goToCreatePostView() async {
+    final result = await _navigationService.pushNamed(
       IsrVideoReelConfig.buildContext!,
       IsrRouteNames.createPostView,
-    );
+    ) as String?;
+    return result;
   }
 
   void goToPostAttributeView({required BuildContext context, PostAttributeClass? postAttributeClass}) {
@@ -40,8 +39,10 @@ class IsrRouteManagement {
     );
   }
 
-  Future<PostAttributeClass?> goToVideoTrimView(
-          {required BuildContext context, required PostAttributeClass postAttributeClass}) async =>
+  Future<PostAttributeClass?> goToVideoTrimView({
+    required BuildContext context,
+    required PostAttributeClass postAttributeClass,
+  }) async =>
       await _navigationService.pushNamed<PostAttributeClass>(
         context,
         IsrRouteNames.videoTrimView,

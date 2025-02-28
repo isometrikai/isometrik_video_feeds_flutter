@@ -66,4 +66,5 @@ class IsrTranslationFile {
   static const String change = 'Change';
   static const String size = 'Size';
   static const String duration = 'Duration';
+  static const String socialPostCreatedSuccessfully = 'Social post created successfully';
 }

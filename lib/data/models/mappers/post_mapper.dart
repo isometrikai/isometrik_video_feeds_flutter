@@ -1,6 +1,7 @@
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/domain/models/custom_response.dart';
 import 'package:ism_video_reel_player/domain/models/response/cloud__details_response.dart';
+import 'package:ism_video_reel_player/domain/models/response/create_post_response.dart';
 import 'package:ism_video_reel_player/domain/models/response/post_response.dart';
 
 class PostMapper {
@@ -9,4 +10,7 @@ class PostMapper {
 
   CustomResponse<CloudDetailsResponse?> mapCloudinaryData(ResponseModel response) =>
       CustomResponse(data: cloudinaryResponseFromJson(response.data), responseCode: response.statusCode);
+
+  CustomResponse<CreatePostResponse?> mapCreatePostResponseData(ResponseModel response) =>
+      CustomResponse(data: createPostResponseFromJson(response.data), responseCode: response.statusCode);
 }

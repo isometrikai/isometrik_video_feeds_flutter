@@ -6,7 +6,7 @@ class CreatePostUseCase extends BaseUseCase {
 
   final PostRepository _repository;
 
-  Future<ApiResult<ResponseClass?>> executeCreatePost({
+  Future<ApiResult<CreatePostResponse?>> executeCreatePost({
     required bool isLoading,
     Map<String, dynamic>? createPostRequest,
   }) async =>

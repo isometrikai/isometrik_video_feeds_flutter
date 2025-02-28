@@ -29,7 +29,7 @@ class CreatePostRequest {
   int? hasAudio;
   String? imageUrl;
   String? fileName;
-  double? size;
+  int? size;
   int? scheduleTime;
   String? cloudinaryPublicId;
 

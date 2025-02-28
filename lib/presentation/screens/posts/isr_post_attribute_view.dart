@@ -65,7 +65,7 @@ class _IsrPostAttributeViewState extends State<IsrPostAttributeView> {
             margin: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.fifteen, vertical: IsrDimens.ten),
             title: IsrTranslationFile.post,
             onPress: () {
-              isrGetIt<PostBloc>().add(CreatePostEvent(createPostRequest: _createPostRequest));
+              isrGetIt<PostBloc>().add(CreatePostEvent());
             },
           ),
         ),

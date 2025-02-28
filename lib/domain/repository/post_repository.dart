@@ -2,7 +2,7 @@ import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
 abstract class PostRepository extends BaseRepository {
-  Future<CustomResponse<ResponseClass?>> createPost({
+  Future<CustomResponse<CreatePostResponse?>> createPost({
     required bool isLoading,
     Map<String, dynamic>? createPostRequest,
   });

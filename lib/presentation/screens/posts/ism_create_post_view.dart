@@ -18,13 +18,13 @@ class _IsmCreatePostViewState extends State<IsmCreatePostView> {
   int _descriptionLength = 0;
   final int _maxLength = 200;
   PostAttributeClass? postAttributeClass;
+  PostBloc? _postBloc;
   var coverImage = '';
-  final _postBloc = InjectionUtils.getBloc<PostBloc>();
   final descriptionController = TextEditingController();
 
   @override
   void initState() {
-    _postBloc.descriptionController = descriptionController;
+    _postBloc = InjectionUtils.getBloc<PostBloc>();
     coverImage = '';
     super.initState();
   }
@@ -42,12 +42,31 @@ class _IsmCreatePostViewState extends State<IsmCreatePostView> {
           titleText: IsrTranslationFile.createPost,
           centerTitle: true,
         ),
-        body: BlocProvider<PostBloc>(
-          create: (context) {
-            coverImage = '';
-            return InjectionUtils.getBloc<PostBloc>();
-          },
-          child: BlocBuilder<PostBloc, PostState>(
+        bottomNavigationBar: Padding(
+          padding: IsrDimens.edgeInsetsSymmetric(vertical: IsrDimens.ten, horizontal: IsrDimens.twenty),
+          child: AppButton(
+            width: IsrDimens.oneHundredForty,
+            onPress: () {
+              _postBloc?.add(CreatePostEvent());
+            },
+            title: IsrTranslationFile.create,
+          ),
+        ),
+        body: BlocProvider(
+          create: (context) => InjectionUtils.getBloc<PostBloc>(),
+          child: BlocConsumer<PostBloc, PostState>(
+            listener: (context, state) {
+              if (state is PostCreatedState) {
+                IsrVideoReelUtility.showInSnackBar(
+                  IsrTranslationFile.socialPostCreatedSuccessfully,
+                  context,
+                  backgroundColor: IsrColors.white,
+                  foregroundColor: IsrColors.black,
+                  isSuccessIcon: true,
+                );
+                Navigator.pop(context, state.postId);
+              }
+            },
             builder: (context, state) {
               if (state is MediaSelectedState) {
                 postAttributeClass = state.postAttributeClass;
@@ -129,68 +148,7 @@ class _IsmCreatePostViewState extends State<IsmCreatePostView> {
 
                       IsrDimens.boxHeight(IsrDimens.twentyFour),
 
-                      // Cover Section
-                      Text(
-                        '${IsrTranslationFile.cover}*',
-                        style: IsrStyles.primaryText12,
-                      ),
-                      IsrDimens.boxHeight(IsrDimens.eight),
-                      Container(
-                        width: IsrDimens.oneHundredTwenty,
-                        height: IsrDimens.oneHundredSixty,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(color: IsrColors.colorDBDBDB),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            // Check if postAttributeClass is not null and has a cover image
-                            coverImage.isEmptyOrNull == false
-                                ? ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: AppImage.file(
-                                      width: IsrDimens.oneHundredTwenty,
-                                      height: IsrDimens.oneHundredSixty,
-                                      coverImage,
-                                      fit: BoxFit.cover,
-                                      isProfileImage: false,
-                                    ),
-                                  )
-                                : const AppImage.svg(
-                                    AssetConstants.icCoverImagePlaceHolder,
-                                  ),
-                            // Edit Cover button at bottom
-                            Positioned(
-                              bottom: 0,
-                              left: 0,
-                              right: 0,
-                              child: Container(
-                                height: IsrDimens.forty,
-                                decoration: const BoxDecoration(
-                                  color: IsrColors.colorCCCCCC,
-                                  borderRadius: BorderRadius.only(
-                                    bottomLeft: Radius.circular(8),
-                                    bottomRight: Radius.circular(8),
-                                  ),
-                                ),
-                                child: Center(
-                                  child: TapHandler(
-                                    onTap: () {
-                                      _showUploadOptionsDialog(context, true);
-                                    },
-                                    child: Text(
-                                      IsrTranslationFile.editCover,
-                                      style: IsrStyles.secondaryText12.copyWith(color: IsrColors.white),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      _buildCoverImageSection(),
 
                       IsrDimens.boxHeight(IsrDimens.twentyFour),
 
@@ -287,7 +245,7 @@ class _IsmCreatePostViewState extends State<IsmCreatePostView> {
       builder: (BuildContext context) => IsmUploadMediaDialog(
         mediaType: isCoverImage ? MediaType.photo : MediaType.both,
         onMediaSelected: (result) {
-          InjectionUtils.getBloc<PostBloc>().add(
+          _postBloc?.add(
             MediaSourceEvent(
               context: context,
               mediaType: result.mediaType,
@@ -373,5 +331,93 @@ class _IsmCreatePostViewState extends State<IsmCreatePostView> {
             ),
           ),
         ],
+      );
+
+  Widget _buildCoverImageSection() => // Cover Section
+      BlocBuilder<PostBloc, PostState>(
+        builder: (context, state) => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${IsrTranslationFile.cover}*',
+              style: IsrStyles.primaryText12,
+            ),
+            IsrDimens.boxHeight(IsrDimens.eight),
+            Container(
+              width: IsrDimens.oneHundredTwenty,
+              height: IsrDimens.oneHundredSixty,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: IsrColors.colorDBDBDB),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Check if postAttributeClass is not null and has a cover image
+                  coverImage.isEmptyOrNull == false
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: AppImage.file(
+                            width: IsrDimens.oneHundredTwenty,
+                            height: IsrDimens.oneHundredSixty,
+                            coverImage,
+                            fit: BoxFit.cover,
+                            isProfileImage: false,
+                          ),
+                        )
+                      : const AppImage.svg(
+                          AssetConstants.icCoverImagePlaceHolder,
+                        ),
+                  // Edit Cover button at bottom
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      height: IsrDimens.forty,
+                      decoration: const BoxDecoration(
+                        color: IsrColors.colorCCCCCC,
+                        borderRadius: BorderRadius.only(
+                          bottomLeft: Radius.circular(8),
+                          bottomRight: Radius.circular(8),
+                        ),
+                      ),
+                      child: Center(
+                        child: TapHandler(
+                          onTap: () {
+                            _showUploadOptionsDialog(context, true);
+                          },
+                          child: Text(
+                            IsrTranslationFile.editCover,
+                            style: IsrStyles.secondaryText12.copyWith(color: IsrColors.white),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // state is UploadingCoverImageState && state.progress > 0 && state.progress < 99
+                  // Progress Bar
+                  if (state is UploadingCoverImageState && state.progress > 0 && state.progress < 99) ...[
+                    Positioned.fill(
+                      child: Align(
+                        alignment: Alignment.center,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircularProgressIndicator(
+                                value: state.progress,
+                                backgroundColor: IsrColors.colorDBDBDB,
+                                color: Theme.of(context).primaryColor),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
       );
 }

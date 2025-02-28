@@ -202,26 +202,29 @@ class PostBloc extends Bloc<PostEvent, PostState> {
       if (cloudDetailsData == null) return;
       if (event.isCoverImage) {
         final fileName = _getFileName(postAttributeClass?.coverImage, 'thumbnail');
-        _createPostRequest.thumbnailUrl = await _uploadImageToCloud(postAttributeClass?.coverImage, fileName);
+        _createPostRequest.thumbnailUrl =
+            await _uploadImageToCloud(postAttributeClass?.coverImage, fileName, emit, true);
       } else {
         final fileName =
             _getFileName(postAttributeClass?.url, postAttributeClass?.postType == MediaType.photo ? 'photo' : 'video');
         _createPostRequest.fileName = fileName;
         if (postAttributeClass?.postType == MediaType.photo) {
-          _createPostRequest.imageUrl = await _uploadImageToCloud(postAttributeClass?.url, fileName);
+          _createPostRequest.imageUrl = await _uploadImageToCloud(postAttributeClass?.url, fileName, emit, false);
           _createPostRequest.thumbnailUrl = _createPostRequest.imageUrl;
           if (_createPostRequest.thumbnailUrl?.contains('media_') == true) {
             _createPostRequest.thumbnailUrl = _createPostRequest.thumbnailUrl!.replaceAll('photo_', 'thumbnail_');
           }
         } else {
-          _createPostRequest.url = await _uploadImageToCloud(postAttributeClass?.url, fileName);
+          _createPostRequest.url = await _uploadImageToCloud(postAttributeClass?.url, fileName, emit, false);
           final coverFileName = _getFileName(postAttributeClass?.thumbnailUrl, 'thumbnail');
-          _createPostRequest.thumbnailUrl = await _uploadImageToCloud(postAttributeClass?.thumbnailUrl, coverFileName);
+          _createPostRequest.thumbnailUrl =
+              await _uploadImageToCloud(postAttributeClass?.thumbnailUrl, coverFileName, emit, true);
         }
         _createPostRequest.mediaType = postAttributeClass?.postType?.mediaType;
         _createPostRequest.duration = postAttributeClass?.duration;
         _createPostRequest.description = descriptionController?.text;
         _createPostRequest.cloudinaryPublicId = cloudDetailsData?.publicId;
+        _createPostRequest.size = postAttributeClass?.size;
       }
     }
 
@@ -268,8 +271,10 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     PostAttributeClass? postAttributeClass = PostAttributeClass();
     final mediaType = mediaInfoClass.mediaType;
     final mediaFile = mediaInfoClass.mediaFile;
+
     if (mediaFile?.path.isEmptyOrNull == false) {
       postAttributeClass.file = File(mediaFile?.path ?? '');
+      postAttributeClass.size = postAttributeClass.file?.lengthSync();
       postAttributeClass.url = mediaFile?.path;
       postAttributeClass.coverImage = mediaFile?.path;
 
@@ -301,11 +306,21 @@ class PostBloc extends Bloc<PostEvent, PostState> {
   }
 
   FutureOr<void> _createPost(CreatePostEvent event, Emitter<PostState> emit) async {
+    _createPostRequest.description = descriptionController?.text;
+    if (_createPostRequest.imageUrl == null && _createPostRequest.url == null) {
+      IsrVideoReelUtility.showAppError(message: 'Select a media file', errorViewType: ErrorViewType.toast);
+      return;
+    }
+    if (_createPostRequest.thumbnailUrl.isEmptyOrNull == true) {
+      IsrVideoReelUtility.showAppError(message: 'Select a cover', errorViewType: ErrorViewType.toast);
+      return;
+    }
     final apiResult = await _createPostUseCase.executeCreatePost(
       isLoading: true,
-      createPostRequest: event.createPostRequest?.toJson(),
+      createPostRequest: _createPostRequest.toJson(),
     );
     if (apiResult.isSuccess) {
+      emit(PostCreatedState(postId: 'postId'));
     } else {
       ErrorHandler.showAppError(appError: apiResult.error, isNeedToShowError: true);
     }
@@ -401,7 +416,8 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     }
   }
 
-  Future<String> _uploadImageToCloud(String? coverImage, String fileName) async {
+  Future<String> _uploadImageToCloud(
+      String? coverImage, String fileName, Emitter<PostState> emit, bool isCoverImage) async {
     var finalUrl = '';
     final cloudinary = CloudinaryHandler.getCloudinary(
       apiKey: cloudDetailsData?.apiKey ?? '',
@@ -417,7 +433,8 @@ class PostBloc extends Bloc<PostEvent, PostState> {
         cloudinaryCustomFolder: AppConstants.cloudinaryFolder,
         resourceType: CloudinaryResourceType.image,
         progressCallback: (count, total) {
-          debugPrint('Upload progress: ${(count * 100) / total}');
+          final progress = (count * 100) / total;
+          emit(isCoverImage ? UploadingCoverImageState(progress) : UploadingMediaState(progress));
         },
       );
       if (response != null) {

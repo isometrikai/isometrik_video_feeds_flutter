@@ -63,6 +63,25 @@ class MediaSelectedState extends PostState {
   final PostAttributeClass? postAttributeClass;
 }
 
+class UploadingCoverImageState extends PostState {
+  // Progress for cover image
+  UploadingCoverImageState(this.progress);
+  final double progress;
+}
+
+class UploadingMediaState extends PostState {
+  // Progress for media
+  UploadingMediaState(this.progress);
+  final double progress;
+}
+
+class PostCreatedState extends PostState {
+  PostCreatedState({
+    required this.postId,
+  });
+  final String postId;
+}
+
 class CoverImageSelected extends PostState {
   CoverImageSelected({
     this.coverImage,

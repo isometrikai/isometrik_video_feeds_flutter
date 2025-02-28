@@ -30,6 +30,7 @@ class IsmCameraViewState extends State<IsmCameraView> {
     _cameraController = CameraController(
       _cameras!.first,
       ResolutionPreset.high,
+      enableAudio: true,
     );
     await _cameraController!.initialize();
     setState(() {});

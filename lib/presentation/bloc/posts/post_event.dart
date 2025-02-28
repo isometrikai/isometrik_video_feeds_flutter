@@ -54,11 +54,7 @@ class FollowUserEvent extends PostEvent {
   final Function(bool) onComplete;
 }
 
-class CreatePostEvent extends PostEvent {
-  CreatePostEvent({required this.createPostRequest});
-
-  final CreatePostRequest? createPostRequest;
-}
+class CreatePostEvent extends PostEvent {}
 
 class MediaSourceEvent extends PostEvent {
   MediaSourceEvent({

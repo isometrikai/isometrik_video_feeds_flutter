@@ -17,6 +17,7 @@ class PostAttributeClass {
     this.isCaptionRequired,
     this.videoBytes,
     this.thumbnailBytes,
+    this.size,
   });
 
   File? file;
@@ -31,4 +32,5 @@ class PostAttributeClass {
   Uint8List? videoBytes;
   Uint8List? thumbnailBytes;
   MediaType? postType;
+  int? size;
 }

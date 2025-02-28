@@ -12,7 +12,7 @@ class PostRepositoryImpl implements PostRepository {
   final PostMapper _postMapper = PostMapper();
 
   @override
-  Future<CustomResponse<ResponseClass?>> createPost({
+  Future<CustomResponse<CreatePostResponse?>> createPost({
     required bool isLoading,
     Map<String, dynamic>? createPostRequest,
   }) async {
@@ -23,7 +23,7 @@ class PostRepositoryImpl implements PostRepository {
         header: header,
         createPostRequest: createPostRequest,
       );
-      return _mapper.mapResponseData(response);
+      return _postMapper.mapCreatePostResponseData(response);
     } catch (e) {
       rethrow;
     }

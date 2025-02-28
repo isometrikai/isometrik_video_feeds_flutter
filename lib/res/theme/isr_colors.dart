@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 class IsrColors {
   IsrColors._();
 
-  static const Color appColor = Color(0xFF2962FF);
-  static const Color secondaryColor = Color(0xFF2962FF);
+  static const Color appColor = Color(0xFF0F1E91);
+  static const Color secondaryColor = Color(0xFF851E91);
 
   static const Color primaryTextColor = Color(0xFF333333);
 
