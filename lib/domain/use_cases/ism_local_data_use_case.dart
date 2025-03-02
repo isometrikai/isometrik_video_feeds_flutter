@@ -1,7 +1,7 @@
 import 'package:ism_video_reel_player/domain/domain.dart';
 
-class LocalDataUseCase extends BaseUseCase {
-  LocalDataUseCase(this.repository);
+class IsmLocalDataUseCase extends BaseUseCase {
+  IsmLocalDataUseCase(this.repository);
 
   final IsrLocalStorageRepository repository;
 

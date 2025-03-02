@@ -18,7 +18,7 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     on<TrendingPostsLoadedEvent>(_loadTrendingPosts);
   }
 
-  final LocalDataUseCase _localDataUseCase;
+  final IsmLocalDataUseCase _localDataUseCase;
   // final GetFollowingPostUseCase _getFollowingPostUseCase;
   // final GetTrendingPostUseCase _getTrendingPostUseCase;
   // final CreatePostUseCase _createPostUseCase;
