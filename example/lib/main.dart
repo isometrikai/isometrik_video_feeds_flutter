@@ -21,6 +21,7 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (context) => InjectionUtils.getBloc<SplashBloc>()),
           BlocProvider(create: (context) => InjectionUtils.getBloc<AuthBloc>()),
           BlocProvider(create: (context) => InjectionUtils.getBloc<HomeBloc>()),
+          BlocProvider(create: (context) => InjectionUtils.getBloc<CreatePostBloc>()),
         ],
         child: ScreenUtilInit(
           useInheritedMediaQuery: true,

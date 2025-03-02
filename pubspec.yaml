@@ -8,7 +8,6 @@ description: A new Flutter plugin project.
 dependencies:
   cached_network_image: '^3.4.0'
   camera: ^0.11.0+2
-  cloudinary: ^1.2.0
   connectivity_plus: ^6.1.1
   dotted_border: ^2.1.0
   flutter:

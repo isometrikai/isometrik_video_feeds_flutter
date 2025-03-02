@@ -547,17 +547,4 @@ class IsrVideoReelUtility {
           ? ''
           : jsonDecode(data.data)['message'] as String
       : data.statusCode.toString();
-
-  static String formatFileSize(int bytes) {
-    if (bytes < 1024 * 1024) {
-      return '${(bytes / 1024).toStringAsFixed(2)} KB';
-    } else {
-      return '${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB';
-    }
-  }
-
-  static String formatDuration(Duration? duration) {
-    if (duration == null) return '0m 0s';
-    return '${duration.inMinutes}m ${duration.inSeconds % 60}s';
-  }
 }

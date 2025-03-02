@@ -18,6 +18,8 @@ class IsrReelView extends StatefulWidget {
     this.onTapShare,
     this.onTapProduct,
     required this.context,
+    this.followingPosts,
+    this.trendingPosts,
   }) {
     IsrReelsProperties.onTapProfilePic = onTapProfilePic;
     IsrReelsProperties.onTapShare = onTapShare;
@@ -29,6 +31,8 @@ class IsrReelView extends StatefulWidget {
   final Function(String)? onTapShare;
   final Function(String)? onTapProduct;
   final BuildContext context;
+  final List<PostDataModel>? followingPosts;
+  final List<PostDataModel>? trendingPosts;
 
   @override
   State<IsrReelView> createState() => _IsrReelViewState();
@@ -51,8 +55,8 @@ class _IsrReelViewState extends State<IsrReelView> {
             path: IsrAppRoutes.postView,
             name: IsrRouteNames.postView,
             builder: (context, state) => BlocProvider.value(
-              value: InjectionUtils.getBloc<PostBloc>(), // Provide PostBloc here
-              child: const IsrPostView(),
+              value: IsmInjectionUtils.getBloc<PostBloc>(), // Provide PostBloc here
+              child: const SizedBox(),
             ),
           ),
           GoRoute(
@@ -62,41 +66,41 @@ class _IsrReelViewState extends State<IsrReelView> {
               context: context,
             ),
           ),
-          GoRoute(
-            path: IsrAppRoutes.createPostView,
-            name: IsrRouteNames.createPostView,
-            builder: (context, state) => BlocProvider.value(
-              value: InjectionUtils.getBloc<PostBloc>(), // Provide PostBloc here
-              child: const IsmCreatePostView(),
-            ),
-          ),
-          GoRoute(
-            path: IsrAppRoutes.cameraView,
-            name: IsrRouteNames.cameraView,
-            builder: (context, state) {
-              final extras = state.extra as Map<String, dynamic>;
-              final mediaType = extras['mediaType'] as MediaType? ?? MediaType.photo;
-              return IsmCameraView(mediaType: mediaType);
-            },
-          ),
-          GoRoute(
-            path: IsrAppRoutes.postAttributeView,
-            name: IsrRouteNames.postAttributeView,
-            builder: (context, state) {
-              final extraMap = state.extra as Map;
-              return IsrPostAttributeView(
-                postAttributeClass: extraMap['postAttributeClass'] as PostAttributeClass?,
-              );
-            },
-          ),
+          // GoRoute(
+          //   path: IsrAppRoutes.createPostView,
+          //   name: IsrRouteNames.createPostView,
+          //   builder: (context, state) => BlocProvider.value(
+          //     value: InjectionUtils.getBloc<PostBloc>(), // Provide PostBloc here
+          //     child: const IsmCreatePostView(),
+          //   ),
+          // ),
+          // GoRoute(
+          //   path: IsrAppRoutes.cameraView,
+          //   name: IsrRouteNames.cameraView,
+          //   builder: (context, state) {
+          //     final extras = state.extra as Map<String, dynamic>;
+          //     final mediaType = extras['mediaType'] as MediaType? ?? MediaType.photo;
+          //     return IsmCameraView(mediaType: mediaType);
+          //   },
+          // ),
+          // GoRoute(
+          //   path: IsrAppRoutes.postAttributeView,
+          //   name: IsrRouteNames.postAttributeView,
+          //   builder: (context, state) {
+          //     final extraMap = state.extra as Map;
+          //     return IsrPostAttributeView(
+          //       postAttributeClass: extraMap['postAttributeClass'] as PostAttributeClass?,
+          //     );
+          //   },
+          // ),
         ],
       );
 
   @override
   Widget build(BuildContext context) => MultiBlocProvider(
         providers: [
-          BlocProvider(create: (_) => InjectionUtils.getBloc<IsmLandingBloc>()), // Provide IsmLandingBloc here
-          BlocProvider(create: (_) => InjectionUtils.getBloc<PostBloc>()), // Provide PostBloc here
+          BlocProvider(create: (_) => IsmInjectionUtils.getBloc<IsmLandingBloc>()), // Provide IsmLandingBloc here
+          BlocProvider(create: (_) => IsmInjectionUtils.getBloc<PostBloc>()), // Provide PostBloc here
         ],
         child: BlocListener<IsmLandingBloc, IsmLandingState>(
           listener: (context, state) {
@@ -127,6 +131,6 @@ class _IsrReelViewState extends State<IsrReelView> {
       return;
     }
 
-    InjectionUtils.getRouteManagement().goToPostView(context: context);
+    IsmInjectionUtils.getRouteManagement().goToPostView(context: context);
   }
 }

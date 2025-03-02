@@ -9,23 +9,7 @@ class UseCaseInjection {
   static void inject() {
     // Register use cases with their respective repositories
 
-    InjectionUtils.registerUseCase<LocalDataUseCase>(
-        () => LocalDataUseCase(InjectionUtils.getRepo<IsrLocalStorageRepository>()));
-    InjectionUtils.registerUseCase<CreatePostUseCase>(
-        () => CreatePostUseCase(InjectionUtils.getRepo<PostRepository>()));
-    InjectionUtils.registerUseCase<GetFollowingPostUseCase>(
-        () => GetFollowingPostUseCase(InjectionUtils.getRepo<PostRepository>()));
-    InjectionUtils.registerUseCase<GetTrendingPostUseCase>(
-        () => GetTrendingPostUseCase(InjectionUtils.getRepo<PostRepository>()));
-    InjectionUtils.registerUseCase<FollowPostUseCase>(
-        () => FollowPostUseCase(InjectionUtils.getRepo<PostRepository>()));
-    InjectionUtils.registerUseCase<SavePostUseCase>(() => SavePostUseCase(InjectionUtils.getRepo<PostRepository>()));
-    InjectionUtils.registerUseCase<LikePostUseCase>(() => LikePostUseCase(InjectionUtils.getRepo<PostRepository>()));
-    InjectionUtils.registerUseCase<ReportPostUseCase>(
-        () => ReportPostUseCase(InjectionUtils.getRepo<PostRepository>()));
-    InjectionUtils.registerUseCase<GetReportReasonsUseCase>(
-        () => GetReportReasonsUseCase(InjectionUtils.getRepo<PostRepository>()));
-    InjectionUtils.registerUseCase<GetCloudDetailsUseCase>(
-        () => GetCloudDetailsUseCase(InjectionUtils.getRepo<PostRepository>()));
+    IsmInjectionUtils.registerUseCase<LocalDataUseCase>(
+        () => LocalDataUseCase(IsmInjectionUtils.getRepo<IsrLocalStorageRepository>()));
   }
 }

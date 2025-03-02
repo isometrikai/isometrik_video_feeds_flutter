@@ -11,9 +11,6 @@ class ApiServiceInjection {
   static void inject() {
     // Create instances of network clients with base URLs
     final networkClient = NetworkClient(baseUrl: AppUrl.appBaseUrl);
-    InjectionUtils.getOtherClass<IsrLocalStorageManager>();
-
-    // Register the API services with their respective providers
-    InjectionUtils.registerApiService<PostApiService>(() => PostApiServiceProvider(networkClient: networkClient));
+    IsmInjectionUtils.getOtherClass<IsrLocalStorageManager>();
   }
 }

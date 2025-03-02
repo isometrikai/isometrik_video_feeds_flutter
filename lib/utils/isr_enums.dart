@@ -41,20 +41,9 @@ enum PostSectionType {
   trending,
 }
 
-enum MediaType {
-  video,
-  photo,
-  both,
-}
-
 enum MediaSource {
   gallery,
   camera,
-}
-
-enum LikeAction {
-  like,
-  unlike,
 }
 
 enum ButtonType {
