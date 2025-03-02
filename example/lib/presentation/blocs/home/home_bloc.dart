@@ -69,10 +69,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         followingPosts: _followingPostList,
         trendingPosts: _trendingPostList,
       ));
-      // add(GetFollowingPostEvent(isLoading: false, isPagination: false, isRefresh: true));
-      // add(GetTrendingPostEvent(isLoading: false, isPagination: false, isRefresh: true));
-      // final listOfData = await getPostData();
-      // emit(HomeLoaded(postData: listOfData));
     } catch (error) {
       emit(HomeError(error.toString()));
     }
@@ -276,15 +272,4 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       event.onComplete.call(false);
     }
   }
-
-// Future<void> _getCloudDetails() async {
-//   final apiResult = await _getCloudDetailsUseCase.executeGetCloudDetails(
-//     key: 'folder',
-//     value: '${AppConstants.cloudinaryFolder}/${DateTime.now().millisecondsSinceEpoch}',
-//     isLoading: false,
-//   );
-//   if (apiResult.isSuccess) {
-//     cloudDetailsData = apiResult.data?.data;
-//   }
-// }
 }

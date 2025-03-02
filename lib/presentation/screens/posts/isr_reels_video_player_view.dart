@@ -89,8 +89,8 @@ class IsrReelsVideoPlayerView extends StatefulWidget {
 
 class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
   // Add constants for media types
-  static const int kPictureType = 1;
-  static const int kVideoType = 2;
+  static const int kPictureType = 0;
+  static const int kVideoType = 1;
 
   VideoPlayerController? videoPlayerController;
 
