@@ -5,26 +5,42 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
-import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
 class FollowingPostWidget extends StatefulWidget {
-  const FollowingPostWidget({super.key});
+  const FollowingPostWidget({
+    super.key,
+    this.onCreatePost,
+    this.showBlur,
+    this.productList,
+    this.onPressSave,
+    this.onPressLike,
+    this.onTapMore,
+    this.onPressFollow,
+  });
+
+  final Future<PostDataModel?> Function()? onCreatePost;
+  final Future<bool> Function(String postId)? onTapMore;
+  final bool? showBlur;
+  final List<FeaturedProductDataItem>? productList;
+  final Future<bool> Function(String)? onPressSave;
+  final Future<bool> Function(String, String, bool)? onPressLike;
+  final Future<bool> Function(String)? onPressFollow;
 
   @override
   State<FollowingPostWidget> createState() => _FollowingPostWidgetState();
 }
 
 class _FollowingPostWidgetState extends State<FollowingPostWidget> {
-  final _postBloc = isrGetIt<PostBloc>();
-  List<PostData> _followingPostList = [];
+  final _postBloc = IsmInjectionUtils.getBloc<PostBloc>();
+  List<PostDataModel> _followingPostList = [];
 
   @override
   Widget build(BuildContext context) => BlocBuilder<PostBloc, PostState>(
         buildWhen: (previousState, currentState) => currentState is FollowingPostsLoadedState,
         builder: (context, state) {
           if (state is FollowingPostsLoadedState) {
-            _followingPostList = state.followingPosts;
+            _followingPostList = state.followingPosts ?? [];
           } else if (state is SavePostSuccessState) {
             // ... handle save state
           } else if (state is FollowSuccessState) {
@@ -36,7 +52,7 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
           return _followingPostList.isEmptyOrNull == false
               ? RefreshIndicator(
                   onRefresh: () async {
-                    _postBloc.add(GetFollowingPostEvent(isLoading: false, isPagination: false));
+                    // _postBloc.add(GetFollowingPostEvent(isLoading: false, isPagination: false));
                   },
                   child: PageView.builder(
                     allowImplicitScrolling: true,
@@ -47,10 +63,10 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
                       // Check if we're at 75% of the list
                       final threshold = (_followingPostList.length * 0.75).floor();
                       if (index >= threshold) {
-                        _postBloc.add(GetFollowingPostEvent(
-                          isLoading: false,
-                          isPagination: true,
-                        ));
+                        // _postBloc.add(GetFollowingPostEvent(
+                        //   isLoading: false,
+                        //   isPagination: true,
+                        // ));
                       }
                     },
                     itemCount: _followingPostList.length,
@@ -58,7 +74,13 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
                     itemBuilder: (context, index) => IsrReelsVideoPlayerView(
                       thumbnail: _followingPostList[index].thumbnailUrl1 ?? '',
                       key: Key(_followingPostList[index].postId ?? ''),
-                      onCreatePost: () async {},
+                      onCreatePost: () async {
+                        if (widget.onCreatePost == null) return;
+                        final postDataModel = await widget.onCreatePost!();
+                        if (postDataModel == null) return;
+                        _followingPostList.insert(0, postDataModel);
+                        _postBloc.add(FollowingPostsLoadedEvent(_followingPostList));
+                      },
                       postId: _followingPostList[index].postId,
                       description: '',
                       isAssetUploading: false,
@@ -80,55 +102,32 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
                       onTapUserProfilePic: () => {},
                       productList: _followingPostList[index].productData,
                       isSavedPost: _followingPostList[index].isSavedPost,
+                      onPressMoreButton: () async {
+                        if (widget.onTapMore == null) return false;
+                        return await widget.onTapMore!(_followingPostList[index].postId!);
+                      },
                       onPressFollowFollowing: () async {
                         if (_followingPostList[index].userId != null) {
-                          try {
-                            final completer = Completer<bool>();
+                          if (widget.onPressFollow == null) return false;
+                          final isFollow = await widget.onPressFollow!(_followingPostList[index].userId!);
 
-                            _postBloc.add(FollowUserEvent(
-                              followingId: _followingPostList[index].userId!,
-                              onComplete: (success) {
-                                if (success) {
-                                  setState(() {
-                                    _followingPostList[index] = _followingPostList[index].copyWith(
-                                      followStatus: 1,
-                                    );
-                                  });
-                                }
-                                completer.complete(success);
-                              },
-                            ));
-
-                            return await completer.future;
-                          } catch (e) {
-                            return false;
-                          }
+                          setState(() {
+                            _followingPostList[index] =
+                                _followingPostList[index].copyWith(followStatus: isFollow ? 1 : 0);
+                          });
+                          return isFollow;
                         }
                         return false;
                       },
                       onPressSave: () async {
                         if (_followingPostList[index].postId != null) {
-                          try {
-                            final completer = Completer<bool>();
+                          if (widget.onPressSave == null) return false;
+                          final isSaved = await widget.onPressSave!(_followingPostList[index].postId!);
 
-                            _postBloc.add(SavePostEvent(
-                              postId: _followingPostList[index].postId!,
-                              onComplete: (success) {
-                                if (success) {
-                                  setState(() {
-                                    _followingPostList[index] = _followingPostList[index].copyWith(
-                                      isSavedPost: true,
-                                    );
-                                  });
-                                }
-                                completer.complete(success);
-                              },
-                            ));
-
-                            return await completer.future;
-                          } catch (e) {
-                            return false;
-                          }
+                          setState(() {
+                            _followingPostList[index] = _followingPostList[index].copyWith(isSavedPost: isSaved);
+                          });
+                          return isSaved;
                         }
                         return false;
                       },
@@ -136,70 +135,19 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
                       likesCount: _followingPostList[index].likesCount ?? 0,
                       onPressLike: () async {
                         if (_followingPostList[index].postId != null) {
-                          try {
-                            final completer = Completer<bool>();
+                          if (widget.onPressLike == null) return false;
+                          final isLiked = await widget.onPressLike!(
+                            _followingPostList[index].postId!,
+                            _followingPostList[index].userId!,
+                            _followingPostList[index].liked == true,
+                          );
 
-                            _postBloc.add(LikePostEvent(
-                              postId: _followingPostList[index].postId!,
-                              userId: _followingPostList[index].userId!,
-                              likeAction: _followingPostList[index].liked == true ? LikeAction.unlike : LikeAction.like,
-                              onComplete: (success) {
-                                if (success) {
-                                  setState(() {
-                                    _followingPostList[index] = _followingPostList[index].copyWith(
-                                      liked: !(_followingPostList[index].liked ?? false),
-                                      likesCount: (_followingPostList[index].liked ?? false)
-                                          ? (_followingPostList[index].likesCount ?? 0) - 1
-                                          : (_followingPostList[index].likesCount ?? 0) + 1,
-                                    );
-                                  });
-                                }
-                                completer.complete(success);
-                              },
-                            ));
-
-                            return await completer.future;
-                          } catch (e) {
-                            return false;
-                          }
+                          setState(() {
+                            _followingPostList[index] = _followingPostList[index].copyWith(liked: isLiked);
+                          });
+                          return isLiked;
                         }
                         return false;
-                      },
-                      onPressReport: ({String message = '', String reason = ''}) async {
-                        try {
-                          final completer = Completer<bool>();
-
-                          _postBloc.add(ReportPostEvent(
-                            postId: _followingPostList[index].postId!,
-                            message: reason,
-                            reason: reason,
-                            onComplete: (success) {
-                              if (success) {
-                                IsrVideoReelUtility.showToastMessage(
-                                  IsrTranslationFile.postReportedSuccessfully,
-                                );
-
-                                // Remove post from list
-                                setState(() {
-                                  _followingPostList.removeAt(index);
-                                });
-
-                                // Only scroll if there are more posts
-                                if (_followingPostList.isNotEmpty && index < _followingPostList.length) {
-                                  _postBloc.reelsPageFollowingController.nextPage(
-                                    duration: const Duration(milliseconds: 300),
-                                    curve: Curves.easeInOut,
-                                  );
-                                }
-                              }
-                              completer.complete(success);
-                            },
-                          ));
-
-                          return await completer.future;
-                        } catch (e) {
-                          return false;
-                        }
                       },
                     ),
                   ),

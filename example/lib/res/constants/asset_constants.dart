@@ -2,7 +2,7 @@ class AssetConstants {
   AssetConstants._();
 
   static const String icAppBarIcon = 'assets/icons/app_icons/ic_app_bar_icon.svg';
-  static const String icCrossIcon = 'assets/icons/cross.svg';
+  static const String icCrossIcon = 'assets/icons/ic_cross_icon.svg';
   static const String icBackIcon = 'assets/icons/ic_app_bar_back_icon.svg';
   static const String icAppLogo = 'assets/icons/ic_app_logo.svg';
   static const String icHomeNavigationIcon = 'assets/icons/home_screen_icons/ic_home_navigation.svg';
@@ -224,4 +224,8 @@ class AssetConstants {
   static const String icDeleteAppColor = 'assets/icons/ic_delete_appcolor.svg';
   static const String icPaymentFailed = 'assets/icons/ic_payment_failed.svg';
   static const String icNoProductsAvailable = 'assets/icons/place_holder_icons/ic_no_products_available.svg';
+  static const String icCoverImagePlaceHolder = 'assets/icons/ic_cover_image_place_holder.svg';
+  static const String icCloudUploadIcon = 'assets/icons/ic_cloud_upload_icon.svg';
+  static const String icCameraIcon = 'assets/icons/ic_camera_icon.svg';
+  static const String icGalleryIcon = 'assets/icons/ic_gallery_icon.svg';
 }

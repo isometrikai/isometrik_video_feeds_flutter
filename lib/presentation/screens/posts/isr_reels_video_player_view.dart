@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -47,7 +46,7 @@ class IsrReelsVideoPlayerView extends StatefulWidget {
     this.isLiked = false,
     this.likesCount = 0,
     this.onPressLike,
-    this.onPressReport,
+    this.onPressMoreButton,
   });
 
   final String? mediaUrl;
@@ -82,7 +81,7 @@ class IsrReelsVideoPlayerView extends StatefulWidget {
   final bool isLiked;
   final num likesCount;
   final Future<bool> Function()? onPressLike;
-  final Future<bool> Function({String message, String reason})? onPressReport;
+  final Future<bool> Function()? onPressMoreButton;
 
   @override
   State<IsrReelsVideoPlayerView> createState() => _IsrReelsVideoPlayerViewState();
@@ -90,8 +89,8 @@ class IsrReelsVideoPlayerView extends StatefulWidget {
 
 class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
   // Add constants for media types
-  static const int kPictureType = 0;
-  static const int kVideoType = 1;
+  static const int kPictureType = 1;
+  static const int kVideoType = 2;
 
   VideoPlayerController? videoPlayerController;
 
@@ -274,11 +273,9 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
               ),
               child: IconButton(
                 onPressed: () async {
-                  await InjectionUtils.getRouteManagement().goToCreatePostView();
-                  // if (postId.isEmptyOrNull == false) {
-                  //   InjectionUtils.getBloc<PostBloc>()
-                  //       .add(GetFollowingPostEvent(isLoading: true, isPagination: false, isRefresh: true));
-                  // }
+                  if (widget.onCreatePost != null) {
+                    await widget.onCreatePost!();
+                  }
                 },
                 icon: const Icon(
                   Icons.add, // Simple plus icon
@@ -330,7 +327,11 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
             _buildActionButton(
               icon: AssetConstants.icMoreIcon,
               label: '',
-              onTap: _showMoreOptionsDialog,
+              onTap: () async {
+                if (widget.onPressMoreButton != null) {
+                  await widget.onPressMoreButton!();
+                }
+              },
             ),
           ],
         ),
@@ -782,18 +783,5 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
       videoPlayerController?.setVolume(isMuted ? 0.0 : 1.0);
     });
     widget.onTapVolume?.call();
-  }
-
-  void _showMoreOptionsDialog() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isDismissible: true,
-      enableDrag: true,
-      builder: (dialogContext) => IsrMoreOptionsBottomSheet(
-        onPressSave: widget.onPressSave,
-        onPressReport: widget.onPressReport,
-      ),
-    );
   }
 }

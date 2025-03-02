@@ -6,11 +6,23 @@ enum ImageType {
 }
 
 enum ButtonType {
-  primary,
-  secondary,
-  outlined,
-  text,
-  icon;
+  primary, // Blue background, white text
+  secondary, // Outlined button with blue border
+  tertiary, // Text only button
+  danger, // Red background for destructive actions
+  success, // Green background for confirmations
+  disabled // Grey, non-interactive
+}
+
+enum LikeAction {
+  like,
+  unlike,
+}
+
+enum ButtonSize {
+  small, // Height: 32
+  medium, // Height: 40
+  large // Height: 48
 }
 
 enum GradientTextType {
@@ -58,4 +70,10 @@ enum PostType {
 enum MediaSource {
   gallery,
   camera,
+}
+
+enum MediaType {
+  video,
+  photo,
+  both,
 }

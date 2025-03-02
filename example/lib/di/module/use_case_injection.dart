@@ -18,5 +18,23 @@ class UseCaseInjection {
     InjectionUtils.registerUseCase<SendOtpUseCase>(() => SendOtpUseCase(InjectionUtils.getRepo<AuthRepository>()));
     InjectionUtils.registerUseCase<GuestLoginUseCase>(
         () => GuestLoginUseCase(InjectionUtils.getRepo<AuthRepository>()));
+
+    /// Post UseCase
+    InjectionUtils.registerUseCase<CreatePostUseCase>(
+        () => CreatePostUseCase(InjectionUtils.getRepo<PostRepository>()));
+    InjectionUtils.registerUseCase<GetFollowingPostUseCase>(
+        () => GetFollowingPostUseCase(InjectionUtils.getRepo<PostRepository>()));
+    InjectionUtils.registerUseCase<GetTrendingPostUseCase>(
+        () => GetTrendingPostUseCase(InjectionUtils.getRepo<PostRepository>()));
+    InjectionUtils.registerUseCase<FollowPostUseCase>(
+        () => FollowPostUseCase(InjectionUtils.getRepo<PostRepository>()));
+    InjectionUtils.registerUseCase<SavePostUseCase>(() => SavePostUseCase(InjectionUtils.getRepo<PostRepository>()));
+    InjectionUtils.registerUseCase<LikePostUseCase>(() => LikePostUseCase(InjectionUtils.getRepo<PostRepository>()));
+    InjectionUtils.registerUseCase<ReportPostUseCase>(
+        () => ReportPostUseCase(InjectionUtils.getRepo<PostRepository>()));
+    InjectionUtils.registerUseCase<GetReportReasonsUseCase>(
+        () => GetReportReasonsUseCase(InjectionUtils.getRepo<PostRepository>()));
+    InjectionUtils.registerUseCase<GetCloudDetailsUseCase>(
+        () => GetCloudDetailsUseCase(InjectionUtils.getRepo<PostRepository>()));
   }
 }

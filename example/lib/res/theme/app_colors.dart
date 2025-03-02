@@ -278,6 +278,12 @@ class AppColors {
 
   static const Color color668A5C = Color(0xFF668A5C);
 
+  static const Color color909090 = Color(0xFF909090);
+
+  static const Color colorBBBBBB = Color(0xFFBBBBBB);
+
+  static const Color colorCCCCCC = Color(0xFFCCCCCC);
+
   static const List<Color> lightBlueGradient = [
     Color(0xFFE2F6FB),
     Color(0xFFFFFFFF),

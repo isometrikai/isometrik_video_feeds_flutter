@@ -1,7 +1,8 @@
 import 'package:go_router/go_router.dart';
-import 'package:ism_video_reel_player/utils/navigator/isr_app_router.dart';
+import 'package:ism_video_reel_player_example/domain/domain.dart';
 import 'package:ism_video_reel_player_example/example_export.dart';
 import 'package:ism_video_reel_player_example/presentation/presentation.dart';
+import 'package:ism_video_reel_player_example/utils/utils.dart';
 
 part 'app_routes.dart';
 
@@ -38,7 +39,33 @@ class AppRouter {
         name: RouteNames.home,
         builder: (_, __) => const HomeScreen(),
       ),
-      ...IsrAppRouter.router.configuration.routes,
+      GoRoute(
+        path: AppRoutes.createPostView,
+        name: RouteNames.createPostView,
+        pageBuilder: (context, state) => PageTransition(
+          child: const CreatePostView(),
+          transitionType: TransitionType.bottomToTop,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.cameraView,
+        name: RouteNames.cameraView,
+        builder: (_, state) {
+          final extras = state.extra as Map<String, dynamic>;
+          final mediaType = extras['mediaType'] as MediaType? ?? MediaType.photo;
+          return CameraView(mediaType: mediaType);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.postAttributeView,
+        name: RouteNames.postAttributeView,
+        builder: (_, state) {
+          final extraMap = state.extra as Map;
+          return PostAttributeView(
+            postAttributeClass: extraMap['postAttributeClass'] as PostAttributeClass?,
+          );
+        },
+      ),
     ],
   );
 }

@@ -18,6 +18,22 @@ class BlocInjection {
         ));
 
     InjectionUtils.registerBloc<SplashBloc>(() => SplashBloc(_localDataUseCase));
-    InjectionUtils.registerBloc<HomeBloc>(() => HomeBloc(_localDataUseCase));
+
+    InjectionUtils.registerBloc<HomeBloc>(() => HomeBloc(
+          _localDataUseCase,
+          InjectionUtils.getUseCase<GetFollowingPostUseCase>(),
+          InjectionUtils.getUseCase<GetTrendingPostUseCase>(),
+          InjectionUtils.getUseCase<FollowPostUseCase>(),
+          InjectionUtils.getUseCase<SavePostUseCase>(),
+          InjectionUtils.getUseCase<LikePostUseCase>(),
+          InjectionUtils.getUseCase<ReportPostUseCase>(),
+          InjectionUtils.getUseCase<GetReportReasonsUseCase>(),
+          InjectionUtils.getUseCase<GetCloudDetailsUseCase>(),
+        ));
+
+    InjectionUtils.registerBloc<CreatePostBloc>(() => CreatePostBloc(
+          InjectionUtils.getUseCase<CreatePostUseCase>(),
+          InjectionUtils.getUseCase<GetCloudDetailsUseCase>(),
+        ));
   }
 }

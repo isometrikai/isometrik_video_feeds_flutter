@@ -29,7 +29,7 @@ class IsrVideoReelConfig {
   static Future<void> _saveUserInformation({
     PostInfoClass? postInfo,
   }) async {
-    final localStorageManager = InjectionUtils.getOtherClass<IsrLocalStorageManager>();
+    final localStorageManager = IsmInjectionUtils.getOtherClass<IsrLocalStorageManager>();
     final userInfoString = postInfo?.userInformation.toString();
     await localStorageManager.saveValueSecurely(IsrLocalStorageKeys.accessToken, postInfo?.accessToken ?? '');
     await localStorageManager.saveValue(IsrLocalStorageKeys.userInfo, userInfoString, SavedValueDataType.string);

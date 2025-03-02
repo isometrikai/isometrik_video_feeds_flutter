@@ -10,7 +10,16 @@ import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 class IsrPostView extends StatefulWidget {
-  const IsrPostView({super.key});
+  const IsrPostView({
+    super.key,
+    // this.followingPosts,
+    // this.trendingPosts,
+    required this.tabDataModelList,
+  });
+
+  // final List<PostDataModel>? followingPosts;
+  // final List<PostDataModel>? trendingPosts;
+  final List<TabDataModel> tabDataModelList;
 
   @override
   State<IsrPostView> createState() => _PostViewState();
@@ -18,6 +27,8 @@ class IsrPostView extends StatefulWidget {
 
 class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
   TabController? _postTabController;
+  late List<RefreshController> _refreshControllers;
+
   UserInfoClass? _userInfoClass;
   final _followingRefreshController = RefreshController(
     initialRefresh: false,
@@ -43,59 +54,65 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
         ),
         child: Scaffold(
           backgroundColor: Colors.black12,
-          body: BlocBuilder<PostBloc, PostState>(
-            buildWhen: (previousState, currentState) =>
-                currentState is UserInformationLoaded ||
-                currentState is TrendingPostsLoadedState ||
-                currentState is FollowingPostsLoadedState,
-            builder: (context, state) {
-              _userInfoClass =
-                  state is UserInformationLoaded ? state.userInfoClass : null;
-              return state is PostInitial
-                  ? state.isLoading == true
-                      ? Center(child: IsrVideoReelUtility.loaderWidget())
-                      : const SizedBox.shrink()
-                  : DefaultTabController(
-                      length: 2,
-                      child: Stack(
-                        children: [
-                          TabBarView(
-                            physics: const NeverScrollableScrollPhysics(),
-                            controller: _postTabController,
-                            children: [
-                              SmartRefresher(
-                                controller: _followingRefreshController,
-                                physics: const ClampingScrollPhysics(),
-                                onRefresh: () async {
-                                  InjectionUtils.getBloc<PostBloc>()
-                                      .add(GetFollowingPostEvent(
-                                    isLoading: false,
-                                    isPagination: false,
-                                    isRefresh: true,
-                                  ));
-                                },
-                                child: const FollowingPostWidget(),
-                              ),
-                              SmartRefresher(
-                                controller: _trendingRefreshController,
-                                physics: const ClampingScrollPhysics(),
-                                onRefresh: () async {
-                                  InjectionUtils.getBloc<PostBloc>()
-                                      .add(GetTrendingPostEvent(
-                                    isLoading: false,
-                                    isPagination: false,
-                                    isRefresh: true,
-                                  ));
-                                },
-                                child: const TrendingPostWidget(),
-                              ),
-                            ],
-                          ),
-                          _buildTabBar(),
-                        ],
-                      ),
-                    );
-            },
+          body: BlocProvider<PostBloc>(
+            create: (context) => IsmInjectionUtils.getBloc<PostBloc>(),
+            child: BlocConsumer<PostBloc, PostState>(
+              listener: (context, state) {
+                if (state is UserInformationLoaded) {
+                  IsmInjectionUtils.getBloc<PostBloc>()
+                      .add(FollowingPostsLoadedEvent(widget.tabDataModelList.first.postList));
+                }
+              },
+              buildWhen: (previousState, currentState) => currentState is UserInformationLoaded,
+              builder: (context, state) {
+                _userInfoClass = state is UserInformationLoaded ? state.userInfoClass : null;
+                return state is PostInitial
+                    ? state.isLoading == true
+                        ? Center(child: IsrVideoReelUtility.loaderWidget())
+                        : const SizedBox.shrink()
+                    : DefaultTabController(
+                        length: 2,
+                        child: Stack(
+                          children: [
+                            TabBarView(
+                              physics: const NeverScrollableScrollPhysics(),
+                              controller: _postTabController,
+                              children: widget.tabDataModelList
+                                  .map((tabData) => _buildTabBarView(tabData, widget.tabDataModelList.indexOf(tabData)))
+                                  .toList(),
+                              // children: [
+                              //   SmartRefresher(
+                              //     controller: _followingRefreshController,
+                              //     physics: const ClampingScrollPhysics(),
+                              //     onRefresh: () async {
+                              //       // InjectionUtils.getBloc<PostBloc>().add(GetFollowingPostEvent(
+                              //       //   isLoading: false,
+                              //       //   isPagination: false,
+                              //       //   isRefresh: true,
+                              //       // ));
+                              //     },
+                              //     child: const FollowingPostWidget(),
+                              //   ),
+                              //   // SmartRefresher(
+                              //   //   controller: _trendingRefreshController,
+                              //   //   physics: const ClampingScrollPhysics(),
+                              //   //   onRefresh: () async {
+                              //   //     // InjectionUtils.getBloc<PostBloc>().add(GetTrendingPostEvent(
+                              //   //     //   isLoading: false,
+                              //   //     //   isPagination: false,
+                              //   //     //   isRefresh: true,
+                              //   //     // ));
+                              //   //   },
+                              //   //   child: const TrendingPostWidget(),
+                              //   // ),
+                              // ],
+                            ),
+                            if (widget.tabDataModelList.length > 1) _buildTabBar(),
+                          ],
+                        ),
+                      );
+              },
+            ),
           ),
         ),
       );
@@ -134,20 +151,16 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
                     fontWeight: FontWeight.w400,
                     height: 1.5,
                   ),
-                  tabs: [
-                    const Tab(
-                      child: Text(
-                        IsrTranslationFile.following,
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    const Tab(
-                      child: Text(
-                        IsrTranslationFile.trending,
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ],
+                  tabs: widget.tabDataModelList
+                      .map(
+                        (tab) => Tab(
+                          child: Text(
+                            tab.title,
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      )
+                      .toList(),
                 ),
               ),
             ),
@@ -155,27 +168,27 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
         ),
       );
 
-  void _onStartInit() {
+  void _onStartInit() async {
     if (!IsrVideoReelConfig.isSdkInitialize) {
       IsrVideoReelUtility.showToastMessage('sdk not initialized');
       return;
     }
-    final postBloc = InjectionUtils.getBloc<PostBloc>();
-    _postTabController = TabController(length: 2, vsync: this);
+    _postTabController = TabController(length: widget.tabDataModelList.length, vsync: this);
+    _refreshControllers = List.generate(widget.tabDataModelList.length, (index) => RefreshController());
+    final postBloc = IsmInjectionUtils.getBloc<PostBloc>();
     _postTabController?.addListener(() {
-      if (_postTabController?.index == 1) {
-        // Trending tab selected
-        postBloc.add(GetTrendingPostEvent(
-          isLoading: false,
-          isPagination: false,
-        ));
-      } else {
-        // Following tab selected
-        postBloc.add(GetFollowingPostEvent(
-          isLoading: false,
-          isPagination: false,
-        ));
-      }
+      IsmInjectionUtils.getBloc<PostBloc>()
+          .add(FollowingPostsLoadedEvent(widget.tabDataModelList[_postTabController!.index].postList));
+      // postBloc.add(FollowingPostsLoadedEvent(widget.followingPosts!));
+      // if (_postTabController?.index == 0) {
+      //   postBloc.add(FollowingPostsLoadedEvent(widget.tabDataModelList?[_postTabController!.index].postList));
+      //   // Following tab selected
+      //   // postBloc.add(FollowingPostsLoadedEvent(widget.followingPosts!));
+      // } else {
+      //   postBloc.add(TrendingPostsLoadedEvent(widget.tabDataModelList?[_postTabController!.index].postList));
+      //   // Trending tab selected
+      //   // postBloc.add(TrendingPostsLoadedEvent(widget.trendingPosts!));
+      // }
     });
     postBloc.add(const StartPost());
   }
@@ -183,6 +196,33 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
   @override
   void dispose() {
     _postTabController?.dispose();
+    // Dispose each RefreshController
+    for (var controller in _refreshControllers) {
+      controller.dispose();
+    }
+    super.dispose();
     super.dispose();
   }
+
+  Widget _buildTabBarView(TabDataModel tabData, int index) => SmartRefresher(
+        controller: _refreshControllers[index],
+        physics: const ClampingScrollPhysics(),
+        onRefresh: () async {
+          await Future.delayed(const Duration(seconds: 1)); // Simulate a delay
+          // Call refreshComplete() when done
+          _refreshControllers[index].refreshCompleted();
+          // InjectionUtils.getBloc<PostBloc>().add(GetFollowingPostEvent(
+          //   isLoading: false,
+          //   isPagination: false,
+          //   isRefresh: true,
+          // ));
+        },
+        child: FollowingPostWidget(
+          onPressSave: tabData.onPressSave,
+          onTapMore: tabData.onTapMore,
+          onPressLike: tabData.onPressLike,
+          onPressFollow: tabData.onPressFollow,
+          onCreatePost: tabData.onCreatePost,
+        ),
+      );
 }

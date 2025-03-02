@@ -7,14 +7,23 @@ class HomeInitial extends HomeState {
 }
 
 class HomeLoading extends HomeState {
-  HomeLoading();
+  HomeLoading({this.isLoading = false});
+
+  final bool? isLoading;
 }
 
 class HomeLoaded extends HomeState {
-  HomeLoaded();
+  HomeLoaded({
+    required this.followingPosts,
+    required this.trendingPosts,
+  });
+
+  final List<isr.PostDataModel>? followingPosts;
+  final List<isr.PostDataModel>? trendingPosts;
 }
 
 class HomeError extends HomeState {
   HomeError(this.message);
+
   final String message;
 }

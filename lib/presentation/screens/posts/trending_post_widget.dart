@@ -5,7 +5,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
-import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
 class TrendingPostWidget extends StatefulWidget {
@@ -16,15 +15,15 @@ class TrendingPostWidget extends StatefulWidget {
 }
 
 class _TrendingPostWidgetState extends State<TrendingPostWidget> {
-  final _postBloc = isrGetIt<PostBloc>();
-  List<PostData> _trendingPostList = [];
+  final _postBloc = IsmInjectionUtils.getBloc<PostBloc>();
+  List<PostDataModel> _trendingPostList = [];
 
   @override
   Widget build(BuildContext context) => BlocBuilder<PostBloc, PostState>(
         buildWhen: (previousState, currentState) => currentState is TrendingPostsLoadedState,
         builder: (context, state) {
           if (state is TrendingPostsLoadedState) {
-            _trendingPostList = state.trendingPosts;
+            _trendingPostList = state.trendingPosts ?? [];
           } else if (state is SavePostSuccessState) {
             final index = _trendingPostList.indexWhere((post) => post.postId == state.postId);
             if (index != -1) {
@@ -44,23 +43,23 @@ class _TrendingPostWidgetState extends State<TrendingPostWidget> {
               });
             }
           } else if (state is LikeSuccessState) {
-            final index = _trendingPostList.indexWhere((post) => post.postId == state.postId);
-            if (index != -1) {
-              setState(() {
-                _trendingPostList[index] = _trendingPostList[index].copyWith(
-                  liked: state.likeAction == LikeAction.like,
-                  likesCount: (state.likeAction == LikeAction.like)
-                      ? (_trendingPostList[index].likesCount ?? 0) + 1
-                      : (_trendingPostList[index].likesCount ?? 0) - 1,
-                );
-              });
-            }
+            // final index = _trendingPostList.indexWhere((post) => post.postId == state.postId);
+            // if (index != -1) {
+            //   setState(() {
+            //     _trendingPostList[index] = _trendingPostList[index].copyWith(
+            //       liked: state.likeAction == LikeAction.like,
+            //       likesCount: (state.likeAction == LikeAction.like)
+            //           ? (_trendingPostList[index].likesCount ?? 0) + 1
+            //           : (_trendingPostList[index].likesCount ?? 0) - 1,
+            //     );
+            //   });
+            // }
           }
 
           return _trendingPostList.isEmptyOrNull == false
               ? RefreshIndicator(
                   onRefresh: () async {
-                    _postBloc.add(GetTrendingPostEvent(isLoading: false));
+                    // _postBloc.add(GetTrendingPostEvent(isLoading: false));
                   },
                   child: PageView.builder(
                     allowImplicitScrolling: true,
@@ -71,10 +70,10 @@ class _TrendingPostWidgetState extends State<TrendingPostWidget> {
                       // Check if we're at 75% of the list
                       final threshold = (_trendingPostList.length * 0.75).floor();
                       if (index >= threshold) {
-                        _postBloc.add(GetTrendingPostEvent(
-                          isLoading: false,
-                          isPagination: true,
-                        ));
+                        // _postBloc.add(GetTrendingPostEvent(
+                        //   isLoading: false,
+                        //   isPagination: true,
+                        // ));
                       }
                     },
                     itemCount: _trendingPostList.length,
@@ -108,19 +107,19 @@ class _TrendingPostWidgetState extends State<TrendingPostWidget> {
                           try {
                             final completer = Completer<bool>();
 
-                            _postBloc.add(FollowUserEvent(
-                              followingId: _trendingPostList[index].userId!,
-                              onComplete: (success) {
-                                if (success) {
-                                  setState(() {
-                                    _trendingPostList[index] = _trendingPostList[index].copyWith(
-                                      followStatus: 1,
-                                    );
-                                  });
-                                }
-                                completer.complete(success);
-                              },
-                            ));
+                            // _postBloc.add(FollowUserEvent(
+                            //   followingId: _trendingPostList[index].userId!,
+                            //   onComplete: (success) {
+                            //     if (success) {
+                            //       setState(() {
+                            //         _trendingPostList[index] = _trendingPostList[index].copyWith(
+                            //           followStatus: 1,
+                            //         );
+                            //       });
+                            //     }
+                            //     completer.complete(success);
+                            //   },
+                            // ));
 
                             return await completer.future;
                           } catch (e) {
@@ -134,19 +133,19 @@ class _TrendingPostWidgetState extends State<TrendingPostWidget> {
                           try {
                             final completer = Completer<bool>();
 
-                            _postBloc.add(SavePostEvent(
-                              postId: _trendingPostList[index].postId!,
-                              onComplete: (success) {
-                                if (success) {
-                                  setState(() {
-                                    _trendingPostList[index] = _trendingPostList[index].copyWith(
-                                      isSavedPost: true,
-                                    );
-                                  });
-                                }
-                                completer.complete(success);
-                              },
-                            ));
+                            // _postBloc.add(SavePostEvent(
+                            //   postId: _trendingPostList[index].postId!,
+                            //   onComplete: (success) {
+                            //     if (success) {
+                            //       setState(() {
+                            //         _trendingPostList[index] = _trendingPostList[index].copyWith(
+                            //           isSavedPost: true,
+                            //         );
+                            //       });
+                            //     }
+                            //     completer.complete(success);
+                            //   },
+                            // ));
 
                             return await completer.future;
                           } catch (e) {
@@ -162,24 +161,24 @@ class _TrendingPostWidgetState extends State<TrendingPostWidget> {
                           try {
                             final completer = Completer<bool>();
 
-                            _postBloc.add(LikePostEvent(
-                              postId: _trendingPostList[index].postId!,
-                              userId: _trendingPostList[index].userId!,
-                              likeAction: _trendingPostList[index].liked == true ? LikeAction.unlike : LikeAction.like,
-                              onComplete: (success) {
-                                if (success) {
-                                  setState(() {
-                                    _trendingPostList[index] = _trendingPostList[index].copyWith(
-                                      liked: !(_trendingPostList[index].liked ?? false),
-                                      likesCount: (_trendingPostList[index].liked ?? false)
-                                          ? (_trendingPostList[index].likesCount ?? 0) - 1
-                                          : (_trendingPostList[index].likesCount ?? 0) + 1,
-                                    );
-                                  });
-                                }
-                                completer.complete(success);
-                              },
-                            ));
+                            // _postBloc.add(LikePostEvent(
+                            //   postId: _trendingPostList[index].postId!,
+                            //   userId: _trendingPostList[index].userId!,
+                            //   likeAction: _trendingPostList[index].liked == true ? LikeAction.unlike : LikeAction.like,
+                            //   onComplete: (success) {
+                            //     if (success) {
+                            //       setState(() {
+                            //         _trendingPostList[index] = _trendingPostList[index].copyWith(
+                            //           liked: !(_trendingPostList[index].liked ?? false),
+                            //           likesCount: (_trendingPostList[index].liked ?? false)
+                            //               ? (_trendingPostList[index].likesCount ?? 0) - 1
+                            //               : (_trendingPostList[index].likesCount ?? 0) + 1,
+                            //         );
+                            //       });
+                            //     }
+                            //     completer.complete(success);
+                            //   },
+                            // ));
 
                             return await completer.future;
                           } catch (e) {
@@ -188,42 +187,42 @@ class _TrendingPostWidgetState extends State<TrendingPostWidget> {
                         }
                         return false;
                       },
-                      onPressReport: ({String message = '', String reason = ''}) async {
-                        try {
-                          final completer = Completer<bool>();
-
-                          _postBloc.add(ReportPostEvent(
-                            postId: _trendingPostList[index].postId!,
-                            message: reason,
-                            reason: reason,
-                            onComplete: (success) {
-                              if (success) {
-                                IsrVideoReelUtility.showToastMessage(
-                                  IsrTranslationFile.postReportedSuccessfully,
-                                );
-
-                                // Remove post from list
-                                setState(() {
-                                  _trendingPostList.removeAt(index);
-                                });
-
-                                // Only scroll if there are more posts
-                                if (_trendingPostList.isNotEmpty && index < _trendingPostList.length) {
-                                  _postBloc.reelsPageTrendingController.nextPage(
-                                    duration: const Duration(milliseconds: 300),
-                                    curve: Curves.easeInOut,
-                                  );
-                                }
-                              }
-                              completer.complete(success);
-                            },
-                          ));
-
-                          return await completer.future;
-                        } catch (e) {
-                          return false;
-                        }
-                      },
+                      // onPressReport: ({String message = '', String reason = ''}) async {
+                      //   try {
+                      //     final completer = Completer<bool>();
+                      //
+                      //     // _postBloc.add(ReportPostEvent(
+                      //     //   postId: _trendingPostList[index].postId!,
+                      //     //   message: reason,
+                      //     //   reason: reason,
+                      //     //   onComplete: (success) {
+                      //     //     if (success) {
+                      //     //       IsrVideoReelUtility.showToastMessage(
+                      //     //         IsrTranslationFile.postReportedSuccessfully,
+                      //     //       );
+                      //     //
+                      //     //       // Remove post from list
+                      //     //       setState(() {
+                      //     //         _trendingPostList.removeAt(index);
+                      //     //       });
+                      //     //
+                      //     //       // Only scroll if there are more posts
+                      //     //       if (_trendingPostList.isNotEmpty && index < _trendingPostList.length) {
+                      //     //         _postBloc.reelsPageTrendingController.nextPage(
+                      //     //           duration: const Duration(milliseconds: 300),
+                      //     //           curve: Curves.easeInOut,
+                      //     //         );
+                      //     //       }
+                      //     //     }
+                      //     //     completer.complete(success);
+                      //     //   },
+                      //     // ));
+                      //
+                      //     return await completer.future;
+                      //   } catch (e) {
+                      //     return false;
+                      //   }
+                      // },
                     ),
                   ),
                 )

@@ -118,11 +118,3 @@ extension RemoveEmptyElementExtension on Map<String, dynamic> {
 extension ColorExt on Color {
   Color applyOpacity(double opacity) => withValues(alpha: opacity);
 }
-
-extension MediaTypeExtension on MediaType {
-  int get mediaType => switch (this) {
-        MediaType.photo => 1,
-        MediaType.video => 2,
-        MediaType.both => 3,
-      };
-}

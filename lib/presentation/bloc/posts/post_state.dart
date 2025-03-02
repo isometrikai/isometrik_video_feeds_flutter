@@ -17,13 +17,13 @@ class UserInformationLoaded extends PostState {
 // Following Posts States
 class FollowingPostsLoadedState extends PostState {
   FollowingPostsLoadedState({required this.followingPosts});
-  final List<PostData> followingPosts;
+  final List<PostDataModel>? followingPosts;
 }
 
 // Trending Posts States
 class TrendingPostsLoadedState extends PostState {
   TrendingPostsLoadedState({required this.trendingPosts});
-  final List<PostData> trendingPosts;
+  final List<PostDataModel>? trendingPosts;
 }
 
 class FollowLoadingState extends PostState {
@@ -48,19 +48,19 @@ class SavePostSuccessState extends PostState {
 }
 
 class LikeSuccessState extends PostState {
-  LikeSuccessState({
-    required this.postId,
-    required this.likeAction,
-  });
-  final String postId;
-  final LikeAction likeAction;
+  // LikeSuccessState({
+  //   required this.postId,
+  //   required this.likeAction,
+  // });
+  // final String postId;
+  // final LikeAction likeAction;
 }
 
 class MediaSelectedState extends PostState {
-  MediaSelectedState({
-    this.postAttributeClass,
-  });
-  final PostAttributeClass? postAttributeClass;
+  // MediaSelectedState({
+  //   this.postAttributeClass,
+  // });
+  // final PostAttributeClass? postAttributeClass;
 }
 
 class UploadingCoverImageState extends PostState {
@@ -73,13 +73,6 @@ class UploadingMediaState extends PostState {
   // Progress for media
   UploadingMediaState(this.progress);
   final double progress;
-}
-
-class PostCreatedState extends PostState {
-  PostCreatedState({
-    required this.postId,
-  });
-  final String postId;
 }
 
 class CoverImageSelected extends PostState {

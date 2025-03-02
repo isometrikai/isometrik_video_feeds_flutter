@@ -1,3 +1,5 @@
+import 'package:ism_video_reel_player/res/res.dart';
+
 class TranslationFile {
   TranslationFile._();
 
@@ -30,4 +32,36 @@ class TranslationFile {
   static const String allowDownloads = 'Allow Downloads';
   static const String post = 'Post';
   static const String sdkNotInitialized = 'sdk not initialized';
+
+  static const uploadPhotoOrVideo = 'Upload a photo or a video';
+  static const uploadPhotoOrVideoToInspire =
+      'Upload a photo or a video to inspire and connect with our ${AppConstants.appName} community.';
+  static const description = 'Description';
+  static const writeDescription = 'Write a description';
+  static const cover = 'Cover';
+  static const editCover = 'Edit Cover';
+  static const whenToPost = 'When to post';
+  static const now = 'Now';
+  static const schedule = 'Schedule';
+  static const linkProductsToPost = 'Link Products to Post';
+  static const noProductsLinkedYet = 'No products linked yet!';
+  static const connectProductsToPost = 'Connect products to posts for better visibility and engagement';
+  static const addProducts = 'Add Products';
+  static const String choosePhotoOrVideo = 'Choose photo or video';
+  static const String noNakedPicture = 'No naked picture. No soliciting. No escort services';
+  static const String takePhoto = 'Take photo';
+  static const String selectImageFromGallery = 'Select image from gallery';
+  static const String takeVideo = 'Take video';
+  static const String selectVideoFromGallery = 'Select video from gallery';
+  static const String change = 'Change';
+  static const String size = 'Size';
+  static const String duration = 'Duration';
+  static const String socialPostCreatedSuccessfully = 'Social post created successfully';
+  static const String createPost = 'Create Post';
+  static const moreOptions = 'More Options';
+  static const reportPost = 'Report Post';
+  static const postReportedSuccessfully = 'Post reported successfully';
+  static const report = 'Report';
+  static const confirm = 'Confirm';
+  static const failedToLoadReportReasons = 'Failed to load report reasons';
 }

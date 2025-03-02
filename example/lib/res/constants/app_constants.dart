@@ -31,6 +31,7 @@ class AppConstants {
   static const bool isRewardWalletEnable = false;
   static const bool isPostEnable = false;
   static const int noInternetErrorCode = 1000;
+  static const String cloudinaryFolder = 'ShopAR/post/image';
 
   static const List<String> restrictedWords = [
     'null',

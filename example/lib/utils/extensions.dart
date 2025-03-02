@@ -44,9 +44,10 @@ extension ColorExt on Color {
   Color applyOpacity(double opacity) => withValues(alpha: opacity);
 }
 
-extension MediaTypeExtension on PostType {
+extension MediaTypeExtension on MediaType {
   int get mediaType => switch (this) {
-        PostType.photo => 1,
-        PostType.video => 2,
+        MediaType.photo => 1,
+        MediaType.video => 2,
+        MediaType.both => 3,
       };
 }
