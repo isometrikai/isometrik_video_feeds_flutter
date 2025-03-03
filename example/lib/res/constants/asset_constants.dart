@@ -5,9 +5,8 @@ class AssetConstants {
   static const String icCrossIcon = 'assets/icons/ic_cross_icon.svg';
   static const String icBackIcon = 'assets/icons/ic_app_bar_back_icon.svg';
   static const String icAppLogo = 'assets/icons/ic_app_logo.svg';
-  static const String icHomeNavigationIcon = 'assets/icons/home_screen_icons/ic_home_navigation.svg';
-  static const String icHomeUnselectedNavigationIcon =
-      'assets/icons/home_screen_icons/ic_home_navigation_unselected.svg';
+  static const String icHomeNavigationIcon = 'assets/icons/ic_home_navigation.svg';
+  static const String icHomeUnselectedNavigationIcon = 'assets/icons/ic_home_navigation_unselected.svg';
   static const String icCategoriesNavigationIcon = 'assets/icons/home_screen_icons/ic_categories_filled.svg';
   static const String icCategoriesUnselectedNavigationIcon =
       'assets/icons/home_screen_icons/ic_categories_navigation_unselected.svg';
@@ -15,9 +14,8 @@ class AssetConstants {
   static const String icOfferNavigationIcon = 'assets/icons/home_screen_icons/ic_offer_navigation.svg';
   static const String icOfferUnselectedNavigationIcon =
       'assets/icons/home_screen_icons/ic_offer_navigation_unselected.svg';
-  static const String icAccountNavigationIcon = 'assets/icons/home_screen_icons/ic_account_navigation.svg';
-  static const String icAccountUnselectedNavigationIcon =
-      'assets/icons/home_screen_icons/ic_account_navigation_unselected.svg';
+  static const String icAccountNavigationIcon = 'assets/icons/ic_account_navigation.svg';
+  static const String icAccountUnselectedNavigationIcon = 'assets/icons/ic_account_navigation_unselected.svg';
   static const String icNotificationBellIcon = 'assets/icons/ic_notification_bell_icon.svg';
   static const String icFavoriteIcon = 'assets/icons/ic_favorite_icon.svg';
   static const String icCartBagIcon = 'assets/icons/ic_cart_bag_icon.svg';
@@ -228,4 +226,5 @@ class AssetConstants {
   static const String icCloudUploadIcon = 'assets/icons/ic_cloud_upload_icon.svg';
   static const String icCameraIcon = 'assets/icons/ic_camera_icon.svg';
   static const String icGalleryIcon = 'assets/icons/ic_gallery_icon.svg';
+  static const String icCalendarIcon = 'assets/icons/ic_calendar_icon.svg';
 }

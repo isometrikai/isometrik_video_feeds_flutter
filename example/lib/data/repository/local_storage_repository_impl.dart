@@ -33,13 +33,13 @@ class LocalStorageRepositoryImpl implements LocalStorageRepository {
   }
 
   @override
-  void clearLocalData() {
-    _localStorageManager.clearData();
+  Future<void> clearLocalData() async {
+    await _localStorageManager.clearData();
   }
 
   @override
-  void deleteAllSecuredValues() {
-    _localStorageManager.deleteAllSecuredValues();
+  Future<void> deleteAllSecuredValues() async {
+    await _localStorageManager.deleteAllSecuredValues();
   }
 
   @override

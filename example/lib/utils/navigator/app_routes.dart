@@ -5,9 +5,10 @@ class AppRoutes {
   static const String splash = '/splash';
   static const String login = '/${RouteNames.login}';
   static const String otp = '/${RouteNames.otp}';
-  static const String home = '/${RouteNames.home}';
   static const String landingView = '/${RouteNames.landingView}';
+  static const String home = '$landingView/${RouteNames.home}';
   static const String cameraView = '/${RouteNames.cameraView}';
+  static const String profileView = '$landingView/${RouteNames.profileView}';
   static const String postView = '/${RouteNames.postView}';
   static const String videoTrimView = '/${RouteNames.videoTrimView}';
   static const String postAttributeView = '/${RouteNames.postAttributeView}';
@@ -19,6 +20,7 @@ class RouteNames {
   static const String login = 'loginView';
   static const String otp = 'otpView';
   static const String home = 'homeView';
+  static const String profileView = 'profileView';
   static const String landingView = 'landingView';
   static const String cameraView = 'CameraView';
   static const String postView = 'postView';

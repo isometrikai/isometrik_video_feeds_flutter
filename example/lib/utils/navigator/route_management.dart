@@ -14,16 +14,24 @@ class RouteManagement {
     _navigationService.go(RouteNames.postView);
   }
 
-  void goToLoginScreen() {
+  void goToHomeScreen() {
+    // _navigationService.goNamed(RouteNames.home);
+    goToNavItem(NavbarType.home, true);
+  }
+
+  void goToNavItem(NavbarType type, bool isFirstTimeVisit) {
+    _navigationService.go(type.route, arguments: {
+      'title': type.label,
+      'isFirstTimeVisit': isFirstTimeVisit,
+    });
+  }
+
+  Future<void> goToLoginScreen() async {
     _navigationService.goNamed(RouteNames.login);
   }
 
   void goToOtpScreen({Object? arguments}) {
     _navigationService.pushNamed(RouteNames.otp, arguments: arguments);
-  }
-
-  void goToHomeScreen() {
-    _navigationService.goNamed(RouteNames.home);
   }
 
   Future<PostDataModel?> goToCreatePostView() async {

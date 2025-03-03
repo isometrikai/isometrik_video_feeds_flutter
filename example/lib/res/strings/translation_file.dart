@@ -11,6 +11,9 @@ class TranslationFile {
   static const String noInternet = 'No Internet';
   static const String yes = 'Yes';
   static const String no = 'No';
+  static const String homeNavigation = 'Home';
+  static const String accountNavigation = 'Account';
+  static const String myAccount = 'My Account';
   static const String register = 'Register';
   static const String alert = 'Alert';
   static const String follow = 'Follow';
@@ -64,4 +67,5 @@ class TranslationFile {
   static const report = 'Report';
   static const confirm = 'Confirm';
   static const failedToLoadReportReasons = 'Failed to load report reasons';
+  static const selectDate = 'Select Date';
 }

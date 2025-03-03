@@ -5,6 +5,8 @@ import 'package:ism_video_reel_player_example/remote/remote.dart';
 import 'package:ism_video_reel_player_example/utils/utils.dart';
 
 class InjectionUtils {
+  static bool _isRegistered<T extends Object>() => kGetIt.isRegistered<T>();
+
   static T getBloc<T extends BlocBase<Object>>() => kGetIt<T>();
   static T getCubit<T extends BlocBase<Object>>() => kGetIt<T>();
 
@@ -17,11 +19,13 @@ class InjectionUtils {
 
   // Generic function to register a UseCase
   static void registerUseCase<T extends BaseUseCase>(T Function() factoryFunc) {
+    if (_isRegistered<T>()) return;
     kGetIt.registerLazySingleton<T>(factoryFunc);
   }
 
   // Generic function to register a repository
   static void registerRepo<T extends BaseRepository>(T Function() factoryFunc) {
+    if (_isRegistered<T>()) return;
     kGetIt.registerLazySingleton<T>(factoryFunc);
   }
 
@@ -29,6 +33,7 @@ class InjectionUtils {
 
   // Generic function to register a api service
   static void registerApiService<T extends BaseService>(T Function() factoryFunc) {
+    if (_isRegistered<T>()) return;
     kGetIt.registerLazySingleton<T>(factoryFunc);
   }
 
@@ -38,6 +43,7 @@ class InjectionUtils {
 
   // Generic function to register a class
   static void registerOtherClass<T extends Object>(T Function() factoryFunc) {
+    if (_isRegistered<T>()) return;
     kGetIt.registerLazySingleton<T>(factoryFunc);
   }
 

@@ -46,8 +46,8 @@ extension ColorExt on Color {
 
 extension MediaTypeExtension on MediaType {
   int get mediaType => switch (this) {
-        MediaType.photo => 1,
-        MediaType.video => 2,
-        MediaType.both => 3,
+        MediaType.photo => 0,
+        MediaType.video => 1,
+        MediaType.both => 2,
       };
 }

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player_example/di/di.dart';
 import 'package:ism_video_reel_player_example/presentation/presentation.dart';
 import 'package:ism_video_reel_player_example/res/res.dart';
+import 'package:ism_video_reel_player_example/utils/utils.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -23,7 +24,7 @@ class _SplashScreenState extends State<SplashScreen> {
         listener: (context, state) {
           if (state is SplashCompleted) {
             if (state.isLoggedIn) {
-              InjectionUtils.getRouteManagement().goToHomeScreen();
+              InjectionUtils.getCubit<NavItemCubit>().onTap(NavbarType.home, isFirstTime: true);
             } else {
               InjectionUtils.getRouteManagement().goToLoginScreen();
             }

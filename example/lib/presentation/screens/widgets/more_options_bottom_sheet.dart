@@ -47,6 +47,7 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
 
   @override
   Widget build(BuildContext context) => Container(
+        padding: Dimens.edgeInsetsSymmetric(horizontal: Dimens.twenty, vertical: Dimens.twenty),
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(

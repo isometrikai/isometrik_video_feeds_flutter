@@ -30,14 +30,6 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
   late List<RefreshController> _refreshControllers;
 
   UserInfoClass? _userInfoClass;
-  final _followingRefreshController = RefreshController(
-    initialRefresh: false,
-    initialLoadStatus: LoadStatus.idle,
-  );
-  final _trendingRefreshController = RefreshController(
-    initialRefresh: false,
-    initialLoadStatus: LoadStatus.idle,
-  );
 
   @override
   void initState() {

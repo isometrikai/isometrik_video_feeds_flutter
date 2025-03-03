@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:ism_video_reel_player_example/di/di.dart';
 import 'package:ism_video_reel_player_example/domain/domain.dart';
 import 'package:ism_video_reel_player_example/presentation/presentation.dart';
@@ -17,7 +18,6 @@ class CreatePostView extends StatefulWidget {
 }
 
 class _CreatePostViewState extends State<CreatePostView> {
-  bool _isNowSelected = true;
   int _descriptionLength = 0;
   final int _maxLength = 200;
   PostAttributeClass? postAttributeClass;
@@ -165,11 +165,12 @@ class _CreatePostViewState extends State<CreatePostView> {
                       Row(
                         children: [
                           Radio(
-                            value: true,
-                            groupValue: _isNowSelected,
+                            value: false,
+                            groupValue: _createPostBloc.isScheduledPost,
                             onChanged: (value) {
                               setState(() {
-                                _isNowSelected = value!;
+                                _createPostBloc.isScheduledPost = value!;
+                                _createPostBloc.selectedDate = DateTime.now().add(const Duration(days: 1));
                               });
                             },
                             activeColor: Theme.of(context).primaryColor,
@@ -180,11 +181,11 @@ class _CreatePostViewState extends State<CreatePostView> {
                           ),
                           const SizedBox(width: 24),
                           Radio(
-                            value: false,
-                            groupValue: _isNowSelected,
+                            value: true,
+                            groupValue: _createPostBloc.isScheduledPost,
                             onChanged: (value) {
                               setState(() {
-                                _isNowSelected = value!;
+                                _createPostBloc.isScheduledPost = value!;
                               });
                             },
                             activeColor: Theme.of(context).primaryColor,
@@ -195,6 +196,32 @@ class _CreatePostViewState extends State<CreatePostView> {
                           ),
                         ],
                       ),
+                      if (_createPostBloc.isScheduledPost) ...[
+                        Dimens.boxHeight(Dimens.twentyFour),
+                        GestureDetector(
+                          onTap: () => _selectDate(context), // Show date picker on tap
+                          child: Container(
+                            width: double.infinity, // Make the container full width
+                            padding: Dimens.edgeInsetsSymmetric(horizontal: Dimens.sixteen, vertical: Dimens.eight),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: AppColors.colorDBDBDB),
+                              borderRadius: Dimens.borderRadiusAll(Dimens.twelve),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  _createPostBloc.selectedDate == null
+                                      ? TranslationFile.selectDate
+                                      : DateFormat('d MMM yyyy').format(_createPostBloc.selectedDate!),
+                                  style: Styles.primaryText14,
+                                ),
+                                const AppImage.svg(AssetConstants.icCalendarIcon),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
 
                       Dimens.boxHeight(Dimens.twentyFour),
 
@@ -206,7 +233,7 @@ class _CreatePostViewState extends State<CreatePostView> {
                       Dimens.boxHeight(Dimens.eight),
                       DottedBorder(
                         borderType: BorderType.RRect,
-                        radius: const Radius.circular(12),
+                        radius: Radius.circular(Dimens.twelve),
                         padding: Dimens.edgeInsetsAll(Dimens.sixteen),
                         color: AppColors.colorDBDBDB,
                         strokeWidth: 1,
@@ -424,4 +451,27 @@ class _CreatePostViewState extends State<CreatePostView> {
           ],
         ),
       );
+
+  void _selectDate(BuildContext context) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _createPostBloc.selectedDate ?? DateTime.now().add(const Duration(days: 1)),
+      firstDate: DateTime.now().add(const Duration(days: 1)), // Disable all dates before tomorrow
+      lastDate: DateTime(2101),
+      builder: (BuildContext context, Widget? child) => Theme(
+        data: ThemeData.light().copyWith(
+          primaryColor: Theme.of(context).primaryColor, // Change the color of the header
+          hintColor: Theme.of(context).primaryColor, // Change the color of the buttons
+          colorScheme: ColorScheme.light(primary: Theme.of(context).primaryColor), // Change the button color
+          buttonTheme: const ButtonThemeData(textTheme: ButtonTextTheme.primary), // Change button text color
+        ),
+        child: child!,
+      ),
+    );
+    if (picked != null && picked != _createPostBloc.selectedDate) {
+      setState(() {
+        _createPostBloc.selectedDate = picked;
+      });
+    }
+  }
 }

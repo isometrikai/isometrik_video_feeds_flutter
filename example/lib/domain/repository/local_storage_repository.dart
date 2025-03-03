@@ -15,9 +15,9 @@ abstract class LocalStorageRepository extends BaseRepository {
 
   void deleteValue(String key);
 
-  void deleteAllSecuredValues();
+  Future<void> deleteAllSecuredValues();
 
-  void clearLocalData();
+  Future<void> clearLocalData();
 
   void clearSession();
 

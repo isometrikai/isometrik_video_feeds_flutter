@@ -19,9 +19,12 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) => MultiBlocProvider(
         providers: [
           BlocProvider(create: (context) => InjectionUtils.getBloc<SplashBloc>()),
+          BlocProvider(create: (context) => InjectionUtils.getBloc<LandingBloc>()),
           BlocProvider(create: (context) => InjectionUtils.getBloc<AuthBloc>()),
           BlocProvider(create: (context) => InjectionUtils.getBloc<HomeBloc>()),
           BlocProvider(create: (context) => InjectionUtils.getBloc<CreatePostBloc>()),
+          BlocProvider(create: (context) => InjectionUtils.getBloc<NavItemCubit>()),
+          BlocProvider(create: (context) => InjectionUtils.getBloc<ProfileBloc>()),
         ],
         child: ScreenUtilInit(
           useInheritedMediaQuery: true,

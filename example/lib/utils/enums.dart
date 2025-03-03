@@ -1,3 +1,6 @@
+import 'package:ism_video_reel_player_example/res/res.dart';
+import 'package:ism_video_reel_player_example/utils/utils.dart';
+
 enum ImageType {
   asset,
   svg,
@@ -76,4 +79,36 @@ enum MediaType {
   video,
   photo,
   both,
+}
+
+enum NavbarType {
+  home(
+    TranslationFile.homeNavigation,
+    AssetConstants.icHomeNavigationIcon,
+    AssetConstants.icHomeUnselectedNavigationIcon,
+    AppRoutes.home,
+  ),
+  account(
+    TranslationFile.accountNavigation,
+    AssetConstants.icAccountNavigationIcon,
+    AssetConstants.icAccountUnselectedNavigationIcon,
+    AppRoutes.profileView,
+  );
+
+  const NavbarType(
+    this.label,
+    this.outlineIcon,
+    this.filledIcon,
+    this.route, {
+    this.isVisible = true,
+  });
+
+  final String label;
+  final String outlineIcon;
+  final String filledIcon;
+  final String route;
+  final bool isVisible;
+
+  // Helper method to get visible items
+  static List<NavbarType> get visibleItems => NavbarType.values.where((item) => item.isVisible).toList();
 }

@@ -33,6 +33,9 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   final _createPostRequest = CreatePostRequest();
   final descriptionController = TextEditingController();
 
+  DateTime? selectedDate = DateTime.now().add(const Duration(days: 1));
+  var isScheduledPost = false;
+
   CloudDetailsData? cloudDetailsData;
 
   Future<void> _getCloudDetails() async {
@@ -240,6 +243,9 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   }
 
   FutureOr<void> _createPost(PostCreateEvent event, Emitter<CreatePostState> emit) async {
+    if (isScheduledPost && selectedDate != null) {
+      _createPostRequest.scheduleTime = selectedDate?.millisecondsSinceEpoch;
+    }
     _createPostRequest.description = descriptionController.text;
     if (_createPostRequest.imageUrl == null && _createPostRequest.url == null) {
       Utility.showAppError(message: 'Select a media file', errorViewType: ErrorViewType.toast);

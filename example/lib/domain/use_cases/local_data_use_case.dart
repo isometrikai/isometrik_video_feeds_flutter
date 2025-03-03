@@ -49,12 +49,9 @@ class LocalDataUseCase extends BaseUseCase {
 
   void saveProfilePic(String value) => repository.saveProfilePic(value);
 
-  void clearLocalData() {
-    repository.clearLocalData();
-  }
-
-  void deleteAllSecuredValues() {
-    repository.deleteAllSecuredValues();
+  Future<void> clearLocalData() async {
+    await repository.clearLocalData();
+    await repository.deleteAllSecuredValues();
   }
 
   void deleteSecuredValue(String key) {

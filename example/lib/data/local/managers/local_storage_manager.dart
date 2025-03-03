@@ -67,7 +67,7 @@ class LocalStorageManager {
   }
 
   /// Delete all data from secure storage
-  Future<void> deleteAllSecuredValues() => _flutterSecureStorage.deleteAll();
+  Future<void> deleteAllSecuredValues() async => _flutterSecureStorage.deleteAll();
 
   //clear data
   Future<void> clearData() async {

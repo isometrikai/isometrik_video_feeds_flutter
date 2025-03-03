@@ -36,16 +36,16 @@ ThemeData appTheme = ThemeData(
     labelSmall: Styles.secondaryText8.copyWith(fontFamily: AppConstants.primaryFontFamily),
   ),
   datePickerTheme: DatePickerThemeData(
-    backgroundColor: AppColors.appColor,
-    surfaceTintColor: AppColors.white,
-    rangeSelectionBackgroundColor: AppColors.white,
+    backgroundColor: AppColors.white,
+    surfaceTintColor: AppColors.appColor,
+    rangeSelectionBackgroundColor: AppColors.appColor,
     rangeSelectionOverlayColor: const WidgetStatePropertyAll(AppColors.white),
     dayBackgroundColor: WidgetStateProperty.resolveWith<Color?>(
-      (states) => states.contains(WidgetState.selected) ? AppColors.white : null,
+      (states) => states.contains(WidgetState.selected) ? AppColors.appColor : null,
     ),
-    dividerColor: AppColors.white,
+    dividerColor: AppColors.appColor,
     dayForegroundColor: WidgetStateProperty.resolveWith<Color?>(
-      (states) => states.contains(WidgetState.selected) ? AppColors.black : AppColors.white,
+      (states) => states.contains(WidgetState.selected) ? AppColors.white : AppColors.black,
     ),
   ),
   elevatedButtonTheme: ElevatedButtonThemeData(
