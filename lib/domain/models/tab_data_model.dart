@@ -11,11 +11,13 @@ class TabDataModel {
     this.onPressSave,
     this.onPressLike,
     this.onPressFollow,
+    this.onLoadMore,
   });
 
   final String title;
   final List<PostDataModel>? postList;
-  final Future<PostDataModel?> Function()? onCreatePost;
+  final Future<String?> Function()? onCreatePost;
+  final Future<List<PostDataModel>> Function()? onLoadMore;
   final Future<bool> Function(String)? onTapMore;
   final bool? showBlur;
   final List<FeaturedProductDataItem>? productList;

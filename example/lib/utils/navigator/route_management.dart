@@ -1,5 +1,4 @@
 import 'package:flutter/cupertino.dart';
-import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player_example/domain/domain.dart';
 import 'package:ism_video_reel_player_example/utils/utils.dart';
 
@@ -34,10 +33,10 @@ class RouteManagement {
     _navigationService.pushNamed(RouteNames.otp, arguments: arguments);
   }
 
-  Future<PostDataModel?> goToCreatePostView() async {
+  Future<String?> goToCreatePostView() async {
     final result = await _navigationService.pushNamed(
       RouteNames.createPostView,
-    ) as PostDataModel?;
+    ) as String?;
     return result;
   }
 

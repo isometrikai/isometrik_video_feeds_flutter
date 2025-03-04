@@ -215,6 +215,7 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
           onPressLike: tabData.onPressLike,
           onPressFollow: tabData.onPressFollow,
           onCreatePost: tabData.onCreatePost,
+          onLoadMore: tabData.onLoadMore,
         ),
       );
 }

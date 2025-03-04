@@ -17,15 +17,17 @@ class FollowingPostWidget extends StatefulWidget {
     this.onPressLike,
     this.onTapMore,
     this.onPressFollow,
+    this.onLoadMore,
   });
 
-  final Future<PostDataModel?> Function()? onCreatePost;
+  final Future<String?> Function()? onCreatePost;
   final Future<bool> Function(String postId)? onTapMore;
   final bool? showBlur;
   final List<FeaturedProductDataItem>? productList;
   final Future<bool> Function(String)? onPressSave;
   final Future<bool> Function(String, String, bool)? onPressLike;
   final Future<bool> Function(String)? onPressFollow;
+  final Future<List<PostDataModel>> Function()? onLoadMore;
 
   @override
   State<FollowingPostWidget> createState() => _FollowingPostWidgetState();
@@ -76,8 +78,9 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
                       key: Key(_followingPostList[index].postId ?? ''),
                       onCreatePost: () async {
                         if (widget.onCreatePost == null) return;
-                        final postDataModel = await widget.onCreatePost!();
-                        if (postDataModel == null) return;
+                        final postDataModelJsonString = await widget.onCreatePost!();
+                        if (postDataModelJsonString.isEmptyOrNull) return;
+                        final postDataModel = PostDataModel.fromJson(postDataModelJsonString as Map<String, dynamic>);
                         _followingPostList.insert(0, postDataModel);
                         _postBloc.add(FollowingPostsLoadedEvent(_followingPostList));
                       },

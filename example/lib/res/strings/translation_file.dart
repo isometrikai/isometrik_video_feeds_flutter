@@ -46,6 +46,7 @@ class TranslationFile {
   static const whenToPost = 'When to post';
   static const now = 'Now';
   static const schedule = 'Schedule';
+  static const schedulePost = 'Schedule Post';
   static const linkProductsToPost = 'Link Products to Post';
   static const noProductsLinkedYet = 'No products linked yet!';
   static const connectProductsToPost = 'Connect products to posts for better visibility and engagement';

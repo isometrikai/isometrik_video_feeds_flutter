@@ -87,12 +87,14 @@ enum NavbarType {
     AssetConstants.icHomeNavigationIcon,
     AssetConstants.icHomeUnselectedNavigationIcon,
     AppRoutes.home,
+    isVisible: true,
   ),
   account(
     TranslationFile.accountNavigation,
     AssetConstants.icAccountNavigationIcon,
     AssetConstants.icAccountUnselectedNavigationIcon,
     AppRoutes.profileView,
+    isVisible: true,
   );
 
   const NavbarType(

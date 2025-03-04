@@ -20,7 +20,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     this._likePostUseCase,
     this._reportPostUseCase,
     this._getReportReasonsUseCase,
-    this._getCloudDetailsUseCase,
   ) : super(HomeInitial()) {
     on<LoadHomeData>(_onLoadHomeData);
     on<GetFollowingPostEvent>(_getFollowingPost);
@@ -40,7 +39,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   final LikePostUseCase _likePostUseCase;
   final ReportPostUseCase _reportPostUseCase;
   final GetReportReasonsUseCase _getReportReasonsUseCase;
-  final GetCloudDetailsUseCase _getCloudDetailsUseCase;
 
   final List<isr.PostDataModel> _followingPostList = [];
   final List<isr.PostDataModel> _trendingPostList = [];

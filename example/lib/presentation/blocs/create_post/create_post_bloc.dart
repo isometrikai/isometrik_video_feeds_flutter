@@ -1,11 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:cloudinary/cloudinary.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player_example/core/core.dart';
 import 'package:ism_video_reel_player_example/di/di.dart';
 import 'package:ism_video_reel_player_example/domain/domain.dart';
@@ -261,9 +261,9 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     );
     if (apiResult.isSuccess) {
       final createPostData = apiResult.data?.newData;
-      final postDataModel = createPostData == null ? null : PostDataModel.fromJson(createPostData.toJson());
+      final postDataModelResponse = jsonEncode(createPostData?.toJson());
 
-      emit(PostCreatedState(postDataModel: postDataModel));
+      emit(PostCreatedState(postDataModel: postDataModelResponse));
     } else {
       ErrorHandler.showAppError(appError: apiResult.error, isNeedToShowError: true);
     }

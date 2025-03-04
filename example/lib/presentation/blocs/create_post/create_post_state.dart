@@ -38,5 +38,5 @@ class PostCreatedState extends CreatePostState {
   PostCreatedState({
     required this.postDataModel,
   });
-  final PostDataModel? postDataModel;
+  final String? postDataModel;
 }

@@ -24,6 +24,7 @@ class _CreatePostViewState extends State<CreatePostView> {
   final _createPostBloc = InjectionUtils.getBloc<CreatePostBloc>();
   var coverImage = '';
   final descriptionController = TextEditingController();
+  var _isCreateButtonDisable = false;
 
   @override
   void initState() {
@@ -53,6 +54,7 @@ class _CreatePostViewState extends State<CreatePostView> {
               onPress: () {
                 _createPostBloc.add(PostCreateEvent());
               },
+              isDisable: _isCreateButtonDisable,
               title: TranslationFile.create,
             ),
           ),
@@ -69,6 +71,16 @@ class _CreatePostViewState extends State<CreatePostView> {
                   isSuccessIcon: true,
                 );
                 Navigator.pop(context, state.postDataModel);
+              }
+              if (state is UploadingCoverImageState) {
+                setState(() {
+                  state.progress >= 99 ? _isCreateButtonDisable = false : _isCreateButtonDisable = true;
+                });
+              }
+              if (state is UploadingMediaState) {
+                setState(() {
+                  state.progress >= 99 ? _isCreateButtonDisable = false : _isCreateButtonDisable = true;
+                });
               }
             },
             builder: (context, state) {
@@ -213,7 +225,7 @@ class _CreatePostViewState extends State<CreatePostView> {
                                 Text(
                                   _createPostBloc.selectedDate == null
                                       ? TranslationFile.selectDate
-                                      : DateFormat('d MMM yyyy').format(_createPostBloc.selectedDate!),
+                                      : DateFormat('dd MMM yyyy HH:mm').format(_createPostBloc.selectedDate!),
                                   style: Styles.primaryText14,
                                 ),
                                 const AppImage.svg(AssetConstants.icCalendarIcon),
@@ -453,24 +465,121 @@ class _CreatePostViewState extends State<CreatePostView> {
       );
 
   void _selectDate(BuildContext context) async {
-    final picked = await showDatePicker(
+    final pickedDate = await showDialog(
       context: context,
-      initialDate: _createPostBloc.selectedDate ?? DateTime.now().add(const Duration(days: 1)),
-      firstDate: DateTime.now().add(const Duration(days: 1)), // Disable all dates before tomorrow
-      lastDate: DateTime(2101),
-      builder: (BuildContext context, Widget? child) => Theme(
-        data: ThemeData.light().copyWith(
-          primaryColor: Theme.of(context).primaryColor, // Change the color of the header
-          hintColor: Theme.of(context).primaryColor, // Change the color of the buttons
-          colorScheme: ColorScheme.light(primary: Theme.of(context).primaryColor), // Change the button color
-          buttonTheme: const ButtonThemeData(textTheme: ButtonTextTheme.primary), // Change button text color
-        ),
-        child: child!,
-      ),
-    );
-    if (picked != null && picked != _createPostBloc.selectedDate) {
+      builder: (BuildContext context) {
+        var selectedDate = _createPostBloc.selectedDate ?? DateTime.now().add(const Duration(days: 1));
+        var selectedTime = TimeOfDay.fromDateTime(selectedDate);
+
+        return AlertDialog(
+          title: Text(TranslationFile.schedulePost, style: Styles.primaryText14),
+          backgroundColor: AppColors.white,
+          buttonPadding: Dimens.edgeInsetsSymmetric(horizontal: Dimens.five, vertical: Dimens.ten),
+          content: StatefulBuilder(
+            builder: (context, setState) => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Date Picker
+                ListTile(
+                  title: Text(
+                    'Date: ${DateFormat('d MMM yyyy').format(selectedDate)}',
+                    style: Styles.primaryText14,
+                  ),
+                  trailing: const Icon(Icons.calendar_today),
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: selectedDate,
+                      firstDate: DateTime.now().add(const Duration(days: 1)),
+                      lastDate: DateTime(2101),
+                      builder: (context, child) => Theme(
+                        data: ThemeData.light().copyWith(
+                          primaryColor: Theme.of(context).primaryColor,
+                          colorScheme: ColorScheme.light(primary: Theme.of(context).primaryColor),
+                        ),
+                        child: child!,
+                      ),
+                    );
+                    if (picked != null) {
+                      setState(() => selectedDate = DateTime(
+                            picked.year,
+                            picked.month,
+                            picked.day,
+                            selectedTime.hour,
+                            selectedTime.minute,
+                          ));
+                    }
+                  },
+                ),
+                // Time Picker
+                ListTile(
+                  title: Text(
+                    'Time: ${selectedTime.format(context)}',
+                    style: Styles.primaryText14,
+                  ),
+                  trailing: const Icon(Icons.access_time),
+                  onTap: () async {
+                    final picked = await showTimePicker(
+                      context: context,
+                      initialTime: selectedTime,
+                      builder: (context, child) => Theme(
+                        data: ThemeData.light().copyWith(
+                          primaryColor: Theme.of(context).primaryColor,
+                          colorScheme: ColorScheme.light(primary: Theme.of(context).primaryColor),
+                        ),
+                        child: child!,
+                      ),
+                    );
+                    if (picked != null) {
+                      setState(() {
+                        selectedTime = picked;
+                        selectedDate = DateTime(
+                          selectedDate.year,
+                          selectedDate.month,
+                          selectedDate.day,
+                          picked.hour,
+                          picked.minute,
+                        );
+                      });
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).primaryColor,
+                backgroundColor: AppColors.white,
+                textStyle: Styles.primaryText14,
+              ),
+              child: Text(
+                TranslationFile.cancel,
+                style: Styles.primaryText14,
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, selectedDate),
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).primaryColor,
+                backgroundColor: AppColors.white,
+                textStyle: Styles.primaryText14,
+              ),
+              child: Text(
+                TranslationFile.ok,
+                style: Styles.primaryText14,
+              ),
+            ),
+          ],
+        );
+      },
+    ) as DateTime?;
+
+    if (pickedDate != null && pickedDate != _createPostBloc.selectedDate) {
       setState(() {
-        _createPostBloc.selectedDate = picked;
+        _createPostBloc.selectedDate = pickedDate;
       });
     }
   }

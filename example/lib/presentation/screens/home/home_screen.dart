@@ -233,12 +233,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _showMoreOptionsDialog({
     Future<bool> Function({String message, String reason})? onPressReport,
   }) async {
-    await showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isDismissible: true,
-      enableDrag: true,
-      builder: (dialogContext) => MoreOptionsBottomSheet(
+    await Utility.showBottomSheet(
+      isDismissible: true, // Add this to respect safe area
+      child: MoreOptionsBottomSheet(
         onPressReport: ({String message = '', String reason = ''}) async {
           try {
             if (onPressReport != null) {

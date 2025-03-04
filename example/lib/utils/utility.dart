@@ -217,8 +217,8 @@ class Utility {
   }
 
   /// shows bottom sheet
-  static Future<T?> showBottomSheet<T>(
-    Widget child, {
+  static Future<T?> showBottomSheet<T>({
+    required Widget child,
     bool isDarkBG = false,
     bool isDismissible = true,
     bool isScrollControlled = true,
