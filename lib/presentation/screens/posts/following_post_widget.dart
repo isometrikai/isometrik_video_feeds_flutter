@@ -111,8 +111,11 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
                 if (postDataModelJsonString.isEmptyOrNull) return;
                 final postDataMap = jsonDecode(postDataModelJsonString!) as Map<String, dynamic>;
                 final postDataModel = PostDataModel.fromJson(postDataMap);
-                _followingPostList.insert(0, postDataModel);
-                _postBloc.add(FollowingPostsLoadedEvent(_followingPostList));
+                setState(() {
+                  _followingPostList.insert(0, postDataModel);
+                });
+                // Remove bloc event since we're managing state locally
+                // _postBloc.add(FollowingPostsLoadedEvent(_followingPostList));
               },
               postId: _followingPostList[index].postId,
               description: '',

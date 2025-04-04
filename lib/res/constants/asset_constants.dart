@@ -32,4 +32,5 @@ class AssetConstants {
   static const String icCloudUploadIcon = '${packageName}assets/icons/ic_cloud_upload_icon.svg';
   static const String icCameraIcon = '${packageName}assets/icons/ic_camera_icon.svg';
   static const String icGalleryIcon = '${packageName}assets/icons/ic_gallery_icon.svg';
+  static const String icAppImagePlaceHolder = '${packageName}assets/icons/ic_app_image_place_holder.svg';
 }
