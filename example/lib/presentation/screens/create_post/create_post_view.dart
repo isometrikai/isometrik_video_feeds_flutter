@@ -24,7 +24,7 @@ class _CreatePostViewState extends State<CreatePostView> {
   final _createPostBloc = InjectionUtils.getBloc<CreatePostBloc>();
   var coverImage = '';
   final descriptionController = TextEditingController();
-  var _isCreateButtonDisable = false;
+  var _isCreateButtonDisable = true;
 
   @override
   void initState() {

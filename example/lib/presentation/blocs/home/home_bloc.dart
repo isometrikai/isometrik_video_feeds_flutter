@@ -60,8 +60,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       emit(HomeLoading(isLoading: true));
       await _initializeReelsSdk();
       await Future.wait([
-        _callGetFollowingPost(true, false, false),
-        _callGetTrendingPost(true, false, false),
+        _callGetFollowingPost(true, false, false, null),
+        _callGetTrendingPost(true, false, false, null),
       ]);
       emit(HomeLoaded(
         followingPosts: _followingPostList,
@@ -89,14 +89,15 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   }
 
   FutureOr<void> _getFollowingPost(GetFollowingPostEvent event, Emitter<HomeState> emit) async {
-    await _callGetFollowingPost(event.isRefresh, event.isPagination, false);
+    await _callGetFollowingPost(event.isRefresh, event.isPagination, false, event.onComplete);
   }
 
   FutureOr<void> _getTrendingPost(GetTrendingPostEvent event, Emitter<HomeState> emit) async {
-    await _callGetTrendingPost(event.isRefresh, event.isPagination, false);
+    await _callGetTrendingPost(event.isRefresh, event.isPagination, false, event.onComplete);
   }
 
-  Future<void> _callGetFollowingPost(bool isFromRefresh, bool isFromPagination, bool isLoading) async {
+  Future<void> _callGetFollowingPost(
+      bool isFromRefresh, bool isFromPagination, bool isLoading, Function(List<isr.PostDataModel>)? onComplete) async {
     // For refresh, clear cache and start from page 0
     if (isFromRefresh) {
       _followingPostList.clear();
@@ -133,6 +134,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
       if (isFromPagination) {
         _followingPostList.addAll(newPosts);
+        if (onComplete != null) {
+          onComplete(newPosts);
+        }
       } else {
         _followingPostList
           ..clear()
@@ -148,7 +152,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     _isLoadingMore = false;
   }
 
-  Future<void> _callGetTrendingPost(bool isFromRefresh, bool isFromPagination, bool isLoading) async {
+  Future<void> _callGetTrendingPost(
+      bool isFromRefresh, bool isFromPagination, bool isLoading, Function(List<isr.PostDataModel>)? onComplete) async {
     // For refresh, clear cache and start from page 0
     if (isFromRefresh) {
       _trendingPostList.clear();
@@ -183,6 +188,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       } else {
         if (isFromPagination) {
           _trendingPostList.addAll(newPosts);
+          if (onComplete != null) {
+            onComplete(newPosts);
+          }
         } else {
           _trendingPostList
             ..clear()

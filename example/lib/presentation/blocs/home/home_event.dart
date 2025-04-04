@@ -13,11 +13,13 @@ class GetFollowingPostEvent extends HomeEvent {
     required this.isLoading,
     required this.isPagination,
     this.isRefresh = false,
+    this.onComplete,
   });
 
   final bool isLoading;
   final bool isPagination;
   final bool isRefresh;
+  final Function(List<isr.PostDataModel>)? onComplete;
 }
 
 class GetTrendingPostEvent extends HomeEvent {
@@ -25,11 +27,13 @@ class GetTrendingPostEvent extends HomeEvent {
     required this.isLoading,
     this.isPagination = false,
     this.isRefresh = false,
+    this.onComplete,
   });
 
   final bool isLoading;
   final bool isPagination;
   final bool isRefresh;
+  final Function(List<isr.PostDataModel>)? onComplete;
 }
 
 class GetCloudDetailsEvent extends HomeEvent {

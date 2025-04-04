@@ -241,7 +241,7 @@ class _Network extends StatelessWidget {
         width: width,
         height: height,
         boxShape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
-        child: name.isEmptyOrNull == false
+        child: name.isEmptyOrNull == false && isProfileImage
             ? Text(
                 initials,
                 style: IsrStyles.secondaryText20.copyWith(fontWeight: FontWeight.w500, color: IsrColors.white),
@@ -255,7 +255,7 @@ class _Network extends StatelessWidget {
         backgroundColor: Theme.of(context).primaryColor,
         placeHolderName: placeHolderName,
         boxShape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
-        child: name.isEmptyOrNull == false
+        child: name.isEmptyOrNull == false && isProfileImage
             ? Text(
                 initials,
                 style: IsrStyles.secondaryText20.copyWith(fontWeight: FontWeight.w500, color: IsrColors.white),
