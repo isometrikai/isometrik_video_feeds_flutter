@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
@@ -156,29 +155,17 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
   }
 
   //initialize vide player controller
-  void initializeVideoPlayer({String url = ''}) async {
-    if (url.isNotEmpty) {
-      if (url.startsWith('http')) {
-        videoPlayerController = VideoPlayerController.networkUrl(
-          Uri.parse(url),
-          videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
-        );
-      } else {
-        videoPlayerController = VideoPlayerController.file(File(url));
+  void initializeVideoPlayer() async {
+    debugPrint('initializeVideoPlayer video url ${widget.mediaUrl}');
+    if (widget.mediaUrl.isEmptyOrNull == false) {
+      var mediaUrl = widget.mediaUrl!;
+      if (mediaUrl.startsWith('http:')) {
+        mediaUrl = mediaUrl.replaceFirst('http:', 'https:');
+        debugPrint('initializeVideoPlayer video url converted to https $mediaUrl');
       }
-    } else {
-      debugPrint('initializeVideoPlayer video url ${widget.mediaUrl}');
-      if (widget.mediaUrl != null && widget.mediaUrl!.isNotEmpty) {
-        if (widget.mediaUrl!.startsWith('http')) {
-          videoPlayerController = VideoPlayerController.networkUrl(
-            Uri.parse(widget.mediaUrl ?? ''),
-          );
-        } else {
-          videoPlayerController = VideoPlayerController.file(
-            File(widget.mediaUrl!),
-          );
-        }
-      }
+      videoPlayerController = VideoPlayerController.networkUrl(
+        Uri.parse(mediaUrl),
+      );
     }
     if (videoPlayerController == null) return;
     try {
@@ -186,12 +173,11 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
       // Always start with volume on
       await videoPlayerController?.setVolume(1.0);
     } catch (e) {
+      debugPrint('catch video url ${widget.mediaUrl}');
       IsrVideoReelUtility.debugCatchLog(error: e);
     }
     await videoPlayerController?.setLooping(true);
-    if (url.isNotEmpty) {
-      await videoPlayerController?.play();
-    }
+
     mountUpdate();
   }
 
