@@ -3,11 +3,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ism_video_reel_player_example/domain/domain.dart';
-import 'package:ism_video_reel_player_example/presentation/presentation.dart';
 import 'package:ism_video_reel_player_example/res/res.dart';
 import 'package:ism_video_reel_player_example/utils/utils.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
-import 'package:video_trimmer/video_trimmer.dart';
+// import 'package:video_trimmer/video_trimmer.dart';
 
 class VideoTrimView extends StatefulWidget {
   const VideoTrimView({super.key, this.postAttributeClass});
@@ -19,7 +18,7 @@ class VideoTrimView extends StatefulWidget {
 }
 
 class _VideoTrimViewState extends State<VideoTrimView> {
-  final Trimmer trimmer = Trimmer();
+  // final Trimmer trimmer = Trimmer();
   var _startValue = 0.0;
   var _endValue = 0.0;
   var _isMuted = false;
@@ -43,26 +42,26 @@ class _VideoTrimViewState extends State<VideoTrimView> {
 
   void loadVideo() async {
     try {
-      await trimmer.loadVideo(videoFile: _newPostAttributeClass.file!);
+      // await trimmer.loadVideo(videoFile: _newPostAttributeClass.file!);
     } catch (e) {
       Utility.debugCatchLog(error: e);
     }
     mountUpdate();
-    trimmer.videoPlayerController?.addListener(checkVideo);
+    // trimmer.videoPlayerController?.addListener(checkVideo);
   }
 
   void checkVideo() {
-    if (trimmer.videoPlayerController?.value.isPlaying == false) {
-      _playPausedAction = true;
-      debugPrint('trimmed video duration...${trimmer.videoPlayerController?.value.duration}');
-      mountUpdate();
-    }
+    // if (trimmer.videoPlayerController?.value.isPlaying == false) {
+    _playPausedAction = true;
+    // debugPrint('trimmed video duration...${trimmer.videoPlayerController?.value.duration}');
+    // mountUpdate();
+    // }
   }
 
   @override
   void dispose() {
-    trimmer.videoPlayerController?.dispose();
-    trimmer.dispose();
+    // trimmer.videoPlayerController?.dispose();
+    // trimmer.dispose();
     super.dispose();
   }
 
@@ -88,9 +87,9 @@ class _VideoTrimViewState extends State<VideoTrimView> {
                     InkWell(
                       borderRadius: BorderRadius.circular(Dimens.hundred),
                       onTap: () async {
-                        await trimmer.videoPlayerController?.setVolume(
-                          _isMuted ? 1.0 : 0.0,
-                        );
+                        // await trimmer.videoPlayerController?.setVolume(
+                        //   _isMuted ? 1.0 : 0.0,
+                        // );
                         _isMuted = !_isMuted;
                         mountUpdate();
                       },
@@ -128,19 +127,19 @@ class _VideoTrimViewState extends State<VideoTrimView> {
                 Dimens.boxHeight(Dimens.eight),
                 SizedBox(
                   width: Dimens.percentWidth(.95),
-                  child: TrimViewer(
-                    showDuration: true,
-                    trimmer: trimmer,
-                    viewerWidth: Dimens.percentWidth(.95),
-                    maxVideoLength: const Duration(seconds: 60),
-                    onChangeStart: (value) {
-                      _startValue = value;
-                    },
-                    onChangeEnd: (value) {
-                      _endValue = value;
-                    },
-                    onChangePlaybackState: (value) {},
-                  ),
+                  // child: TrimViewer(
+                  //   showDuration: true,
+                  //   trimmer: trimmer,
+                  //   viewerWidth: Dimens.percentWidth(.95),
+                  //   maxVideoLength: const Duration(seconds: 60),
+                  //   onChangeStart: (value) {
+                  //     _startValue = value;
+                  //   },
+                  //   onChangeEnd: (value) {
+                  //     _endValue = value;
+                  //   },
+                  //   onChangePlaybackState: (value) {},
+                  // ),
                 ),
               ],
             ),
@@ -152,79 +151,79 @@ class _VideoTrimViewState extends State<VideoTrimView> {
             children: [
               InkWell(
                 onTap: () async {
-                  final playBackState = await trimmer.videoPlaybackControl(
-                    startValue: _startValue,
-                    endValue: _endValue,
-                  );
-                  mountUpdate();
-                  _playPausedAction = true;
-                  mountUpdate();
-                  if (playBackState == false) return;
-                  await Future<void>.delayed(const Duration(milliseconds: 1000));
-                  _playPausedAction = false;
-                  mountUpdate();
+                  // final playBackState = await trimmer.videoPlaybackControl(
+                  //   startValue: _startValue,
+                  //   endValue: _endValue,
+                  // );
+                  // mountUpdate();
+                  // _playPausedAction = true;
+                  // mountUpdate();
+                  // if (playBackState == false) return;
+                  // await Future<void>.delayed(const Duration(milliseconds: 1000));
+                  // _playPausedAction = false;
+                  // mountUpdate();
                 },
                 child: Center(
-                  child: AspectRatio(
-                    aspectRatio: trimmer.videoPlayerController?.value.aspectRatio ?? 1,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        VideoViewer(
-                          trimmer: trimmer,
-                        ),
-                        Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                AppColors.blackColor.applyOpacity(.6),
-                                AppColors.blackColor.applyOpacity(.0),
-                                AppColors.blackColor.applyOpacity(.0),
-                                AppColors.blackColor.applyOpacity(.4),
-                              ],
-                            ),
-                          ),
-                        ),
-                        AnimatedOpacity(
-                          duration: const Duration(milliseconds: 250),
-                          opacity: _playPausedAction ? 1 : 0,
-                          child: AppImage.svg(
-                            trimmer.videoPlayerController?.value.isPlaying == true
-                                ? AssetConstants.pausedRoundedSvg
-                                : AssetConstants.reelsPlaySvg,
-                            height: Dimens.thirty,
-                            width: Dimens.thirty,
-                          ),
-                        ),
-                      ],
+                    // child: AspectRatio(
+                    //   aspectRatio: trimmer.videoPlayerController?.value.aspectRatio ?? 1,
+                    //   child: Stack(
+                    //     alignment: Alignment.center,
+                    //     children: [
+                    //       VideoViewer(
+                    //         trimmer: trimmer,
+                    //       ),
+                    //       Container(
+                    //         decoration: BoxDecoration(
+                    //           gradient: LinearGradient(
+                    //             begin: Alignment.topCenter,
+                    //             end: Alignment.bottomCenter,
+                    //             colors: [
+                    //               AppColors.blackColor.applyOpacity(.6),
+                    //               AppColors.blackColor.applyOpacity(.0),
+                    //               AppColors.blackColor.applyOpacity(.0),
+                    //               AppColors.blackColor.applyOpacity(.4),
+                    //             ],
+                    //           ),
+                    //         ),
+                    //       ),
+                    //       AnimatedOpacity(
+                    //         duration: const Duration(milliseconds: 250),
+                    //         opacity: _playPausedAction ? 1 : 0,
+                    //         child: AppImage.svg(
+                    //           trimmer.videoPlayerController?.value.isPlaying == true
+                    //               ? AssetConstants.pausedRoundedSvg
+                    //               : AssetConstants.reelsPlaySvg,
+                    //           height: Dimens.thirty,
+                    //           width: Dimens.thirty,
+                    //         ),
+                    //       ),
+                    //     ],
+                    //   ),
+                    // ),
                     ),
-                  ),
-                ),
               ),
-              if (trimmer.videoPlayerController?.value.isInitialized == true)
-                Align(
-                  alignment: Alignment.bottomCenter,
-                  child: Padding(
-                    padding: Dimens.edgeInsetsSymmetric(horizontal: Dimens.sixteen).copyWith(
-                      bottom: Dimens.twenty,
-                    ),
-                    child: AppButton(
-                      title: TranslationFile.continues,
-                      onPress: () async {
-                        await trimmer.saveTrimmedVideo(
-                          startValue: _startValue,
-                          endValue: _endValue,
-                          onSave: (value) async {
-                            if (value == null || value.isEmpty) return;
-                            _handleTrimmedVideo(value, context);
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                ),
+              // if (trimmer.videoPlayerController?.value.isInitialized == true)
+              //   Align(
+              //     alignment: Alignment.bottomCenter,
+              //     child: Padding(
+              //       padding: Dimens.edgeInsetsSymmetric(horizontal: Dimens.sixteen).copyWith(
+              //         bottom: Dimens.twenty,
+              //       ),
+              //       child: AppButton(
+              //         title: TranslationFile.continues,
+              //         onPress: () async {
+              //           await trimmer.saveTrimmedVideo(
+              //             startValue: _startValue,
+              //             endValue: _endValue,
+              //             onSave: (value) async {
+              //               if (value == null || value.isEmpty) return;
+              //               _handleTrimmedVideo(value, context);
+              //             },
+              //           );
+              //         },
+              //       ),
+              //     ),
+              //   ),
             ],
           ),
         ),

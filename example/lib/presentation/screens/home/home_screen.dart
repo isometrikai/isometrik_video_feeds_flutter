@@ -134,6 +134,19 @@ class _HomeScreenState extends State<HomeScreen> {
                         return false;
                       }
                     },
+                    onLoadMore: () async {
+                      final completer = Completer<List<PostDataModel>>();
+
+                      _homeBloc.add(GetFollowingPostEvent(
+                        isLoading: false,
+                        isPagination: true,
+                        onComplete: (posts) {
+                          completer.complete(posts);
+                        },
+                      ));
+                      final postResponse = await completer.future;
+                      return postResponse;
+                    },
                   ),
                   TabDataModel(
                     title: TranslationFile.trending,
@@ -219,6 +232,19 @@ class _HomeScreenState extends State<HomeScreen> {
                       } catch (e) {
                         return false;
                       }
+                    },
+                    onLoadMore: () async {
+                      final completer = Completer<List<PostDataModel>>();
+
+                      _homeBloc.add(GetTrendingPostEvent(
+                        isLoading: false,
+                        isPagination: true,
+                        onComplete: (posts) {
+                          completer.complete(posts);
+                        },
+                      ));
+                      final postResponse = await completer.future;
+                      return postResponse;
                     },
                   ),
                 ],

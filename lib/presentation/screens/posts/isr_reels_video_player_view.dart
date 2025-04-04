@@ -161,6 +161,7 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
       if (url.startsWith('http')) {
         videoPlayerController = VideoPlayerController.networkUrl(
           Uri.parse(url),
+          videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
         );
       } else {
         videoPlayerController = VideoPlayerController.file(File(url));
@@ -197,7 +198,6 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
   @override
   void dispose() {
     videoPlayerController?.pause();
-    // Don't mute on dispose
     videoPlayerController?.dispose();
     videoPlayerController = null;
     super.dispose();
