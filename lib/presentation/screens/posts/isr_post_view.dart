@@ -193,7 +193,6 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
       controller.dispose();
     }
     super.dispose();
-    super.dispose();
   }
 
   Widget _buildTabBarView(TabDataModel tabData, int index) => SmartRefresher(
