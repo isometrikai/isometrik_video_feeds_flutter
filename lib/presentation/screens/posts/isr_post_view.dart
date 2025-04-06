@@ -202,6 +202,9 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
           await Future.delayed(const Duration(seconds: 1)); // Simulate a delay
           // Call refreshComplete() when done
           _refreshControllers[index].refreshCompleted();
+          if (tabData.onRefresh != null) {
+            await tabData.onRefresh!();
+          }
           // InjectionUtils.getBloc<PostBloc>().add(GetFollowingPostEvent(
           //   isLoading: false,
           //   isPagination: false,
@@ -215,6 +218,7 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
           onPressFollow: tabData.onPressFollow,
           onCreatePost: tabData.onCreatePost,
           onLoadMore: tabData.onLoadMore,
+          onTapCartIcon: tabData.onTapCartIcon,
         ),
       );
 }

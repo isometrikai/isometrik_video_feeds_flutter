@@ -46,6 +46,7 @@ class IsrReelsVideoPlayerView extends StatefulWidget {
     this.likesCount = 0,
     this.onPressLike,
     this.onPressMoreButton,
+    this.onTapCartIcon,
   });
 
   final String? mediaUrl;
@@ -81,6 +82,7 @@ class IsrReelsVideoPlayerView extends StatefulWidget {
   final num likesCount;
   final Future<bool> Function()? onPressLike;
   final Future<bool> Function()? onPressMoreButton;
+  final VoidCallback? onTapCartIcon;
 
   @override
   State<IsrReelsVideoPlayerView> createState() => _IsrReelsVideoPlayerViewState();
@@ -369,45 +371,52 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
           children: [
             // Shop button
             if (widget.productList?.isNotEmpty == true) ...[
-              Container(
-                padding: IsrDimens.edgeInsetsSymmetric(
-                  horizontal: IsrDimens.twelve,
-                  vertical: IsrDimens.eight,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white, // Set to white for the background
-                  borderRadius: BorderRadius.circular(IsrDimens.ten), // Rounded corners
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.applyOpacity(0.1), // Light shadow
-                      spreadRadius: 1,
-                      blurRadius: 4,
-                      offset: const Offset(0, 2), // Shadow offset
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const AppImage.svg(AssetConstants.icCartIcon),
-                    IsrDimens.boxWidth(IsrDimens.eight),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          IsrTranslationFile.shop,
-                          style: IsrStyles.primaryText12
-                              .copyWith(color: IsrColors.color0F1E91, fontWeight: FontWeight.w700),
-                        ),
-                        IsrDimens.boxHeight(IsrDimens.four),
-                        Text(
-                          '${widget.productList!.length} ${IsrTranslationFile.products}',
-                          style: IsrStyles.primaryText10
-                              .copyWith(color: IsrColors.color0F1E91, fontWeight: FontWeight.w500),
-                        ),
-                      ],
-                    ),
-                  ],
+              TapHandler(
+                onTap: () {
+                  if (widget.onTapCartIcon != null) {
+                    widget.onTapCartIcon!();
+                  }
+                },
+                child: Container(
+                  padding: IsrDimens.edgeInsetsSymmetric(
+                    horizontal: IsrDimens.twelve,
+                    vertical: IsrDimens.eight,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white, // Set to white for the background
+                    borderRadius: BorderRadius.circular(IsrDimens.ten), // Rounded corners
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.applyOpacity(0.1), // Light shadow
+                        spreadRadius: 1,
+                        blurRadius: 4,
+                        offset: const Offset(0, 2), // Shadow offset
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const AppImage.svg(AssetConstants.icCartIcon),
+                      IsrDimens.boxWidth(IsrDimens.eight),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            IsrTranslationFile.shop,
+                            style: IsrStyles.primaryText12
+                                .copyWith(color: IsrColors.color0F1E91, fontWeight: FontWeight.w700),
+                          ),
+                          IsrDimens.boxHeight(IsrDimens.four),
+                          Text(
+                            '${widget.productList!.length} ${IsrTranslationFile.products}',
+                            style: IsrStyles.primaryText10
+                                .copyWith(color: IsrColors.color0F1E91, fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
               IsrDimens.boxHeight(IsrDimens.sixteen),

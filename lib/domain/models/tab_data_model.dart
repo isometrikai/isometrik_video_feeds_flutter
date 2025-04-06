@@ -12,6 +12,8 @@ class TabDataModel {
     this.onPressLike,
     this.onPressFollow,
     this.onLoadMore,
+    this.onRefresh,
+    this.onTapCartIcon,
   });
 
   final String title;
@@ -24,4 +26,6 @@ class TabDataModel {
   final Future<bool> Function(String postId)? onPressSave;
   final Future<bool> Function(String, String, bool)? onPressLike;
   final Future<bool> Function(String)? onPressFollow;
+  final Future<bool> Function()? onRefresh;
+  final Function(List<FeaturedProductDataItem>?)? onTapCartIcon;
 }
