@@ -198,13 +198,15 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
   Widget _buildTabBarView(TabDataModel tabData, int index) => SmartRefresher(
         controller: _refreshControllers[index],
         physics: const ClampingScrollPhysics(),
+        enablePullDown: false,
         onRefresh: () async {
-          await Future.delayed(const Duration(seconds: 1)); // Simulate a delay
+          debugPrint('onRefresh......');
+          // await Future.delayed(const Duration(seconds: 1)); // Simulate a delay
           // Call refreshComplete() when done
-          _refreshControllers[index].refreshCompleted();
           if (tabData.onRefresh != null) {
             await tabData.onRefresh!();
           }
+          _refreshControllers[index].refreshCompleted();
           // InjectionUtils.getBloc<PostBloc>().add(GetFollowingPostEvent(
           //   isLoading: false,
           //   isPagination: false,
@@ -219,6 +221,7 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
           onCreatePost: tabData.onCreatePost,
           onLoadMore: tabData.onLoadMore,
           onTapCartIcon: tabData.onTapCartIcon,
+          onRefresh: tabData.onRefresh,
         ),
       );
 }

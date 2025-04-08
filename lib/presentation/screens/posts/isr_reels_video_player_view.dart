@@ -115,16 +115,11 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
 
   var isReportLoading = false;
 
-  void playPause() async {
+  void _playPause() async {
     if (widget.showBlur == true) {
       return;
     }
-    playPausedAction = true;
-    mountUpdate();
-    await Future<void>.delayed(
-      const Duration(milliseconds: 1000),
-    );
-    playPausedAction = false;
+    playPausedAction = !playPausedAction;
     mountUpdate();
   }
 
@@ -565,6 +560,16 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
         ),
       );
 
+  void _togglePlayPause() {
+    isPlaying = !isPlaying;
+    if (isPlaying) {
+      videoPlayerController?.pause();
+    } else {
+      videoPlayerController?.play();
+    }
+    _playPause();
+  }
+
   @override
   Widget build(BuildContext context) => Stack(
         fit: StackFit.expand,
@@ -575,14 +580,7 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
               if (widget.showBlur == true || widget.mediaType == kPictureType) {
                 return;
               }
-              isPlaying = !isPlaying;
-              if (isPlaying) {
-                videoPlayerController?.pause();
-                playPause();
-              } else {
-                videoPlayerController?.play();
-                playPause();
-              }
+              _togglePlayPause();
             },
             onDoubleTap: () async {
               if (widget.onDoubleTap != null) {
@@ -673,21 +671,21 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
             ),
           ),
 
-          // Gradient overlay
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  IsrColors.black.applyOpacity(0.4),
-                  Colors.transparent,
-                  Colors.transparent,
-                  IsrColors.black.applyOpacity(0.4),
-                ],
-              ),
-            ),
-          ),
+          // // Gradient overlay
+          // Container(
+          //   decoration: BoxDecoration(
+          //     gradient: LinearGradient(
+          //       begin: Alignment.topCenter,
+          //       end: Alignment.bottomCenter,
+          //       colors: [
+          //         IsrColors.black.applyOpacity(0.4),
+          //         Colors.transparent,
+          //         Colors.transparent,
+          //         IsrColors.black.applyOpacity(0.4),
+          //       ],
+          //     ),
+          //   ),
+          // ),
 
           // Right side actions
           _buildRightSideActions(),
@@ -696,16 +694,38 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
           _buildBottomSection(),
 
           // Video controls
-          if (widget.mediaType == kVideoType)
+          if (widget.mediaType == kVideoType && videoPlayerController?.value.isInitialized == true)
             AnimatedOpacity(
               opacity: playPausedAction ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 500),
+              duration: const Duration(milliseconds: 300),
               child: Center(
                 child: AppImage.svg(
-                  isPlaying ? AssetConstants.pausedRoundedSvg : AssetConstants.reelsPlaySvg,
+                  !playPausedAction ? AssetConstants.pausedRoundedSvg : AssetConstants.reelsPlaySvg,
                 ),
               ),
             ),
+
+          // if (widget.mediaType == kVideoType && videoPlayerController?.value.isInitialized == true)
+          //   AnimatedOpacity(
+          //     opacity: playPausedAction ? 1.0 : 0.0,
+          //     duration: const Duration(milliseconds: 300),
+          //     child: Container(
+          //       decoration: BoxDecoration(
+          //         color: playPausedAction ? Colors.amber : Colors.amber,
+          //         shape: BoxShape.circle,
+          //       ),
+          //       padding: IsrDimens.edgeInsetsAll(12),
+          //       child: playPausedAction
+          //           ? const Icon(
+          //               Icons.pause,
+          //               color: Colors.white,
+          //               size: 32,
+          //             )
+          //           : const AppImage.svg(
+          //               AssetConstants.reelsPlaySvg,
+          //             ),
+          //     ),
+          //   ),
 
           // Double tap heart animation
           if (isDoubleTapped)

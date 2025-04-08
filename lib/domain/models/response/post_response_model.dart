@@ -427,6 +427,14 @@ class FeaturedProductDataItem {
     this.outOfStock,
     this.variants,
     this.avgRating,
+    this.storeName,
+    this.isFavourite,
+    this.maxQuantity,
+    this.productImage,
+    this.offers,
+    this.offersList,
+    this.userCount,
+    this.rewardFinalPrice,
   });
 
   factory FeaturedProductDataItem.fromJson(Map<String, dynamic> json) => FeaturedProductDataItem(
@@ -468,6 +476,26 @@ class FeaturedProductDataItem {
         outOfStock: json['outOfStock'] as bool? ?? false,
         variants: json['variants'] == null ? [] : List<dynamic>.from((json['variants'] as List).map((x) => x)),
         avgRating: json['avgRating'] as num? ?? 0,
+        storeName: json['storeName'] as String? ?? '',
+        isFavourite: json['isFavourite'] as bool? ?? false,
+        maxQuantity: json['maxQuantity'] as num? ?? 0,
+        productImage: json['productImage'] as String? ?? '',
+        offers: json['offer'] == null ? null : Offers.fromJson(json['offer'] as Map<String, dynamic>),
+        offersList: json['offers'] == null
+            ? [] // If it's null, return an empty list
+            : (json['offers'] is List
+                ? List<Offers>.from(
+                    (json['offers'] as List).map((dynamic x) => Offers.fromJson(x as Map<String, dynamic>)),
+                  )
+                : (json['offers'] is Map
+                    ? (json['offers'] as Map)['offerId'] == null
+                        ? []
+                        : [
+                            Offers.fromJson(json['offers'] as Map<String, dynamic>),
+                          ]
+                    : [])),
+        userCount: json['userCount'] as num? ?? 0,
+        rewardFinalPrice: json['rewardFinalPrice'] as num? ?? 0,
       );
   num? availableQuantity;
   num? avgRatings;
@@ -503,6 +531,14 @@ class FeaturedProductDataItem {
   bool? outOfStock;
   List<dynamic>? variants;
   num? avgRating;
+  String? storeName;
+  bool? isFavourite;
+  num? maxQuantity;
+  String? productImage;
+  Offers? offers;
+  List<Offers>? offersList;
+  num? userCount;
+  num? rewardFinalPrice;
 
   Map<String, dynamic> toJson() => {
         'availableQuantity': availableQuantity,
@@ -539,6 +575,14 @@ class FeaturedProductDataItem {
         'outOfStock': outOfStock,
         'variants': variants == null ? [] : List<dynamic>.from(variants!.map((x) => x)),
         'avgRating': avgRating,
+        'storeName': storeName,
+        'isFavourite': isFavourite,
+        'maxQuantity': maxQuantity,
+        'productImage': productImage,
+        'offers': offers?.toJson(),
+        'offersList': offersList == null ? [] : List<dynamic>.from(offersList!.map((x) => x.toJson())),
+        'userCount': userCount,
+        'rewardFinalPrice': rewardFinalPrice,
       };
 }
 
@@ -785,5 +829,62 @@ class FinalPriceList {
         'taxRate': taxRate,
         'discount': discount,
         'discountValue': discountValue,
+      };
+}
+
+class Offers {
+  Offers({
+    this.images,
+    this.offerName,
+    this.statusString,
+    this.offerId,
+    this.discountType,
+    this.listComboProducts,
+    this.offerFor,
+    this.discountValue,
+    this.globalClaimCount,
+    this.webimages,
+    this.status,
+  });
+
+  factory Offers.fromJson(Map<String, dynamic> json) => Offers(
+        images: json['images'] == null ? null : Images.fromJson(json['images'] as Map<String, dynamic>),
+        offerName: json['offerName'] == null ? null : OfferName.fromJson(json['offerName'] as Map<String, dynamic>),
+        statusString: json['statusString'] as String? ?? '',
+        offerId: json['offerId'] as String? ?? '',
+        discountType: json['discountType'] as num? ?? 0,
+        listComboProducts: json['listComboProducts'] == null
+            ? []
+            : List<dynamic>.from((json['listComboProducts'] as List).map((x) => x)),
+        offerFor: json['offerFor'] as num? ?? 0,
+        discountValue: json['discountValue'] as num? ?? 0,
+        globalClaimCount: json['globalClaimCount'] as num? ?? 0,
+        webimages: json['webimages'] == null ? null : Images.fromJson(json['webimages'] as Map<String, dynamic>),
+        status: json['status'] as num? ?? 0,
+      );
+  Images? images;
+  OfferName? offerName;
+  String? statusString;
+  String? offerId;
+  num? discountType;
+  List<dynamic>? listComboProducts;
+  num? offerFor;
+  num? discountValue;
+  num? globalClaimCount;
+  Images? webimages;
+  num? status;
+
+  Map<String, dynamic> toJson() => {
+        'images': images?.toJson(),
+        'offerName': offerName?.toJson(),
+        'statusString': statusString,
+        'offerId': offerId,
+        'discountType': discountType,
+        'listComboProducts': listComboProducts == null ? [] : List<dynamic>.from(listComboProducts!.map((x) => x)),
+        'offerFor': offerFor,
+        'discountValue': discountValue,
+        'globalClaimCount': globalClaimCount,
+        'webimages': webimages?.toJson(),
+        'status': status,
       };
 }

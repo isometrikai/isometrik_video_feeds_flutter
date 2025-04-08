@@ -19,6 +19,7 @@ class FollowingPostWidget extends StatefulWidget {
     this.onPressFollow,
     this.onLoadMore,
     this.onTapCartIcon,
+    this.onRefresh,
   });
 
   final Future<String?> Function()? onCreatePost;
@@ -30,6 +31,7 @@ class FollowingPostWidget extends StatefulWidget {
   final Future<bool> Function(String)? onPressFollow;
   final Future<List<PostDataModel>> Function()? onLoadMore;
   final Function(String)? onTapCartIcon;
+  final Future<bool> Function()? onRefresh;
 
   @override
   State<FollowingPostWidget> createState() => _FollowingPostWidgetState();
@@ -75,6 +77,9 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
   Widget build(BuildContext context) => _followingPostList.isEmptyOrNull == false
       ? RefreshIndicator(
           onRefresh: () async {
+            if (widget.onRefresh != null) {
+              await widget.onRefresh?.call();
+            }
             // _postBloc.add(GetFollowingPostEvent(isLoading: false, isPagination: false));
           },
           child: PageView.builder(

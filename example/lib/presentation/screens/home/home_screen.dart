@@ -147,106 +147,107 @@ class _HomeScreenState extends State<HomeScreen> {
                       final postResponse = await completer.future;
                       return postResponse;
                     },
+                    onRefresh: () async => false,
                   ),
                   TabDataModel(
-                    title: TranslationFile.trending,
-                    postList: state.trendingPosts,
-                    onCreatePost: () async {
-                      final postDataModel = await InjectionUtils.getRouteManagement().goToCreatePostView();
-                      return postDataModel;
-                    },
-                    onPressLike: (postId, userId, isLiked) async {
-                      try {
-                        final completer = Completer<bool>();
+                      title: TranslationFile.trending,
+                      postList: state.trendingPosts,
+                      onCreatePost: () async {
+                        final postDataModel = await InjectionUtils.getRouteManagement().goToCreatePostView();
+                        return postDataModel;
+                      },
+                      onPressLike: (postId, userId, isLiked) async {
+                        try {
+                          final completer = Completer<bool>();
 
-                        _homeBloc.add(LikePostEvent(
-                          postId: postId,
-                          userId: userId,
-                          likeAction: isLiked ? LikeAction.unlike : LikeAction.like,
-                          onComplete: (success) {
-                            completer.complete(success);
+                          _homeBloc.add(LikePostEvent(
+                            postId: postId,
+                            userId: userId,
+                            likeAction: isLiked ? LikeAction.unlike : LikeAction.like,
+                            onComplete: (success) {
+                              completer.complete(success);
+                            },
+                          ));
+
+                          return await completer.future;
+                        } catch (e) {
+                          return false;
+                        }
+                      },
+                      onTapMore: (postId) async {
+                        await _showMoreOptionsDialog(
+                          onPressReport: ({String message = '', String reason = ''}) async {
+                            try {
+                              final completer = Completer<bool>();
+
+                              _homeBloc.add(ReportPostEvent(
+                                postId: postId,
+                                message: reason,
+                                reason: reason,
+                                onComplete: (success) {
+                                  if (success) {
+                                    Utility.showToastMessage(
+                                      TranslationFile.postReportedSuccessfully,
+                                    );
+                                  }
+                                  completer.complete(success);
+                                },
+                              ));
+
+                              return await completer.future;
+                            } catch (e) {
+                              return false;
+                            }
+                          },
+                        );
+                        return false;
+                      },
+                      onPressSave: (postId) async {
+                        try {
+                          final completer = Completer<bool>();
+
+                          _homeBloc.add(SavePostEvent(
+                            postId: postId,
+                            onComplete: (success) {
+                              completer.complete(success);
+                            },
+                          ));
+
+                          return await completer.future;
+                        } catch (e) {
+                          return false;
+                        }
+                      },
+                      onPressFollow: (userId) async {
+                        try {
+                          final completer = Completer<bool>();
+
+                          _homeBloc.add(FollowUserEvent(
+                            followingId: userId,
+                            onComplete: (success) {
+                              completer.complete(success);
+                            },
+                          ));
+
+                          return await completer.future;
+                        } catch (e) {
+                          return false;
+                        }
+                      },
+                      onLoadMore: () async {
+                        final completer = Completer<List<PostDataModel>>();
+
+                        _homeBloc.add(GetTrendingPostEvent(
+                          isLoading: false,
+                          isPagination: true,
+                          onComplete: (posts) {
+                            completer.complete(posts);
                           },
                         ));
-
-                        return await completer.future;
-                      } catch (e) {
-                        return false;
-                      }
-                    },
-                    onTapMore: (postId) async {
-                      await _showMoreOptionsDialog(
-                        onPressReport: ({String message = '', String reason = ''}) async {
-                          try {
-                            final completer = Completer<bool>();
-
-                            _homeBloc.add(ReportPostEvent(
-                              postId: postId,
-                              message: reason,
-                              reason: reason,
-                              onComplete: (success) {
-                                if (success) {
-                                  Utility.showToastMessage(
-                                    TranslationFile.postReportedSuccessfully,
-                                  );
-                                }
-                                completer.complete(success);
-                              },
-                            ));
-
-                            return await completer.future;
-                          } catch (e) {
-                            return false;
-                          }
-                        },
-                      );
-                      return false;
-                    },
-                    onPressSave: (postId) async {
-                      try {
-                        final completer = Completer<bool>();
-
-                        _homeBloc.add(SavePostEvent(
-                          postId: postId,
-                          onComplete: (success) {
-                            completer.complete(success);
-                          },
-                        ));
-
-                        return await completer.future;
-                      } catch (e) {
-                        return false;
-                      }
-                    },
-                    onPressFollow: (userId) async {
-                      try {
-                        final completer = Completer<bool>();
-
-                        _homeBloc.add(FollowUserEvent(
-                          followingId: userId,
-                          onComplete: (success) {
-                            completer.complete(success);
-                          },
-                        ));
-
-                        return await completer.future;
-                      } catch (e) {
-                        return false;
-                      }
-                    },
-                    onLoadMore: () async {
-                      final completer = Completer<List<PostDataModel>>();
-
-                      _homeBloc.add(GetTrendingPostEvent(
-                        isLoading: false,
-                        isPagination: true,
-                        onComplete: (posts) {
-                          completer.complete(posts);
-                        },
-                      ));
-                      final postResponse = await completer.future;
-                      return postResponse;
-                    },
-                  ),
+                        final postResponse = await completer.future;
+                        return postResponse;
+                      },
+                      onRefresh: () async => false),
                 ],
               );
             }
