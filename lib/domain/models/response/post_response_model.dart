@@ -411,6 +411,7 @@ class FeaturedProductDataItem {
     this.productCondition,
     this.productConditionText,
     this.productName,
+    this.storeName,
     this.resellerCommission,
     this.resellerCommissionType,
     this.resellerFixedCommission,
@@ -427,7 +428,6 @@ class FeaturedProductDataItem {
     this.outOfStock,
     this.variants,
     this.avgRating,
-    this.storeName,
     this.isFavourite,
     this.maxQuantity,
     this.productImage,
@@ -435,6 +435,7 @@ class FeaturedProductDataItem {
     this.offersList,
     this.userCount,
     this.rewardFinalPrice,
+    this.productAllData,
   });
 
   factory FeaturedProductDataItem.fromJson(Map<String, dynamic> json) => FeaturedProductDataItem(
@@ -460,6 +461,7 @@ class FeaturedProductDataItem {
         productCondition: json['productCondition'] as num? ?? 0,
         productConditionText: json['productConditionText'] as String? ?? '',
         productName: json['productName'] as String? ?? '',
+        storeName: json['storeName'] as String? ?? '',
         resellerCommission: json['resellerCommission'] as num? ?? 0,
         resellerCommissionType: json['resellerCommissionType'] as num? ?? 0,
         resellerFixedCommission: json['resellerFixedCommission'] as num? ?? 0,
@@ -476,7 +478,6 @@ class FeaturedProductDataItem {
         outOfStock: json['outOfStock'] as bool? ?? false,
         variants: json['variants'] == null ? [] : List<dynamic>.from((json['variants'] as List).map((x) => x)),
         avgRating: json['avgRating'] as num? ?? 0,
-        storeName: json['storeName'] as String? ?? '',
         isFavourite: json['isFavourite'] as bool? ?? false,
         maxQuantity: json['maxQuantity'] as num? ?? 0,
         productImage: json['productImage'] as String? ?? '',
@@ -496,6 +497,9 @@ class FeaturedProductDataItem {
                     : [])),
         userCount: json['userCount'] as num? ?? 0,
         rewardFinalPrice: json['rewardFinalPrice'] as num? ?? 0,
+        productAllData: json['productAllData'] == null
+            ? null
+            : ProductAllDataItem.fromJson(json['productAllData'] as Map<String, dynamic>),
       );
   num? availableQuantity;
   num? avgRatings;
@@ -515,6 +519,7 @@ class FeaturedProductDataItem {
   num? productCondition;
   String? productConditionText;
   String? productName;
+  String? storeName;
   num? resellerCommission;
   num? resellerCommissionType;
   num? resellerFixedCommission;
@@ -531,7 +536,6 @@ class FeaturedProductDataItem {
   bool? outOfStock;
   List<dynamic>? variants;
   num? avgRating;
-  String? storeName;
   bool? isFavourite;
   num? maxQuantity;
   String? productImage;
@@ -539,6 +543,7 @@ class FeaturedProductDataItem {
   List<Offers>? offersList;
   num? userCount;
   num? rewardFinalPrice;
+  ProductAllDataItem? productAllData;
 
   Map<String, dynamic> toJson() => {
         'availableQuantity': availableQuantity,
@@ -559,6 +564,7 @@ class FeaturedProductDataItem {
         'productCondition': productCondition,
         'productConditionText': productConditionText,
         'productName': productName,
+        'storeName': storeName,
         'resellerCommission': resellerCommission,
         'resellerCommissionType': resellerCommissionType,
         'resellerFixedCommission': resellerFixedCommission,
@@ -575,7 +581,6 @@ class FeaturedProductDataItem {
         'outOfStock': outOfStock,
         'variants': variants == null ? [] : List<dynamic>.from(variants!.map((x) => x)),
         'avgRating': avgRating,
-        'storeName': storeName,
         'isFavourite': isFavourite,
         'maxQuantity': maxQuantity,
         'productImage': productImage,
@@ -583,6 +588,7 @@ class FeaturedProductDataItem {
         'offersList': offersList == null ? [] : List<dynamic>.from(offersList!.map((x) => x.toJson())),
         'userCount': userCount,
         'rewardFinalPrice': rewardFinalPrice,
+        'productAllData': productAllData?.toJson(),
       };
 }
 
@@ -886,5 +892,253 @@ class Offers {
         'globalClaimCount': globalClaimCount,
         'webimages': webimages?.toJson(),
         'status': status,
+      };
+}
+
+class ProductAllDataItem {
+  factory ProductAllDataItem.fromJson(Map<String, dynamic> json) => ProductAllDataItem(
+        productId: json['productId'] as String? ?? '',
+        parentProductId: json['parentProductId'] as String? ?? '',
+        productName: json['productName'] as String? ?? '',
+        variantName:
+            json['variantName'] == null ? null : VariantName.fromJson(json['variantName'] as Map<String, dynamic>),
+        color: json['color'] as String? ?? '',
+        colorDetails:
+            json['colorDetails'] == null ? [] : List<dynamic>.from((json['colorDetails'] as List).map((x) => x)),
+        rgb: json['rgb'] as String? ?? '',
+        productDataType: json['productDataType'] as num? ?? 0,
+        productTypeMessage: json['productTypeMessage'] as String? ?? '',
+        productTag: json['productTag'] as String? ?? '',
+        storeCount: json['storeCount'] as num? ?? 0,
+        supplierCount: json['supplierCount'] as num? ?? 0,
+        sizes: json['sizes'] == null ? [] : List<dynamic>.from((json['sizes'] as List).map((x) => x)),
+        price: json['price'] as num? ?? 0,
+        listedPrice: json['listedPrice'] as num? ?? 0,
+        msrpPrice: json['msrpPrice'] as num? ?? 0,
+        tfmPrice: json['tfmPrice'] as num? ?? 0,
+        catPath: json['catPath'] == null ? [] : List<String>.from((json['catPath'] as List).map((x) => x)),
+        childCount: json['childCount'] as num? ?? 0,
+        variantData: json['variantData'] == null ? [] : List<dynamic>.from((json['variantData'] as List).map((x) => x)),
+        images: json['images'] == null ? [] : List<dynamic>.from((json['images'] as List).map((x) => x)),
+        popularScore: json['popularScore'] as num? ?? 0,
+        avgRating: json['avgRating'] as num? ?? 0,
+        variantCount: json['variantCount'] as num? ?? 0,
+        productType: json['productType'] as String? ?? '',
+        totalReview: json['totalReview'] as num? ?? 0,
+        productFor: json['productFor'],
+        productForMsg: json['productForMsg'] as String? ?? '',
+        catName: json['catName'] as String? ?? '',
+        categoryJson:
+            json['categoryJson'] == null ? [] : List<dynamic>.from((json['categoryJson'] as List).map((x) => x)),
+        currency: json['currency'] as String? ?? '',
+        currencySymbol: json['currencySymbol'] as String? ?? '',
+        createdTimestamp: json['createdTimestamp'] as num? ?? 0,
+        storeType: json['storeType'],
+        addedBySupplier: json['addedBySupplier'] as bool? ?? false,
+        isColourEnable: json['isColourEnable'] as bool? ?? false,
+        isPulledProduct: json['isPulledProduct'] as bool? ?? false,
+        prescriptionRequired: json['prescriptionRequired'],
+        saleOnline: json['saleOnline'] as num? ?? 0,
+        offer: json['offer'] == null ? [] : List<dynamic>.from((json['offer'] as List).map((x) => x)),
+        uploadProductDetails: json['uploadProductDetails'] as String? ?? '',
+        symptoms: json['symptoms'] == null ? [] : List<dynamic>.from((json['symptoms'] as List).map((x) => x)),
+        barcode: json['barcode'] as String? ?? '',
+        sku: json['sku'] as String? ?? '',
+        uploadArModelEnabled: json['uploadARModelEnabled'] as bool? ?? false,
+        cannabisMenuType: json['cannabisMenuType'] as num? ?? 0,
+        storeId: json['storeId'] as String? ?? '',
+        supplierName: json['supplierName'] as String? ?? '',
+        storeName: json['storeName'] as String? ?? '',
+        partnerRevsharePercentage: json['partnerRevsharePercentage'] as num? ?? 0,
+        partnerRevshareToggle: json['partnerRevshareToggle'] as bool? ?? false,
+        keepProductAndRefund: json['keepProductAndRefund'] as bool? ?? false,
+        rewardFinalPrice: json['rewardFinalPrice'] as num? ?? 0,
+        finalPriceList: json['finalPriceList'] == null
+            ? null
+            : FinalPriceList.fromJson(json['finalPriceList'] as Map<String, dynamic>),
+      );
+
+  ProductAllDataItem({
+    this.productId,
+    this.parentProductId,
+    this.productName,
+    this.variantName,
+    this.color,
+    this.colorDetails,
+    this.rgb,
+    this.productDataType,
+    this.productTypeMessage,
+    this.productTag,
+    this.storeCount,
+    this.supplierCount,
+    this.sizes,
+    this.price,
+    this.listedPrice,
+    this.msrpPrice,
+    this.tfmPrice,
+    this.catPath,
+    this.childCount,
+    this.variantData,
+    this.images,
+    this.popularScore,
+    this.avgRating,
+    this.variantCount,
+    this.productType,
+    this.totalReview,
+    this.productFor,
+    this.productForMsg,
+    this.catName,
+    this.categoryJson,
+    this.currency,
+    this.currencySymbol,
+    this.createdTimestamp,
+    this.storeType,
+    this.addedBySupplier,
+    this.isColourEnable,
+    this.isPulledProduct,
+    this.prescriptionRequired,
+    this.saleOnline,
+    this.offer,
+    this.uploadProductDetails,
+    this.symptoms,
+    this.barcode,
+    this.sku,
+    this.uploadArModelEnabled,
+    this.cannabisMenuType,
+    this.storeId,
+    this.supplierName,
+    this.storeName,
+    this.partnerRevsharePercentage,
+    this.partnerRevshareToggle,
+    this.keepProductAndRefund,
+    this.rewardFinalPrice,
+    this.finalPriceList,
+  });
+
+  String? productId;
+  String? parentProductId;
+  String? productName;
+  VariantName? variantName;
+  String? color;
+  List<dynamic>? colorDetails;
+  String? rgb;
+  num? productDataType;
+  String? productTypeMessage;
+  String? productTag;
+  num? storeCount;
+  num? supplierCount;
+  List<dynamic>? sizes;
+  num? price;
+  num? listedPrice;
+  num? msrpPrice;
+  num? tfmPrice;
+  List<String>? catPath;
+  num? childCount;
+  List<dynamic>? variantData;
+  List<dynamic>? images;
+  num? popularScore;
+  num? avgRating;
+  num? variantCount;
+  String? productType;
+  num? totalReview;
+  dynamic productFor;
+  String? productForMsg;
+  String? catName;
+  List<dynamic>? categoryJson;
+  String? currency;
+  String? currencySymbol;
+  num? createdTimestamp;
+  dynamic storeType;
+  bool? addedBySupplier;
+  bool? isColourEnable;
+  bool? isPulledProduct;
+  dynamic prescriptionRequired;
+  num? saleOnline;
+  List<dynamic>? offer;
+  String? uploadProductDetails;
+  List<dynamic>? symptoms;
+  String? barcode;
+  String? sku;
+  bool? uploadArModelEnabled;
+  num? cannabisMenuType;
+  String? storeId;
+  String? supplierName;
+  String? storeName;
+  num? partnerRevsharePercentage;
+  bool? partnerRevshareToggle;
+  bool? keepProductAndRefund;
+  num? rewardFinalPrice;
+  FinalPriceList? finalPriceList;
+
+  Map<String, dynamic> toJson() => {
+        'productId': productId,
+        'parentProductId': parentProductId,
+        'productName': productName,
+        'variantName': variantName?.toJson(),
+        'color': color,
+        'colorDetails': colorDetails == null ? [] : List<dynamic>.from(colorDetails!.map((x) => x)),
+        'rgb': rgb,
+        'productDataType': productDataType,
+        'productTypeMessage': productTypeMessage,
+        'productTag': productTag,
+        'storeCount': storeCount,
+        'supplierCount': supplierCount,
+        'sizes': sizes == null ? [] : List<dynamic>.from(sizes!.map((x) => x)),
+        'price': price,
+        'listedPrice': listedPrice,
+        'msrpPrice': msrpPrice,
+        'tfmPrice': tfmPrice,
+        'catPath': catPath == null ? [] : List<dynamic>.from(catPath!.map((x) => x)),
+        'childCount': childCount,
+        'variantData': variantData == null ? [] : List<dynamic>.from(variantData!.map((x) => x)),
+        'images': images == null ? [] : List<dynamic>.from(images!.map((x) => x)),
+        'popularScore': popularScore,
+        'avgRating': avgRating,
+        'variantCount': variantCount,
+        'productType': productType,
+        'totalReview': totalReview,
+        'productFor': productFor,
+        'productForMsg': productForMsg,
+        'catName': catName,
+        'categoryJson': categoryJson == null ? [] : List<dynamic>.from(categoryJson!.map((x) => x)),
+        'currency': currency,
+        'currencySymbol': currencySymbol,
+        'createdTimestamp': createdTimestamp,
+        'storeType': storeType,
+        'addedBySupplier': addedBySupplier,
+        'isColourEnable': isColourEnable,
+        'isPulledProduct': isPulledProduct,
+        'prescriptionRequired': prescriptionRequired,
+        'saleOnline': saleOnline,
+        'offer': offer == null ? [] : List<dynamic>.from(offer!.map((x) => x)),
+        'uploadProductDetails': uploadProductDetails,
+        'symptoms': symptoms == null ? [] : List<dynamic>.from(symptoms!.map((x) => x)),
+        'barcode': barcode,
+        'sku': sku,
+        'uploadARModelEnabled': uploadArModelEnabled,
+        'cannabisMenuType': cannabisMenuType,
+        'storeId': storeId,
+        'supplierName': supplierName,
+        'storeName': storeName,
+        'partnerRevsharePercentage': partnerRevsharePercentage,
+        'partnerRevshareToggle': partnerRevshareToggle,
+        'keepProductAndRefund': keepProductAndRefund,
+        'rewardFinalPrice': rewardFinalPrice,
+        'finalPriceList': finalPriceList?.toJson(),
+      };
+}
+
+class VariantName {
+  VariantName({
+    this.en,
+  });
+
+  factory VariantName.fromJson(Map<String, dynamic> json) => VariantName(
+        en: json['en'] as String? ?? '',
+      );
+  String? en;
+
+  Map<String, dynamic> toJson() => {
+        'en': en,
       };
 }
