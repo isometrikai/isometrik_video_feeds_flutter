@@ -167,20 +167,15 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
     }
     _postTabController = TabController(length: widget.tabDataModelList.length, vsync: this);
     _refreshControllers = List.generate(widget.tabDataModelList.length, (index) => RefreshController());
-    final postBloc = IsmInjectionUtils.getBloc<PostBloc>();
+    var postBloc = IsmInjectionUtils.getBloc<PostBloc>();
+    debugPrint('PostBloc1....${postBloc.isClosed}');
+    if (postBloc.isClosed) {
+      isrConfigureInjection();
+      postBloc = IsmInjectionUtils.getBloc<PostBloc>();
+    }
+    debugPrint('PostBloc2....${postBloc.isClosed}');
     _postTabController?.addListener(() {
-      IsmInjectionUtils.getBloc<PostBloc>()
-          .add(FollowingPostsLoadedEvent(widget.tabDataModelList[_postTabController!.index].postList));
-      // postBloc.add(FollowingPostsLoadedEvent(widget.followingPosts!));
-      // if (_postTabController?.index == 0) {
-      //   postBloc.add(FollowingPostsLoadedEvent(widget.tabDataModelList?[_postTabController!.index].postList));
-      //   // Following tab selected
-      //   // postBloc.add(FollowingPostsLoadedEvent(widget.followingPosts!));
-      // } else {
-      //   postBloc.add(TrendingPostsLoadedEvent(widget.tabDataModelList?[_postTabController!.index].postList));
-      //   // Trending tab selected
-      //   // postBloc.add(TrendingPostsLoadedEvent(widget.trendingPosts!));
-      // }
+      postBloc.add(FollowingPostsLoadedEvent(widget.tabDataModelList[_postTabController!.index].postList));
     });
     postBloc.add(const StartPost());
   }

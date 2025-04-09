@@ -15,27 +15,33 @@ class IsmInjectionUtils {
 
   // Generic function to register a Bloc
   static void registerBloc<T extends BlocBase<Object>>(T Function() factoryFunc) {
-    if (isrGetIt.isRegistered<T>()) return;
+    unRegister<T>();
     isrGetIt.registerLazySingleton<T>(factoryFunc);
   }
 
   // Generic function to register a UseCase
   static void registerUseCase<T extends BaseUseCase>(T Function() factoryFunc) {
-    if (_isRegistered<T>()) return;
+    unRegister<T>();
     isrGetIt.registerLazySingleton<T>(factoryFunc);
   }
 
   // Generic function to register a repository
   static void registerRepo<T extends BaseRepository>(T Function() factoryFunc) {
-    if (_isRegistered<T>()) return;
+    unRegister<T>();
     isrGetIt.registerLazySingleton<T>(factoryFunc);
+  }
+
+  static void unRegister<T extends Object>() {
+    if (_isRegistered<T>()) {
+      isrGetIt.unregister<T>();
+    }
   }
 
   static T getRepo<T extends BaseRepository>() => isrGetIt<T>(); // Generic method to get repository
 
   // Generic function to register a api service
   static void registerApiService<T extends BaseService>(T Function() factoryFunc) {
-    if (_isRegistered<T>()) return;
+    unRegister<T>();
     isrGetIt.registerLazySingleton<T>(factoryFunc);
   }
 
@@ -45,7 +51,7 @@ class IsmInjectionUtils {
 
   // Generic function to register a class
   static void registerOtherClass<T extends Object>(T Function() factoryFunc) {
-    if (_isRegistered<T>()) return;
+    unRegister<T>();
     isrGetIt.registerLazySingleton<T>(factoryFunc);
   }
 
