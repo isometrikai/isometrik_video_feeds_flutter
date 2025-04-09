@@ -153,8 +153,9 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
 
   //initialize vide player controller
   void initializeVideoPlayer() async {
-    if (widget.mediaUrl.isStringEmptyOrNull == false) {
-      var mediaUrl = widget.mediaUrl ?? '';
+    debugPrint('initializeVideoPlayer video url ${widget.mediaUrl}');
+    if (widget.mediaUrl?.isStringEmptyOrNull == false) {
+      var mediaUrl = widget.mediaUrl!;
       if (mediaUrl.startsWith('http:')) {
         mediaUrl = mediaUrl.replaceFirst('http:', 'https:');
         debugPrint('initializeVideoPlayer video url converted to https $mediaUrl');
@@ -165,12 +166,11 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
     }
     if (videoPlayerController == null) return;
     try {
-      debugPrint('initializeVideoPlayer video url ${widget.mediaUrl ?? ''}');
       await videoPlayerController?.initialize();
       // Always start with volume on
       await videoPlayerController?.setVolume(1.0);
     } catch (e) {
-      debugPrint('catch video url ${widget.mediaUrl ?? ''}');
+      debugPrint('catch video url ${widget.mediaUrl}');
       IsrVideoReelUtility.debugCatchLog(error: e);
     }
     await videoPlayerController?.setLooping(true);
