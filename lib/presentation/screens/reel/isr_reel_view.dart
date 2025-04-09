@@ -7,7 +7,7 @@ import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
-import 'package:ism_video_reel_player/utils/utils.dart';
+import 'package:ism_video_reel_player/utils/isr_utils.dart';
 
 final GlobalKey<NavigatorState> ismNavigatorKey = GlobalKey<NavigatorState>();
 

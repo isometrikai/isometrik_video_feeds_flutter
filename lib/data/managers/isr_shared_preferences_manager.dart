@@ -1,6 +1,6 @@
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/res/res.dart';
-import 'package:ism_video_reel_player/utils/utils.dart';
+import 'package:ism_video_reel_player/utils/isr_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class IsrSharedPreferencesManager {

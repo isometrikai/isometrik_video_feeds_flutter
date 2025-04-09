@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/res/res.dart';
-import 'package:ism_video_reel_player/utils/utils.dart';
 
 class PostPlaceHolderView extends StatelessWidget {
   const PostPlaceHolderView({

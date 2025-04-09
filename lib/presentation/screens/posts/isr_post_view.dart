@@ -6,7 +6,7 @@ import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
-import 'package:ism_video_reel_player/utils/utils.dart';
+import 'package:ism_video_reel_player/utils/isr_utils.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 class IsrPostView extends StatefulWidget {

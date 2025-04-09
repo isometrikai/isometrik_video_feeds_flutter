@@ -1,6 +1,6 @@
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
-import 'package:ism_video_reel_player/utils/utils.dart';
+import 'package:ism_video_reel_player/utils/isr_utils.dart';
 
 class IsrLocalStorageRepositoryImpl implements IsrLocalStorageRepository {
   IsrLocalStorageRepositoryImpl(this._localStorageManager);

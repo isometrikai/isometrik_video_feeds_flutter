@@ -1,6 +1,5 @@
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
-import 'package:ism_video_reel_player/utils/utils.dart';
 
 class AppModuleInjection {
   static void inject() {

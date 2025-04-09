@@ -163,7 +163,7 @@ class _VideoTrimViewState extends State<VideoTrimView> {
                   // _playPausedAction = false;
                   // mountUpdate();
                 },
-                child: Center(
+                child: const Center(
                     // child: AspectRatio(
                     //   aspectRatio: trimmer.videoPlayerController?.value.aspectRatio ?? 1,
                     //   child: Stack(

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
-import 'package:ism_video_reel_player/utils/utils.dart';
+import 'package:ism_video_reel_player/utils/isr_utils.dart';
 
 class IsrNavigationServiceImpl implements IsrNavigationService {
   IsrNavigationServiceImpl(this.navigatorKey);

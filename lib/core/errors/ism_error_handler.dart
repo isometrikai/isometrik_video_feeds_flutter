@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/core/core.dart';
-import 'package:ism_video_reel_player/utils/utils.dart';
+import 'package:ism_video_reel_player/utils/isr_utils.dart';
 
 class IsmErrorHandler {
   static AppError handleError(dynamic error, StackTrace stackTrace) {

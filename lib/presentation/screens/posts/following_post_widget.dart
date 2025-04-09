@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
-import 'package:ism_video_reel_player/utils/utils.dart';
+import 'package:ism_video_reel_player/utils/isr_utils.dart';
 
 class FollowingPostWidget extends StatefulWidget {
   const FollowingPostWidget({
@@ -116,7 +116,6 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
                                 !_followingPostList.any((existingPost) => existingPost.postId == newPost.postId));
                             _followingPostList.addAll(newPosts);
                           });
-                          debugPrint('FollowingPostWidget Total posts after pagination: ${_followingPostList.length}');
                         }
                       });
                     }
@@ -136,8 +135,6 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
                     setState(() {
                       _followingPostList.insert(0, postDataModel);
                     });
-                    // Remove bloc event since we're managing state locally
-                    // _postBloc.add(FollowingPostsLoadedEvent(_followingPostList));
                   },
                   postId: _followingPostList[index].postId,
                   description: '',

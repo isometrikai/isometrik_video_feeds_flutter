@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
-import 'package:ism_video_reel_player/utils/utils.dart';
+import 'package:ism_video_reel_player/utils/isr_utils.dart';
 
 class FeatureProductWidget extends StatelessWidget {
   const FeatureProductWidget({super.key, this.productData});

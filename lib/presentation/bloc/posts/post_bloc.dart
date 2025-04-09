@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
-import 'package:ism_video_reel_player/utils/utils.dart';
 
 part 'post_event.dart';
 part 'post_state.dart';
