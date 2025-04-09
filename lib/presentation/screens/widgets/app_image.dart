@@ -240,7 +240,7 @@ class _Network extends StatelessWidget {
         placeHolderName: placeHolderName,
         width: width,
         height: height,
-        boxFit: BoxFit.contain,
+        boxFit: fit ?? BoxFit.contain,
         boxShape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
         child: name.isStringEmptyOrNull == false && isProfileImage
             ? Text(
@@ -253,7 +253,7 @@ class _Network extends StatelessWidget {
         width: width,
         height: height,
         borderRadius: borderRadius,
-        boxFit: BoxFit.contain,
+        boxFit: fit ?? BoxFit.contain,
         backgroundColor: Theme.of(context).primaryColor,
         placeHolderName: placeHolderName,
         boxShape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
@@ -288,7 +288,7 @@ class _Svg extends StatelessWidget {
         path,
         height: height,
         width: width,
-        fit: fit ?? BoxFit.contain,
+        fit: fit ?? BoxFit.cover,
         colorFilter: color != null
             ? ColorFilter.mode(
                 color!,
