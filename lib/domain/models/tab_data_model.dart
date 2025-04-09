@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 
 class TabDataModel {
@@ -14,6 +15,7 @@ class TabDataModel {
     this.onLoadMore,
     this.onRefresh,
     this.onTapCartIcon,
+    this.placeHolderWidget,
   });
 
   final String title;
@@ -28,4 +30,5 @@ class TabDataModel {
   final Future<bool> Function(String)? onPressFollow;
   final Future<bool> Function()? onRefresh;
   final Function(String?)? onTapCartIcon;
+  final Widget? placeHolderWidget;
 }
