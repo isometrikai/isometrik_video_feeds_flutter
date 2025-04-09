@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/utils/isr_enums.dart';
 
 class TabDataModel {
   TabDataModel({
@@ -16,6 +17,7 @@ class TabDataModel {
     this.onRefresh,
     this.onTapCartIcon,
     this.placeHolderWidget,
+    this.postSectionType = PostSectionType.following,
   });
 
   final String title;
@@ -31,4 +33,5 @@ class TabDataModel {
   final Future<bool> Function()? onRefresh;
   final Function(String?)? onTapCartIcon;
   final Widget? placeHolderWidget;
+  final PostSectionType? postSectionType;
 }

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart' as isr;
+import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:ism_video_reel_player_example/di/di.dart';
 import 'package:ism_video_reel_player_example/presentation/presentation.dart';
 import 'package:ism_video_reel_player_example/res/res.dart';
@@ -50,11 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
               return isr.IsrPostView(
                 tabDataModelList: [
                   isr.TabDataModel(
-                    placeHolderWidget: const AppImage.svg(
-                      AssetConstants.icAppLogo,
-                      fit: BoxFit.cover,
-                      color: Colors.black,
-                    ),
+                    postSectionType: PostSectionType.following,
                     title: TranslationFile.following,
                     postList: state.followingPosts,
                     onCreatePost: () async {
@@ -155,11 +152,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     onRefresh: () async => false,
                   ),
                   isr.TabDataModel(
-                      placeHolderWidget: const AppImage.svg(
-                        AssetConstants.icAppLogo,
-                        fit: BoxFit.cover,
-                        color: Colors.black,
-                      ),
+                      postSectionType: PostSectionType.trending,
                       title: TranslationFile.trending,
                       postList: state.trendingPosts,
                       onCreatePost: () async {

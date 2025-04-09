@@ -223,6 +223,12 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
           onTapCartIcon: tabData.onTapCartIcon,
           onRefresh: tabData.onRefresh,
           placeHolderWidget: tabData.placeHolderWidget,
+          postSectionType: tabData.postSectionType,
+          onTapPlaceHolder: () {
+            if ((_postTabController?.length ?? 0) > 1) {
+              _postTabController?.animateTo(1);
+            }
+          },
         ),
       );
 }

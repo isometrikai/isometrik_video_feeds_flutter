@@ -35,4 +35,6 @@ class IsrTranslationFile {
   static const String share = 'Share';
   static const mute = 'Mute';
   static const unmute = 'Unmute';
+  static const notFollowingAnyone = 'Not Following Anyone!';
+  static const findPeopleToFollow = 'Find People to follow';
 }
