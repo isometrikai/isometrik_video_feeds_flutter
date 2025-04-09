@@ -85,7 +85,7 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
             await widget.onRefresh?.call();
           }
         },
-        child: _followingPostList.isEmptyOrNull == true
+        child: _followingPostList.isListEmptyOrNull == true
             ? Center(
                 child: widget.placeHolderWidget ??
                     PostPlaceHolderView(
@@ -108,7 +108,7 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
                   if (index >= threshold) {
                     if (widget.onLoadMore != null) {
                       widget.onLoadMore!().then((value) {
-                        if (value.isEmptyOrNull) return;
+                        if (value.isListEmptyOrNull) return;
                         if (mounted) {
                           setState(() {
                             // Filter out duplicates based on postId
@@ -129,7 +129,7 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
                   onCreatePost: () async {
                     if (widget.onCreatePost == null) return;
                     final postDataModelJsonString = await widget.onCreatePost!();
-                    if (postDataModelJsonString.isEmptyOrNull) return;
+                    if (postDataModelJsonString.isStringEmptyOrNull) return;
                     final postDataMap = jsonDecode(postDataModelJsonString!) as Map<String, dynamic>;
                     final postDataModel = PostDataModel.fromJson(postDataMap);
                     setState(() {

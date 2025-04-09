@@ -121,7 +121,7 @@ class IsmCustomAppBarWidget extends StatelessWidget implements PreferredSizeWidg
             : Text(
                 titleText!,
               ),
-        actions: showActions == false || actions.isEmptyOrNull ? null : actions,
+        actions: showActions == false || actions.isListEmptyOrNull ? null : actions,
         bottom: showDivider == true
             ? PreferredSize(
                 preferredSize: Size(

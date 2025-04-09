@@ -56,7 +56,7 @@ class _TrendingPostWidgetState extends State<TrendingPostWidget> {
             // }
           }
 
-          return _trendingPostList.isEmptyOrNull == false
+          return _trendingPostList.isListEmptyOrNull == false
               ? RefreshIndicator(
                   onRefresh: () async {
                     // _postBloc.add(GetTrendingPostEvent(isLoading: false));

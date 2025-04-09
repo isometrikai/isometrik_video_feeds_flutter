@@ -64,14 +64,14 @@ extension IntExtension on int {
 }
 
 extension EmptyExtension on String? {
-  bool get isEmptyOrNull {
+  bool get isStringEmptyOrNull {
     final finalString = this?.trim();
     return finalString == null || finalString == ' ' || finalString.isEmpty == true;
   }
 }
 
 extension EmptyListExtension on List<dynamic>? {
-  bool get isEmptyOrNull => this == null || this?.isEmpty == true;
+  bool get isListEmptyOrNull => this == null || this?.isEmpty == true;
 }
 
 extension ZeroOrNullExtension on double? {
@@ -109,8 +109,8 @@ extension DurationExtension on Duration {
 
 extension RemoveEmptyElementExtension on Map<String, dynamic> {
   Map<String, dynamic> removeEmptyValues() {
-    removeWhere(
-        (key, value) => value is List ? value.isEmpty : (value == null || (value is String && value.isEmptyOrNull)));
+    removeWhere((key, value) =>
+        value is List ? value.isEmpty : (value == null || (value is String && value.isStringEmptyOrNull)));
     return this;
   }
 }

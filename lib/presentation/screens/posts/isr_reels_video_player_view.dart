@@ -154,7 +154,7 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
   //initialize vide player controller
   void initializeVideoPlayer() async {
     debugPrint('initializeVideoPlayer video url ${widget.mediaUrl}');
-    if (widget.mediaUrl.isEmptyOrNull == false) {
+    if (widget.mediaUrl.isStringEmptyOrNull == false) {
       var mediaUrl = widget.mediaUrl!;
       if (mediaUrl.startsWith('http:')) {
         mediaUrl = mediaUrl.replaceFirst('http:', 'https:');

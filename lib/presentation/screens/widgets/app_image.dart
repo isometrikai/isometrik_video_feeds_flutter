@@ -208,7 +208,7 @@ class _Network extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fullName = name.isEmptyOrNull == false ? name : '';
+    final fullName = name.isStringEmptyOrNull == false ? name : '';
     final words = fullName.split(' ');
     final initials = words.map((word) => word.isNotEmpty ? word[0] : '').join('');
     final optimizedImageUrl = AppConstants.isGumletEnable
@@ -241,7 +241,7 @@ class _Network extends StatelessWidget {
         width: width,
         height: height,
         boxShape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
-        child: name.isEmptyOrNull == false && isProfileImage
+        child: name.isStringEmptyOrNull == false && isProfileImage
             ? Text(
                 initials,
                 style: IsrStyles.secondaryText20.copyWith(fontWeight: FontWeight.w500, color: IsrColors.white),
@@ -255,7 +255,7 @@ class _Network extends StatelessWidget {
         backgroundColor: Theme.of(context).primaryColor,
         placeHolderName: placeHolderName,
         boxShape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
-        child: name.isEmptyOrNull == false && isProfileImage
+        child: name.isStringEmptyOrNull == false && isProfileImage
             ? Text(
                 initials,
                 style: IsrStyles.secondaryText20.copyWith(fontWeight: FontWeight.w500, color: IsrColors.white),

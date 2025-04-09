@@ -141,7 +141,7 @@ class IsrVideoReelUtility {
                   titleText ?? IsrTranslationFile.alert,
                   style: IsrStyles.secondaryText14.copyWith(fontWeight: FontWeight.w700),
                 ),
-              if (message.isEmptyOrNull == false) ...[
+              if (message.isStringEmptyOrNull == false) ...[
                 IsrDimens.boxHeight(IsrDimens.eight),
                 Text(
                   message.toString(),
@@ -362,7 +362,7 @@ class IsrVideoReelUtility {
 
   static String getFormattedPrice(double price, String? currencySymbol) => NumberFormat.currency(
           decimalDigits: price % 1 == 0 ? 0 : 2,
-          symbol: currencySymbol.isEmptyOrNull ? DefaultValues.defaultCurrencySymbol : currencySymbol)
+          symbol: currencySymbol.isStringEmptyOrNull ? DefaultValues.defaultCurrencySymbol : currencySymbol)
       .format(price);
 
   static Future<void> showCustomModalBottomSheet({
