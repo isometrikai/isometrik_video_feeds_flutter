@@ -21,7 +21,7 @@ class PostPlaceHolderView extends StatelessWidget {
               padding: IsrDimens.edgeInsetsAll(IsrDimens.fifteen),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.applyOpacity(0.3),
+                color: Colors.white.changeOpacity(0.3),
               ),
               child: const AppImage.svg(AssetConstants.icAddFollowerPlaceHolder),
             ),

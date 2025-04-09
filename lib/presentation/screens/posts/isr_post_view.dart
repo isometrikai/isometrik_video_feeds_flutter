@@ -127,7 +127,7 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
                 child: TabBar(
                   controller: _postTabController,
                   labelColor: IsrColors.white,
-                  unselectedLabelColor: IsrColors.white.applyOpacity(0.6),
+                  unselectedLabelColor: IsrColors.white.changeOpacity(0.6),
                   indicatorColor: IsrColors.white,
                   indicatorWeight: 2,
                   dividerColor: Colors.transparent,

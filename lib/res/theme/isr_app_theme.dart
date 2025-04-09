@@ -17,7 +17,7 @@ ThemeData isrTheme = ThemeData(
   iconTheme: const IconThemeData(color: IsrColors.white),
   scaffoldBackgroundColor: IsrColors.scaffoldColor,
   fontFamily: AppConstants.primaryFontFamily,
-  splashColor: IsrColors.appColor.applyOpacity(0.5),
+  splashColor: IsrColors.appColor.changeOpacity(0.5),
   textTheme: TextTheme(
     displayLarge: IsrStyles.secondaryText18.copyWith(fontWeight: FontWeight.w600),
     displayMedium: IsrStyles.secondaryText16.copyWith(fontWeight: FontWeight.w600),

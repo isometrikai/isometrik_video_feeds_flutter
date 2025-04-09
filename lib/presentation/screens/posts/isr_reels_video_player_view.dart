@@ -230,7 +230,7 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
                 borderRadius: BorderRadius.circular(IsrDimens.thirty),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.applyOpacity(0.2),
+                    color: Colors.black.changeOpacity(0.2),
                     spreadRadius: 2,
                     blurRadius: 5,
                     offset: const Offset(0, 2),
@@ -382,7 +382,7 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
                     borderRadius: BorderRadius.circular(IsrDimens.ten), // Rounded corners
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.applyOpacity(0.1), // Light shadow
+                        color: Colors.black.changeOpacity(0.1), // Light shadow
                         spreadRadius: 1,
                         blurRadius: 4,
                         offset: const Offset(0, 2), // Shadow offset
@@ -514,7 +514,7 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
                                 child: Text(
                                   IsrTranslationFile.more,
                                   style: IsrStyles.white14.copyWith(
-                                    color: IsrColors.white.applyOpacity(0.6),
+                                    color: IsrColors.white.changeOpacity(0.6),
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -544,7 +544,7 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
                               TextSpan(
                                 text: widget.description,
                                 style: IsrStyles.white14.copyWith(
-                                  color: IsrColors.white.applyOpacity(0.9),
+                                  color: IsrColors.white.changeOpacity(0.9),
                                 ),
                               ),
                             ],
@@ -655,10 +655,10 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
                               colors: [
-                                IsrColors.black.applyOpacity(.6),
-                                IsrColors.black.applyOpacity(.0),
-                                IsrColors.black.applyOpacity(.0),
-                                IsrColors.black.applyOpacity(.4),
+                                IsrColors.black.changeOpacity(.6),
+                                IsrColors.black.changeOpacity(.0),
+                                IsrColors.black.changeOpacity(.0),
+                                IsrColors.black.changeOpacity(.4),
                               ],
                             ),
                           ),
@@ -678,10 +678,10 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
           //       begin: Alignment.topCenter,
           //       end: Alignment.bottomCenter,
           //       colors: [
-          //         IsrColors.black.applyOpacity(0.4),
+          //         IsrColors.black.changeOpacity(0.4),
           //         Colors.transparent,
           //         Colors.transparent,
-          //         IsrColors.black.applyOpacity(0.4),
+          //         IsrColors.black.changeOpacity(0.4),
           //       ],
           //     ),
           //   ),

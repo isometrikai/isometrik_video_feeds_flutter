@@ -116,5 +116,5 @@ extension RemoveEmptyElementExtension on Map<String, dynamic> {
 }
 
 extension ColorExt on Color {
-  Color applyOpacity(double opacity) => withValues(alpha: opacity);
+  Color changeOpacity(double opacity) => withValues(alpha: opacity);
 }
