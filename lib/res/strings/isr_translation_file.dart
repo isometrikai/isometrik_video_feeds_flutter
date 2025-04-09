@@ -37,4 +37,5 @@ class IsrTranslationFile {
   static const unmute = 'Unmute';
   static const notFollowingAnyone = 'Not Following Anyone!';
   static const findPeopleToFollow = 'Find People to follow';
+  static const noPostAvailable = 'No Post Available';
 }

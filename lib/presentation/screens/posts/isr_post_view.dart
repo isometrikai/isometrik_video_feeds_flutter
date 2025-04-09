@@ -12,13 +12,9 @@ import 'package:pull_to_refresh/pull_to_refresh.dart';
 class IsrPostView extends StatefulWidget {
   const IsrPostView({
     super.key,
-    // this.followingPosts,
-    // this.trendingPosts,
     required this.tabDataModelList,
   });
 
-  // final List<PostDataModel>? followingPosts;
-  // final List<PostDataModel>? trendingPosts;
   final List<TabDataModel> tabDataModelList;
 
   @override
@@ -72,32 +68,6 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
                               children: widget.tabDataModelList
                                   .map((tabData) => _buildTabBarView(tabData, widget.tabDataModelList.indexOf(tabData)))
                                   .toList(),
-                              // children: [
-                              //   SmartRefresher(
-                              //     controller: _followingRefreshController,
-                              //     physics: const ClampingScrollPhysics(),
-                              //     onRefresh: () async {
-                              //       // InjectionUtils.getBloc<PostBloc>().add(GetFollowingPostEvent(
-                              //       //   isLoading: false,
-                              //       //   isPagination: false,
-                              //       //   isRefresh: true,
-                              //       // ));
-                              //     },
-                              //     child: const FollowingPostWidget(),
-                              //   ),
-                              //   // SmartRefresher(
-                              //   //   controller: _trendingRefreshController,
-                              //   //   physics: const ClampingScrollPhysics(),
-                              //   //   onRefresh: () async {
-                              //   //     // InjectionUtils.getBloc<PostBloc>().add(GetTrendingPostEvent(
-                              //   //     //   isLoading: false,
-                              //   //     //   isPagination: false,
-                              //   //     //   isRefresh: true,
-                              //   //     // ));
-                              //   //   },
-                              //   //   child: const TrendingPostWidget(),
-                              //   // ),
-                              // ],
                             ),
                             if (widget.tabDataModelList.length > 1) _buildTabBar(),
                           ],
@@ -168,7 +138,6 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
     _postTabController = TabController(length: widget.tabDataModelList.length, vsync: this);
     _refreshControllers = List.generate(widget.tabDataModelList.length, (index) => RefreshController());
     var postBloc = IsmInjectionUtils.getBloc<PostBloc>();
-    debugPrint('PostBloc1....${postBloc.isClosed}');
     if (postBloc.isClosed) {
       isrConfigureInjection();
       postBloc = IsmInjectionUtils.getBloc<PostBloc>();
