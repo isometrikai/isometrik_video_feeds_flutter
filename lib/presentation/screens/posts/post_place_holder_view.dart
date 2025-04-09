@@ -27,7 +27,9 @@ class PostPlaceHolderView extends StatelessWidget {
             ),
             IsrDimens.boxHeight(IsrDimens.ten),
             Text(
-              IsrTranslationFile.notFollowingAnyone,
+              postSectionType == PostSectionType.following
+                  ? IsrTranslationFile.notFollowingAnyone
+                  : IsrTranslationFile.noPostAvailable,
               style: IsrStyles.white14.copyWith(
                 fontWeight: FontWeight.w700,
               ),
