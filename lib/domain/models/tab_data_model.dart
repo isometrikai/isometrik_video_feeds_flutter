@@ -36,6 +36,6 @@ class TabDataModel {
   final Function(String?)? onTapCartIcon;
   final Widget? placeHolderWidget;
   final PostSectionType? postSectionType;
-  final VoidCallback? onTapComment;
-  final VoidCallback? onTapShare;
+  final Function(String)? onTapComment;
+  final Function(String)? onTapShare;
 }

@@ -40,8 +40,8 @@ class FollowingPostWidget extends StatefulWidget {
   final Widget? placeHolderWidget;
   final PostSectionType? postSectionType;
   final VoidCallback? onTapPlaceHolder;
-  final VoidCallback? onTapComment;
-  final VoidCallback? onTapShare;
+  final Function(String)? onTapComment;
+  final Function(String)? onTapShare;
 
   @override
   State<FollowingPostWidget> createState() => _FollowingPostWidgetState();
@@ -216,12 +216,12 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
                   },
                   onTapComment: () {
                     if (widget.onTapComment != null) {
-                      widget.onTapComment!();
+                      widget.onTapComment!(_followingPostList[index].postId ?? '');
                     }
                   },
                   onTapShare: () {
                     if (widget.onTapShare != null) {
-                      widget.onTapShare!();
+                      widget.onTapShare!(_followingPostList[index].postId ?? '');
                     }
                   },
                   commentCount: _followingPostList[index].commentCount?.toInt() ?? 0,
