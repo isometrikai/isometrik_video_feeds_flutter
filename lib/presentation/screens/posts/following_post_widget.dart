@@ -25,6 +25,7 @@ class FollowingPostWidget extends StatefulWidget {
     this.onTapPlaceHolder,
     this.onTapShare,
     this.onTapComment,
+    this.isCreatePostButtonVisble = false,
   });
 
   final Future<String?> Function()? onCreatePost;
@@ -42,6 +43,7 @@ class FollowingPostWidget extends StatefulWidget {
   final VoidCallback? onTapPlaceHolder;
   final Function(String)? onTapComment;
   final Function(String)? onTapShare;
+  final bool? isCreatePostButtonVisble;
 
   @override
   State<FollowingPostWidget> createState() => _FollowingPostWidgetState();
@@ -128,6 +130,7 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
                 itemCount: _followingPostList.length,
                 scrollDirection: Axis.vertical,
                 itemBuilder: (context, index) => IsrReelsVideoPlayerView(
+                  isCreatePostButtonVisble: widget.isCreatePostButtonVisble,
                   thumbnail: _followingPostList[index].thumbnailUrl1 ?? '',
                   key: Key(_followingPostList[index].postId ?? ''),
                   onCreatePost: () async {

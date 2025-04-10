@@ -50,6 +50,7 @@ class IsrReelsVideoPlayerView extends StatefulWidget {
     this.onTapComment,
     this.onTapShare,
     this.commentCount = 0,
+    this.isCreatePostButtonVisble,
   });
 
   final String? mediaUrl;
@@ -89,6 +90,7 @@ class IsrReelsVideoPlayerView extends StatefulWidget {
   final VoidCallback? onTapComment;
   final VoidCallback? onTapShare;
   final int? commentCount;
+  final bool? isCreatePostButtonVisble;
 
   @override
   State<IsrReelsVideoPlayerView> createState() => _IsrReelsVideoPlayerViewState();
@@ -250,33 +252,35 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
               ),
             ),
             IsrDimens.boxHeight(IsrDimens.fifteen),
-            Container(
-              alignment: Alignment.center,
-              width: IsrDimens.thirtyFive,
-              height: IsrDimens.thirtyFive,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Theme.of(context).primaryColor, // Blue background
-              ),
-              child: IconButton(
-                onPressed: () async {
-                  if (widget.onCreatePost != null) {
-                    await widget.onCreatePost!();
-                  }
-                },
-                icon: const Icon(
-                  Icons.add, // Simple plus icon
-                  color: IsrColors.white,
-                  size: 24,
+            if (widget.isCreatePostButtonVisble == true) ...[
+              Container(
+                alignment: Alignment.center,
+                width: IsrDimens.thirtyFive,
+                height: IsrDimens.thirtyFive,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Theme.of(context).primaryColor, // Blue background
+                ),
+                child: IconButton(
+                  onPressed: () async {
+                    if (widget.onCreatePost != null) {
+                      await widget.onCreatePost!();
+                    }
+                  },
+                  icon: const Icon(
+                    Icons.add, // Simple plus icon
+                    color: IsrColors.white,
+                    size: 24,
+                  ),
                 ),
               ),
-            ),
-            IsrDimens.boxHeight(IsrDimens.five),
-            Text(
-              IsrTranslationFile.create,
-              style: IsrStyles.white12,
-            ),
-            IsrDimens.boxHeight(IsrDimens.ten),
+              IsrDimens.boxHeight(IsrDimens.five),
+              Text(
+                IsrTranslationFile.create,
+                style: IsrStyles.white12,
+              ),
+              IsrDimens.boxHeight(IsrDimens.ten),
+            ],
             // if (widget.mediaType == kVideoType) ...[
             //   _buildActionButton(
             //     icon: isMuted ? AssetConstants.icVolumeMute : AssetConstants.icVolumeUp,

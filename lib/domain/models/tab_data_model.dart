@@ -20,6 +20,7 @@ class TabDataModel {
     this.postSectionType = PostSectionType.following,
     this.onTapComment,
     this.onTapShare,
+    this.isCreatePostButtonVisble,
   });
 
   final String title;
@@ -38,4 +39,5 @@ class TabDataModel {
   final PostSectionType? postSectionType;
   final Function(String)? onTapComment;
   final Function(String)? onTapShare;
+  final bool? isCreatePostButtonVisble;
 }
