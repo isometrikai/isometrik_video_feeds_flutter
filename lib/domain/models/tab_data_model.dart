@@ -18,6 +18,8 @@ class TabDataModel {
     this.onTapCartIcon,
     this.placeHolderWidget,
     this.postSectionType = PostSectionType.following,
+    this.onTapComment,
+    this.onTapShare,
   });
 
   final String title;
@@ -34,4 +36,6 @@ class TabDataModel {
   final Function(String?)? onTapCartIcon;
   final Widget? placeHolderWidget;
   final PostSectionType? postSectionType;
+  final VoidCallback? onTapComment;
+  final VoidCallback? onTapShare;
 }

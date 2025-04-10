@@ -47,6 +47,9 @@ class IsrReelsVideoPlayerView extends StatefulWidget {
     this.onPressLike,
     this.onPressMoreButton,
     this.onTapCartIcon,
+    this.onTapComment,
+    this.onTapShare,
+    this.commentCount = 0,
   });
 
   final String? mediaUrl;
@@ -83,6 +86,9 @@ class IsrReelsVideoPlayerView extends StatefulWidget {
   final Future<bool> Function()? onPressLike;
   final Future<bool> Function()? onPressMoreButton;
   final VoidCallback? onTapCartIcon;
+  final VoidCallback? onTapComment;
+  final VoidCallback? onTapShare;
+  final int? commentCount;
 
   @override
   State<IsrReelsVideoPlayerView> createState() => _IsrReelsVideoPlayerViewState();
@@ -288,14 +294,22 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
             IsrDimens.boxHeight(IsrDimens.twenty),
             _buildActionButton(
               icon: AssetConstants.icCommentIcon,
-              label: '10K',
-              onTap: () {},
+              label: widget.commentCount.toString(),
+              onTap: () {
+                if (widget.onTapComment != null) {
+                  widget.onTapComment!();
+                }
+              },
             ),
             IsrDimens.boxHeight(IsrDimens.twenty),
             _buildActionButton(
               icon: AssetConstants.icShareIcon,
               label: IsrTranslationFile.share,
-              onTap: () {},
+              onTap: () {
+                if (widget.onTapShare != null) {
+                  widget.onTapShare!();
+                }
+              },
             ),
             IsrDimens.boxHeight(IsrDimens.twenty),
             _buildActionButton(
