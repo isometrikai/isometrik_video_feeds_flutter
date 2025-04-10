@@ -255,8 +255,6 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
             if (widget.isCreatePostButtonVisble == true) ...[
               Container(
                 alignment: Alignment.center,
-                width: IsrDimens.thirtyFive,
-                height: IsrDimens.thirtyFive,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Theme.of(context).primaryColor, // Blue background
@@ -270,7 +268,6 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
                   icon: const Icon(
                     Icons.add, // Simple plus icon
                     color: IsrColors.white,
-                    size: 24,
                   ),
                 ),
               ),
