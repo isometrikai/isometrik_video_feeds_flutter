@@ -23,6 +23,8 @@ class FollowingPostWidget extends StatefulWidget {
     this.placeHolderWidget,
     this.postSectionType,
     this.onTapPlaceHolder,
+    this.onTapShare,
+    this.onTapComment,
   });
 
   final Future<String?> Function()? onCreatePost;
@@ -38,6 +40,8 @@ class FollowingPostWidget extends StatefulWidget {
   final Widget? placeHolderWidget;
   final PostSectionType? postSectionType;
   final VoidCallback? onTapPlaceHolder;
+  final VoidCallback? onTapComment;
+  final VoidCallback? onTapShare;
 
   @override
   State<FollowingPostWidget> createState() => _FollowingPostWidgetState();
@@ -208,6 +212,16 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
                       final productList = _followingPostList[index].productData;
                       final jsonString = jsonEncode(productList?.map((e) => e.toJson()).toList());
                       widget.onTapCartIcon!(jsonString);
+                    }
+                  },
+                  onTapComment: () {
+                    if (widget.onTapComment != null) {
+                      widget.onTapComment!();
+                    }
+                  },
+                  onTapShare: () {
+                    if (widget.onTapShare != null) {
+                      widget.onTapShare!();
                     }
                   },
                 ),
