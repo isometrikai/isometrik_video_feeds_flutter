@@ -51,7 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
               return isr.IsrPostView(
                 tabDataModelList: [
                   isr.TabDataModel(
-                    isCreatePostButtonVisble: true,
+                    isCreatePostButtonVisible: true,
                     postSectionType: PostSectionType.following,
                     title: TranslationFile.following,
                     postList: state.followingPosts,
@@ -153,7 +153,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     onRefresh: () async => false,
                   ),
                   isr.TabDataModel(
-                      isCreatePostButtonVisble: true,
+                      isCreatePostButtonVisible: true,
                       postSectionType: PostSectionType.trending,
                       title: TranslationFile.trending,
                       postList: state.trendingPosts,

@@ -50,7 +50,7 @@ class IsrReelsVideoPlayerView extends StatefulWidget {
     this.onTapComment,
     this.onTapShare,
     this.commentCount = 0,
-    this.isCreatePostButtonVisble,
+    this.isCreatePostButtonVisible,
   });
 
   final String? mediaUrl;
@@ -90,7 +90,7 @@ class IsrReelsVideoPlayerView extends StatefulWidget {
   final VoidCallback? onTapComment;
   final VoidCallback? onTapShare;
   final int? commentCount;
-  final bool? isCreatePostButtonVisble;
+  final bool? isCreatePostButtonVisible;
 
   @override
   State<IsrReelsVideoPlayerView> createState() => _IsrReelsVideoPlayerViewState();
@@ -252,7 +252,7 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
               ),
             ),
             IsrDimens.boxHeight(IsrDimens.fifteen),
-            if (widget.isCreatePostButtonVisble == true) ...[
+            if (widget.isCreatePostButtonVisible == true) ...[
               Container(
                 alignment: Alignment.center,
                 decoration: BoxDecoration(

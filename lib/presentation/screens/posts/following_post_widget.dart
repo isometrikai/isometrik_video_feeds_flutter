@@ -25,7 +25,7 @@ class FollowingPostWidget extends StatefulWidget {
     this.onTapPlaceHolder,
     this.onTapShare,
     this.onTapComment,
-    this.isCreatePostButtonVisble = false,
+    this.isCreatePostButtonVisible = false,
   });
 
   final Future<String?> Function()? onCreatePost;
@@ -36,14 +36,14 @@ class FollowingPostWidget extends StatefulWidget {
   final Future<bool> Function(String, String, bool)? onPressLike;
   final Future<bool> Function(String)? onPressFollow;
   final Future<List<PostDataModel>> Function()? onLoadMore;
-  final Function(String)? onTapCartIcon;
+  final Function(String, String)? onTapCartIcon;
   final Future<bool> Function()? onRefresh;
   final Widget? placeHolderWidget;
   final PostSectionType? postSectionType;
   final VoidCallback? onTapPlaceHolder;
   final Future<num>? Function(String)? onTapComment;
   final Function(String)? onTapShare;
-  final bool? isCreatePostButtonVisble;
+  final bool? isCreatePostButtonVisible;
 
   @override
   State<FollowingPostWidget> createState() => _FollowingPostWidgetState();
@@ -130,7 +130,7 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
                 itemCount: _followingPostList.length,
                 scrollDirection: Axis.vertical,
                 itemBuilder: (context, index) => IsrReelsVideoPlayerView(
-                  isCreatePostButtonVisble: widget.isCreatePostButtonVisble,
+                  isCreatePostButtonVisible: widget.isCreatePostButtonVisible,
                   thumbnail: _followingPostList[index].thumbnailUrl1 ?? '',
                   key: Key(_followingPostList[index].postId ?? ''),
                   onCreatePost: () async {
@@ -214,7 +214,7 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
                     if (widget.onTapCartIcon != null) {
                       final productList = _followingPostList[index].productData;
                       final jsonString = jsonEncode(productList?.map((e) => e.toJson()).toList());
-                      widget.onTapCartIcon!(jsonString);
+                      widget.onTapCartIcon!(jsonString, _followingPostList[index].postId ?? '');
                     }
                   },
                   onTapComment: () async {

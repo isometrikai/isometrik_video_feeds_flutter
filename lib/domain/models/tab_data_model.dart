@@ -20,7 +20,7 @@ class TabDataModel {
     this.postSectionType = PostSectionType.following,
     this.onTapComment,
     this.onTapShare,
-    this.isCreatePostButtonVisble,
+    this.isCreatePostButtonVisible,
   });
 
   final String title;
@@ -34,10 +34,10 @@ class TabDataModel {
   final Future<bool> Function(String, String, bool)? onPressLike;
   final Future<bool> Function(String)? onPressFollow;
   final Future<bool> Function()? onRefresh;
-  final Function(String?)? onTapCartIcon;
+  final Function(String, String)? onTapCartIcon;
   final Widget? placeHolderWidget;
   final PostSectionType? postSectionType;
   final Future<num>? Function(String)? onTapComment;
   final Function(String)? onTapShare;
-  final bool? isCreatePostButtonVisble;
+  final bool? isCreatePostButtonVisible;
 }
