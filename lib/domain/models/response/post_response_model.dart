@@ -85,6 +85,7 @@ class PostDataModel {
     this.isBusinessUser,
     this.isSavedPost,
     this.distinctViews,
+    this.totalComments,
   });
 
   factory PostDataModel.fromJson(Map<String, dynamic> json) => PostDataModel(
@@ -142,6 +143,7 @@ class PostDataModel {
         isBusinessUser: json['isBusinessUser'] as bool? ?? false,
         isSavedPost: json['isSavedPost'] as bool? ?? false,
         distinctViews: json['distinctViews'] as num? ?? 0,
+        totalComments: json['totalComments'] as num? ?? 0,
       );
   String? id;
   bool? allowComment;
@@ -191,6 +193,7 @@ class PostDataModel {
   bool? isBusinessUser;
   bool? isSavedPost;
   num? distinctViews;
+  num? totalComments;
 
   Map<String, dynamic> toJson() => {
         '_id': id,
@@ -241,6 +244,7 @@ class PostDataModel {
         'isBusinessUser': isBusinessUser,
         'isSavedPost': isSavedPost,
         'distinctViews': distinctViews,
+        'totalComments': totalComments,
       };
 
   PostDataModel copyWith({

@@ -85,6 +85,7 @@ class PostData {
     this.isBusinessUser,
     this.isSavedPost,
     this.distinctViews,
+    this.totalComments,
   });
 
   factory PostData.fromJson(Map<String, dynamic> json) => PostData(
@@ -142,6 +143,7 @@ class PostData {
         isBusinessUser: json['isBusinessUser'] as bool? ?? false,
         isSavedPost: json['isSavedPost'] as bool? ?? false,
         distinctViews: json['distinctViews'] as num? ?? 0,
+        totalComments: json['totalComments'] as num? ?? 0,
       );
   String? id;
   bool? allowComment;
@@ -191,6 +193,7 @@ class PostData {
   bool? isBusinessUser;
   bool? isSavedPost;
   num? distinctViews;
+  num? totalComments;
 
   Map<String, dynamic> toJson() => {
         '_id': id,
@@ -241,6 +244,7 @@ class PostData {
         'isBusinessUser': isBusinessUser,
         'isSavedPost': isSavedPost,
         'distinctViews': distinctViews,
+        'totalComments': totalComments,
       };
 
   PostData copyWith({
@@ -292,6 +296,7 @@ class PostData {
     bool? isBusinessUser,
     bool? isSavedPost,
     num? distinctViews,
+    num? totalComments,
   }) =>
       PostData(
         id: id ?? this.id,
@@ -342,6 +347,7 @@ class PostData {
         isBusinessUser: isBusinessUser ?? this.isBusinessUser,
         isSavedPost: isSavedPost ?? this.isSavedPost,
         distinctViews: distinctViews ?? this.distinctViews,
+        totalComments: totalComments ?? this.totalComments,
       );
 }
 

@@ -41,7 +41,7 @@ class FollowingPostWidget extends StatefulWidget {
   final Widget? placeHolderWidget;
   final PostSectionType? postSectionType;
   final VoidCallback? onTapPlaceHolder;
-  final Function(String)? onTapComment;
+  final Future<num>? Function(String)? onTapComment;
   final Function(String)? onTapShare;
   final bool? isCreatePostButtonVisble;
 
@@ -217,9 +217,14 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
                       widget.onTapCartIcon!(jsonString);
                     }
                   },
-                  onTapComment: () {
+                  onTapComment: () async {
                     if (widget.onTapComment != null) {
-                      widget.onTapComment!(_followingPostList[index].postId ?? '');
+                      final newCommentCount = await widget.onTapComment!(_followingPostList[index].postId ?? '');
+                      if (newCommentCount != null && newCommentCount != 0) {
+                        setState(() {
+                          _followingPostList[index].totalComments = newCommentCount;
+                        });
+                      }
                     }
                   },
                   onTapShare: () {
@@ -227,7 +232,7 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
                       widget.onTapShare!(_followingPostList[index].postId ?? '');
                     }
                   },
-                  commentCount: _followingPostList[index].commentCount?.toInt() ?? 0,
+                  commentCount: _followingPostList[index].totalComments?.toInt() ?? 0,
                 ),
               ),
       );

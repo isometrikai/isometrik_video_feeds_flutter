@@ -37,7 +37,7 @@ class TabDataModel {
   final Function(String?)? onTapCartIcon;
   final Widget? placeHolderWidget;
   final PostSectionType? postSectionType;
-  final Function(String)? onTapComment;
+  final Future<num>? Function(String)? onTapComment;
   final Function(String)? onTapShare;
   final bool? isCreatePostButtonVisble;
 }
