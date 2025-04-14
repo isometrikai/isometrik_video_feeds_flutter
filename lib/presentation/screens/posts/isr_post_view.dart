@@ -13,9 +13,11 @@ class IsrPostView extends StatefulWidget {
   const IsrPostView({
     super.key,
     required this.tabDataModelList,
+    this.currentIndex = 0,
   });
 
   final List<TabDataModel> tabDataModelList;
+  final num? currentIndex;
 
   @override
   State<IsrPostView> createState() => _PostViewState();
@@ -24,7 +26,7 @@ class IsrPostView extends StatefulWidget {
 class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
   TabController? _postTabController;
   late List<RefreshController> _refreshControllers;
-
+  var _currentIndex = 0;
   UserInfoClass? _userInfoClass;
 
   @override
@@ -48,7 +50,7 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
               listener: (context, state) {
                 if (state is UserInformationLoaded) {
                   IsmInjectionUtils.getBloc<PostBloc>()
-                      .add(FollowingPostsLoadedEvent(widget.tabDataModelList.first.postList));
+                      .add(FollowingPostsLoadedEvent(widget.tabDataModelList[_currentIndex].postList));
                 }
               },
               buildWhen: (previousState, currentState) => currentState is UserInformationLoaded,
@@ -60,6 +62,7 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
                         : const SizedBox.shrink()
                     : DefaultTabController(
                         length: 2,
+                        initialIndex: _currentIndex,
                         child: Stack(
                           children: [
                             TabBarView(
@@ -131,11 +134,18 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
       );
 
   void _onStartInit() async {
+    _currentIndex = widget.currentIndex?.toInt() ?? 0;
+    if (_currentIndex >= widget.tabDataModelList.length) {
+      _currentIndex = 0;
+    }
     if (!IsrVideoReelConfig.isSdkInitialize) {
       IsrVideoReelUtility.showToastMessage('sdk not initialized');
       return;
     }
     _postTabController = TabController(length: widget.tabDataModelList.length, vsync: this);
+    if (_currentIndex > 0) {
+      _postTabController?.animateTo(_currentIndex);
+    }
     _refreshControllers = List.generate(widget.tabDataModelList.length, (index) => RefreshController());
     var postBloc = IsmInjectionUtils.getBloc<PostBloc>();
     if (postBloc.isClosed) {
@@ -144,7 +154,8 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
     }
     debugPrint('PostBloc2....${postBloc.isClosed}');
     _postTabController?.addListener(() {
-      postBloc.add(FollowingPostsLoadedEvent(widget.tabDataModelList[_postTabController!.index].postList));
+      _currentIndex = _postTabController?.index ?? 0;
+      postBloc.add(FollowingPostsLoadedEvent(widget.tabDataModelList[_currentIndex].postList));
     });
     postBloc.add(const StartPost());
   }
