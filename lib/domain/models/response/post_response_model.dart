@@ -927,7 +927,7 @@ class ProductAllDataItem {
         popularScore: json['popularScore'] as num? ?? 0,
         avgRating: json['avgRating'] as num? ?? 0,
         variantCount: json['variantCount'] as num? ?? 0,
-        productType: json['productType'] as String? ?? '',
+        productType: json['productType'],
         totalReview: json['totalReview'] as num? ?? 0,
         productFor: json['productFor'],
         productForMsg: json['productForMsg'] as String? ?? '',
@@ -1043,7 +1043,7 @@ class ProductAllDataItem {
   num? popularScore;
   num? avgRating;
   num? variantCount;
-  String? productType;
+  dynamic productType;
   num? totalReview;
   dynamic productFor;
   String? productForMsg;
