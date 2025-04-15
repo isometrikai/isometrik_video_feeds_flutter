@@ -64,8 +64,6 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
   }
 
   void _onStartInit() {
-    _currentPageIndex = widget.startingPostIndex ?? 0;
-    _currentPageIndex = _currentPageIndex >= _followingPostList.length ? 0 : _currentPageIndex;
     // Check current state
     final currentState = _postBloc.state;
     if (currentState is FollowingPostsLoadedState) {
@@ -84,8 +82,12 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
       }
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _postBloc.reelsPageFollowingController
-          .animateToPage(_currentPageIndex, duration: const Duration(milliseconds: 1), curve: Curves.easeIn);
+      _currentPageIndex = widget.startingPostIndex ?? 0;
+      _currentPageIndex = _currentPageIndex >= _followingPostList.length ? 0 : _currentPageIndex;
+      if (_currentPageIndex > 0) {
+        _postBloc.reelsPageFollowingController
+            .animateToPage(_currentPageIndex, duration: const Duration(milliseconds: 1), curve: Curves.easeIn);
+      }
     });
   }
 
