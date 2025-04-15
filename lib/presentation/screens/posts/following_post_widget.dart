@@ -198,9 +198,12 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
                       if (widget.onPressSave == null) return false;
                       final isSaved = await widget.onPressSave!(_followingPostList[index].postId!);
 
-                      setState(() {
-                        _followingPostList[index] = _followingPostList[index].copyWith(isSavedPost: isSaved);
-                      });
+                      if (isSaved) {
+                        setState(() {
+                          _followingPostList[index] = _followingPostList[index]
+                              .copyWith(isSavedPost: _followingPostList[index].isSavedPost == false);
+                        });
+                      }
                       return isSaved;
                     }
                     return false;
