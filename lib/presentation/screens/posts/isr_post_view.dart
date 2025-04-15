@@ -207,6 +207,7 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
           onTapComment: tabData.onTapComment,
           onTapShare: tabData.onTapShare,
           isCreatePostButtonVisible: tabData.isCreatePostButtonVisible,
+          startingPostIndex: tabData.startingPostIndex,
         ),
       );
 }

@@ -21,6 +21,7 @@ class TabDataModel {
     this.onTapComment,
     this.onTapShare,
     this.isCreatePostButtonVisible,
+    this.startingPostIndex = 0,
   });
 
   final String title;
@@ -40,4 +41,5 @@ class TabDataModel {
   final Future<num>? Function(String)? onTapComment;
   final Function(String)? onTapShare;
   final bool? isCreatePostButtonVisible;
+  final int? startingPostIndex;
 }

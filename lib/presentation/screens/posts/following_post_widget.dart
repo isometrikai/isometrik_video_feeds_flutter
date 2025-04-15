@@ -26,6 +26,7 @@ class FollowingPostWidget extends StatefulWidget {
     this.onTapShare,
     this.onTapComment,
     this.isCreatePostButtonVisible = false,
+    this.startingPostIndex = 0,
   });
 
   final Future<String?> Function()? onCreatePost;
@@ -44,6 +45,7 @@ class FollowingPostWidget extends StatefulWidget {
   final Future<num>? Function(String)? onTapComment;
   final Function(String)? onTapShare;
   final bool? isCreatePostButtonVisible;
+  final int? startingPostIndex;
 
   @override
   State<FollowingPostWidget> createState() => _FollowingPostWidgetState();
@@ -52,13 +54,18 @@ class FollowingPostWidget extends StatefulWidget {
 class _FollowingPostWidgetState extends State<FollowingPostWidget> {
   final _postBloc = IsmInjectionUtils.getBloc<PostBloc>();
   List<PostDataModel> _followingPostList = [];
-
+  var _currentPageIndex = 0;
   StreamSubscription<dynamic>? _subscription;
 
   @override
   void initState() {
+    _onStartInit();
     super.initState();
+  }
 
+  void _onStartInit() {
+    _currentPageIndex = widget.startingPostIndex ?? 0;
+    _currentPageIndex = _currentPageIndex >= _followingPostList.length ? 0 : _currentPageIndex;
     // Check current state
     final currentState = _postBloc.state;
     if (currentState is FollowingPostsLoadedState) {
@@ -75,6 +82,10 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
           });
         }
       }
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _postBloc.reelsPageFollowingController
+          .animateToPage(_currentPageIndex, duration: const Duration(milliseconds: 1), curve: Curves.easeIn);
     });
   }
 
@@ -109,7 +120,7 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
                 clipBehavior: Clip.none,
                 physics: const ClampingScrollPhysics(),
                 onPageChanged: (index) {
-                  // Check if we're at 75% of the list
+                  // Check if we're at 65% of the list
                   final threshold = (_followingPostList.length * 0.65).floor();
                   if (index >= threshold) {
                     if (widget.onLoadMore != null) {
