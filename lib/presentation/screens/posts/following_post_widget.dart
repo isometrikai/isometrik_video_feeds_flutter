@@ -178,9 +178,14 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
                   productList: _followingPostList[index].productData,
                   isSavedPost: _followingPostList[index].isSavedPost,
                   onPressMoreButton: () async {
-                    if (widget.onTapMore == null) return false;
-                    return await widget.onTapMore!(
+                    if (widget.onTapMore == null) return;
+                    final isSuccess = await widget.onTapMore!(
                         _followingPostList[index].postId ?? '', _followingPostList[index].userId ?? '');
+                    if (isSuccess) {
+                      setState(() {
+                        _followingPostList.removeAt(index);
+                      });
+                    }
                   },
                   onPressFollowFollowing: () async {
                     if (_followingPostList[index].userId != null) {

@@ -85,7 +85,7 @@ class IsrReelsVideoPlayerView extends StatefulWidget {
   final bool isLiked;
   final num likesCount;
   final Future<bool> Function()? onPressLike;
-  final Future<bool> Function()? onPressMoreButton;
+  final VoidCallback? onPressMoreButton;
   final VoidCallback? onTapCartIcon;
   final VoidCallback? onTapComment;
   final VoidCallback? onTapShare;
@@ -325,7 +325,7 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
               label: '',
               onTap: () async {
                 if (widget.onPressMoreButton != null) {
-                  await widget.onPressMoreButton!();
+                  widget.onPressMoreButton!();
                 }
               },
             ),
