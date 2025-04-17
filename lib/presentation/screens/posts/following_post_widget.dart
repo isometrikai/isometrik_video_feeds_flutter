@@ -30,7 +30,7 @@ class FollowingPostWidget extends StatefulWidget {
   });
 
   final Future<String?> Function()? onCreatePost;
-  final Future<bool> Function(String postId)? onTapMore;
+  final Future<bool> Function(String postId, String userId)? onTapMore;
   final bool? showBlur;
   final List<FeaturedProductDataItem>? productList;
   final Future<bool> Function(String)? onPressSave;
@@ -179,7 +179,8 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
                   isSavedPost: _followingPostList[index].isSavedPost,
                   onPressMoreButton: () async {
                     if (widget.onTapMore == null) return false;
-                    return await widget.onTapMore!(_followingPostList[index].postId!);
+                    return await widget.onTapMore!(
+                        _followingPostList[index].postId ?? '', _followingPostList[index].userId ?? '');
                   },
                   onPressFollowFollowing: () async {
                     if (_followingPostList[index].userId != null) {

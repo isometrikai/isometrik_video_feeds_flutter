@@ -77,7 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         return false;
                       }
                     },
-                    onTapMore: (postId) async {
+                    onTapMore: (postId, userId) async {
                       await _showMoreOptionsDialog(
                         onPressReport: ({String message = '', String reason = ''}) async {
                           try {
@@ -179,7 +179,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           return false;
                         }
                       },
-                      onTapMore: (postId) async {
+                      onTapMore: (postId, userId) async {
                         await _showMoreOptionsDialog(
                           onPressReport: ({String message = '', String reason = ''}) async {
                             try {
