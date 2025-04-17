@@ -28,7 +28,7 @@ class TabDataModel {
   final List<PostDataModel>? postList;
   final Future<String?> Function()? onCreatePost;
   final Future<List<PostDataModel>> Function()? onLoadMore;
-  final Future<bool> Function(String)? onTapMore;
+  final Future<bool> Function(String postId, String userId)? onTapMore;
   final bool? showBlur;
   final List<FeaturedProductDataItem>? productList;
   final Future<bool> Function(String postId)? onPressSave;
