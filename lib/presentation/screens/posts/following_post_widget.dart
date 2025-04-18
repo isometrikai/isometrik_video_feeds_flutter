@@ -219,16 +219,25 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
                   onPressLike: () async {
                     if (_followingPostList[index].postId != null) {
                       if (widget.onPressLike == null) return false;
-                      final isLiked = await widget.onPressLike!(
+                      final currentLikeStatus = _followingPostList[index].liked == true;
+                      final isSuccess = await widget.onPressLike!(
                         _followingPostList[index].postId!,
                         _followingPostList[index].userId!,
-                        _followingPostList[index].liked == true,
+                        currentLikeStatus,
                       );
 
+                      if (isSuccess == false) return false;
                       setState(() {
-                        _followingPostList[index] = _followingPostList[index].copyWith(liked: isLiked);
+                        final newLikesCount = currentLikeStatus
+                            ? (_followingPostList[index].likesCount ?? 0) - 1
+                            : (_followingPostList[index].likesCount ?? 0) + 1;
+
+                        _followingPostList[index] = _followingPostList[index].copyWith(
+                          liked: !currentLikeStatus,
+                          likesCount: newLikesCount,
+                        );
                       });
-                      return isLiked;
+                      return isSuccess;
                     }
                     return false;
                   },
