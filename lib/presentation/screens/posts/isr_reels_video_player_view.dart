@@ -71,7 +71,7 @@ class IsrReelsVideoPlayerView extends StatefulWidget {
   final Future<bool> Function()? onPressFollowFollowing;
   final String description;
   final bool isSelfProfile;
-  final Function() onTapUserProfilePic;
+  final Function()? onTapUserProfilePic;
   final String? postId;
   final Future<void> Function()? onCreatePost;
   final Function()? onTapReport;
@@ -230,25 +230,32 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(IsrDimens.thirty),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.changeOpacity(0.2),
-                    spreadRadius: 2,
-                    blurRadius: 5,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: AppImage.network(
-                widget.profilePhoto,
-                width: IsrDimens.thirtyFive,
-                height: IsrDimens.thirtyFive,
-                isProfileImage: true,
-                name: '${widget.firstName ?? ''} ${widget.lastName ?? ''}',
+            TapHandler(
+              onTap: () {
+                if (widget.onTapUserProfilePic != null) {
+                  widget.onTapUserProfilePic!();
+                }
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(IsrDimens.thirty),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.changeOpacity(0.2),
+                      spreadRadius: 2,
+                      blurRadius: 5,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: AppImage.network(
+                  widget.profilePhoto,
+                  width: IsrDimens.thirtyFive,
+                  height: IsrDimens.thirtyFive,
+                  isProfileImage: true,
+                  name: '${widget.firstName ?? ''} ${widget.lastName ?? ''}',
+                ),
               ),
             ),
             IsrDimens.boxHeight(IsrDimens.fifteen),
@@ -470,7 +477,7 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
                                     IsrDimens.boxWidth(IsrDimens.eight),
                                   ],
                                   // Only show follow button if not following
-                                  if (!widget.isFollow && !isFollowLoading)
+                                  if (!widget.isFollow && !isFollowLoading && !widget.isSelfProfile)
                                     Container(
                                       height: IsrDimens.twentyFour,
                                       decoration: BoxDecoration(

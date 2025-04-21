@@ -14,10 +14,12 @@ class IsrPostView extends StatefulWidget {
     super.key,
     required this.tabDataModelList,
     this.currentIndex = 0,
+    this.loggedInUserId,
   });
 
   final List<TabDataModel> tabDataModelList;
   final num? currentIndex;
+  final String? loggedInUserId;
 
   @override
   State<IsrPostView> createState() => _PostViewState();
@@ -208,6 +210,11 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
           onTapShare: tabData.onTapShare,
           isCreatePostButtonVisible: tabData.isCreatePostButtonVisible,
           startingPostIndex: tabData.startingPostIndex,
+          onTapUserProfilePic: (userId) {
+            if (tabData.onTapUserProfile == null) return;
+            tabData.onTapUserProfile!(userId);
+          },
+          loggedInUserId: widget.loggedInUserId,
         ),
       );
 }

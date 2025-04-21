@@ -27,6 +27,8 @@ class FollowingPostWidget extends StatefulWidget {
     this.onTapComment,
     this.isCreatePostButtonVisible = false,
     this.startingPostIndex = 0,
+    this.onTapUserProfilePic,
+    this.loggedInUserId,
   });
 
   final Future<String?> Function()? onCreatePost;
@@ -44,8 +46,10 @@ class FollowingPostWidget extends StatefulWidget {
   final VoidCallback? onTapPlaceHolder;
   final Future<num>? Function(String)? onTapComment;
   final Function(String)? onTapShare;
+  final Function(String)? onTapUserProfilePic;
   final bool? isCreatePostButtonVisible;
   final int? startingPostIndex;
+  final String? loggedInUserId;
 
   @override
   State<FollowingPostWidget> createState() => _FollowingPostWidgetState();
@@ -160,7 +164,7 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
                   description: '',
                   isAssetUploading: false,
                   isFollow: _followingPostList[index].followStatus == 1,
-                  isSelfProfile: false,
+                  isSelfProfile: widget.loggedInUserId == _followingPostList[index].userId,
                   firstName: _followingPostList[index].firstName ?? '',
                   lastName: _followingPostList[index].lastName ?? '',
                   name: '@${_followingPostList[index].userName ?? ''}',
@@ -174,7 +178,11 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
                   onLongPressStart: () {},
                   mediaUrl: _followingPostList[index].imageUrl1 ?? '',
                   mediaType: _followingPostList[index].mediaType1?.toInt() ?? 0,
-                  onTapUserProfilePic: () => {},
+                  onTapUserProfilePic: () {
+                    if (widget.onTapUserProfilePic != null) {
+                      widget.onTapUserProfilePic!(widget.loggedInUserId ?? '');
+                    }
+                  },
                   productList: _followingPostList[index].productData,
                   isSavedPost: _followingPostList[index].isSavedPost,
                   onPressMoreButton: () async {
