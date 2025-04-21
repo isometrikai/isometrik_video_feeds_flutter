@@ -231,11 +231,14 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             TapHandler(
-              onTap: () {
-                if (widget.onTapUserProfilePic != null) {
-                  widget.onTapUserProfilePic!();
-                }
-              },
+              borderRadius: IsrDimens.thirty,
+              onTap: widget.isSelfProfile
+                  ? null
+                  : () {
+                      if (widget.onTapUserProfilePic != null) {
+                        widget.onTapUserProfilePic!();
+                      }
+                    },
               child: Container(
                 decoration: BoxDecoration(
                   color: Colors.transparent,

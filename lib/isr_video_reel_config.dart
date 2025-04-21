@@ -23,7 +23,7 @@ class IsrVideoReelConfig {
     isrConfigureInjection();
     Bloc.observer = IsrAppBlocObserver();
     await _saveUserInformation(postInfo: postInfo);
-    isSdkInitialize = true;
+    isSdkInitialize = postInfo?.userInformation?.userId.isStringEmptyOrNull == false;
   }
 
   static Future<void> _saveUserInformation({
