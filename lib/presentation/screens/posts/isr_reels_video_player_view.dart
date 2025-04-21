@@ -458,13 +458,22 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
                             child: Row(
                               children: [
                                 Flexible(
-                                  child: Text(
-                                    widget.name.length > 15 ? '${widget.name.substring(0, 10)}...' : widget.name,
-                                    style: IsrStyles.white14.copyWith(
-                                      fontWeight: FontWeight.w600,
+                                  child: TapHandler(
+                                    onTap: widget.isSelfProfile
+                                        ? null
+                                        : () {
+                                            if (widget.onTapUserProfilePic != null) {
+                                              widget.onTapUserProfilePic!();
+                                            }
+                                          },
+                                    child: Text(
+                                      widget.name.length > 15 ? '${widget.name.substring(0, 10)}...' : widget.name,
+                                      style: IsrStyles.white14.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                                 if (!widget.isSelfProfile) ...[
