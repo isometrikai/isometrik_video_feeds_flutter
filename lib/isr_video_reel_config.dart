@@ -17,6 +17,10 @@ class IsrVideoReelConfig {
     required String baseUrl,
     PostInfoClass? postInfo,
   }) async {
+    if (isSdkInitialize) {
+      await _saveUserInformation(postInfo: postInfo);
+      return;
+    }
     AppUrl.appBaseUrl = baseUrl;
     WidgetsFlutterBinding.ensureInitialized();
     await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
