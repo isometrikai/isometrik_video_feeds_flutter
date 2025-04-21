@@ -39,10 +39,10 @@ class PostBloc extends Bloc<PostEvent, PostState> {
 
   void _onStartPost(StartPost event, Emitter<PostState> emit) async {
     final userInfoString = await _localDataUseCase.getUserInfo();
-    if (userInfoString.isStringEmptyOrNull == false) {
-      _userInfoClass = UserInfoClass.fromJson(jsonDecode(userInfoString) as Map<String, dynamic>);
-      emit(UserInformationLoaded(userInfoClass: _userInfoClass));
-    }
+    // if (userInfoString.isStringEmptyOrNull == false) {
+    _userInfoClass = UserInfoClass.fromJson(jsonDecode(userInfoString) as Map<String, dynamic>);
+    emit(UserInformationLoaded(userInfoClass: _userInfoClass));
+    // }
     //
     // // Load initial posts without pagination
     // add(GetFollowingPostEvent(isLoading: false, isPagination: false));

@@ -11,7 +11,7 @@ class AppImage extends StatelessWidget {
   const AppImage.asset(
     this.path, {
     super.key,
-    this.name = 'U',
+    this.name = '',
     this.fit,
     this.isProfileImage = false,
     this.dimensions,
@@ -30,7 +30,7 @@ class AppImage extends StatelessWidget {
   const AppImage.svg(
     this.path, {
     super.key,
-    this.name = 'U',
+    this.name = '',
     this.fit,
     this.isProfileImage = false,
     this.dimensions,
@@ -49,7 +49,7 @@ class AppImage extends StatelessWidget {
   const AppImage.network(
     this.path, {
     super.key,
-    this.name = 'U',
+    this.name = '',
     this.fit,
     this.isProfileImage = false,
     this.dimensions,
@@ -68,7 +68,7 @@ class AppImage extends StatelessWidget {
   const AppImage.file(
     this.path, {
     super.key,
-    this.name = 'U',
+    this.name = '',
     this.fit,
     this.isProfileImage = false,
     this.dimensions,
@@ -245,7 +245,8 @@ class _Network extends StatelessWidget {
         child: name.isStringEmptyOrNull == false && isProfileImage
             ? Text(
                 initials,
-                style: IsrStyles.secondaryText20.copyWith(fontWeight: FontWeight.w500, color: IsrColors.white),
+                style: IsrStyles.secondaryText14.copyWith(fontWeight: FontWeight.w500, color: IsrColors.white),
+                textAlign: TextAlign.center,
               )
             : null,
       ),
@@ -254,13 +255,15 @@ class _Network extends StatelessWidget {
         height: height,
         borderRadius: borderRadius,
         boxFit: fit ?? BoxFit.contain,
+        padding: 4,
         backgroundColor: Theme.of(context).primaryColor,
         placeHolderName: placeHolderName,
         boxShape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
         child: name.isStringEmptyOrNull == false && isProfileImage
             ? Text(
                 initials,
-                style: IsrStyles.secondaryText20.copyWith(fontWeight: FontWeight.w500, color: IsrColors.white),
+                style: IsrStyles.secondaryText14.copyWith(fontWeight: FontWeight.w500, color: IsrColors.white),
+                textAlign: TextAlign.center,
               )
             : null,
       ),

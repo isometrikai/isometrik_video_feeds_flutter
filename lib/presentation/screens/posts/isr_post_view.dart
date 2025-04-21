@@ -14,12 +14,10 @@ class IsrPostView extends StatefulWidget {
     super.key,
     required this.tabDataModelList,
     this.currentIndex = 0,
-    this.loggedInUserId,
   });
 
   final List<TabDataModel> tabDataModelList;
   final num? currentIndex;
-  final String? loggedInUserId;
 
   @override
   State<IsrPostView> createState() => _PostViewState();
@@ -30,6 +28,7 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
   late List<RefreshController> _refreshControllers;
   var _currentIndex = 0;
   UserInfoClass? _userInfoClass;
+  var loggedInUserId = '';
 
   @override
   void initState() {
@@ -58,6 +57,7 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
               buildWhen: (previousState, currentState) => currentState is UserInformationLoaded,
               builder: (context, state) {
                 _userInfoClass = state is UserInformationLoaded ? state.userInfoClass : null;
+                loggedInUserId = _userInfoClass?.userId ?? '';
                 return state is PostInitial
                     ? state.isLoading == true
                         ? Center(child: IsrVideoReelUtility.loaderWidget())
@@ -214,7 +214,7 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
             if (tabData.onTapUserProfile == null) return;
             tabData.onTapUserProfile!(userId);
           },
-          loggedInUserId: widget.loggedInUserId,
+          loggedInUserId: loggedInUserId,
         ),
       );
 }

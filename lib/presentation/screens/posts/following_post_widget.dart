@@ -164,7 +164,8 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
                   description: '',
                   isAssetUploading: false,
                   isFollow: _followingPostList[index].followStatus == 1,
-                  isSelfProfile: widget.loggedInUserId == _followingPostList[index].userId,
+                  isSelfProfile: widget.loggedInUserId.isStringEmptyOrNull == false &&
+                      widget.loggedInUserId == _followingPostList[index].userId,
                   firstName: _followingPostList[index].firstName ?? '',
                   lastName: _followingPostList[index].lastName ?? '',
                   name: '@${_followingPostList[index].userName ?? ''}',
