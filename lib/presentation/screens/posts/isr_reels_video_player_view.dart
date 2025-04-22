@@ -51,6 +51,7 @@ class IsrReelsVideoPlayerView extends StatefulWidget {
     this.onTapShare,
     this.commentCount = 0,
     this.isCreatePostButtonVisible,
+    this.isScheduledPost,
   });
 
   final String? mediaUrl;
@@ -91,6 +92,7 @@ class IsrReelsVideoPlayerView extends StatefulWidget {
   final VoidCallback? onTapShare;
   final int? commentCount;
   final bool? isCreatePostButtonVisible;
+  final bool? isScheduledPost;
 
   @override
   State<IsrReelsVideoPlayerView> createState() => _IsrReelsVideoPlayerViewState();
@@ -322,13 +324,15 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
                 }
               },
             ),
-            IsrDimens.boxHeight(IsrDimens.twenty),
-            _buildActionButton(
-              icon: widget.isSavedPost == true ? AssetConstants.icSaveSelected : AssetConstants.icSaveUnSelected,
-              label: widget.isSavedPost == true ? IsrTranslationFile.saved : IsrTranslationFile.save,
-              onTap: _callSaveFunction,
-              isLoading: isSaveLoading,
-            ),
+            if (widget.isScheduledPost == false) ...[
+              IsrDimens.boxHeight(IsrDimens.twenty),
+              _buildActionButton(
+                icon: widget.isSavedPost == true ? AssetConstants.icSaveSelected : AssetConstants.icSaveUnSelected,
+                label: widget.isSavedPost == true ? IsrTranslationFile.saved : IsrTranslationFile.save,
+                onTap: _callSaveFunction,
+                isLoading: isSaveLoading,
+              ),
+            ],
             IsrDimens.boxHeight(IsrDimens.twenty),
             _buildActionButton(
               icon: AssetConstants.icMoreIcon,

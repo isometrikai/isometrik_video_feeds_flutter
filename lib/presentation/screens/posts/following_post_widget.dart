@@ -109,16 +109,25 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
           }
         },
         child: _followingPostList.isListEmptyOrNull == true
-            ? Center(
-                child: widget.placeHolderWidget ??
-                    PostPlaceHolderView(
-                      postSectionType: widget.postSectionType,
-                      onTap: () {
-                        if (widget.onTapPlaceHolder != null) {
-                          widget.onTapPlaceHolder!();
-                        }
-                      },
+            ? CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  SliverFillRemaining(
+                    fillOverscroll: true,
+                    hasScrollBody: true,
+                    child: Center(
+                      child: widget.placeHolderWidget ??
+                          PostPlaceHolderView(
+                            postSectionType: widget.postSectionType,
+                            onTap: () {
+                              if (widget.onTapPlaceHolder != null) {
+                                widget.onTapPlaceHolder!();
+                              }
+                            },
+                          ),
                     ),
+                  ),
+                ],
               )
             : PageView.builder(
                 allowImplicitScrolling: true,
@@ -273,6 +282,8 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
                     }
                   },
                   commentCount: _followingPostList[index].totalComments?.toInt() ?? 0,
+                  isScheduledPost:
+                      _followingPostList[index].scheduleTime != null && _followingPostList[index].scheduleTime != 0,
                 ),
               ),
       );
