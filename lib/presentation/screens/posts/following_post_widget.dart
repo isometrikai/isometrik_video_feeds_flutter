@@ -193,7 +193,7 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
                       widget.onTapUserProfilePic!(widget.loggedInUserId ?? '');
                     }
                   },
-                  productList: _followingPostList[index].productData,
+                  productCount: _followingPostList[index].productCount?.toInt() ?? 0,
                   isSavedPost: _followingPostList[index].isSavedPost,
                   onPressMoreButton: () async {
                     if (widget.onTapMore == null) return;

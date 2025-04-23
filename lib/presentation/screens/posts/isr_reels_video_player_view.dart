@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/isr_utils.dart';
@@ -40,7 +39,7 @@ class IsrReelsVideoPlayerView extends StatefulWidget {
     this.needBottomPadding,
     this.isAssetUploading = false,
     this.isSavedPost,
-    this.productList,
+    this.productCount,
     this.onPressSave,
     this.isLiked = false,
     this.likesCount = 0,
@@ -81,7 +80,7 @@ class IsrReelsVideoPlayerView extends StatefulWidget {
   final bool? needBottomPadding;
   final bool isAssetUploading;
   final bool? isSavedPost;
-  final List<FeaturedProductDataItem>? productList;
+  final int? productCount;
   final Future<bool> Function()? onPressSave;
   final bool isLiked;
   final num likesCount;
@@ -392,7 +391,7 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
           mainAxisSize: MainAxisSize.min,
           children: [
             // Shop button
-            if (widget.productList?.isNotEmpty == true) ...[
+            if ((widget.productCount ?? 0) > 0) ...[
               TapHandler(
                 onTap: () {
                   if (widget.onTapCartIcon != null) {
@@ -431,7 +430,7 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
                           ),
                           IsrDimens.boxHeight(IsrDimens.four),
                           Text(
-                            '${widget.productList!.length} ${IsrTranslationFile.products}',
+                            '${widget.productCount} ${IsrTranslationFile.products}',
                             style: IsrStyles.primaryText10
                                 .copyWith(color: IsrColors.color0F1E91, fontWeight: FontWeight.w500),
                           ),

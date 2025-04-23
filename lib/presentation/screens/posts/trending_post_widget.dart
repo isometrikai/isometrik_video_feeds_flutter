@@ -100,7 +100,7 @@ class _TrendingPostWidgetState extends State<TrendingPostWidget> {
                       mediaUrl: _trendingPostList[index].imageUrl1 ?? '',
                       mediaType: _trendingPostList[index].mediaType1?.toInt() ?? 0,
                       onTapUserProfilePic: () => {},
-                      productList: _trendingPostList[index].productData,
+                      productCount: _trendingPostList[index].productCount?.toInt() ?? 0,
                       isSavedPost: _trendingPostList[index].isSavedPost,
                       onPressFollowFollowing: () async {
                         if (_trendingPostList[index].userId != null) {
