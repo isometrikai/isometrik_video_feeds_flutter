@@ -9,9 +9,10 @@ class PostInitial extends PostState {
 }
 
 class UserInformationLoaded extends PostState {
-  UserInformationLoaded({this.userInfoClass});
+  UserInformationLoaded({this.userInfoClass, required this.userId});
 
   final UserInfoClass? userInfoClass;
+  final String userId;
 }
 
 // Following Posts States

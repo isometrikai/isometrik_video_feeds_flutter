@@ -27,7 +27,6 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
   TabController? _postTabController;
   late List<RefreshController> _refreshControllers;
   var _currentIndex = 0;
-  UserInfoClass? _userInfoClass;
   var loggedInUserId = '';
 
   @override
@@ -44,7 +43,7 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
           statusBarIconBrightness: Brightness.light,
         ),
         child: Scaffold(
-          backgroundColor: Colors.black12,
+          backgroundColor: Colors.white,
           body: BlocProvider<PostBloc>(
             create: (context) => IsmInjectionUtils.getBloc<PostBloc>(),
             child: BlocConsumer<PostBloc, PostState>(
@@ -56,8 +55,7 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
               },
               buildWhen: (previousState, currentState) => currentState is UserInformationLoaded,
               builder: (context, state) {
-                _userInfoClass = state is UserInformationLoaded ? state.userInfoClass : null;
-                loggedInUserId = _userInfoClass?.userId ?? '';
+                loggedInUserId = state is UserInformationLoaded ? state.userId : '';
                 return state is PostInitial
                     ? state.isLoading == true
                         ? Center(child: IsrVideoReelUtility.loaderWidget())

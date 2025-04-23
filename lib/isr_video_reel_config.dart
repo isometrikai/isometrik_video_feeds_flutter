@@ -37,5 +37,7 @@ class IsrVideoReelConfig {
     final userInfoString = postInfo?.userInformation.toString();
     await localStorageManager.saveValueSecurely(IsrLocalStorageKeys.accessToken, postInfo?.accessToken ?? '');
     await localStorageManager.saveValue(IsrLocalStorageKeys.userInfo, userInfoString, SavedValueDataType.string);
+    await localStorageManager.saveValue(
+        IsrLocalStorageKeys.userId, postInfo?.userInformation?.userId, SavedValueDataType.string);
   }
 }

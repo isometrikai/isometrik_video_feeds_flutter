@@ -41,7 +41,11 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     final userInfoString = await _localDataUseCase.getUserInfo();
     // if (userInfoString.isStringEmptyOrNull == false) {
     _userInfoClass = UserInfoClass.fromJson(jsonDecode(userInfoString) as Map<String, dynamic>);
-    emit(UserInformationLoaded(userInfoClass: _userInfoClass));
+    final userId = await _localDataUseCase.getUserId();
+    emit(UserInformationLoaded(
+      userInfoClass: _userInfoClass,
+      userId: userId,
+    ));
     // }
     //
     // // Load initial posts without pagination

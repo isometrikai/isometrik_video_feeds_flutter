@@ -32,8 +32,18 @@ class PostPlaceHolderView extends StatelessWidget {
                   : IsrTranslationFile.noPostAvailable,
               style: IsrStyles.white14.copyWith(
                 fontWeight: FontWeight.w700,
+                color: IsrColors.color333333,
               ),
             ),
+            if (postSectionType == PostSectionType.following) ...[
+              IsrDimens.boxHeight(IsrDimens.five),
+              Text(
+                IsrTranslationFile.startFollowing,
+                style: IsrStyles.white14.copyWith(
+                  color: IsrColors.color909090,
+                ),
+              ),
+            ],
             if (postSectionType == PostSectionType.following) ...[
               IsrDimens.boxHeight(IsrDimens.twenty),
               AppButton(
