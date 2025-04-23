@@ -170,49 +170,30 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  Widget _buildTabBarView(TabDataModel tabData, int index) => SmartRefresher(
-        controller: _refreshControllers[index],
-        physics: const ClampingScrollPhysics(),
-        enablePullDown: false,
-        onRefresh: () async {
-          debugPrint('onRefresh......');
-          // await Future.delayed(const Duration(seconds: 1)); // Simulate a delay
-          // Call refreshComplete() when done
-          if (tabData.onRefresh != null) {
-            await tabData.onRefresh!();
+  Widget _buildTabBarView(TabDataModel tabData, int index) => FollowingPostWidget(
+        onPressSave: tabData.onPressSave,
+        onTapMore: tabData.onTapMore,
+        onPressLike: tabData.onPressLike,
+        onPressFollow: tabData.onPressFollow,
+        onCreatePost: tabData.onCreatePost,
+        onLoadMore: tabData.onLoadMore,
+        onTapCartIcon: tabData.onTapCartIcon,
+        onRefresh: tabData.onRefresh,
+        placeHolderWidget: tabData.placeHolderWidget,
+        postSectionType: tabData.postSectionType,
+        onTapPlaceHolder: () {
+          if ((_postTabController?.length ?? 0) > 1) {
+            _postTabController?.animateTo(1);
           }
-          _refreshControllers[index].refreshCompleted();
-          // InjectionUtils.getBloc<PostBloc>().add(GetFollowingPostEvent(
-          //   isLoading: false,
-          //   isPagination: false,
-          //   isRefresh: true,
-          // ));
         },
-        child: FollowingPostWidget(
-          onPressSave: tabData.onPressSave,
-          onTapMore: tabData.onTapMore,
-          onPressLike: tabData.onPressLike,
-          onPressFollow: tabData.onPressFollow,
-          onCreatePost: tabData.onCreatePost,
-          onLoadMore: tabData.onLoadMore,
-          onTapCartIcon: tabData.onTapCartIcon,
-          onRefresh: tabData.onRefresh,
-          placeHolderWidget: tabData.placeHolderWidget,
-          postSectionType: tabData.postSectionType,
-          onTapPlaceHolder: () {
-            if ((_postTabController?.length ?? 0) > 1) {
-              _postTabController?.animateTo(1);
-            }
-          },
-          onTapComment: tabData.onTapComment,
-          onTapShare: tabData.onTapShare,
-          isCreatePostButtonVisible: tabData.isCreatePostButtonVisible,
-          startingPostIndex: tabData.startingPostIndex,
-          onTapUserProfilePic: (userId) {
-            if (tabData.onTapUserProfile == null) return;
-            tabData.onTapUserProfile!(userId);
-          },
-          loggedInUserId: loggedInUserId,
-        ),
+        onTapComment: tabData.onTapComment,
+        onTapShare: tabData.onTapShare,
+        isCreatePostButtonVisible: tabData.isCreatePostButtonVisible,
+        startingPostIndex: tabData.startingPostIndex,
+        onTapUserProfilePic: (userId) {
+          if (tabData.onTapUserProfile == null) return;
+          tabData.onTapUserProfile!(userId);
+        },
+        loggedInUserId: loggedInUserId,
       );
 }
