@@ -355,28 +355,62 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
       Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          GestureDetector(
-            onTap: onTap,
-            child: isLoading
-                ? SizedBox(
-                    width: IsrDimens.twentyFour,
-                    height: IsrDimens.twentyFour,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.transparent.changeOpacity(0.2),
+              borderRadius: BorderRadius.circular(IsrDimens.fifty),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.transparent.changeOpacity(0.1),
+                  spreadRadius: 1,
+                  blurRadius: 1,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+            ),
+            padding: IsrDimens.edgeInsetsAll(IsrDimens.eight),
+            child: GestureDetector(
+              onTap: onTap,
+              child: isLoading
+                  ? SizedBox(
+                      width: IsrDimens.twentyFour,
+                      height: IsrDimens.twentyFour,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
+                      ),
+                    )
+                  : AppImage.svg(
+                      icon,
+                      width: IsrDimens.twentyFour,
+                      height: IsrDimens.twentyFour,
                     ),
-                  )
-                : AppImage.svg(
-                    icon,
-                    width: IsrDimens.twentyFour,
-                    height: IsrDimens.twentyFour,
-                  ),
+            ),
           ),
-          if (label != null) ...[
+          if (label.isStringEmptyOrNull == false) ...[
             IsrDimens.boxHeight(IsrDimens.four),
-            Text(
-              label,
-              style: IsrStyles.white12,
+            Container(
+              padding: IsrDimens.edgeInsetsSymmetric(
+                horizontal: IsrDimens.eight,
+                vertical: IsrDimens.four,
+              ),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(IsrDimens.fifty),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.transparent.changeOpacity(0.1),
+                    spreadRadius: 0,
+                    blurRadius: 0,
+                    offset: const Offset(0, 0),
+                  ),
+                ],
+              ),
+              child: Text(
+                label ?? '',
+                style: IsrStyles.white12.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ),
           ],
         ],
