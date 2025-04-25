@@ -39,7 +39,7 @@ class FollowingPostWidget extends StatefulWidget {
   final Future<bool> Function(String, String, bool)? onPressLike;
   final Future<bool> Function(String)? onPressFollow;
   final Future<List<PostDataModel>> Function()? onLoadMore;
-  final Function(String, String)? onTapCartIcon;
+  final Future<List<FeaturedProductDataItem>>? Function(String, String)? onTapCartIcon;
   final Future<bool> Function()? onRefresh;
   final Widget? placeHolderWidget;
   final PostSectionType? postSectionType;
@@ -265,11 +265,15 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
               }
               return false;
             },
-            onTapCartIcon: () {
+            onTapCartIcon: () async {
               if (widget.onTapCartIcon != null) {
                 final productList = _followingPostList[index].productData;
                 final jsonString = jsonEncode(productList?.map((e) => e.toJson()).toList());
-                widget.onTapCartIcon!(jsonString, _followingPostList[index].postId ?? '');
+                final productDataList = await widget.onTapCartIcon!(jsonString, _followingPostList[index].postId ?? '');
+                if (productDataList.isListEmptyOrNull) return;
+                setState(() {
+                  _followingPostList[index] = _followingPostList[index].copyWith(productData: productDataList);
+                });
               }
             },
             onTapComment: () async {
