@@ -300,6 +300,7 @@ class PostDataModel {
     bool? isBusinessUser,
     bool? isSavedPost,
     num? distinctViews,
+    num? scheduleTime,
   }) =>
       PostDataModel(
         id: id ?? this.id,
@@ -481,7 +482,8 @@ class FeaturedProductDataItem {
         storeId: json['storeId'] as String? ?? '',
         totalReview: json['totalReview'] as num? ?? 0,
         userStoreProduct: json['userStoreProduct'] as bool? ?? false,
-        variantCount: json['variantCount'] as num? ?? 0,
+        variantCount:
+            json['variantCount'] is num ? json['variantCount'] as num? ?? 0 : json['variantCount'] as bool? ?? false,
         brandId: json['brandId'] as String? ?? '',
         moderationStatus: json['moderationStatus'] as String? ?? '',
         outOfStock: json['outOfStock'] as bool? ?? false,
@@ -539,7 +541,7 @@ class FeaturedProductDataItem {
   String? storeId;
   num? totalReview;
   bool? userStoreProduct;
-  num? variantCount;
+  dynamic variantCount;
   String? brandId;
   String? moderationStatus;
   bool? outOfStock;
@@ -931,7 +933,8 @@ class ProductAllDataItem {
         images: json['images'] == null ? [] : List<dynamic>.from((json['images'] as List).map((x) => x)),
         popularScore: json['popularScore'] as num? ?? 0,
         avgRating: json['avgRating'] as num? ?? 0,
-        variantCount: json['variantCount'] as num? ?? 0,
+        variantCount:
+            json['variantCount'] is num ? json['variantCount'] as num? ?? 0 : json['variantCount'] as bool? ?? false,
         productType: json['productType'],
         totalReview: json['totalReview'] as num? ?? 0,
         productFor: json['productFor'],
@@ -1047,7 +1050,7 @@ class ProductAllDataItem {
   List<dynamic>? images;
   num? popularScore;
   num? avgRating;
-  num? variantCount;
+  dynamic variantCount;
   dynamic productType;
   num? totalReview;
   dynamic productFor;
