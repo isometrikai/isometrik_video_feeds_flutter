@@ -279,7 +279,7 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
             onTapComment: () async {
               if (widget.onTapComment != null) {
                 final newCommentCount = await widget.onTapComment!(_followingPostList[index].postId ?? '');
-                if (newCommentCount != null && newCommentCount != 0) {
+                if (newCommentCount != null) {
                   setState(() {
                     _followingPostList[index].totalComments = newCommentCount;
                   });
