@@ -44,6 +44,7 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
         ),
         child: Scaffold(
           backgroundColor: Colors.white,
+          resizeToAvoidBottomInset: false,
           body: BlocProvider<PostBloc>(
             create: (context) => IsmInjectionUtils.getBloc<PostBloc>(),
             child: BlocConsumer<PostBloc, PostState>(
