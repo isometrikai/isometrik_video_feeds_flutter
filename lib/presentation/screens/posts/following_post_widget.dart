@@ -196,7 +196,7 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
             mediaType: _followingPostList[index].mediaType1?.toInt() ?? 0,
             onTapUserProfilePic: () {
               if (widget.onTapUserProfilePic != null) {
-                widget.onTapUserProfilePic!(widget.loggedInUserId ?? '');
+                widget.onTapUserProfilePic!(_followingPostList[index].userId ?? '');
               }
             },
             productCount: _followingPostList[index].productCount?.toInt() ?? 0,
