@@ -7,8 +7,8 @@ import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/utils/isr_utils.dart';
 
-class FollowingPostWidget extends StatefulWidget {
-  const FollowingPostWidget({
+class PostItemWidget extends StatefulWidget {
+  const PostItemWidget({
     super.key,
     this.onCreatePost,
     this.showBlur,
@@ -52,12 +52,12 @@ class FollowingPostWidget extends StatefulWidget {
   final String? loggedInUserId;
 
   @override
-  State<FollowingPostWidget> createState() => _FollowingPostWidgetState();
+  State<PostItemWidget> createState() => _PostItemWidgetState();
 }
 
-class _FollowingPostWidgetState extends State<FollowingPostWidget> {
+class _PostItemWidgetState extends State<PostItemWidget> {
   final _postBloc = IsmInjectionUtils.getBloc<PostBloc>();
-  List<PostDataModel> _followingPostList = [];
+  List<PostDataModel> _postList = [];
   var _currentPageIndex = 0;
   StreamSubscription<dynamic>? _subscription;
 
@@ -70,24 +70,24 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
   void _onStartInit() {
     // Check current state
     final currentState = _postBloc.state;
-    if (currentState is FollowingPostsLoadedState) {
+    if (currentState is PostsLoadedState) {
       setState(() {
-        _followingPostList = currentState.followingPosts ?? [];
+        _postList = currentState.postsList ?? [];
       });
     }
 
     _subscription = _postBloc.stream.listen((state) {
-      if (state is FollowingPostsLoadedState) {
-        if (_followingPostList.isEmpty) {
+      if (state is PostsLoadedState) {
+        if (_postList.isEmpty) {
           setState(() {
-            _followingPostList = state.followingPosts ?? [];
+            _postList = state.postsList ?? [];
           });
         }
       }
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _currentPageIndex = widget.startingPostIndex ?? 0;
-      _currentPageIndex = _currentPageIndex >= _followingPostList.length ? 0 : _currentPageIndex;
+      _currentPageIndex = _currentPageIndex >= _postList.length ? 0 : _currentPageIndex;
       if (_currentPageIndex > 0) {
         _postBloc.reelsPageFollowingController
             .animateToPage(_currentPageIndex, duration: const Duration(milliseconds: 1), curve: Curves.easeIn);
@@ -102,7 +102,7 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
   }
 
   @override
-  Widget build(BuildContext context) => _followingPostList.isListEmptyOrNull == true
+  Widget build(BuildContext context) => _postList.isListEmptyOrNull == true
       ? _buildContent(context)
       : RefreshIndicator(
           onRefresh: () async {
@@ -114,7 +114,7 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
           child: _buildContent(context),
         );
 
-  Widget _buildContent(BuildContext context) => _followingPostList.isListEmptyOrNull == true
+  Widget _buildContent(BuildContext context) => _postList.isListEmptyOrNull == true
       ? CustomScrollView(
           physics: const ClampingScrollPhysics(),
           slivers: [
@@ -141,14 +141,14 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
           clipBehavior: Clip.none,
           physics: const ClampingScrollPhysics(),
           onPageChanged: (index) {
-            debugPrint('FollowingPostWidget ...following post size... ${_followingPostList.length}');
+            debugPrint('FollowingPostWidget ...post list size... ${_postList.length}');
 
             debugPrint('FollowingPostWidget ...index $index');
 
             debugPrint(
-                'FollowingPostWidget ...Post by ...${_followingPostList[index].userName}\n Post url ${_followingPostList[index].imageUrl1}');
+                'FollowingPostWidget ...Post by ...${_postList[index].userName}\n Post url ${_postList[index].imageUrl1}');
             // Check if we're at 65% of the list
-            final threshold = (_followingPostList.length * 0.65).floor();
+            final threshold = (_postList.length * 0.65).floor();
             if (index >= threshold) {
               if (widget.onLoadMore != null) {
                 widget.onLoadMore!().then((value) {
@@ -156,21 +156,21 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
                   if (mounted) {
                     setState(() {
                       // Filter out duplicates based on postId
-                      final newPosts = value.where((newPost) =>
-                          !_followingPostList.any((existingPost) => existingPost.postId == newPost.postId));
-                      _followingPostList.addAll(newPosts);
+                      final newPosts = value
+                          .where((newPost) => !_postList.any((existingPost) => existingPost.postId == newPost.postId));
+                      _postList.addAll(newPosts);
                     });
                   }
                 });
               }
             }
           },
-          itemCount: _followingPostList.length,
+          itemCount: _postList.length,
           scrollDirection: Axis.vertical,
-          itemBuilder: (context, index) => IsrReelsVideoPlayerView(
+          itemBuilder: (context, index) => IsmReelsVideoPlayerView(
             isCreatePostButtonVisible: widget.isCreatePostButtonVisible,
-            thumbnail: _followingPostList[index].thumbnailUrl1 ?? '',
-            key: Key(_followingPostList[index].postId ?? ''),
+            thumbnail: _postList[index].thumbnailUrl1 ?? '',
+            key: Key(_postList[index].postId ?? ''),
             onCreatePost: () async {
               if (widget.onCreatePost == null) return;
               final postDataModelJsonString = await widget.onCreatePost!();
@@ -178,91 +178,89 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
               final postDataMap = jsonDecode(postDataModelJsonString!) as Map<String, dynamic>;
               final postDataModel = PostDataModel.fromJson(postDataMap);
               setState(() {
-                _followingPostList.insert(0, postDataModel);
+                _postList.insert(0, postDataModel);
               });
             },
-            postId: _followingPostList[index].postId,
+            postId: _postList[index].postId,
             description: '',
             isAssetUploading: false,
-            isFollow: _followingPostList[index].followStatus == 1,
-            isSelfProfile: widget.loggedInUserId.isStringEmptyOrNull == false &&
-                widget.loggedInUserId == _followingPostList[index].userId,
-            firstName: _followingPostList[index].firstName ?? '',
-            lastName: _followingPostList[index].lastName ?? '',
-            name: '@${_followingPostList[index].userName ?? ''}',
-            hasTags: _followingPostList[index].hashTags ?? [],
-            profilePhoto: _followingPostList[index].profilePic ?? '',
+            isFollow: _postList[index].followStatus == 1,
+            isSelfProfile:
+                widget.loggedInUserId.isStringEmptyOrNull == false && widget.loggedInUserId == _postList[index].userId,
+            firstName: _postList[index].firstName ?? '',
+            lastName: _postList[index].lastName ?? '',
+            name: '@${_postList[index].userName ?? ''}',
+            hasTags: _postList[index].hashTags ?? [],
+            profilePhoto: _postList[index].profilePic ?? '',
             onTapVolume: () {},
             isReelsMuted: false,
             isReelsLongPressed: false,
             onLongPressEnd: () {},
             onDoubleTap: () async {},
             onLongPressStart: () {},
-            mediaUrl: _followingPostList[index].imageUrl1 ?? '',
-            mediaType: _followingPostList[index].mediaType1?.toInt() ?? 0,
+            mediaUrl: _postList[index].imageUrl1 ?? '',
+            mediaType: _postList[index].mediaType1?.toInt() ?? 0,
             onTapUserProfilePic: () {
               if (widget.onTapUserProfilePic != null) {
-                widget.onTapUserProfilePic!(_followingPostList[index].userId ?? '');
+                widget.onTapUserProfilePic!(_postList[index].userId ?? '');
               }
             },
-            productCount: _followingPostList[index].productCount?.toInt() ?? 0,
-            isSavedPost: _followingPostList[index].isSavedPost,
+            productCount: _postList[index].productCount?.toInt() ?? 0,
+            isSavedPost: _postList[index].isSavedPost,
             onPressMoreButton: () async {
               if (widget.onTapMore == null) return;
-              final isSuccess = await widget.onTapMore!(
-                  _followingPostList[index].postId ?? '', _followingPostList[index].userId ?? '');
+              final isSuccess = await widget.onTapMore!(_postList[index].postId ?? '', _postList[index].userId ?? '');
               if (isSuccess) {
                 setState(() {
-                  _followingPostList.removeAt(index);
+                  _postList.removeAt(index);
                 });
               }
             },
             onPressFollowFollowing: () async {
-              if (_followingPostList[index].userId != null) {
+              if (_postList[index].userId != null) {
                 if (widget.onPressFollow == null) return false;
-                final isFollow = await widget.onPressFollow!(_followingPostList[index].userId!);
+                final isFollow = await widget.onPressFollow!(_postList[index].userId!);
 
                 setState(() {
-                  _followingPostList[index] = _followingPostList[index].copyWith(followStatus: isFollow ? 1 : 0);
+                  _postList[index] = _postList[index].copyWith(followStatus: isFollow ? 1 : 0);
                 });
                 return isFollow;
               }
               return false;
             },
             onPressSave: () async {
-              if (_followingPostList[index].postId != null) {
+              if (_postList[index].postId != null) {
                 if (widget.onPressSave == null) return false;
-                final isSaved = await widget.onPressSave!(_followingPostList[index].postId!);
+                final isSaved = await widget.onPressSave!(_postList[index].postId!);
 
                 if (isSaved) {
                   setState(() {
-                    _followingPostList[index] =
-                        _followingPostList[index].copyWith(isSavedPost: _followingPostList[index].isSavedPost == false);
+                    _postList[index] = _postList[index].copyWith(isSavedPost: _postList[index].isSavedPost == false);
                   });
                 }
                 return isSaved;
               }
               return false;
             },
-            isLiked: _followingPostList[index].liked ?? false,
-            likesCount: _followingPostList[index].likesCount ?? 0,
+            isLiked: _postList[index].liked ?? false,
+            likesCount: _postList[index].likesCount ?? 0,
             onPressLike: () async {
-              if (_followingPostList[index].postId != null) {
+              if (_postList[index].postId != null) {
                 if (widget.onPressLike == null) return false;
-                final currentLikeStatus = _followingPostList[index].liked == true;
+                final currentLikeStatus = _postList[index].liked == true;
                 final isSuccess = await widget.onPressLike!(
-                  _followingPostList[index].postId!,
-                  _followingPostList[index].userId!,
+                  _postList[index].postId!,
+                  _postList[index].userId!,
                   currentLikeStatus,
                 );
 
                 if (isSuccess == false) return false;
                 setState(() {
                   final newLikesCount = currentLikeStatus
-                      ? (_followingPostList[index].likesCount ?? 0) - 1
-                      : (_followingPostList[index].likesCount ?? 0) + 1;
+                      ? (_postList[index].likesCount ?? 0) - 1
+                      : (_postList[index].likesCount ?? 0) + 1;
 
-                  _followingPostList[index] = _followingPostList[index].copyWith(
+                  _postList[index] = _postList[index].copyWith(
                     liked: !currentLikeStatus,
                     likesCount: newLikesCount,
                   );
@@ -273,33 +271,32 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
             },
             onTapCartIcon: () async {
               if (widget.onTapCartIcon != null) {
-                final productList = _followingPostList[index].productData;
+                final productList = _postList[index].productData;
                 final jsonString = jsonEncode(productList?.map((e) => e.toJson()).toList());
-                final productDataList = await widget.onTapCartIcon!(jsonString, _followingPostList[index].postId ?? '');
+                final productDataList = await widget.onTapCartIcon!(jsonString, _postList[index].postId ?? '');
                 if (productDataList.isListEmptyOrNull) return;
                 setState(() {
-                  _followingPostList[index] = _followingPostList[index].copyWith(productData: productDataList);
+                  _postList[index] = _postList[index].copyWith(productData: productDataList);
                 });
               }
             },
             onTapComment: () async {
               if (widget.onTapComment != null) {
-                final newCommentCount = await widget.onTapComment!(_followingPostList[index].postId ?? '');
+                final newCommentCount = await widget.onTapComment!(_postList[index].postId ?? '');
                 if (newCommentCount != null) {
                   setState(() {
-                    _followingPostList[index].totalComments = newCommentCount;
+                    _postList[index].totalComments = newCommentCount;
                   });
                 }
               }
             },
             onTapShare: () {
               if (widget.onTapShare != null) {
-                widget.onTapShare!(_followingPostList[index].postId ?? '');
+                widget.onTapShare!(_postList[index].postId ?? '');
               }
             },
-            commentCount: _followingPostList[index].totalComments?.toInt() ?? 0,
-            isScheduledPost:
-                _followingPostList[index].scheduleTime != null && _followingPostList[index].scheduleTime != 0,
+            commentCount: _postList[index].totalComments?.toInt() ?? 0,
+            isScheduledPost: _postList[index].scheduleTime != null && _postList[index].scheduleTime != 0,
           ),
         );
 }

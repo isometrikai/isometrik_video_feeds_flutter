@@ -9,8 +9,8 @@ import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/isr_utils.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
-class IsrPostView extends StatefulWidget {
-  const IsrPostView({
+class IsmPostView extends StatefulWidget {
+  const IsmPostView({
     super.key,
     required this.tabDataModelList,
     this.currentIndex = 0,
@@ -20,14 +20,14 @@ class IsrPostView extends StatefulWidget {
   final num? currentIndex;
 
   @override
-  State<IsrPostView> createState() => _PostViewState();
+  State<IsmPostView> createState() => _PostViewState();
 }
 
-class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
+class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   TabController? _postTabController;
   late List<RefreshController> _refreshControllers;
   var _currentIndex = 0;
-  var loggedInUserId = '';
+  var _loggedInUserId = '';
 
   @override
   void initState() {
@@ -51,12 +51,12 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
               listener: (context, state) {
                 if (state is UserInformationLoaded) {
                   IsmInjectionUtils.getBloc<PostBloc>()
-                      .add(FollowingPostsLoadedEvent(widget.tabDataModelList[_currentIndex].postList));
+                      .add(PostsLoadedEvent(widget.tabDataModelList[_currentIndex].postList));
                 }
               },
               buildWhen: (previousState, currentState) => currentState is UserInformationLoaded,
               builder: (context, state) {
-                loggedInUserId = state is UserInformationLoaded ? state.userId : '';
+                _loggedInUserId = state is UserInformationLoaded ? state.userId : '';
                 return state is PostInitial
                     ? state.isLoading == true
                         ? Center(child: IsrVideoReelUtility.loaderWidget())
@@ -156,7 +156,7 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
     debugPrint('PostBloc2....${postBloc.isClosed}');
     _postTabController?.addListener(() {
       _currentIndex = _postTabController?.index ?? 0;
-      postBloc.add(FollowingPostsLoadedEvent(widget.tabDataModelList[_currentIndex].postList));
+      postBloc.add(PostsLoadedEvent(widget.tabDataModelList[_currentIndex].postList));
     });
     postBloc.add(const StartPost());
   }
@@ -171,7 +171,7 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  Widget _buildTabBarView(TabDataModel tabData, int index) => FollowingPostWidget(
+  Widget _buildTabBarView(TabDataModel tabData, int index) => PostItemWidget(
         onPressSave: tabData.onPressSave,
         onTapMore: tabData.onTapMore,
         onPressLike: tabData.onPressLike,
@@ -195,6 +195,6 @@ class _PostViewState extends State<IsrPostView> with TickerProviderStateMixin {
           if (tabData.onTapUserProfile == null) return;
           tabData.onTapUserProfile!(userId);
         },
-        loggedInUserId: loggedInUserId,
+        loggedInUserId: _loggedInUserId,
       );
 }

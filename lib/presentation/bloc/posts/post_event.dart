@@ -8,14 +8,8 @@ class StartPost extends PostEvent {
   const StartPost();
 }
 
-class FollowingPostsLoadedEvent extends PostEvent {
-  FollowingPostsLoadedEvent(this.followingPosts);
+class PostsLoadedEvent extends PostEvent {
+  PostsLoadedEvent(this.postsList);
 
-  final List<PostDataModel>? followingPosts;
-}
-
-class TrendingPostsLoadedEvent extends PostEvent {
-  TrendingPostsLoadedEvent(this.trendingPosts);
-
-  final List<PostDataModel>? trendingPosts;
+  final List<PostDataModel>? postsList;
 }

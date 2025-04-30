@@ -8,8 +8,8 @@ import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 /// Custom Reels Player for both Video and Photo content
-class IsrReelsVideoPlayerView extends StatefulWidget {
-  const IsrReelsVideoPlayerView({
+class IsmReelsVideoPlayerView extends StatefulWidget {
+  const IsmReelsVideoPlayerView({
     super.key,
     required this.mediaUrl,
     required this.mediaType, // 0 for picture, 1 for video
@@ -93,10 +93,10 @@ class IsrReelsVideoPlayerView extends StatefulWidget {
   final bool? isScheduledPost;
 
   @override
-  State<IsrReelsVideoPlayerView> createState() => _IsrReelsVideoPlayerViewState();
+  State<IsmReelsVideoPlayerView> createState() => _IsmReelsVideoPlayerViewState();
 }
 
-class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
+class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
   // Add constants for media types
   static const int kPictureType = 0;
   static const int kVideoType = 1;

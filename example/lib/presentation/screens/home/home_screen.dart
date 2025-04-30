@@ -48,7 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
             }
 
             if (state is HomeLoaded) {
-              return isr.IsrPostView(
+              return isr.IsmPostView(
                 tabDataModelList: [
                   isr.TabDataModel(
                     isCreatePostButtonVisible: true,
