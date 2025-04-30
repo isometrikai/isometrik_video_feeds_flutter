@@ -656,7 +656,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                 if (widget.showBlur == true || widget.mediaType == kPictureType) {
                   return;
                 }
-                if (info.visibleFraction > 0.5) {
+                if (info.visibleFraction > 0.9) {
                   mountUpdate();
                   if (videoPlayerController?.value.isPlaying == false) {
                     videoPlayerController?.seekTo(Duration.zero);
