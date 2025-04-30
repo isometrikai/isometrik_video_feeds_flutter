@@ -103,31 +103,25 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
 
   VideoPlayerController? videoPlayerController;
 
-  var isPlaying = true;
+  var _isPlaying = true;
 
-  var playPausedAction = false;
+  var _isPlayPauseActioned = false;
 
-  var isDoubleTapped = false;
-
-  var isFollowLoading = false;
-
-  var isVideoVisible = false;
+  var _isFollowLoading = false;
 
   bool _isExpandedDescription = false;
 
-  var isSaveLoading = false;
+  var _isSaveLoading = false;
 
-  var isLikeLoading = false;
+  var _isLikeLoading = false;
 
-  var isMuted = false;
-
-  var isReportLoading = false;
+  var _isMuted = false;
 
   @override
   void initState() {
     super.initState();
     // Always start unmuted
-    isMuted = false;
+    _isMuted = false;
     debugPrint('IsmReelsVideoPlayerView ...Post by ...${widget.name}\n Post url ${widget.mediaUrl}');
     if (widget.mediaType == kVideoType) {
       initializeVideoPlayer();
@@ -271,8 +265,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
             ],
             // if (widget.mediaType == kVideoType) ...[
             //   _buildActionButton(
-            //     icon: isMuted ? AssetConstants.icVolumeMute : AssetConstants.icVolumeUp,
-            //     label: isMuted ? IsrTranslationFile.unmute : IsrTranslationFile.mute,
+            //     icon: _isMuted ? AssetConstants.icVolumeMute : AssetConstants.icVolumeUp,
+            //     label: _isMuted ? IsrTranslationFile.unmute : IsrTranslationFile.mute,
             //     onTap: _toggleSound,
             //   ),
             //   IsrDimens.boxHeight(IsrDimens.twenty),
@@ -281,7 +275,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
               icon: widget.isLiked ? AssetConstants.icLikeSelected : AssetConstants.icLikeUnSelected,
               label: widget.likesCount.toString(),
               onTap: _callLikeFunction,
-              isLoading: isLikeLoading,
+              isLoading: _isLikeLoading,
             ),
             IsrDimens.boxHeight(IsrDimens.twenty),
             _buildActionButton(
@@ -309,7 +303,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                 icon: widget.isSavedPost == true ? AssetConstants.icSaveSelected : AssetConstants.icSaveUnSelected,
                 label: widget.isSavedPost == true ? IsrTranslationFile.saved : IsrTranslationFile.save,
                 onTap: _callSaveFunction,
-                isLoading: isSaveLoading,
+                isLoading: _isSaveLoading,
               ),
             ],
             IsrDimens.boxHeight(IsrDimens.twenty),
@@ -506,7 +500,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                                     IsrDimens.boxWidth(IsrDimens.eight),
                                   ],
                                   // Only show follow button if not following
-                                  if (!widget.isFollow && !isFollowLoading && !widget.isSelfProfile)
+                                  if (!widget.isFollow && !_isFollowLoading && !widget.isSelfProfile)
                                     Container(
                                       height: IsrDimens.twentyFour,
                                       decoration: BoxDecoration(
@@ -532,7 +526,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                                       ),
                                     ),
                                   // Show loading indicator while API call is in progress
-                                  if (isFollowLoading)
+                                  if (_isFollowLoading)
                                     SizedBox(
                                       width: IsrDimens.sixty,
                                       height: IsrDimens.twentyFour,
@@ -613,13 +607,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
     if (widget.showBlur == true || widget.mediaType == kPictureType) {
       return;
     }
-    isPlaying = !isPlaying;
-    if (isPlaying) {
+    _isPlaying = !_isPlaying;
+    if (_isPlaying) {
       videoPlayerController?.pause();
     } else {
       videoPlayerController?.play();
     }
-    playPausedAction = !playPausedAction;
+    _isPlayPauseActioned = !_isPlayPauseActioned;
     mountUpdate();
   }
 
@@ -633,10 +627,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
             onDoubleTap: () async {
               if (widget.onDoubleTap != null) {
                 widget.onDoubleTap!();
-                isDoubleTapped = true;
                 mountUpdate();
                 await Future<void>.delayed(const Duration(seconds: 1));
-                isDoubleTapped = false;
                 mountUpdate();
               }
             },
@@ -665,22 +657,19 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                   return;
                 }
                 if (info.visibleFraction > 0.5) {
-                  isVideoVisible = true;
                   mountUpdate();
                   if (videoPlayerController?.value.isPlaying == false) {
                     videoPlayerController?.seekTo(Duration.zero);
                     videoPlayerController?.play();
-                    isPlaying = !isPlaying;
-                    // Reset play/pause icon state when video becomes visible
+                    _isPlaying = !_isPlaying;
                     mountUpdate();
                   }
                 } else {
-                  playPausedAction = false;
-                  isVideoVisible = false;
+                  _isPlayPauseActioned = false; // Reset play/pause icon state when video becomes visible
                   mountUpdate();
                   if (videoPlayerController?.value.isPlaying == true) {
                     videoPlayerController?.pause();
-                    isPlaying = !isPlaying;
+                    _isPlaying = !_isPlaying;
                     mountUpdate();
                   }
                 }
@@ -730,78 +719,67 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
           // Video controls
           if (widget.mediaType == kVideoType && videoPlayerController?.value.isInitialized == true)
             AnimatedOpacity(
-              opacity: playPausedAction ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 200),
+              opacity: _isPlayPauseActioned ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 300),
               curve: Curves.easeInOut,
               child: Center(
                 child: InkWell(
                   onTap: _togglePlayPause,
                   child: AppImage.svg(
-                    playPausedAction ? AssetConstants.reelsPlaySvg : AssetConstants.pausedRoundedSvg,
+                    _isPlayPauseActioned ? AssetConstants.reelsPlaySvg : AssetConstants.pausedRoundedSvg,
                   ),
                 ),
               ),
             ),
-
-          // // Double tap heart animation
-          // if (isDoubleTapped)
-          //   Center(
-          //     child: Lottie.asset(
-          //       AssetConstants.heartAnimation,
-          //       width: IsrDimens.oneHundredFifty,
-          //       height: IsrDimens.oneHundredFifty,
-          //       animate: true,
-          //     ),
-          //   ),
         ],
       );
 
   //calls api to follow and unfollow user
   Future<void> _callFollowFunction() async {
     if (widget.onPressFollowFollowing == null) return;
-    isFollowLoading = true;
+    _isFollowLoading = true;
     mountUpdate();
 
     try {
       final success = await widget.onPressFollowFollowing!();
       if (!success) {
         // Reset loading if follow failed
-        isFollowLoading = false;
+        _isFollowLoading = false;
       }
     } finally {
-      isFollowLoading = false;
+      _isFollowLoading = false;
       mountUpdate();
     }
   }
 
   Future<void> _callSaveFunction() async {
     if (widget.onPressSave == null) return;
-    isSaveLoading = true;
+    _isSaveLoading = true;
     mountUpdate();
 
     try {
       final success = await widget.onPressSave!();
       if (!success) {
-        isSaveLoading = false;
+        _isSaveLoading = false;
       }
     } finally {
-      isSaveLoading = false;
+      _isSaveLoading = false;
       mountUpdate();
     }
   }
 
   Future<void> _callLikeFunction() async {
     if (widget.onPressLike == null) return;
-    isLikeLoading = true;
+    _isLikeLoading = true;
     mountUpdate();
 
     try {
       final success = await widget.onPressLike!();
       if (!success) {
-        isLikeLoading = false;
+        _isLikeLoading = false;
       }
     } finally {
-      isLikeLoading = false;
+      _isLikeLoading = false;
       mountUpdate();
     }
   }
@@ -810,8 +788,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
     if (widget.mediaType != kVideoType) return;
 
     setState(() {
-      isMuted = !isMuted;
-      videoPlayerController?.setVolume(isMuted ? 0.0 : 1.0);
+      _isMuted = !_isMuted;
+      videoPlayerController?.setVolume(_isMuted ? 0.0 : 1.0);
     });
     widget.onTapVolume?.call();
   }
