@@ -39,7 +39,7 @@ class TabDataModel {
   final Future<List<FeaturedProductDataItem>>? Function(String, String)? onTapCartIcon;
   final Widget? placeHolderWidget;
   final PostSectionType? postSectionType;
-  final Future<num>? Function(String)? onTapComment;
+  final Future<num>? Function(String, int)? onTapComment;
   final Function(String)? onTapShare;
   final Function(String)? onTapUserProfile;
   final bool? isCreatePostButtonVisible;
