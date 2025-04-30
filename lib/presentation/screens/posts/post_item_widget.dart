@@ -44,7 +44,7 @@ class PostItemWidget extends StatefulWidget {
   final Widget? placeHolderWidget;
   final PostSectionType? postSectionType;
   final VoidCallback? onTapPlaceHolder;
-  final Future<num>? Function(String)? onTapComment;
+  final Future<num>? Function(String, int)? onTapComment;
   final Function(String)? onTapShare;
   final Function(String)? onTapUserProfilePic;
   final bool? isCreatePostButtonVisible;
@@ -282,7 +282,8 @@ class _PostItemWidgetState extends State<PostItemWidget> {
             },
             onTapComment: () async {
               if (widget.onTapComment != null) {
-                final newCommentCount = await widget.onTapComment!(_postList[index].postId ?? '');
+                final newCommentCount = await widget.onTapComment!(
+                    _postList[index].postId ?? '', _postList[index].totalComments?.toInt() ?? 0);
                 if (newCommentCount != null) {
                   setState(() {
                     _postList[index].totalComments = newCommentCount;
