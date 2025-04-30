@@ -89,11 +89,11 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   }
 
   FutureOr<void> _getFollowingPost(GetFollowingPostEvent event, Emitter<HomeState> emit) async {
-    await _callGetFollowingPost(event.isRefresh, event.isPagination, false, event.onComplete);
+    await _callGetFollowingPost(event.isRefresh, event.isPagination, event.isLoading, event.onComplete);
   }
 
   FutureOr<void> _getTrendingPost(GetTrendingPostEvent event, Emitter<HomeState> emit) async {
-    await _callGetTrendingPost(event.isRefresh, event.isPagination, false, event.onComplete);
+    await _callGetTrendingPost(event.isRefresh, event.isPagination, event.isLoading, event.onComplete);
   }
 
   Future<void> _callGetFollowingPost(

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/isr_utils.dart';
-import 'package:lottie/lottie.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -124,34 +123,15 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
 
   var isReportLoading = false;
 
-  void _playPause() async {
-    if (widget.showBlur == true) {
-      return;
-    }
-    playPausedAction = !playPausedAction;
-    mountUpdate();
-  }
-
   @override
   void initState() {
     super.initState();
     // Always start unmuted
     isMuted = false;
+    debugPrint('IsrReelsVideoPlayerView ...Post by ...${widget.name}\n Post url ${widget.mediaUrl}');
     if (widget.mediaType == kVideoType) {
       initializeVideoPlayer();
     }
-  }
-
-  void pauseVideoPlayer() {
-    videoPlayerController?.setVolume(0);
-    videoPlayerController?.pause();
-    mountUpdate();
-  }
-
-  void playVideoPlayer() {
-    videoPlayerController?.setVolume(1);
-    videoPlayerController?.play();
-    mountUpdate();
   }
 
   /// Method For Update The Tree Carefully
@@ -183,7 +163,6 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
       IsrVideoReelUtility.debugCatchLog(error: e);
     }
     await videoPlayerController?.setLooping(true);
-
     mountUpdate();
   }
 
@@ -630,13 +609,17 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
       );
 
   void _togglePlayPause() {
+    if (widget.showBlur == true || widget.mediaType == kPictureType) {
+      return;
+    }
     isPlaying = !isPlaying;
     if (isPlaying) {
       videoPlayerController?.pause();
     } else {
       videoPlayerController?.play();
     }
-    _playPause();
+    playPausedAction = !playPausedAction;
+    mountUpdate();
   }
 
   @override
@@ -645,12 +628,7 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
         children: [
           // Media content with gesture detection
           GestureDetector(
-            onTap: () {
-              if (widget.showBlur == true || widget.mediaType == kPictureType) {
-                return;
-              }
-              _togglePlayPause();
-            },
+            onTap: _togglePlayPause,
             onDoubleTap: () async {
               if (widget.onDoubleTap != null) {
                 widget.onDoubleTap!();
@@ -740,22 +718,6 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
             ),
           ),
 
-          // // Gradient overlay
-          // Container(
-          //   decoration: BoxDecoration(
-          //     gradient: LinearGradient(
-          //       begin: Alignment.topCenter,
-          //       end: Alignment.bottomCenter,
-          //       colors: [
-          //         IsrColors.black.changeOpacity(0.4),
-          //         Colors.transparent,
-          //         Colors.transparent,
-          //         IsrColors.black.changeOpacity(0.4),
-          //       ],
-          //     ),
-          //   ),
-          // ),
-
           // Right side actions
           _buildRightSideActions(),
 
@@ -768,44 +730,25 @@ class _IsrReelsVideoPlayerViewState extends State<IsrReelsVideoPlayerView> {
               opacity: playPausedAction ? 1.0 : 0.0,
               duration: const Duration(milliseconds: 300),
               child: Center(
-                child: AppImage.svg(
-                  !playPausedAction ? AssetConstants.pausedRoundedSvg : AssetConstants.reelsPlaySvg,
+                child: InkWell(
+                  onTap: _togglePlayPause,
+                  child: AppImage.svg(
+                    !playPausedAction ? AssetConstants.pausedRoundedSvg : AssetConstants.reelsPlaySvg,
+                  ),
                 ),
               ),
             ),
 
-          // if (widget.mediaType == kVideoType && videoPlayerController?.value.isInitialized == true)
-          //   AnimatedOpacity(
-          //     opacity: playPausedAction ? 1.0 : 0.0,
-          //     duration: const Duration(milliseconds: 300),
-          //     child: Container(
-          //       decoration: BoxDecoration(
-          //         color: playPausedAction ? Colors.amber : Colors.amber,
-          //         shape: BoxShape.circle,
-          //       ),
-          //       padding: IsrDimens.edgeInsetsAll(12),
-          //       child: playPausedAction
-          //           ? const Icon(
-          //               Icons.pause,
-          //               color: Colors.white,
-          //               size: 32,
-          //             )
-          //           : const AppImage.svg(
-          //               AssetConstants.reelsPlaySvg,
-          //             ),
+          // // Double tap heart animation
+          // if (isDoubleTapped)
+          //   Center(
+          //     child: Lottie.asset(
+          //       AssetConstants.heartAnimation,
+          //       width: IsrDimens.oneHundredFifty,
+          //       height: IsrDimens.oneHundredFifty,
+          //       animate: true,
           //     ),
           //   ),
-
-          // Double tap heart animation
-          if (isDoubleTapped)
-            Center(
-              child: Lottie.asset(
-                AssetConstants.heartAnimation,
-                width: IsrDimens.oneHundredFifty,
-                height: IsrDimens.oneHundredFifty,
-                animate: true,
-              ),
-            ),
         ],
       );
 

@@ -141,6 +141,12 @@ class _FollowingPostWidgetState extends State<FollowingPostWidget> {
           clipBehavior: Clip.none,
           physics: const ClampingScrollPhysics(),
           onPageChanged: (index) {
+            debugPrint('FollowingPostWidget ...following post size... ${_followingPostList.length}');
+
+            debugPrint('FollowingPostWidget ...index $index');
+
+            debugPrint(
+                'FollowingPostWidget ...Post by ...${_followingPostList[index].userName}\n Post url ${_followingPostList[index].imageUrl1}');
             // Check if we're at 65% of the list
             final threshold = (_followingPostList.length * 0.65).floor();
             if (index >= threshold) {
