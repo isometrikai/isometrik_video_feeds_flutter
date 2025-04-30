@@ -128,7 +128,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
     super.initState();
     // Always start unmuted
     isMuted = false;
-    debugPrint('IsrReelsVideoPlayerView ...Post by ...${widget.name}\n Post url ${widget.mediaUrl}');
+    debugPrint('IsmReelsVideoPlayerView ...Post by ...${widget.name}\n Post url ${widget.mediaUrl}');
     if (widget.mediaType == kVideoType) {
       initializeVideoPlayer();
     }
@@ -142,12 +142,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
 
   //initialize vide player controller
   void initializeVideoPlayer() async {
-    debugPrint('initializeVideoPlayer video url ${widget.mediaUrl}');
+    debugPrint('IsmReelsVideoPlayerView....initializeVideoPlayer video url ${widget.mediaUrl}');
     if (widget.mediaUrl?.isStringEmptyOrNull == false) {
       var mediaUrl = widget.mediaUrl!;
       if (mediaUrl.startsWith('http:')) {
         mediaUrl = mediaUrl.replaceFirst('http:', 'https:');
-        debugPrint('initializeVideoPlayer video url converted to https $mediaUrl');
+        debugPrint('IsmReelsVideoPlayerView....initializeVideoPlayer video url converted to https $mediaUrl');
       }
       videoPlayerController = VideoPlayerController.networkUrl(
         Uri.parse(mediaUrl),
@@ -158,8 +158,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
       await videoPlayerController?.initialize();
       // Always start with volume on
       await videoPlayerController?.setVolume(1.0);
+      debugPrint('IsmReelsVideoPlayerView....initializeVideoPlayer name ${widget.name}');
     } catch (e) {
-      debugPrint('catch video url ${widget.mediaUrl}');
+      debugPrint('IsmReelsVideoPlayerView...catch video url ${widget.mediaUrl}');
       IsrVideoReelUtility.debugCatchLog(error: e);
     }
     await videoPlayerController?.setLooping(true);
@@ -663,16 +664,18 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                 if (widget.showBlur == true || widget.mediaType == kPictureType) {
                   return;
                 }
-                if (info.visibleFraction > 0.1) {
+                if (info.visibleFraction > 0.5) {
                   isVideoVisible = true;
                   mountUpdate();
                   if (videoPlayerController?.value.isPlaying == false) {
                     videoPlayerController?.seekTo(Duration.zero);
                     videoPlayerController?.play();
                     isPlaying = !isPlaying;
+                    // Reset play/pause icon state when video becomes visible
                     mountUpdate();
                   }
                 } else {
+                  playPausedAction = false;
                   isVideoVisible = false;
                   mountUpdate();
                   if (videoPlayerController?.value.isPlaying == true) {
@@ -728,12 +731,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
           if (widget.mediaType == kVideoType && videoPlayerController?.value.isInitialized == true)
             AnimatedOpacity(
               opacity: playPausedAction ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 300),
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
               child: Center(
                 child: InkWell(
                   onTap: _togglePlayPause,
                   child: AppImage.svg(
-                    !playPausedAction ? AssetConstants.pausedRoundedSvg : AssetConstants.reelsPlaySvg,
+                    playPausedAction ? AssetConstants.reelsPlaySvg : AssetConstants.pausedRoundedSvg,
                   ),
                 ),
               ),
