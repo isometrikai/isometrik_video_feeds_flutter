@@ -87,6 +87,7 @@ class PostDataModel {
     this.distinctViews,
     this.totalComments,
     this.scheduleTime,
+    this.fileName,
   });
 
   factory PostDataModel.fromJson(Map<String, dynamic> json) => PostDataModel(
@@ -146,6 +147,7 @@ class PostDataModel {
         distinctViews: json['distinctViews'] as num? ?? 0,
         totalComments: json['totalComments'] as num? ?? 0,
         scheduleTime: json['scheduleTime'] as num? ?? 0,
+        fileName: json['fileName'] as String? ?? '',
       );
   String? id;
   bool? allowComment;
@@ -197,6 +199,7 @@ class PostDataModel {
   num? distinctViews;
   num? totalComments;
   num? scheduleTime;
+  String? fileName;
 
   Map<String, dynamic> toJson() => {
         '_id': id,
@@ -249,6 +252,7 @@ class PostDataModel {
         'distinctViews': distinctViews,
         'totalComments': totalComments,
         'scheduleTime': scheduleTime,
+        'fileName': fileName,
       };
 
   PostDataModel copyWith({
@@ -301,6 +305,7 @@ class PostDataModel {
     bool? isSavedPost,
     num? distinctViews,
     num? scheduleTime,
+    String? fileName,
   }) =>
       PostDataModel(
         id: id ?? this.id,
@@ -352,6 +357,7 @@ class PostDataModel {
         isSavedPost: isSavedPost ?? this.isSavedPost,
         distinctViews: distinctViews ?? this.distinctViews,
         scheduleTime: scheduleTime ?? this.scheduleTime,
+        fileName: fileName ?? this.fileName,
       );
 }
 
