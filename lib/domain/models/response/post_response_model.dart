@@ -88,6 +88,7 @@ class PostDataModel {
     this.totalComments,
     this.scheduleTime,
     this.fileName,
+    this.size,
   });
 
   factory PostDataModel.fromJson(Map<String, dynamic> json) => PostDataModel(
@@ -148,6 +149,7 @@ class PostDataModel {
         totalComments: json['totalComments'] as num? ?? 0,
         scheduleTime: json['scheduleTime'] as num? ?? 0,
         fileName: json['fileName'] as String? ?? '',
+        size: json['size'] as num? ?? 0,
       );
   String? id;
   bool? allowComment;
@@ -200,6 +202,7 @@ class PostDataModel {
   num? totalComments;
   num? scheduleTime;
   String? fileName;
+  num? size;
 
   Map<String, dynamic> toJson() => {
         '_id': id,
@@ -253,6 +256,7 @@ class PostDataModel {
         'totalComments': totalComments,
         'scheduleTime': scheduleTime,
         'fileName': fileName,
+        'size': size,
       };
 
   PostDataModel copyWith({
@@ -306,6 +310,7 @@ class PostDataModel {
     num? distinctViews,
     num? scheduleTime,
     String? fileName,
+    num? size,
   }) =>
       PostDataModel(
         id: id ?? this.id,
@@ -358,6 +363,7 @@ class PostDataModel {
         distinctViews: distinctViews ?? this.distinctViews,
         scheduleTime: scheduleTime ?? this.scheduleTime,
         fileName: fileName ?? this.fileName,
+        size: size ?? this.size,
       );
 }
 
