@@ -77,14 +77,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         return false;
                       }
                     },
-                    onTapMore: (postId, userId) async {
+                    onTapMore: (postData, userId) async {
                       await _showMoreOptionsDialog(
                         onPressReport: ({String message = '', String reason = ''}) async {
                           try {
                             final completer = Completer<bool>();
 
                             _homeBloc.add(ReportPostEvent(
-                              postId: postId,
+                              postId: postData.postId ?? '',
                               message: reason,
                               reason: reason,
                               onComplete: (success) {
@@ -163,7 +163,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     isCreatePostButtonVisible: true,
                     postSectionType: PostSectionType.trending,
                     title: TranslationFile.trending,
-                    postList: state.trendingPosts,
+                    postList: [],
                     onCreatePost: () async {
                       final postDataModel = await InjectionUtils.getRouteManagement().goToCreatePostView();
                       return postDataModel;
@@ -186,14 +186,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         return false;
                       }
                     },
-                    onTapMore: (postId, userId) async {
+                    onTapMore: (postData, userId) async {
                       await _showMoreOptionsDialog(
                         onPressReport: ({String message = '', String reason = ''}) async {
                           try {
                             final completer = Completer<bool>();
 
                             _homeBloc.add(ReportPostEvent(
-                              postId: postId,
+                              postId: postData.postId ?? '',
                               message: reason,
                               reason: reason,
                               onComplete: (success) {

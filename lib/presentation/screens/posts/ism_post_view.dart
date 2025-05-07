@@ -43,7 +43,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           statusBarIconBrightness: Brightness.light,
         ),
         child: Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: Colors.transparent,
           resizeToAvoidBottomInset: false,
           body: BlocProvider<PostBloc>(
             create: (context) => IsmInjectionUtils.getBloc<PostBloc>(),

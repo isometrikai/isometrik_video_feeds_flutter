@@ -32,7 +32,7 @@ class PostItemWidget extends StatefulWidget {
   });
 
   final Future<String?> Function()? onCreatePost;
-  final Future<bool> Function(String postId, String userId)? onTapMore;
+  final Future<bool> Function(PostDataModel, String userId)? onTapMore;
   final bool? showBlur;
   final List<FeaturedProductDataItem>? productList;
   final Future<bool> Function(String)? onPressSave;
@@ -122,15 +122,17 @@ class _PostItemWidgetState extends State<PostItemWidget> {
               fillOverscroll: true,
               hasScrollBody: false,
               child: Center(
-                child: widget.placeHolderWidget ??
-                    PostPlaceHolderView(
-                      postSectionType: widget.postSectionType,
-                      onTap: () {
-                        if (widget.onTapPlaceHolder != null) {
-                          widget.onTapPlaceHolder!();
-                        }
-                      },
-                    ),
+                child: widget.postSectionType == PostSectionType.trending
+                    ? const SizedBox.shrink()
+                    : widget.placeHolderWidget ??
+                        PostPlaceHolderView(
+                          postSectionType: widget.postSectionType,
+                          onTap: () {
+                            if (widget.onTapPlaceHolder != null) {
+                              widget.onTapPlaceHolder!();
+                            }
+                          },
+                        ),
               ),
             ),
           ],
@@ -209,7 +211,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
             isSavedPost: _postList[index].isSavedPost,
             onPressMoreButton: () async {
               if (widget.onTapMore == null) return;
-              final isSuccess = await widget.onTapMore!(_postList[index].postId ?? '', _postList[index].userId ?? '');
+              final isSuccess = await widget.onTapMore!(_postList[index], _postList[index].userId ?? '');
               if (isSuccess) {
                 setState(() {
                   _postList.removeAt(index);
