@@ -89,6 +89,7 @@ class PostDataModel {
     this.scheduleTime,
     this.fileName,
     this.size,
+    this.duration,
   });
 
   factory PostDataModel.fromJson(Map<String, dynamic> json) => PostDataModel(
@@ -150,6 +151,7 @@ class PostDataModel {
         scheduleTime: json['scheduleTime'] as num? ?? 0,
         fileName: json['fileName'] as String? ?? '',
         size: json['size'] as num? ?? 0,
+        duration: json['duration'] as num? ?? 0,
       );
   String? id;
   bool? allowComment;
@@ -203,6 +205,7 @@ class PostDataModel {
   num? scheduleTime;
   String? fileName;
   num? size;
+  num? duration;
 
   Map<String, dynamic> toJson() => {
         '_id': id,
@@ -257,6 +260,7 @@ class PostDataModel {
         'scheduleTime': scheduleTime,
         'fileName': fileName,
         'size': size,
+        'duration': duration,
       };
 
   PostDataModel copyWith({
@@ -311,6 +315,7 @@ class PostDataModel {
     num? scheduleTime,
     String? fileName,
     num? size,
+    num? duration,
   }) =>
       PostDataModel(
         id: id ?? this.id,
@@ -364,6 +369,7 @@ class PostDataModel {
         scheduleTime: scheduleTime ?? this.scheduleTime,
         fileName: fileName ?? this.fileName,
         size: size ?? this.size,
+        duration: duration ?? this.duration,
       );
 }
 
