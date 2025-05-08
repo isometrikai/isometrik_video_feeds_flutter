@@ -103,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           }
                         },
                       );
-                      return false;
+                      return {'isSuccess': false};
                     },
                     onPressSave: (postId) async {
                       try {
@@ -212,7 +212,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           }
                         },
                       );
-                      return false;
+                      return {'isSuccess': false};
                     },
                     onPressSave: (postId) async {
                       try {

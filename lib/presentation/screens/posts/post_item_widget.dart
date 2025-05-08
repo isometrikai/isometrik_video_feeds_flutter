@@ -32,7 +32,7 @@ class PostItemWidget extends StatefulWidget {
   });
 
   final Future<String?> Function()? onCreatePost;
-  final Future<bool> Function(PostDataModel, String userId)? onTapMore;
+  final Future<Map<String, dynamic>> Function(PostDataModel, String userId)? onTapMore;
   final bool? showBlur;
   final List<FeaturedProductDataItem>? productList;
   final Future<bool> Function(String)? onPressSave;
@@ -211,11 +211,21 @@ class _PostItemWidgetState extends State<PostItemWidget> {
             isSavedPost: _postList[index].isSavedPost,
             onPressMoreButton: () async {
               if (widget.onTapMore == null) return;
-              final isSuccess = await widget.onTapMore!(_postList[index], _postList[index].userId ?? '');
+              final map = await widget.onTapMore!(_postList[index], _postList[index].userId ?? '');
+              final isSuccess = map['isSuccess'] as bool? ?? false;
               if (isSuccess) {
                 setState(() {
                   _postList.removeAt(index);
                 });
+              }
+              final editedPostedData = map['editedPostedData'] as String? ?? '';
+              if (editedPostedData.isStringEmptyOrNull == false) {
+                final postData = PostDataModel.fromJson(jsonDecode(editedPostedData) as Map<String, dynamic>);
+                if (_postList[index].postId == postData.postId) {
+                  setState(() {
+                    _postList[index] = postData;
+                  });
+                }
               }
             },
             onPressFollowFollowing: () async {
