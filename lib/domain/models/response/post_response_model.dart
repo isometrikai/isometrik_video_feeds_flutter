@@ -316,6 +316,7 @@ class PostDataModel {
     String? fileName,
     num? size,
     num? duration,
+    num? totalComments,
   }) =>
       PostDataModel(
         id: id ?? this.id,
@@ -370,6 +371,7 @@ class PostDataModel {
         fileName: fileName ?? this.fileName,
         size: size ?? this.size,
         duration: duration ?? this.duration,
+        totalComments: totalComments ?? this.totalComments,
       );
 }
 
