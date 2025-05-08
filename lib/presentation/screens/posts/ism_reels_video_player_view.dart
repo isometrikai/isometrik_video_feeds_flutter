@@ -117,6 +117,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
 
   var _isMuted = false;
 
+  final _maxLengthToShow = 100;
   @override
   void initState() {
     super.initState();
@@ -545,7 +546,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                               ],
                             ),
                           ),
-                          if (!_isExpandedDescription && widget.description.isNotEmpty)
+                          if (!_isExpandedDescription &&
+                              widget.description.isNotEmpty &&
+                              widget.description.length > _maxLengthToShow)
                             Padding(
                               padding: IsrDimens.edgeInsets(left: IsrDimens.eight),
                               child: GestureDetector(

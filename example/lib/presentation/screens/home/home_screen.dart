@@ -163,7 +163,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     isCreatePostButtonVisible: true,
                     postSectionType: PostSectionType.trending,
                     title: TranslationFile.trending,
-                    postList: [],
+                    postList: state.trendingPosts,
                     onCreatePost: () async {
                       final postDataModel = await InjectionUtils.getRouteManagement().goToCreatePostView();
                       return postDataModel;
