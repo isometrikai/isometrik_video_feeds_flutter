@@ -184,7 +184,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
               });
             },
             postId: _postList[index].postId,
-            description: '',
+            description: _postList[index].title ?? '',
             isAssetUploading: false,
             isFollow: _postList[index].followStatus == 1,
             isSelfProfile:
