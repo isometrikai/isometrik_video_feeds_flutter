@@ -118,6 +118,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
   var _isMuted = false;
 
   final _maxLengthToShow = 100;
+
   @override
   void initState() {
     super.initState();
@@ -199,9 +200,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
         : const SizedBox();
   }
 
-  Widget _buildRightSideActions() => Positioned(
-        right: IsrDimens.sixteen,
-        bottom: IsrDimens.forty,
+  Widget _buildRightSideActions() => Padding(
+        padding: IsrDimens.edgeInsets(bottom: IsrDimens.forty, right: IsrDimens.sixteen),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.end,
@@ -391,10 +391,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
         ],
       );
 
-  Widget _buildBottomSection() => Positioned(
-        bottom: IsrDimens.forty,
-        left: IsrDimens.sixteen,
-        right: IsrDimens.sixteen,
+  Widget _buildBottomSection() => Padding(
+        padding: IsrDimens.edgeInsets(left: IsrDimens.sixteen, right: IsrDimens.sixteen, bottom: IsrDimens.forty),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -713,11 +711,18 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
             ),
           ),
 
-          // Right side actions
-          _buildRightSideActions(),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              // Bottom section
+              Expanded(
+                child: _buildBottomSection(),
+              ),
 
-          // Bottom section
-          _buildBottomSection(),
+              // Right side actions
+              _buildRightSideActions(),
+            ],
+          ),
 
           // Video controls
           if (widget.mediaType == kVideoType && videoPlayerController?.value.isInitialized == true)
