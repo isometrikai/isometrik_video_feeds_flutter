@@ -5,6 +5,8 @@ import 'dart:io';
 import 'package:cloudinary/cloudinary.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_thumbnail_video/index.dart';
+import 'package:get_thumbnail_video/video_thumbnail.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ism_video_reel_player_example/core/core.dart';
 import 'package:ism_video_reel_player_example/di/di.dart';
@@ -13,7 +15,8 @@ import 'package:ism_video_reel_player_example/res/res.dart';
 import 'package:ism_video_reel_player_example/utils/utils.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
-import 'package:video_thumbnail/video_thumbnail.dart';
+
+// import 'package:video_thumbnail/video_thumbnail.dart';
 
 part 'create_post_event.dart';
 part 'create_post_state.dart';
@@ -222,16 +225,15 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
       if (mediaType == MediaType.video) {
         final trimmedVideoThumbnailPath = await VideoThumbnail.thumbnailFile(
-              video: postAttributeClass.file?.path ?? '',
-              imageFormat: ImageFormat.PNG,
-              quality: 50,
-              thumbnailPath: (await getTemporaryDirectory()).path,
-            ) ??
-            '';
-        if (trimmedVideoThumbnailPath.isEmpty) return null;
-        final trimmedVideoThumbnailBytes = await File(trimmedVideoThumbnailPath).readAsBytes();
-        postAttributeClass.thumbnailUrl = trimmedVideoThumbnailPath;
-        postAttributeClass.coverImage = trimmedVideoThumbnailPath;
+          video: postAttributeClass.file?.path ?? '',
+          imageFormat: ImageFormat.PNG,
+          quality: 50,
+          thumbnailPath: (await getTemporaryDirectory()).path,
+        );
+        if (trimmedVideoThumbnailPath.path.isEmptyOrNull == true) return null;
+        final trimmedVideoThumbnailBytes = await File(trimmedVideoThumbnailPath.path).readAsBytes();
+        postAttributeClass.thumbnailUrl = trimmedVideoThumbnailPath.path;
+        postAttributeClass.coverImage = trimmedVideoThumbnailPath.path;
         postAttributeClass.thumbnailBytes = trimmedVideoThumbnailBytes;
         // if (context.mounted) {
         //   postAttributeClass = await InjectionUtils.getRouteManagement()
