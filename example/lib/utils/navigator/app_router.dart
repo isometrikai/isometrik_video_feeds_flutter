@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ism_video_reel_player_example/domain/domain.dart';
 import 'package:ism_video_reel_player_example/example_export.dart';
@@ -73,7 +72,7 @@ class AppRouter {
 
   static final List<RouteBase> _landingRoutes = [
     ShellRoute(
-      navigatorKey: GlobalKey<NavigatorState>(),
+      navigatorKey: shallNavigatorKey,
       builder: (_, state, child) {
         final data = state.extra as Map? ?? {};
         final title = data['title'] as String? ?? '';

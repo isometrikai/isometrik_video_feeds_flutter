@@ -115,6 +115,13 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
                     ),
                     onTap: () => Navigator.pop(context),
                   ),
+                  // const SizedBox(height: 10),
+                  // TextField(
+                  //   decoration: InputDecoration(
+                  //     hintText: 'Enter comment',
+                  //     border: OutlineInputBorder(),
+                  //   ),
+                  // ),
                 ] else ...[
                   // Report reasons dialog
                   Padding(

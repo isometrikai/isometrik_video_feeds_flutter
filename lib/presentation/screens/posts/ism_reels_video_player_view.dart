@@ -200,6 +200,144 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
         : const SizedBox();
   }
 
+  void _togglePlayPause() {
+    if (widget.showBlur == true || widget.mediaType == kPictureType) {
+      return;
+    }
+    _isPlaying = !_isPlaying;
+    if (_isPlaying) {
+      videoPlayerController?.pause();
+    } else {
+      videoPlayerController?.play();
+    }
+    _isPlayPauseActioned = !_isPlayPauseActioned;
+    mountUpdate();
+  }
+
+  @override
+  Widget build(BuildContext context) => Stack(
+        fit: StackFit.expand,
+        children: [
+          // Media content with gesture detection
+          GestureDetector(
+            onTap: _togglePlayPause,
+            onDoubleTap: () async {
+              if (widget.onDoubleTap != null) {
+                widget.onDoubleTap!();
+                mountUpdate();
+                await Future<void>.delayed(const Duration(seconds: 1));
+                mountUpdate();
+              }
+            },
+            onLongPressStart: (details) {
+              if (widget.mediaType == kVideoType) {
+                videoPlayerController?.pause();
+              }
+              if (widget.onLongPressStart != null) {
+                widget.onLongPressStart!();
+              }
+              mountUpdate();
+            },
+            onLongPressEnd: (value) {
+              if (widget.mediaType == kVideoType) {
+                videoPlayerController?.play();
+              }
+              if (widget.onLongPressEnd != null) {
+                widget.onLongPressEnd!();
+              }
+              mountUpdate();
+            },
+            child: VisibilityDetector(
+              key: Key('${widget.mediaUrl}'),
+              onVisibilityChanged: (info) {
+                if (widget.showBlur == true || widget.mediaType == kPictureType) {
+                  return;
+                }
+                if (info.visibleFraction > 0.9) {
+                  mountUpdate();
+                  if (videoPlayerController?.value.isPlaying == false) {
+                    videoPlayerController?.seekTo(Duration.zero);
+                    videoPlayerController?.play();
+                    _isPlaying = !_isPlaying;
+                    mountUpdate();
+                  }
+                } else {
+                  _isPlayPauseActioned = false; // Reset play/pause icon state when video becomes visible
+                  mountUpdate();
+                  if (videoPlayerController?.value.isPlaying == true) {
+                    videoPlayerController?.pause();
+                    _isPlaying = !_isPlaying;
+                    mountUpdate();
+                  }
+                }
+              },
+              child: Stack(
+                fit: StackFit.expand,
+                alignment: Alignment.center,
+                children: [
+                  _buildMediaContent(),
+                  ClipRRect(
+                    borderRadius: BorderRadius.zero,
+                    child: SizedBox(
+                      width: IsrDimens.getScreenWidth(context),
+                      child: AnimatedOpacity(
+                        opacity: widget.isReelsLongPressed == true ? 0.0 : 1.0,
+                        duration: const Duration(milliseconds: 100),
+                        child: Container(
+                          height: IsrDimens.getScreenHeight(context),
+                          width: IsrDimens.getScreenWidth(context),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                IsrColors.black.changeOpacity(.6),
+                                IsrColors.black.changeOpacity(.0),
+                                IsrColors.black.changeOpacity(.0),
+                                IsrColors.black.changeOpacity(.4),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              // Bottom section
+              Expanded(
+                child: _buildBottomSection(),
+              ),
+
+              // Right side actions
+              _buildRightSideActions(),
+            ],
+          ),
+
+          // Video controls
+          if (widget.mediaType == kVideoType && videoPlayerController?.value.isInitialized == true)
+            AnimatedOpacity(
+              opacity: _isPlayPauseActioned ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              child: Center(
+                child: InkWell(
+                  onTap: _togglePlayPause,
+                  child: AppImage.svg(
+                    _isPlayPauseActioned ? AssetConstants.reelsPlaySvg : AssetConstants.pausedRoundedSvg,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      );
+
   Widget _buildRightSideActions() => Padding(
         padding: IsrDimens.edgeInsets(bottom: IsrDimens.forty, right: IsrDimens.sixteen),
         child: Column(
@@ -602,144 +740,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
             ),
           ],
         ),
-      );
-
-  void _togglePlayPause() {
-    if (widget.showBlur == true || widget.mediaType == kPictureType) {
-      return;
-    }
-    _isPlaying = !_isPlaying;
-    if (_isPlaying) {
-      videoPlayerController?.pause();
-    } else {
-      videoPlayerController?.play();
-    }
-    _isPlayPauseActioned = !_isPlayPauseActioned;
-    mountUpdate();
-  }
-
-  @override
-  Widget build(BuildContext context) => Stack(
-        fit: StackFit.expand,
-        children: [
-          // Media content with gesture detection
-          GestureDetector(
-            onTap: _togglePlayPause,
-            onDoubleTap: () async {
-              if (widget.onDoubleTap != null) {
-                widget.onDoubleTap!();
-                mountUpdate();
-                await Future<void>.delayed(const Duration(seconds: 1));
-                mountUpdate();
-              }
-            },
-            onLongPressStart: (details) {
-              if (widget.mediaType == kVideoType) {
-                videoPlayerController?.pause();
-              }
-              if (widget.onLongPressStart != null) {
-                widget.onLongPressStart!();
-              }
-              mountUpdate();
-            },
-            onLongPressEnd: (value) {
-              if (widget.mediaType == kVideoType) {
-                videoPlayerController?.play();
-              }
-              if (widget.onLongPressEnd != null) {
-                widget.onLongPressEnd!();
-              }
-              mountUpdate();
-            },
-            child: VisibilityDetector(
-              key: Key('${widget.mediaUrl}'),
-              onVisibilityChanged: (info) {
-                if (widget.showBlur == true || widget.mediaType == kPictureType) {
-                  return;
-                }
-                if (info.visibleFraction > 0.9) {
-                  mountUpdate();
-                  if (videoPlayerController?.value.isPlaying == false) {
-                    videoPlayerController?.seekTo(Duration.zero);
-                    videoPlayerController?.play();
-                    _isPlaying = !_isPlaying;
-                    mountUpdate();
-                  }
-                } else {
-                  _isPlayPauseActioned = false; // Reset play/pause icon state when video becomes visible
-                  mountUpdate();
-                  if (videoPlayerController?.value.isPlaying == true) {
-                    videoPlayerController?.pause();
-                    _isPlaying = !_isPlaying;
-                    mountUpdate();
-                  }
-                }
-              },
-              child: Stack(
-                fit: StackFit.expand,
-                alignment: Alignment.center,
-                children: [
-                  _buildMediaContent(),
-                  ClipRRect(
-                    borderRadius: BorderRadius.zero,
-                    child: SizedBox(
-                      width: IsrDimens.getScreenWidth(context),
-                      child: AnimatedOpacity(
-                        opacity: widget.isReelsLongPressed == true ? 0.0 : 1.0,
-                        duration: const Duration(milliseconds: 100),
-                        child: Container(
-                          height: IsrDimens.getScreenHeight(context),
-                          width: IsrDimens.getScreenWidth(context),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                IsrColors.black.changeOpacity(.6),
-                                IsrColors.black.changeOpacity(.0),
-                                IsrColors.black.changeOpacity(.0),
-                                IsrColors.black.changeOpacity(.4),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              // Bottom section
-              Expanded(
-                child: _buildBottomSection(),
-              ),
-
-              // Right side actions
-              _buildRightSideActions(),
-            ],
-          ),
-
-          // Video controls
-          if (widget.mediaType == kVideoType && videoPlayerController?.value.isInitialized == true)
-            AnimatedOpacity(
-              opacity: _isPlayPauseActioned ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              child: Center(
-                child: InkWell(
-                  onTap: _togglePlayPause,
-                  child: AppImage.svg(
-                    _isPlayPauseActioned ? AssetConstants.reelsPlaySvg : AssetConstants.pausedRoundedSvg,
-                  ),
-                ),
-              ),
-            ),
-        ],
       );
 
   //calls api to follow and unfollow user

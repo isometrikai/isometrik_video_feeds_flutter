@@ -221,17 +221,24 @@ class Utility {
     required Widget child,
     bool isDarkBG = false,
     bool isDismissible = true,
-    bool isScrollControlled = true,
+    bool isScrollControlled = false,
+    Color? backgroundColor,
+    double? height,
+    BuildContext? context,
   }) =>
       showModalBottomSheet<T>(
         context: exNavigatorKey.currentContext!,
-        builder: (_) => child,
+        builder: (_) => SizedBox(
+          height: height,
+          child: child,
+        ),
         enableDrag: false,
         showDragHandle: false,
-        useSafeArea: false,
+        useSafeArea: true,
         isDismissible: isDismissible,
         isScrollControlled: isScrollControlled,
-        backgroundColor: isDarkBG ? Theme.of(exNavigatorKey.currentContext!).primaryColor : AppColors.white,
+        backgroundColor:
+            backgroundColor ?? (isDarkBG ? Theme.of(exNavigatorKey.currentContext!).primaryColor : AppColors.white),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(
             top: Radius.circular(Dimens.bottomSheetBorderRadius),

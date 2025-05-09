@@ -3,6 +3,7 @@ import 'package:ism_video_reel_player_example/domain/domain.dart';
 import 'package:ism_video_reel_player_example/utils/utils.dart';
 
 final GlobalKey<NavigatorState> exNavigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> shallNavigatorKey = GlobalKey<NavigatorState>();
 
 class RouteManagement {
   RouteManagement(this._navigationService);

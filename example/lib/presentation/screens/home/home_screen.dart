@@ -27,6 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
+        resizeToAvoidBottomInset: false,
         backgroundColor: AppColors.grey.shade100,
         body: BlocBuilder<HomeBloc, HomeState>(
           builder: (context, state) {
@@ -281,7 +282,7 @@ class _HomeScreenState extends State<HomeScreen> {
     Future<bool> Function({String message, String reason})? onPressReport,
   }) async {
     await Utility.showBottomSheet(
-      isDismissible: true, // Add this to respect safe area
+      height: Dimens.percentHeight(0.25),
       child: MoreOptionsBottomSheet(
         onPressReport: ({String message = '', String reason = ''}) async {
           try {
