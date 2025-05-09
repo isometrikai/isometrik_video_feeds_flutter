@@ -144,9 +144,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
           physics: const ClampingScrollPhysics(),
           onPageChanged: (index) {
             debugPrint('FollowingPostWidget ...post list size... ${_postList.length}');
-
             debugPrint('FollowingPostWidget ...index $index');
-
             debugPrint(
                 'FollowingPostWidget ...Post by ...${_postList[index].userName}\n Post url ${_postList[index].imageUrl1}');
             // Check if we're at 65% of the list
