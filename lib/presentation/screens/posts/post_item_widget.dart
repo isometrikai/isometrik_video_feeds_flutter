@@ -35,7 +35,7 @@ class PostItemWidget extends StatefulWidget {
   final Future<dynamic> Function(PostDataModel, String userId)? onTapMore;
   final bool? showBlur;
   final List<FeaturedProductDataItem>? productList;
-  final Future<bool> Function(String)? onPressSave;
+  final Future<bool> Function(String, bool)? onPressSave;
   final Future<bool> Function(String, String, bool)? onPressLike;
   final Future<bool> Function(String)? onPressFollow;
   final Future<List<PostDataModel>> Function()? onLoadMore;
@@ -246,7 +246,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
           onPressSave: () async {
             if (_postList[index].postId != null) {
               if (widget.onPressSave == null) return false;
-              final isSaved = await widget.onPressSave!(_postList[index].postId!);
+              final isSaved = await widget.onPressSave!(_postList[index].postId!, _postList[index].isSavedPost == true);
 
               if (isSaved) {
                 setState(() {

@@ -106,7 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       );
                       return {'isSuccess': false};
                     },
-                    onPressSave: (postId) async {
+                    onPressSave: (postId, isSavedPost) async {
                       try {
                         final completer = Completer<bool>();
 
@@ -215,7 +215,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       );
                       return {'isSuccess': false};
                     },
-                    onPressSave: (postId) async {
+                    onPressSave: (postId, isSavedPost) async {
                       try {
                         final completer = Completer<bool>();
 
