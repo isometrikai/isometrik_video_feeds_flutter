@@ -138,7 +138,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         return false;
                       }
                     },
-                    onLoadMore: () async {
+                    onLoadMore: (postSectionType) async {
                       final completer = Completer<List<isr.PostDataModel>>();
 
                       _homeBloc.add(GetFollowingPostEvent(
@@ -247,7 +247,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         return false;
                       }
                     },
-                    onLoadMore: () async {
+                    onLoadMore: (postSectionType) async {
                       final completer = Completer<List<isr.PostDataModel>>();
 
                       _homeBloc.add(GetTrendingPostEvent(

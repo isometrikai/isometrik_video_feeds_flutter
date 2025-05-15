@@ -28,7 +28,7 @@ class TabDataModel {
   final String title;
   final List<PostDataModel>? postList;
   final Future<String?> Function()? onCreatePost;
-  final Future<List<PostDataModel>> Function()? onLoadMore;
+  final Future<List<PostDataModel>> Function(PostSectionType?)? onLoadMore;
   final Future<dynamic> Function(PostDataModel, String userId)? onTapMore;
   final bool? showBlur;
   final List<FeaturedProductDataItem>? productList;

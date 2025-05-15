@@ -38,7 +38,7 @@ class PostItemWidget extends StatefulWidget {
   final Future<bool> Function(String, bool)? onPressSave;
   final Future<bool> Function(String, String, bool)? onPressLike;
   final Future<bool> Function(String)? onPressFollow;
-  final Future<List<PostDataModel>> Function()? onLoadMore;
+  final Future<List<PostDataModel>> Function(PostSectionType?)? onLoadMore;
   final Future<List<FeaturedProductDataItem>>? Function(String, String)? onTapCartIcon;
   final Future<bool> Function()? onRefresh;
   final Widget? placeHolderWidget;
@@ -151,7 +151,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
           final threshold = (_postList.length * 0.65).floor();
           if (index >= threshold) {
             if (widget.onLoadMore != null) {
-              widget.onLoadMore!().then((value) {
+              widget.onLoadMore!(widget.postSectionType).then((value) {
                 if (value.isListEmptyOrNull) return;
                 if (mounted) {
                   setState(() {
