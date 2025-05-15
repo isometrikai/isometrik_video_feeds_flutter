@@ -26,7 +26,7 @@ class IsmPostView extends StatefulWidget {
 class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   TabController? _postTabController;
   late List<RefreshController> _refreshControllers;
-  var _currentIndex = 0;
+  var _currentIndex = 1;
   var _loggedInUserId = '';
 
   @override
