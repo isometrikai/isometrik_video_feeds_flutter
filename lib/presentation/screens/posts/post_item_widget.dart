@@ -223,7 +223,8 @@ class _PostItemWidgetState extends State<PostItemWidget> {
               final editedPostedData = result;
               if (editedPostedData.isStringEmptyOrNull == false) {
                 final postData = PostDataModel.fromJson(jsonDecode(editedPostedData) as Map<String, dynamic>);
-                if (_postList[index].postId == postData.postId) {
+                final index = _postList.indexWhere((element) => element.postId == postData.postId);
+                if (index != -1) {
                   setState(() {
                     _postList[index] = postData;
                   });
