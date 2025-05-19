@@ -74,6 +74,7 @@ class _LandingViewState extends State<LandingView> {
               },
               child: Scaffold(
                 backgroundColor: state == NavbarType.home ? AppColors.white : Theme.of(context).scaffoldBackgroundColor,
+                resizeToAvoidBottomInset: false,
                 appBar: state == NavbarType.home
                     ? null
                     : CustomAppBar(

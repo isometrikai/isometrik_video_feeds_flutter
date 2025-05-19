@@ -42,43 +42,39 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           statusBarBrightness: Brightness.dark,
           statusBarIconBrightness: Brightness.light,
         ),
-        child: Scaffold(
-          backgroundColor: Colors.transparent,
-          resizeToAvoidBottomInset: false,
-          body: BlocProvider<PostBloc>(
-            create: (context) => IsmInjectionUtils.getBloc<PostBloc>(),
-            child: BlocConsumer<PostBloc, PostState>(
-              listener: (context, state) {
-                if (state is UserInformationLoaded) {
-                  IsmInjectionUtils.getBloc<PostBloc>()
-                      .add(PostsLoadedEvent(widget.tabDataModelList[_currentIndex].postList));
-                }
-              },
-              buildWhen: (previousState, currentState) => currentState is UserInformationLoaded,
-              builder: (context, state) {
-                _loggedInUserId = state is UserInformationLoaded ? state.userId : '';
-                return state is PostInitial
-                    ? state.isLoading == true
-                        ? Center(child: IsrVideoReelUtility.loaderWidget())
-                        : const SizedBox.shrink()
-                    : DefaultTabController(
-                        length: 2,
-                        initialIndex: _currentIndex,
-                        child: Stack(
-                          children: [
-                            TabBarView(
-                              physics: const NeverScrollableScrollPhysics(),
-                              controller: _postTabController,
-                              children: widget.tabDataModelList
-                                  .map((tabData) => _buildTabBarView(tabData, widget.tabDataModelList.indexOf(tabData)))
-                                  .toList(),
-                            ),
-                            if (widget.tabDataModelList.length > 1) _buildTabBar(),
-                          ],
-                        ),
-                      );
-              },
-            ),
+        child: BlocProvider<PostBloc>(
+          create: (context) => IsmInjectionUtils.getBloc<PostBloc>(),
+          child: BlocConsumer<PostBloc, PostState>(
+            listener: (context, state) {
+              if (state is UserInformationLoaded) {
+                IsmInjectionUtils.getBloc<PostBloc>()
+                    .add(PostsLoadedEvent(widget.tabDataModelList[_currentIndex].postList));
+              }
+            },
+            buildWhen: (previousState, currentState) => currentState is UserInformationLoaded,
+            builder: (context, state) {
+              _loggedInUserId = state is UserInformationLoaded ? state.userId : '';
+              return state is PostInitial
+                  ? state.isLoading == true
+                      ? Center(child: IsrVideoReelUtility.loaderWidget())
+                      : const SizedBox.shrink()
+                  : DefaultTabController(
+                      length: 2,
+                      initialIndex: _currentIndex,
+                      child: Stack(
+                        children: [
+                          TabBarView(
+                            physics: const NeverScrollableScrollPhysics(),
+                            controller: _postTabController,
+                            children: widget.tabDataModelList
+                                .map((tabData) => _buildTabBarView(tabData, widget.tabDataModelList.indexOf(tabData)))
+                                .toList(),
+                          ),
+                          if (widget.tabDataModelList.length > 1) _buildTabBar(),
+                        ],
+                      ),
+                    );
+            },
           ),
         ),
       );
