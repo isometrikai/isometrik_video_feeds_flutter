@@ -139,10 +139,16 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       IsrVideoReelUtility.showToastMessage('sdk not initialized');
       return;
     }
-    _postTabController = TabController(length: widget.tabDataModelList.length, vsync: this);
-    if (_currentIndex > 0) {
-      _postTabController?.animateTo(_currentIndex);
-    }
+    // Initialize TabController with initialIndex = _currentIndex
+    _postTabController = TabController(
+      length: widget.tabDataModelList.length,
+      vsync: this,
+      initialIndex: _currentIndex,
+    );
+    // REMOVE this block:
+    // if (_currentIndex > 0) {
+    //   _postTabController?.animateTo(_currentIndex);
+    // }
     _refreshControllers = List.generate(widget.tabDataModelList.length, (index) => RefreshController());
     var postBloc = IsmInjectionUtils.getBloc<PostBloc>();
     if (postBloc.isClosed) {
