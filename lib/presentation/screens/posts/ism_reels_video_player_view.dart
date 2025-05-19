@@ -754,7 +754,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
         ),
         child: Text(
           IsrTranslationFile.creatorEarnsCommission,
-          style: IsrStyles.white16.copyWith(
+          style: IsrStyles.white10.copyWith(
             fontWeight: FontWeight.w500,
           ),
         ),
