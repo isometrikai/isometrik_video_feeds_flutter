@@ -738,7 +738,25 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                 ),
               ],
             ),
+            if ((widget.productCount ?? 0) > 0) ...[
+              IsrDimens.boxHeight(IsrDimens.eight),
+              _buildCommissionTag(),
+            ],
           ],
+        ),
+      );
+
+  Widget _buildCommissionTag() => Container(
+        padding: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twelve, vertical: IsrDimens.six),
+        decoration: BoxDecoration(
+          color: Colors.black.changeOpacity(0.6),
+          borderRadius: IsrDimens.borderRadiusAll(20),
+        ),
+        child: Text(
+          IsrTranslationFile.creatorEarnsComission,
+          style: IsrStyles.white16.copyWith(
+            fontWeight: FontWeight.w500,
+          ),
         ),
       );
 

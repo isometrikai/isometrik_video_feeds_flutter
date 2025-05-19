@@ -39,4 +39,5 @@ class IsrTranslationFile {
   static const findPeopleToFollow = 'Find People to follow';
   static const noPostAvailable = 'No Post Available';
   static const startFollowing = 'Start following to see contents.';
+  static const creatorEarnsComission = 'Creator Earns Commission';
 }
