@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -100,6 +101,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
   // Add constants for media types
   static const int kPictureType = 0;
   static const int kVideoType = 1;
+  late TapGestureRecognizer _tapGestureRecognizer;
 
   VideoPlayerController? videoPlayerController;
 
@@ -124,6 +126,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
     super.initState();
     // Always start unmuted
     _isMuted = false;
+    _tapGestureRecognizer = TapGestureRecognizer();
     debugPrint('IsmReelsVideoPlayerView ...Post by ...${widget.name}\n Post url ${widget.mediaUrl}');
     if (widget.mediaType == kVideoType) {
       initializeVideoPlayer();
@@ -165,6 +168,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
 
   @override
   void dispose() {
+    _tapGestureRecognizer.dispose();
     videoPlayerController?.pause();
     videoPlayerController?.dispose();
     videoPlayerController = null;
@@ -682,26 +686,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                               ],
                             ),
                           ),
-                          if (!_isExpandedDescription &&
-                              widget.description.isNotEmpty &&
-                              widget.description.length > _maxLengthToShow)
-                            Padding(
-                              padding: IsrDimens.edgeInsets(left: IsrDimens.eight),
-                              child: GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    _isExpandedDescription = true;
-                                  });
-                                },
-                                child: Text(
-                                  IsrTranslationFile.more,
-                                  style: IsrStyles.white14.copyWith(
-                                    color: IsrColors.white.changeOpacity(0.6),
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ),
                         ],
                       ),
 
@@ -709,10 +693,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                       if (widget.description.isNotEmpty) ...[
                         IsrDimens.boxHeight(IsrDimens.four),
                         RichText(
-                          maxLines: _isExpandedDescription ? null : 1,
-                          overflow: _isExpandedDescription ? TextOverflow.visible : TextOverflow.ellipsis,
                           text: TextSpan(
                             children: [
+                              // Tags
                               if (widget.hasTags?.isNotEmpty == true)
                                 ...widget.hasTags!.map(
                                   (tag) => TextSpan(
@@ -723,16 +706,56 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                                     ),
                                   ),
                                 ),
+                              // Description
                               TextSpan(
-                                text: widget.description,
+                                text: _isExpandedDescription
+                                    ? widget.description
+                                    : widget.description.length > _maxLengthToShow
+                                        ? '${widget.description.substring(0, _maxLengthToShow)}...'
+                                        : widget.description,
                                 style: IsrStyles.white14.copyWith(
                                   color: IsrColors.white.changeOpacity(0.9),
                                 ),
                               ),
+                              // Read More / Read Less
+                              if (widget.description.length > _maxLengthToShow)
+                                TextSpan(
+                                  text: _isExpandedDescription
+                                      ? ' ${IsrTranslationFile.readLess}'
+                                      : ' ${IsrTranslationFile.readMore}',
+                                  style: IsrStyles.white14.copyWith(
+                                    color: IsrColors.appColor.changeOpacity(0.6),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  recognizer: _tapGestureRecognizer
+                                    ..onTap = () {
+                                      setState(() {
+                                        _isExpandedDescription = !_isExpandedDescription;
+                                      });
+                                    },
+                                ),
                             ],
                           ),
                         ),
                       ],
+                      // if (widget.description.isNotEmpty && widget.description.length > _maxLengthToShow)
+                      //   Padding(
+                      //     padding: IsrDimens.edgeInsets(left: IsrDimens.eight),
+                      //     child: GestureDetector(
+                      //       onTap: () {
+                      //         setState(() {
+                      //           _isExpandedDescription = !_isExpandedDescription;
+                      //         });
+                      //       },
+                      //       child: Text(
+                      //         !_isExpandedDescription ? 'Read More' : 'Read Less',
+                      //         style: IsrStyles.white14.copyWith(
+                      //           color: IsrColors.appColor.changeOpacity(0.6),
+                      //           fontWeight: FontWeight.w500,
+                      //         ),
+                      //       ),
+                      //     ),
+                      //   ),
                     ],
                   ),
                 ),
