@@ -818,7 +818,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
   }
 
   Future<void> _callLikeFunction() async {
-    if (widget.onPressLike == null) return;
+    if (widget.onPressLike == null || _isLikeLoading) return;
     _isLikeLoading = true;
     mountUpdate();
 

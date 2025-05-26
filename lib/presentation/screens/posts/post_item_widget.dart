@@ -272,8 +272,11 @@ class _PostItemWidgetState extends State<PostItemWidget> {
 
               if (isSuccess == false) return false;
               setState(() {
-                final newLikesCount =
-                    currentLikeStatus ? (_postList[index].likesCount ?? 0) - 1 : (_postList[index].likesCount ?? 0) + 1;
+                final newLikesCount = currentLikeStatus
+                    ? _postList[index].likesCount?.toInt() == 0
+                        ? 0
+                        : (_postList[index].likesCount ?? 0) - 1
+                    : (_postList[index].likesCount ?? 0) + 1;
 
                 _postList[index] = _postList[index].copyWith(
                   liked: !currentLikeStatus,
