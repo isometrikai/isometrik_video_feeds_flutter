@@ -121,68 +121,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
 
   final _maxLengthToShow = 100;
 
-// In _IsmReelsVideoPlayerViewState class
-  bool _isCurrentPage = false;
-
   @override
   void initState() {
     super.initState();
+    // Always start unmuted
     _isMuted = false;
     _tapGestureRecognizer = TapGestureRecognizer();
     debugPrint('IsmReelsVideoPlayerView ...Post by ...${widget.name}\n Post url ${widget.mediaUrl}');
     if (widget.mediaType == kVideoType) {
-      // Initialize video but don't play yet
-      _initializeVideoPlayer(shouldPlay: false);
-    }
-  }
-
-  Future<void> _initializeVideoPlayer({bool shouldPlay = false}) async {
-    if (videoPlayerController != null) return;
-
-    debugPrint('Initializing video player for: ${widget.mediaUrl}');
-    if (widget.mediaUrl?.isStringEmptyOrNull == false) {
-      var mediaUrl = widget.mediaUrl!;
-      if (mediaUrl.startsWith('http:')) {
-        mediaUrl = mediaUrl.replaceFirst('http:', 'https:');
-      }
-
-      videoPlayerController = VideoPlayerController.network(mediaUrl);
-
-      try {
-        await videoPlayerController?.initialize();
-        await videoPlayerController?.setLooping(true);
-        await videoPlayerController?.setVolume(1.0);
-
-        if (mounted) {
-          setState(() {});
-          // Only play if this is the current page
-          if (shouldPlay && _isCurrentPage) {
-            videoPlayerController?.play();
-          }
-        }
-      } catch (e) {
-        debugPrint('Error initializing video player: $e');
-      }
-    }
-  }
-
-// Add this method to handle page visibility
-  void _handlePageVisibility(bool isCurrentPage) {
-    if (_isCurrentPage == isCurrentPage) return;
-
-    _isCurrentPage = isCurrentPage;
-
-    if (videoPlayerController == null || !videoPlayerController!.value.isInitialized) {
-      if (isCurrentPage) {
-        _initializeVideoPlayer(shouldPlay: true);
-      }
-      return;
-    }
-
-    if (isCurrentPage) {
-      videoPlayerController?.play();
-    } else {
-      videoPlayerController?.pause();
+      initializeVideoPlayer();
     }
   }
 
@@ -311,7 +258,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                   return;
                 }
                 if (info.visibleFraction > 0.9) {
-                  _handlePageVisibility(info.visibleFraction > 0.9);
                   mountUpdate();
                   if (videoPlayerController?.value.isPlaying == false) {
                     videoPlayerController?.seekTo(Duration.zero);
