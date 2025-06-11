@@ -164,6 +164,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
     }
     await videoPlayerController?.setLooping(true);
     mountUpdate();
+    // if (!_isPlaying) {
+    //   _togglePlayPause();
+    // }
   }
 
   @override
