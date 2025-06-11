@@ -29,6 +29,7 @@ class PostItemWidget extends StatefulWidget {
     this.startingPostIndex = 0,
     this.onTapUserProfilePic,
     this.loggedInUserId,
+    this.allowImplicitScrolling = true,
   });
 
   final Future<String?> Function()? onCreatePost;
@@ -50,6 +51,7 @@ class PostItemWidget extends StatefulWidget {
   final bool? isCreatePostButtonVisible;
   final int? startingPostIndex;
   final String? loggedInUserId;
+  final bool? allowImplicitScrolling;
 
   @override
   State<PostItemWidget> createState() => _PostItemWidgetState();
@@ -138,7 +140,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
       );
 
   Widget _buildContent(BuildContext context) => PageView.builder(
-        allowImplicitScrolling: true,
+        allowImplicitScrolling: widget.allowImplicitScrolling ?? true,
         controller: _postBloc.reelsPageFollowingController,
         clipBehavior: Clip.none,
         physics: const ClampingScrollPhysics(),

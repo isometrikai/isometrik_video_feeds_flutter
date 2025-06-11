@@ -14,10 +14,12 @@ class IsmPostView extends StatefulWidget {
     super.key,
     required this.tabDataModelList,
     this.currentIndex = 0,
+    this.allowImplicitScrolling = false,
   });
 
   final List<TabDataModel> tabDataModelList;
   final num? currentIndex;
+  final bool? allowImplicitScrolling;
 
   @override
   State<IsmPostView> createState() => _PostViewState();
@@ -198,5 +200,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           tabData.onTapUserProfile!(userId);
         },
         loggedInUserId: _loggedInUserId,
+        allowImplicitScrolling: widget.allowImplicitScrolling,
       );
 }
