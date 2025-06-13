@@ -30,6 +30,7 @@ class PostItemWidget extends StatefulWidget {
     this.onTapUserProfilePic,
     this.loggedInUserId,
     this.allowImplicitScrolling = true,
+    this.onPageChanged,
   });
 
   final Future<String?> Function()? onCreatePost;
@@ -52,6 +53,7 @@ class PostItemWidget extends StatefulWidget {
   final int? startingPostIndex;
   final String? loggedInUserId;
   final bool? allowImplicitScrolling;
+  final Function(int)? onPageChanged;
 
   @override
   State<PostItemWidget> createState() => _PostItemWidgetState();
@@ -91,7 +93,8 @@ class _PostItemWidgetState extends State<PostItemWidget> {
       }
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final targetPage = _pageController.initialPage >= _postList.length ? 0 : _pageController.initialPage;
+      final targetPage =
+          _pageController.initialPage >= _postList.length ? _postList.length - 1 : _pageController.initialPage;
       if (targetPage > 0) {
         _pageController.animateToPage(
           targetPage,
@@ -172,6 +175,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
               });
             }
           }
+          if (widget.onPageChanged != null) widget.onPageChanged!(index);
         },
         itemCount: _postList.length,
         scrollDirection: Axis.vertical,
