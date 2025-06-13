@@ -15,11 +15,13 @@ class IsmPostView extends StatefulWidget {
     required this.tabDataModelList,
     this.currentIndex = 0,
     this.allowImplicitScrolling = false,
+    this.onPageChanged,
   });
 
   final List<TabDataModel> tabDataModelList;
   final num? currentIndex;
   final bool? allowImplicitScrolling;
+  final Function(int)? onPageChanged;
 
   @override
   State<IsmPostView> createState() => _PostViewState();
@@ -147,17 +149,13 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       vsync: this,
       initialIndex: _currentIndex,
     );
-    // REMOVE this block:
-    // if (_currentIndex > 0) {
-    //   _postTabController?.animateTo(_currentIndex);
-    // }
+
     _refreshControllers = List.generate(widget.tabDataModelList.length, (index) => RefreshController());
     var postBloc = IsmInjectionUtils.getBloc<PostBloc>();
     if (postBloc.isClosed) {
       isrConfigureInjection();
       postBloc = IsmInjectionUtils.getBloc<PostBloc>();
     }
-    debugPrint('PostBloc2....${postBloc.isClosed}');
     _postTabController?.addListener(() {
       _currentIndex = _postTabController?.index ?? 0;
       postBloc.add(PostsLoadedEvent(widget.tabDataModelList[_currentIndex].postList));
@@ -201,5 +199,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         },
         loggedInUserId: _loggedInUserId,
         allowImplicitScrolling: widget.allowImplicitScrolling,
+        onPageChanged: widget.onPageChanged,
       );
 }
