@@ -350,13 +350,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
           children: [
             TapHandler(
               borderRadius: IsrDimens.thirty,
-              onTap: widget.isSelfProfile
-                  ? null
-                  : () {
-                      if (widget.onTapUserProfilePic != null) {
-                        widget.onTapUserProfilePic!();
-                      }
-                    },
+              onTap: () {
+                if (widget.onTapUserProfilePic != null) {
+                  widget.onTapUserProfilePic!();
+                }
+              },
               child: Container(
                 decoration: BoxDecoration(
                   color: Colors.transparent,
@@ -611,13 +609,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                               children: [
                                 Flexible(
                                   child: TapHandler(
-                                    onTap: widget.isSelfProfile
-                                        ? null
-                                        : () {
-                                            if (widget.onTapUserProfilePic != null) {
-                                              widget.onTapUserProfilePic!();
-                                            }
-                                          },
+                                    onTap: () {
+                                      if (widget.onTapUserProfilePic != null) {
+                                        widget.onTapUserProfilePic!();
+                                      }
+                                    },
                                     child: Text(
                                       widget.name,
                                       style: IsrStyles.white14.copyWith(
