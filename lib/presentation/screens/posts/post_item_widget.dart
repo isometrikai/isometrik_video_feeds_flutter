@@ -93,7 +93,8 @@ class _PostItemWidgetState extends State<PostItemWidget> {
       }
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final targetPage = _pageController.initialPage >= _postList.length ? 0 : _pageController.initialPage;
+      final targetPage =
+          _pageController.initialPage >= _postList.length ? _postList.length - 1 : _pageController.initialPage;
       if (targetPage > 0) {
         _pageController.animateToPage(
           targetPage,
