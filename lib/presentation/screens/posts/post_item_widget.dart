@@ -62,6 +62,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
   List<PostDataModel> _postList = [];
   var _currentPageIndex = 0;
   StreamSubscription<dynamic>? _subscription;
+  late PageController _pageController;
 
   @override
   void initState() {
@@ -70,6 +71,8 @@ class _PostItemWidgetState extends State<PostItemWidget> {
   }
 
   void _onStartInit() {
+    _pageController = PageController(initialPage: widget.startingPostIndex ?? 0);
+
     // Check current state
     final currentState = _postBloc.state;
     if (currentState is PostsLoadedState) {
@@ -88,17 +91,20 @@ class _PostItemWidgetState extends State<PostItemWidget> {
       }
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _currentPageIndex = widget.startingPostIndex ?? 0;
-      _currentPageIndex = _currentPageIndex >= _postList.length ? 0 : _currentPageIndex;
-      if (_currentPageIndex > 0) {
-        _postBloc.reelsPageFollowingController
-            .animateToPage(_currentPageIndex, duration: const Duration(milliseconds: 1), curve: Curves.easeIn);
+      final targetPage = _pageController.initialPage >= _postList.length ? 0 : _pageController.initialPage;
+      if (targetPage > 0) {
+        _pageController.animateToPage(
+          targetPage,
+          duration: const Duration(milliseconds: 1),
+          curve: Curves.easeIn,
+        );
       }
     });
   }
 
   @override
   void dispose() {
+    _pageController.dispose();
     _subscription?.cancel();
     super.dispose();
   }
@@ -141,7 +147,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
 
   Widget _buildContent(BuildContext context) => PageView.builder(
         allowImplicitScrolling: widget.allowImplicitScrolling ?? true,
-        controller: _postBloc.reelsPageFollowingController,
+        controller: _pageController,
         clipBehavior: Clip.none,
         physics: const ClampingScrollPhysics(),
         onPageChanged: (index) {

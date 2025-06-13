@@ -18,7 +18,6 @@ class PostBloc extends Bloc<PostEvent, PostState> {
 
   final IsmLocalDataUseCase _localDataUseCase;
 
-  var reelsPageFollowingController = PageController();
   UserInfoClass? _userInfoClass;
   var reelsPageTrendingController = PageController();
   TextEditingController? descriptionController;
