@@ -619,7 +619,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                                             }
                                           },
                                     child: Text(
-                                      widget.name.length > 15 ? '${widget.name.substring(0, 10)}...' : widget.name,
+                                      widget.name,
                                       style: IsrStyles.white14.copyWith(
                                         fontWeight: FontWeight.w600,
                                       ),
