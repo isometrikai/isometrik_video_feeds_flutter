@@ -162,9 +162,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       postBloc = IsmInjectionUtils.getBloc<PostBloc>();
     }
 
-    if (widget.tabDataModelList.length > 1) {
-      _tabsVisibilityNotifier.value = true;
-    }
+    _tabsVisibilityNotifier.value = widget.tabDataModelList.length > 1;
+
     if (_currentIndex == 0 &&
         widget.tabDataModelList[_currentIndex].postSectionType == PostSectionType.following &&
         widget.tabDataModelList[_currentIndex].postList.isListEmptyOrNull) {
