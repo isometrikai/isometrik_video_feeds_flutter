@@ -32,6 +32,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   late List<RefreshController> _refreshControllers;
   var _currentIndex = 1;
   var _loggedInUserId = '';
+  final ValueNotifier<bool> _tabsVisibilityNotifier = ValueNotifier<bool>(true);
 
   @override
   void initState() {
@@ -74,7 +75,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                                 .map((tabData) => _buildTabBarView(tabData, widget.tabDataModelList.indexOf(tabData)))
                                 .toList(),
                           ),
-                          if (widget.tabDataModelList.length > 1) _buildTabBar(),
+                          _buildTabBar(),
                         ],
                       ),
                     );
@@ -83,56 +84,60 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         ),
       );
 
-  Widget _buildTabBar() => Container(
-        color: Colors.transparent,
-        padding: EdgeInsets.only(
-          top: MediaQuery.of(context).padding.top + IsrDimens.twenty,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(
-              width: IsrDimens.getScreenWidth(context) * 0.7,
-              child: Theme(
-                data: ThemeData(
-                  splashColor: Colors.transparent,
-                  highlightColor: Colors.transparent,
-                ),
-                child: TabBar(
-                  controller: _postTabController,
-                  labelColor: IsrColors.white,
-                  unselectedLabelColor: IsrColors.white.changeOpacity(0.6),
-                  indicatorColor: IsrColors.white,
-                  indicatorWeight: 2,
-                  dividerColor: Colors.transparent,
-                  indicatorSize: TabBarIndicatorSize.label,
-                  labelPadding: IsrDimens.edgeInsetsSymmetric(
-                    horizontal: IsrDimens.eight,
-                  ),
-                  labelStyle: IsrStyles.white16.copyWith(
-                    fontWeight: FontWeight.w700,
-                    height: 1.5,
-                  ),
-                  unselectedLabelStyle: IsrStyles.white16.copyWith(
-                    fontWeight: FontWeight.w400,
-                    height: 1.5,
-                  ),
-                  tabs: widget.tabDataModelList
-                      .map(
-                        (tab) => Tab(
-                          child: Text(
-                            tab.title,
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      )
-                      .toList(),
-                ),
+  Widget _buildTabBar() => ValueListenableBuilder<bool>(
+      valueListenable: _tabsVisibilityNotifier,
+      builder: (context, value, child) => value == true
+          ? Container(
+              color: Colors.transparent,
+              padding: EdgeInsets.only(
+                top: MediaQuery.of(context).padding.top + IsrDimens.twenty,
               ),
-            ),
-          ],
-        ),
-      );
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: IsrDimens.getScreenWidth(context) * 0.7,
+                    child: Theme(
+                      data: ThemeData(
+                        splashColor: Colors.transparent,
+                        highlightColor: Colors.transparent,
+                      ),
+                      child: TabBar(
+                        controller: _postTabController,
+                        labelColor: IsrColors.white,
+                        unselectedLabelColor: IsrColors.white.changeOpacity(0.6),
+                        indicatorColor: IsrColors.white,
+                        indicatorWeight: 2,
+                        dividerColor: Colors.transparent,
+                        indicatorSize: TabBarIndicatorSize.label,
+                        labelPadding: IsrDimens.edgeInsetsSymmetric(
+                          horizontal: IsrDimens.eight,
+                        ),
+                        labelStyle: IsrStyles.white16.copyWith(
+                          fontWeight: FontWeight.w700,
+                          height: 1.5,
+                        ),
+                        unselectedLabelStyle: IsrStyles.white16.copyWith(
+                          fontWeight: FontWeight.w400,
+                          height: 1.5,
+                        ),
+                        tabs: widget.tabDataModelList
+                            .map(
+                              (tab) => Tab(
+                                child: Text(
+                                  tab.title,
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : const SizedBox.shrink());
 
   void _onStartInit() async {
     _currentIndex = widget.currentIndex?.toInt() ?? 0;
@@ -156,8 +161,25 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       isrConfigureInjection();
       postBloc = IsmInjectionUtils.getBloc<PostBloc>();
     }
+
+    if (widget.tabDataModelList.length > 1) {
+      _tabsVisibilityNotifier.value = true;
+    }
+    if (_currentIndex == 0 &&
+        widget.tabDataModelList[_currentIndex].postSectionType == PostSectionType.following &&
+        widget.tabDataModelList[_currentIndex].postList.isListEmptyOrNull) {
+      _tabsVisibilityNotifier.value = false;
+    }
     _postTabController?.addListener(() {
-      _currentIndex = _postTabController?.index ?? 0;
+      final newIndex = _postTabController?.index ?? 0;
+      if (_currentIndex == 0 &&
+          widget.tabDataModelList[_currentIndex].postSectionType == PostSectionType.following &&
+          widget.tabDataModelList[_currentIndex].postList.isListEmptyOrNull) {
+        _tabsVisibilityNotifier.value = false;
+        _postTabController?.animateTo(0);
+        return;
+      }
+      _currentIndex = newIndex;
       postBloc.add(PostsLoadedEvent(widget.tabDataModelList[_currentIndex].postList));
     });
     postBloc.add(const StartPost());
@@ -186,6 +208,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         postSectionType: tabData.postSectionType,
         onTapPlaceHolder: () {
           if ((_postTabController?.length ?? 0) > 1) {
+            _tabsVisibilityNotifier.value = true;
+            _currentIndex++;
             _postTabController?.animateTo(1);
           }
         },
