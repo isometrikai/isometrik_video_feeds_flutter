@@ -440,7 +440,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                 }
               },
             ),
-            if (widget.postStatus == 1) ...[
+            if (widget.postStatus != 0) ...[
               IsrDimens.boxHeight(IsrDimens.twenty),
               _buildActionButton(
                 icon: widget.isSavedPost == true ? AssetConstants.icSaveSelected : AssetConstants.icSaveUnSelected,
