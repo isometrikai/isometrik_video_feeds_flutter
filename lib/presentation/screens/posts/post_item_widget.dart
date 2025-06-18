@@ -328,6 +328,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
           },
           commentCount: _postList[index].totalComments?.toInt() ?? 0,
           isScheduledPost: _postList[index].scheduleTime != null && _postList[index].scheduleTime != 0,
+          postStatus: _postList[index].postStatus?.toInt() ?? 0,
         ),
       );
 }

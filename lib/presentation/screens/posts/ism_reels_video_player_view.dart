@@ -51,6 +51,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
     this.commentCount = 0,
     this.isCreatePostButtonVisible,
     this.isScheduledPost,
+    this.postStatus,
   });
 
   final String? mediaUrl;
@@ -92,6 +93,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
   final int? commentCount;
   final bool? isCreatePostButtonVisible;
   final bool? isScheduledPost;
+  final int? postStatus;
 
   @override
   State<IsmReelsVideoPlayerView> createState() => _IsmReelsVideoPlayerViewState();
@@ -438,7 +440,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                 }
               },
             ),
-            if (widget.isScheduledPost == false) ...[
+            if (widget.postStatus == 1) ...[
               IsrDimens.boxHeight(IsrDimens.twenty),
               _buildActionButton(
                 icon: widget.isSavedPost == true ? AssetConstants.icSaveSelected : AssetConstants.icSaveUnSelected,
