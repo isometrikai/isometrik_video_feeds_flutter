@@ -200,7 +200,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
             child: SizedBox(
               height: videoPlayerController?.value.size.height,
               width: videoPlayerController?.value.size.width,
-              child: VideoPlayer(videoPlayerController!),
+              child: AspectRatio(
+                aspectRatio: videoPlayerController!.value.aspectRatio,
+                child: VideoPlayer(videoPlayerController!),
+              ),
             ),
           )
         : const SizedBox();
