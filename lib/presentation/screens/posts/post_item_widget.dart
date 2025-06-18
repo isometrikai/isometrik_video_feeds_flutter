@@ -154,7 +154,6 @@ class _PostItemWidgetState extends State<PostItemWidget> {
         clipBehavior: Clip.none,
         physics: const ClampingScrollPhysics(),
         onPageChanged: (index) {
-          if (_postList.isEmpty) context.pop(context);
           debugPrint('FollowingPostWidget ...post list size... ${_postList.length}');
           debugPrint('FollowingPostWidget ...index $index');
           debugPrint(
@@ -242,6 +241,11 @@ class _PostItemWidgetState extends State<PostItemWidget> {
                     _postList[index] = postData;
                   });
                 }
+              }
+            }
+            if (_postList.isListEmptyOrNull) {
+              if (context.mounted) {
+                context.pop(context);
               }
             }
           },
