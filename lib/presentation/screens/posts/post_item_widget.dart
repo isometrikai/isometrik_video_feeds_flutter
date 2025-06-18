@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
@@ -62,7 +63,6 @@ class PostItemWidget extends StatefulWidget {
 class _PostItemWidgetState extends State<PostItemWidget> {
   final _postBloc = IsmInjectionUtils.getBloc<PostBloc>();
   List<PostDataModel> _postList = [];
-  var _currentPageIndex = 0;
   StreamSubscription<dynamic>? _subscription;
   late PageController _pageController;
 
@@ -154,6 +154,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
         clipBehavior: Clip.none,
         physics: const ClampingScrollPhysics(),
         onPageChanged: (index) {
+          if (_postList.isEmpty) context.pop(context);
           debugPrint('FollowingPostWidget ...post list size... ${_postList.length}');
           debugPrint('FollowingPostWidget ...index $index');
           debugPrint(
