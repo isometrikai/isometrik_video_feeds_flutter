@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
@@ -241,11 +240,6 @@ class _PostItemWidgetState extends State<PostItemWidget> {
                     _postList[index] = postData;
                   });
                 }
-              }
-            }
-            if (_postList.isListEmptyOrNull) {
-              if (context.mounted) {
-                context.pop(context);
               }
             }
           },
