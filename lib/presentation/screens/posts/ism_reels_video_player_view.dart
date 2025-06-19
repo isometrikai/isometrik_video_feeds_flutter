@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:image/image.dart' as img;
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/isr_utils.dart';
@@ -123,15 +125,41 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
 
   final _maxLengthToShow = 100;
 
+  var _aspectRatio = 1.0;
+
   @override
   void initState() {
+    _onStartInit();
     super.initState();
+  }
+
+  void _onStartInit() async {
     // Always start unmuted
     _isMuted = false;
     _tapGestureRecognizer = TapGestureRecognizer();
     debugPrint('IsmReelsVideoPlayerView ...Post by ...${widget.name}\n Post url ${widget.mediaUrl}');
     if (widget.mediaType == kVideoType) {
       initializeVideoPlayer();
+    } else {
+      _aspectRatio = await getImageAspectRatio(widget.mediaUrl ?? '') ?? 1.0;
+      print('Aspect ratio: $_aspectRatio');
+    }
+  }
+
+  Future<double?> getImageAspectRatio(String imageUrl) async {
+    try {
+      final response = await http.get(Uri.parse(imageUrl));
+      if (response.statusCode == 200) {
+        var imageBytes = response.bodyBytes;
+        var decodedImage = img.decodeImage(imageBytes);
+        if (decodedImage != null) {
+          return decodedImage.width / decodedImage.height;
+        }
+      }
+      return null; // Unable to decode
+    } catch (e) {
+      print('Error getting aspect ratio: $e');
+      return null;
     }
   }
 
@@ -183,7 +211,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
         widget.thumbnail,
         width: IsrDimens.getScreenWidth(context),
         height: IsrDimens.getScreenHeight(context),
-        fit: BoxFit.contain,
+        fit: BoxFit.cover,
       );
     }
 
@@ -192,7 +220,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
         widget.mediaUrl ?? '',
         width: IsrDimens.getScreenWidth(context),
         height: IsrDimens.getScreenHeight(context),
-        fit: BoxFit.contain,
+        fit: BoxFit.cover,
       );
     }
 
