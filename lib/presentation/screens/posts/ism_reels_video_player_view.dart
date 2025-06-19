@@ -211,7 +211,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
         widget.thumbnail,
         width: IsrDimens.getScreenWidth(context),
         height: IsrDimens.getScreenHeight(context),
-        fit: BoxFit.cover,
+        fit: BoxFit.contain,
       );
     }
 
@@ -220,7 +220,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
         widget.mediaUrl ?? '',
         width: IsrDimens.getScreenWidth(context),
         height: IsrDimens.getScreenHeight(context),
-        fit: BoxFit.cover,
+        fit: BoxFit.contain,
       );
     }
 
