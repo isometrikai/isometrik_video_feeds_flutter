@@ -179,6 +179,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
         itemCount: _postList.length,
         scrollDirection: Axis.vertical,
         itemBuilder: (context, index) => IsmReelsVideoPlayerView(
+          pageIndex: index,
           isCreatePostButtonVisible: widget.isCreatePostButtonVisible,
           thumbnail: _postList[index].thumbnailUrl1 ?? '',
           key: Key(_postList[index].postId ?? ''),

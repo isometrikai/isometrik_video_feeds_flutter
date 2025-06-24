@@ -54,6 +54,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
     this.isCreatePostButtonVisible,
     this.isScheduledPost,
     this.postStatus,
+    this.pageIndex,
   });
 
   final String? mediaUrl;
@@ -96,6 +97,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
   final bool? isCreatePostButtonVisible;
   final bool? isScheduledPost;
   final int? postStatus;
+  final int? pageIndex;
 
   @override
   State<IsmReelsVideoPlayerView> createState() => _IsmReelsVideoPlayerViewState();
@@ -178,9 +180,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
         mediaUrl = mediaUrl.replaceFirst('http:', 'https:');
         debugPrint('IsmReelsVideoPlayerView....initializeVideoPlayer video url converted to https $mediaUrl');
       }
-      videoPlayerController = VideoPlayerController.networkUrl(
-        Uri.parse(mediaUrl),
-      );
+      videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(mediaUrl));
     }
     if (videoPlayerController == null) return;
     try {
@@ -193,6 +193,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
       IsrVideoReelUtility.debugCatchLog(error: e);
     }
     await videoPlayerController?.setLooping(true);
+    if (widget.pageIndex == 0) {
+      _togglePlayPause();
+    }
     mountUpdate();
   }
 
