@@ -193,9 +193,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
       IsrVideoReelUtility.debugCatchLog(error: e);
     }
     await videoPlayerController?.setLooping(true);
-    if (widget.pageIndex == 0 && _isPlaying == false) {
-      _togglePlayPause();
-    }
+    VisibilityDetectorController.instance.notifyNow();
     mountUpdate();
   }
 
