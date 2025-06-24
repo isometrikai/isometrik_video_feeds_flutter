@@ -305,21 +305,25 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
             child: VisibilityDetector(
               key: Key('${widget.mediaUrl}'),
               onVisibilityChanged: (info) {
-                if (widget.showBlur == true || widget.mediaType == kPictureType) return;
-
-                final isVisible = info.visibleFraction > 0.9;
-                final isInitialized = videoPlayerController?.value.isInitialized ?? false;
-                final isPlaying = videoPlayerController?.value.isPlaying ?? false;
-
-                if (isVisible && isInitialized && !isPlaying) {
-                  videoPlayerController?.seekTo(Duration.zero);
-                  videoPlayerController?.play();
-                  _isPlaying = true;
+                if (widget.showBlur == true || widget.mediaType == kPictureType) {
+                  return;
+                }
+                if (info.visibleFraction > 0.9) {
                   mountUpdate();
-                } else if (!isVisible && isPlaying) {
-                  videoPlayerController?.pause();
-                  _isPlaying = false;
+                  if (videoPlayerController?.value.isPlaying == false) {
+                    videoPlayerController?.seekTo(Duration.zero);
+                    videoPlayerController?.play();
+                    _isPlaying = !_isPlaying;
+                    mountUpdate();
+                  }
+                } else {
+                  _isPlayPauseActioned = false; // Reset play/pause icon state when video becomes visible
                   mountUpdate();
+                  if (videoPlayerController?.value.isPlaying == true) {
+                    videoPlayerController?.pause();
+                    _isPlaying = !_isPlaying;
+                    mountUpdate();
+                  }
                 }
               },
               child: Stack(
