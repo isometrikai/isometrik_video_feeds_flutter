@@ -109,7 +109,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
   static const int kVideoType = 1;
   late TapGestureRecognizer _tapGestureRecognizer;
 
-  VideoPlayerController? videoPlayerController;
+  VideoPlayerController? _videoPlayerController;
 
   var _isPlaying = true;
 
@@ -184,14 +184,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
         mediaUrl = mediaUrl.replaceFirst('http:', 'https:');
         debugPrint('IsmReelsVideoPlayerView....initializeVideoPlayer video url converted to https $mediaUrl');
       }
-      videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(mediaUrl));
+      _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(mediaUrl));
     }
-    if (videoPlayerController == null) return;
+    if (_videoPlayerController == null) return;
     try {
-      await videoPlayerController?.initialize();
+      await _videoPlayerController?.initialize();
       // Always start with volume on
-      await videoPlayerController?.setVolume(1.0);
-      await videoPlayerController?.setLooping(true);
+      await _videoPlayerController?.setVolume(1.0);
+      await _videoPlayerController?.setLooping(true);
 
       // ✅ ADD: Mark as initialized
       _isVideoInitialized = true;
@@ -200,10 +200,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
 
       // ✅ ADD: Auto-play if this is the initial/first video
       if (widget.isFirstPost == true) {
-        await videoPlayerController?.seekTo(Duration.zero);
-        await videoPlayerController?.play();
+        await _videoPlayerController?.seekTo(Duration.zero);
+        await _videoPlayerController?.play();
         _isPlaying = true;
+        debugPrint('IsmReelsVideoPlayerView....Auto-playing initial video');
       }
+      // Wait until next frame before forcing visibility check
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        VisibilityDetectorController.instance.notifyNow();
+      });
       mountUpdate();
     } catch (e) {
       debugPrint('IsmReelsVideoPlayerView...catch video url ${widget.mediaUrl}');
@@ -214,9 +219,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
   @override
   void dispose() {
     _tapGestureRecognizer.dispose();
-    videoPlayerController?.pause();
-    videoPlayerController?.dispose();
-    videoPlayerController = null;
+    _videoPlayerController?.pause();
+    _videoPlayerController?.dispose();
+    _videoPlayerController = null;
     super.dispose();
   }
 
@@ -240,15 +245,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
     }
 
     // ✅ CHANGED: Check _isVideoInitialized instead of just isInitialized
-    return _isVideoInitialized && videoPlayerController?.value.isInitialized == true
+    return _videoPlayerController != null && _videoPlayerController?.value.isInitialized == true
         ? FittedBox(
             fit: BoxFit.cover,
             child: SizedBox(
-              height: videoPlayerController?.value.size.height,
-              width: videoPlayerController?.value.size.width,
+              height: _videoPlayerController?.value.size.height,
+              width: _videoPlayerController?.value.size.width,
               child: AspectRatio(
-                aspectRatio: videoPlayerController!.value.aspectRatio,
-                child: VideoPlayer(videoPlayerController!),
+                aspectRatio: _videoPlayerController!.value.aspectRatio,
+                child: VideoPlayer(_videoPlayerController!),
               ),
             ),
           )
@@ -261,9 +266,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
     }
     _isPlaying = !_isPlaying;
     if (_isPlaying) {
-      videoPlayerController?.pause();
+      _videoPlayerController?.pause();
     } else {
-      videoPlayerController?.play();
+      _videoPlayerController?.play();
     }
     _isPlayPauseActioned = !_isPlayPauseActioned;
     mountUpdate();
@@ -286,7 +291,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
             },
             onLongPressStart: (details) {
               if (widget.mediaType == kVideoType) {
-                videoPlayerController?.pause();
+                _videoPlayerController?.pause();
               }
               if (widget.onLongPressStart != null) {
                 widget.onLongPressStart!();
@@ -295,7 +300,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
             },
             onLongPressEnd: (value) {
               if (widget.mediaType == kVideoType) {
-                videoPlayerController?.play();
+                _videoPlayerController?.play();
               }
               if (widget.onLongPressEnd != null) {
                 widget.onLongPressEnd!();
@@ -310,17 +315,17 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                 }
                 if (info.visibleFraction > 0.9) {
                   mountUpdate();
-                  if (videoPlayerController?.value.isPlaying == false) {
-                    videoPlayerController?.seekTo(Duration.zero);
-                    videoPlayerController?.play();
+                  if (_videoPlayerController?.value.isPlaying == false) {
+                    _videoPlayerController?.seekTo(Duration.zero);
+                    _videoPlayerController?.play();
                     _isPlaying = !_isPlaying;
                     mountUpdate();
                   }
                 } else {
                   _isPlayPauseActioned = false; // Reset play/pause icon state when video becomes visible
                   mountUpdate();
-                  if (videoPlayerController?.value.isPlaying == true) {
-                    videoPlayerController?.pause();
+                  if (_videoPlayerController?.value.isPlaying == true) {
+                    _videoPlayerController?.pause();
                     _isPlaying = !_isPlaying;
                     mountUpdate();
                   }
@@ -376,7 +381,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
           ),
 
           // Video controls
-          if (widget.mediaType == kVideoType && videoPlayerController?.value.isInitialized == true)
+          if (widget.mediaType == kVideoType && _videoPlayerController?.value.isInitialized == true)
             AnimatedOpacity(
               opacity: _isPlayPauseActioned ? 1.0 : 0.0,
               duration: const Duration(milliseconds: 300),
@@ -885,7 +890,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
 
     setState(() {
       _isMuted = !_isMuted;
-      videoPlayerController?.setVolume(_isMuted ? 0.0 : 1.0);
+      _videoPlayerController?.setVolume(_isMuted ? 0.0 : 1.0);
     });
     widget.onTapVolume?.call();
   }
