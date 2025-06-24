@@ -129,10 +129,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
 
   var _aspectRatio = 1.0;
 
+  var _isVideoInitialized = false;
+
   @override
   void initState() {
-    _onStartInit();
     super.initState();
+    _onStartInit();
   }
 
   void _onStartInit() async {
@@ -141,7 +143,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
     _tapGestureRecognizer = TapGestureRecognizer();
     debugPrint('IsmReelsVideoPlayerView ...Post by ...${widget.name}\n Post url ${widget.mediaUrl}');
     if (widget.mediaType == kVideoType) {
-      initializeVideoPlayer();
+      await initializeVideoPlayer(); // ✅ CHANGED: Make this await
     } else {
       _aspectRatio = await getImageAspectRatio(widget.mediaUrl ?? '') ?? 1.0;
       print('Aspect ratio: $_aspectRatio');
@@ -172,7 +174,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
   }
 
   //initialize vide player controller
-  void initializeVideoPlayer() async {
+  //initialize video player controller
+  Future<void> initializeVideoPlayer() async {
+    // ✅ CHANGED: Make this return Future<void>
     debugPrint('IsmReelsVideoPlayerView....initializeVideoPlayer video url ${widget.mediaUrl}');
     if (widget.mediaUrl?.isStringEmptyOrNull == false) {
       var mediaUrl = widget.mediaUrl!;
@@ -187,14 +191,24 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
       await videoPlayerController?.initialize();
       // Always start with volume on
       await videoPlayerController?.setVolume(1.0);
+      await videoPlayerController?.setLooping(true);
+
+      // ✅ ADD: Mark as initialized
+      _isVideoInitialized = true;
+
       debugPrint('IsmReelsVideoPlayerView....initializeVideoPlayer name ${widget.name}');
+
+      // ✅ ADD: Auto-play if this is the initial/first video
+      if (widget.pageIndex == 0) {
+        await videoPlayerController?.seekTo(Duration.zero);
+        await videoPlayerController?.play();
+        _isPlaying = true;
+      }
+      mountUpdate();
     } catch (e) {
       debugPrint('IsmReelsVideoPlayerView...catch video url ${widget.mediaUrl}');
       IsrVideoReelUtility.debugCatchLog(error: e);
     }
-    await videoPlayerController?.setLooping(true);
-    VisibilityDetectorController.instance.notifyNow();
-    mountUpdate();
   }
 
   @override
@@ -225,7 +239,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
       );
     }
 
-    return videoPlayerController != null && videoPlayerController?.value.isInitialized == true
+    // ✅ CHANGED: Check _isVideoInitialized instead of just isInitialized
+    return _isVideoInitialized && videoPlayerController?.value.isInitialized == true
         ? FittedBox(
             fit: BoxFit.cover,
             child: SizedBox(
@@ -290,25 +305,21 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
             child: VisibilityDetector(
               key: Key('${widget.mediaUrl}'),
               onVisibilityChanged: (info) {
-                if (widget.showBlur == true || widget.mediaType == kPictureType) {
-                  return;
-                }
-                if (info.visibleFraction > 0.9) {
+                if (widget.showBlur == true || widget.mediaType == kPictureType) return;
+
+                final isVisible = info.visibleFraction > 0.9;
+                final isInitialized = videoPlayerController?.value.isInitialized ?? false;
+                final isPlaying = videoPlayerController?.value.isPlaying ?? false;
+
+                if (isVisible && isInitialized && !isPlaying) {
+                  videoPlayerController?.seekTo(Duration.zero);
+                  videoPlayerController?.play();
+                  _isPlaying = true;
                   mountUpdate();
-                  if (videoPlayerController?.value.isPlaying == false) {
-                    videoPlayerController?.seekTo(Duration.zero);
-                    videoPlayerController?.play();
-                    _isPlaying = !_isPlaying;
-                    mountUpdate();
-                  }
-                } else {
-                  _isPlayPauseActioned = false; // Reset play/pause icon state when video becomes visible
+                } else if (!isVisible && isPlaying) {
+                  videoPlayerController?.pause();
+                  _isPlaying = false;
                   mountUpdate();
-                  if (videoPlayerController?.value.isPlaying == true) {
-                    videoPlayerController?.pause();
-                    _isPlaying = !_isPlaying;
-                    mountUpdate();
-                  }
                 }
               },
               child: Stack(
