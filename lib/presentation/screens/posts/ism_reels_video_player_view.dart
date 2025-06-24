@@ -54,7 +54,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
     this.isCreatePostButtonVisible,
     this.isScheduledPost,
     this.postStatus,
-    this.pageIndex,
+    this.isFirstPost,
   });
 
   final String? mediaUrl;
@@ -97,7 +97,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
   final bool? isCreatePostButtonVisible;
   final bool? isScheduledPost;
   final int? postStatus;
-  final int? pageIndex;
+  final bool? isFirstPost;
 
   @override
   State<IsmReelsVideoPlayerView> createState() => _IsmReelsVideoPlayerViewState();
@@ -199,7 +199,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
       debugPrint('IsmReelsVideoPlayerView....initializeVideoPlayer name ${widget.name}');
 
       // ✅ ADD: Auto-play if this is the initial/first video
-      if (widget.pageIndex == 0) {
+      if (widget.isFirstPost == true) {
         await videoPlayerController?.seekTo(Duration.zero);
         await videoPlayerController?.play();
         _isPlaying = true;
