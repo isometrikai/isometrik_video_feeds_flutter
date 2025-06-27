@@ -125,7 +125,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
 
   var _isMuted = false;
 
-  final _maxLengthToShow = 100;
+  final _maxLengthToShow = 50;
 
   var _aspectRatio = 1.0;
 
