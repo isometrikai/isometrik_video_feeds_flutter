@@ -773,11 +773,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                               if (widget.description.length > _maxLengthToShow)
                                 TextSpan(
                                   text: _isExpandedDescription
-                                      ? ' ${IsrTranslationFile.readLess}'
-                                      : ' ${IsrTranslationFile.readMore}',
+                                      ? ' ${IsrTranslationFile.viewLess}'
+                                      : ' ${IsrTranslationFile.viewMore}',
                                   style: IsrStyles.white14.copyWith(
-                                    color: IsrColors.appColor.changeOpacity(0.6),
-                                    fontWeight: FontWeight.w500,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                   recognizer: _tapGestureRecognizer
                                     ..onTap = () {

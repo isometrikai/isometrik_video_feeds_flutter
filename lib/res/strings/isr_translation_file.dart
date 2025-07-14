@@ -40,6 +40,6 @@ class IsrTranslationFile {
   static const noPostAvailable = 'No Post Available';
   static const startFollowing = 'Start following to see contents.';
   static const creatorEarnsCommission = 'Creator Earns Commission';
-  static const readMore = 'Read More';
-  static const readLess = 'Read Less';
+  static const viewMore = 'View More';
+  static const viewLess = 'View Less';
 }
