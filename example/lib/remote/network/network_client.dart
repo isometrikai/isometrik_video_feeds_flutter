@@ -136,6 +136,14 @@ class NetworkClient with AppMixin {
     }
   }
 
+  void _logRequest(http.Response response, dynamic data, Uri finalUrl, Map<String, String>? headers,
+      ResponseModel res) {
+    printLog(
+      this,
+      '\nMethod: ${response.request?.method}\nURL: ${response.request?.url}\nBody: ${jsonEncode(data)}\nQuery Params: ${finalUrl.queryParameters}\nHeaders: $headers\nResponse:\nStatus Code: ${res.statusCode}\nResponse Data: ${res.data}',
+    );
+  }
+
   /// Method to return the API response based upon the status code of the server
   ResponseModel returnResponse(http.Response response) {
     final statusCode = response.statusCode;

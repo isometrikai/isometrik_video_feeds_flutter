@@ -54,7 +54,6 @@ class _HomeScreenState extends State<HomeScreen> {
               return isr.IsmPostView(
                 tabDataModelList: [
                   isr.TabDataModel(
-                    onTapCartIcon: _handleCartAction,
                     timeLinePosts: state.timeLinePosts ?? [],
                     isCreatePostButtonVisible: true,
                     postSectionType: PostSectionType.following,
