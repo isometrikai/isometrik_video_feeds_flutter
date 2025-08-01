@@ -1,8 +1,10 @@
 // coverage:ignore-file
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
+import 'package:http/io_client.dart';
 import 'package:ism_video_reel_player_example/core/core.dart';
 import 'package:ism_video_reel_player_example/data/data.dart';
 import 'package:ism_video_reel_player_example/di/di.dart';
@@ -14,12 +16,16 @@ import 'package:ism_video_reel_player_example/utils/utils.dart';
 class NetworkClient with AppMixin {
   NetworkClient({
     required this.baseUrl,
-  });
+  }) {
+    _client = IOClient(HttpClient()
+      ..connectionTimeout = AppConstants.timeOutDuration
+      ..idleTimeout = const Duration(minutes: 10)
+      ..maxConnectionsPerHost = 5);
+  }
 
   final String baseUrl;
   final localStorageManager = InjectionUtils.getOtherClass<LocalStorageManager>();
-
-  final networkClient = http.Client();
+  late final IOClient _client;
 
   var _isRefreshing = false;
   var responseCode = 200;
@@ -94,7 +100,9 @@ class NetworkClient with AppMixin {
       final response = await getFinalResponse(finalUrl, headers, data, request);
       if (isLoading) Utility.closeProgressDialog();
       final res = returnResponse(response);
-      _logRequest(response, data, finalUrl, headers, res);
+
+      logRequest(this, response, data, finalUrl, headers, res, 0);
+
       if (res.hasError) {
         return _proceedWithErrorResponse(res, response);
       }
@@ -128,8 +136,8 @@ class NetworkClient with AppMixin {
     }
   }
 
-  void _logRequest(
-      http.Response response, dynamic data, Uri finalUrl, Map<String, String>? headers, ResponseModel res) {
+  void _logRequest(http.Response response, dynamic data, Uri finalUrl, Map<String, String>? headers,
+      ResponseModel res) {
     printLog(
       this,
       '\nMethod: ${response.request?.method}\nURL: ${response.request?.url}\nBody: ${jsonEncode(data)}\nQuery Params: ${finalUrl.queryParameters}\nHeaders: $headers\nResponse:\nStatus Code: ${res.statusCode}\nResponse Data: ${res.data}',
@@ -252,14 +260,14 @@ class NetworkClient with AppMixin {
       Uri finalUrl, Map<String, String>? headers, data, NetworkRequestType requestType) async {
     switch (requestType) {
       case NetworkRequestType.get:
-        return await http.Client()
+        return _client
             .get(
               finalUrl,
               headers: headers,
             )
             .timeout(AppConstants.timeOutDuration);
       case NetworkRequestType.post:
-        return await http.Client()
+        return _client
             .post(
               finalUrl,
               body: jsonEncode(data),
@@ -267,7 +275,7 @@ class NetworkClient with AppMixin {
             )
             .timeout(AppConstants.timeOutDuration);
       case NetworkRequestType.put:
-        return await http.Client()
+        return _client
             .put(
               finalUrl,
               body: jsonEncode(data),
@@ -275,7 +283,7 @@ class NetworkClient with AppMixin {
             )
             .timeout(AppConstants.timeOutDuration);
       case NetworkRequestType.patch:
-        return await http.Client()
+        return _client
             .patch(
               finalUrl,
               body: jsonEncode(data),
@@ -283,7 +291,7 @@ class NetworkClient with AppMixin {
             )
             .timeout(AppConstants.timeOutDuration);
       case NetworkRequestType.delete:
-        return await http.Client()
+        return _client
             .delete(
               finalUrl,
               body: jsonEncode(data),

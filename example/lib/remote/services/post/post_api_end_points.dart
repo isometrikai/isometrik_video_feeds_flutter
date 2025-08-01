@@ -9,4 +9,5 @@ class PostApiEndPoints {
   static const String reportPost = '/social/v1/reportReasons';
   static const String getReportReasons = '/social/v1/reportReasons';
   static const String getCloudDetails = '/v1/cloudinary';
+  static const String getTimeLinePosts = '/v1/posts/timeline';
 }

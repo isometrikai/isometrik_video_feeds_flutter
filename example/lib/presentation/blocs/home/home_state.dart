@@ -16,10 +16,12 @@ class HomeLoaded extends HomeState {
   HomeLoaded({
     required this.followingPosts,
     required this.trendingPosts,
+    required this.timeLinePosts,
   });
 
   final List<isr.PostDataModel>? followingPosts;
   final List<isr.PostDataModel>? trendingPosts;
+  final List<isr.TimeLineData>? timeLinePosts;
 }
 
 class HomeError extends HomeState {

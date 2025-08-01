@@ -34,7 +34,7 @@ dependencies:
   pull_to_refresh: ^2.0.0
   shared_preferences: ^2.3.5
   url_launcher: ^6.3.1
-  video_player: ^2.9.5
+  video_player: ^2.10.0
 #  video_thumbnail: ^0.5.3
   get_thumbnail_video: ^0.7.3
   #  video_trimmer: '^4.0.2'

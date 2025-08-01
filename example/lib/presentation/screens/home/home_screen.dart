@@ -52,12 +52,14 @@ class _HomeScreenState extends State<HomeScreen> {
               return isr.IsmPostView(
                 tabDataModelList: [
                   isr.TabDataModel(
+                    timeLinePosts: state.timeLinePosts ?? [],
                     isCreatePostButtonVisible: true,
                     postSectionType: PostSectionType.following,
                     title: TranslationFile.following,
                     postList: state.followingPosts,
                     onCreatePost: () async {
-                      final postDataModel = await InjectionUtils.getRouteManagement().goToCreatePostView();
+                      final postDataModel =
+                          await InjectionUtils.getRouteManagement().goToCreatePostView();
                       return postDataModel;
                     },
                     onPressLike: (postId, userId, isLiked) async {
@@ -139,9 +141,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       }
                     },
                     onLoadMore: (postSectionType) async {
-                      final completer = Completer<List<isr.PostDataModel>>();
+                      final completer = Completer<List<isr.TimeLineData>>();
 
-                      _homeBloc.add(GetFollowingPostEvent(
+                      _homeBloc.add(GetTimeLinePostEvent(
                         isLoading: false,
                         isPagination: true,
                         onComplete: (posts) {
@@ -161,12 +163,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                   ),
                   isr.TabDataModel(
+                    timeLinePosts: [],
                     isCreatePostButtonVisible: true,
                     postSectionType: PostSectionType.trending,
                     title: TranslationFile.trending,
                     postList: state.trendingPosts,
                     onCreatePost: () async {
-                      final postDataModel = await InjectionUtils.getRouteManagement().goToCreatePostView();
+                      final postDataModel =
+                          await InjectionUtils.getRouteManagement().goToCreatePostView();
                       return postDataModel;
                     },
                     onPressLike: (postId, userId, isLiked) async {
@@ -258,7 +262,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         },
                       ));
                       final postResponse = await completer.future;
-                      return postResponse;
+                      return [];
                     },
                     onRefresh: () async {
                       _homeBloc.add(GetTrendingPostEvent(

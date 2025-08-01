@@ -12,3 +12,4 @@ export 'post_response.dart';
 export 'report_reason_response.dart';
 export 'response_class.dart';
 export 'signup_response_model.dart';
+export 'timeline_response.dart';

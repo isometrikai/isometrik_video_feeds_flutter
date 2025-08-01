@@ -20,9 +20,11 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     this._likePostUseCase,
     this._reportPostUseCase,
     this._getReportReasonsUseCase,
+    this._getTimelinePostUseCase,
   ) : super(HomeInitial()) {
     on<LoadHomeData>(_onLoadHomeData);
     on<GetFollowingPostEvent>(_getFollowingPost);
+    on<GetTimeLinePostEvent>(_getTimeLinePost);
     on<GetTrendingPostEvent>(_getTrendingPost);
     on<SavePostEvent>(_savePost);
     on<GetReasonEvent>(_getReason);
@@ -33,6 +35,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
   final LocalDataUseCase _localDataUseCase;
   final GetFollowingPostUseCase _getFollowingPostUseCase;
+  final GetTimelinePostUseCase _getTimelinePostUseCase;
   final GetTrendingPostUseCase _getTrendingPostUseCase;
   final FollowPostUseCase _followPostUseCase;
   final SavePostUseCase _savePostUseCase;
@@ -43,6 +46,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   final List<isr.PostDataModel> _followingPostList = [];
   final List<isr.PostDataModel> _trendingPostList = [];
 
+  final List<isr.TimeLineData> _timeLinePostList = [];
+
   int _currentPage = 0;
   final _followingPageSize = 20;
   bool _hasMoreData = true;
@@ -51,6 +56,11 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   bool _hasTrendingMoreData = true;
   bool _isTrendingLoadingMore = false;
   final _trendingPageSize = 20;
+
+  bool _isTimeLineLoadingMore = false;
+  bool _hasMoreTimeLineData = true;
+  int _timeLineCurrentPage = 1;
+  final _timeLinePageSize = 20;
 
   Future<void> _onLoadHomeData(
     LoadHomeData event,
@@ -61,11 +71,13 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       await _initializeReelsSdk();
       await Future.wait([
         _callGetFollowingPost(true, false, false, null),
-        _callGetTrendingPost(true, false, false, null),
+        _callGetTimeLinePost(true, false, false, null)
+        // _callGetTrendingPost(true, false, false, null),
       ]);
       emit(HomeLoaded(
         followingPosts: _followingPostList,
         trendingPosts: _trendingPostList,
+        timeLinePosts: _timeLinePostList,
       ));
     } catch (error) {
       emit(HomeError(error.toString()));
@@ -89,15 +101,22 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   }
 
   FutureOr<void> _getFollowingPost(GetFollowingPostEvent event, Emitter<HomeState> emit) async {
-    await _callGetFollowingPost(event.isRefresh, event.isPagination, event.isLoading, event.onComplete);
+    await _callGetFollowingPost(
+        event.isRefresh, event.isPagination, event.isLoading, event.onComplete);
+  }
+
+  FutureOr<void> _getTimeLinePost(GetTimeLinePostEvent event, Emitter<HomeState> emit) async {
+    await _callGetTimeLinePost(
+        event.isRefresh, event.isPagination, event.isLoading, event.onComplete);
   }
 
   FutureOr<void> _getTrendingPost(GetTrendingPostEvent event, Emitter<HomeState> emit) async {
-    await _callGetTrendingPost(event.isRefresh, event.isPagination, event.isLoading, event.onComplete);
+    await _callGetTrendingPost(
+        event.isRefresh, event.isPagination, event.isLoading, event.onComplete);
   }
 
-  Future<void> _callGetFollowingPost(
-      bool isFromRefresh, bool isFromPagination, bool isLoading, Function(List<isr.PostDataModel>)? onComplete) async {
+  Future<void> _callGetFollowingPost(bool isFromRefresh, bool isFromPagination, bool isLoading,
+      Function(List<isr.PostDataModel>)? onComplete) async {
     // For refresh, clear cache and start from page 0
     if (isFromRefresh) {
       _followingPostList.clear();
@@ -126,8 +145,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
     if (apiResult.isSuccess) {
       final postDataList = apiResult.data?.data as List<PostData>;
-      final newPosts =
-          postDataList.map((postData) => isr.PostDataModel.fromJson(postData.toJson())).toList(); // Updated line
+      final newPosts = postDataList
+          .map((postData) => isr.PostDataModel.fromJson(postData.toJson()))
+          .toList(); // Updated line
       if (newPosts.length < _followingPageSize) {
         _hasMoreData = false;
       }
@@ -152,8 +172,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     _isLoadingMore = false;
   }
 
-  Future<void> _callGetTrendingPost(
-      bool isFromRefresh, bool isFromPagination, bool isLoading, Function(List<isr.PostDataModel>)? onComplete) async {
+  Future<void> _callGetTrendingPost(bool isFromRefresh, bool isFromPagination, bool isLoading,
+      Function(List<isr.PostDataModel>)? onComplete) async {
     // For refresh, clear cache and start from page 0
     if (isFromRefresh) {
       _trendingPostList.clear();
@@ -182,7 +202,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
     if (apiResult.isSuccess) {
       final postDataList = apiResult.data?.data as List<PostData>;
-      final newPosts = postDataList.map((postData) => isr.PostDataModel.fromJson(postData.toJson())).toList();
+      final newPosts =
+          postDataList.map((postData) => isr.PostDataModel.fromJson(postData.toJson())).toList();
       if (newPosts.isEmpty) {
         _hasTrendingMoreData = false;
       } else {
@@ -277,5 +298,65 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       ErrorHandler.showAppError(appError: apiResult.error);
       event.onComplete.call(false);
     }
+  }
+
+  Future<void> _callGetTimeLinePost(
+    bool isFromRefresh,
+    bool isFromPagination,
+    bool isLoading,
+    Function(List<isr.TimeLineData>)? onComplete,
+  ) async {
+    // For refresh, clear cache and start from page 0
+    if (isFromRefresh) {
+      _timeLinePostList.clear();
+      _timeLineCurrentPage = 1;
+      _hasMoreTimeLineData = true;
+      _isTimeLineLoadingMore = false;
+    } else if (!isFromPagination && _followingPostList.isNotEmpty) {
+      // If we have cached posts and it's not a refresh, emit them immediately
+      // emit(HomeLoaded(followingPosts: _followingPostList, trendingPosts: _trendingPostList));
+    }
+
+    if (!isFromPagination) {
+      _timeLineCurrentPage = 1;
+      _hasMoreTimeLineData = true;
+    } else if (_isTimeLineLoadingMore || !_hasMoreTimeLineData) {
+      return;
+    }
+
+    _isTimeLineLoadingMore = true;
+
+    final apiResult = await _getTimelinePostUseCase.executeTimeLinePost(
+      isLoading: isLoading,
+      page: _timeLineCurrentPage,
+      pageLimit: _timeLinePageSize,
+    );
+
+    if (apiResult.isSuccess) {
+      final postDataList = apiResult.data?.data as List<TimeLineData>;
+      final newPosts = postDataList
+          .map((postData) => isr.TimeLineData.fromMap(postData.toMap()))
+          .toList(); // Updated line
+      if (newPosts.length < _timeLinePageSize) {
+        _hasMoreTimeLineData = false;
+      }
+
+      if (isFromPagination) {
+        _timeLinePostList.addAll(newPosts);
+        if (onComplete != null) {
+          onComplete(newPosts);
+        }
+      } else {
+        _timeLinePostList
+          ..clear()
+          ..addAll(newPosts);
+      }
+
+      _timeLineCurrentPage++;
+    } else {
+      ErrorHandler.showAppError(appError: apiResult.error);
+    }
+
+    _isTimeLineLoadingMore = false;
   }
 }

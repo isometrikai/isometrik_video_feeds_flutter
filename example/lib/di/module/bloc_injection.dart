@@ -31,6 +31,7 @@ class BlocInjection {
           InjectionUtils.getUseCase<LikePostUseCase>(),
           InjectionUtils.getUseCase<ReportPostUseCase>(),
           InjectionUtils.getUseCase<GetReportReasonsUseCase>(),
+          InjectionUtils.getUseCase<GetTimelinePostUseCase>(),
         ));
 
     InjectionUtils.registerBloc<CreatePostBloc>(() => CreatePostBloc(
