@@ -9,13 +9,16 @@ class ApiServiceInjection {
   static void inject() {
     // Create instances of network clients with base URLs
     final networkClient = NetworkClient(baseUrl: AppUrl.appBaseUrl);
+    final socialNetworkClient = NetworkClient(baseUrl: AppUrl.socialBaseUrl);
     final deviceInfoManager = InjectionUtils.getOtherClass<DeviceInfoManager>();
     InjectionUtils.getOtherClass<LocalStorageManager>();
 
     // Register the API services with their respective providers
-    InjectionUtils.registerApiService<AuthApiService>(() => AuthApiServiceProvider(deviceInfoManager, networkClient));
+    InjectionUtils.registerApiService<AuthApiService>(
+        () => AuthApiServiceProvider(deviceInfoManager, networkClient));
 
     // Register the API services with their respective providers
-    InjectionUtils.registerApiService<PostApiService>(() => PostApiServiceProvider(networkClient: networkClient));
+    InjectionUtils.registerApiService<PostApiService>(
+        () => PostApiServiceProvider(networkClient: socialNetworkClient));
   }
 }

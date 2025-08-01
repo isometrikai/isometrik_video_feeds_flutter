@@ -16,18 +16,19 @@ class AppConstants {
 
   static const String emailPattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
 
-  static const String passwordPattern = r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[!@#\$&*~]).{8,}$';
+  static const String passwordPattern =
+      r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[!@#\$&*~]).{8,}$';
 
   static const String headerAccept = 'application/json';
   static const String headerContentType = 'application/json';
 
-  static const bool isGumletEnable = false;
+  static const bool isGumletEnable = true;
   static const String cloudinaryFolder = 'ShopAR/post/image';
 }
 
 abstract class AppUrl {
   static String appBaseUrl = '';
-  static const String gumletUrl = 'https://meolaa-cdn.gumlet.io';
+  static const String gumletUrl = 'https://cdn.trulyfreehome.dev/tenant_001/project_001/user_007';
 }
 
 abstract class DefaultValues {

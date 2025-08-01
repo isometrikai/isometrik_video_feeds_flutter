@@ -13,9 +13,12 @@ class UseCaseInjection {
         () => LocalDataUseCase(InjectionUtils.getRepo<LocalStorageRepository>()));
 
     /// Auth UseCase
-    InjectionUtils.registerUseCase<LoginUseCase>(() => LoginUseCase(InjectionUtils.getRepo<AuthRepository>()));
-    InjectionUtils.registerUseCase<VerifyOtpUseCase>(() => VerifyOtpUseCase(InjectionUtils.getRepo<AuthRepository>()));
-    InjectionUtils.registerUseCase<SendOtpUseCase>(() => SendOtpUseCase(InjectionUtils.getRepo<AuthRepository>()));
+    InjectionUtils.registerUseCase<LoginUseCase>(
+        () => LoginUseCase(InjectionUtils.getRepo<AuthRepository>()));
+    InjectionUtils.registerUseCase<VerifyOtpUseCase>(
+        () => VerifyOtpUseCase(InjectionUtils.getRepo<AuthRepository>()));
+    InjectionUtils.registerUseCase<SendOtpUseCase>(
+        () => SendOtpUseCase(InjectionUtils.getRepo<AuthRepository>()));
     InjectionUtils.registerUseCase<GuestLoginUseCase>(
         () => GuestLoginUseCase(InjectionUtils.getRepo<AuthRepository>()));
 
@@ -28,13 +31,17 @@ class UseCaseInjection {
         () => GetTrendingPostUseCase(InjectionUtils.getRepo<PostRepository>()));
     InjectionUtils.registerUseCase<FollowPostUseCase>(
         () => FollowPostUseCase(InjectionUtils.getRepo<PostRepository>()));
-    InjectionUtils.registerUseCase<SavePostUseCase>(() => SavePostUseCase(InjectionUtils.getRepo<PostRepository>()));
-    InjectionUtils.registerUseCase<LikePostUseCase>(() => LikePostUseCase(InjectionUtils.getRepo<PostRepository>()));
+    InjectionUtils.registerUseCase<SavePostUseCase>(
+        () => SavePostUseCase(InjectionUtils.getRepo<PostRepository>()));
+    InjectionUtils.registerUseCase<LikePostUseCase>(
+        () => LikePostUseCase(InjectionUtils.getRepo<PostRepository>()));
     InjectionUtils.registerUseCase<ReportPostUseCase>(
         () => ReportPostUseCase(InjectionUtils.getRepo<PostRepository>()));
     InjectionUtils.registerUseCase<GetReportReasonsUseCase>(
         () => GetReportReasonsUseCase(InjectionUtils.getRepo<PostRepository>()));
     InjectionUtils.registerUseCase<GetCloudDetailsUseCase>(
         () => GetCloudDetailsUseCase(InjectionUtils.getRepo<PostRepository>()));
+    InjectionUtils.registerUseCase<GetTimelinePostUseCase>(
+        () => GetTimelinePostUseCase(InjectionUtils.getRepo<PostRepository>()));
   }
 }

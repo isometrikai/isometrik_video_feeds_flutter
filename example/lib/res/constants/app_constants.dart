@@ -19,7 +19,8 @@ class AppConstants {
 
   static const String emailPattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
 
-  static const String passwordPattern = r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[!@#\$&*~]).{8,}$';
+  static const String passwordPattern =
+      r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[!@#\$&*~]).{8,}$';
 
   static const String headerAccept = 'application/json';
   static const String headerContentType = 'application/json';
@@ -87,6 +88,7 @@ class AppConstants {
 
 abstract class AppUrl {
   static const String appBaseUrl = 'https://api.trulyfreehome.dev';
+  static const String socialBaseUrl = 'https://social-apis.dev.trulyfree.com';
   static const String gumletUrl = 'https://meolaa-cdn.gumlet.io';
 }
 

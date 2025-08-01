@@ -52,4 +52,10 @@ abstract class PostRepository extends BaseRepository {
     required String key,
     required String value,
   });
+
+  Future<CustomResponse<TimelineResponse?>> getTimeLinePosts({
+    required bool isLoading,
+    required int page,
+    required int pageLimit,
+  });
 }

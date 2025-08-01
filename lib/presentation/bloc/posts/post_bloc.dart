@@ -33,6 +33,6 @@ class PostBloc extends Bloc<PostEvent, PostState> {
   }
 
   FutureOr<void> _loadFollowingPosts(PostsLoadedEvent event, Emitter<PostState> emit) async {
-    emit(PostsLoadedState(postsList: event.postsList));
+    emit(PostsLoadedState(postsList: event.postsList, timeLinePostList: event.timeLinePostList));
   }
 }

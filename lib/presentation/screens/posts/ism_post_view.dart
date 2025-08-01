@@ -16,12 +16,14 @@ class IsmPostView extends StatefulWidget {
     this.currentIndex = 0,
     this.allowImplicitScrolling = false,
     this.onPageChanged,
+    this.timeLinePosts = const [],
   });
 
   final List<TabDataModel> tabDataModelList;
   final num? currentIndex;
   final bool? allowImplicitScrolling;
   final Function(int)? onPageChanged;
+  final List<TimeLineData> timeLinePosts;
 
   @override
   State<IsmPostView> createState() => _PostViewState();
@@ -52,8 +54,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           child: BlocConsumer<PostBloc, PostState>(
             listener: (context, state) {
               if (state is UserInformationLoaded) {
-                IsmInjectionUtils.getBloc<PostBloc>()
-                    .add(PostsLoadedEvent(widget.tabDataModelList[_currentIndex].postList));
+                IsmInjectionUtils.getBloc<PostBloc>().add(PostsLoadedEvent(
+                    widget.tabDataModelList[_currentIndex].postList,
+                    widget.tabDataModelList[_currentIndex].timeLinePosts));
               }
             },
             buildWhen: (previousState, currentState) => currentState is UserInformationLoaded,
@@ -180,7 +183,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         return;
       }
       _currentIndex = newIndex;
-      postBloc.add(PostsLoadedEvent(widget.tabDataModelList[_currentIndex].postList));
+      postBloc.add(PostsLoadedEvent(widget.tabDataModelList[_currentIndex].postList,
+          widget.tabDataModelList[_currentIndex].timeLinePosts));
     });
     postBloc.add(const StartPost());
   }

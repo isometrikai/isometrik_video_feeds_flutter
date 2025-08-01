@@ -9,7 +9,8 @@ class StartPost extends PostEvent {
 }
 
 class PostsLoadedEvent extends PostEvent {
-  PostsLoadedEvent(this.postsList);
+  PostsLoadedEvent(this.postsList, this.timeLinePostList);
 
   final List<PostDataModel>? postsList;
+  final List<TimeLineData>? timeLinePostList;
 }

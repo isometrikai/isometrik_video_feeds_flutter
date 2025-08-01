@@ -22,6 +22,20 @@ class GetFollowingPostEvent extends HomeEvent {
   final Function(List<isr.PostDataModel>)? onComplete;
 }
 
+class GetTimeLinePostEvent extends HomeEvent {
+  GetTimeLinePostEvent({
+    required this.isLoading,
+    required this.isPagination,
+    this.isRefresh = false,
+    this.onComplete,
+  });
+
+  final bool isLoading;
+  final bool isPagination;
+  final bool isRefresh;
+  final Function(List<isr.TimeLineData>)? onComplete;
+}
+
 class GetTrendingPostEvent extends HomeEvent {
   GetTrendingPostEvent({
     required this.isLoading,

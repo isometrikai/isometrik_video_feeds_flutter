@@ -5,3 +5,4 @@ export 'ism_post_view.dart';
 export 'ism_reels_video_player_view.dart';
 export 'post_item_widget.dart';
 export 'post_place_holder_view.dart';
+export 'reel_video_player.dart';

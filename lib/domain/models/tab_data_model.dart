@@ -6,6 +6,7 @@ class TabDataModel {
   TabDataModel({
     required this.title,
     this.postList = const [],
+    this.timeLinePosts = const [],
     this.onCreatePost,
     this.onTapMore,
     this.showBlur,
@@ -27,8 +28,9 @@ class TabDataModel {
 
   final String title;
   final List<PostDataModel>? postList;
+  final List<TimeLineData>? timeLinePosts;
   final Future<String?> Function()? onCreatePost;
-  final Future<List<PostDataModel>> Function(PostSectionType?)? onLoadMore;
+  final Future<List<TimeLineData>> Function(PostSectionType?)? onLoadMore;
   final Future<dynamic> Function(PostDataModel, String userId)? onTapMore;
   final bool? showBlur;
   final List<FeaturedProductDataItem>? productList;

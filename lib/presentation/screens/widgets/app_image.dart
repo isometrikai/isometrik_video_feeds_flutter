@@ -211,17 +211,25 @@ class _Network extends StatelessWidget {
     final fullName = name.isStringEmptyOrNull == false ? name : '';
     final words = fullName.split(' ');
     final initials = words.map((word) => word.isNotEmpty ? word[0] : '').join('');
-    final optimizedImageUrl = AppConstants.isGumletEnable
-        ? IsrVideoReelUtility.buildGumletImageUrl(imageUrl: imageUrl, width: width, height: height)
-        : imageUrl;
+    final isOptimizationEnable = imageUrl.contains('https://cdn.trulyfreehome.dev');
+
+    final optimizedImageUrl = AppConstants.isGumletEnable && isOptimizationEnable
+        ? IsrVideoReelUtility.buildGumletImageUrl(
+            imageUrl: imageUrl.trim().replaceAll(RegExp(r'[",]+$'), ''),
+            width: width,
+            height: height)
+        : imageUrl.trim().replaceAll(RegExp(r'[",]+$'), '');
+    // debugPrint('optimizedImageUrl: $optimizedImageUrl');
     return CachedNetworkImage(
       width: width,
       imageUrl: optimizedImageUrl,
       fit: fit ?? BoxFit.cover,
       alignment: Alignment.center,
       cacheKey: optimizedImageUrl,
-      fadeInDuration: fadeAnimationEnable ?? false ? const Duration(milliseconds: 300) : Duration.zero,
-      fadeOutDuration: fadeAnimationEnable ?? false ? const Duration(milliseconds: 300) : Duration.zero,
+      fadeInDuration:
+          fadeAnimationEnable ?? false ? const Duration(milliseconds: 300) : Duration.zero,
+      fadeOutDuration:
+          fadeAnimationEnable ?? false ? const Duration(milliseconds: 300) : Duration.zero,
       placeholderFadeInDuration: Duration.zero,
       imageBuilder: (_, image) => ClipRRect(
         borderRadius: borderRadius ?? BorderRadius.zero,
@@ -245,7 +253,8 @@ class _Network extends StatelessWidget {
         child: name.isStringEmptyOrNull == false && isProfileImage
             ? Text(
                 initials,
-                style: IsrStyles.secondaryText14.copyWith(fontWeight: FontWeight.w500, color: IsrColors.white),
+                style: IsrStyles.secondaryText14
+                    .copyWith(fontWeight: FontWeight.w500, color: IsrColors.white),
                 textAlign: TextAlign.center,
               )
             : null,
@@ -256,13 +265,13 @@ class _Network extends StatelessWidget {
         borderRadius: borderRadius,
         boxFit: fit ?? BoxFit.contain,
         padding: 4,
-        backgroundColor: Theme.of(context).primaryColor,
         placeHolderName: placeHolderName,
         boxShape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
         child: name.isStringEmptyOrNull == false && isProfileImage
             ? Text(
                 initials,
-                style: IsrStyles.secondaryText14.copyWith(fontWeight: FontWeight.w500, color: IsrColors.white),
+                style: IsrStyles.secondaryText14
+                    .copyWith(fontWeight: FontWeight.w500, color: IsrColors.white),
                 textAlign: TextAlign.center,
               )
             : null,
