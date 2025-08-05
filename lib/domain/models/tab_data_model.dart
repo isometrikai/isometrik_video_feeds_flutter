@@ -31,14 +31,14 @@ class TabDataModel {
   final List<TimeLineData>? timeLinePosts;
   final Future<String?> Function()? onCreatePost;
   final Future<List<TimeLineData>> Function(PostSectionType?)? onLoadMore;
-  final Future<dynamic> Function(TimeLineData, String userId)? onTapMore;
+  final Future<dynamic> Function(PostDataModel, String userId)? onTapMore;
   final bool? showBlur;
   final List<FeaturedProductDataItem>? productList;
   final Future<bool> Function(String postId, bool isSavedPost)? onPressSave;
   final Future<bool> Function(String, String, bool)? onPressLike;
   final Future<bool> Function(String)? onPressFollow;
   final Future<bool> Function()? onRefresh;
-  final Future<List<SocialProductData>>? Function(String, String)? onTapCartIcon;
+  final void Function(String)? onTapCartIcon;
   final Widget? placeHolderWidget;
   final PostSectionType? postSectionType;
   final Future<num>? Function(String, int)? onTapComment;

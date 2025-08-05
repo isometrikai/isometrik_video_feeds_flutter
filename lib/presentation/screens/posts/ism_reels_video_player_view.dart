@@ -1,5 +1,6 @@
 import 'dart:async';
 
+// import 'package:better_player/better_player.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
@@ -53,7 +54,6 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
     this.isScheduledPost,
     this.postStatus,
     this.isFirstPost,
-    this.videoCacheManager,
   });
 
   final String? mediaUrl;
@@ -97,21 +97,20 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
   final bool? isScheduledPost;
   final int? postStatus;
   final bool? isFirstPost;
-  final VideoCacheManager? videoCacheManager; // Add this parameter
 
   @override
   State<IsmReelsVideoPlayerView> createState() => _IsmReelsVideoPlayerViewState();
 }
 
 class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
-  VideoCacheManager get _videoCacheManager => widget.videoCacheManager ?? VideoCacheManager();
-
   // Add constants for media types
   static const int kPictureType = 0;
   static const int kVideoType = 1;
   TapGestureRecognizer? _tapGestureRecognizer;
 
   VideoPlayerController? _videoPlayerController;
+
+  VlcPlayerController? _vlcViewController;
 
   var _isPlaying = true;
 
@@ -129,6 +128,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
 
   final _maxLengthToShow = 50;
 
+  var _isVideoInitialized = false;
+
   @override
   void initState() {
     super.initState();
@@ -142,8 +143,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
     debugPrint(
         'IsmReelsVideoPlayerView ...Post by ...${widget.name}\n Post url ${widget.mediaUrl}');
     if (widget.mediaType == kVideoType) {
-      await _initializeVideoPlayer(); // ✅ CHANGED: Make this await
-      mountUpdate();
+      await initializeVideoPlayer(); // ✅ CHANGED: Make this await
     }
   }
 
@@ -153,91 +153,83 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
     setState(() {});
   }
 
-  //initialize vide player controller and initialization to use cache
-  Future<void> _initializeVideoPlayer() async {
-    if (widget.mediaUrl?.isStringEmptyOrNull != false) return;
-
-    final videoUrl = widget.mediaUrl!;
-    debugPrint('IsmReelsVideoPlayerView....initializeVideoPlayer video url $videoUrl');
-
+  //initialize vide player controller
+  //initialize video player controller
+  Future<void> initializeVideoPlayer() async {
+    // ✅ CHANGED: Make this return Future<void>
+    debugPrint('IsmReelsVideoPlayerView....initializeVideoPlayer video url ${widget.mediaUrl}');
+    if (widget.mediaUrl?.isStringEmptyOrNull == false) {
+      var mediaUrl = widget.mediaUrl!;
+      if (mediaUrl.startsWith('http:')) {
+        mediaUrl = mediaUrl.replaceFirst('http:', 'https:');
+        debugPrint(
+            'IsmReelsVideoPlayerView....initializeVideoPlayer video url converted to https $mediaUrl');
+      }
+      _videoPlayerController = VideoPlayerController.networkUrl(
+        Uri.parse(
+            'https://video.gumlet.io/6890598d69cc5f5f003fdf04/689060718bcbb4476ad9dc23/main.m3u8'),
+        formatHint: VideoFormat.hls,
+        httpHeaders: {
+          'User-Agent': 'Mozilla/5.0 (compatible; VideoPlayer)',
+          'Accept': '*/*',
+        },
+      );
+    }
+    if (_videoPlayerController == null) return;
     try {
-      // First, try to get cached controller
-      _videoPlayerController = _videoCacheManager.getCachedController(videoUrl);
+      await _videoPlayerController?.initialize();
+      // Always start with volume on
+      await _videoPlayerController?.setVolume(1.0);
+      await _videoPlayerController?.setLooping(true);
 
-      if (_videoPlayerController != null) {
-        // Use cached controller
-        debugPrint('IsmReelsVideoPlayerView....Using cached video controller for $videoUrl');
-        _setupVideoController();
-        // mountUpdate();
-        return;
+      // ✅ ADD: Mark as initialized
+      _isVideoInitialized = true;
+
+      debugPrint('IsmReelsVideoPlayerView....initializeVideoPlayer name ${widget.name}');
+
+      // ✅ ADD: Auto-play if this is the initial/first video
+      if (widget.isFirstPost == true) {
+        await _videoPlayerController?.seekTo(Duration.zero);
+        await _videoPlayerController?.play();
+        _isPlaying = true;
+        debugPrint('IsmReelsVideoPlayerView....Auto-playing initial video');
       }
-
-      // If not cached, check if it's being initialized
-      if (_videoCacheManager.isVideoInitializing(videoUrl)) {
-        debugPrint('IsmReelsVideoPlayerView....Video is being initialized, waiting...');
-        // Wait a bit and try again
-        await Future.delayed(const Duration(milliseconds: 500));
-        _videoPlayerController = _videoCacheManager.getCachedController(videoUrl);
-        if (_videoPlayerController != null) {
-          _setupVideoController();
-          mountUpdate();
-          return;
-        }
-      }
-
-      // If still not available, initialize normally (fallback)
-      await _initializeVideoControllerNormally(videoUrl);
+      // Wait until next frame before forcing visibility check
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        VisibilityDetectorController.instance.notifyNow();
+      });
+      mountUpdate();
     } catch (e) {
       debugPrint('IsmReelsVideoPlayerView...catch video url ${widget.mediaUrl}');
       IsrVideoReelUtility.debugCatchLog(error: e);
     }
   }
 
-  // Fallback initialization method
-  Future<void> _initializeVideoControllerNormally(String videoUrl) async {
-    debugPrint('IsmReelsVideoPlayerView....Initializing video controller normally $videoUrl');
-    var mediaUrl = videoUrl;
-    if (mediaUrl.startsWith('http:')) {
-      mediaUrl = mediaUrl.replaceFirst('http:', 'https:');
+  Future<void> _initializeBetterPlayer() async {
+    try {
+      _vlcViewController = VlcPlayerController.network(
+        'https://video.gumlet.io/6890598d69cc5f5f003fdf04/689060718bcbb4476ad9dc23/main.m3u8',
+      );
+      await _vlcViewController?.initialize();
+      // Wait until next frame before forcing visibility check
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        VisibilityDetectorController.instance.notifyNow();
+      });
+      mountUpdate();
+    } catch (e) {
+      debugPrint('IsmReelsVideoPlayerView...catch video url ${widget.mediaUrl}');
+      IsrVideoReelUtility.debugCatchLog(error: e);
     }
-
-    _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(mediaUrl));
-
-    if (_videoPlayerController == null) return;
-
-    await _videoPlayerController?.initialize();
-    _setupVideoController();
-    mountUpdate();
-  }
-
-  // Setup video controller settings
-  void _setupVideoController() {
-    _videoPlayerController?.play();
-    _videoPlayerController?.setVolume(1.0);
-    _videoPlayerController?.setLooping(true);
   }
 
   @override
   void dispose() {
     _tapGestureRecognizer?.dispose();
-
-    // Mark as not visible in cache manager
-    if (widget.mediaUrl?.isStringEmptyOrNull == false) {
-      _videoCacheManager.markAsNotVisible(widget.mediaUrl!);
-    }
-
-    // Only dispose if this controller is not in cache
-    if (_videoPlayerController != null &&
-        widget.mediaUrl?.isStringEmptyOrNull == false &&
-        !_videoCacheManager.isVideoCached(widget.mediaUrl!)) {
-      _videoPlayerController?.pause();
-      _videoPlayerController?.dispose();
-    } else {
-      // Just pause if it's cached
-      _videoPlayerController?.pause();
-    }
-
+    _videoPlayerController?.pause();
+    _videoPlayerController?.dispose();
+    _vlcViewController?.dispose();
     _videoPlayerController = null;
+    _vlcViewController = null;
     super.dispose();
   }
 
@@ -261,37 +253,32 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
     }
 
     // ✅ CHANGED: Check  instead of just isInitialized
-    return Stack(
-      fit: StackFit.expand,
-      alignment: Alignment.center,
-      children: [
-        // Always show thumbnail as background
-        AppImage.network(
-          widget.thumbnail,
-          width: IsrDimens.getScreenWidth(context),
-          height: IsrDimens.getScreenHeight(context),
-          fit: BoxFit.cover,
-        ),
-
-        // Video player with fade-in animation
-        if (_videoPlayerController != null && _videoPlayerController!.value.isInitialized)
-          AnimatedOpacity(
-            opacity: 1.0,
-            duration: const Duration(milliseconds: 300),
-            child: FittedBox(
-              fit: BoxFit.cover,
-              child: SizedBox(
-                height: _videoPlayerController?.value.size.height,
-                width: _videoPlayerController?.value.size.width,
-                child: AspectRatio(
-                  aspectRatio: _videoPlayerController!.value.aspectRatio,
-                  child: VideoPlayer(_videoPlayerController!),
+    return _vlcViewController == null || _vlcViewController?.isReadyToInitialize == false
+        ? AppImage.network(
+            widget.thumbnail,
+            width: IsrDimens.getScreenWidth(context),
+            height: IsrDimens.getScreenHeight(context),
+            fit: BoxFit.contain,
+          )
+        : FittedBox(
+            fit: BoxFit.cover,
+            child: SizedBox(
+              height: _vlcViewController?.value.size.height,
+              width: _vlcViewController?.value.size.width,
+              child: AspectRatio(
+                aspectRatio: _vlcViewController!.value.aspectRatio,
+                // child: VideoPlayer(_videoPlayerController!),
+                // child: BetterPlayer(
+                //   controller: _betterPlayerController,
+                // ),
+                child: VlcPlayer(
+                  controller: _vlcViewController!,
+                  aspectRatio: 16 / 9,
+                  placeholder: const Center(child: CircularProgressIndicator()),
                 ),
               ),
             ),
-          ),
-      ],
-    );
+          );
   }
 
   void _togglePlayPause() {
@@ -299,9 +286,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
       return;
     }
     if (_isPlaying) {
-      _videoPlayerController?.pause();
+      _vlcViewController?.pause();
     } else {
-      _videoPlayerController?.play();
+      _vlcViewController?.play();
     }
     _isPlaying = !_isPlaying;
     _isPlayPauseActioned = !_isPlayPauseActioned;
@@ -325,7 +312,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
             },
             onLongPressStart: (details) {
               if (widget.mediaType == kVideoType) {
-                _videoPlayerController?.pause();
+                _vlcViewController?.pause();
               }
               if (widget.onLongPressStart != null) {
                 widget.onLongPressStart!();
@@ -334,7 +321,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
             },
             onLongPressEnd: (value) {
               if (widget.mediaType == kVideoType) {
-                _videoPlayerController?.play();
+                _vlcViewController?.play();
               }
               if (widget.onLongPressEnd != null) {
                 widget.onLongPressEnd!();
@@ -347,32 +334,23 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                 if (widget.showBlur == true || widget.mediaType == kPictureType) {
                   return;
                 }
-
-                // Update cache manager about visibility
-                if (widget.mediaUrl?.isStringEmptyOrNull == false) {
-                  if (info.visibleFraction > 0.9) {
-                    _videoCacheManager.markAsVisible(widget.mediaUrl!);
-                  } else {
-                    _videoCacheManager.markAsNotVisible(widget.mediaUrl!);
-                  }
-                }
-
                 if (info.visibleFraction > 0.9) {
                   mountUpdate();
-                  if (_videoPlayerController != null &&
-                      _videoPlayerController?.value.isInitialized == true &&
-                      _videoPlayerController?.value.isPlaying == false) {
-                    _videoPlayerController?.seekTo(Duration.zero);
-                    _videoPlayerController?.play();
-                    _isPlaying = true;
+                  if (_vlcViewController != null &&
+                      _vlcViewController?.value.isInitialized == true &&
+                      _vlcViewController?.value.isPlaying == false) {
+                    _vlcViewController?.seekTo(Duration.zero);
+                    _vlcViewController?.play();
+                    _isPlaying = !_isPlaying;
                     mountUpdate();
                   }
                 } else {
-                  _isPlayPauseActioned = false;
+                  _isPlayPauseActioned =
+                      false; // Reset play/pause icon state when video becomes visible
                   mountUpdate();
-                  if (_videoPlayerController?.value.isPlaying == true) {
-                    _videoPlayerController?.pause();
-                    _isPlaying = false;
+                  if (_vlcViewController?.value.isPlaying == true) {
+                    _vlcViewController?.pause();
+                    _isPlaying = !_isPlaying;
                     mountUpdate();
                   }
                 }
@@ -417,7 +395,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               // Bottom section
-              Expanded(child: _buildBottomSection()),
+              Expanded(
+                child: _buildBottomSection(),
+              ),
 
               // Right side actions
               _buildRightSideActions(),
@@ -648,7 +628,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                           ),
                           IsrDimens.boxHeight(IsrDimens.four),
                           Text(
-                            '${widget.productCount} ${widget.productCount == 1 ? IsrTranslationFile.product : IsrTranslationFile.products}',
+                            '${widget.productCount} ${IsrTranslationFile.products}',
                             style: IsrStyles.primaryText10.copyWith(
                                 color: IsrColors.color0F1E91, fontWeight: FontWeight.w500),
                           ),

@@ -11,17 +11,18 @@ class SocialProductsBottomSheet extends StatefulWidget {
     required this.products,
   }) : super(key: key);
 
-  final List<SocialProductData> products;
+  final List<ProductData> products;
 
   @override
   State<SocialProductsBottomSheet> createState() => _SocialProductsBottomSheetState();
 }
 
 class _SocialProductsBottomSheetState extends State<SocialProductsBottomSheet> {
-  final List<SocialProductData> _productsList = [];
+  final List<ProductData> _productsList = [];
   final ScrollController _scrollController = ScrollController();
   var _hasMoreData = true;
   var _isLoadingMore = false;
+  var _totalProductsCount = 0;
 
   @override
   void initState() {
@@ -106,7 +107,7 @@ class _SocialProductsBottomSheetState extends State<SocialProductsBottomSheet> {
                   controller: _scrollController,
                   padding: Dimens.edgeInsetsAll(Dimens.sixteen),
                   itemCount: _productsList.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 16),
+                  separatorBuilder: (_, __) => SizedBox(height: 16),
                   itemBuilder: (context, index) => _buildProductItem(
                     context,
                     _productsList[index],
@@ -114,7 +115,7 @@ class _SocialProductsBottomSheetState extends State<SocialProductsBottomSheet> {
                   ),
                 ),
               ),
-              const SizedBox(height: 20)
+              SizedBox(height: 20)
             ],
           ),
         ),
@@ -122,7 +123,7 @@ class _SocialProductsBottomSheetState extends State<SocialProductsBottomSheet> {
 
   Widget _buildProductItem(
     BuildContext context,
-    SocialProductData? productDataModel, {
+    ProductData? productDataModel, {
     bool isSelected = false,
   }) =>
       Container(
@@ -176,7 +177,7 @@ class _SocialProductsBottomSheetState extends State<SocialProductsBottomSheet> {
                       ),
                       maxLines: 2,
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     // Prices
                     Column(
                       mainAxisAlignment: MainAxisAlignment.start,

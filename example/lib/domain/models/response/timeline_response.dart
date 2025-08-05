@@ -5,7 +5,6 @@
 import 'dart:convert';
 
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
-import 'package:ism_video_reel_player_example/utils/utils.dart';
 
 TimelineResponse timelineResponseFromMap(String str) =>
     TimelineResponse.fromMap(json.decode(str) as Map<String, dynamic>);
@@ -95,11 +94,7 @@ class TimeLineData {
         visibility: json['visibility'] as String? ?? '',
         id: json['id'] as String? ?? '',
         soundSnapshot: json['sound_snapshot'] as String? ?? '',
-        tags: json['tags'] == null
-            ? null
-            : json['tags'] is String && (json['tags'] as String).isEmptyOrNull
-                ? null
-                : Tags.fromMap(json['tags'] as Map<String, dynamic>),
+        tags: json['tags'] == null ? null : Tags.fromMap(json['tags'] as Map<String, dynamic>),
         settings: json['settings'] == null
             ? null
             : Settings.fromMap(json['settings'] as Map<String, dynamic>),
@@ -144,41 +139,6 @@ class TimeLineData {
         'type': type,
         'previews': previews == null ? [] : List<dynamic>.from(previews!.map((x) => x)),
       };
-
-  TimeLineData copyWith({
-    String? textFormatting,
-    String? publishedAt,
-    List<Media>? media,
-    String? soundId,
-    String? caption,
-    String? userId,
-    User? user,
-    String? visibility,
-    String? id,
-    String? soundSnapshot,
-    Tags? tags,
-    Settings? settings,
-    EngagementMetrics? engagementMetrics,
-    String? type,
-    List<dynamic>? previews,
-  }) =>
-      TimeLineData(
-        textFormatting: textFormatting ?? this.textFormatting,
-        publishedAt: publishedAt ?? this.publishedAt,
-        media: media ?? this.media,
-        soundId: soundId ?? this.soundId,
-        caption: caption ?? this.caption,
-        userId: userId ?? this.userId,
-        user: user ?? this.user,
-        visibility: visibility ?? this.visibility,
-        id: id ?? this.id,
-        soundSnapshot: soundSnapshot ?? this.soundSnapshot,
-        tags: tags ?? this.tags,
-        settings: settings ?? this.settings,
-        engagementMetrics: engagementMetrics ?? this.engagementMetrics,
-        type: type ?? this.type,
-        previews: previews ?? this.previews,
-      );
 }
 
 class EngagementMetrics {
@@ -362,21 +322,21 @@ class Tags {
                 x is Map<String, dynamic> ? MentionData.fromJson(x) : MentionData.fromJson({}))),
         places:
             json['places'] == null ? [] : List<String>.from((json['places'] as List).map((x) => x)),
-        products: json['products'] == null || (json['products'] as List).isListEmptyOrNull
+        products: json['products'] == null
             ? []
-            : List<SocialProductData>.from((json['products'] as List)
-                .map((dynamic x) => SocialProductData.fromJson(x as Map<String, dynamic>))),
+            : List<ProductData>.from((json['products'] as List).map((x) =>
+                x is Map<String, dynamic> ? ProductData.fromJson(x) : ProductData.fromJson({}))),
       );
   List<MentionData>? mentions;
   List<MentionData>? hashtags;
   List<String>? places;
-  List<SocialProductData>? products;
+  List<ProductData>? products;
 
   Map<String, dynamic> toMap() => {
-        'mentions': mentions == null ? [] : List<dynamic>.from(mentions!.map((x) => x.toJson())),
-        'hashtags': hashtags == null ? [] : List<dynamic>.from(hashtags!.map((x) => x.toJson())),
+        'mentions': mentions == null ? [] : List<dynamic>.from(mentions!.map((x) => x)),
+        'hashtags': hashtags == null ? [] : List<dynamic>.from(hashtags!.map((x) => x)),
         'places': places == null ? [] : List<dynamic>.from(places!.map((x) => x)),
-        'products': products == null ? [] : List<dynamic>.from(products!.map((x) => x.toJson())),
+        'products': products == null ? [] : List<dynamic>.from(products!.map((x) => x)),
       };
 }
 
@@ -497,8 +457,8 @@ class Position {
       };
 }
 
-class SocialProductData {
-  SocialProductData({
+class ProductData {
+  ProductData({
     required this.id,
     required this.name,
     required this.brandName,
@@ -510,7 +470,7 @@ class SocialProductData {
     required this.position,
   });
 
-  factory SocialProductData.fromJson(Map<String, dynamic> json) => SocialProductData(
+  factory ProductData.fromJson(Map<String, dynamic> json) => ProductData(
         id: json['id'] as String? ?? '',
         name: json['name'] as String? ?? '',
         brandName: json['brand_name'] as String? ?? '',
