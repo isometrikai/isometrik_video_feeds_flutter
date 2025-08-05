@@ -29,6 +29,8 @@ class AppConstants {
 abstract class AppUrl {
   static String appBaseUrl = '';
   static const String gumletUrl = 'https://cdn.trulyfreehome.dev/tenant_001/project_001/user_007';
+  static const String imageBaseUrl =
+      'https://cdn.trulyfreehome.dev/tenant_001/project_001/user_007/';
 }
 
 abstract class DefaultValues {
