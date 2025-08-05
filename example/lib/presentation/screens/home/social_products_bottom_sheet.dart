@@ -22,7 +22,6 @@ class _SocialProductsBottomSheetState extends State<SocialProductsBottomSheet> {
   final ScrollController _scrollController = ScrollController();
   var _hasMoreData = true;
   var _isLoadingMore = false;
-  var _totalProductsCount = 0;
 
   @override
   void initState() {
@@ -107,7 +106,7 @@ class _SocialProductsBottomSheetState extends State<SocialProductsBottomSheet> {
                   controller: _scrollController,
                   padding: Dimens.edgeInsetsAll(Dimens.sixteen),
                   itemCount: _productsList.length,
-                  separatorBuilder: (_, __) => SizedBox(height: 16),
+                  separatorBuilder: (_, __) => const SizedBox(height: 16),
                   itemBuilder: (context, index) => _buildProductItem(
                     context,
                     _productsList[index],
@@ -115,7 +114,7 @@ class _SocialProductsBottomSheetState extends State<SocialProductsBottomSheet> {
                   ),
                 ),
               ),
-              SizedBox(height: 20)
+              const SizedBox(height: 20)
             ],
           ),
         ),
@@ -177,7 +176,7 @@ class _SocialProductsBottomSheetState extends State<SocialProductsBottomSheet> {
                       ),
                       maxLines: 2,
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     // Prices
                     Column(
                       mainAxisAlignment: MainAxisAlignment.start,

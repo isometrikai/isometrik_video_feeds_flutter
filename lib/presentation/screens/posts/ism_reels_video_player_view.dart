@@ -168,7 +168,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
       if (_videoPlayerController != null) {
         // Use cached controller
         debugPrint('IsmReelsVideoPlayerView....Using cached video controller for $videoUrl');
-        _isVideoInitialized = true;
         _setupVideoController();
         // mountUpdate();
         return;
@@ -181,7 +180,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
         await Future.delayed(const Duration(milliseconds: 500));
         _videoPlayerController = _videoCacheManager.getCachedController(videoUrl);
         if (_videoPlayerController != null) {
-          _isVideoInitialized = true;
           _setupVideoController();
           mountUpdate();
           return;
@@ -216,7 +214,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
 
     await _videoPlayerController?.initialize();
     _setupVideoController();
-    _isVideoInitialized = true;
     mountUpdate();
   }
 

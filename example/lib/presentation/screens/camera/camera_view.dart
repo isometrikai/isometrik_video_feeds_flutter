@@ -132,19 +132,4 @@ class CameraViewState extends State<CameraView> {
                 ],
               ),
       );
-
-  double _getScale(BuildContext context) {
-    // fetch screen size
-    final size = MediaQuery.of(context).size;
-
-    // calculate scale depending on screen and camera ratios
-    // this is actually size.aspectRatio / (1 / camera.aspectRatio)
-    // because camera preview size is received as landscape
-    // but we're calculating for portrait orientation
-    var scale = size.aspectRatio * _cameraController!.value.aspectRatio;
-
-    // to prevent scaling down, invert the value
-    if (scale < 1) scale = 1 / scale;
-    return scale;
-  }
 }
