@@ -1,13 +1,8 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:get_thumbnail_video/video_thumbnail.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ism_video_reel_player_example/domain/domain.dart';
 import 'package:ism_video_reel_player_example/res/res.dart';
 import 'package:ism_video_reel_player_example/utils/utils.dart';
-// import 'package:video_thumbnail/video_thumbnail.dart';
-// import 'package:video_trimmer/video_trimmer.dart';
 
 class VideoTrimView extends StatefulWidget {
   const VideoTrimView({super.key, this.postAttributeClass});
@@ -20,11 +15,7 @@ class VideoTrimView extends StatefulWidget {
 
 class _VideoTrimViewState extends State<VideoTrimView> {
   // final Trimmer trimmer = Trimmer();
-  var _startValue = 0.0;
-  var _endValue = 0.0;
   var _isMuted = false;
-  var _playPausedAction = true;
-  late PostAttributeClass _newPostAttributeClass;
 
   /// Method For Update Tree Carefully
   void mountUpdate() {
@@ -35,8 +26,6 @@ class _VideoTrimViewState extends State<VideoTrimView> {
 
   @override
   void initState() {
-    _newPostAttributeClass = widget.postAttributeClass ?? PostAttributeClass();
-    _endValue = _newPostAttributeClass.duration?.toDouble() ?? 0;
     loadVideo();
     super.initState();
   }
@@ -53,7 +42,6 @@ class _VideoTrimViewState extends State<VideoTrimView> {
 
   void checkVideo() {
     // if (trimmer.videoPlayerController?.value.isPlaying == false) {
-    _playPausedAction = true;
     // debugPrint('trimmed video duration...${trimmer.videoPlayerController?.value.duration}');
     // mountUpdate();
     // }
@@ -229,18 +217,4 @@ class _VideoTrimViewState extends State<VideoTrimView> {
           ),
         ),
       );
-
-  void _handleTrimmedVideo(String path, BuildContext context) async {
-    final xFile = await VideoThumbnail.thumbnailFile(video: path);
-    _newPostAttributeClass.thumbnailUrl = xFile.path;
-    _newPostAttributeClass.url = path;
-    // final _videoController = VideoPlayerController.file(File(path));
-    // await _videoController.initialize();
-    final duration = _endValue ~/ 1000 - _startValue ~/ 1000;
-    _newPostAttributeClass.duration = duration;
-    _newPostAttributeClass.thumbnailBytes = await File(_newPostAttributeClass.thumbnailUrl ?? '').readAsBytes();
-    if (context.mounted) {
-      context.pop(_newPostAttributeClass);
-    }
-  }
 }
