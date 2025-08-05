@@ -211,7 +211,9 @@ class _Network extends StatelessWidget {
     final fullName = name.isStringEmptyOrNull == false ? name : '';
     final words = fullName.split(' ');
     final initials = words.map((word) => word.isNotEmpty ? word[0] : '').join('');
-    final optimizedImageUrl = AppConstants.isGumletEnable
+    final isOptimizationEnable =
+        !imageUrl.contains('https://cdn.trulyfreehome.dev/trulyfree-staging');
+    final optimizedImageUrl = AppConstants.isGumletEnable && isOptimizationEnable
         ? IsrVideoReelUtility.buildGumletImageUrl(imageUrl: imageUrl, width: width, height: height)
         : imageUrl;
     return CachedNetworkImage(
@@ -220,8 +222,10 @@ class _Network extends StatelessWidget {
       fit: fit ?? BoxFit.cover,
       alignment: Alignment.center,
       cacheKey: optimizedImageUrl,
-      fadeInDuration: fadeAnimationEnable ?? false ? const Duration(milliseconds: 300) : Duration.zero,
-      fadeOutDuration: fadeAnimationEnable ?? false ? const Duration(milliseconds: 300) : Duration.zero,
+      fadeInDuration:
+          fadeAnimationEnable ?? false ? const Duration(milliseconds: 300) : Duration.zero,
+      fadeOutDuration:
+          fadeAnimationEnable ?? false ? const Duration(milliseconds: 300) : Duration.zero,
       placeholderFadeInDuration: Duration.zero,
       imageBuilder: (_, image) => ClipRRect(
         borderRadius: borderRadius ?? BorderRadius.zero,
@@ -244,7 +248,8 @@ class _Network extends StatelessWidget {
         child: name.isStringEmptyOrNull == false
             ? Text(
                 initials,
-                style: IsrStyles.secondaryText20.copyWith(fontWeight: FontWeight.w500, color: IsrColors.white),
+                style: IsrStyles.secondaryText20
+                    .copyWith(fontWeight: FontWeight.w500, color: IsrColors.white),
               )
             : null,
       ),
@@ -257,7 +262,8 @@ class _Network extends StatelessWidget {
         child: name.isStringEmptyOrNull == false
             ? Text(
                 initials,
-                style: IsrStyles.secondaryText20.copyWith(fontWeight: FontWeight.w500, color: IsrColors.white),
+                style: IsrStyles.secondaryText20
+                    .copyWith(fontWeight: FontWeight.w500, color: IsrColors.white),
               )
             : null,
       ),

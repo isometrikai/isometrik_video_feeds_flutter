@@ -42,7 +42,7 @@ class PostItemWidget extends StatefulWidget {
   final Future<bool> Function(String, String, bool)? onPressLike;
   final Future<bool> Function(String)? onPressFollow;
   final Future<List<TimeLineData>> Function(PostSectionType?)? onLoadMore;
-  final Future<List<FeaturedProductDataItem>>? Function(String, String)? onTapCartIcon;
+  final void Function(String)? onTapCartIcon;
   final Future<bool> Function()? onRefresh;
   final Widget? placeHolderWidget;
   final PostSectionType? postSectionType;
@@ -187,7 +187,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
         itemBuilder: (context, index) => IsmReelsVideoPlayerView(
           isFirstPost: widget.startingPostIndex == index,
           isCreatePostButtonVisible: widget.isCreatePostButtonVisible,
-          thumbnail: '',
+          thumbnail: _postList[index].media?.first.previewUrl ?? '',
           key: Key(_postList[index].id ?? ''),
           onCreatePost: () async {
             if (widget.onCreatePost == null) return;
@@ -208,7 +208,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
           firstName: _postList[index].user?.displayName ?? '',
           lastName: '',
           name: '@${_postList[index].user?.username ?? ''}',
-          hasTags: _postList[index].tags?.hashtags as List<String>,
+          hasTags: [],
           profilePhoto: _postList[index].user?.avatarUrl ?? '',
           onTapVolume: () {},
           isReelsMuted: false,
@@ -216,15 +216,16 @@ class _PostItemWidgetState extends State<PostItemWidget> {
           onLongPressEnd: () {},
           onDoubleTap: () async {},
           onLongPressStart: () {},
-          mediaUrl:
-              'https://cdn.trulyfreehome.dev/tenant_001/project_001/user_007/${_postList[index].media?.first.url ?? ''}',
+          mediaUrl: _postList[index].media?.first.mediaType == 'image'
+              ? 'https://cdn.trulyfreehome.dev/tenant_001/project_001/user_007/${_postList[index].media?.first.url ?? ''}'
+              : _postList[index].media?.first.url ?? '',
           mediaType: _postList[index].media?.first.mediaType == 'image' ? 0 : 1,
           onTapUserProfilePic: () {
             if (widget.onTapUserProfilePic != null) {
               widget.onTapUserProfilePic!(_postList[index].userId ?? '');
             }
           },
-          productCount: 0,
+          productCount: _postList[index].tags?.products?.length ?? 0,
           isSavedPost: false,
           onPressMoreButton: () async {
             // if (widget.onTapMore == null) return;
@@ -310,16 +311,11 @@ class _PostItemWidgetState extends State<PostItemWidget> {
             return false;
           },
           onTapCartIcon: () async {
-            // if (widget.onTapCartIcon != null) {
-            //   final productList = _postList[index].productData;
-            //   final jsonString = jsonEncode(productList?.map((e) => e.toJson()).toList());
-            //   final productDataList =
-            //       await widget.onTapCartIcon!(jsonString, _postList[index].postId ?? '');
-            //   if (productDataList.isListEmptyOrNull) return;
-            //   setState(() {
-            //     _postList[index] = _postList[index].copyWith(productData: productDataList);
-            //   });
-            // }
+            if (widget.onTapCartIcon != null) {
+              final productList = _postList[index].tags?.products;
+              final jsonString = jsonEncode(productList?.map((e) => e.toJson()).toList());
+              widget.onTapCartIcon!(jsonString);
+            }
           },
           onTapComment: () async {
             // if (widget.onTapComment != null) {

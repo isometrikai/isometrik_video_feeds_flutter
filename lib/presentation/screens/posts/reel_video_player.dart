@@ -416,10 +416,10 @@ class _ReelPageViewState extends State<ReelPageView> with WidgetsBindingObserver
     _pageController = PageController(initialPage: widget.initialIndex);
     WidgetsBinding.instance.addObserver(this);
 
-    // Initial precaching
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _precacheVideos();
-    });
+    // // Initial precaching
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   _precacheVideos();
+    // });
   }
 
   @override

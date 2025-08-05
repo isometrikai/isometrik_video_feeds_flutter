@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart' as isr;
 import 'package:ism_video_reel_player/utils/isr_utils.dart';
 import 'package:ism_video_reel_player_example/di/di.dart';
+import 'package:ism_video_reel_player_example/domain/domain.dart';
 import 'package:ism_video_reel_player_example/presentation/presentation.dart';
 import 'package:ism_video_reel_player_example/res/res.dart';
 import 'package:ism_video_reel_player_example/utils/utils.dart';
@@ -52,6 +54,9 @@ class _HomeScreenState extends State<HomeScreen> {
               return isr.IsmPostView(
                 tabDataModelList: [
                   isr.TabDataModel(
+                    onTapCartIcon: (productListJsonString) async {
+                      _handleProductList(productListJsonString);
+                    },
                     timeLinePosts: state.timeLinePosts ?? [],
                     isCreatePostButtonVisible: true,
                     postSectionType: PostSectionType.following,
@@ -302,5 +307,30 @@ class _HomeScreenState extends State<HomeScreen> {
         },
       ),
     );
+  }
+
+  void _handleProductList(String productListJsonString) async {
+    final productDataList = _getSocialProductList(productListJsonString);
+    await Utility.showBottomSheet<List<ProductData>>(
+      child: SocialProductsBottomSheet(
+        products: productDataList,
+      ),
+    );
+  }
+
+  List<ProductData> _getSocialProductList(String? productJsonString) {
+    final productDataModelList = <ProductData>[];
+    if (productJsonString.isEmptyOrNull == false) {
+      final jsonList = jsonDecode(productJsonString ?? '');
+
+      final featuredProducts = (jsonList as List)
+          .map((item) => ProductData.fromJson(item as Map<String, dynamic>))
+          .toList();
+      if (featuredProducts.isEmptyOrNull == false) {
+        productDataModelList.addAll(featuredProducts);
+      }
+    }
+    debugPrint('productDataModelList: $productDataModelList');
+    return productDataModelList;
   }
 }

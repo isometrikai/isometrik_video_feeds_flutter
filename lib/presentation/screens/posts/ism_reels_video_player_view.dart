@@ -1,5 +1,6 @@
 import 'dart:async';
 
+// import 'package:better_player/better_player.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
@@ -105,9 +106,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
   // Add constants for media types
   static const int kPictureType = 0;
   static const int kVideoType = 1;
-  late TapGestureRecognizer _tapGestureRecognizer;
+  TapGestureRecognizer? _tapGestureRecognizer;
 
   VideoPlayerController? _videoPlayerController;
+
+  VlcPlayerController? _vlcViewController;
 
   var _isPlaying = true;
 
@@ -162,7 +165,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
         debugPrint(
             'IsmReelsVideoPlayerView....initializeVideoPlayer video url converted to https $mediaUrl');
       }
-      _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(mediaUrl));
+      _videoPlayerController = VideoPlayerController.networkUrl(
+        Uri.parse(
+            'https://video.gumlet.io/6890598d69cc5f5f003fdf04/689060718bcbb4476ad9dc23/main.m3u8'),
+        formatHint: VideoFormat.hls,
+        httpHeaders: {
+          'User-Agent': 'Mozilla/5.0 (compatible; VideoPlayer)',
+          'Accept': '*/*',
+        },
+      );
     }
     if (_videoPlayerController == null) return;
     try {
@@ -194,12 +205,31 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
     }
   }
 
+  Future<void> _initializeBetterPlayer() async {
+    try {
+      _vlcViewController = VlcPlayerController.network(
+        'https://video.gumlet.io/6890598d69cc5f5f003fdf04/689060718bcbb4476ad9dc23/main.m3u8',
+      );
+      await _vlcViewController?.initialize();
+      // Wait until next frame before forcing visibility check
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        VisibilityDetectorController.instance.notifyNow();
+      });
+      mountUpdate();
+    } catch (e) {
+      debugPrint('IsmReelsVideoPlayerView...catch video url ${widget.mediaUrl}');
+      IsrVideoReelUtility.debugCatchLog(error: e);
+    }
+  }
+
   @override
   void dispose() {
-    _tapGestureRecognizer.dispose();
+    _tapGestureRecognizer?.dispose();
     _videoPlayerController?.pause();
     _videoPlayerController?.dispose();
+    _vlcViewController?.dispose();
     _videoPlayerController = null;
+    _vlcViewController = null;
     super.dispose();
   }
 
@@ -222,20 +252,33 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
       );
     }
 
-    // ✅ CHANGED: Check _isVideoInitialized instead of just isInitialized
-    return _videoPlayerController != null && _videoPlayerController?.value.isInitialized == true
-        ? FittedBox(
+    // ✅ CHANGED: Check  instead of just isInitialized
+    return _vlcViewController == null || _vlcViewController?.isReadyToInitialize == false
+        ? AppImage.network(
+            widget.thumbnail,
+            width: IsrDimens.getScreenWidth(context),
+            height: IsrDimens.getScreenHeight(context),
+            fit: BoxFit.contain,
+          )
+        : FittedBox(
             fit: BoxFit.cover,
             child: SizedBox(
-              height: _videoPlayerController?.value.size.height,
-              width: _videoPlayerController?.value.size.width,
+              height: _vlcViewController?.value.size.height,
+              width: _vlcViewController?.value.size.width,
               child: AspectRatio(
-                aspectRatio: _videoPlayerController!.value.aspectRatio,
-                child: VideoPlayer(_videoPlayerController!),
+                aspectRatio: _vlcViewController!.value.aspectRatio,
+                // child: VideoPlayer(_videoPlayerController!),
+                // child: BetterPlayer(
+                //   controller: _betterPlayerController,
+                // ),
+                child: VlcPlayer(
+                  controller: _vlcViewController!,
+                  aspectRatio: 16 / 9,
+                  placeholder: const Center(child: CircularProgressIndicator()),
+                ),
               ),
             ),
-          )
-        : const SizedBox();
+          );
   }
 
   void _togglePlayPause() {
@@ -243,9 +286,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
       return;
     }
     if (_isPlaying) {
-      _videoPlayerController?.pause();
+      _vlcViewController?.pause();
     } else {
-      _videoPlayerController?.play();
+      _vlcViewController?.play();
     }
     _isPlaying = !_isPlaying;
     _isPlayPauseActioned = !_isPlayPauseActioned;
@@ -269,7 +312,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
             },
             onLongPressStart: (details) {
               if (widget.mediaType == kVideoType) {
-                _videoPlayerController?.pause();
+                _vlcViewController?.pause();
               }
               if (widget.onLongPressStart != null) {
                 widget.onLongPressStart!();
@@ -278,7 +321,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
             },
             onLongPressEnd: (value) {
               if (widget.mediaType == kVideoType) {
-                _videoPlayerController?.play();
+                _vlcViewController?.play();
               }
               if (widget.onLongPressEnd != null) {
                 widget.onLongPressEnd!();
@@ -293,9 +336,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                 }
                 if (info.visibleFraction > 0.9) {
                   mountUpdate();
-                  if (_videoPlayerController?.value.isPlaying == false) {
-                    _videoPlayerController?.seekTo(Duration.zero);
-                    _videoPlayerController?.play();
+                  if (_vlcViewController != null &&
+                      _vlcViewController?.value.isInitialized == true &&
+                      _vlcViewController?.value.isPlaying == false) {
+                    _vlcViewController?.seekTo(Duration.zero);
+                    _vlcViewController?.play();
                     _isPlaying = true;
                     mountUpdate();
                   }
@@ -303,8 +348,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                   _isPlayPauseActioned =
                       false; // Reset play/pause icon state when video becomes visible
                   mountUpdate();
-                  if (_videoPlayerController?.value.isPlaying == true) {
-                    _videoPlayerController?.pause();
+                  if (_vlcViewController?.value.isPlaying == true) {
+                    _vlcViewController?.pause();
                     _isPlaying = false;
                     mountUpdate();
                   }
@@ -732,7 +777,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                                     fontWeight: FontWeight.w700,
                                   ),
                                   recognizer: _tapGestureRecognizer
-                                    ..onTap = () {
+                                    ?..onTap = () {
                                       setState(() {
                                         _isExpandedDescription = !_isExpandedDescription;
                                       });
