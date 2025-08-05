@@ -322,10 +322,10 @@ class Tags {
                 x is Map<String, dynamic> ? MentionData.fromJson(x) : MentionData.fromJson({}))),
         places:
             json['places'] == null ? [] : List<String>.from((json['places'] as List).map((x) => x)),
-        products: json['products'] == null
+        products: json['products'] == null || (json['products'] as List).isListEmptyOrNull
             ? []
-            : List<ProductData>.from((json['products'] as List).map((x) =>
-                x is Map<String, dynamic> ? ProductData.fromJson(x) : ProductData.fromJson({}))),
+            : List<ProductData>.from((json['products'] as List)
+                .map((dynamic x) => ProductData.fromJson(x as Map<String, dynamic>))),
       );
   List<MentionData>? mentions;
   List<MentionData>? hashtags;
@@ -333,10 +333,10 @@ class Tags {
   List<ProductData>? products;
 
   Map<String, dynamic> toMap() => {
-        'mentions': mentions == null ? [] : List<dynamic>.from(mentions!.map((x) => x)),
-        'hashtags': hashtags == null ? [] : List<dynamic>.from(hashtags!.map((x) => x)),
+        'mentions': mentions == null ? [] : List<dynamic>.from(mentions!.map((x) => x.toJson())),
+        'hashtags': hashtags == null ? [] : List<dynamic>.from(hashtags!.map((x) => x.toJson())),
         'places': places == null ? [] : List<dynamic>.from(places!.map((x) => x)),
-        'products': products == null ? [] : List<dynamic>.from(products!.map((x) => x)),
+        'products': products == null ? [] : List<dynamic>.from(products!.map((x) => x.toJson())),
       };
 }
 
