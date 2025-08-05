@@ -38,7 +38,7 @@ class TabDataModel {
   final Future<bool> Function(String, String, bool)? onPressLike;
   final Future<bool> Function(String)? onPressFollow;
   final Future<bool> Function()? onRefresh;
-  final Future<List<FeaturedProductDataItem>>? Function(String, String)? onTapCartIcon;
+  final void Function(String)? onTapCartIcon;
   final Widget? placeHolderWidget;
   final PostSectionType? postSectionType;
   final Future<num>? Function(String, int)? onTapComment;

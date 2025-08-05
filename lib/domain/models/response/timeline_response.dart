@@ -4,6 +4,8 @@
 
 import 'dart:convert';
 
+import 'package:ism_video_reel_player/ism_video_reel_player.dart';
+
 TimelineResponse timelineResponseFromMap(String str) =>
     TimelineResponse.fromMap(json.decode(str) as Map<String, dynamic>);
 
@@ -229,6 +231,7 @@ class Media {
     this.assetId,
     this.position,
     this.url,
+    this.previewUrl,
     this.description,
   });
 
@@ -237,12 +240,14 @@ class Media {
         assetId: json['asset_id'] as String?,
         position: json['position'] as num?,
         url: json['url'] as String?,
+        previewUrl: json['preview_url'] as String?,
         description: json['description'],
       );
   String? mediaType;
   String? assetId;
   num? position;
   String? url;
+  String? previewUrl;
   dynamic description;
 
   Map<String, dynamic> toMap() => {
@@ -250,6 +255,7 @@ class Media {
         'asset_id': assetId,
         'position': position,
         'url': url,
+        'preview_url': previewUrl,
         'description': description,
       };
 }
@@ -306,22 +312,25 @@ class Tags {
   });
 
   factory Tags.fromMap(Map<String, dynamic> json) => Tags(
-        mentions: json['mentions'] == null
+        mentions: json['mentions'] == null || (json['mentions'] as List).isListEmptyOrNull
             ? []
-            : List<String>.from((json['mentions'] as List).map((x) => x)),
-        hashtags: json['hashtags'] == null
+            : List<MentionData>.from((json['mentions'] as List).map((x) =>
+                x is Map<String, dynamic> ? MentionData.fromJson(x) : MentionData.fromJson({}))),
+        hashtags: json['hashtags'] == null || (json['hashtags'] as List).isListEmptyOrNull
             ? []
-            : List<String>.from((json['hashtags'] as List).map((x) => x)),
+            : List<MentionData>.from((json['hashtags'] as List).map((x) =>
+                x is Map<String, dynamic> ? MentionData.fromJson(x) : MentionData.fromJson({}))),
         places:
             json['places'] == null ? [] : List<String>.from((json['places'] as List).map((x) => x)),
         products: json['products'] == null
             ? []
-            : List<dynamic>.from((json['products'] as List).map((x) => x)),
+            : List<ProductData>.from((json['products'] as List).map((x) =>
+                x is Map<String, dynamic> ? ProductData.fromJson(x) : ProductData.fromJson({}))),
       );
-  List<String>? mentions;
-  List<String>? hashtags;
+  List<MentionData>? mentions;
+  List<MentionData>? hashtags;
   List<String>? places;
-  List<dynamic>? products;
+  List<ProductData>? products;
 
   Map<String, dynamic> toMap() => {
         'mentions': mentions == null ? [] : List<dynamic>.from(mentions!.map((x) => x)),
@@ -401,5 +410,142 @@ class Preferences {
   Map<String, dynamic> toMap() => {
         'theme': theme,
         'language': language,
+      };
+}
+
+class MentionData {
+  MentionData({
+    required this.userId,
+    required this.username,
+    required this.position,
+  });
+
+  factory MentionData.fromJson(Map<String, dynamic> json) => MentionData(
+        userId: json['user_id'] as String? ?? '',
+        username: json['username'] as String? ?? '',
+        position: json['position'] == null
+            ? null
+            : Position.fromJson(json['position'] as Map<String, dynamic>),
+      );
+  String? userId;
+  String? username;
+  Position? position;
+
+  Map<String, dynamic> toJson() => {
+        'user_id': userId,
+        'username': username,
+        'position': position?.toJson(),
+      };
+}
+
+class Position {
+  Position({
+    required this.start,
+    required this.end,
+  });
+
+  factory Position.fromJson(Map<String, dynamic> json) => Position(
+        start: json['start'] as num? ?? 0,
+        end: json['end'] as num? ?? 0,
+      );
+  num? start;
+  num? end;
+
+  Map<String, dynamic> toJson() => {
+        'start': start,
+        'end': end,
+      };
+}
+
+class ProductData {
+  ProductData({
+    required this.id,
+    required this.name,
+    required this.brandName,
+    required this.price,
+    required this.discountPrice,
+    required this.currency,
+    required this.url,
+    required this.imageUrl,
+    required this.position,
+  });
+
+  factory ProductData.fromJson(Map<String, dynamic> json) => ProductData(
+        id: json['id'] as String? ?? '',
+        name: json['name'] as String? ?? '',
+        brandName: json['brand_name'] as String? ?? '',
+        price: json['price'] as num? ?? 0,
+        discountPrice: json['discount_price'] as num? ?? 0,
+        currency: json['currency'] == null
+            ? null
+            : Currency.fromJson(json['currency'] as Map<String, dynamic>),
+        url: json['url'] as String? ?? '',
+        imageUrl: json['image_url'] as String? ?? '',
+        position: json['position'] == null
+            ? null
+            : ProductPosition.fromJson(json['position'] as Map<String, dynamic>),
+      );
+  String? id;
+  String? name;
+  String? brandName;
+  num? price;
+  num? discountPrice;
+  Currency? currency;
+  String? url;
+  String? imageUrl;
+  ProductPosition? position;
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'brand_name': brandName,
+        'price': price,
+        'discount_price': discountPrice,
+        'currency': currency?.toJson(),
+        'url': url,
+        'image_url': imageUrl,
+        'position': position?.toJson(),
+      };
+}
+
+class Currency {
+  Currency({
+    required this.code,
+    required this.symbol,
+  });
+
+  factory Currency.fromJson(Map<String, dynamic> json) => Currency(
+        code: json['code'] as String? ?? '',
+        symbol: json['symbol'] as String? ?? '',
+      );
+  String? code;
+  String? symbol;
+
+  Map<String, dynamic> toJson() => {
+        'code': code,
+        'symbol': symbol,
+      };
+}
+
+class ProductPosition {
+  ProductPosition({
+    required this.mediaPosition,
+    required this.x,
+    required this.y,
+  });
+
+  factory ProductPosition.fromJson(Map<String, dynamic> json) => ProductPosition(
+        mediaPosition: json['media_position'] as num? ?? 0,
+        x: json['x'] as num? ?? 0,
+        y: json['y'] as num? ?? 0,
+      );
+  num? mediaPosition;
+  num? x;
+  num? y;
+
+  Map<String, dynamic> toJson() => {
+        'media_position': mediaPosition,
+        'x': x,
+        'y': y,
       };
 }

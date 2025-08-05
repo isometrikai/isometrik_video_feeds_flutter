@@ -334,25 +334,29 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
     if (apiResult.isSuccess) {
       final postDataList = apiResult.data?.data as List<TimeLineData>;
-      final newPosts = postDataList
-          .map((postData) => isr.TimeLineData.fromMap(postData.toMap()))
-          .toList(); // Updated line
-      if (newPosts.length < _timeLinePageSize) {
-        _hasMoreTimeLineData = false;
-      }
-
-      if (isFromPagination) {
-        _timeLinePostList.addAll(newPosts);
-        if (onComplete != null) {
-          onComplete(newPosts);
+      try {
+        final newPosts = postDataList
+            .map((postData) => isr.TimeLineData.fromMap(postData.toMap()))
+            .toList(); // Updated line
+        if (newPosts.length < _timeLinePageSize) {
+          _hasMoreTimeLineData = false;
         }
-      } else {
-        _timeLinePostList
-          ..clear()
-          ..addAll(newPosts);
-      }
 
-      _timeLineCurrentPage++;
+        if (isFromPagination) {
+          _timeLinePostList.addAll(newPosts);
+          if (onComplete != null) {
+            onComplete(newPosts);
+          }
+        } else {
+          _timeLinePostList
+            ..clear()
+            ..addAll(newPosts);
+        }
+
+        _timeLineCurrentPage++;
+      } catch (e, stackTrace) {
+        AppLog.error('Error logged: $e', stackTrace);
+      }
     } else {
       ErrorHandler.showAppError(appError: apiResult.error);
     }

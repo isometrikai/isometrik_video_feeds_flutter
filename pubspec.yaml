@@ -6,6 +6,7 @@ environment:
   sdk: '>=3.4.0 <4.0.0'
 description: A new Flutter plugin project.
 dependencies:
+#  better_player: ^0.0.84
   cached_network_image: '^3.4.0'
   camera: ^0.11.0+2
   connectivity_plus: ^6.1.1
@@ -16,6 +17,7 @@ dependencies:
   flutter_screenutil: ^5.9.3
   flutter_secure_storage: ^9.2.3
   flutter_svg: ^2.0.17
+  flutter_vlc_player: ^7.4.3
   flutter_web_plugins:
     sdk: flutter
   fluttertoast: ^8.2.11

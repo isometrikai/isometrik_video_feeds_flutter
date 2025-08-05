@@ -29,13 +29,15 @@ extension zeroOrNullExtension on double? {
 }
 
 extension StringExtension on String {
-  String capitalize() => length > 1 ? '${this[0].toUpperCase()}${substring(1).toLowerCase()}' : toUpperCase();
+  String capitalize() =>
+      length > 1 ? '${this[0].toUpperCase()}${substring(1).toLowerCase()}' : toUpperCase();
 }
 
 extension removeEmptyElementExtension on Map<String, dynamic> {
   Map<String, dynamic> removeEmptyValues() {
-    removeWhere(
-        (key, value) => value is List ? value.isEmpty : (value == null || (value is String && value.isEmptyOrNull)));
+    removeWhere((key, value) => value is List
+        ? value.isEmpty
+        : (value == null || (value is String && value.isEmptyOrNull)));
     return this;
   }
 }
@@ -50,4 +52,8 @@ extension MediaTypeExtension on MediaType {
         MediaType.video => 1,
         MediaType.both => 2,
       };
+}
+
+extension ColorExtension on String {
+  Color get toHexColor => Color(int.parse('0xFF$this'));
 }
