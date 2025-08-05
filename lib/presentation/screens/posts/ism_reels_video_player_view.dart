@@ -110,8 +110,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
 
   VideoPlayerController? _videoPlayerController;
 
-  VlcPlayerController? _vlcViewController;
-
   var _isPlaying = true;
 
   var _isPlayPauseActioned = false;
@@ -166,9 +164,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
             'IsmReelsVideoPlayerView....initializeVideoPlayer video url converted to https $mediaUrl');
       }
       _videoPlayerController = VideoPlayerController.networkUrl(
-        Uri.parse(
-            'https://video.gumlet.io/6890598d69cc5f5f003fdf04/689060718bcbb4476ad9dc23/main.m3u8'),
-        formatHint: VideoFormat.hls,
+        Uri.parse(mediaUrl),
         httpHeaders: {
           'User-Agent': 'Mozilla/5.0 (compatible; VideoPlayer)',
           'Accept': '*/*',
@@ -187,34 +183,17 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
 
       debugPrint('IsmReelsVideoPlayerView....initializeVideoPlayer name ${widget.name}');
 
-      // ✅ ADD: Auto-play if this is the initial/first video
-      if (widget.isFirstPost == true) {
-        await _videoPlayerController?.seekTo(Duration.zero);
-        await _videoPlayerController?.play();
-        _isPlaying = true;
-        debugPrint('IsmReelsVideoPlayerView....Auto-playing initial video');
-      }
-      // Wait until next frame before forcing visibility check
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        VisibilityDetectorController.instance.notifyNow();
-      });
-      mountUpdate();
-    } catch (e) {
-      debugPrint('IsmReelsVideoPlayerView...catch video url ${widget.mediaUrl}');
-      IsrVideoReelUtility.debugCatchLog(error: e);
-    }
-  }
-
-  Future<void> _initializeBetterPlayer() async {
-    try {
-      _vlcViewController = VlcPlayerController.network(
-        'https://video.gumlet.io/6890598d69cc5f5f003fdf04/689060718bcbb4476ad9dc23/main.m3u8',
-      );
-      await _vlcViewController?.initialize();
-      // Wait until next frame before forcing visibility check
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        VisibilityDetectorController.instance.notifyNow();
-      });
+      // // ✅ ADD: Auto-play if this is the initial/first video
+      // if (widget.isFirstPost == true) {
+      //   await _videoPlayerController?.seekTo(Duration.zero);
+      //   await _videoPlayerController?.play();
+      //   _isPlaying = true;
+      //   debugPrint('IsmReelsVideoPlayerView....Auto-playing initial video');
+      // }
+      // // Wait until next frame before forcing visibility check
+      // WidgetsBinding.instance.addPostFrameCallback((_) {
+      //   VisibilityDetectorController.instance.notifyNow();
+      // });
       mountUpdate();
     } catch (e) {
       debugPrint('IsmReelsVideoPlayerView...catch video url ${widget.mediaUrl}');
@@ -227,9 +206,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
     _tapGestureRecognizer?.dispose();
     _videoPlayerController?.pause();
     _videoPlayerController?.dispose();
-    _vlcViewController?.dispose();
     _videoPlayerController = null;
-    _vlcViewController = null;
     super.dispose();
   }
 
@@ -253,32 +230,37 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
     }
 
     // ✅ CHANGED: Check  instead of just isInitialized
-    return _vlcViewController == null || _vlcViewController?.isReadyToInitialize == false
-        ? AppImage.network(
-            widget.thumbnail,
-            width: IsrDimens.getScreenWidth(context),
-            height: IsrDimens.getScreenHeight(context),
-            fit: BoxFit.contain,
-          )
-        : FittedBox(
-            fit: BoxFit.cover,
-            child: SizedBox(
-              height: _vlcViewController?.value.size.height,
-              width: _vlcViewController?.value.size.width,
-              child: AspectRatio(
-                aspectRatio: _vlcViewController!.value.aspectRatio,
-                // child: VideoPlayer(_videoPlayerController!),
-                // child: BetterPlayer(
-                //   controller: _betterPlayerController,
-                // ),
-                child: VlcPlayer(
-                  controller: _vlcViewController!,
-                  aspectRatio: 16 / 9,
-                  placeholder: const Center(child: CircularProgressIndicator()),
+    return Stack(
+      children: [
+        // Always show thumbnail as background
+        AppImage.network(
+          widget.thumbnail,
+          width: IsrDimens.getScreenWidth(context),
+          height: IsrDimens.getScreenHeight(context),
+          fit: BoxFit.contain,
+        ),
+
+        // Video player with fade-in animation
+        if (_videoPlayerController != null &&
+            _videoPlayerController!.value.isInitialized &&
+            !_videoPlayerController!.value.isBuffering)
+          AnimatedOpacity(
+            opacity: 1.0,
+            duration: const Duration(milliseconds: 300),
+            child: FittedBox(
+              fit: BoxFit.cover,
+              child: SizedBox(
+                height: _videoPlayerController?.value.size.height,
+                width: _videoPlayerController?.value.size.width,
+                child: AspectRatio(
+                  aspectRatio: _videoPlayerController!.value.aspectRatio,
+                  child: VideoPlayer(_videoPlayerController!),
                 ),
               ),
             ),
-          );
+          ),
+      ],
+    );
   }
 
   void _togglePlayPause() {
@@ -286,9 +268,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
       return;
     }
     if (_isPlaying) {
-      _vlcViewController?.pause();
+      _videoPlayerController?.pause();
     } else {
-      _vlcViewController?.play();
+      _videoPlayerController?.play();
     }
     _isPlaying = !_isPlaying;
     _isPlayPauseActioned = !_isPlayPauseActioned;
@@ -312,7 +294,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
             },
             onLongPressStart: (details) {
               if (widget.mediaType == kVideoType) {
-                _vlcViewController?.pause();
+                _videoPlayerController?.pause();
               }
               if (widget.onLongPressStart != null) {
                 widget.onLongPressStart!();
@@ -321,7 +303,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
             },
             onLongPressEnd: (value) {
               if (widget.mediaType == kVideoType) {
-                _vlcViewController?.play();
+                _videoPlayerController?.play();
               }
               if (widget.onLongPressEnd != null) {
                 widget.onLongPressEnd!();
@@ -336,11 +318,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                 }
                 if (info.visibleFraction > 0.9) {
                   mountUpdate();
-                  if (_vlcViewController != null &&
-                      _vlcViewController?.value.isInitialized == true &&
-                      _vlcViewController?.value.isPlaying == false) {
-                    _vlcViewController?.seekTo(Duration.zero);
-                    _vlcViewController?.play();
+                  if (_videoPlayerController != null &&
+                      _videoPlayerController?.value.isInitialized == true &&
+                      _videoPlayerController?.value.isPlaying == false) {
+                    _videoPlayerController?.seekTo(Duration.zero);
+                    _videoPlayerController?.play();
                     _isPlaying = true;
                     mountUpdate();
                   }
@@ -348,8 +330,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                   _isPlayPauseActioned =
                       false; // Reset play/pause icon state when video becomes visible
                   mountUpdate();
-                  if (_vlcViewController?.value.isPlaying == true) {
-                    _vlcViewController?.pause();
+                  if (_videoPlayerController?.value.isPlaying == true) {
+                    _videoPlayerController?.pause();
                     _isPlaying = false;
                     mountUpdate();
                   }
