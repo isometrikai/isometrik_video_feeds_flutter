@@ -70,6 +70,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
   StreamSubscription<dynamic>? _subscription;
   late PageController _pageController;
   final Set<String> _cachedImages = {};
+  final VideoCacheManager _videoCacheManager = VideoCacheManager();
 
   @override
   void initState() {
@@ -121,6 +122,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
   void dispose() {
     _pageController.dispose();
     _subscription?.cancel();
+    _videoCacheManager.clearAll();
     super.dispose();
   }
 
@@ -191,6 +193,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
         itemCount: _postList.length,
         scrollDirection: Axis.vertical,
         itemBuilder: (context, index) => IsmReelsVideoPlayerView(
+          videoCacheManager: _videoCacheManager, // Add this parameter
           isFirstPost: widget.startingPostIndex == index,
           isCreatePostButtonVisible: widget.isCreatePostButtonVisible,
           thumbnail: _postList[index].media?.first.previewUrl ?? '',
@@ -268,9 +271,24 @@ class _PostItemWidgetState extends State<PostItemWidget> {
     }));
   }
 
+  // Update your _doImageCaching method to handle both images and videos
   void _doImageCaching(int index) {
+    final post = _postList[index];
+    final username = post.user?.username ?? 'unknown';
+    final mediaType = post.media?.first.mediaType ?? 'unknown';
+
+    debugPrint('🎯 MainWidget: Page changed to index $index (@$username - $mediaType)');
+
     // Precache images around current position
     _precacheNearbyImages(index);
+    // Precache videos around current position
+    _precacheNearbyVideos(index);
+
+    // Print cache stats every few scrolls
+    if (index % 3 == 0) {
+      final stats = _videoCacheManager.getCacheStats();
+      debugPrint('📊 MainWidget: Cache Stats - ${stats.toString()}');
+    }
   }
 
   void _precacheNearbyImages(int currentIndex) {
@@ -317,5 +335,109 @@ class _PostItemWidgetState extends State<PostItemWidget> {
       }
     }
     return images;
+  }
+
+  // Add this new method for video precaching
+  void _precacheNearbyVideos(int currentIndex) {
+    if (_postList.isEmpty) return;
+
+    debugPrint('🎬 MainWidget: Starting video precaching for index $currentIndex');
+
+    // Cache more aggressively ahead since users typically scroll forward
+    final startIndex = math.max(0, currentIndex - 1); // 1 behind
+    final endIndex = math.min(_postList.length - 1, currentIndex + 4); // 4 ahead
+
+    debugPrint(
+        '📍 MainWidget: Precaching range: $startIndex to $endIndex (current: $currentIndex)');
+
+    final videosToCache = <String>[];
+    final videoInfo = <String>[];
+
+    for (var i = startIndex; i <= endIndex; i++) {
+      final post = _postList[i];
+
+      // Only cache videos, not images
+      if (post.media?.first.mediaType == 'video') {
+        final videoUrl = post.media?.first.url ?? '';
+        final username = post.user?.username ?? 'unknown';
+        final position = i == currentIndex
+            ? 'CURRENT'
+            : i < currentIndex
+                ? 'BEHIND'
+                : 'AHEAD';
+
+        videoInfo.add('[$position] Index $i: @$username');
+
+        // Only cache if not already cached and URL is valid
+        if (videoUrl.isNotEmpty && !_videoCacheManager.isVideoCached(videoUrl)) {
+          videosToCache.add(videoUrl);
+          debugPrint('➕ MainWidget: Added to cache queue - Index $i (@$username)');
+        } else if (videoUrl.isNotEmpty) {
+          debugPrint('✅ MainWidget: Already cached - Index $i (@$username)');
+        } else {
+          debugPrint('⚠️ MainWidget: Empty video URL - Index $i (@$username)');
+        }
+      } else {
+        final username = post.user?.username ?? 'unknown';
+        debugPrint('📷 MainWidget: Skipping image post - Index $i (@$username)');
+      }
+    }
+
+    debugPrint('📊 MainWidget: Video analysis complete:');
+    for (final info in videoInfo) {
+      debugPrint('   $info');
+    }
+
+    if (videosToCache.isNotEmpty) {
+      // Priority: cache next post first, then others
+      final prioritizedVideos = _prioritizeNextVideo(videosToCache, currentIndex);
+      debugPrint('🚀 MainWidget: Starting precache for ${prioritizedVideos.length} videos');
+
+      unawaited(_videoCacheManager.precacheVideos(prioritizedVideos));
+    } else {
+      debugPrint('✅ MainWidget: No new videos to cache around index $currentIndex');
+    }
+  }
+
+// Add this method to prioritize next video
+  List<String> _prioritizeNextVideo(List<String> videos, int currentIndex) {
+    debugPrint('🎯 MainWidget: Prioritizing videos for current index $currentIndex');
+
+    // Put next post video first in the caching queue
+    final nextPostIndex = currentIndex + 1;
+    if (nextPostIndex < _postList.length) {
+      final nextPost = _postList[nextPostIndex];
+      if (nextPost.media?.first.mediaType == 'video') {
+        final nextVideoUrl = nextPost.media?.first.url ?? '';
+        final nextUsername = nextPost.user?.username ?? 'unknown';
+
+        if (nextVideoUrl.isNotEmpty && videos.contains(nextVideoUrl)) {
+          // Move next video to front
+          videos.remove(nextVideoUrl);
+          final prioritized = [nextVideoUrl, ...videos];
+
+          debugPrint(
+              '🥇 MainWidget: Prioritized next video - Index $nextPostIndex (@$nextUsername)');
+          debugPrint('📋 MainWidget: Final priority order:');
+          for (var i = 0; i < prioritized.length; i++) {
+            final url = prioritized[i];
+            // Find which post this URL belongs to
+            for (var j = 0; j < _postList.length; j++) {
+              final post = _postList[j];
+              if (post.media?.first.url == url) {
+                final username = post.user?.username ?? 'unknown';
+                debugPrint('   ${i + 1}. Index $j (@$username)');
+                break;
+              }
+            }
+          }
+
+          return prioritized;
+        }
+      }
+    }
+
+    debugPrint('📋 MainWidget: No next video to prioritize, using original order');
+    return videos;
   }
 }

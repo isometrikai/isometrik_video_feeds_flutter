@@ -54,6 +54,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
     this.isScheduledPost,
     this.postStatus,
     this.isFirstPost,
+    this.videoCacheManager,
   });
 
   final String? mediaUrl;
@@ -97,12 +98,14 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
   final bool? isScheduledPost;
   final int? postStatus;
   final bool? isFirstPost;
+  final VideoCacheManager? videoCacheManager; // Add this parameter
 
   @override
   State<IsmReelsVideoPlayerView> createState() => _IsmReelsVideoPlayerViewState();
 }
 
 class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
+  VideoCacheManager get _videoCacheManager => widget.videoCacheManager ?? VideoCacheManager();
   // Add constants for media types
   static const int kPictureType = 0;
   static const int kVideoType = 1;
@@ -151,61 +154,98 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
     setState(() {});
   }
 
-  //initialize vide player controller
-  //initialize video player controller
-  Future<void> initializeVideoPlayer() async {
-    // ✅ CHANGED: Make this return Future<void>
-    debugPrint('IsmReelsVideoPlayerView....initializeVideoPlayer video url ${widget.mediaUrl}');
-    if (widget.mediaUrl?.isStringEmptyOrNull == false) {
-      var mediaUrl = widget.mediaUrl!;
-      if (mediaUrl.startsWith('http:')) {
-        mediaUrl = mediaUrl.replaceFirst('http:', 'https:');
-        debugPrint(
-            'IsmReelsVideoPlayerView....initializeVideoPlayer video url converted to https $mediaUrl');
-      }
-      _videoPlayerController = VideoPlayerController.networkUrl(
-        Uri.parse(mediaUrl),
-        httpHeaders: {
-          'User-Agent': 'Mozilla/5.0 (compatible; VideoPlayer)',
-          'Accept': '*/*',
-        },
-      );
-    }
-    if (_videoPlayerController == null) return;
+  //initialize vide player controller and initialization to use cache
+  Future<void> _initializeVideoPlayer() async {
+    if (widget.mediaUrl?.isStringEmptyOrNull != false) return;
+
+    final videoUrl = widget.mediaUrl!;
+    debugPrint('IsmReelsVideoPlayerView....initializeVideoPlayer video url $videoUrl');
+
     try {
-      await _videoPlayerController?.initialize();
-      // Always start with volume on
-      await _videoPlayerController?.setVolume(1.0);
-      await _videoPlayerController?.setLooping(true);
+      // First, try to get cached controller
+      _videoPlayerController = _videoCacheManager.getCachedController(videoUrl);
 
-      // ✅ ADD: Mark as initialized
-      _isVideoInitialized = true;
+      if (_videoPlayerController != null) {
+        // Use cached controller
+        debugPrint('IsmReelsVideoPlayerView....Using cached video controller for $videoUrl');
+        _isVideoInitialized = true;
+        _setupVideoController();
+        // mountUpdate();
+        return;
+      }
 
-      debugPrint('IsmReelsVideoPlayerView....initializeVideoPlayer name ${widget.name}');
+      // If not cached, check if it's being initialized
+      if (_videoCacheManager.isVideoInitializing(videoUrl)) {
+        debugPrint('IsmReelsVideoPlayerView....Video is being initialized, waiting...');
+        // Wait a bit and try again
+        await Future.delayed(const Duration(milliseconds: 500));
+        _videoPlayerController = _videoCacheManager.getCachedController(videoUrl);
+        if (_videoPlayerController != null) {
+          _isVideoInitialized = true;
+          _setupVideoController();
+          mountUpdate();
+          return;
+        }
+      }
 
-      // // ✅ ADD: Auto-play if this is the initial/first video
-      // if (widget.isFirstPost == true) {
-      //   await _videoPlayerController?.seekTo(Duration.zero);
-      //   await _videoPlayerController?.play();
-      //   _isPlaying = true;
-      //   debugPrint('IsmReelsVideoPlayerView....Auto-playing initial video');
-      // }
-      // // Wait until next frame before forcing visibility check
-      // WidgetsBinding.instance.addPostFrameCallback((_) {
-      //   VisibilityDetectorController.instance.notifyNow();
-      // });
-      mountUpdate();
+      // If still not available, initialize normally (fallback)
+      debugPrint('IsmReelsVideoPlayerView....Initializing video controller normally');
+      await _initializeVideoControllerNormally(videoUrl);
     } catch (e) {
       debugPrint('IsmReelsVideoPlayerView...catch video url ${widget.mediaUrl}');
       IsrVideoReelUtility.debugCatchLog(error: e);
     }
   }
 
+  // Fallback initialization method
+  Future<void> _initializeVideoControllerNormally(String videoUrl) async {
+    var mediaUrl = videoUrl;
+    if (mediaUrl.startsWith('http:')) {
+      mediaUrl = mediaUrl.replaceFirst('http:', 'https:');
+    }
+
+    _videoPlayerController = VideoPlayerController.networkUrl(
+      Uri.parse(mediaUrl),
+      // httpHeaders: {
+      //   'User-Agent': 'Mozilla/5.0 (compatible; VideoPlayer)',
+      //   'Accept': '*/*',
+      // },
+    );
+
+    if (_videoPlayerController == null) return;
+
+    await _videoPlayerController?.initialize();
+    _setupVideoController();
+    _isVideoInitialized = true;
+    mountUpdate();
+  }
+
+  // Setup video controller settings
+  void _setupVideoController() {
+    _videoPlayerController?.setVolume(1.0);
+    _videoPlayerController?.setLooping(true);
+  }
+
   @override
   void dispose() {
     _tapGestureRecognizer?.dispose();
-    _videoPlayerController?.pause();
-    _videoPlayerController?.dispose();
+
+    // Mark as not visible in cache manager
+    if (widget.mediaUrl?.isStringEmptyOrNull == false) {
+      _videoCacheManager.markAsNotVisible(widget.mediaUrl!);
+    }
+
+    // Only dispose if this controller is not in cache
+    if (_videoPlayerController != null &&
+        widget.mediaUrl?.isStringEmptyOrNull == false &&
+        !_videoCacheManager.isVideoCached(widget.mediaUrl!)) {
+      _videoPlayerController?.pause();
+      _videoPlayerController?.dispose();
+    } else {
+      // Just pause if it's cached
+      _videoPlayerController?.pause();
+    }
+
     _videoPlayerController = null;
     super.dispose();
   }
@@ -316,6 +356,16 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                 if (widget.showBlur == true || widget.mediaType == kPictureType) {
                   return;
                 }
+
+                // Update cache manager about visibility
+                if (widget.mediaUrl?.isStringEmptyOrNull == false) {
+                  if (info.visibleFraction > 0.9) {
+                    _videoCacheManager.markAsVisible(widget.mediaUrl!);
+                  } else {
+                    _videoCacheManager.markAsNotVisible(widget.mediaUrl!);
+                  }
+                }
+
                 if (info.visibleFraction > 0.9) {
                   mountUpdate();
                   if (_videoPlayerController != null &&
@@ -323,16 +373,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                       _videoPlayerController?.value.isPlaying == false) {
                     _videoPlayerController?.seekTo(Duration.zero);
                     _videoPlayerController?.play();
-                    _isPlaying = !_isPlaying;
+                    _isPlaying = true; // Update this line
                     mountUpdate();
                   }
                 } else {
-                  _isPlayPauseActioned =
-                      false; // Reset play/pause icon state when video becomes visible
+                  _isPlayPauseActioned = false;
                   mountUpdate();
                   if (_videoPlayerController?.value.isPlaying == true) {
                     _videoPlayerController?.pause();
-                    _isPlaying = !_isPlaying;
+                    _isPlaying = false; // Update this line
                     mountUpdate();
                   }
                 }
@@ -610,7 +659,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                           ),
                           IsrDimens.boxHeight(IsrDimens.four),
                           Text(
-                            '${widget.productCount} ${IsrTranslationFile.products}',
+                            '${widget.productCount} ${widget.productCount == 1 ? IsrTranslationFile.product : IsrTranslationFile.products}',
                             style: IsrStyles.primaryText10.copyWith(
                                 color: IsrColors.color0F1E91, fontWeight: FontWeight.w500),
                           ),
