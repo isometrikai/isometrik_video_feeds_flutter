@@ -85,7 +85,6 @@ class _PostItemWidgetState extends State<PostItemWidget> {
     final currentState = _postBloc.state;
     if (currentState is PostsLoadedState) {
       final postList = currentState.timeLinePostList ?? [];
-      // _precacheImages(postList);
       setState(() {
         _postList = postList;
       });
@@ -127,17 +126,34 @@ class _PostItemWidgetState extends State<PostItemWidget> {
   }
 
   @override
-  Widget build(BuildContext context) => _postList.isListEmptyOrNull == true
-      ? _buildPlaceHolder(context)
-      : RefreshIndicator(
-          onRefresh: () async {
-            if (widget.loggedInUserId.isStringEmptyOrNull == true) return;
-            if (widget.onRefresh != null) {
-              await widget.onRefresh?.call();
-            }
-          },
-          child: _buildContent(context),
-        );
+  Widget build(BuildContext context) {
+    // if (_postList.isListEmptyOrNull || _postList.length == 1) {
+    //   widget.onLoadMore!(widget.postSectionType).then((value) {
+    //     if (value.isListEmptyOrNull) return;
+    //     setState(() {
+    //       final newPosts = value
+    //           .where((newPost) => !_postList.any((existingPost) => existingPost.id == newPost.id));
+    //       _postList
+    //           .addAll(newPosts.where((post) => post.media?.first.mediaType == 'video').toList());
+    //
+    //       if (_postList.length == 1) {
+    //         _precacheNearbyVideos(0);
+    //       }
+    //     });
+    //   });
+    // }
+    return _postList.isListEmptyOrNull == true
+        ? _buildPlaceHolder(context)
+        : RefreshIndicator(
+            onRefresh: () async {
+              if (widget.loggedInUserId.isStringEmptyOrNull == true) return;
+              if (widget.onRefresh != null) {
+                await widget.onRefresh?.call();
+              }
+            },
+            child: _buildContent(context),
+          );
+  }
 
   Widget _buildPlaceHolder(BuildContext context) => CustomScrollView(
         physics: const ClampingScrollPhysics(),
@@ -172,7 +188,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
           debugPrint('page index: $index');
           // Check if we're at 65% of the list
           final threshold = (_postList.length * 0.65).floor();
-          if (index >= threshold) {
+          if (index >= threshold || index == _postList.length - 1) {
             if (widget.onLoadMore != null) {
               widget.onLoadMore!(widget.postSectionType).then((value) {
                 if (value.isListEmptyOrNull) return;
@@ -181,7 +197,8 @@ class _PostItemWidgetState extends State<PostItemWidget> {
                     // Filter out duplicates based on postId
                     final newPosts = value.where((newPost) =>
                         !_postList.any((existingPost) => existingPost.id == newPost.id));
-                    _postList.addAll(newPosts);
+                    _postList.addAll(
+                        newPosts.where((post) => post.media?.first.mediaType == 'video').toList());
                     // _precacheImages(newPosts as List<TimeLineData>);
                   });
                 }

@@ -1,6 +1,5 @@
 import 'dart:async';
 
-// import 'package:better_player/better_player.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
@@ -106,6 +105,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
 
 class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
   VideoCacheManager get _videoCacheManager => widget.videoCacheManager ?? VideoCacheManager();
+
   // Add constants for media types
   static const int kPictureType = 0;
   static const int kVideoType = 1;
@@ -187,7 +187,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
       }
 
       // If still not available, initialize normally (fallback)
-      debugPrint('IsmReelsVideoPlayerView....Initializing video controller normally');
       await _initializeVideoControllerNormally(videoUrl);
     } catch (e) {
       debugPrint('IsmReelsVideoPlayerView...catch video url ${widget.mediaUrl}');
@@ -197,18 +196,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
 
   // Fallback initialization method
   Future<void> _initializeVideoControllerNormally(String videoUrl) async {
+    debugPrint('IsmReelsVideoPlayerView....Initializing video controller normally');
     var mediaUrl = videoUrl;
     if (mediaUrl.startsWith('http:')) {
       mediaUrl = mediaUrl.replaceFirst('http:', 'https:');
     }
 
-    _videoPlayerController = VideoPlayerController.networkUrl(
-      Uri.parse(mediaUrl),
-      // httpHeaders: {
-      //   'User-Agent': 'Mozilla/5.0 (compatible; VideoPlayer)',
-      //   'Accept': '*/*',
-      // },
-    );
+    _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(mediaUrl));
 
     if (_videoPlayerController == null) return;
 
@@ -219,6 +213,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
 
   // Setup video controller settings
   void _setupVideoController() {
+    _videoPlayerController?.play();
     _videoPlayerController?.setVolume(1.0);
     _videoPlayerController?.setLooping(true);
   }
