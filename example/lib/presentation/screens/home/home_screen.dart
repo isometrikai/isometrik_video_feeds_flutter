@@ -90,7 +90,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             final completer = Completer<bool>();
 
                             _homeBloc.add(ReportPostEvent(
-                              postId: postData.postId ?? '',
+                              postId: postData.id ?? '',
                               message: reason,
                               reason: reason,
                               onComplete: (success) {
@@ -201,7 +201,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             final completer = Completer<bool>();
 
                             _homeBloc.add(ReportPostEvent(
-                              postId: postData.postId ?? '',
+                              postId: postData.id ?? '',
                               message: reason,
                               reason: reason,
                               onComplete: (success) {
