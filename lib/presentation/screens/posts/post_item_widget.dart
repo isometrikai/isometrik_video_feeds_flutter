@@ -37,7 +37,7 @@ class PostItemWidget extends StatefulWidget {
   });
 
   final Future<String?> Function()? onCreatePost;
-  final Future<dynamic> Function(PostDataModel, String userId)? onTapMore;
+  final Future<dynamic> Function(TimeLineData, String userId)? onTapMore;
   final bool? showBlur;
   final List<FeaturedProductDataItem>? productList;
   final Future<bool> Function(String, bool)? onPressSave;
