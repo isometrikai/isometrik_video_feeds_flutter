@@ -44,7 +44,7 @@ class PostItemWidget extends StatefulWidget {
   final Future<bool> Function(String, String, bool)? onPressLike;
   final Future<bool> Function(String)? onPressFollow;
   final Future<List<TimeLineData>> Function(PostSectionType?)? onLoadMore;
-  final void Function(String)? onTapCartIcon;
+  final Future<List<SocialProductData>>? Function(String, String)? onTapCartIcon;
   final Future<bool> Function()? onRefresh;
   final Widget? placeHolderWidget;
   final PostSectionType? postSectionType;
@@ -126,34 +126,17 @@ class _PostItemWidgetState extends State<PostItemWidget> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    // if (_postList.isListEmptyOrNull || _postList.length == 1) {
-    //   widget.onLoadMore!(widget.postSectionType).then((value) {
-    //     if (value.isListEmptyOrNull) return;
-    //     setState(() {
-    //       final newPosts = value
-    //           .where((newPost) => !_postList.any((existingPost) => existingPost.id == newPost.id));
-    //       _postList
-    //           .addAll(newPosts.where((post) => post.media?.first.mediaType == 'video').toList());
-    //
-    //       if (_postList.length == 1) {
-    //         _precacheNearbyVideos(0);
-    //       }
-    //     });
-    //   });
-    // }
-    return _postList.isListEmptyOrNull == true
-        ? _buildPlaceHolder(context)
-        : RefreshIndicator(
-            onRefresh: () async {
-              if (widget.loggedInUserId.isStringEmptyOrNull == true) return;
-              if (widget.onRefresh != null) {
-                await widget.onRefresh?.call();
-              }
-            },
-            child: _buildContent(context),
-          );
-  }
+  Widget build(BuildContext context) => _postList.isListEmptyOrNull == true
+      ? _buildPlaceHolder(context)
+      : RefreshIndicator(
+          onRefresh: () async {
+            if (widget.loggedInUserId.isStringEmptyOrNull == true) return;
+            if (widget.onRefresh != null) {
+              await widget.onRefresh?.call();
+            }
+          },
+          child: _buildContent(context),
+        );
 
   Widget _buildPlaceHolder(BuildContext context) => CustomScrollView(
         physics: const ClampingScrollPhysics(),
@@ -263,7 +246,15 @@ class _PostItemWidgetState extends State<PostItemWidget> {
             if (widget.onTapCartIcon != null) {
               final productList = _postList[index].tags?.products;
               final jsonString = jsonEncode(productList?.map((e) => e.toJson()).toList());
-              widget.onTapCartIcon!(jsonString);
+              final productDataList =
+                  await widget.onTapCartIcon!(jsonString, _postList[index].id ?? '');
+              if (productDataList.isListEmptyOrNull) return;
+              final tags = _postList[index].tags;
+              if (tags == null) return;
+              tags.products = productDataList;
+              setState(() {
+                _postList[index] = _postList[index].copyWith(tags: tags);
+              });
             }
           },
           onTapComment: () async {},

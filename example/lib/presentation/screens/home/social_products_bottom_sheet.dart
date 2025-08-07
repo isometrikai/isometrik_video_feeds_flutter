@@ -11,14 +11,14 @@ class SocialProductsBottomSheet extends StatefulWidget {
     required this.products,
   }) : super(key: key);
 
-  final List<ProductData> products;
+  final List<SocialProductData> products;
 
   @override
   State<SocialProductsBottomSheet> createState() => _SocialProductsBottomSheetState();
 }
 
 class _SocialProductsBottomSheetState extends State<SocialProductsBottomSheet> {
-  final List<ProductData> _productsList = [];
+  final List<SocialProductData> _productsList = [];
   final ScrollController _scrollController = ScrollController();
   var _hasMoreData = true;
   var _isLoadingMore = false;
@@ -122,7 +122,7 @@ class _SocialProductsBottomSheetState extends State<SocialProductsBottomSheet> {
 
   Widget _buildProductItem(
     BuildContext context,
-    ProductData? productDataModel, {
+    SocialProductData? productDataModel, {
     bool isSelected = false,
   }) =>
       Container(

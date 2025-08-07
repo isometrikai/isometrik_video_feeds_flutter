@@ -54,9 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
               return isr.IsmPostView(
                 tabDataModelList: [
                   isr.TabDataModel(
-                    onTapCartIcon: (productListJsonString) async {
-                      _handleProductList(productListJsonString);
-                    },
+                    onTapCartIcon: _handleCartAction,
                     timeLinePosts: state.timeLinePosts ?? [],
                     isCreatePostButtonVisible: true,
                     postSectionType: PostSectionType.following,
@@ -309,22 +307,35 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _handleProductList(String productListJsonString) async {
-    final productDataList = _getSocialProductList(productListJsonString);
-    await Utility.showBottomSheet<List<ProductData>>(
-      child: SocialProductsBottomSheet(
-        products: productDataList,
-      ),
-    );
+  Future<List<isr.SocialProductData>>? _handleCartAction(
+      String productListJsonString, String productId) async {
+    var featuredProductList = <isr.SocialProductData>[];
+
+    try {
+      final productDataList = _getSocialProductList(productListJsonString);
+      final result = await Utility.showBottomSheet<List<SocialProductData>>(
+        child: SocialProductsBottomSheet(
+          products: productDataList,
+        ),
+      );
+      if (result.isEmptyOrNull == false) {
+        final productList = result as List<SocialProductData>;
+        featuredProductList = _getFeaturedProductList(productList);
+      }
+    } catch (error, stackTrace) {
+      Utility.debugCatchLog(error: error, stackTrace: stackTrace);
+      debugPrint('Error handling cart action: $error');
+    }
+    return featuredProductList;
   }
 
-  List<ProductData> _getSocialProductList(String? productJsonString) {
-    final productDataModelList = <ProductData>[];
+  List<SocialProductData> _getSocialProductList(String? productJsonString) {
+    final productDataModelList = <SocialProductData>[];
     if (productJsonString.isEmptyOrNull == false) {
       final jsonList = jsonDecode(productJsonString ?? '');
 
       final featuredProducts = (jsonList as List)
-          .map((item) => ProductData.fromJson(item as Map<String, dynamic>))
+          .map((item) => SocialProductData.fromJson(item as Map<String, dynamic>))
           .toList();
       if (featuredProducts.isEmptyOrNull == false) {
         productDataModelList.addAll(featuredProducts);
@@ -332,5 +343,19 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     debugPrint('productDataModelList: $productDataModelList');
     return productDataModelList;
+  }
+
+  List<isr.SocialProductData> _getFeaturedProductList(List<SocialProductData>? productDataList) {
+    var featuredProducts = <isr.SocialProductData>[];
+    if (productDataList.isEmptyOrNull == true) return featuredProducts;
+    final productJsonString =
+        jsonEncode(productDataList?.map((product) => product.toJson()).toList());
+    if (productJsonString.isEmptyOrNull == false) {
+      final jsonList = jsonDecode(productJsonString);
+      featuredProducts = (jsonList as List)
+          .map((item) => isr.SocialProductData.fromJson(item as Map<String, dynamic>))
+          .toList();
+    }
+    return featuredProducts;
   }
 }
