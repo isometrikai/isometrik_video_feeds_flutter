@@ -285,6 +285,8 @@ class IsrColors {
 
   static const Color colorCCCCCC = Color(0xFFCCCCCC);
 
+  static const Color colorF4F4F4 = Color(0xFFF4F4F4);
+
   static const List<Color> lightBlueGradient = [
     Color(0xFFE2F6FB),
     Color(0xFFFFFFFF),

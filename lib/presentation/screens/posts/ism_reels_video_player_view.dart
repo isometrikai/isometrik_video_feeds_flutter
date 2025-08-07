@@ -2,8 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:image/image.dart' as img;
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/isr_utils.dart';
@@ -127,8 +125,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
 
   final _maxLengthToShow = 50;
 
-  var _aspectRatio = 1.0;
-
   var _isVideoInitialized = false;
 
   @override
@@ -141,29 +137,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
     // Always start unmuted
     _isMuted = false;
     _tapGestureRecognizer = TapGestureRecognizer();
-    debugPrint('IsmReelsVideoPlayerView ...Post by ...${widget.name}\n Post url ${widget.mediaUrl}');
+    debugPrint(
+        'IsmReelsVideoPlayerView ...Post by ...${widget.name}\n Post url ${widget.mediaUrl}');
     if (widget.mediaType == kVideoType) {
       await initializeVideoPlayer(); // ✅ CHANGED: Make this await
-    } else {
-      _aspectRatio = await getImageAspectRatio(widget.mediaUrl ?? '') ?? 1.0;
-      print('Aspect ratio: $_aspectRatio');
-    }
-  }
-
-  Future<double?> getImageAspectRatio(String imageUrl) async {
-    try {
-      final response = await http.get(Uri.parse(imageUrl));
-      if (response.statusCode == 200) {
-        var imageBytes = response.bodyBytes;
-        var decodedImage = img.decodeImage(imageBytes);
-        if (decodedImage != null) {
-          return decodedImage.width / decodedImage.height;
-        }
-      }
-      return null; // Unable to decode
-    } catch (e) {
-      print('Error getting aspect ratio: $e');
-      return null;
     }
   }
 
@@ -182,7 +159,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
       var mediaUrl = widget.mediaUrl!;
       if (mediaUrl.startsWith('http:')) {
         mediaUrl = mediaUrl.replaceFirst('http:', 'https:');
-        debugPrint('IsmReelsVideoPlayerView....initializeVideoPlayer video url converted to https $mediaUrl');
+        debugPrint(
+            'IsmReelsVideoPlayerView....initializeVideoPlayer video url converted to https $mediaUrl');
       }
       _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(mediaUrl));
     }
@@ -264,12 +242,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
     if (widget.showBlur == true || widget.mediaType == kPictureType) {
       return;
     }
-    _isPlaying = !_isPlaying;
     if (_isPlaying) {
       _videoPlayerController?.pause();
     } else {
       _videoPlayerController?.play();
     }
+    _isPlaying = !_isPlaying;
     _isPlayPauseActioned = !_isPlayPauseActioned;
     mountUpdate();
   }
@@ -322,7 +300,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                     mountUpdate();
                   }
                 } else {
-                  _isPlayPauseActioned = false; // Reset play/pause icon state when video becomes visible
+                  _isPlayPauseActioned =
+                      false; // Reset play/pause icon state when video becomes visible
                   mountUpdate();
                   if (_videoPlayerController?.value.isPlaying == true) {
                     _videoPlayerController?.pause();
@@ -390,7 +369,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                 child: InkWell(
                   onTap: _togglePlayPause,
                   child: AppImage.svg(
-                    _isPlayPauseActioned ? AssetConstants.reelsPlaySvg : AssetConstants.pausedRoundedSvg,
+                    _isPlayPauseActioned
+                        ? AssetConstants.reelsPlaySvg
+                        : AssetConstants.pausedRoundedSvg,
                   ),
                 ),
               ),
@@ -469,7 +450,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
             //   IsrDimens.boxHeight(IsrDimens.twenty),
             // ],
             _buildActionButton(
-              icon: widget.isLiked ? AssetConstants.icLikeSelected : AssetConstants.icLikeUnSelected,
+              icon:
+                  widget.isLiked ? AssetConstants.icLikeSelected : AssetConstants.icLikeUnSelected,
               label: widget.likesCount.toString(),
               onTap: _callLikeFunction,
               isLoading: _isLikeLoading,
@@ -497,8 +479,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
             if (widget.postStatus != 0) ...[
               IsrDimens.boxHeight(IsrDimens.twenty),
               _buildActionButton(
-                icon: widget.isSavedPost == true ? AssetConstants.icSaveSelected : AssetConstants.icSaveUnSelected,
-                label: widget.isSavedPost == true ? IsrTranslationFile.saved : IsrTranslationFile.save,
+                icon: widget.isSavedPost == true
+                    ? AssetConstants.icSaveSelected
+                    : AssetConstants.icSaveUnSelected,
+                label:
+                    widget.isSavedPost == true ? IsrTranslationFile.saved : IsrTranslationFile.save,
                 onTap: _callSaveFunction,
                 isLoading: _isSaveLoading,
               ),
@@ -526,61 +511,25 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
       Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.transparent.changeOpacity(0.2),
-              borderRadius: BorderRadius.circular(IsrDimens.fifty),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.transparent.changeOpacity(0.1),
-                  spreadRadius: 1,
-                  blurRadius: 1,
-                  offset: const Offset(0, 1),
-                ),
-              ],
-            ),
-            padding: IsrDimens.edgeInsetsAll(IsrDimens.eight),
-            child: GestureDetector(
-              onTap: onTap,
-              child: isLoading
-                  ? SizedBox(
-                      width: IsrDimens.twentyFour,
-                      height: IsrDimens.twentyFour,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
-                      ),
-                    )
-                  : AppImage.svg(
-                      icon,
-                      width: IsrDimens.twentyFour,
-                      height: IsrDimens.twentyFour,
+          GestureDetector(
+            onTap: onTap,
+            child: isLoading
+                ? SizedBox(
+                    width: IsrDimens.twentyFour,
+                    height: IsrDimens.twentyFour,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
                     ),
-            ),
+                  )
+                : AppImage.svg(icon),
           ),
           if (label.isStringEmptyOrNull == false) ...[
             IsrDimens.boxHeight(IsrDimens.four),
-            Container(
-              padding: IsrDimens.edgeInsetsSymmetric(
-                horizontal: IsrDimens.eight,
-                vertical: IsrDimens.four,
-              ),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(IsrDimens.fifty),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.transparent.changeOpacity(0.1),
-                    spreadRadius: 0,
-                    blurRadius: 0,
-                    offset: const Offset(0, 0),
-                  ),
-                ],
-              ),
-              child: Text(
-                label ?? '',
-                style: IsrStyles.white12.copyWith(
-                  fontWeight: FontWeight.w500,
-                ),
+            Text(
+              label ?? '',
+              style: IsrStyles.white12.copyWith(
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -588,7 +537,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
       );
 
   Widget _buildBottomSection() => Padding(
-        padding: IsrDimens.edgeInsets(left: IsrDimens.sixteen, right: IsrDimens.sixteen, bottom: IsrDimens.forty),
+        padding: IsrDimens.edgeInsets(
+            left: IsrDimens.sixteen, right: IsrDimens.sixteen, bottom: IsrDimens.forty),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -628,14 +578,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                         children: [
                           Text(
                             IsrTranslationFile.shop,
-                            style: IsrStyles.primaryText12
-                                .copyWith(color: IsrColors.color0F1E91, fontWeight: FontWeight.w700),
+                            style: IsrStyles.primaryText12.copyWith(
+                                color: IsrColors.color0F1E91, fontWeight: FontWeight.w700),
                           ),
                           IsrDimens.boxHeight(IsrDimens.four),
                           Text(
                             '${widget.productCount} ${IsrTranslationFile.products}',
-                            style: IsrStyles.primaryText10
-                                .copyWith(color: IsrColors.color0F1E91, fontWeight: FontWeight.w500),
+                            style: IsrStyles.primaryText10.copyWith(
+                                color: IsrColors.color0F1E91, fontWeight: FontWeight.w500),
                           ),
                         ],
                       ),
@@ -682,18 +632,20 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                                 ),
                                 if (!widget.isSelfProfile) ...[
                                   IsrDimens.boxWidth(IsrDimens.eight),
-                                  // Check if the user is verified
-                                  if (widget.isVerifiedUser == false) ...[
-                                    // Add the verified user icon
-                                    SizedBox(
-                                      height: IsrDimens.twentyFour,
-                                      width: IsrDimens.twentyFour,
-                                      child: const AppImage.svg(AssetConstants.icVerifiedIcon),
-                                    ),
-                                    IsrDimens.boxWidth(IsrDimens.eight),
-                                  ],
+                                  // // Check if the user is verified
+                                  // if (widget.isVerifiedUser == false) ...[
+                                  //   // Add the verified user icon
+                                  //   SizedBox(
+                                  //     height: IsrDimens.twentyFour,
+                                  //     width: IsrDimens.twentyFour,
+                                  //     child: const AppImage.svg(AssetConstants.icVerifiedIcon),
+                                  //   ),
+                                  //   IsrDimens.boxWidth(IsrDimens.eight),
+                                  // ],
                                   // Only show follow button if not following
-                                  if (!widget.isFollow && !_isFollowLoading && !widget.isSelfProfile)
+                                  if (!widget.isFollow &&
+                                      !_isFollowLoading &&
+                                      !widget.isSelfProfile)
                                     Container(
                                       height: IsrDimens.twentyFour,
                                       decoration: BoxDecoration(
@@ -729,7 +681,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                                           height: IsrDimens.sixteen,
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2,
-                                            valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
+                                            valueColor: AlwaysStoppedAnimation<Color>(
+                                                Theme.of(context).primaryColor),
                                           ),
                                         ),
                                       ),
@@ -821,15 +774,16 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
       );
 
   Widget _buildCommissionTag() => Container(
-        padding: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twelve, vertical: IsrDimens.six),
+        padding:
+            IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.six, vertical: IsrDimens.three),
         decoration: BoxDecoration(
-          color: Colors.black.changeOpacity(0.6),
-          borderRadius: IsrDimens.borderRadiusAll(20),
+          color: Colors.black.changeOpacity(0.5),
+          borderRadius: IsrDimens.borderRadiusAll(5),
         ),
         child: Text(
           IsrTranslationFile.creatorEarnsCommission,
           style: IsrStyles.white10.copyWith(
-            fontWeight: FontWeight.w500,
+            color: IsrColors.colorF4F4F4,
           ),
         ),
       );
