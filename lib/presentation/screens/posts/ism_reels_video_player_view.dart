@@ -144,7 +144,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
     debugPrint(
         'IsmReelsVideoPlayerView ...Post by ...${widget.name}\n Post url ${widget.mediaUrl}');
     if (widget.mediaType == kVideoType) {
-      await initializeVideoPlayer(); // ✅ CHANGED: Make this await
+      await _initializeVideoPlayer(); // ✅ CHANGED: Make this await
     }
   }
 
