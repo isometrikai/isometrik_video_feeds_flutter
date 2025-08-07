@@ -72,7 +72,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                             physics: const NeverScrollableScrollPhysics(),
                             controller: _postTabController,
                             children: widget.tabDataModelList
-                                .map((tabData) => _buildTabBarView(tabData, widget.tabDataModelList.indexOf(tabData)))
+                                .map((tabData) => _buildTabBarView(
+                                    tabData, widget.tabDataModelList.indexOf(tabData)))
                                 .toList(),
                           ),
                           _buildTabBar(),
@@ -104,9 +105,12 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                       ),
                       child: TabBar(
                         controller: _postTabController,
-                        labelColor: IsrColors.white,
-                        unselectedLabelColor: IsrColors.white.changeOpacity(0.6),
-                        indicatorColor: IsrColors.white,
+                        labelColor: _isFollowingPostsEmpty() ? IsrColors.black : IsrColors.white,
+                        unselectedLabelColor: _isFollowingPostsEmpty()
+                            ? IsrColors.black
+                            : IsrColors.white.changeOpacity(0.6),
+                        indicatorColor:
+                            _isFollowingPostsEmpty() ? IsrColors.black : IsrColors.white,
                         indicatorWeight: 2,
                         dividerColor: Colors.transparent,
                         indicatorSize: TabBarIndicatorSize.label,
@@ -155,7 +159,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       initialIndex: _currentIndex,
     );
 
-    _refreshControllers = List.generate(widget.tabDataModelList.length, (index) => RefreshController());
+    _refreshControllers =
+        List.generate(widget.tabDataModelList.length, (index) => RefreshController());
     var postBloc = IsmInjectionUtils.getBloc<PostBloc>();
     if (postBloc.isClosed) {
       isrConfigureInjection();
@@ -164,17 +169,13 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
     _tabsVisibilityNotifier.value = widget.tabDataModelList.length > 1;
 
-    if (_currentIndex == 0 &&
-        widget.tabDataModelList[_currentIndex].postSectionType == PostSectionType.following &&
-        widget.tabDataModelList[_currentIndex].postList.isListEmptyOrNull) {
-      _tabsVisibilityNotifier.value = false;
+    if (_isFollowingPostsEmpty()) {
+      // _tabsVisibilityNotifier.value = false;
     }
     _postTabController?.addListener(() {
       final newIndex = _postTabController?.index ?? 0;
-      if (_currentIndex == 0 &&
-          widget.tabDataModelList[_currentIndex].postSectionType == PostSectionType.following &&
-          widget.tabDataModelList[_currentIndex].postList.isListEmptyOrNull) {
-        _tabsVisibilityNotifier.value = false;
+      if (_isFollowingPostsEmpty()) {
+        // _tabsVisibilityNotifier.value = false;
         _postTabController?.animateTo(0);
         return;
       }
@@ -224,4 +225,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         allowImplicitScrolling: widget.allowImplicitScrolling,
         onPageChanged: widget.onPageChanged,
       );
+
+  bool _isFollowingPostsEmpty() =>
+      _currentIndex == 0 &&
+      widget.tabDataModelList[_currentIndex].postSectionType == PostSectionType.following &&
+      widget.tabDataModelList[_currentIndex].postList.isListEmptyOrNull;
 }

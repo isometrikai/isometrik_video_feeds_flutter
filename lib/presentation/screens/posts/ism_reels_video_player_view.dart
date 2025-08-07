@@ -522,7 +522,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                       valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
                     ),
                   )
-                : AppImage.svg(icon),
+                : AppImage.asset(icon),
           ),
           if (label.isStringEmptyOrNull == false) ...[
             IsrDimens.boxHeight(IsrDimens.four),
