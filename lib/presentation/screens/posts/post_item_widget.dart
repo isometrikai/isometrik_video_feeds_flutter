@@ -225,9 +225,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
           onLongPressEnd: () {},
           onDoubleTap: () async {},
           onLongPressStart: () {},
-          mediaUrl: _postList[index].media?.first.mediaType == 'image'
-              ? '${AppUrl.imageBaseUrl}${_postList[index].media?.first.url ?? ''}'
-              : _postList[index].media?.first.url ?? '',
+          mediaUrl: _postList[index].media?.first.url ?? '',
           mediaType: _postList[index].media?.first.mediaType == 'image' ? 0 : 1,
           onTapUserProfilePic: () {
             if (widget.onTapUserProfilePic != null) {

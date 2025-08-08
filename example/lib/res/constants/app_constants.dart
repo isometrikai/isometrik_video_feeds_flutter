@@ -84,6 +84,9 @@ class AppConstants {
     '---',
     '___'
   ];
+
+  static const String tenantId = 'tenant_001';
+  static const String projectId = 'project_001';
 }
 
 abstract class AppUrl {

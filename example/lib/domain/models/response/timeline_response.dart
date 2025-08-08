@@ -5,6 +5,7 @@
 import 'dart:convert';
 
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
+import 'package:ism_video_reel_player_example/utils/utils.dart';
 
 TimelineResponse timelineResponseFromMap(String str) =>
     TimelineResponse.fromMap(json.decode(str) as Map<String, dynamic>);
@@ -94,7 +95,11 @@ class TimeLineData {
         visibility: json['visibility'] as String? ?? '',
         id: json['id'] as String? ?? '',
         soundSnapshot: json['sound_snapshot'] as String? ?? '',
-        tags: json['tags'] == null ? null : Tags.fromMap(json['tags'] as Map<String, dynamic>),
+        tags: json['tags'] == null
+            ? null
+            : json['tags'] is String && (json['tags'] as String).isEmptyOrNull
+                ? null
+                : Tags.fromMap(json['tags'] as Map<String, dynamic>),
         settings: json['settings'] == null
             ? null
             : Settings.fromMap(json['settings'] as Map<String, dynamic>),
@@ -139,6 +144,7 @@ class TimeLineData {
         'type': type,
         'previews': previews == null ? [] : List<dynamic>.from(previews!.map((x) => x)),
       };
+
   TimeLineData copyWith({
     String? textFormatting,
     String? publishedAt,

@@ -295,25 +295,28 @@ class VideoCacheManager {
 
   /// Extract video ID from URL for logging
   String _extractVideoId(String url) {
-    if (url.isEmpty) return 'empty-url';
-
-    // Extract filename or last part of URL for cleaner logs
-    final uri = Uri.tryParse(url);
-    if (uri != null) {
-      final segments = uri.pathSegments;
-      if (segments.isNotEmpty) {
-        final lastSegment = segments.last;
-        // If it has an extension, remove it for cleaner display
-        final dotIndex = lastSegment.lastIndexOf('.');
-        if (dotIndex > 0) {
-          return lastSegment.substring(0, dotIndex);
-        }
-        return lastSegment;
-      }
-    }
-
-    // Fallback: take last 20 characters
-    return url.length > 20 ? '...${url.substring(url.length - 20)}' : url;
+    // if (url.isEmpty) return 'empty-url';
+    //
+    // // Extract filename or last part of URL for cleaner logs
+    // final uri = Uri.tryParse(url);
+    // if (uri != null) {
+    //   final segments = uri.pathSegments;
+    //   if (segments.isNotEmpty) {
+    //     final lastSegment = segments.last;
+    //     // If it has an extension, remove it for cleaner display
+    //     final dotIndex = lastSegment.lastIndexOf('.');
+    //     if (dotIndex > 0) {
+    //       return lastSegment.substring(0, dotIndex);
+    //     }
+    //     return lastSegment;
+    //   }
+    // }
+    //
+    // // Fallback: take last 20 characters
+    // return url.length > 20 ? '...${url.substring(url.length - 20)}' : url;
+    final regex = RegExp(r'res\.cloudinary\.com/[^/]+(/video/upload/v\d+/.+)\.\w+$');
+    final match = regex.firstMatch(url);
+    return match != null ? match.group(1)! : '';
   }
 
   /// Get cache statistics for debugging
