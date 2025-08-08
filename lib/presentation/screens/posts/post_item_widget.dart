@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
-import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/isr_utils.dart';
 
 class PostItemWidget extends StatefulWidget {
@@ -164,7 +163,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
   Widget _buildContent(BuildContext context) => PageView.builder(
         allowImplicitScrolling: widget.allowImplicitScrolling ?? true,
         controller: _pageController,
-        clipBehavior: Clip.none,
+        clipBehavior: Clip.hardEdge,
         physics: const ClampingScrollPhysics(),
         onPageChanged: (index) {
           _doImageCaching(index);
@@ -309,7 +308,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
     for (var i = startIndex; i <= endIndex; i++) {
       final post = _postList[i];
       final imageUrl = post.media?.first.mediaType == 'image'
-          ? '${AppUrl.imageBaseUrl}${post.media?.first.url ?? ''}'
+          ? post.media?.first.url ?? ''
           : (post.media?.first.previewUrl ?? '');
 
       // Only cache if not already cached
@@ -333,7 +332,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
       final nextPost = _postList[nextPostIndex];
       if (nextPost.media?.first.mediaType == 'image') {
         final nextImageUrl = nextPost.media?.first.mediaType == 'image'
-            ? '${AppUrl.imageBaseUrl}${nextPost.media?.first.url ?? ''}'
+            ? nextPost.media?.first.url ?? ''
             : (nextPost.media?.first.previewUrl ?? '');
         // Move next image to front
         images.remove(nextImageUrl);
