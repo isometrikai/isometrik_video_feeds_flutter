@@ -59,7 +59,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
   bool _isTimeLineLoadingMore = false;
   bool _hasMoreTimeLineData = true;
-  int _timeLineCurrentPage = 6;
+  int _timeLineCurrentPage = 1;
   final _timeLinePageSize = 20;
 
   Future<void> _onLoadHomeData(
@@ -309,7 +309,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     // For refresh, clear cache and start from page 0
     if (isFromRefresh) {
       _timeLinePostList.clear();
-      _timeLineCurrentPage = 6;
+      _timeLineCurrentPage = 1;
       _hasMoreTimeLineData = true;
       _isTimeLineLoadingMore = false;
     } else if (!isFromPagination && _followingPostList.isNotEmpty) {
@@ -318,7 +318,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     }
 
     if (!isFromPagination) {
-      _timeLineCurrentPage = 6;
+      _timeLineCurrentPage = 1;
       _hasMoreTimeLineData = true;
     } else if (_isTimeLineLoadingMore || !_hasMoreTimeLineData) {
       return;
