@@ -129,8 +129,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
 
   final _maxLengthToShow = 50;
 
-  var _isVideoInitialized = false;
-
   @override
   void initState() {
     super.initState();
@@ -145,6 +143,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
         'IsmReelsVideoPlayerView ...Post by ...${widget.name}\n Post url ${widget.mediaUrl}');
     if (widget.mediaType == kVideoType) {
       await _initializeVideoPlayer(); // ✅ CHANGED: Make this await
+      mountUpdate();
     }
   }
 
@@ -196,7 +195,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
 
   // Fallback initialization method
   Future<void> _initializeVideoControllerNormally(String videoUrl) async {
-    debugPrint('IsmReelsVideoPlayerView....Initializing video controller normally');
+    debugPrint('IsmReelsVideoPlayerView....Initializing video controller normally $videoUrl');
     var mediaUrl = videoUrl;
     if (mediaUrl.startsWith('http:')) {
       mediaUrl = mediaUrl.replaceFirst('http:', 'https:');
@@ -263,6 +262,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
 
     // ✅ CHANGED: Check  instead of just isInitialized
     return Stack(
+      fit: StackFit.expand,
+      alignment: Alignment.center,
       children: [
         // Always show thumbnail as background
         AppImage.network(
