@@ -112,13 +112,7 @@ class VideoCacheManager {
       }
 
       debugPrint('🌐 VideoCacheManager: Creating NetworkUrl controller for $videoId');
-      final controller = VideoPlayerController.networkUrl(
-        Uri.parse(mediaUrl),
-        httpHeaders: {
-          'User-Agent': 'Mozilla/5.0 (compatible; VideoPlayer)',
-          'Accept': '*/*',
-        },
-      );
+      final controller = VideoPlayerController.networkUrl(Uri.parse(mediaUrl));
 
       debugPrint('⏳ VideoCacheManager: Initializing controller for $videoId');
       await controller.initialize();
