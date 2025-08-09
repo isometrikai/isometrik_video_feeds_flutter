@@ -166,25 +166,32 @@ class _PostItemWidgetState extends State<PostItemWidget> {
         clipBehavior: Clip.hardEdge,
         physics: const ClampingScrollPhysics(),
         onPageChanged: (index) {
-          _doImageCaching(index);
+          _doMediaCaching(index);
           debugPrint('page index: $index');
           // Check if we're at 65% of the list
           final threshold = (_postList.length * 0.65).floor();
           if (index >= threshold || index == _postList.length - 1) {
             if (widget.onLoadMore != null) {
-              widget.onLoadMore!(widget.postSectionType).then((value) {
-                if (value.isListEmptyOrNull) return;
-                if (mounted) {
-                  setState(() {
-                    // Filter out duplicates based on postId
-                    final newPosts = value.where((newPost) =>
-                        !_postList.any((existingPost) => existingPost.id == newPost.id));
-                    _postList.addAll(
-                        newPosts.where((post) => post.media?.first.mediaType == 'video').toList());
-                    // _precacheImages(newPosts as List<TimeLineData>);
-                  });
-                }
-              });
+              widget.onLoadMore!(widget.postSectionType).then(
+                (value) {
+                  if (value.isListEmptyOrNull) return;
+                  if (mounted) {
+                    setState(
+                      () {
+                        // Filter out duplicates based on postId
+                        final newPosts = value.where((newPost) =>
+                            !_postList.any((existingPost) => existingPost.id == newPost.id));
+                        _postList.addAll(newPosts
+                            .where((post) => post.media?.first.mediaType == 'video')
+                            .toList());
+                        if (_postList.isNotEmpty) {
+                          _doMediaCaching(0);
+                        }
+                      },
+                    );
+                  }
+                },
+              );
             }
           }
           if (widget.onPageChanged != null) widget.onPageChanged!(index);
@@ -192,7 +199,8 @@ class _PostItemWidgetState extends State<PostItemWidget> {
         itemCount: _postList.length,
         scrollDirection: Axis.vertical,
         itemBuilder: (context, index) => IsmReelsVideoPlayerView(
-          videoCacheManager: _videoCacheManager, // Add this parameter
+          videoCacheManager: _videoCacheManager,
+          // Add this parameter
           isFirstPost: widget.startingPostIndex == index,
           isCreatePostButtonVisible: widget.isCreatePostButtonVisible,
           thumbnail: _postList[index].media?.first.previewUrl ?? '',
@@ -233,7 +241,32 @@ class _PostItemWidgetState extends State<PostItemWidget> {
           },
           productCount: _postList[index].tags?.products?.length ?? 0,
           isSavedPost: false,
-          onPressMoreButton: () {},
+          onPressMoreButton: () async {
+            if (widget.onTapMore == null) return;
+            final result = await widget.onTapMore!(_postList[index], _postList[index].userId ?? '');
+            if (result == null) return;
+            if (result is bool) {
+              final isSuccess = result;
+              if (isSuccess) {
+                setState(() {
+                  _postList.removeAt(index);
+                });
+              }
+            }
+            if (result is String) {
+              final editedPostedData = result;
+              if (editedPostedData.isStringEmptyOrNull == false) {
+                final postData =
+                    TimeLineData.fromMap(jsonDecode(editedPostedData) as Map<String, dynamic>);
+                final index = _postList.indexWhere((element) => element.id == postData.id);
+                if (index != -1) {
+                  setState(() {
+                    _postList[index] = postData;
+                  });
+                }
+              }
+            }
+          },
           onPressFollowFollowing: () async => false,
           onPressSave: () async => false,
           isLiked: false,
@@ -254,8 +287,22 @@ class _PostItemWidgetState extends State<PostItemWidget> {
               });
             }
           },
-          onTapComment: () async {},
-          onTapShare: () {},
+          onTapComment: () async {
+            if (widget.onTapComment != null) {
+              final newCommentCount = await widget.onTapComment!(_postList[index].id ?? '',
+                  _postList[index].engagementMetrics?.comments?.toInt() ?? 0);
+              if (newCommentCount != null) {
+                setState(() {
+                  _postList[index].engagementMetrics?.comments = newCommentCount;
+                });
+              }
+            }
+          },
+          onTapShare: () {
+            if (widget.onTapShare != null) {
+              widget.onTapShare!(_postList[index].id ?? '');
+            }
+          },
           commentCount: 0,
           isScheduledPost: false,
           postStatus: 0,
@@ -277,7 +324,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
   }
 
   // Update your _doImageCaching method to handle both images and videos
-  void _doImageCaching(int index) {
+  void _doMediaCaching(int index) {
     final post = _postList[index];
     final username = post.user?.username ?? 'unknown';
     final mediaType = post.media?.first.mediaType ?? 'unknown';
