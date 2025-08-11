@@ -272,21 +272,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
           height: IsrDimens.getScreenHeight(context),
           fit: BoxFit.cover,
         ),
-        AnimatedOpacity(
-          opacity: 1.0,
-          duration: const Duration(milliseconds: 300),
-          child: FittedBox(
-            fit: BoxFit.cover,
-            child: SizedBox(
-              height: _videoPlayerController?.value.size.height,
-              width: _videoPlayerController?.value.size.width,
-              child: AspectRatio(
-                aspectRatio: _videoPlayerController!.value.aspectRatio,
-                child: VideoPlayer(_videoPlayerController!),
-              ),
-            ),
-          ),
-        ),
 
         // Video player with fade-in animation
         if (_videoPlayerController != null && _videoPlayerController!.value.isInitialized)
