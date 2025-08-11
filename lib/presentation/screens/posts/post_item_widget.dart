@@ -4,6 +4,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
@@ -77,7 +78,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
     super.initState();
   }
 
-  void _onStartInit() {
+  void _onStartInit() async {
     _pageController = PageController(initialPage: widget.startingPostIndex ?? 0);
 
     // Check current state
@@ -87,6 +88,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
       setState(() {
         _postList = postList;
       });
+      await _clearAllCache();
       _precacheNearbyImages(0);
     }
 
@@ -248,6 +250,10 @@ class _PostItemWidgetState extends State<PostItemWidget> {
             if (result is bool) {
               final isSuccess = result;
               if (isSuccess) {
+                final imageUrl = _postList[index].media?.first.mediaType == 'image'
+                    ? _postList[index].media?.first.url ?? ''
+                    : (_postList[index].media?.first.previewUrl ?? '');
+                await _evictDeletedPostImage(imageUrl);
                 setState(() {
                   _postList.removeAt(index);
                 });
@@ -491,5 +497,26 @@ class _PostItemWidgetState extends State<PostItemWidget> {
 
     debugPrint('📋 MainWidget: No next video to prioritize, using original order');
     return videos;
+  }
+
+  Future<void> _clearAllCache() async {
+    PaintingBinding.instance.imageCache.clear(); // removes decoded images
+    PaintingBinding.instance.imageCache.clearLiveImages(); // removes "live" references
+
+    // Clear disk cache from CachedNetworkImage
+    await DefaultCacheManager().emptyCache();
+  }
+
+  Future<void> _evictDeletedPostImage(String? imageUrl) async {
+    if (imageUrl == null || imageUrl.isEmpty) return;
+
+    // Evict from Flutter's memory cache
+    await NetworkImage(imageUrl).evict();
+
+    // Also evict from disk cache if using CachedNetworkImage
+    try {
+      await DefaultCacheManager().removeFile(imageUrl);
+      debugPrint('🗑️ MainWidget: Evicted deleted post image from cache - $imageUrl');
+    } catch (_) {}
   }
 }
