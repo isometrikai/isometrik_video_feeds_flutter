@@ -543,18 +543,18 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                 }
               },
             ),
-            // if (widget.postStatus != 0) ...[
-            IsrDimens.boxHeight(IsrDimens.twenty),
-            _buildActionButton(
-              icon: widget.isSavedPost == true
-                  ? AssetConstants.icSaveSelected
-                  : AssetConstants.icSaveUnSelected,
-              label:
-                  widget.isSavedPost == true ? IsrTranslationFile.saved : IsrTranslationFile.save,
-              onTap: _callSaveFunction,
-              isLoading: _isSaveLoading,
-            ),
-            // ],
+            if (widget.postStatus != 0) ...[
+              IsrDimens.boxHeight(IsrDimens.twenty),
+              _buildActionButton(
+                icon: widget.isSavedPost == true
+                    ? AssetConstants.icSaveSelected
+                    : AssetConstants.icSaveUnSelected,
+                label:
+                    widget.isSavedPost == true ? IsrTranslationFile.saved : IsrTranslationFile.save,
+                onTap: _callSaveFunction,
+                isLoading: _isSaveLoading,
+              ),
+            ],
             IsrDimens.boxHeight(IsrDimens.twenty),
             _buildActionButton(
               icon: AssetConstants.icMoreIcon,
