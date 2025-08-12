@@ -222,6 +222,29 @@ class EngagementMetrics {
         'completion_rate': completionRate,
         'engagement_rate': engagementRate,
       };
+
+  EngagementMetrics copyWith({
+    num? views,
+    num? uniqueViews,
+    LikeTypes? likeTypes,
+    num? comments,
+    num? shares,
+    num? saves,
+    num? watchTime,
+    num? completionRate,
+    num? engagementRate,
+  }) =>
+      EngagementMetrics(
+        views: views ?? this.views,
+        uniqueViews: uniqueViews ?? this.uniqueViews,
+        likeTypes: likeTypes ?? this.likeTypes,
+        comments: comments ?? this.comments,
+        shares: shares ?? this.shares,
+        saves: saves ?? this.saves,
+        watchTime: watchTime ?? this.watchTime,
+        completionRate: completionRate ?? this.completionRate,
+        engagementRate: engagementRate ?? this.engagementRate,
+      );
 }
 
 class LikeTypes {

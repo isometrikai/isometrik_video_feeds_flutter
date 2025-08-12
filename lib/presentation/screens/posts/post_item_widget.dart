@@ -183,9 +183,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
                         // Filter out duplicates based on postId
                         final newPosts = value.where((newPost) =>
                             !_postList.any((existingPost) => existingPost.id == newPost.id));
-                        _postList.addAll(newPosts
-                            .where((post) => post.media?.first.mediaType == 'video')
-                            .toList());
+                        _postList.addAll(newPosts);
                         if (_postList.isNotEmpty) {
                           _doMediaCaching(0);
                         }
@@ -220,7 +218,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
           postId: _postList[index].id,
           description: _postList[index].caption ?? '',
           isAssetUploading: false,
-          isFollow: false,
+          isFollow: true,
           isSelfProfile: widget.loggedInUserId.isStringEmptyOrNull == false &&
               widget.loggedInUserId == _postList[index].userId,
           firstName: _postList[index].user?.displayName ?? '',
@@ -273,11 +271,70 @@ class _PostItemWidgetState extends State<PostItemWidget> {
               }
             }
           },
-          onPressFollowFollowing: () async => false,
-          onPressSave: () async => false,
+          onPressFollowFollowing: () async {
+            if (_postList[index].userId != null) {
+              if (widget.onPressFollow == null) return false;
+              final isFollow = await widget.onPressFollow!(_postList[index].userId!);
+
+              // setState(() {
+              //   _postList[index] = _postList[index].copyWith(followStatus: isFollow ? 1 : 0);
+              // });
+              return isFollow;
+            }
+            return false;
+          },
+          onPressSave: () async {
+            if (_postList[index].id != null) {
+              if (widget.onPressSave == null) return false;
+              // final isAlreadySaved = _postList[index].isSavedPost == true;
+              final isAlreadySaved = false;
+              final isSaved = await widget.onPressSave!(_postList[index].id!, isAlreadySaved);
+
+              if (isSaved) {
+                // setState(() {
+                //   _postList[index] =
+                //       _postList[index].copyWith(isSavedPost: _postList[index].isSavedPost == false);
+                // });
+              }
+              return isSaved;
+            }
+            return false;
+          },
           isLiked: false,
-          likesCount: 0,
-          onPressLike: () async => false,
+          likesCount: _postList[index].engagementMetrics?.likeTypes?.like ?? 0,
+          onPressLike: () async {
+            if (_postList[index].id != null) {
+              if (widget.onPressLike == null) return false;
+              // final currentLikeStatus = _postList[index].liked == true;
+              final currentLikeStatus = false;
+              final isSuccess = await widget.onPressLike!(
+                _postList[index].id!,
+                _postList[index].userId!,
+                currentLikeStatus,
+              );
+              setState(() {
+                final engagementMetrics = _postList[index].engagementMetrics;
+                if (engagementMetrics == null) return;
+                var likeTypes = engagementMetrics.likeTypes;
+                if (likeTypes == null) return;
+                final likeCount = likeTypes.like ?? 0;
+
+                final newLikesCount = isSuccess
+                    ? likeCount == 0
+                        ? 0
+                        : likeCount - 1
+                    : likeCount + 1;
+
+                likeTypes.like = newLikesCount;
+                engagementMetrics.copyWith(likeTypes: likeTypes);
+                _postList[index] = _postList[index].copyWith(
+                  engagementMetrics: engagementMetrics,
+                );
+              });
+              return isSuccess;
+            }
+            return false;
+          },
           onTapCartIcon: () async {
             if (widget.onTapCartIcon != null) {
               final productList = _postList[index].tags?.products;
