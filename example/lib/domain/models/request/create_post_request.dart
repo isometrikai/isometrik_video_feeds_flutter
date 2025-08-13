@@ -15,6 +15,7 @@ class CreatePostRequest {
     this.size,
     this.scheduleTime,
     this.cloudinaryPublicId,
+    this.visibility,
   });
 
   String? description;
@@ -32,6 +33,7 @@ class CreatePostRequest {
   int? size;
   int? scheduleTime;
   String? cloudinaryPublicId;
+  String? visibility;
 
   Map<String, dynamic> toJson() => {
         'description': description,
@@ -47,7 +49,8 @@ class CreatePostRequest {
         'hasAudio1': hasAudio,
         'fileName': fileName,
         'size': size,
-        'scheduleTime': scheduleTime,
+        'scheduled_at': scheduleTime,
         'cloudinary_public_id': cloudinaryPublicId,
+        'visibility': visibility,
       };
 }
