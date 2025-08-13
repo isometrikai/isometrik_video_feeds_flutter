@@ -88,7 +88,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
       setState(() {
         _postList = postList;
       });
-      await _clearAllCache();
+      // await _clearAllCache();
       _precacheNearbyImages(0);
     }
 
@@ -210,10 +210,10 @@ class _PostItemWidgetState extends State<PostItemWidget> {
             final postDataModelJsonString = await widget.onCreatePost!();
             if (postDataModelJsonString.isStringEmptyOrNull) return;
             final postDataMap = jsonDecode(postDataModelJsonString!) as Map<String, dynamic>;
-            final postDataModel = PostDataModel.fromJson(postDataMap);
-            setState(() {
-              // _postList.insert(0, postDataModel);
-            });
+            final postDataModel = TimeLineData.fromMap(postDataMap);
+            // setState(() {
+            //   _postList.insert(0, postDataModel);
+            // });
           },
           postId: _postList[index].id,
           description: _postList[index].caption ?? '',
