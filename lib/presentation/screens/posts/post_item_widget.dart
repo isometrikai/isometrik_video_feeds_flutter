@@ -4,10 +4,10 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
-import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/isr_utils.dart';
 
 class PostItemWidget extends StatefulWidget {
@@ -37,7 +37,7 @@ class PostItemWidget extends StatefulWidget {
   });
 
   final Future<String?> Function()? onCreatePost;
-  final Future<dynamic> Function(PostDataModel, String userId)? onTapMore;
+  final Future<dynamic> Function(TimeLineData, String userId)? onTapMore;
   final bool? showBlur;
   final List<FeaturedProductDataItem>? productList;
   final Future<bool> Function(String, bool)? onPressSave;
@@ -78,7 +78,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
     super.initState();
   }
 
-  void _onStartInit() {
+  void _onStartInit() async {
     _pageController = PageController(initialPage: widget.startingPostIndex ?? 0);
 
     // Check current state
@@ -88,6 +88,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
       setState(() {
         _postList = postList;
       });
+      // await _clearAllCache();
       _precacheNearbyImages(0);
     }
 
@@ -164,28 +165,33 @@ class _PostItemWidgetState extends State<PostItemWidget> {
   Widget _buildContent(BuildContext context) => PageView.builder(
         allowImplicitScrolling: widget.allowImplicitScrolling ?? true,
         controller: _pageController,
-        clipBehavior: Clip.none,
+        clipBehavior: Clip.hardEdge,
         physics: const ClampingScrollPhysics(),
         onPageChanged: (index) {
-          _doImageCaching(index);
+          _doMediaCaching(index);
           debugPrint('page index: $index');
           // Check if we're at 65% of the list
           final threshold = (_postList.length * 0.65).floor();
           if (index >= threshold || index == _postList.length - 1) {
             if (widget.onLoadMore != null) {
-              widget.onLoadMore!(widget.postSectionType).then((value) {
-                if (value.isListEmptyOrNull) return;
-                if (mounted) {
-                  setState(() {
-                    // Filter out duplicates based on postId
-                    final newPosts = value.where((newPost) =>
-                        !_postList.any((existingPost) => existingPost.id == newPost.id));
-                    _postList.addAll(
-                        newPosts.where((post) => post.media?.first.mediaType == 'video').toList());
-                    // _precacheImages(newPosts as List<TimeLineData>);
-                  });
-                }
-              });
+              widget.onLoadMore!(widget.postSectionType).then(
+                (value) {
+                  if (value.isListEmptyOrNull) return;
+                  if (mounted) {
+                    setState(
+                      () {
+                        // Filter out duplicates based on postId
+                        final newPosts = value.where((newPost) =>
+                            !_postList.any((existingPost) => existingPost.id == newPost.id));
+                        _postList.addAll(newPosts);
+                        if (_postList.isNotEmpty) {
+                          _doMediaCaching(0);
+                        }
+                      },
+                    );
+                  }
+                },
+              );
             }
           }
           if (widget.onPageChanged != null) widget.onPageChanged!(index);
@@ -193,7 +199,8 @@ class _PostItemWidgetState extends State<PostItemWidget> {
         itemCount: _postList.length,
         scrollDirection: Axis.vertical,
         itemBuilder: (context, index) => IsmReelsVideoPlayerView(
-          videoCacheManager: _videoCacheManager, // Add this parameter
+          videoCacheManager: _videoCacheManager,
+          // Add this parameter
           isFirstPost: widget.startingPostIndex == index,
           isCreatePostButtonVisible: widget.isCreatePostButtonVisible,
           thumbnail: _postList[index].media?.first.previewUrl ?? '',
@@ -211,7 +218,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
           postId: _postList[index].id,
           description: _postList[index].caption ?? '',
           isAssetUploading: false,
-          isFollow: false,
+          isFollow: true,
           isSelfProfile: widget.loggedInUserId.isStringEmptyOrNull == false &&
               widget.loggedInUserId == _postList[index].userId,
           firstName: _postList[index].user?.displayName ?? '',
@@ -225,9 +232,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
           onLongPressEnd: () {},
           onDoubleTap: () async {},
           onLongPressStart: () {},
-          mediaUrl: _postList[index].media?.first.mediaType == 'image'
-              ? '${AppUrl.imageBaseUrl}${_postList[index].media?.first.url ?? ''}'
-              : _postList[index].media?.first.url ?? '',
+          mediaUrl: _postList[index].media?.first.url ?? '',
           mediaType: _postList[index].media?.first.mediaType == 'image' ? 0 : 1,
           onTapUserProfilePic: () {
             if (widget.onTapUserProfilePic != null) {
@@ -236,12 +241,100 @@ class _PostItemWidgetState extends State<PostItemWidget> {
           },
           productCount: _postList[index].tags?.products?.length ?? 0,
           isSavedPost: false,
-          onPressMoreButton: () {},
-          onPressFollowFollowing: () async => false,
-          onPressSave: () async => false,
+          onPressMoreButton: () async {
+            if (widget.onTapMore == null) return;
+            final result = await widget.onTapMore!(_postList[index], _postList[index].userId ?? '');
+            if (result == null) return;
+            if (result is bool) {
+              final isSuccess = result;
+              if (isSuccess) {
+                final imageUrl = _postList[index].media?.first.mediaType == 'image'
+                    ? _postList[index].media?.first.url ?? ''
+                    : (_postList[index].media?.first.previewUrl ?? '');
+                await _evictDeletedPostImage(imageUrl);
+                setState(() {
+                  _postList.removeAt(index);
+                });
+              }
+            }
+            if (result is String) {
+              final editedPostedData = result;
+              if (editedPostedData.isStringEmptyOrNull == false) {
+                final postData =
+                    TimeLineData.fromMap(jsonDecode(editedPostedData) as Map<String, dynamic>);
+                final index = _postList.indexWhere((element) => element.id == postData.id);
+                if (index != -1) {
+                  setState(() {
+                    _postList[index] = postData;
+                  });
+                }
+              }
+            }
+          },
+          onPressFollowFollowing: () async {
+            if (_postList[index].userId != null) {
+              if (widget.onPressFollow == null) return false;
+              final isFollow = await widget.onPressFollow!(_postList[index].userId!);
+
+              // setState(() {
+              //   _postList[index] = _postList[index].copyWith(followStatus: isFollow ? 1 : 0);
+              // });
+              return isFollow;
+            }
+            return false;
+          },
+          onPressSave: () async {
+            if (_postList[index].id != null) {
+              if (widget.onPressSave == null) return false;
+              // final isAlreadySaved = _postList[index].isSavedPost == true;
+              final isAlreadySaved = false;
+              final isSaved = await widget.onPressSave!(_postList[index].id!, isAlreadySaved);
+
+              if (isSaved) {
+                // setState(() {
+                //   _postList[index] =
+                //       _postList[index].copyWith(isSavedPost: _postList[index].isSavedPost == false);
+                // });
+              }
+              return isSaved;
+            }
+            return false;
+          },
           isLiked: false,
-          likesCount: 0,
-          onPressLike: () async => false,
+          likesCount: _postList[index].engagementMetrics?.likeTypes?.like ?? 0,
+          onPressLike: () async {
+            if (_postList[index].id != null) {
+              if (widget.onPressLike == null) return false;
+              // final currentLikeStatus = _postList[index].liked == true;
+              final currentLikeStatus = false;
+              final isSuccess = await widget.onPressLike!(
+                _postList[index].id!,
+                _postList[index].userId!,
+                currentLikeStatus,
+              );
+              setState(() {
+                final engagementMetrics = _postList[index].engagementMetrics;
+                if (engagementMetrics == null) return;
+                var likeTypes = engagementMetrics.likeTypes;
+                if (likeTypes == null) return;
+                final likeCount = likeTypes.like ?? 0;
+
+                final newLikesCount = isSuccess
+                    ? likeCount == 0
+                        ? 0
+                        : likeCount - 1
+                    : likeCount + 1;
+
+                likeTypes.like = newLikesCount;
+                engagementMetrics.copyWith(likeTypes: likeTypes);
+                _postList[index] = _postList[index].copyWith(
+                  engagementMetrics: engagementMetrics,
+                );
+              });
+              return isSuccess;
+            }
+            return false;
+          },
           onTapCartIcon: () async {
             if (widget.onTapCartIcon != null) {
               final productList = _postList[index].tags?.products;
@@ -257,8 +350,22 @@ class _PostItemWidgetState extends State<PostItemWidget> {
               });
             }
           },
-          onTapComment: () async {},
-          onTapShare: () {},
+          onTapComment: () async {
+            if (widget.onTapComment != null) {
+              final newCommentCount = await widget.onTapComment!(_postList[index].id ?? '',
+                  _postList[index].engagementMetrics?.comments?.toInt() ?? 0);
+              if (newCommentCount != null) {
+                setState(() {
+                  _postList[index].engagementMetrics?.comments = newCommentCount;
+                });
+              }
+            }
+          },
+          onTapShare: () {
+            if (widget.onTapShare != null) {
+              widget.onTapShare!(_postList[index].id ?? '');
+            }
+          },
           commentCount: 0,
           isScheduledPost: false,
           postStatus: 0,
@@ -280,7 +387,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
   }
 
   // Update your _doImageCaching method to handle both images and videos
-  void _doImageCaching(int index) {
+  void _doMediaCaching(int index) {
     final post = _postList[index];
     final username = post.user?.username ?? 'unknown';
     final mediaType = post.media?.first.mediaType ?? 'unknown';
@@ -311,7 +418,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
     for (var i = startIndex; i <= endIndex; i++) {
       final post = _postList[i];
       final imageUrl = post.media?.first.mediaType == 'image'
-          ? '${AppUrl.imageBaseUrl}${post.media?.first.url ?? ''}'
+          ? post.media?.first.url ?? ''
           : (post.media?.first.previewUrl ?? '');
 
       // Only cache if not already cached
@@ -335,7 +442,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
       final nextPost = _postList[nextPostIndex];
       if (nextPost.media?.first.mediaType == 'image') {
         final nextImageUrl = nextPost.media?.first.mediaType == 'image'
-            ? '${AppUrl.imageBaseUrl}${nextPost.media?.first.url ?? ''}'
+            ? nextPost.media?.first.url ?? ''
             : (nextPost.media?.first.previewUrl ?? '');
         // Move next image to front
         images.remove(nextImageUrl);
@@ -447,5 +554,26 @@ class _PostItemWidgetState extends State<PostItemWidget> {
 
     debugPrint('📋 MainWidget: No next video to prioritize, using original order');
     return videos;
+  }
+
+  Future<void> _clearAllCache() async {
+    PaintingBinding.instance.imageCache.clear(); // removes decoded images
+    PaintingBinding.instance.imageCache.clearLiveImages(); // removes "live" references
+
+    // Clear disk cache from CachedNetworkImage
+    await DefaultCacheManager().emptyCache();
+  }
+
+  Future<void> _evictDeletedPostImage(String? imageUrl) async {
+    if (imageUrl == null || imageUrl.isEmpty) return;
+
+    // Evict from Flutter's memory cache
+    await NetworkImage(imageUrl).evict();
+
+    // Also evict from disk cache if using CachedNetworkImage
+    try {
+      await DefaultCacheManager().removeFile(imageUrl);
+      debugPrint('🗑️ MainWidget: Evicted deleted post image from cache - $imageUrl');
+    } catch (_) {}
   }
 }
