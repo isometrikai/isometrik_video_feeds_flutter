@@ -417,9 +417,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               // Bottom section
-              Expanded(
-                child: _buildBottomSection(),
-              ),
+              Expanded(child: _buildBottomSection()),
 
               // Right side actions
               _buildRightSideActions(),
