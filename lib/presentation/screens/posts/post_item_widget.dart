@@ -88,7 +88,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
       setState(() {
         _postList = postList;
       });
-      await _clearAllCache();
+      // await _clearAllCache();
       _precacheNearbyImages(0);
     }
 
