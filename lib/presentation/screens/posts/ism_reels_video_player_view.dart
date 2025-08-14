@@ -878,11 +878,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
       if (!success) {
         _isLikeLoading = false;
       } else {
+        if (_reelData.isLiked == false) {
+          _reelData.likesCount = (_reelData.likesCount ?? 0) + 1;
+        } else {
+          if ((_reelData.likesCount ?? 0) > 0) {
+            _reelData.likesCount = (_reelData.likesCount ?? 0) - 1;
+          }
+        }
         _reelData.isLiked = _reelData.isLiked == false;
-      }
-      if ((_reelData.likesCount ?? 0) > 0) {
-        _reelData.likesCount =
-            success ? (_reelData.likesCount ?? 0) + 1 : (_reelData.likesCount ?? 0) - 1;
       }
       setState.call(() {});
     } finally {
