@@ -109,6 +109,7 @@ class ReelsData {
     required this.mediaUrl,
     required this.thumbnailUrl,
     required this.mediaType,
+    this.postId,
     this.profilePhoto,
     this.userName,
     this.firstName,
@@ -143,6 +144,7 @@ class ReelsData {
     this.isSavedPost,
   });
 
+  final String? postId;
   final String mediaUrl;
   final String thumbnailUrl;
   final int mediaType;
@@ -169,7 +171,7 @@ class ReelsData {
   final Future<bool> Function()? onPressFollowFollowing;
   final VoidCallback? onPressMoreButton;
   final Widget? placeHolderWidget;
-  final VoidCallback? onTapComment;
+  final Future<num>? Function(String, int)? onTapComment;
   final VoidCallback? onTapShare;
   final Function()? onTapUserProfile;
   final Function()? onTapReport;
