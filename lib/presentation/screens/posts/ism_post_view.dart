@@ -54,9 +54,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           child: BlocConsumer<PostBloc, PostState>(
             listener: (context, state) {
               if (state is UserInformationLoaded) {
-                IsmInjectionUtils.getBloc<PostBloc>().add(PostsLoadedEvent(
-                    widget.tabDataModelList[_currentIndex].postList,
-                    widget.tabDataModelList[_currentIndex].timeLinePosts));
+                // IsmInjectionUtils.getBloc<PostBloc>().add(PostsLoadedEvent(
+                //     [],
+                //     widget.tabDataModelList[_currentIndex].postList));
               }
             },
             buildWhen: (previousState, currentState) => currentState is UserInformationLoaded,
@@ -183,8 +183,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         return;
       }
       _currentIndex = newIndex;
-      postBloc.add(PostsLoadedEvent(widget.tabDataModelList[_currentIndex].postList,
-          widget.tabDataModelList[_currentIndex].timeLinePosts));
+      // postBloc.add(PostsLoadedEvent([],
+      //     widget.tabDataModelList[_currentIndex].postList));
     });
     postBloc.add(const StartPost());
   }
@@ -199,17 +199,37 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  // Widget _buildTabBarView(TabDataModel tabData, int index) => PostItemWidget(
+  //       onPressSave: tabData.onPressSave,
+  //       onTapMore: tabData.onTapMore,
+  //       onPressLike: tabData.onPressLike,
+  //       onPressFollow: tabData.onPressFollow,
+  //       onCreatePost: tabData.onCreatePost,
+  //       onLoadMore: tabData.onLoadMore,
+  //       onTapCartIcon: tabData.onTapCartIcon,
+  //       onRefresh: tabData.onRefresh,
+  //       placeHolderWidget: tabData.placeHolderWidget,
+  //       postSectionType: tabData.postSectionType,
+  //       onTapPlaceHolder: () {
+  //         if ((_postTabController?.length ?? 0) > 1) {
+  //           _tabsVisibilityNotifier.value = true;
+  //           _currentIndex++;
+  //           _postTabController?.animateTo(1);
+  //         }
+  //       },
+  //       onTapComment: tabData.onTapComment,
+  //       onTapShare: tabData.onTapShare,
+  //       isCreatePostButtonVisible: tabData.isCreatePostButtonVisible,
+  //       startingPostIndex: tabData.startingPostIndex,
+  //       onTapUserProfilePic: (userId) {
+  //         if (tabData.onTapUserProfile == null) return;
+  //         tabData.onTapUserProfile!(userId);
+  //       },
+  //       loggedInUserId: _loggedInUserId,
+  //       allowImplicitScrolling: widget.allowImplicitScrolling,
+  //       onPageChanged: widget.onPageChanged,
+  //     );
   Widget _buildTabBarView(TabDataModel tabData, int index) => PostItemWidget(
-        onPressSave: tabData.onPressSave,
-        onTapMore: tabData.onTapMore,
-        onPressLike: tabData.onPressLike,
-        onPressFollow: tabData.onPressFollow,
-        onCreatePost: tabData.onCreatePost,
-        onLoadMore: tabData.onLoadMore,
-        onTapCartIcon: tabData.onTapCartIcon,
-        onRefresh: tabData.onRefresh,
-        placeHolderWidget: tabData.placeHolderWidget,
-        postSectionType: tabData.postSectionType,
         onTapPlaceHolder: () {
           if ((_postTabController?.length ?? 0) > 1) {
             _tabsVisibilityNotifier.value = true;
@@ -217,21 +237,16 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
             _postTabController?.animateTo(1);
           }
         },
-        onTapComment: tabData.onTapComment,
-        onTapShare: tabData.onTapShare,
-        isCreatePostButtonVisible: tabData.isCreatePostButtonVisible,
-        startingPostIndex: tabData.startingPostIndex,
-        onTapUserProfilePic: (userId) {
-          if (tabData.onTapUserProfile == null) return;
-          tabData.onTapUserProfile!(userId);
-        },
         loggedInUserId: _loggedInUserId,
         allowImplicitScrolling: widget.allowImplicitScrolling,
         onPageChanged: widget.onPageChanged,
+        reelsDataList: widget.tabDataModelList[index].reelsDataList,
       );
 
-  bool _isFollowingPostsEmpty() =>
-      _currentIndex == 0 &&
-      widget.tabDataModelList[_currentIndex].postSectionType == PostSectionType.following &&
-      widget.tabDataModelList[_currentIndex].postList.isListEmptyOrNull;
+  // bool _isFollowingPostsEmpty() =>
+  //     _currentIndex == 0 &&
+  //     widget.tabDataModelList[_currentIndex].postSectionType == PostSectionType.following &&
+  //     widget.tabDataModelList[_currentIndex].postList.isListEmptyOrNull;
+
+  bool _isFollowingPostsEmpty() => false;
 }
