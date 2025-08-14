@@ -46,7 +46,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   final List<isr.PostDataModel> _followingPostList = [];
   final List<isr.PostDataModel> _trendingPostList = [];
 
-  final List<isr.TimeLineData> _timeLinePostList = [];
+  final List<TimeLineData> _timeLinePostList = [];
 
   int _currentPage = 0;
   final _followingPageSize = 20;
@@ -137,37 +137,37 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
     _isLoadingMore = true;
 
-    final apiResult = await _getFollowingPostUseCase.executeGetFollowingPost(
-      isLoading: isLoading,
-      page: _currentPage,
-      pageLimit: _followingPageSize,
-    );
-
-    if (apiResult.isSuccess) {
-      final postDataList = apiResult.data?.data as List<PostData>;
-      final newPosts = postDataList
-          .map((postData) => isr.PostDataModel.fromJson(postData.toJson()))
-          .toList(); // Updated line
-      if (newPosts.length < _followingPageSize) {
-        _hasMoreData = false;
-      }
-
-      if (isFromPagination) {
-        _followingPostList.addAll(newPosts);
-        if (onComplete != null) {
-          onComplete(newPosts);
-        }
-      } else {
-        _followingPostList
-          ..clear()
-          ..addAll(newPosts);
-      }
-
-      _currentPage++;
-      // emit(HomeLoaded(followingPosts: _followingPostList, trendingPosts: _trendingPostList));
-    } else {
-      ErrorHandler.showAppError(appError: apiResult.error);
-    }
+    // final apiResult = await _getFollowingPostUseCase.executeGetFollowingPost(
+    //   isLoading: isLoading,
+    //   page: _currentPage,
+    //   pageLimit: _followingPageSize,
+    // );
+    //
+    // if (apiResult.isSuccess) {
+    //   final postDataList = apiResult.data?.data as List<PostData>;
+    //   final newPosts = postDataList
+    //       .map((postData) => isr.PostDataModel.fromJson(postData.toJson()))
+    //       .toList(); // Updated line
+    //   if (newPosts.length < _followingPageSize) {
+    //     _hasMoreData = false;
+    //   }
+    //
+    //   if (isFromPagination) {
+    //     _followingPostList.addAll(newPosts);
+    //     if (onComplete != null) {
+    //       onComplete(newPosts);
+    //     }
+    //   } else {
+    //     _followingPostList
+    //       ..clear()
+    //       ..addAll(newPosts);
+    //   }
+    //
+    //   _currentPage++;
+    //   // emit(HomeLoaded(followingPosts: _followingPostList, trendingPosts: _trendingPostList));
+    // } else {
+    //   ErrorHandler.showAppError(appError: apiResult.error);
+    // }
 
     _isLoadingMore = false;
   }
@@ -343,14 +343,14 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         }
 
         if (isFromPagination) {
-          _timeLinePostList.addAll(newPosts);
+          _timeLinePostList.addAll(postDataList);
           if (onComplete != null) {
             onComplete(newPosts);
           }
         } else {
           _timeLinePostList
             ..clear()
-            ..addAll(newPosts);
+            ..addAll(postDataList);
         }
 
         _timeLineCurrentPage++;

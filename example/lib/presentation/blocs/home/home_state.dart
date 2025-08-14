@@ -21,7 +21,7 @@ class HomeLoaded extends HomeState {
 
   final List<isr.PostDataModel>? followingPosts;
   final List<isr.PostDataModel>? trendingPosts;
-  final List<isr.TimeLineData>? timeLinePosts;
+  final List<TimeLineData>? timeLinePosts;
 }
 
 class HomeError extends HomeState {
