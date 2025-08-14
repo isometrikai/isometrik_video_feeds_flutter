@@ -58,11 +58,20 @@ class _HomeScreenState extends State<HomeScreen> {
                     reelsDataList: state.timeLinePosts
                             ?.map(
                               (postData) => isr.ReelsData(
+                                postSetting: isr.PostSetting(
+                                  isProfilePicVisible: true,
+                                  isCreatePostButtonVisible: true,
+                                  isCommentButtonVisible: true,
+                                  isSaveButtonVisible: true,
+                                  isLikeButtonVisible: true,
+                                  isShareButtonVisible: true,
+                                  isMoreButtonVisible: true,
+                                ),
                                 mediaUrl: postData.media?.first.url ?? '',
                                 thumbnailUrl: postData.media?.first.previewUrl ?? '',
                                 mediaType: postData.media?.first.mediaType == 'image' ? 0 : 1,
-                                actionWidget: _buildActionButtons(postData),
-                                footerWidget: _buildFooter(postData),
+                                // actionWidget: _buildActionButtons(postData),
+                                // footerWidget: _buildFooter(postData),
                                 userName: postData.user?.username ?? '',
                                 profilePhoto: postData.user?.avatarUrl ?? '',
                                 firstName: '',
