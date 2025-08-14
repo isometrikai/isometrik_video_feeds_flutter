@@ -142,6 +142,7 @@ class ReelsData {
     this.isCreatePostButtonVisible,
     this.isScheduledPost,
     this.isSavedPost,
+    this.postSetting,
   });
 
   final String? postId;
@@ -182,4 +183,26 @@ class ReelsData {
   final bool? isCreatePostButtonVisible;
   final bool? isScheduledPost;
   final bool? isSavedPost;
+  final PostSetting? postSetting;
+}
+
+class PostSetting {
+  PostSetting({
+    this.isProfilePicVisible = false,
+    this.isCreatePostButtonVisible = false,
+    this.isFollowButtonVisible = false,
+    this.isShareButtonVisible = false,
+    this.isCommentButtonVisible = false,
+    this.isLikeButtonVisible = false,
+    this.isSaveButtonVisible = false,
+    this.isMoreButtonVisible = false,
+  });
+  final bool isProfilePicVisible;
+  final bool isCreatePostButtonVisible;
+  final bool isFollowButtonVisible;
+  final bool isShareButtonVisible;
+  final bool isCommentButtonVisible;
+  final bool isLikeButtonVisible;
+  final bool isSaveButtonVisible;
+  final bool isMoreButtonVisible;
 }

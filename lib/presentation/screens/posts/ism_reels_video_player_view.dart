@@ -424,115 +424,104 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
   Widget _buildRightSideActions() => Padding(
         padding: IsrDimens.edgeInsets(bottom: IsrDimens.forty, right: IsrDimens.sixteen),
         child: Column(
+          spacing: IsrDimens.twenty,
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            TapHandler(
-              borderRadius: IsrDimens.thirty,
-              onTap: () {
-                if (_reelData.onTapUserProfile != null) {
-                  _reelData.onTapUserProfile!();
-                }
-              },
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(IsrDimens.thirty),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.changeOpacity(0.2),
-                      spreadRadius: 2,
-                      blurRadius: 5,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: AppImage.network(
-                  _reelData.profilePhoto ?? '',
-                  width: IsrDimens.thirtyFive,
-                  height: IsrDimens.thirtyFive,
-                  isProfileImage: true,
-                  name: '${_reelData.firstName ?? ''} ${_reelData.lastName ?? ''}',
-                ),
-              ),
-            ),
-            IsrDimens.boxHeight(IsrDimens.fifteen),
-            if (_reelData.isCreatePostButtonVisible == true) ...[
-              Container(
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Theme.of(context).primaryColor, // Blue background
-                ),
-                child: IconButton(
-                  onPressed: () async {
-                    // if (_reelData.onCreatePost != null) {
-                    //   await _reelData.onCreatePost!();
-                    // }
-                  },
-                  icon: const Icon(
-                    Icons.add, // Simple plus icon
-                    color: IsrColors.white,
+            if (_reelData.postSetting?.isProfilePicVisible == true)
+              TapHandler(
+                borderRadius: IsrDimens.thirty,
+                onTap: () {
+                  if (_reelData.onTapUserProfile != null) {
+                    _reelData.onTapUserProfile!();
+                  }
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(IsrDimens.thirty),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.changeOpacity(0.2),
+                        spreadRadius: 2,
+                        blurRadius: 5,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: AppImage.network(
+                    _reelData.profilePhoto ?? '',
+                    width: IsrDimens.thirtyFive,
+                    height: IsrDimens.thirtyFive,
+                    isProfileImage: true,
+                    name: '${_reelData.firstName ?? ''} ${_reelData.lastName ?? ''}',
                   ),
                 ),
               ),
-              IsrDimens.boxHeight(IsrDimens.five),
-              Text(
-                IsrTranslationFile.create,
-                style: IsrStyles.white12,
+            if (_reelData.postSetting?.isCreatePostButtonVisible == true) ...[
+              Column(
+                children: [
+                  Container(
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Theme.of(context).primaryColor, // Blue background
+                    ),
+                    child: IconButton(
+                      onPressed: () async {
+                        // if (_reelData.onCreatePost != null) {
+                        //   await _reelData.onCreatePost!();
+                        // }
+                      },
+                      icon: const Icon(
+                        Icons.add, // Simple plus icon
+                        color: IsrColors.white,
+                      ),
+                    ),
+                  ),
+                  IsrDimens.boxHeight(IsrDimens.ten),
+                  Text(
+                    IsrTranslationFile.create,
+                    style: IsrStyles.white12,
+                  ),
+                ],
               ),
-              IsrDimens.boxHeight(IsrDimens.ten),
             ],
-            // if (widget.mediaType == kVideoType) ...[
-            //   _buildActionButton(
-            //     icon: _isMuted ? AssetConstants.icVolumeMute : AssetConstants.icVolumeUp,
-            //     label: _isMuted ? IsrTranslationFile.unmute : IsrTranslationFile.mute,
-            //     onTap: _toggleSound,
-            //   ),
-            //   IsrDimens.boxHeight(IsrDimens.twenty),
-            // ],
-            // _buildActionButton(
-            //   icon: _reelData.isLiked == true
-            //       ? AssetConstants.icLikeSelected
-            //       : AssetConstants.icLikeUnSelected,
-            //   label: _reelData.likesCount.toString(),
-            //   onTap: _callLikeFunction,
-            //   isLoading: _isLikeLoading,
-            // ),
-            StatefulBuilder(
-              builder: (context, setState) => _buildActionButton(
-                icon: _reelData.isLiked == true
-                    ? AssetConstants.icLikeSelected
-                    : AssetConstants.icLikeUnSelected,
-                label: _reelData.likesCount.toString(),
-                onTap: () {
-                  _callLikeFunction(setState);
-                },
-                isLoading: _isLikeLoading,
+            if (_reelData.postSetting?.isLikeButtonVisible == true)
+              StatefulBuilder(
+                builder: (context, setState) => _buildActionButton(
+                  icon: _reelData.isLiked == true
+                      ? AssetConstants.icLikeSelected
+                      : AssetConstants.icLikeUnSelected,
+                  label: _reelData.likesCount.toString(),
+                  onTap: () {
+                    _callLikeFunction(setState);
+                  },
+                  isLoading: _isLikeLoading,
+                ),
               ),
-            ),
-            IsrDimens.boxHeight(IsrDimens.twenty),
-            _buildActionButton(
-              icon: AssetConstants.icCommentIcon,
-              label: _reelData.commentCount.toString(),
-              onTap: () {
-                if (_reelData.onTapComment != null) {
-                  _reelData.onTapComment!(_reelData.postId ?? '', _reelData.commentCount ?? 0);
-                }
-              },
-            ),
-            IsrDimens.boxHeight(IsrDimens.twenty),
-            _buildActionButton(
-              icon: AssetConstants.icShareIcon,
-              label: IsrTranslationFile.share,
-              onTap: () {
-                if (_reelData.onTapShare != null) {
-                  _reelData.onTapShare!();
-                }
-              },
-            ),
-            if (_reelData.postStatus != 0) ...[
-              IsrDimens.boxHeight(IsrDimens.twenty),
+            if (_reelData.postSetting?.isCommentButtonVisible == true)
+              _buildActionButton(
+                icon: AssetConstants.icCommentIcon,
+                label: _reelData.commentCount.toString(),
+                onTap: () {
+                  if (_reelData.onTapComment != null) {
+                    _reelData.onTapComment!(_reelData.postId ?? '', _reelData.commentCount ?? 0);
+                  }
+                },
+              ),
+            if (_reelData.postSetting?.isShareButtonVisible == true)
+              _buildActionButton(
+                icon: AssetConstants.icShareIcon,
+                label: IsrTranslationFile.share,
+                onTap: () {
+                  if (_reelData.onTapShare != null) {
+                    _reelData.onTapShare!();
+                  }
+                },
+              ),
+            if (_reelData.postStatus != 0 &&
+                _reelData.postSetting?.isSaveButtonVisible == true) ...[
               _buildActionButton(
                 icon: _reelData.isSavedPost == true
                     ? AssetConstants.icSaveSelected
@@ -544,16 +533,16 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                 isLoading: _isSaveLoading,
               ),
             ],
-            IsrDimens.boxHeight(IsrDimens.twenty),
-            _buildActionButton(
-              icon: AssetConstants.icMoreIcon,
-              label: '',
-              onTap: () async {
-                if (_reelData.onPressMoreButton != null) {
-                  _reelData.onPressMoreButton!();
-                }
-              },
-            ),
+            if (_reelData.postSetting?.isMoreButtonVisible == true)
+              _buildActionButton(
+                icon: AssetConstants.icMoreIcon,
+                label: '',
+                onTap: () async {
+                  if (_reelData.onPressMoreButton != null) {
+                    _reelData.onPressMoreButton!();
+                  }
+                },
+              ),
           ],
         ),
       );
@@ -699,7 +688,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                                   //   IsrDimens.boxWidth(IsrDimens.eight),
                                   // ],
                                   // Only show follow button if not following
-                                  if (_reelData.isFollow == false &&
+                                  if (_reelData.postSetting?.isFollowButtonVisible == true &&
+                                      _reelData.isFollow == false &&
                                       !_isFollowLoading &&
                                       _reelData.isSelfProfile == false)
                                     Container(
