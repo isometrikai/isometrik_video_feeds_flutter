@@ -131,12 +131,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                     return false;
                                   }
                                 },
-                                onPressSave: (postId, isSavedPost) async {
+                                onPressSave: (isSavedPost) async {
                                   try {
                                     final completer = Completer<bool>();
 
                                     _homeBloc.add(SavePostEvent(
-                                      postId: postId,
+                                      postId: postData.id ?? '',
                                       onComplete: (success) {
                                         completer.complete(success);
                                       },

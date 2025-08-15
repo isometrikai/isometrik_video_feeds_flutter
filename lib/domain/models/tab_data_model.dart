@@ -163,7 +163,7 @@ class ReelsData {
   final ReelsWidgetBuilder? footerWidget;
   final ReelsWidgetBuilder? actionWidget;
 
-  final Future<bool> Function(String postId, bool isSavedPost)? onPressSave;
+  final Future<bool> Function(bool isSavedPost)? onPressSave;
   final Future<bool> Function(String, String, bool)? onPressLike;
   final Future<bool> Function(String)? onPressFollow;
   final Future<bool> Function()? onRefresh;
@@ -172,7 +172,7 @@ class ReelsData {
   final Future<bool> Function()? onPressFollowFollowing;
   final VoidCallback? onPressMoreButton;
   final Widget? placeHolderWidget;
-  final Future<num>? Function(String, int)? onTapComment;
+  final Future<num>? Function(int)? onTapComment;
   final VoidCallback? onTapShare;
   final Function()? onTapUserProfile;
   final Function()? onTapReport;
@@ -182,7 +182,7 @@ class ReelsData {
   final int? postStatus;
   final bool? isCreatePostButtonVisible;
   final bool? isScheduledPost;
-  final bool? isSavedPost;
+  bool? isSavedPost;
   final PostSetting? postSetting;
 }
 
