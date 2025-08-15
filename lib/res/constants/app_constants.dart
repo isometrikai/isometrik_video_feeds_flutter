@@ -22,7 +22,7 @@ class AppConstants {
   static const String headerAccept = 'application/json';
   static const String headerContentType = 'application/json';
 
-  static const bool isGumletEnable = true;
+  static const bool isGumletEnable = false;
   static const String cloudinaryFolder = 'ShopAR/post/image';
 }
 

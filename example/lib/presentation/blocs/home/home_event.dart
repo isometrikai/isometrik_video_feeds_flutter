@@ -115,3 +115,13 @@ class ReportPostEvent extends HomeEvent {
   final String reason;
   final Function(bool) onComplete;
 }
+
+class GetPostDetailsEvent extends HomeEvent {
+  GetPostDetailsEvent({
+    this.isFromPagination = false,
+    this.productIds,
+  });
+
+  final bool? isFromPagination;
+  final List<String>? productIds;
+}

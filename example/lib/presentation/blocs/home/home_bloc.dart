@@ -21,6 +21,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     this._reportPostUseCase,
     this._getReportReasonsUseCase,
     this._getTimelinePostUseCase,
+    this._getPostDetailsUseCase,
   ) : super(HomeInitial()) {
     on<LoadHomeData>(_onLoadHomeData);
     on<GetFollowingPostEvent>(_getFollowingPost);
@@ -31,6 +32,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<ReportPostEvent>(_reportPost);
     on<LikePostEvent>(_likePost);
     on<FollowUserEvent>(_followUser);
+    on<GetPostDetailsEvent>(_getPostDetails);
   }
 
   final LocalDataUseCase _localDataUseCase;
@@ -42,6 +44,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   final LikePostUseCase _likePostUseCase;
   final ReportPostUseCase _reportPostUseCase;
   final GetReportReasonsUseCase _getReportReasonsUseCase;
+  final GetPostDetailsUseCase _getPostDetailsUseCase;
 
   final List<isr.PostDataModel> _followingPostList = [];
   final List<isr.PostDataModel> _trendingPostList = [];
@@ -61,6 +64,10 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   bool _hasMoreTimeLineData = true;
   int _timeLineCurrentPage = 6;
   final _timeLinePageSize = 20;
+
+  var _isDataLoading = false;
+  var _detailsCurrentPage = 1;
+  final List<ProductDataModel> _detailsProductList = [];
 
   Future<void> _onLoadHomeData(
     LoadHomeData event,
@@ -362,5 +369,32 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     }
 
     _isTimeLineLoadingMore = false;
+  }
+
+  FutureOr<void> _getPostDetails(GetPostDetailsEvent event, Emitter<HomeState> emit) async {
+    var totalProductCount = 0;
+    if (_isDataLoading) return;
+    _isDataLoading = true;
+    if (event.isFromPagination == false) {
+      _detailsCurrentPage = 1;
+      _detailsProductList.clear();
+      emit(PostDetailsLoading());
+    } else {
+      _detailsCurrentPage++;
+    }
+    final apiResult = await _getPostDetailsUseCase.executeGetPostDetails(
+      isLoading: false,
+      productIds: event.productIds,
+      page: _detailsCurrentPage,
+      limit: 20,
+    );
+    if (apiResult.isSuccess) {
+      totalProductCount = apiResult.data?.count?.toInt() ?? 0;
+      _detailsProductList.addAll(apiResult.data?.data as Iterable<ProductDataModel>);
+    } else {
+      ErrorHandler.showAppError(appError: apiResult.error);
+    }
+    emit(PostDetailsLoaded(productList: _detailsProductList, totalProductCount: totalProductCount));
+    _isDataLoading = false;
   }
 }

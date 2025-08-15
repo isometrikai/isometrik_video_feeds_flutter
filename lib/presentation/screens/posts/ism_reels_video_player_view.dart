@@ -240,7 +240,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
 
     if (_reelData.mediaType == kPictureType) {
       return AppImage.network(
-        _reelData.mediaUrl ?? '',
+        _reelData.mediaUrl,
         width: IsrDimens.getScreenWidth(context),
         height: IsrDimens.getScreenHeight(context),
         fit: BoxFit.contain,
@@ -501,14 +501,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                 ),
               ),
             if (_reelData.postSetting?.isCommentButtonVisible == true)
-              _buildActionButton(
-                icon: AssetConstants.icCommentIcon,
-                label: _reelData.commentCount.toString(),
-                onTap: () {
-                  if (_reelData.onTapComment != null) {
-                    _reelData.onTapComment!(_reelData.commentCount ?? 0);
-                  }
-                },
+              StatefulBuilder(
+                builder: (context, setState) => _buildActionButton(
+                  icon: AssetConstants.icCommentIcon,
+                  label: _reelData.commentCount.toString(),
+                  onTap: () {
+                    _handleCommentClick(setState);
+                  },
+                ),
               ),
             if (_reelData.postSetting?.isShareButtonVisible == true)
               _buildActionButton(
@@ -904,5 +904,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
       _videoPlayerController?.setVolume(_isMuted ? 0.0 : 1.0);
     });
     // widget.onTapVolume?.call();
+  }
+
+  void _handleCommentClick(StateSetter setState) async {
+    if (_reelData.onTapComment != null) {
+      final commentCount = await _reelData.onTapComment!(_reelData.commentCount ?? 0);
+      if (commentCount != null) {
+        _reelData.commentCount = commentCount;
+      }
+      setState.call(() {});
+    }
   }
 }
