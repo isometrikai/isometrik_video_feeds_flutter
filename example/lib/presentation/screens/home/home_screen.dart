@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -161,6 +160,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                   } catch (e) {
                                     return false;
                                   }
+                                },
+                                onTapCartIcon: () {
+                                  _handleCartAction(postData);
                                 },
                               ),
                             )
@@ -423,56 +425,32 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<List<isr.SocialProductData>>? _handleCartAction(
-      String productListJsonString, String productId) async {
-    var featuredProductList = <isr.SocialProductData>[];
-
+  Future<List<ProductDataModel>> _handleCartAction(TimeLineData postData) async {
+    var featuredProductList = <ProductDataModel>[];
     try {
-      final productDataList = _getSocialProductList(productListJsonString);
-      final result = await Utility.showBottomSheet<List<SocialProductData>>(
+      final productIds = <String>[];
+      final socialProductList = postData.tags?.products ?? <SocialProductData>[];
+      for (final productItem in socialProductList) {
+        productIds.add(productItem.id ?? '');
+      }
+
+      // final productDataList = _getSocialProductList(productJsonString);
+      final result = await Utility.showBottomSheet<List<ProductDataModel>>(
         child: SocialProductsBottomSheet(
-          products: productDataList,
+          productIds: productIds,
+          // products: productDataList,
+          products: [],
         ),
       );
       if (result.isEmptyOrNull == false) {
-        final productList = result as List<SocialProductData>;
-        featuredProductList = _getFeaturedProductList(productList);
+        final productList = result as List<ProductDataModel>;
+        featuredProductList = productList;
       }
     } catch (error, stackTrace) {
       Utility.debugCatchLog(error: error, stackTrace: stackTrace);
       debugPrint('Error handling cart action: $error');
     }
     return featuredProductList;
-  }
-
-  List<SocialProductData> _getSocialProductList(String? productJsonString) {
-    final productDataModelList = <SocialProductData>[];
-    if (productJsonString.isEmptyOrNull == false) {
-      final jsonList = jsonDecode(productJsonString ?? '');
-
-      final featuredProducts = (jsonList as List)
-          .map((item) => SocialProductData.fromJson(item as Map<String, dynamic>))
-          .toList();
-      if (featuredProducts.isEmptyOrNull == false) {
-        productDataModelList.addAll(featuredProducts);
-      }
-    }
-    debugPrint('productDataModelList: $productDataModelList');
-    return productDataModelList;
-  }
-
-  List<isr.SocialProductData> _getFeaturedProductList(List<SocialProductData>? productDataList) {
-    var featuredProducts = <isr.SocialProductData>[];
-    if (productDataList.isEmptyOrNull == true) return featuredProducts;
-    final productJsonString =
-        jsonEncode(productDataList?.map((product) => product.toJson()).toList());
-    if (productJsonString.isEmptyOrNull == false) {
-      final jsonList = jsonDecode(productJsonString);
-      featuredProducts = (jsonList as List)
-          .map((item) => isr.SocialProductData.fromJson(item as Map<String, dynamic>))
-          .toList();
-    }
-    return featuredProducts;
   }
 
   isr.ReelsWidgetBuilder _buildFooter(TimeLineData postData) => isr.ReelsWidgetBuilder(

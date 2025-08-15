@@ -37,8 +37,9 @@ class NetworkClient with AppMixin {
     dynamic data,
     Map<String, dynamic>? queryParameters,
     Map<String, String>? headers,
-    bool isLoading,
-  ) async {
+    bool isLoading, {
+    List<String>? pathSegments,
+  }) async {
     final isNetworkAvailable = await Utility.isNetworkAvailable;
     if (isNetworkAvailable) {
       while (_isRefreshing) {
@@ -51,6 +52,7 @@ class NetworkClient with AppMixin {
         queryParameters,
         isLoading,
         headers,
+        pathSegments,
       );
       if (responseModel.statusCode == 406) {
         _isRefreshing = true;
@@ -65,6 +67,7 @@ class NetworkClient with AppMixin {
           queryParameters,
           isLoading,
           headers,
+          pathSegments,
         );
         _isRefreshing = false;
       }
@@ -82,6 +85,7 @@ class NetworkClient with AppMixin {
     Map<String, dynamic>? queryParameters,
     bool isLoading,
     Map<String, String>? headers,
+    List<String>? pathSegments,
   ) async {
     if (!(await Utility.isNetworkAvailable)) {
       return const ResponseModel(
@@ -92,7 +96,14 @@ class NetworkClient with AppMixin {
     }
 
     final uri = baseUrl + url;
-    final finalUrl = Uri.parse(uri).replace(queryParameters: queryParameters);
+    var finalUrl = Uri.parse(uri);
+    finalUrl = Uri.parse(uri).replace(
+      pathSegments: [
+        ...finalUrl.pathSegments, // keep existing segments
+        if (pathSegments != null) ...pathSegments, // append new segments
+      ],
+      queryParameters: queryParameters,
+    );
 
     if (isLoading) Utility.showLoader();
 

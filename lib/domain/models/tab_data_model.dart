@@ -172,13 +172,13 @@ class ReelsData {
   final Future<bool> Function()? onPressFollowFollowing;
   final VoidCallback? onPressMoreButton;
   final Widget? placeHolderWidget;
-  final Future<num>? Function(int)? onTapComment;
+  final Future<int>? Function(int)? onTapComment;
   final VoidCallback? onTapShare;
   final Function()? onTapUserProfile;
   final Function()? onTapReport;
   final bool? showBlur;
   final int? productCount;
-  final int? commentCount;
+  int? commentCount;
   final int? postStatus;
   final bool? isCreatePostButtonVisible;
   final bool? isScheduledPost;

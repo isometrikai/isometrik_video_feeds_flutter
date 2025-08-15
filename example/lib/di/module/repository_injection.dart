@@ -14,10 +14,13 @@ class RepositoryInjection {
     final sessionManager = InjectionUtils.getOtherClass<SessionManager>();
     final _localStorageManager = InjectionUtils.getOtherClass<LocalStorageManager>();
 
-    InjectionUtils.registerRepo<LocalStorageRepository>(() => LocalStorageRepositoryImpl(_localStorageManager));
-    InjectionUtils.registerRepo<AuthRepository>(
-        () => AuthRepositoryImpl(InjectionUtils.getApiService<AuthApiService>(), dataSource, sessionManager));
+    InjectionUtils.registerRepo<LocalStorageRepository>(
+        () => LocalStorageRepositoryImpl(_localStorageManager));
+    InjectionUtils.registerRepo<AuthRepository>(() => AuthRepositoryImpl(
+        InjectionUtils.getApiService<AuthApiService>(), dataSource, sessionManager));
     InjectionUtils.registerRepo<PostRepository>(
         () => PostRepositoryImpl(InjectionUtils.getApiService<PostApiService>(), dataSource));
+    InjectionUtils.registerRepo<SocialRepository>(
+        () => SocialRepositoryImpl(InjectionUtils.getApiService<SocialApiService>(), dataSource));
   }
 }

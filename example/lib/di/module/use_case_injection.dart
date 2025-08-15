@@ -43,5 +43,8 @@ class UseCaseInjection {
         () => GetCloudDetailsUseCase(InjectionUtils.getRepo<PostRepository>()));
     InjectionUtils.registerUseCase<GetTimelinePostUseCase>(
         () => GetTimelinePostUseCase(InjectionUtils.getRepo<PostRepository>()));
+
+    InjectionUtils.registerUseCase<GetPostDetailsUseCase>(
+        () => GetPostDetailsUseCase(InjectionUtils.getRepo<SocialRepository>()));
   }
 }

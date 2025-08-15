@@ -29,3 +29,15 @@ class HomeError extends HomeState {
 
   final String message;
 }
+
+class PostDetailsLoading extends HomeState {}
+
+class PostDetailsLoaded extends HomeState {
+  PostDetailsLoaded({
+    required this.productList,
+    required this.totalProductCount,
+  });
+
+  final List<ProductDataModel>? productList;
+  final int totalProductCount;
+}
