@@ -506,7 +506,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                 label: _reelData.commentCount.toString(),
                 onTap: () {
                   if (_reelData.onTapComment != null) {
-                    _reelData.onTapComment!(_reelData.postId ?? '', _reelData.commentCount ?? 0);
+                    _reelData.onTapComment!(_reelData.commentCount ?? 0);
                   }
                 },
               ),
@@ -858,9 +858,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
     mountUpdate();
 
     try {
-      final success = await _reelData.onPressSave!('', false);
+      final success = await _reelData.onPressSave!(_reelData.isSavedPost ?? false);
       if (!success) {
         _isSaveLoading = false;
+      } else {
+        _reelData.isSavedPost = _reelData.isSavedPost == false;
       }
     } finally {
       _isSaveLoading = false;
