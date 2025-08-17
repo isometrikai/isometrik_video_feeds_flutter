@@ -45,7 +45,7 @@ class PostItemWidget extends StatefulWidget {
   final Future<bool> Function(String, bool)? onPressSave;
   final Future<bool> Function(String, String, bool)? onPressLike;
   final Future<bool> Function(String)? onPressFollow;
-  final Future<List<TimeLineData>> Function(PostSectionType?)? onLoadMore;
+  final Future<List<ReelsData>> Function(PostSectionType?)? onLoadMore;
   final Future<List<SocialProductData>>? Function(String, String)? onTapCartIcon;
   final Future<bool> Function()? onRefresh;
   final Widget? placeHolderWidget;
@@ -188,17 +188,23 @@ class _PostItemWidgetState extends State<PostItemWidget> {
               (value) {
                 if (value.isListEmptyOrNull) return;
                 if (mounted) {
-                  // setState(
-                  //   () {
-                  //     // Filter out duplicates based on postId
-                  //     final newPosts = value.where((newPost) =>
-                  //         !_postList.any((existingPost) => existingPost.id == newPost.id));
-                  //     _postList.addAll(newPosts);
-                  //     if (_postList.isNotEmpty) {
-                  //       _doMediaCaching(0);
-                  //     }
-                  //   },
-                  // );
+                  setState(
+                    () {
+                      // Filter out duplicates based on postId
+                      // final newPosts = value.where((newPost) =>
+                      //     !_postList.any((existingPost) => existingPost.id == newPost.id));
+                      // _postList.addAll(newPosts);
+                      // if (_postList.isNotEmpty) {
+                      //   _doMediaCaching(0);
+                      // }
+                      final newReels = value.where((newReel) => !_reelsDataList
+                          .any((existingReel) => existingReel.postId == newReel.postId));
+                      _reelsDataList.addAll(newReels);
+                      if (_reelsDataList.isNotEmpty) {
+                        _doMediaCaching(0);
+                      }
+                    },
+                  );
                 }
               },
             );

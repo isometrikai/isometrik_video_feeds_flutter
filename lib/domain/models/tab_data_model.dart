@@ -51,10 +51,14 @@ class TabDataModel {
   TabDataModel({
     required this.title,
     required this.reelsDataList,
+    this.onLoadMore,
+    this.onRefresh,
   });
 
   final String title;
   final List<ReelsData> reelsDataList;
+  final Future<List<ReelsData>> Function(PostSectionType?)? onLoadMore;
+  final Future<bool> Function()? onRefresh;
 
 // final tabs = [
 //   TabDataModel(

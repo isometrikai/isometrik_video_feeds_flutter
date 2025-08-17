@@ -241,6 +241,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         allowImplicitScrolling: widget.allowImplicitScrolling,
         onPageChanged: widget.onPageChanged,
         reelsDataList: widget.tabDataModelList[index].reelsDataList,
+        onLoadMore: widget.tabDataModelList[index].onLoadMore,
+        onRefresh: widget.tabDataModelList[index].onRefresh,
       );
 
   // bool _isFollowingPostsEmpty() =>
