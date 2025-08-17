@@ -57,7 +57,7 @@ class TabDataModel {
 
   final String title;
   final List<ReelsData> reelsDataList;
-  final Future<List<ReelsData>> Function(PostSectionType?)? onLoadMore;
+  final Future<List<ReelsData>> Function()? onLoadMore;
   final Future<bool> Function()? onRefresh;
 
 // final tabs = [
