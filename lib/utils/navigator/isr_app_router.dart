@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:go_router/go_router.dart';
-import 'package:ism_video_reel_player/presentation/presentation.dart';
+import 'package:ism_video_reel_player/di/di.dart';
 
 part 'isr_app_routes.dart';
 

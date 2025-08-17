@@ -8,20 +8,6 @@ class LoadHomeData extends HomeEvent {
   LoadHomeData();
 }
 
-class GetFollowingPostEvent extends HomeEvent {
-  GetFollowingPostEvent({
-    required this.isLoading,
-    required this.isPagination,
-    this.isRefresh = false,
-    this.onComplete,
-  });
-
-  final bool isLoading;
-  final bool isPagination;
-  final bool isRefresh;
-  final Function(List<isr.PostDataModel>)? onComplete;
-}
-
 class GetTimeLinePostEvent extends HomeEvent {
   GetTimeLinePostEvent({
     required this.isLoading,
@@ -33,7 +19,7 @@ class GetTimeLinePostEvent extends HomeEvent {
   final bool isLoading;
   final bool isPagination;
   final bool isRefresh;
-  final Function(List<isr.TimeLineData>)? onComplete;
+  final Function(List<TimeLineData>)? onComplete;
 }
 
 class GetTrendingPostEvent extends HomeEvent {
@@ -47,7 +33,7 @@ class GetTrendingPostEvent extends HomeEvent {
   final bool isLoading;
   final bool isPagination;
   final bool isRefresh;
-  final Function(List<isr.PostDataModel>)? onComplete;
+  final Function(List<PostData>)? onComplete;
 }
 
 class GetCloudDetailsEvent extends HomeEvent {

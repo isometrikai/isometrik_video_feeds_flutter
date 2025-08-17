@@ -29,7 +29,4 @@ class SocialMapper {
         data: post.data.isEmptyOrNull == true ? null : post.data!.first,
         responseCode: response.statusCode);
   }
-
-  CustomResponse<TimelineResponse?> mapTimelineResponse(ResponseModel response) => CustomResponse(
-      data: timelineResponseFromMap(response.data), responseCode: response.statusCode);
 }

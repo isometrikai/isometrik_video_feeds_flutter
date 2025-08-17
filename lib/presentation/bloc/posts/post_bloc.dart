@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
@@ -13,7 +12,6 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     this._localDataUseCase,
   ) : super(PostInitial(isLoading: true)) {
     on<StartPost>(_onStartPost);
-    on<PostsLoadedEvent>(_loadFollowingPosts);
   }
 
   final IsmLocalDataUseCase _localDataUseCase;
@@ -30,9 +28,5 @@ class PostBloc extends Bloc<PostEvent, PostState> {
       userInfoClass: _userInfoClass,
       userId: userId,
     ));
-  }
-
-  FutureOr<void> _loadFollowingPosts(PostsLoadedEvent event, Emitter<PostState> emit) async {
-    emit(PostsLoadedState(postsList: event.postsList, timeLinePostList: event.timeLinePostList));
   }
 }

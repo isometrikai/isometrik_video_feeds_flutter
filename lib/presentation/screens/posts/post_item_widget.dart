@@ -14,13 +14,10 @@ class PostItemWidget extends StatefulWidget {
     super.key,
     this.onCreatePost,
     this.showBlur,
-    this.productList,
     this.onPressSave,
     this.onPressLike,
-    this.onTapMore,
     this.onPressFollow,
     this.onLoadMore,
-    this.onTapCartIcon,
     this.onRefresh,
     this.placeHolderWidget,
     this.postSectionType,
@@ -39,14 +36,11 @@ class PostItemWidget extends StatefulWidget {
   });
 
   final Future<String?> Function()? onCreatePost;
-  final Future<dynamic> Function(TimeLineData, String userId)? onTapMore;
   final bool? showBlur;
-  final List<FeaturedProductDataItem>? productList;
   final Future<bool> Function(String, bool)? onPressSave;
   final Future<bool> Function(String, String, bool)? onPressLike;
   final Future<bool> Function(String)? onPressFollow;
   final Future<List<ReelsData>> Function()? onLoadMore;
-  final Future<List<SocialProductData>>? Function(String, String)? onTapCartIcon;
   final Future<bool> Function()? onRefresh;
   final Widget? placeHolderWidget;
   final PostSectionType? postSectionType;
@@ -70,9 +64,6 @@ class PostItemWidget extends StatefulWidget {
 class _PostItemWidgetState extends State<PostItemWidget> {
   final _postBloc = IsmInjectionUtils.getBloc<PostBloc>();
 
-  // List<PostDataModel> _postList = [];
-  // List<TimeLineData> _postList = [];
-  StreamSubscription<dynamic>? _subscription;
   late PageController _pageController;
   final Set<String> _cachedImages = {};
   final VideoCacheManager _videoCacheManager = VideoCacheManager();
@@ -90,28 +81,6 @@ class _PostItemWidgetState extends State<PostItemWidget> {
     _pageController = PageController(initialPage: widget.startingPostIndex ?? 0);
 
     // Check current state
-    final currentState = _postBloc.state;
-    if (currentState is PostsLoadedState) {
-      final postList = currentState.timeLinePostList ?? [];
-      setState(() {
-        // _postList = postList;
-      });
-      // await _clearAllCache();
-      _precacheNearbyImages(0);
-    }
-
-    _subscription = _postBloc.stream.listen((state) {
-      if (state is PostsLoadedState) {
-        // if (_postList.isEmpty) {
-        final postList = state.timeLinePostList ?? [];
-        // _precacheImages(postList);
-        // setState(() {
-        //   _postList = postList;
-        // });
-        _precacheNearbyImages(0);
-        // }
-      }
-    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final targetPage = _pageController.initialPage >= widget.reelsDataList.length
           ? widget.reelsDataList.length - 1
@@ -129,7 +98,6 @@ class _PostItemWidgetState extends State<PostItemWidget> {
   @override
   void dispose() {
     _pageController.dispose();
-    _subscription?.cancel();
     _videoCacheManager.clearAll();
     super.dispose();
   }

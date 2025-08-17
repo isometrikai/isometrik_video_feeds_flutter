@@ -24,7 +24,6 @@ class BlocInjection {
 
     InjectionUtils.registerBloc<HomeBloc>(() => HomeBloc(
           _localDataUseCase,
-          InjectionUtils.getUseCase<GetFollowingPostUseCase>(),
           InjectionUtils.getUseCase<GetTrendingPostUseCase>(),
           InjectionUtils.getUseCase<FollowPostUseCase>(),
           InjectionUtils.getUseCase<SavePostUseCase>(),

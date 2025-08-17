@@ -300,24 +300,4 @@ class SocialRepositoryImpl implements SocialRepository {
       rethrow;
     }
   }
-
-  @override
-  Future<CustomResponse<TimelineResponse?>> getTimeLinePosts({
-    required bool isLoading,
-    required int page,
-    required int pageLimit,
-  }) async {
-    try {
-      final header = await _dataSource.getHeader();
-      final response = await _apiService.getTimeLinePosts(
-        isLoading: isLoading,
-        header: header,
-        page: page,
-        pageLimit: pageLimit,
-      );
-      return _socialMapper.mapTimelineResponse(response);
-    } catch (e) {
-      rethrow;
-    }
-  }
 }

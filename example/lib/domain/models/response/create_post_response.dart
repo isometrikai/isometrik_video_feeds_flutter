@@ -4,8 +4,6 @@
 
 import 'dart:convert';
 
-import 'package:ism_video_reel_player/domain/domain.dart';
-
 CreatePostResponse createPostResponseFromJson(String str) =>
     CreatePostResponse.fromJson(json.decode(str) as Map<String, dynamic>);
 
@@ -15,7 +13,9 @@ class CreatePostResponse {
   factory CreatePostResponse.fromJson(Map<String, dynamic> json) => CreatePostResponse(
         message: json['message'] as String? ?? '',
         data: json['data'] == null ? null : OldData.fromJson(json['data'] as Map<String, dynamic>),
-        newData: json['newData'] == null ? null : NewData.fromJson(json['newData'] as Map<String, dynamic>),
+        newData: json['newData'] == null
+            ? null
+            : NewData.fromJson(json['newData'] as Map<String, dynamic>),
       );
 
   CreatePostResponse({
@@ -23,6 +23,7 @@ class CreatePostResponse {
     this.data,
     this.newData,
   });
+
   String? message;
   OldData? data;
   NewData? newData;
@@ -43,13 +44,17 @@ class OldData {
   });
 
   factory OldData.fromJson(Map<String, dynamic> json) => OldData(
-        result: json['result'] == null ? null : ResultItem.fromJson(json['result'] as Map<String, dynamic>),
+        result: json['result'] == null
+            ? null
+            : ResultItem.fromJson(json['result'] as Map<String, dynamic>),
         ops: json['ops'] == null
             ? []
-            : List<Op>.from((json['ops'] as List).map((x) => Op.fromJson(x as Map<String, dynamic>))),
+            : List<Op>.from(
+                (json['ops'] as List).map((x) => Op.fromJson(x as Map<String, dynamic>))),
         insertedCount: json['insertedCount'] as num? ?? 0,
-        insertedIds:
-            json['insertedIds'] == null ? null : InsertedIds.fromJson(json['insertedIds'] as Map<String, dynamic>),
+        insertedIds: json['insertedIds'] == null
+            ? null
+            : InsertedIds.fromJson(json['insertedIds'] as Map<String, dynamic>),
       );
   ResultItem? result;
   List<Op>? ops;
@@ -118,7 +123,6 @@ class Op {
     this.categoryName,
     this.categoryUrl,
     this.musicId,
-    this.musicData,
     this.location,
     this.place,
     this.countrySname,
@@ -146,7 +150,6 @@ class Op {
     this.visibleOnSellerProfile,
     this.scheduleTime,
     this.id,
-    this.orderDetails,
   });
 
   factory Op.fromJson(Map<String, dynamic> json) => Op(
@@ -163,15 +166,18 @@ class Op {
         imageUrl1Width: json['imageUrl1Width'],
         imageUrl1Height: json['imageUrl1Height'],
         likesCount: json['likesCount'] as num? ?? 0,
-        mentionedUsers:
-            json['mentionedUsers'] == null ? [] : List<dynamic>.from((json['mentionedUsers'] as List).map((x) => x)),
+        mentionedUsers: json['mentionedUsers'] == null
+            ? []
+            : List<dynamic>.from((json['mentionedUsers'] as List).map((x) => x)),
         postStatus: json['postStatus'] as num? ?? 0,
         postStatusText: json['postStatusText'] as String? ?? '',
         shareCount: json['shareCount'] as num? ?? 0,
         commentCount: json['commentCount'] as num? ?? 0,
         userName: json['userName'] as String? ?? '',
         userStoreId: json['userStoreId'] as String? ?? '',
-        storeData: json['storeData'] == null ? null : StoreData.fromJson(json['storeData'] as Map<String, dynamic>),
+        storeData: json['storeData'] == null
+            ? null
+            : StoreData.fromJson(json['storeData'] as Map<String, dynamic>),
         userType: json['userType'] as num? ?? 0,
         userTypeText: json['userTypeText'] as String? ?? '',
         firstName: json['firstName'] as String? ?? '',
@@ -188,13 +194,15 @@ class Op {
         categoryName: json['categoryName'] as String? ?? '',
         categoryUrl: json['categoryUrl'] as String? ?? '',
         musicId: json['musicId'] as String? ?? '',
-        musicData: json['musicData'] == null ? null : MusicData.fromJson(json['musicData'] as Map<String, dynamic>),
-        location: json['location'] == null ? null : LocationItem.fromJson(json['location'] as Map<String, dynamic>),
+        location: json['location'] == null
+            ? null
+            : LocationItem.fromJson(json['location'] as Map<String, dynamic>),
         place: json['place'] as String? ?? '',
         countrySname: json['countrySname'] as String? ?? '',
         city: json['city'] as String? ?? '',
         placeId: json['placeId'] as String? ?? '',
-        likes: json['likes'] == null ? [] : List<dynamic>.from((json['likes'] as List).map((x) => x)),
+        likes:
+            json['likes'] == null ? [] : List<dynamic>.from((json['likes'] as List).map((x) => x)),
         orientation: json['orientation'] as num? ?? 0,
         isStar: json['isStar'] as bool? ?? false,
         knownByName: json['knownByName'] as String? ?? '',
@@ -202,8 +210,12 @@ class Op {
         allowDownload: json['allowDownload'] as bool? ?? false,
         allowComment: json['allowComment'] as bool? ?? false,
         allowDuet: json['allowDuet'] as bool? ?? false,
-        productIds: json['productIds'] == null ? [] : List<dynamic>.from((json['productIds'] as List).map((x) => x)),
-        productData: json['productData'] == null ? [] : List<dynamic>.from((json['productData'] as List).map((x) => x)),
+        productIds: json['productIds'] == null
+            ? []
+            : List<dynamic>.from((json['productIds'] as List).map((x) => x)),
+        productData: json['productData'] == null
+            ? []
+            : List<dynamic>.from((json['productData'] as List).map((x) => x)),
         cityForPost: json['cityForPost'] as String? ?? '',
         countryForPost: json['countryForPost'] as String? ?? '',
         locationForPost: json['locationForPost'] == null
@@ -218,8 +230,6 @@ class Op {
         visibleOnSellerProfile: json['visibleOnSellerProfile'] as bool? ?? false,
         scheduleTime: json['scheduleTime'] as num? ?? 0,
         id: json['_id'] as String? ?? '',
-        orderDetails:
-            json['orderDetails'] == null ? null : MusicData.fromJson(json['orderDetails'] as Map<String, dynamic>),
       );
   String? title;
   String? imageUrl1;
@@ -258,7 +268,6 @@ class Op {
   String? categoryName;
   String? categoryUrl;
   String? musicId;
-  MusicData? musicData;
   LocationItem? location;
   String? place;
   String? countrySname;
@@ -286,7 +295,6 @@ class Op {
   bool? visibleOnSellerProfile;
   num? scheduleTime;
   String? id;
-  MusicData? orderDetails;
 
   Map<String, dynamic> toJson() => {
         'title': title,
@@ -302,7 +310,8 @@ class Op {
         'imageUrl1Width': imageUrl1Width,
         'imageUrl1Height': imageUrl1Height,
         'likesCount': likesCount,
-        'mentionedUsers': mentionedUsers == null ? [] : List<dynamic>.from(mentionedUsers!.map((x) => x)),
+        'mentionedUsers':
+            mentionedUsers == null ? [] : List<dynamic>.from(mentionedUsers!.map((x) => x)),
         'postStatus': postStatus,
         'postStatusText': postStatusText,
         'shareCount': shareCount,
@@ -326,7 +335,6 @@ class Op {
         'categoryName': categoryName,
         'categoryUrl': categoryUrl,
         'musicId': musicId,
-        'musicData': musicData?.toJson(),
         'location': location?.toJson(),
         'place': place,
         'countrySname': countrySname,
@@ -354,7 +362,6 @@ class Op {
         'visibleOnSellerProfile': visibleOnSellerProfile,
         'scheduleTime': scheduleTime,
         '_id': id,
-        'orderDetails': orderDetails?.toJson(),
       };
 }
 
@@ -425,7 +432,8 @@ class ResultItem {
   factory ResultItem.fromJson(Map<String, dynamic> json) => ResultItem(
         ok: json['ok'] as num? ?? 0,
         n: json['n'] as num? ?? 0,
-        opTime: json['opTime'] == null ? null : OpTime.fromJson(json['opTime'] as Map<String, dynamic>),
+        opTime:
+            json['opTime'] == null ? null : OpTime.fromJson(json['opTime'] as Map<String, dynamic>),
       );
   num? ok;
   num? n;
@@ -521,13 +529,18 @@ class NewData {
         createdOn: json['createdOn'] == null ? null : json['createdOn'] as String? ?? '',
         timeStamp: json['timeStamp'] as num? ?? 0,
         distinctViews: json['distinctViews'] as num? ?? 0,
-        totalViews: json['totalViews'] == null ? [] : List<dynamic>.from((json['totalViews'] as List).map((x) => x)),
-        comments: json['comments'] == null ? [] : List<dynamic>.from((json['comments'] as List).map((x) => x)),
+        totalViews: json['totalViews'] == null
+            ? []
+            : List<dynamic>.from((json['totalViews'] as List).map((x) => x)),
+        comments: json['comments'] == null
+            ? []
+            : List<dynamic>.from((json['comments'] as List).map((x) => x)),
         imageUrl1Width: json['imageUrl1Width'],
         imageUrl1Height: json['imageUrl1Height'],
         likesCount: json['likesCount'] as num? ?? 0,
-        mentionedUsers:
-            json['mentionedUsers'] == null ? [] : List<dynamic>.from((json['mentionedUsers'] as List).map((x) => x)),
+        mentionedUsers: json['mentionedUsers'] == null
+            ? []
+            : List<dynamic>.from((json['mentionedUsers'] as List).map((x) => x)),
         postStatus: json['postStatus'] as num? ?? 0,
         shareCount: json['shareCount'] as num? ?? 0,
         commentCount: json['commentCount'] as num? ?? 0,
@@ -546,7 +559,9 @@ class NewData {
         categoryName: json['categoryName'] as String? ?? '',
         categoryUrl: json['categoryUrl'] as String? ?? '',
         musicId: json['musicId'] as String? ?? '',
-        location: json['location'] == null ? null : LocationItem.fromJson(json['location'] as Map<String, dynamic>),
+        location: json['location'] == null
+            ? null
+            : LocationItem.fromJson(json['location'] as Map<String, dynamic>),
         place: json['place'] as String? ?? '',
         countrySname: json['countrySname'] as String? ?? '',
         city: json['city'] as String? ?? '',
@@ -628,7 +643,8 @@ class NewData {
         'imageUrl1Width': imageUrl1Width,
         'imageUrl1Height': imageUrl1Height,
         'likesCount': likesCount,
-        'mentionedUsers': mentionedUsers == null ? [] : List<dynamic>.from(mentionedUsers!.map((x) => x)),
+        'mentionedUsers':
+            mentionedUsers == null ? [] : List<dynamic>.from(mentionedUsers!.map((x) => x)),
         'postStatus': postStatus,
         'shareCount': shareCount,
         'commentCount': commentCount,

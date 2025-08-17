@@ -87,10 +87,4 @@ abstract class SocialRepository extends BaseRepository {
     required bool isLoading,
     required String postId,
   });
-
-  Future<CustomResponse<TimelineResponse?>> getTimeLinePosts({
-    required bool isLoading,
-    required int page,
-    required int pageLimit,
-  });
 }

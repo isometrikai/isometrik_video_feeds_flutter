@@ -16,14 +16,12 @@ class IsmPostView extends StatefulWidget {
     this.currentIndex = 0,
     this.allowImplicitScrolling = false,
     this.onPageChanged,
-    this.timeLinePosts = const [],
   });
 
   final List<TabDataModel> tabDataModelList;
   final num? currentIndex;
   final bool? allowImplicitScrolling;
   final Function(int)? onPageChanged;
-  final List<TimeLineData> timeLinePosts;
 
   @override
   State<IsmPostView> createState() => _PostViewState();

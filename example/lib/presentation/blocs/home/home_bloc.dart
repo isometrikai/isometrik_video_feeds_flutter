@@ -13,7 +13,6 @@ part 'home_state.dart';
 class HomeBloc extends Bloc<HomeEvent, HomeState> {
   HomeBloc(
     this._localDataUseCase,
-    this._getFollowingPostUseCase,
     this._getTrendingPostUseCase,
     this._followPostUseCase,
     this._savePostUseCase,
@@ -24,7 +23,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     this._getPostDetailsUseCase,
   ) : super(HomeInitial()) {
     on<LoadHomeData>(_onLoadHomeData);
-    on<GetFollowingPostEvent>(_getFollowingPost);
     on<GetTimeLinePostEvent>(_getTimeLinePost);
     on<GetTrendingPostEvent>(_getTrendingPost);
     on<SavePostEvent>(_savePost);
@@ -36,7 +34,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   }
 
   final LocalDataUseCase _localDataUseCase;
-  final GetFollowingPostUseCase _getFollowingPostUseCase;
   final GetTimelinePostUseCase _getTimelinePostUseCase;
   final GetTrendingPostUseCase _getTrendingPostUseCase;
   final FollowPostUseCase _followPostUseCase;
@@ -46,8 +43,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   final GetReportReasonsUseCase _getReportReasonsUseCase;
   final GetPostDetailsUseCase _getPostDetailsUseCase;
 
-  final List<isr.PostDataModel> _followingPostList = [];
-  final List<isr.PostDataModel> _trendingPostList = [];
+  final List<PostData> _followingPostList = [];
+  final List<PostData> _trendingPostList = [];
 
   final List<TimeLineData> _timeLinePostList = [];
 
@@ -79,13 +76,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       await Future.wait([
         _callGetFollowingPost(true, false, false, null),
         _callGetTimeLinePost(true, false, false, null)
-        // _callGetTrendingPost(true, false, false, null),
       ]);
-      emit(HomeLoaded(
-        followingPosts: _followingPostList,
-        trendingPosts: _trendingPostList,
-        timeLinePosts: _timeLinePostList,
-      ));
+      emit(HomeLoaded(timeLinePosts: _timeLinePostList));
     } catch (error) {
       emit(HomeError(error.toString()));
     }
@@ -107,11 +99,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     );
   }
 
-  FutureOr<void> _getFollowingPost(GetFollowingPostEvent event, Emitter<HomeState> emit) async {
-    await _callGetFollowingPost(
-        event.isRefresh, event.isPagination, event.isLoading, event.onComplete);
-  }
-
   FutureOr<void> _getTimeLinePost(GetTimeLinePostEvent event, Emitter<HomeState> emit) async {
     await _callGetTimeLinePost(
         event.isRefresh, event.isPagination, event.isLoading, event.onComplete);
@@ -123,7 +110,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   }
 
   Future<void> _callGetFollowingPost(bool isFromRefresh, bool isFromPagination, bool isLoading,
-      Function(List<isr.PostDataModel>)? onComplete) async {
+      Function(List<PostData>)? onComplete) async {
     // For refresh, clear cache and start from page 0
     if (isFromRefresh) {
       _followingPostList.clear();
@@ -180,7 +167,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   }
 
   Future<void> _callGetTrendingPost(bool isFromRefresh, bool isFromPagination, bool isLoading,
-      Function(List<isr.PostDataModel>)? onComplete) async {
+      Function(List<PostData>)? onComplete) async {
     // For refresh, clear cache and start from page 0
     if (isFromRefresh) {
       _trendingPostList.clear();
@@ -209,20 +196,18 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
     if (apiResult.isSuccess) {
       final postDataList = apiResult.data?.data as List<PostData>;
-      final newPosts =
-          postDataList.map((postData) => isr.PostDataModel.fromJson(postData.toJson())).toList();
-      if (newPosts.isEmpty) {
+      if (postDataList.isEmpty) {
         _hasTrendingMoreData = false;
       } else {
         if (isFromPagination) {
-          _trendingPostList.addAll(newPosts);
+          _trendingPostList.addAll(postDataList);
           if (onComplete != null) {
-            onComplete(newPosts);
+            onComplete(postDataList);
           }
         } else {
           _trendingPostList
             ..clear()
-            ..addAll(newPosts);
+            ..addAll(postDataList);
         }
         _trendingCurrentPage++;
         // emit(HomeLoaded(followingPosts: _followingPostList, trendingPosts: _trendingPostList));
@@ -311,7 +296,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     bool isFromRefresh,
     bool isFromPagination,
     bool isLoading,
-    Function(List<isr.TimeLineData>)? onComplete,
+    Function(List<TimeLineData>)? onComplete,
   ) async {
     // For refresh, clear cache and start from page 0
     if (isFromRefresh) {
@@ -343,7 +328,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       final postDataList = apiResult.data?.data as List<TimeLineData>;
       try {
         final newPosts = postDataList
-            .map((postData) => isr.TimeLineData.fromMap(postData.toMap()))
+            .map((postData) => TimeLineData.fromMap(postData.toMap()))
             .toList(); // Updated line
         if (newPosts.length < _timeLinePageSize) {
           _hasMoreTimeLineData = false;
