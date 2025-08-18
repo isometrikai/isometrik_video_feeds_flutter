@@ -79,6 +79,7 @@ class TimeLineData {
     this.type,
     this.previews,
     this.isLiked,
+    this.isSaved,
   });
 
   factory TimeLineData.fromMap(Map<String, dynamic> json) => TimeLineData(
@@ -106,7 +107,8 @@ class TimeLineData {
         previews: json['previews'] == null
             ? []
             : List<dynamic>.from((json['previews'] as List).map((x) => x)),
-        isLiked: json['is_like'] as bool? ?? false,
+        isLiked: json['is_liked'] as bool? ?? false,
+        isSaved: json['is_saved'] as bool? ?? false,
       );
   String? textFormatting;
   String? publishedAt;
@@ -124,6 +126,7 @@ class TimeLineData {
   String? type;
   List<dynamic>? previews;
   bool? isLiked;
+  bool? isSaved;
 
   Map<String, dynamic> toMap() => {
         'text_formatting': textFormatting,
@@ -141,7 +144,8 @@ class TimeLineData {
         'engagement_metrics': engagementMetrics?.toMap(),
         'type': type,
         'previews': previews == null ? [] : List<dynamic>.from(previews!.map((x) => x)),
-        'is_like': isLiked,
+        'is_liked': isLiked,
+        'is_saved': isSaved,
       };
   TimeLineData copyWith({
     String? textFormatting,
@@ -160,6 +164,7 @@ class TimeLineData {
     String? type,
     List<dynamic>? previews,
     bool? isLiked,
+    bool? isSaved,
   }) =>
       TimeLineData(
         textFormatting: textFormatting ?? this.textFormatting,
@@ -178,6 +183,7 @@ class TimeLineData {
         type: type ?? this.type,
         previews: previews ?? this.previews,
         isLiked: isLiked ?? this.isLiked,
+        isSaved: isSaved ?? this.isSaved,
       );
 }
 

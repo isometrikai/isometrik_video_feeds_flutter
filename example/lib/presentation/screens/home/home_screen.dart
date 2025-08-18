@@ -54,120 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 tabDataModelList: [
                   isr.TabDataModel(
                     title: 'Following',
-                    reelsDataList: state.timeLinePosts
-                            ?.map(
-                              (postData) => isr.ReelsData(
-                                postSetting: isr.PostSetting(
-                                  isProfilePicVisible: true,
-                                  isCreatePostButtonVisible: true,
-                                  isCommentButtonVisible: true,
-                                  isSaveButtonVisible: true,
-                                  isLikeButtonVisible: true,
-                                  isShareButtonVisible: true,
-                                  isMoreButtonVisible: true,
-                                ),
-                                mediaUrl: postData.media?.first.url ?? '',
-                                thumbnailUrl: postData.media?.first.previewUrl ?? '',
-                                mediaType: postData.media?.first.mediaType == 'image' ? 0 : 1,
-                                // actionWidget: _buildActionButtons(postData),
-                                // footerWidget: _buildFooter(postData),
-                                userName: postData.user?.username ?? '',
-                                profilePhoto: postData.user?.avatarUrl ?? '',
-                                firstName: '',
-                                lastName: '',
-                                likesCount:
-                                    postData.engagementMetrics?.likeTypes?.like?.toInt() ?? 0,
-                                commentCount: postData.engagementMetrics?.comments?.toInt() ?? 0,
-                                isFollow: false,
-                                isLiked: postData.isLiked,
-                                isSavedPost: false,
-                                isVerifiedUser: false,
-                                productCount: postData.tags?.products?.length ?? 0,
-                                description: '',
-                                onPressMoreButton: () async {
-                                  await _showMoreOptionsDialog(
-                                    onPressReport: (
-                                        {String message = '', String reason = ''}) async {
-                                      try {
-                                        final completer = Completer<bool>();
-
-                                        _homeBloc.add(ReportPostEvent(
-                                          postId: postData.id ?? '',
-                                          message: reason,
-                                          reason: reason,
-                                          onComplete: (success) {
-                                            if (success) {
-                                              Utility.showToastMessage(
-                                                TranslationFile.postReportedSuccessfully,
-                                              );
-                                            }
-                                            completer.complete(success);
-                                          },
-                                        ));
-
-                                        return await completer.future;
-                                      } catch (e) {
-                                        return false;
-                                      }
-                                    },
-                                  );
-                                  // return {'isSuccess': false};
-                                },
-                                onPressLike: (postId, userId, isLiked) async {
-                                  try {
-                                    final completer = Completer<bool>();
-
-                                    _homeBloc.add(LikePostEvent(
-                                      postId: postId,
-                                      userId: userId,
-                                      likeAction: isLiked ? LikeAction.unlike : LikeAction.like,
-                                      onComplete: (success) {
-                                        completer.complete(success);
-                                      },
-                                    ));
-                                    return await completer.future;
-                                  } catch (e) {
-                                    return false;
-                                  }
-                                },
-                                onPressSave: (isSavedPost) async {
-                                  try {
-                                    final completer = Completer<bool>();
-
-                                    _homeBloc.add(SavePostEvent(
-                                      postId: postData.id ?? '',
-                                      onComplete: (success) {
-                                        completer.complete(success);
-                                      },
-                                    ));
-                                    return await completer.future;
-                                  } catch (e) {
-                                    return false;
-                                  }
-                                },
-                                onPressFollow: (userId) async {
-                                  try {
-                                    final completer = Completer<bool>();
-
-                                    _homeBloc.add(FollowUserEvent(
-                                      followingId: userId,
-                                      onComplete: (success) {
-                                        completer.complete(success);
-                                      },
-                                    ));
-
-                                    return await completer.future;
-                                  } catch (e) {
-                                    return false;
-                                  }
-                                },
-                                onTapCartIcon: () {
-                                  _handleCartAction(postData);
-                                },
-                              ),
-                            )
-                            .toList() ??
-                        [],
+                    reelsDataList: state.timeLinePosts?.map(_getReelData).toList() ?? [],
                   ),
                 ],
               );
@@ -401,6 +288,114 @@ class _HomeScreenState extends State<HomeScreen> {
             return const SizedBox.shrink();
           },
         ),
+      );
+
+  isr.ReelsData _getReelData(TimeLineData postData) => isr.ReelsData(
+        postSetting: isr.PostSetting(
+          isProfilePicVisible: true,
+          isCreatePostButtonVisible: true,
+          isCommentButtonVisible: true,
+          isSaveButtonVisible: true,
+          isLikeButtonVisible: true,
+          isShareButtonVisible: true,
+          isMoreButtonVisible: true,
+        ),
+        mediaUrl: postData.media?.first.url ?? '',
+        thumbnailUrl: postData.media?.first.previewUrl ?? '',
+        mediaType: postData.media?.first.mediaType == 'image' ? 0 : 1,
+        // actionWidget: _buildActionButtons(postData),
+        // footerWidget: _buildFooter(postData),
+        userName: postData.user?.username ?? '',
+        profilePhoto: postData.user?.avatarUrl ?? '',
+        firstName: '',
+        lastName: '',
+        likesCount: postData.engagementMetrics?.likeTypes?.like?.toInt() ?? 0,
+        commentCount: postData.engagementMetrics?.comments?.toInt() ?? 0,
+        isFollow: false,
+        isLiked: postData.isLiked,
+        isSavedPost: false,
+        isVerifiedUser: false,
+        productCount: postData.tags?.products?.length ?? 0,
+        description: '',
+        onPressMoreButton: () async {
+          final result = await _showMoreOptionsDialog(
+            onPressReport: ({String message = '', String reason = ''}) async {
+              try {
+                final completer = Completer<bool>();
+
+                _homeBloc.add(ReportPostEvent(
+                  postId: postData.id ?? '',
+                  message: reason,
+                  reason: reason,
+                  onComplete: (success) {
+                    if (success) {
+                      Utility.showToastMessage(
+                        TranslationFile.postReportedSuccessfully,
+                      );
+                    }
+                    completer.complete(success);
+                  },
+                ));
+
+                return await completer.future;
+              } catch (e) {
+                return false;
+              }
+            },
+          );
+          return {'isSuccess': false};
+        },
+        onPressLike: (postId, userId, isLiked) async {
+          try {
+            final completer = Completer<bool>();
+
+            _homeBloc.add(LikePostEvent(
+              postId: postId,
+              userId: userId,
+              likeAction: isLiked ? LikeAction.unlike : LikeAction.like,
+              onComplete: (success) {
+                completer.complete(success);
+              },
+            ));
+            return await completer.future;
+          } catch (e) {
+            return false;
+          }
+        },
+        onPressSave: (isSavedPost) async {
+          try {
+            final completer = Completer<bool>();
+
+            _homeBloc.add(SavePostEvent(
+              postId: postData.id ?? '',
+              onComplete: (success) {
+                completer.complete(success);
+              },
+            ));
+            return await completer.future;
+          } catch (e) {
+            return false;
+          }
+        },
+        onPressFollow: (userId) async {
+          try {
+            final completer = Completer<bool>();
+
+            _homeBloc.add(FollowUserEvent(
+              followingId: userId,
+              onComplete: (success) {
+                completer.complete(success);
+              },
+            ));
+
+            return await completer.future;
+          } catch (e) {
+            return false;
+          }
+        },
+        onTapCartIcon: () {
+          _handleCartAction(postData);
+        },
       );
 
   Future<void> _showMoreOptionsDialog({

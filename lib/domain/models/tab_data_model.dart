@@ -174,11 +174,11 @@ class ReelsData {
   // final Future<num>? Function(String, String)? onTapCartIcon;
   final VoidCallback? onTapCartIcon;
   final Future<bool> Function()? onPressFollowFollowing;
-  final VoidCallback? onPressMoreButton;
+  final Future<dynamic> Function()? onPressMoreButton;
   final Widget? placeHolderWidget;
   final Future<int>? Function(int)? onTapComment;
   final VoidCallback? onTapShare;
-  final Function()? onTapUserProfile;
+  final Function(bool)? onTapUserProfile;
   final Function()? onTapReport;
   final bool? showBlur;
   final int? productCount;

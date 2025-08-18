@@ -82,8 +82,8 @@ class _PostItemWidgetState extends State<PostItemWidget> {
 
     // Check current state
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final targetPage = _pageController.initialPage >= widget.reelsDataList.length
-          ? widget.reelsDataList.length - 1
+      final targetPage = _pageController.initialPage >= _reelsDataList.length
+          ? _reelsDataList.length - 1
           : _pageController.initialPage;
       if (targetPage > 0) {
         _pageController.animateToPage(
@@ -103,7 +103,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
   }
 
   @override
-  Widget build(BuildContext context) => widget.reelsDataList.isListEmptyOrNull == true
+  Widget build(BuildContext context) => _reelsDataList.isListEmptyOrNull == true
       ? _buildPlaceHolder(context)
       : RefreshIndicator(
           onRefresh: () async {
@@ -139,7 +139,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
       );
 
   Widget _buildContent(BuildContext context) {
-    debugPrint('reelsDataList length: ${widget.reelsDataList.length}');
+    debugPrint('reelsDataList length: ${_reelsDataList.length}');
     return PageView.builder(
       allowImplicitScrolling: widget.allowImplicitScrolling ?? true,
       controller: _pageController,
@@ -180,14 +180,35 @@ class _PostItemWidgetState extends State<PostItemWidget> {
         }
         if (widget.onPageChanged != null) widget.onPageChanged!(index);
       },
-      itemCount: widget.reelsDataList.length,
+      itemCount: _reelsDataList.length,
       scrollDirection: Axis.vertical,
       itemBuilder: (context, index) {
-        final reelsData = widget.reelsDataList[index];
+        final reelsData = _reelsDataList[index];
         return IsmReelsVideoPlayerView(
           reelsData: reelsData,
           videoCacheManager: _videoCacheManager,
-          key: Key(widget.reelsDataList[index].mediaUrl ?? ''),
+          key: Key(reelsData.mediaUrl ?? ''),
+          onPressMoreButton: () async {
+            if (reelsData.onPressMoreButton == null) return;
+            final result = await reelsData.onPressMoreButton!.call();
+            if (result == null) return;
+            if (result is bool) {
+              final isSuccess = result;
+              if (isSuccess) {
+                setState(() {
+                  _reelsDataList.removeAt(index);
+                });
+              }
+            }
+            if (result is ReelsData) {
+              final index = _reelsDataList.indexWhere((element) => element.postId == result.postId);
+              if (index != -1) {
+                setState(() {
+                  _reelsDataList[index] = result;
+                });
+              }
+            }
+          },
         );
       },
     );
@@ -210,7 +231,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
   // Update your _doImageCaching method to handle both images and videos
   void _doMediaCaching(int index) {
     final reelsData = _reelsDataList[index];
-    final username = 'unknown';
+    final username = reelsData.userName;
     final mediaType = reelsData.mediaType;
 
     debugPrint('🎯 MainWidget: Page changed to index $index (@$username - $mediaType)');
@@ -292,7 +313,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
       // Only cache videos, not images
       if (reelsData.mediaType == 1) {
         final videoUrl = reelsData.mediaUrl ?? '';
-        final username = 'unknown';
+        final username = reelsData.userName;
         final position = i == currentIndex
             ? 'CURRENT'
             : i < currentIndex
@@ -311,7 +332,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
           debugPrint('⚠️ MainWidget: Empty video URL - Index $i (@$username)');
         }
       } else {
-        final username = 'unknown';
+        final username = reelsData.userName;
         debugPrint('📷 MainWidget: Skipping image post - Index $i (@$username)');
       }
     }
@@ -342,7 +363,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
       final reelsData = _reelsDataList[nextPostIndex];
       if (reelsData.mediaType == 1) {
         final nextVideoUrl = reelsData.mediaUrl ?? '';
-        final nextUsername = 'unknown';
+        final nextUsername = reelsData.userName;
 
         if (nextVideoUrl.isNotEmpty && videos.contains(nextVideoUrl)) {
           // Move next video to front
@@ -358,7 +379,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
             for (var j = 0; j < _reelsDataList.length; j++) {
               final post = _reelsDataList[j];
               if (post.mediaUrl == url) {
-                final username = 'unknown';
+                final username = post.userName;
                 debugPrint('   ${i + 1}. Index $j (@$username)');
                 break;
               }

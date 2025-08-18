@@ -47,6 +47,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
     // this.postStatus,
     this.videoCacheManager,
     this.reelsData,
+    this.onPressMoreButton,
   });
 
   // final String? mediaUrl;
@@ -83,6 +84,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
   // final int? postStatus;
   final VideoCacheManager? videoCacheManager;
   final ReelsData? reelsData;
+  final VoidCallback? onPressMoreButton;
 
   @override
   State<IsmReelsVideoPlayerView> createState() => _IsmReelsVideoPlayerViewState();
@@ -433,7 +435,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                 borderRadius: IsrDimens.thirty,
                 onTap: () {
                   if (_reelData.onTapUserProfile != null) {
-                    _reelData.onTapUserProfile!();
+                    _reelData.onTapUserProfile!(_reelData.isSelfProfile == true);
                   }
                 },
                 child: Container(
@@ -538,8 +540,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                 icon: AssetConstants.icMoreIcon,
                 label: '',
                 onTap: () async {
-                  if (_reelData.onPressMoreButton != null) {
-                    _reelData.onPressMoreButton!();
+                  if (widget.onPressMoreButton != null) {
+                    widget.onPressMoreButton!();
                   }
                 },
               ),
@@ -662,7 +664,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                                   child: TapHandler(
                                     onTap: () {
                                       if (_reelData.onTapUserProfile != null) {
-                                        _reelData.onTapUserProfile!();
+                                        _reelData.onTapUserProfile!(false);
                                       }
                                     },
                                     child: Text(
