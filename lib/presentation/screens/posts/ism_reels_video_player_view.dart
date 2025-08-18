@@ -435,7 +435,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                 borderRadius: IsrDimens.thirty,
                 onTap: () {
                   if (_reelData.onTapUserProfile != null) {
-                    _reelData.onTapUserProfile!(_reelData.isSelfProfile == true);
+                    _reelData.onTapUserProfile!(true);
                   }
                 },
                 child: Container(
