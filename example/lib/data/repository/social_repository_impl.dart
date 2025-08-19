@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:ism_video_reel_player_example/data/data.dart';
 import 'package:ism_video_reel_player_example/domain/domain.dart';
 import 'package:ism_video_reel_player_example/remote/remote.dart';
@@ -299,5 +301,28 @@ class SocialRepositoryImpl implements SocialRepository {
     } catch (e) {
       rethrow;
     }
+  }
+
+  @override
+  Future<String?> uploadMediaToGoogleCloud({
+    required File file,
+    required String fileName,
+    required String userId,
+    required String fileExtension,
+    Function(double p1)? onProgress,
+    String? cloudFolderName,
+  }) async {
+    final response = await GoogleCloudStorageUploader.uploadFileWithRealProgress(
+        file: file,
+        fileName: fileName,
+        fileExtension: fileExtension,
+        userId: userId,
+        onProgress: (progress) {
+          if (onProgress == null) return;
+          onProgress(progress);
+          // debugPrint('_uploadMediaToGoogleCloud......progress: ${progress * 100}');
+          // progressCallBackFunction.call(progress * 100);
+        });
+    return response ?? '';
   }
 }

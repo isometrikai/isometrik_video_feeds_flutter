@@ -9,6 +9,7 @@ class GetPostDetailsUseCase extends BaseUseCase {
   Future<ApiResult<PostDetailsResponse?>> executeGetPostDetails({
     required bool isLoading,
     List<String>? productIds,
+    String? postId,
     int? page,
     int? limit,
   }) async =>

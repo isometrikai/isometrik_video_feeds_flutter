@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:ism_video_reel_player_example/domain/domain.dart';
 import 'package:ism_video_reel_player_example/utils/utils.dart';
 
@@ -86,5 +88,14 @@ abstract class SocialRepository extends BaseRepository {
   Future<CustomResponse<PostData?>> getPost({
     required bool isLoading,
     required String postId,
+  });
+
+  Future<String?> uploadMediaToGoogleCloud({
+    required File file,
+    required String fileName,
+    required String userId,
+    required String fileExtension,
+    Function(double)? onProgress,
+    String? cloudFolderName,
   });
 }

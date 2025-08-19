@@ -25,4 +25,11 @@ class AssetConstants {
   static const String icLikeUnSelected = 'assets/icons/ic_like_un_selected_icon.svg';
   static const String icCommentIcon = 'assets/icons/ic_comment_icon.svg';
   static const String icMoreIcon = 'assets/icons/ic_more_icon.svg';
+  static const String googleServiceJson = 'assets/json/google_service_json.json';
+  static const String postUploadedAnimation = 'assets/json/post_uploaded_gif.json';
+  static const String icClose = 'assets/icons/ic_close.svg';
+  static const String icHeartIconSelected = 'assets/icons/ic_heart_icon_selected.svg';
+  static const String icHeartIconUnSelected = 'assets/icons/ic_heart_icon_un_selected.svg';
+  static const String icVerticalMoreMenu = 'assets/icons/ic_vertical_more_icon.svg';
+  static const String icCommentsPlaceHolder = 'assets/icons/ic_comments_place_holder.svg';
 }

@@ -66,7 +66,10 @@ extension IntExtension on int {
 extension EmptyExtension on String? {
   bool get isStringEmptyOrNull {
     final finalString = this?.trim();
-    return finalString == null || finalString == ' ' || finalString.isEmpty == true;
+    return finalString == null ||
+        finalString == ' ' ||
+        finalString == 'null' ||
+        finalString.isEmpty == true;
   }
 }
 
@@ -79,7 +82,8 @@ extension ZeroOrNullExtension on double? {
 }
 
 extension StringExtension on String {
-  String capitalize() => length > 1 ? '${this[0].toUpperCase()}${substring(1).toLowerCase()}' : toUpperCase();
+  String capitalize() =>
+      length > 1 ? '${this[0].toUpperCase()}${substring(1).toLowerCase()}' : toUpperCase();
 }
 
 extension DurationExtension on Duration {
@@ -109,8 +113,9 @@ extension DurationExtension on Duration {
 
 extension RemoveEmptyElementExtension on Map<String, dynamic> {
   Map<String, dynamic> removeEmptyValues() {
-    removeWhere((key, value) =>
-        value is List ? value.isEmpty : (value == null || (value is String && value.isStringEmptyOrNull)));
+    removeWhere((key, value) => value is List
+        ? value.isEmpty
+        : (value == null || (value is String && value.isStringEmptyOrNull)));
     return this;
   }
 }

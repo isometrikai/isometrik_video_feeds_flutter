@@ -3,10 +3,12 @@
 //     final timelineResponse = timelineResponseFromMap(jsonString);
 
 import 'dart:convert';
+import 'dart:io';
 
-import 'package:ism_video_reel_player/ism_video_reel_player.dart';
+import 'package:flutter/foundation.dart';
+import 'package:ism_video_reel_player_example/utils/utils.dart';
 
-TimelineResponse timelineResponseFromMap(String str) =>
+TimelineResponse timelineResponseFromJson(String str) =>
     TimelineResponse.fromMap(json.decode(str) as Map<String, dynamic>);
 
 String timelineResponseToMap(TimelineResponse data) => json.encode(data.toMap());
@@ -87,8 +89,8 @@ class TimeLineData {
         publishedAt: json['published_at'] as String? ?? '',
         media: json['media'] == null
             ? []
-            : List<Media>.from(
-                (json['media'] as List).map((x) => Media.fromMap(x as Map<String, dynamic>))),
+            : List<MediaData>.from(
+                (json['media'] as List).map((x) => MediaData.fromMap(x as Map<String, dynamic>))),
         soundId: json['sound_id'] as String? ?? '',
         caption: json['caption'] as String? ?? '',
         userId: json['user_id'] as String? ?? '',
@@ -96,7 +98,11 @@ class TimeLineData {
         visibility: json['visibility'] as String? ?? '',
         id: json['id'] as String? ?? '',
         soundSnapshot: json['sound_snapshot'] as String? ?? '',
-        tags: json['tags'] == null ? null : Tags.fromMap(json['tags'] as Map<String, dynamic>),
+        tags: json['tags'] == null
+            ? null
+            : json['tags'] is String && (json['tags'] as String).isEmptyOrNull
+                ? null
+                : Tags.fromMap(json['tags'] as Map<String, dynamic>),
         settings: json['settings'] == null
             ? null
             : Settings.fromMap(json['settings'] as Map<String, dynamic>),
@@ -106,13 +112,14 @@ class TimeLineData {
         type: json['type'] as String? ?? '',
         previews: json['previews'] == null
             ? []
-            : List<dynamic>.from((json['previews'] as List).map((x) => x)),
+            : List<PreviewMedia>.from((json['previews'] as List)
+                .map((x) => PreviewMedia.fromMap(x as Map<String, dynamic>))),
         isLiked: json['is_liked'] as bool? ?? false,
         isSaved: json['is_saved'] as bool? ?? false,
       );
   String? textFormatting;
   String? publishedAt;
-  List<Media>? media;
+  List<MediaData>? media;
   String? soundId;
   String? caption;
   String? userId;
@@ -124,7 +131,7 @@ class TimeLineData {
   Settings? settings;
   EngagementMetrics? engagementMetrics;
   String? type;
-  List<dynamic>? previews;
+  List<PreviewMedia>? previews;
   bool? isLiked;
   bool? isSaved;
 
@@ -143,48 +150,39 @@ class TimeLineData {
         'settings': settings?.toMap(),
         'engagement_metrics': engagementMetrics?.toMap(),
         'type': type,
-        'previews': previews == null ? [] : List<dynamic>.from(previews!.map((x) => x)),
+        'previews': previews == null ? [] : List<dynamic>.from(previews!.map((x) => x.toMap())),
         'is_liked': isLiked,
         'is_saved': isSaved,
       };
-  TimeLineData copyWith({
-    String? textFormatting,
-    String? publishedAt,
-    List<Media>? media,
-    String? soundId,
-    String? caption,
-    String? userId,
-    User? user,
-    String? visibility,
-    String? id,
-    String? soundSnapshot,
-    Tags? tags,
-    Settings? settings,
-    EngagementMetrics? engagementMetrics,
-    String? type,
-    List<dynamic>? previews,
-    bool? isLiked,
-    bool? isSaved,
-  }) =>
-      TimeLineData(
-        textFormatting: textFormatting ?? this.textFormatting,
-        publishedAt: publishedAt ?? this.publishedAt,
-        media: media ?? this.media,
-        soundId: soundId ?? this.soundId,
-        caption: caption ?? this.caption,
-        userId: userId ?? this.userId,
-        user: user ?? this.user,
-        visibility: visibility ?? this.visibility,
-        id: id ?? this.id,
-        soundSnapshot: soundSnapshot ?? this.soundSnapshot,
-        tags: tags ?? this.tags,
-        settings: settings ?? this.settings,
-        engagementMetrics: engagementMetrics ?? this.engagementMetrics,
-        type: type ?? this.type,
-        previews: previews ?? this.previews,
-        isLiked: isLiked ?? this.isLiked,
-        isSaved: isSaved ?? this.isSaved,
+}
+
+class PreviewMedia {
+  factory PreviewMedia.fromMap(Map<String, dynamic> json) => PreviewMedia(
+        mediaType: json['media_type'] as String? ?? '',
+        position: json['position'] as num? ?? 0,
+        url: json['url'] as String? ?? '',
       );
+
+  PreviewMedia({
+    this.mediaType,
+    this.position,
+    this.url,
+    this.file,
+    this.fileName,
+  });
+
+  Map<String, dynamic> toMap() => {
+        'media_type': mediaType,
+        'position': position,
+        'url': url,
+        'file': file,
+        'file_name': fileName,
+      };
+  String? mediaType;
+  num? position;
+  String? url;
+  File? file;
+  String? fileName;
 }
 
 class EngagementMetrics {
@@ -271,23 +269,34 @@ class LikeTypes {
       };
 }
 
-class Media {
-  Media({
+class MediaData {
+  MediaData({
     this.mediaType,
     this.assetId,
     this.position,
     this.url,
     this.previewUrl,
     this.description,
+    this.width,
+    this.height,
+    this.duration,
+    this.fileName,
+    this.postType,
+    this.size,
   });
 
-  factory Media.fromMap(Map<String, dynamic> json) => Media(
-        mediaType: json['media_type'] as String?,
-        assetId: json['asset_id'] as String?,
-        position: json['position'] as num?,
-        url: json['url'] as String?,
-        previewUrl: json['preview_url'] as String?,
-        description: json['description'],
+  factory MediaData.fromMap(Map<String, dynamic> json) => MediaData(
+        mediaType: json['media_type'] as String? ?? '',
+        assetId: json['asset_id'] as String? ?? '',
+        position: json['position'] as num? ?? 0,
+        url: json['url'] as String? ?? '',
+        previewUrl: json['preview_url'] as String? ?? '',
+        width: json['width'] as num? ?? 0,
+        height: json['height'] as num? ?? 0,
+        duration: json['duration'] as num? ?? 0,
+        fileName: json['fileName'] as String? ?? '',
+        postType: json['postType'] as PostType? ?? PostType.photo,
+        size: json['size'] as num? ?? 0,
       );
   String? mediaType;
   String? assetId;
@@ -295,6 +304,16 @@ class Media {
   String? url;
   String? previewUrl;
   dynamic description;
+  num? width;
+  num? height;
+  num? duration;
+  String? fileName;
+  String? fileExtension;
+  String? coverFileName;
+  String? coverFileExtension;
+  PostType? postType;
+  num? size;
+  Uint8List? videoThumbnailFileBytes;
 
   Map<String, dynamic> toMap() => {
         'media_type': mediaType,
@@ -303,7 +322,10 @@ class Media {
         'url': url,
         'preview_url': previewUrl,
         'description': description,
-      };
+        'height': height,
+        'width': width,
+        'duration': duration,
+      }.removeEmptyValues();
 }
 
 class Settings {
@@ -358,20 +380,20 @@ class Tags {
   });
 
   factory Tags.fromMap(Map<String, dynamic> json) => Tags(
-        mentions: json['mentions'] == null || (json['mentions'] as List).isListEmptyOrNull
+        mentions: json['mentions'] == null || (json['mentions'] as List).isEmptyOrNull
             ? []
             : List<MentionData>.from((json['mentions'] as List).map((x) =>
                 x is Map<String, dynamic> ? MentionData.fromJson(x) : MentionData.fromJson({}))),
-        hashtags: json['hashtags'] == null || (json['hashtags'] as List).isListEmptyOrNull
+        hashtags: json['hashtags'] == null || (json['hashtags'] as List).isEmptyOrNull
             ? []
             : List<MentionData>.from((json['hashtags'] as List).map((x) =>
                 x is Map<String, dynamic> ? MentionData.fromJson(x) : MentionData.fromJson({}))),
         places:
             json['places'] == null ? [] : List<String>.from((json['places'] as List).map((x) => x)),
-        products: json['products'] == null || (json['products'] as List).isListEmptyOrNull
+        products: json['products'] == null
             ? []
             : List<SocialProductData>.from((json['products'] as List)
-                .map((dynamic x) => SocialProductData.fromJson(x as Map<String, dynamic>))),
+                .map((x) => SocialProductData.fromJson(x as Map<String, dynamic>))),
       );
   List<MentionData>? mentions;
   List<MentionData>? hashtags;

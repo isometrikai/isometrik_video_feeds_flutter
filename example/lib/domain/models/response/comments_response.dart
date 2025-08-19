@@ -105,7 +105,7 @@ class CommentDataItem {
       starRequest: json['starRequest'] == null ? null : StarRequest.fromJson(),
       fullName: commenter['full_name'] as String? ?? '',
       isStar: json['isStar'] as bool? ?? false,
-      isLiked: json['is_like'] as bool? ?? false,
+      isLiked: json['is_liked'] as bool? ?? false,
       likeCount: json['like_count'] as num? ?? 0,
       parentCommentId: json['parent_id'] as String? ?? '',
     );
@@ -174,7 +174,7 @@ class CommentDataItem {
         'commentUserTypeText': commentUserTypeText,
         'starRequest': starRequest?.toJson(),
         'isStar': isStar,
-        'is_like': isLiked,
+        'is_liked': isLiked,
         'like_count': likeCount,
         'parent_id': parentCommentId,
       };

@@ -4,7 +4,6 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
-import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/utils/isr_utils.dart';
@@ -12,7 +11,6 @@ import 'package:ism_video_reel_player/utils/isr_utils.dart';
 class PostItemWidget extends StatefulWidget {
   const PostItemWidget({
     super.key,
-    this.onCreatePost,
     this.showBlur,
     this.onPressSave,
     this.onPressLike,
@@ -35,7 +33,6 @@ class PostItemWidget extends StatefulWidget {
     required this.reelsDataList,
   });
 
-  final Future<String?> Function()? onCreatePost;
   final bool? showBlur;
   final Future<bool> Function(String, bool)? onPressSave;
   final Future<bool> Function(String, String, bool)? onPressLike;
@@ -62,8 +59,6 @@ class PostItemWidget extends StatefulWidget {
 }
 
 class _PostItemWidgetState extends State<PostItemWidget> {
-  final _postBloc = IsmInjectionUtils.getBloc<PostBloc>();
-
   late PageController _pageController;
   final Set<String> _cachedImages = {};
   final VideoCacheManager _videoCacheManager = VideoCacheManager();
@@ -187,7 +182,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
         return IsmReelsVideoPlayerView(
           reelsData: reelsData,
           videoCacheManager: _videoCacheManager,
-          key: Key(reelsData.mediaUrl ?? ''),
+          key: Key(reelsData.mediaUrl),
           onPressMoreButton: () async {
             if (reelsData.onPressMoreButton == null) return;
             final result = await reelsData.onPressMoreButton!.call();
@@ -205,6 +200,16 @@ class _PostItemWidgetState extends State<PostItemWidget> {
               if (index != -1) {
                 setState(() {
                   _reelsDataList[index] = result;
+                });
+              }
+            }
+          },
+          onCreatePost: () async {
+            if (reelsData.onCreatePost != null) {
+              final result = await reelsData.onCreatePost!();
+              if (result != null) {
+                setState(() {
+                  _reelsDataList.insert(index, result);
                 });
               }
             }
@@ -259,7 +264,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
 
     for (var i = startIndex; i <= endIndex; i++) {
       final reelData = _reelsDataList[i];
-      final imageUrl = reelData.mediaType == 0 ? reelData.mediaUrl ?? '' : '';
+      final imageUrl = reelData.mediaType == 0 ? reelData.mediaUrl : '';
 
       // Only cache if not already cached
       if (!_cachedImages.contains(imageUrl)) {
@@ -282,7 +287,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
       final reelsData = _reelsDataList[nextPostIndex];
       if (reelsData.mediaType == 0) {
         final nextImageUrl =
-            reelsData.mediaType == 0 ? reelsData.mediaUrl ?? '' : (reelsData.thumbnailUrl ?? '');
+            reelsData.mediaType == 0 ? reelsData.mediaUrl : (reelsData.thumbnailUrl);
         // Move next image to front
         images.remove(nextImageUrl);
         return [nextImageUrl, ...images];
@@ -312,7 +317,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
 
       // Only cache videos, not images
       if (reelsData.mediaType == 1) {
-        final videoUrl = reelsData.mediaUrl ?? '';
+        final videoUrl = reelsData.mediaUrl;
         final username = reelsData.userName;
         final position = i == currentIndex
             ? 'CURRENT'
@@ -362,7 +367,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
     if (nextPostIndex < _reelsDataList.length) {
       final reelsData = _reelsDataList[nextPostIndex];
       if (reelsData.mediaType == 1) {
-        final nextVideoUrl = reelsData.mediaUrl ?? '';
+        final nextVideoUrl = reelsData.mediaUrl;
         final nextUsername = reelsData.userName;
 
         if (nextVideoUrl.isNotEmpty && videos.contains(nextVideoUrl)) {

@@ -27,7 +27,6 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
     // this.description = '',
     // this.isSelfProfile = false,
     // required this.onTapUserProfilePic,
-    // this.onCreatePost,
     // this.onTapReport,
     // this.showBlur = false,
     // required this.thumbnail,
@@ -48,6 +47,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
     this.videoCacheManager,
     this.reelsData,
     this.onPressMoreButton,
+    this.onCreatePost,
   });
 
   // final String? mediaUrl;
@@ -64,7 +64,6 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
   // final String? description;
   // final bool? isSelfProfile;
   // final Function()? onTapUserProfilePic;
-  // final Future<void> Function()? onCreatePost;
   // final Function()? onTapReport;
   // final bool? showBlur;
   // final String thumbnail;
@@ -85,6 +84,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
   final VideoCacheManager? videoCacheManager;
   final ReelsData? reelsData;
   final VoidCallback? onPressMoreButton;
+  final Future<void> Function()? onCreatePost;
 
   @override
   State<IsmReelsVideoPlayerView> createState() => _IsmReelsVideoPlayerViewState();
@@ -471,9 +471,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                     ),
                     child: IconButton(
                       onPressed: () async {
-                        // if (_reelData.onCreatePost != null) {
-                        //   await _reelData.onCreatePost!();
-                        // }
+                        if (widget.onCreatePost != null) {
+                          await widget.onCreatePost!();
+                        }
                       },
                       icon: const Icon(
                         Icons.add, // Simple plus icon
@@ -878,7 +878,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
     mountUpdate();
 
     try {
-      final success = await _reelData.onPressLike!('', '', false);
+      final success = await _reelData.onPressLike!(false);
       if (!success) {
         _isLikeLoading = false;
       } else {

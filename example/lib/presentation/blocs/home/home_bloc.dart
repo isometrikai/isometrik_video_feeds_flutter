@@ -21,6 +21,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     this._getReportReasonsUseCase,
     this._getTimelinePostUseCase,
     this._getPostDetailsUseCase,
+    this._getPostCommentUseCase,
+    this._commentUseCase,
   ) : super(HomeInitial()) {
     on<LoadHomeData>(_onLoadHomeData);
     on<GetTimeLinePostEvent>(_getTimeLinePost);
@@ -31,6 +33,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<LikePostEvent>(_likePost);
     on<FollowUserEvent>(_followUser);
     on<GetPostDetailsEvent>(_getPostDetails);
+    on<GetPostCommentsEvent>(_getPostComments);
+    on<CommentActionEvent>(_doActionOnComment);
   }
 
   final LocalDataUseCase _localDataUseCase;
@@ -42,6 +46,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   final ReportPostUseCase _reportPostUseCase;
   final GetReportReasonsUseCase _getReportReasonsUseCase;
   final GetPostDetailsUseCase _getPostDetailsUseCase;
+  final GetPostCommentUseCase _getPostCommentUseCase;
+  final CommentActionUseCase _commentUseCase;
 
   final List<PostData> _followingPostList = [];
   final List<PostData> _trendingPostList = [];
@@ -70,6 +76,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     LoadHomeData event,
     Emitter<HomeState> emit,
   ) async {
+    final userId = await _localDataUseCase.getUserId();
     try {
       emit(HomeLoading(isLoading: true));
       await _initializeReelsSdk();
@@ -77,7 +84,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         _callGetFollowingPost(true, false, false, null),
         _callGetTimeLinePost(true, false, false, null)
       ]);
-      emit(HomeLoaded(timeLinePosts: _timeLinePostList));
+      emit(HomeLoaded(timeLinePosts: _timeLinePostList, userId: userId));
     } catch (error) {
       emit(HomeError(error.toString()));
     }
@@ -381,5 +388,66 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     }
     emit(PostDetailsLoaded(productList: _detailsProductList, totalProductCount: totalProductCount));
     _isDataLoading = false;
+  }
+
+  FutureOr<void> _getPostComments(GetPostCommentsEvent event, Emitter<HomeState> emit) async {
+    if (event.isLoading == true) {
+      emit(LoadingPostComment());
+    }
+    final apiResult = await _getPostCommentUseCase.executeGetPostComment(
+      postId: event.postId,
+      isLoading: false,
+    );
+    final postCommentsList = apiResult.data?.data;
+    final myUserId = await _localDataUseCase.getUserId();
+    emit(LoadPostCommentState(
+      postCommentsList: postCommentsList,
+      myUserId: myUserId,
+    ));
+  }
+
+  Future<void> _doActionOnComment(CommentActionEvent event, Emitter<HomeState> emit) async {
+    final commentRequest = CommentRequest(
+      commentId: event.commentId,
+      commentAction: event.commentAction,
+      postId: event.postId,
+      userType: event.commentAction == CommentAction.comment ? 1 : null,
+      comment: event.replyText,
+      postedBy: event.postedBy,
+      parentCommentId: event.parentCommentId,
+      reason: event.reportReason,
+      message: event.commentMessage,
+      commentIds: event.commentIds,
+    );
+    final apiResult = await _commentUseCase.executeCommentAction(
+      isLoading: true,
+      commentRequest: commentRequest.toJson(),
+    );
+    if (apiResult.isSuccess) {
+      if (event.commentAction == CommentAction.comment) {
+        add(GetPostCommentsEvent(
+          postId: event.postId ?? '',
+          isLoading: true,
+        ));
+      } else {
+        if (event.commentAction == CommentAction.report) {
+          ErrorHandler.showAppError(
+            appError: apiResult.error,
+            message: TranslationFile.commentReportedSuccessfully,
+            isNeedToShowError: true,
+            errorViewType: ErrorViewType.snackBar,
+          );
+        }
+      }
+    } else {
+      ErrorHandler.showAppError(
+        appError: apiResult.error,
+        isNeedToShowError: true,
+        errorViewType: ErrorViewType.dialog,
+      );
+    }
+    if (event.onComplete != null) {
+      event.onComplete?.call(event.commentId ?? '', apiResult.isSuccess);
+    }
   }
 }

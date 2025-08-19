@@ -76,7 +76,8 @@ class _PostAttributeViewState extends State<PostAttributeView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: Dimens.edgeInsetsSymmetric(horizontal: Dimens.twenty, vertical: Dimens.ten),
+                  padding:
+                      Dimens.edgeInsetsSymmetric(horizontal: Dimens.twenty, vertical: Dimens.ten),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -113,7 +114,8 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                                                   alignment: Alignment.center,
                                                   children: [
                                                     VideoPlayer(_videoPlayerController!),
-                                                    if (_videoPlayerController?.value.isBuffering == true)
+                                                    if (_videoPlayerController?.value.isBuffering ==
+                                                        true)
                                                       const UnconstrainedBox(
                                                         child: CircularProgressIndicator(),
                                                       ),
@@ -141,14 +143,19 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                                                           ],
                                                         ),
                                                         image: DecorationImage(
-                                                          image: FileImage(
-                                                              File(widget.postAttributeClass?.thumbnailUrl ?? '')),
+                                                          image: FileImage(File(widget
+                                                                  .postAttributeClass
+                                                                  ?.thumbnailUrl ??
+                                                              '')),
                                                           fit: BoxFit.cover,
                                                         ),
                                                       ),
                                                     ),
-                                                    if (_videoPlayerController?.value.isInitialized == true &&
-                                                        _videoPlayerController?.value.isPlaying == false)
+                                                    if (_videoPlayerController
+                                                                ?.value.isInitialized ==
+                                                            true &&
+                                                        _videoPlayerController?.value.isPlaying ==
+                                                            false)
                                                       Container(
                                                         padding: Dimens.edgeInsetsAll(Dimens.five),
                                                         decoration: BoxDecoration(
@@ -180,7 +187,7 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                         child: TextFormField(
                           maxLines: 5,
                           onChanged: (value) {
-                            _createPostRequest.description = value;
+                            _createPostRequest.caption = value;
                           },
                           decoration: InputDecoration(
                             hintText: TranslationFile.writeCaption,
@@ -196,7 +203,8 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                 TapHandler(
                   onTap: () {},
                   child: Padding(
-                    padding: Dimens.edgeInsetsSymmetric(horizontal: Dimens.twenty, vertical: Dimens.ten),
+                    padding:
+                        Dimens.edgeInsetsSymmetric(horizontal: Dimens.twenty, vertical: Dimens.ten),
                     child: Row(
                       children: [
                         Text(
@@ -226,11 +234,12 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                 TapHandler(
                   onTap: () {
                     setState(() {
-                      _createPostRequest.allowComment = _createPostRequest.allowComment == false;
+                      // _createPostRequest.allowComment = _createPostRequest.allowComment == false;
                     });
                   },
                   child: Padding(
-                    padding: Dimens.edgeInsetsSymmetric(horizontal: Dimens.twenty, vertical: Dimens.ten),
+                    padding:
+                        Dimens.edgeInsetsSymmetric(horizontal: Dimens.twenty, vertical: Dimens.ten),
                     child: Row(
                       children: [
                         Text(
@@ -240,15 +249,15 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        const Spacer(),
-                        Switch(
-                          value: _createPostRequest.allowComment == true,
-                          onChanged: (value) {
-                            setState(() {
-                              _createPostRequest.allowComment = value;
-                            });
-                          },
-                        ),
+                        // const Spacer(),
+                        // Switch(
+                        //   value: _createPostRequest.allowComment == true,
+                        //   onChanged: (value) {
+                        //     setState(() {
+                        //       _createPostRequest.allowComment = value;
+                        //     });
+                        //   },
+                        // ),
                       ],
                     ),
                   ),
@@ -257,11 +266,12 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                 TapHandler(
                   onTap: () {
                     setState(() {
-                      _createPostRequest.allowDownload = _createPostRequest.allowDownload == false;
+                      // _createPostRequest.allowDownload = _createPostRequest.allowDownload == false;
                     });
                   },
                   child: Padding(
-                    padding: Dimens.edgeInsetsSymmetric(horizontal: Dimens.twenty, vertical: Dimens.ten),
+                    padding:
+                        Dimens.edgeInsetsSymmetric(horizontal: Dimens.twenty, vertical: Dimens.ten),
                     child: Row(
                       children: [
                         Text(
@@ -271,15 +281,15 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        const Spacer(),
-                        Switch(
-                          value: _createPostRequest.allowDownload == true,
-                          onChanged: (value) {
-                            setState(() {
-                              _createPostRequest.allowComment = value;
-                            });
-                          },
-                        ),
+                        // const Spacer(),
+                        // Switch(
+                        //   value: _createPostRequest.allowDownload == true,
+                        //   onChanged: (value) {
+                        //     setState(() {
+                        //       _createPostRequest.allowComment = value;
+                        //     });
+                        //   },
+                        // ),
                       ],
                     ),
                   ),
@@ -300,12 +310,12 @@ class _PostAttributeViewState extends State<PostAttributeView> {
   }
 
   void setRequest() {
-    _createPostRequest.description = widget.postAttributeClass?.description;
-    _createPostRequest.url = widget.postAttributeClass?.url;
-    _createPostRequest.thumbnailUrl = widget.postAttributeClass?.thumbnailUrl;
-    _createPostRequest.mediaType = widget.postAttributeClass?.postType == MediaType.video ? 2 : 1;
-    _createPostRequest.imageUrl = widget.postAttributeClass?.url;
-    _createPostRequest.duration = widget.postAttributeClass?.duration;
-    _createPostRequest.mediaType = widget.postAttributeClass?.postType?.mediaType;
+    _createPostRequest.caption = widget.postAttributeClass?.description;
+    // _createPostRequest.url = widget.postAttributeClass?.url;
+    // _createPostRequest.thumbnailUrl = widget.postAttributeClass?.thumbnailUrl;
+    // _createPostRequest.mediaType = widget.postAttributeClass?.postType == MediaType.video ? 2 : 1;
+    // _createPostRequest.imageUrl = widget.postAttributeClass?.url;
+    // _createPostRequest.duration = widget.postAttributeClass?.duration;
+    // _createPostRequest.mediaType = widget.postAttributeClass?.postType?.mediaType;
   }
 }

@@ -83,9 +83,13 @@ class LikePostEvent extends HomeEvent {
 }
 
 class GetReasonEvent extends HomeEvent {
-  const GetReasonEvent({required this.onComplete});
+  GetReasonEvent({
+    required this.onComplete,
+    this.reasonsFor,
+  });
 
   final Function(List<String>?) onComplete;
+  final ReasonsFor? reasonsFor;
 }
 
 class ReportPostEvent extends HomeEvent {
@@ -110,4 +114,52 @@ class GetPostDetailsEvent extends HomeEvent {
 
   final bool? isFromPagination;
   final List<String>? productIds;
+}
+
+class DeletePostEvent extends HomeEvent {
+  DeletePostEvent({
+    required this.onComplete,
+    required this.postId,
+  });
+
+  final Function(bool) onComplete;
+  final String postId;
+}
+
+class GetPostCommentsEvent extends HomeEvent {
+  GetPostCommentsEvent({
+    required this.postId,
+    this.isLoading,
+  });
+
+  final String postId;
+  final bool? isLoading;
+}
+
+class CommentActionEvent extends HomeEvent {
+  CommentActionEvent({
+    this.postId,
+    this.commentId,
+    required this.commentAction,
+    this.isLoading,
+    this.onComplete,
+    this.replyText,
+    this.postedBy,
+    this.parentCommentId,
+    this.reportReason,
+    this.commentMessage,
+    this.commentIds,
+  });
+
+  final String? postId;
+  final String? commentId;
+  final List<String>? commentIds;
+  final String? parentCommentId;
+  final String? replyText;
+  final String? postedBy;
+  final CommentAction commentAction;
+  final bool? isLoading;
+  final Function(String, bool)? onComplete;
+  final String? reportReason;
+  final String? commentMessage;
 }

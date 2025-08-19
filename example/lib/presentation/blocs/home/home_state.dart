@@ -13,9 +13,13 @@ class HomeLoading extends HomeState {
 }
 
 class HomeLoaded extends HomeState {
-  HomeLoaded({required this.timeLinePosts});
+  HomeLoaded({
+    required this.timeLinePosts,
+    required this.userId,
+  });
 
   final List<TimeLineData>? timeLinePosts;
+  final String userId;
 }
 
 class HomeError extends HomeState {
@@ -35,3 +39,15 @@ class PostDetailsLoaded extends HomeState {
   final List<ProductDataModel>? productList;
   final int totalProductCount;
 }
+
+class LoadPostCommentState extends HomeState {
+  LoadPostCommentState({
+    required this.postCommentsList,
+    this.myUserId,
+  });
+
+  final List<CommentDataItem>? postCommentsList;
+  final String? myUserId;
+}
+
+class LoadingPostComment extends HomeState {}

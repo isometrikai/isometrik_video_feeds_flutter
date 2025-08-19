@@ -25,6 +25,8 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (context) => InjectionUtils.getBloc<CreatePostBloc>()),
           BlocProvider(create: (context) => InjectionUtils.getBloc<NavItemCubit>()),
           BlocProvider(create: (context) => InjectionUtils.getBloc<ProfileBloc>()),
+          BlocProvider(create: (context) => InjectionUtils.getBloc<UploadProgressCubit>()),
+          BlocProvider(create: (context) => InjectionUtils.getBloc<CommentActionCubit>()),
         ],
         child: ScreenUtilInit(
           useInheritedMediaQuery: true,

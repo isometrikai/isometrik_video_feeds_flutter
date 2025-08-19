@@ -147,6 +147,7 @@ class ReelsData {
     this.isScheduledPost,
     this.isSavedPost,
     this.postSetting,
+    this.onCreatePost,
   });
 
   final String? postId;
@@ -168,9 +169,11 @@ class ReelsData {
   final ReelsWidgetBuilder? actionWidget;
 
   final Future<bool> Function(bool isSavedPost)? onPressSave;
-  final Future<bool> Function(String, String, bool)? onPressLike;
+  final Future<bool> Function(bool)? onPressLike;
   final Future<bool> Function(String)? onPressFollow;
   final Future<bool> Function()? onRefresh;
+  final Future<ReelsData?> Function()? onCreatePost;
+
   // final Future<num>? Function(String, String)? onTapCartIcon;
   final VoidCallback? onTapCartIcon;
   final Future<bool> Function()? onPressFollowFollowing;
@@ -201,6 +204,7 @@ class PostSetting {
     this.isSaveButtonVisible = false,
     this.isMoreButtonVisible = false,
   });
+
   final bool isProfilePicVisible;
   final bool isCreatePostButtonVisible;
   final bool isFollowButtonVisible;

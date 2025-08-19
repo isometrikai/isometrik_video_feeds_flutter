@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart' as isr;
 import 'package:ism_video_reel_player_example/di/di.dart';
 import 'package:ism_video_reel_player_example/domain/domain.dart';
@@ -19,11 +21,12 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final _homeBloc = InjectionUtils.getBloc<HomeBloc>();
   var _isLikeLoading = false;
+  var _myUserId = '';
 
   @override
   void initState() {
-    super.initState();
     _homeBloc.add(LoadHomeData());
+    super.initState();
   }
 
   @override
@@ -31,6 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
         resizeToAvoidBottomInset: false,
         backgroundColor: AppColors.grey.shade100,
         body: BlocBuilder<HomeBloc, HomeState>(
+          buildWhen: _filterBuildStates,
           builder: (context, state) {
             if (state is HomeLoading) {
               return state.isLoading == true
@@ -50,6 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
             }
 
             if (state is HomeLoaded) {
+              _myUserId = state.userId;
               return isr.IsmPostView(
                 tabDataModelList: [
                   isr.TabDataModel(
@@ -290,6 +295,12 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
 
+  bool _filterBuildStates(HomeState previous, HomeState current) =>
+      current is! LoadPostCommentState &&
+      current is! LoadingPostComment &&
+      current is! PostDetailsLoading &&
+      current is! PostDetailsLoaded;
+
   isr.ReelsData _getReelData(TimeLineData postData) => isr.ReelsData(
         postSetting: isr.PostSetting(
           isProfilePicVisible: true,
@@ -300,6 +311,7 @@ class _HomeScreenState extends State<HomeScreen> {
           isShareButtonVisible: true,
           isMoreButtonVisible: true,
         ),
+        onCreatePost: () async => await _handleCreatePost(),
         mediaUrl: postData.media?.first.url ?? '',
         thumbnailUrl: postData.media?.first.previewUrl ?? '',
         mediaType: postData.media?.first.mediaType == 'image' ? 0 : 1,
@@ -309,7 +321,7 @@ class _HomeScreenState extends State<HomeScreen> {
         profilePhoto: postData.user?.avatarUrl ?? '',
         firstName: '',
         lastName: '',
-        likesCount: postData.engagementMetrics?.likeTypes?.like?.toInt() ?? 0,
+        likesCount: postData.engagementMetrics?.likeTypes?.love?.toInt() ?? 0,
         commentCount: postData.engagementMetrics?.comments?.toInt() ?? 0,
         isFollow: false,
         isLiked: postData.isLiked,
@@ -317,41 +329,21 @@ class _HomeScreenState extends State<HomeScreen> {
         isVerifiedUser: false,
         productCount: postData.tags?.products?.length ?? 0,
         description: '',
-        onPressMoreButton: () async {
-          final result = await _showMoreOptionsDialog(
-            onPressReport: ({String message = '', String reason = ''}) async {
-              try {
-                final completer = Completer<bool>();
-
-                _homeBloc.add(ReportPostEvent(
-                  postId: postData.id ?? '',
-                  message: reason,
-                  reason: reason,
-                  onComplete: (success) {
-                    if (success) {
-                      Utility.showToastMessage(
-                        TranslationFile.postReportedSuccessfully,
-                      );
-                    }
-                    completer.complete(success);
-                  },
-                ));
-
-                return await completer.future;
-              } catch (e) {
-                return false;
-              }
-            },
-          );
-          return {'isSuccess': false};
+        onTapComment: (totalCommentsCount) async {
+          final result = await _handleCommentAction(postData.id ?? '', totalCommentsCount);
+          return result;
         },
-        onPressLike: (postId, userId, isLiked) async {
+        onPressMoreButton: () async {
+          final result = await _handleMoreOptions(postData);
+          return result;
+        },
+        onPressLike: (isLiked) async {
           try {
             final completer = Completer<bool>();
 
             _homeBloc.add(LikePostEvent(
-              postId: postId,
-              userId: userId,
+              postId: postData.id ?? '',
+              userId: postData.user?.id ?? '',
               likeAction: isLiked ? LikeAction.unlike : LikeAction.like,
               onComplete: (success) {
                 completer.complete(success);
@@ -398,26 +390,211 @@ class _HomeScreenState extends State<HomeScreen> {
         },
       );
 
-  Future<void> _showMoreOptionsDialog({
+  /// Handles the more options menu for a post
+  Future<dynamic> _handleMoreOptions(TimeLineData postDataModel) async {
+    try {
+      return await _showMoreOptionsDialog(
+        onPressReport: ({String message = '', String reason = ''}) async {
+          final completer = Completer<bool>();
+          _homeBloc.add(
+            ReportPostEvent(
+              postId: postDataModel.id ?? '',
+              message: message,
+              reason: reason,
+              onComplete: (success) {
+                if (success) {
+                  Utility.showToastMessage(TranslationFile.postReportedSuccessfully);
+                }
+                completer.complete(success);
+              },
+            ),
+          );
+          return await completer.future;
+        },
+        onDeletePost: () async {
+          final result = await _showDeletePostDialog(context);
+          if (result == true) {
+            final completer = Completer<bool>();
+            _homeBloc.add(
+              DeletePostEvent(
+                postId: postDataModel.id ?? '',
+                onComplete: (success) {
+                  if (success) {
+                    Utility.showToastMessage(TranslationFile.postDeletedSuccessfully);
+                  }
+                  completer.complete(success);
+                },
+              ),
+            );
+            return await completer.future;
+          }
+          return false;
+        },
+        isSelfProfile: postDataModel.user?.id == _myUserId,
+        onEditPost: () async {
+          final postDataString = await _showEditPostDialog(context, postDataModel);
+          return postDataString ?? '';
+        },
+      );
+    } catch (e) {
+      debugPrint('Error handling more options: $e');
+      return false;
+    }
+  }
+
+  Future<dynamic> _showMoreOptionsDialog({
     Future<bool> Function({String message, String reason})? onPressReport,
+    Future<bool> Function()? onDeletePost,
+    Future<String> Function()? onEditPost,
+    bool? isSelfProfile,
   }) async {
+    final completer = Completer<dynamic>();
     await Utility.showBottomSheet(
-      height: Dimens.percentHeight(0.25),
+      isDismissible: true,
       child: MoreOptionsBottomSheet(
         onPressReport: ({String message = '', String reason = ''}) async {
           try {
             if (onPressReport != null) {
               final isReported = await onPressReport(message: message, reason: reason);
+              completer.complete(isReported);
               return isReported;
             }
-
             return false;
           } catch (e) {
             return false;
           }
         },
+        isSelfProfile: isSelfProfile == true,
+        onDeletePost: () async {
+          if (onDeletePost != null) {
+            final isDeleted = await onDeletePost();
+            completer.complete(isDeleted);
+            return isDeleted;
+          }
+          return false;
+        },
+        onEditPost: () async {
+          if (onEditPost != null) {
+            final postDataString = await onEditPost();
+            if (postDataString.isEmptyOrNull == false) {
+              final postData =
+                  TimeLineData.fromMap(jsonDecode(postDataString) as Map<String, dynamic>);
+              final reelData = _getReelData(postData);
+              completer.complete(reelData);
+            }
+            return postDataString;
+          }
+          return '';
+        },
       ),
     );
+    return completer.future;
+  }
+
+  Future<bool?> _showDeletePostDialog(BuildContext context) => showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  TranslationFile.deletePost,
+                  style: Styles.primaryText18.copyWith(fontWeight: FontWeight.w700),
+                ),
+                16.verticalSpace,
+                Text(
+                  TranslationFile.deletePostConfirmation,
+                  style: Styles.primaryText14.copyWith(
+                    color: '4A4A4A'.toHexColor,
+                  ),
+                ),
+                32.verticalSpace,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    AppButton(
+                      title: TranslationFile.delete,
+                      width: 102.scaledValue,
+                      onPress: () => Navigator.of(context).pop(true),
+                      backgroundColor: 'E04755'.toHexColor,
+                    ),
+                    AppButton(
+                      title: TranslationFile.cancel,
+                      width: 102.scaledValue,
+                      onPress: () => Navigator.of(context).pop(false),
+                      backgroundColor: 'F6F6F6'.toHexColor,
+                      textColor: Theme.of(context).primaryColor,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+  Future<String?> _showEditPostDialog(BuildContext context, TimeLineData postDataModel) =>
+      showDialog<String>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  TranslationFile.editPost,
+                  style: Styles.primaryText18.copyWith(fontWeight: FontWeight.w700),
+                ),
+                16.verticalSpace,
+                Text(
+                  TranslationFile.editPostConfirmation,
+                  style: Styles.primaryText14.copyWith(
+                    color: '4A4A4A'.toHexColor,
+                  ),
+                ),
+                32.verticalSpace,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    AppButton(
+                      title: TranslationFile.yes,
+                      width: 102.scaledValue,
+                      onPress: () async {
+                        final postDataString = await _handleEditPost(postDataModel);
+                        Navigator.of(context).pop(postDataString ?? '');
+                      },
+                      backgroundColor: '006CD8'.toHexColor,
+                    ),
+                    AppButton(
+                      title: TranslationFile.cancel,
+                      width: 102.scaledValue,
+                      onPress: () => Navigator.of(context).pop(''),
+                      backgroundColor: 'F6F6F6'.toHexColor,
+                      textColor: Theme.of(context).primaryColor,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+  Future<String?> _handleEditPost(TimeLineData postDataModel) async {
+    final postDataString =
+        await InjectionUtils.getRouteManagement().goToCreatePostView(postData: postDataModel);
+    return postDataString;
   }
 
   Future<List<ProductDataModel>> _handleCartAction(TimeLineData postData) async {
@@ -866,5 +1043,38 @@ class _HomeScreenState extends State<HomeScreen> {
       _isLikeLoading = false;
       setState.call(() {});
     }
+  }
+
+  // Interaction handlers
+  Future<isr.ReelsData?> _handleCreatePost() async {
+    final completer = Completer<isr.ReelsData>();
+    final postDataModelString = await InjectionUtils.getRouteManagement().goToCreatePostView();
+    if (postDataModelString.isStringEmptyOrNull == false) {
+      final postDataModel =
+          TimeLineData.fromMap(jsonDecode(postDataModelString!) as Map<String, dynamic>);
+      final reelsData = _getReelData(postDataModel);
+      completer.complete(reelsData);
+    }
+    return completer.future;
+  }
+
+  /// Handles comment action
+  Future<int> _handleCommentAction(String postId, int totalCommentsCount) async {
+    final completer = Completer<int>();
+
+    final result = await Utility.showBottomSheet<int>(
+      child: CommentsBottomSheet(
+        postId: postId,
+        totalCommentsCount: totalCommentsCount,
+        onTapProfile: (userId) {
+          context.pop(totalCommentsCount);
+        },
+      ),
+      isDarkBG: true,
+      backgroundColor: Colors.black,
+    );
+    completer.complete(result ?? 0);
+
+    return completer.future;
   }
 }

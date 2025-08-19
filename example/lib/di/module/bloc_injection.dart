@@ -32,11 +32,24 @@ class BlocInjection {
           InjectionUtils.getUseCase<GetReportReasonsUseCase>(),
           InjectionUtils.getUseCase<GetTimelinePostUseCase>(),
           InjectionUtils.getUseCase<GetPostDetailsUseCase>(),
+          InjectionUtils.getUseCase<GetPostCommentUseCase>(),
+          InjectionUtils.getUseCase<CommentActionUseCase>(),
         ));
 
     InjectionUtils.registerBloc<CreatePostBloc>(() => CreatePostBloc(
           InjectionUtils.getUseCase<CreatePostUseCase>(),
-          InjectionUtils.getUseCase<GetCloudDetailsUseCase>(),
+          InjectionUtils.getUseCase<GetPostDetailsUseCase>(),
+          _localDataUseCase,
+          InjectionUtils.getUseCase<GoogleCloudStorageUploaderUseCase>(),
+        ));
+
+    InjectionUtils.registerBloc<UploadProgressCubit>(
+      UploadProgressCubit.new,
+    );
+
+    InjectionUtils.registerBloc<CommentActionCubit>(() => CommentActionCubit(
+          _localDataUseCase,
+          InjectionUtils.getUseCase<CommentActionUseCase>(),
         ));
   }
 }
