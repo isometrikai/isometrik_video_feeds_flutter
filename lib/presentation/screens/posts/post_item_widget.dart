@@ -267,7 +267,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
 
     for (var i = startIndex; i <= endIndex; i++) {
       final reelData = _reelsDataList[i];
-      final imageUrl = reelData.mediaType == 0 ? reelData.mediaUrl : '';
+      final imageUrl = reelData.mediaType == 0 ? reelData.mediaUrl : reelData.thumbnailUrl;
 
       // Only cache if not already cached
       if (!_cachedImages.contains(imageUrl)) {
@@ -288,13 +288,12 @@ class _PostItemWidgetState extends State<PostItemWidget> {
     final nextPostIndex = currentIndex + 1;
     if (nextPostIndex < _reelsDataList.length) {
       final reelsData = _reelsDataList[nextPostIndex];
+      final nextImageUrl = reelsData.mediaType == 0 ? reelsData.mediaUrl : reelsData.thumbnailUrl;
+      // Move next image to front
       if (reelsData.mediaType == 0) {
-        final nextImageUrl =
-            reelsData.mediaType == 0 ? reelsData.mediaUrl : (reelsData.thumbnailUrl);
-        // Move next image to front
         images.remove(nextImageUrl);
-        return [nextImageUrl, ...images];
       }
+      return [nextImageUrl, ...images];
     }
     return images;
   }
