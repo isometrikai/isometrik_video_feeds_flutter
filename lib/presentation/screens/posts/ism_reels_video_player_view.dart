@@ -650,7 +650,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                                       height: IsrDimens.twentyFour,
                                       decoration: BoxDecoration(
                                         color: Theme.of(context).primaryColor,
-                                        borderRadius: BorderRadius.circular(IsrDimens.twenty),
+                                        borderRadius: BorderRadius.circular(IsrDimens.four),
                                       ),
                                       child: MaterialButton(
                                         minWidth: IsrDimens.sixty,
