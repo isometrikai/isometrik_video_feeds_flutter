@@ -222,9 +222,7 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
                               selectedReason = null;
                             });
                           },
-                    icon: const Icon(
-                      Icons.close,
-                    ),
+                    icon: const Icon(Icons.close),
                   ),
                 ],
               ),
@@ -238,22 +236,19 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
                 ),
               ),
             ] else ...[
-              Flexible(
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: reportReasons
-                        .map(
-                          (reason) => _buildReportOption(
-                            reason,
-                            selectedReason,
-                            (value) {
-                              setState(() => selectedReason = value);
-                            },
-                          ),
-                        )
-                        .toList(),
-                  ),
+              SingleChildScrollView(
+                child: Column(
+                  children: reportReasons
+                      .map(
+                        (reason) => _buildReportOption(
+                          reason,
+                          selectedReason,
+                          (value) {
+                            setState(() => selectedReason = value);
+                          },
+                        ),
+                      )
+                      .toList(),
                 ),
               ),
               const Divider(height: 1),
