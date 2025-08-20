@@ -15,13 +15,6 @@ class UserInformationLoaded extends PostState {
   final String userId;
 }
 
-// Posts States
-class PostsLoadedState extends PostState {
-  PostsLoadedState({required this.postsList, required this.timeLinePostList});
-  final List<PostDataModel>? postsList;
-  final List<TimeLineData>? timeLinePostList;
-}
-
 class PostLoadingState extends PostState {
   PostLoadingState({
     required this.userId,

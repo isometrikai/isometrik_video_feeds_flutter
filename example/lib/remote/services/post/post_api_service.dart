@@ -8,6 +8,14 @@ abstract class PostApiService extends BaseService {
     required Header header,
     Map<String, dynamic>? createPostRequest,
   });
+
+  Future<ResponseModel> editPost({
+    required bool isLoading,
+    required Header header,
+    required String postId,
+    Map<String, dynamic>? editPostRequest,
+  });
+
   Future<ResponseModel> getFollowingPosts({
     required bool isLoading,
     required Header header,

@@ -13,7 +13,6 @@ part 'home_state.dart';
 class HomeBloc extends Bloc<HomeEvent, HomeState> {
   HomeBloc(
     this._localDataUseCase,
-    this._getFollowingPostUseCase,
     this._getTrendingPostUseCase,
     this._followPostUseCase,
     this._savePostUseCase,
@@ -21,9 +20,11 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     this._reportPostUseCase,
     this._getReportReasonsUseCase,
     this._getTimelinePostUseCase,
+    this._getPostDetailsUseCase,
+    this._getPostCommentUseCase,
+    this._commentUseCase,
   ) : super(HomeInitial()) {
     on<LoadHomeData>(_onLoadHomeData);
-    on<GetFollowingPostEvent>(_getFollowingPost);
     on<GetTimeLinePostEvent>(_getTimeLinePost);
     on<GetTrendingPostEvent>(_getTrendingPost);
     on<SavePostEvent>(_savePost);
@@ -31,10 +32,12 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<ReportPostEvent>(_reportPost);
     on<LikePostEvent>(_likePost);
     on<FollowUserEvent>(_followUser);
+    on<GetPostDetailsEvent>(_getPostDetails);
+    on<GetPostCommentsEvent>(_getPostComments);
+    on<CommentActionEvent>(_doActionOnComment);
   }
 
   final LocalDataUseCase _localDataUseCase;
-  final GetFollowingPostUseCase _getFollowingPostUseCase;
   final GetTimelinePostUseCase _getTimelinePostUseCase;
   final GetTrendingPostUseCase _getTrendingPostUseCase;
   final FollowPostUseCase _followPostUseCase;
@@ -42,11 +45,14 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   final LikePostUseCase _likePostUseCase;
   final ReportPostUseCase _reportPostUseCase;
   final GetReportReasonsUseCase _getReportReasonsUseCase;
+  final GetPostDetailsUseCase _getPostDetailsUseCase;
+  final GetPostCommentUseCase _getPostCommentUseCase;
+  final CommentActionUseCase _commentUseCase;
 
-  final List<isr.PostDataModel> _followingPostList = [];
-  final List<isr.PostDataModel> _trendingPostList = [];
+  final List<PostData> _followingPostList = [];
+  final List<PostData> _trendingPostList = [];
 
-  final List<isr.TimeLineData> _timeLinePostList = [];
+  final List<TimeLineData> _timeLinePostList = [];
 
   int _currentPage = 0;
   final _followingPageSize = 20;
@@ -59,26 +65,26 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
   bool _isTimeLineLoadingMore = false;
   bool _hasMoreTimeLineData = true;
-  int _timeLineCurrentPage = 1;
+  int _timeLineCurrentPage = 6;
   final _timeLinePageSize = 20;
+
+  var _isDataLoading = false;
+  var _detailsCurrentPage = 1;
+  final List<ProductDataModel> _detailsProductList = [];
 
   Future<void> _onLoadHomeData(
     LoadHomeData event,
     Emitter<HomeState> emit,
   ) async {
+    final userId = await _localDataUseCase.getUserId();
     try {
       emit(HomeLoading(isLoading: true));
       await _initializeReelsSdk();
       await Future.wait([
         _callGetFollowingPost(true, false, false, null),
         _callGetTimeLinePost(true, false, false, null)
-        // _callGetTrendingPost(true, false, false, null),
       ]);
-      emit(HomeLoaded(
-        followingPosts: _followingPostList,
-        trendingPosts: _trendingPostList,
-        timeLinePosts: _timeLinePostList,
-      ));
+      emit(HomeLoaded(timeLinePosts: _timeLinePostList, userId: userId));
     } catch (error) {
       emit(HomeError(error.toString()));
     }
@@ -100,11 +106,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     );
   }
 
-  FutureOr<void> _getFollowingPost(GetFollowingPostEvent event, Emitter<HomeState> emit) async {
-    await _callGetFollowingPost(
-        event.isRefresh, event.isPagination, event.isLoading, event.onComplete);
-  }
-
   FutureOr<void> _getTimeLinePost(GetTimeLinePostEvent event, Emitter<HomeState> emit) async {
     await _callGetTimeLinePost(
         event.isRefresh, event.isPagination, event.isLoading, event.onComplete);
@@ -116,7 +117,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   }
 
   Future<void> _callGetFollowingPost(bool isFromRefresh, bool isFromPagination, bool isLoading,
-      Function(List<isr.PostDataModel>)? onComplete) async {
+      Function(List<PostData>)? onComplete) async {
     // For refresh, clear cache and start from page 0
     if (isFromRefresh) {
       _followingPostList.clear();
@@ -137,43 +138,43 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
     _isLoadingMore = true;
 
-    final apiResult = await _getFollowingPostUseCase.executeGetFollowingPost(
-      isLoading: isLoading,
-      page: _currentPage,
-      pageLimit: _followingPageSize,
-    );
-
-    if (apiResult.isSuccess) {
-      final postDataList = apiResult.data?.data as List<PostData>;
-      final newPosts = postDataList
-          .map((postData) => isr.PostDataModel.fromJson(postData.toJson()))
-          .toList(); // Updated line
-      if (newPosts.length < _followingPageSize) {
-        _hasMoreData = false;
-      }
-
-      if (isFromPagination) {
-        _followingPostList.addAll(newPosts);
-        if (onComplete != null) {
-          onComplete(newPosts);
-        }
-      } else {
-        _followingPostList
-          ..clear()
-          ..addAll(newPosts);
-      }
-
-      _currentPage++;
-      // emit(HomeLoaded(followingPosts: _followingPostList, trendingPosts: _trendingPostList));
-    } else {
-      ErrorHandler.showAppError(appError: apiResult.error);
-    }
+    // final apiResult = await _getFollowingPostUseCase.executeGetFollowingPost(
+    //   isLoading: isLoading,
+    //   page: _currentPage,
+    //   pageLimit: _followingPageSize,
+    // );
+    //
+    // if (apiResult.isSuccess) {
+    //   final postDataList = apiResult.data?.data as List<PostData>;
+    //   final newPosts = postDataList
+    //       .map((postData) => isr.PostDataModel.fromJson(postData.toJson()))
+    //       .toList(); // Updated line
+    //   if (newPosts.length < _followingPageSize) {
+    //     _hasMoreData = false;
+    //   }
+    //
+    //   if (isFromPagination) {
+    //     _followingPostList.addAll(newPosts);
+    //     if (onComplete != null) {
+    //       onComplete(newPosts);
+    //     }
+    //   } else {
+    //     _followingPostList
+    //       ..clear()
+    //       ..addAll(newPosts);
+    //   }
+    //
+    //   _currentPage++;
+    //   // emit(HomeLoaded(followingPosts: _followingPostList, trendingPosts: _trendingPostList));
+    // } else {
+    //   ErrorHandler.showAppError(appError: apiResult.error);
+    // }
 
     _isLoadingMore = false;
   }
 
   Future<void> _callGetTrendingPost(bool isFromRefresh, bool isFromPagination, bool isLoading,
-      Function(List<isr.PostDataModel>)? onComplete) async {
+      Function(List<PostData>)? onComplete) async {
     // For refresh, clear cache and start from page 0
     if (isFromRefresh) {
       _trendingPostList.clear();
@@ -202,20 +203,18 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
     if (apiResult.isSuccess) {
       final postDataList = apiResult.data?.data as List<PostData>;
-      final newPosts =
-          postDataList.map((postData) => isr.PostDataModel.fromJson(postData.toJson())).toList();
-      if (newPosts.isEmpty) {
+      if (postDataList.isEmpty) {
         _hasTrendingMoreData = false;
       } else {
         if (isFromPagination) {
-          _trendingPostList.addAll(newPosts);
+          _trendingPostList.addAll(postDataList);
           if (onComplete != null) {
-            onComplete(newPosts);
+            onComplete(postDataList);
           }
         } else {
           _trendingPostList
             ..clear()
-            ..addAll(newPosts);
+            ..addAll(postDataList);
         }
         _trendingCurrentPage++;
         // emit(HomeLoaded(followingPosts: _followingPostList, trendingPosts: _trendingPostList));
@@ -304,12 +303,12 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     bool isFromRefresh,
     bool isFromPagination,
     bool isLoading,
-    Function(List<isr.TimeLineData>)? onComplete,
+    Function(List<TimeLineData>)? onComplete,
   ) async {
     // For refresh, clear cache and start from page 0
     if (isFromRefresh) {
       _timeLinePostList.clear();
-      _timeLineCurrentPage = 1;
+      _timeLineCurrentPage = 6;
       _hasMoreTimeLineData = true;
       _isTimeLineLoadingMore = false;
     } else if (!isFromPagination && _followingPostList.isNotEmpty) {
@@ -318,7 +317,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     }
 
     if (!isFromPagination) {
-      _timeLineCurrentPage = 1;
+      _timeLineCurrentPage = 6;
       _hasMoreTimeLineData = true;
     } else if (_isTimeLineLoadingMore || !_hasMoreTimeLineData) {
       return;
@@ -336,21 +335,21 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       final postDataList = apiResult.data?.data as List<TimeLineData>;
       try {
         final newPosts = postDataList
-            .map((postData) => isr.TimeLineData.fromMap(postData.toMap()))
+            .map((postData) => TimeLineData.fromMap(postData.toMap()))
             .toList(); // Updated line
         if (newPosts.length < _timeLinePageSize) {
           _hasMoreTimeLineData = false;
         }
 
         if (isFromPagination) {
-          _timeLinePostList.addAll(newPosts);
+          _timeLinePostList.addAll(postDataList);
           if (onComplete != null) {
             onComplete(newPosts);
           }
         } else {
           _timeLinePostList
             ..clear()
-            ..addAll(newPosts);
+            ..addAll(postDataList);
         }
 
         _timeLineCurrentPage++;
@@ -362,5 +361,93 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     }
 
     _isTimeLineLoadingMore = false;
+  }
+
+  FutureOr<void> _getPostDetails(GetPostDetailsEvent event, Emitter<HomeState> emit) async {
+    var totalProductCount = 0;
+    if (_isDataLoading) return;
+    _isDataLoading = true;
+    if (event.isFromPagination == false) {
+      _detailsCurrentPage = 1;
+      _detailsProductList.clear();
+      emit(PostDetailsLoading());
+    } else {
+      _detailsCurrentPage++;
+    }
+    final apiResult = await _getPostDetailsUseCase.executeGetPostDetails(
+      isLoading: false,
+      productIds: event.productIds,
+      page: _detailsCurrentPage,
+      limit: 20,
+    );
+    if (apiResult.isSuccess) {
+      totalProductCount = apiResult.data?.count?.toInt() ?? 0;
+      _detailsProductList.addAll(apiResult.data?.data as Iterable<ProductDataModel>);
+    } else {
+      ErrorHandler.showAppError(appError: apiResult.error);
+    }
+    emit(PostDetailsLoaded(productList: _detailsProductList, totalProductCount: totalProductCount));
+    _isDataLoading = false;
+  }
+
+  FutureOr<void> _getPostComments(GetPostCommentsEvent event, Emitter<HomeState> emit) async {
+    if (event.isLoading == true) {
+      emit(LoadingPostComment());
+    }
+    final apiResult = await _getPostCommentUseCase.executeGetPostComment(
+      postId: event.postId,
+      isLoading: false,
+    );
+    final postCommentsList = apiResult.data?.data;
+    final myUserId = await _localDataUseCase.getUserId();
+    emit(LoadPostCommentState(
+      postCommentsList: postCommentsList,
+      myUserId: myUserId,
+    ));
+  }
+
+  Future<void> _doActionOnComment(CommentActionEvent event, Emitter<HomeState> emit) async {
+    final commentRequest = CommentRequest(
+      commentId: event.commentId,
+      commentAction: event.commentAction,
+      postId: event.postId,
+      userType: event.commentAction == CommentAction.comment ? 1 : null,
+      comment: event.replyText,
+      postedBy: event.postedBy,
+      parentCommentId: event.parentCommentId,
+      reason: event.reportReason,
+      message: event.commentMessage,
+      commentIds: event.commentIds,
+    );
+    final apiResult = await _commentUseCase.executeCommentAction(
+      isLoading: true,
+      commentRequest: commentRequest.toJson(),
+    );
+    if (apiResult.isSuccess) {
+      if (event.commentAction == CommentAction.comment) {
+        add(GetPostCommentsEvent(
+          postId: event.postId ?? '',
+          isLoading: true,
+        ));
+      } else {
+        if (event.commentAction == CommentAction.report) {
+          ErrorHandler.showAppError(
+            appError: apiResult.error,
+            message: TranslationFile.commentReportedSuccessfully,
+            isNeedToShowError: true,
+            errorViewType: ErrorViewType.snackBar,
+          );
+        }
+      }
+    } else {
+      ErrorHandler.showAppError(
+        appError: apiResult.error,
+        isNeedToShowError: true,
+        errorViewType: ErrorViewType.dialog,
+      );
+    }
+    if (event.onComplete != null) {
+      event.onComplete?.call(event.commentId ?? '', apiResult.isSuccess);
+    }
   }
 }

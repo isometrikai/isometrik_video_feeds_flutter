@@ -24,15 +24,46 @@ class PostApiServiceProvider extends PostApiService {
         {
           'Accept': AppConstants.headerAccept,
           'Content-Type': AppConstants.headerContentType,
-          'Authorization': header.accessToken,
-          'language': header.language,
+          'authorization': header.accessToken,
+          'lan': header.language,
           'currencySymbol': header.currencySymbol,
           'currencyCode': header.currencyCode,
-          'platform': header.platForm.toString(),
+          'platform': header.platForm.platformText.toString(),
           'latitude': header.latitude.toString(),
           'longitude': header.longitude.toString(),
+          'x-tenant-id': AppConstants.tenantId,
+          'x-project-id': AppConstants.projectId,
         },
         isLoading,
+      );
+
+  @override
+  Future<ResponseModel> editPost({
+    required bool isLoading,
+    required Header header,
+    required String postId,
+    Map<String, dynamic>? editPostRequest,
+  }) async =>
+      await networkClient.makeRequest(
+        SocialApiEndPoints.putEditPost,
+        NetworkRequestType.put,
+        editPostRequest?.removeEmptyValues(),
+        null,
+        {
+          'Accept': AppConstants.headerAccept,
+          'Content-Type': AppConstants.headerContentType,
+          'authorization': header.accessToken,
+          'lan': header.language,
+          'currencySymbol': header.currencySymbol,
+          'currencyCode': header.currencyCode,
+          'platform': header.platForm.platformText.toString(),
+          'latitude': header.latitude.toString(),
+          'longitude': header.longitude.toString(),
+          'x-tenant-id': AppConstants.tenantId,
+          'x-project-id': AppConstants.projectId,
+        },
+        isLoading,
+        pathSegments: [postId],
       );
 
   @override

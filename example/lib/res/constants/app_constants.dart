@@ -33,6 +33,11 @@ class AppConstants {
   static const bool isPostEnable = false;
   static const int noInternetErrorCode = 1000;
   static const String cloudinaryFolder = 'ShopAR/post/image';
+  static const String cloudinaryVideoFolder = 'video/folder/';
+  static const String cloudinaryImageFolder = 'image/folder/';
+  static const String cloudinaryThumbnailFolder = 'thumbnail/folder/';
+
+  static const bool isCompressionEnable = true;
 
   static const List<String> restrictedWords = [
     'null',
@@ -87,6 +92,8 @@ class AppConstants {
 
   static const String tenantId = 'tenant_001';
   static const String projectId = 'project_001';
+
+  static String bucketName = 'trulyfree-staging';
 }
 
 abstract class AppUrl {
@@ -117,4 +124,13 @@ abstract class DefaultValues {
   static const String defaultIpAddress = '192.168.1.0';
 
   static const String defaultCountryId = '620ca66bcf0bd360e40dfe23';
+}
+
+abstract class SocialPostType {
+  static const String video = 'video';
+  static const String image = 'image';
+  static const String carousel = 'carousel';
+  static const String text = 'text';
+  static const String product = 'product';
+  static const String audio = 'audio';
 }

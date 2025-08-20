@@ -24,7 +24,7 @@ class UseCaseInjection {
 
     /// Post UseCase
     InjectionUtils.registerUseCase<CreatePostUseCase>(
-        () => CreatePostUseCase(InjectionUtils.getRepo<PostRepository>()));
+        () => CreatePostUseCase(InjectionUtils.getRepo<SocialRepository>()));
     InjectionUtils.registerUseCase<GetFollowingPostUseCase>(
         () => GetFollowingPostUseCase(InjectionUtils.getRepo<PostRepository>()));
     InjectionUtils.registerUseCase<GetTrendingPostUseCase>(
@@ -34,7 +34,7 @@ class UseCaseInjection {
     InjectionUtils.registerUseCase<SavePostUseCase>(
         () => SavePostUseCase(InjectionUtils.getRepo<PostRepository>()));
     InjectionUtils.registerUseCase<LikePostUseCase>(
-        () => LikePostUseCase(InjectionUtils.getRepo<PostRepository>()));
+        () => LikePostUseCase(InjectionUtils.getRepo<SocialRepository>()));
     InjectionUtils.registerUseCase<ReportPostUseCase>(
         () => ReportPostUseCase(InjectionUtils.getRepo<PostRepository>()));
     InjectionUtils.registerUseCase<GetReportReasonsUseCase>(
@@ -43,5 +43,14 @@ class UseCaseInjection {
         () => GetCloudDetailsUseCase(InjectionUtils.getRepo<PostRepository>()));
     InjectionUtils.registerUseCase<GetTimelinePostUseCase>(
         () => GetTimelinePostUseCase(InjectionUtils.getRepo<PostRepository>()));
+
+    InjectionUtils.registerUseCase<GetPostDetailsUseCase>(
+        () => GetPostDetailsUseCase(InjectionUtils.getRepo<SocialRepository>()));
+    InjectionUtils.registerUseCase<GoogleCloudStorageUploaderUseCase>(
+        () => GoogleCloudStorageUploaderUseCase(InjectionUtils.getRepo<SocialRepository>()));
+    InjectionUtils.registerUseCase<CommentActionUseCase>(
+        () => CommentActionUseCase(InjectionUtils.getRepo<SocialRepository>()));
+    InjectionUtils.registerUseCase<GetPostCommentUseCase>(
+        () => GetPostCommentUseCase(InjectionUtils.getRepo<SocialRepository>()));
   }
 }

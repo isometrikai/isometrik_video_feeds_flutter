@@ -7,6 +7,12 @@ abstract class PostRepository extends BaseRepository {
     Map<String, dynamic>? createPostRequest,
   });
 
+  Future<CustomResponse<CreatePostResponse?>> editPost({
+    required bool isLoading,
+    required String postId,
+    Map<String, dynamic>? editPostRequest,
+  });
+
   Future<CustomResponse<PostResponse?>> getFollowingPost({
     required bool isLoading,
     required int page,

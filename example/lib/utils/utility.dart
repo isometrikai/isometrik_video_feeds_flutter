@@ -30,6 +30,9 @@ class Utility {
 
   static void hideKeyboard() => SystemChannels.textInput.invokeMethod('TextInput.hide');
 
+  static bool isLocalUrl(String url) =>
+      url.startsWith('http://') == false && url.startsWith('https://') == false;
+
   static void updateLater(
     VoidCallback callback, [
     bool addDelay = true,
@@ -178,7 +181,8 @@ class Utility {
                       textStyle: Styles.primaryText14.copyWith(
                           fontWeight: FontWeight.w700,
                           color: isTwoButtons == true ? AppColors.appColor : AppColors.white),
-                      title: positiveButtonText ?? (isTwoButtons == true ? TranslationFile.yes : TranslationFile.ok),
+                      title: positiveButtonText ??
+                          (isTwoButtons == true ? TranslationFile.yes : TranslationFile.ok),
                       onPress: () {
                         closeOpenDialog();
                         if (onPressPositiveButton != null) {
@@ -237,8 +241,8 @@ class Utility {
         useSafeArea: true,
         isDismissible: isDismissible,
         isScrollControlled: isScrollControlled,
-        backgroundColor:
-            backgroundColor ?? (isDarkBG ? Theme.of(exNavigatorKey.currentContext!).primaryColor : AppColors.white),
+        backgroundColor: backgroundColor ??
+            (isDarkBG ? Theme.of(exNavigatorKey.currentContext!).primaryColor : AppColors.white),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(
             top: Radius.circular(Dimens.bottomSheetBorderRadius),
@@ -452,10 +456,13 @@ class Utility {
   }
 
   static Widget loaderWidget({bool? isAdaptive = true}) => Center(
-      child: isAdaptive == true ? const CircularProgressIndicator.adaptive() : const CircularProgressIndicator());
+      child: isAdaptive == true
+          ? const CircularProgressIndicator.adaptive()
+          : const CircularProgressIndicator());
 
   /// get formated date
-  static String getFormattedDateWithNumberOfDays(int? numberOfDays, {String? dataFormat = 'EEEE, dd MMM'}) =>
+  static String getFormattedDateWithNumberOfDays(int? numberOfDays,
+          {String? dataFormat = 'EEEE, dd MMM'}) =>
       DateFormat(dataFormat).format(DateTime.now().add(Duration(days: numberOfDays ?? 0)));
 
   static Color rgbStringToColor(String rgbString) {
@@ -475,7 +482,8 @@ class Utility {
 
   static String getFormattedPrice(double price, String? currencySymbol) => NumberFormat.currency(
           decimalDigits: price % 1 == 0 ? 0 : 2,
-          symbol: currencySymbol.isEmptyOrNull ? DefaultValues.defaultCurrencySymbol : currencySymbol)
+          symbol:
+              currencySymbol.isEmptyOrNull ? DefaultValues.defaultCurrencySymbol : currencySymbol)
       .format(price);
 
   static Future<void> showCustomModalBottomSheet({
@@ -627,7 +635,8 @@ class Utility {
     final document = html_parser.parse(htmlContent);
 
     // Extract the text content (ignores the HTML tags)
-    return Utility.cleanText(document.body?.text ?? ''); // Use null-aware operator in case of no body.
+    return Utility.cleanText(
+        document.body?.text ?? ''); // Use null-aware operator in case of no body.
   }
 
   /// remove escape sequences
@@ -635,7 +644,8 @@ class Utility {
       inputText.replaceAll(RegExp(r'[\n\t\r]'), ''); // Removes newline, tab, and carriage return
 
   ///show custom widget dialog
-  static Future<void> showCustomDialog({required BuildContext context, required Widget child}) => showDialog(
+  static Future<void> showCustomDialog({required BuildContext context, required Widget child}) =>
+      showDialog(
         context: context,
         builder: (context) => AlertDialog(
           contentPadding: Dimens.edgeInsetsAll(Dimens.twelve),

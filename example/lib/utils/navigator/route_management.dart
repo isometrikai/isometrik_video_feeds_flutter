@@ -34,14 +34,15 @@ class RouteManagement {
     _navigationService.pushNamed(RouteNames.otp, arguments: arguments);
   }
 
-  Future<String?> goToCreatePostView() async {
-    final result = await _navigationService.pushNamed(
-      RouteNames.createPostView,
-    ) as String?;
+  Future<String?> goToCreatePostView({TimeLineData? postData}) async {
+    final result = await _navigationService.pushNamed(RouteNames.createPostView, arguments: {
+      'postData': postData,
+    }) as String?;
     return result;
   }
 
-  Future<MediaInfoClass?> goToCameraView({required BuildContext context, MediaType mediaType = MediaType.photo}) async {
+  Future<MediaInfoClass?> goToCameraView(
+      {required BuildContext context, MediaType mediaType = MediaType.photo}) async {
     final result = await _navigationService.pushNamed(
       RouteNames.cameraView,
       arguments: {'mediaType': mediaType},

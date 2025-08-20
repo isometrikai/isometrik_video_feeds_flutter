@@ -8,7 +8,13 @@ class CreatePostInitialEvent extends CreatePostEvent {
   final bool? isLoading;
 }
 
-class PostCreateEvent extends CreatePostEvent {}
+class PostCreateEvent extends CreatePostEvent {
+  PostCreateEvent({
+    this.isForEdit = false,
+  });
+
+  final bool? isForEdit;
+}
 
 class MediaSourceEvent extends CreatePostEvent {
   MediaSourceEvent({
@@ -22,4 +28,23 @@ class MediaSourceEvent extends CreatePostEvent {
   final MediaType mediaType;
   final MediaSource mediaSource;
   final bool isCoverImage;
+}
+
+class GetProductsEvent extends CreatePostEvent {
+  GetProductsEvent({
+    this.isFromPagination = false,
+  });
+
+  final bool? isFromPagination;
+}
+
+class GetSocialPostDetailsEvent extends CreatePostEvent {
+  GetSocialPostDetailsEvent({required this.postId});
+
+  final String postId;
+}
+
+class EditPostEvent extends CreatePostEvent {
+  EditPostEvent({required this.postData});
+  final TimeLineData postData;
 }

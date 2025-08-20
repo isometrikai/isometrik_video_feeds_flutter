@@ -14,14 +14,12 @@ class HomeLoading extends HomeState {
 
 class HomeLoaded extends HomeState {
   HomeLoaded({
-    required this.followingPosts,
-    required this.trendingPosts,
     required this.timeLinePosts,
+    required this.userId,
   });
 
-  final List<isr.PostDataModel>? followingPosts;
-  final List<isr.PostDataModel>? trendingPosts;
-  final List<isr.TimeLineData>? timeLinePosts;
+  final List<TimeLineData>? timeLinePosts;
+  final String userId;
 }
 
 class HomeError extends HomeState {
@@ -29,3 +27,27 @@ class HomeError extends HomeState {
 
   final String message;
 }
+
+class PostDetailsLoading extends HomeState {}
+
+class PostDetailsLoaded extends HomeState {
+  PostDetailsLoaded({
+    required this.productList,
+    required this.totalProductCount,
+  });
+
+  final List<ProductDataModel>? productList;
+  final int totalProductCount;
+}
+
+class LoadPostCommentState extends HomeState {
+  LoadPostCommentState({
+    required this.postCommentsList,
+    this.myUserId,
+  });
+
+  final List<CommentDataItem>? postCommentsList;
+  final String? myUserId;
+}
+
+class LoadingPostComment extends HomeState {}

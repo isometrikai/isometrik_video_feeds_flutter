@@ -16,7 +16,7 @@ class PostMapper {
           data: createPostResponseFromJson(response.data), responseCode: response.statusCode);
 
   CustomResponse<TimelineResponse?> mapTimelineResponse(ResponseModel response) => CustomResponse(
-        data: timelineResponseFromMap(response.data),
+        data: timelineResponseFromJson(response.data),
         responseCode: response.statusCode,
       );
 }

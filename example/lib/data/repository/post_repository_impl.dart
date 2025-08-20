@@ -30,6 +30,26 @@ class PostRepositoryImpl implements PostRepository {
   }
 
   @override
+  Future<CustomResponse<CreatePostResponse?>> editPost({
+    required bool isLoading,
+    required String postId,
+    Map<String, dynamic>? editPostRequest,
+  }) async {
+    try {
+      final header = await _dataSource.getHeader();
+      final response = await _apiService.editPost(
+        isLoading: isLoading,
+        header: header,
+        postId: postId,
+        editPostRequest: editPostRequest,
+      );
+      return _postMapper.mapCreatePostResponseData(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
   Future<CustomResponse<PostResponse?>> getFollowingPost({
     required bool isLoading,
     required int page,

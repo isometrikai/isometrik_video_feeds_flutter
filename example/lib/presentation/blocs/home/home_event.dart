@@ -8,20 +8,6 @@ class LoadHomeData extends HomeEvent {
   LoadHomeData();
 }
 
-class GetFollowingPostEvent extends HomeEvent {
-  GetFollowingPostEvent({
-    required this.isLoading,
-    required this.isPagination,
-    this.isRefresh = false,
-    this.onComplete,
-  });
-
-  final bool isLoading;
-  final bool isPagination;
-  final bool isRefresh;
-  final Function(List<isr.PostDataModel>)? onComplete;
-}
-
 class GetTimeLinePostEvent extends HomeEvent {
   GetTimeLinePostEvent({
     required this.isLoading,
@@ -33,7 +19,7 @@ class GetTimeLinePostEvent extends HomeEvent {
   final bool isLoading;
   final bool isPagination;
   final bool isRefresh;
-  final Function(List<isr.TimeLineData>)? onComplete;
+  final Function(List<TimeLineData>)? onComplete;
 }
 
 class GetTrendingPostEvent extends HomeEvent {
@@ -47,7 +33,7 @@ class GetTrendingPostEvent extends HomeEvent {
   final bool isLoading;
   final bool isPagination;
   final bool isRefresh;
-  final Function(List<isr.PostDataModel>)? onComplete;
+  final Function(List<PostData>)? onComplete;
 }
 
 class GetCloudDetailsEvent extends HomeEvent {
@@ -97,9 +83,13 @@ class LikePostEvent extends HomeEvent {
 }
 
 class GetReasonEvent extends HomeEvent {
-  const GetReasonEvent({required this.onComplete});
+  GetReasonEvent({
+    required this.onComplete,
+    this.reasonsFor,
+  });
 
   final Function(List<String>?) onComplete;
+  final ReasonsFor? reasonsFor;
 }
 
 class ReportPostEvent extends HomeEvent {
@@ -114,4 +104,62 @@ class ReportPostEvent extends HomeEvent {
   final String message;
   final String reason;
   final Function(bool) onComplete;
+}
+
+class GetPostDetailsEvent extends HomeEvent {
+  GetPostDetailsEvent({
+    this.isFromPagination = false,
+    this.productIds,
+  });
+
+  final bool? isFromPagination;
+  final List<String>? productIds;
+}
+
+class DeletePostEvent extends HomeEvent {
+  DeletePostEvent({
+    required this.onComplete,
+    required this.postId,
+  });
+
+  final Function(bool) onComplete;
+  final String postId;
+}
+
+class GetPostCommentsEvent extends HomeEvent {
+  GetPostCommentsEvent({
+    required this.postId,
+    this.isLoading,
+  });
+
+  final String postId;
+  final bool? isLoading;
+}
+
+class CommentActionEvent extends HomeEvent {
+  CommentActionEvent({
+    this.postId,
+    this.commentId,
+    required this.commentAction,
+    this.isLoading,
+    this.onComplete,
+    this.replyText,
+    this.postedBy,
+    this.parentCommentId,
+    this.reportReason,
+    this.commentMessage,
+    this.commentIds,
+  });
+
+  final String? postId;
+  final String? commentId;
+  final List<String>? commentIds;
+  final String? parentCommentId;
+  final String? replyText;
+  final String? postedBy;
+  final CommentAction commentAction;
+  final bool? isLoading;
+  final Function(String, bool)? onComplete;
+  final String? reportReason;
+  final String? commentMessage;
 }

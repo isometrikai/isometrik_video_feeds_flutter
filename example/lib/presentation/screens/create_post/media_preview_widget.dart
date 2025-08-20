@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player_example/domain/domain.dart';
@@ -9,10 +11,10 @@ import 'package:video_player/video_player.dart';
 class MediaPreviewWidget extends StatefulWidget {
   const MediaPreviewWidget({
     super.key,
-    required this.postAttributeClass,
+    required this.mediaData,
   });
 
-  final PostAttributeClass? postAttributeClass;
+  final MediaData? mediaData;
 
   @override
   State<MediaPreviewWidget> createState() => _MediaPreviewWidgetState();
@@ -21,15 +23,25 @@ class MediaPreviewWidget extends StatefulWidget {
 class _MediaPreviewWidgetState extends State<MediaPreviewWidget> {
   VideoPlayerController? _controller;
   bool _isPlaying = false;
+  final ValueNotifier<double> _compressionProgress = ValueNotifier(60.0);
+  bool _isCompressing = false;
+  MediaData? _mediaData;
 
   @override
   void initState() {
     super.initState();
+    _onStartInit();
+    _initializeVideoPlayer();
+  }
+
+  void _onStartInit() {
+    _mediaData = widget.mediaData;
     _initializeVideoPlayer();
   }
 
   @override
   void dispose() {
+    _compressionProgress.dispose();
     _controller?.dispose();
     super.dispose();
   }
@@ -37,15 +49,20 @@ class _MediaPreviewWidgetState extends State<MediaPreviewWidget> {
   @override
   void didUpdateWidget(MediaPreviewWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Check if the postAttributeClass has changed
-    if (widget.postAttributeClass != oldWidget.postAttributeClass) {
+    // Check if the mediaData has changed
+    if (_mediaData != oldWidget.mediaData) {
       _initializeVideoPlayer();
     }
   }
 
   Future<void> _initializeVideoPlayer() async {
-    if (widget.postAttributeClass?.postType == MediaType.video) {
-      _controller = VideoPlayerController.file(widget.postAttributeClass!.file!);
+    if (_mediaData == null) return;
+    if (_mediaData?.mediaType?.mediaType == MediaType.video) {
+      if (Utility.isLocalUrl(_mediaData!.url ?? '') == false) {
+        _initializedLocalVideoPlayer(File(_mediaData!.url!));
+      } else {
+        _initializedVideoPlayer(_mediaData!.url!);
+      }
       await _controller?.initialize().then((_) {
         setState(() {});
       });
@@ -61,7 +78,20 @@ class _MediaPreviewWidgetState extends State<MediaPreviewWidget> {
     }
   }
 
+  void _initializedLocalVideoPlayer(File file) {
+    _controller = VideoPlayerController.file(file);
+  }
+
+  void _initializedVideoPlayer(String videoUrl) {
+    try {
+      _controller = VideoPlayerController.networkUrl(Uri.parse(_mediaData!.url!));
+    } catch (e) {
+      debugPrint('Error initializing video player: $e');
+    }
+  }
+
   void _togglePlayPause() {
+    if (_controller?.value.isInitialized == false) return;
     setState(() {
       if (_controller?.value.isPlaying ?? false) {
         _controller?.pause();
@@ -73,37 +103,64 @@ class _MediaPreviewWidgetState extends State<MediaPreviewWidget> {
   }
 
   @override
-  Widget build(BuildContext context) => BlocBuilder<CreatePostBloc, CreatePostState>(
-        builder: (context, state) => Stack(
-          children: [
-            if (widget.postAttributeClass?.postType == MediaType.video) ...[
+  Widget build(BuildContext context) => BlocConsumer<CreatePostBloc, CreatePostState>(
+        listenWhen: (previous, current) => current is CompressionProgressState,
+        listener: (context, state) {
+          if (state is CompressionProgressState) {
+            _compressionProgress.value = state.progress;
+            _isCompressing = state.progress > 0 && state.progress < 100;
+          }
+        },
+        builder: (context, state) => ValueListenableBuilder<double>(
+          valueListenable: _compressionProgress,
+          builder: (context, progress, _) => Stack(
+            children: [
+              // Media Preview Container
               Container(
-                width: Dimens.sixty,
-                height: Dimens.sixty,
+                width: 60.scaledValue,
+                height: 60.scaledValue,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(4.scaledValue),
                   border: Border.all(color: AppColors.colorDBDBDB),
                 ),
+                clipBehavior: Clip.hardEdge,
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(4.scaledValue),
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      // Video Player
-                      _controller?.value.isInitialized ?? false
-                          ? VideoPlayer(_controller!)
-                          : const Center(
-                              child: CircularProgressIndicator(),
-                            ),
-
-                      // Play/Pause Button Overlay
-                      if (_controller?.value.isInitialized ?? false)
+                      if (_mediaData?.mediaType?.mediaType == MediaType.video)
+                        _controller?.value.isInitialized ?? false
+                            ? VideoPlayer(_controller!)
+                            : AppImage.network(
+                                _mediaData!.previewUrl!,
+                                width: Dimens.sixty,
+                                height: Dimens.sixty,
+                                borderRadius: Dimens.borderRadiusAll(4.scaledValue),
+                                fit: BoxFit.cover,
+                              )
+                      else if (Utility.isLocalUrl(_mediaData?.url ?? '') == true)
+                        AppImage.file(
+                          _mediaData!.url!,
+                          width: Dimens.sixty,
+                          height: Dimens.sixty,
+                          fit: BoxFit.cover,
+                        )
+                      else
+                        AppImage.network(
+                          _mediaData?.url ?? '',
+                          width: Dimens.sixty,
+                          height: Dimens.sixty,
+                          borderRadius: Dimens.borderRadiusAll(4.scaledValue),
+                          fit: BoxFit.cover,
+                        ),
+                      if (_mediaData?.mediaType?.mediaType == MediaType.video && !_isCompressing)
                         TapHandler(
                           onTap: _togglePlayPause,
                           child: Container(
                             width: Dimens.sixty,
                             height: Dimens.sixty,
-                            color: Colors.black26, // Semi-transparent overlay
+                            color: Colors.black26,
                             child: Icon(
                               _isPlaying ? Icons.pause : Icons.play_arrow,
                               color: AppColors.white,
@@ -114,95 +171,22 @@ class _MediaPreviewWidgetState extends State<MediaPreviewWidget> {
                     ],
                   ),
                 ),
-              )
-            ] else ...[
-              Container(
-                width: Dimens.sixty,
-                height: Dimens.sixty,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  image: DecorationImage(
-                    image: FileImage(widget.postAttributeClass!.file!),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              )
-            ],
-
-            // Progress Bar
-            if (state is UploadingMediaState && state.progress > 0 && state.progress < 99) ...[
-              Positioned.fill(
-                child: Align(
-                  alignment: Alignment.center,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      CircularProgressIndicator(
-                        value: state.progress,
-                        backgroundColor: AppColors.colorDBDBDB,
-                        color: Theme.of(context).primaryColor,
-                      ),
-                    ],
-                  ),
-                ),
               ),
-            ],
-          ],
 
-          // // Check if the postAttributeClass is not null and has a cover image
-          // if (widget.postAttributeClass?.postType == MediaType.video) {
-          //   return Container(
-          //     width: Dimens.sixty,
-          //     height: Dimens.sixty,
-          //     decoration: BoxDecoration(
-          //       borderRadius: BorderRadius.circular(8),
-          //       border: Border.all(color: AppColors.colorDBDBDB),
-          //     ),
-          //     child: ClipRRect(
-          //       borderRadius: BorderRadius.circular(8),
-          //       child: Stack(
-          //         alignment: Alignment.center,
-          //         children: [
-          //           // Video Player
-          //           _controller?.value.isInitialized ?? false
-          //               ? VideoPlayer(_controller!)
-          //               : const Center(
-          //                   child: CircularProgressIndicator(),
-          //                 ),
-          //
-          //           // Play/Pause Button Overlay
-          //           if (_controller?.value.isInitialized ?? false)
-          //             TapHandler(
-          //               onTap: _togglePlayPause,
-          //               child: Container(
-          //                 width: Dimens.sixty,
-          //                 height: Dimens.sixty,
-          //                 color: Colors.black26, // Semi-transparent overlay
-          //                 child: Icon(
-          //                   _isPlaying ? Icons.pause : Icons.play_arrow,
-          //                   color: AppColors.white,
-          //                   size: Dimens.twentyFour,
-          //                 ),
-          //               ),
-          //             ),
-          //         ],
-          //       ),
-          //     ),
-          //   );
-          // }
-          //
-          // // For image type
-          // return Container(
-          //   width: Dimens.sixty,
-          //   height: Dimens.sixty,
-          //   decoration: BoxDecoration(
-          //     borderRadius: BorderRadius.circular(8),
-          //     image: DecorationImage(
-          //       image: FileImage(widget.postAttributeClass!.file!),
-          //       fit: BoxFit.cover,
-          //     ),
-          //   ),
-          // );
+              // 🔵 Progress Border - Top
+              if (_isCompressing)
+                // Rectangular border progress overlay
+                CustomPaint(
+                  size: Size(60.scaledValue, 60.scaledValue),
+                  painter: RectangularProgressBar(
+                    progress: progress / 100,
+                    color: Colors.amber,
+                    strokeWidth: 3.scaledValue,
+                    borderRadius: 8.scaledValue,
+                  ),
+                ),
+            ],
+          ),
         ),
       );
 }

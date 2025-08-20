@@ -5,7 +5,7 @@ import 'package:ism_video_reel_player_example/utils/utils.dart';
 class LikePostUseCase extends BaseUseCase {
   LikePostUseCase(this._repository);
 
-  final PostRepository _repository;
+  final SocialRepository _repository;
 
   Future<ApiResult<ResponseClass?>> executeLikePost({
     required bool isLoading,
@@ -20,6 +20,9 @@ class LikePostUseCase extends BaseUseCase {
           userId: userId,
           likeAction: likeAction,
         );
-        return ApiResult(data: response.responseCode == 200 ? response.data : null);
+        return ApiResult(
+            data: response.responseCode == 200 || response.responseCode == 201
+                ? response.data
+                : null);
       });
 }

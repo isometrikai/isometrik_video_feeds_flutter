@@ -112,5 +112,31 @@ enum NavbarType {
   final bool isVisible;
 
   // Helper method to get visible items
-  static List<NavbarType> get visibleItems => NavbarType.values.where((item) => item.isVisible).toList();
+  static List<NavbarType> get visibleItems =>
+      NavbarType.values.where((item) => item.isVisible).toList();
+}
+
+enum SocialPostAction {
+  like,
+  unlike,
+  comment,
+  share,
+  report,
+  delete,
+  save,
+  unSave,
+}
+
+enum ReasonsFor {
+  socialPost,
+  comment,
+}
+
+enum CommentAction {
+  like,
+  dislike,
+  report,
+  delete,
+  comment,
+  edit,
 }

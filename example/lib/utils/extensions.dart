@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:ism_video_reel_player_example/utils/utils.dart';
 
 extension ContextExtension on BuildContext {
@@ -56,4 +57,42 @@ extension MediaTypeExtension on MediaType {
 
 extension ColorExtension on String {
   Color get toHexColor => Color(int.parse('0xFF$this'));
+}
+
+extension PlatformExtension on num {
+  String get platformText => switch (this) {
+        1 => 'android',
+        2 => 'ios',
+        int() => 'android',
+        double() => 'android',
+      };
+}
+
+extension MediaTypeExtensionOnString on String {
+  MediaType get mediaType => switch (this) {
+        'photo' => MediaType.photo,
+        'video' => MediaType.video,
+        String() => MediaType.both,
+      };
+}
+
+extension PercentageWidthExtension on num {
+  double get percentWidth => (this / 100).toDouble().sw;
+}
+
+extension PercentageHeightExtension on num {
+  double get percentHeight => (this / 100).toDouble().sh;
+}
+
+extension DimensionExtension on num {
+  double get scaledValue => sp;
+}
+
+extension HeightExtension on num {
+  SizedBox get verticalSpace =>
+      this == 0 ? const SizedBox.shrink() : SizedBox(height: toDouble().scaledValue);
+}
+
+extension WidthExtension on num {
+  SizedBox get horizontalSpace => SizedBox(width: toDouble().scaledValue);
 }

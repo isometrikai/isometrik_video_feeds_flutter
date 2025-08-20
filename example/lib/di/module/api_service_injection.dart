@@ -19,5 +19,7 @@ class ApiServiceInjection {
     // Register the API services with their respective providers
     InjectionUtils.registerApiService<PostApiService>(
         () => PostApiServiceProvider(networkClient: networkClient));
+    InjectionUtils.registerApiService<SocialApiService>(() => SocialApiServiceProvider(
+        networkClient: networkClient, deviceInfoManager: deviceInfoManager));
   }
 }
