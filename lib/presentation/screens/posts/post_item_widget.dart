@@ -73,6 +73,9 @@ class _PostItemWidgetState extends State<PostItemWidget> {
   void _onStartInit() async {
     _reelsDataList = widget.reelsDataList;
 
+    if (_reelsDataList.isListEmptyOrNull == false) {
+      _doMediaCaching(0);
+    }
     _pageController = PageController(initialPage: widget.startingPostIndex ?? 0);
 
     // Check current state
