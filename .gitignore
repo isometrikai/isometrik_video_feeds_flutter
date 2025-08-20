@@ -49,3 +49,4 @@ app.*.map.json
 /windows/flutter/generated_plugin_registrant.cc
 /linux/flutter/generated_plugin_registrant.cc
 /example/android/app/.cxx/Debug
+/example/assets/json/google_service_json.json

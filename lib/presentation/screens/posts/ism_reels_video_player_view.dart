@@ -296,7 +296,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                   if (_videoPlayerController?.value.isPlaying == false) {
                     _videoPlayerController?.seekTo(Duration.zero);
                     _videoPlayerController?.play();
-                    _isPlaying = !_isPlaying;
+                    _isPlaying = true;
                     mountUpdate();
                   }
                 } else {
@@ -305,7 +305,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                   mountUpdate();
                   if (_videoPlayerController?.value.isPlaying == true) {
                     _videoPlayerController?.pause();
-                    _isPlaying = !_isPlaying;
+                    _isPlaying = false;
                     mountUpdate();
                   }
                 }
