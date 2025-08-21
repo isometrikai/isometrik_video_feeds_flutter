@@ -225,10 +225,9 @@ class Utility {
     required Widget child,
     bool isDarkBG = false,
     bool isDismissible = true,
-    bool isScrollControlled = false,
+    bool isScrollControlled = true,
     Color? backgroundColor,
     double? height,
-    BuildContext? context,
   }) =>
       showModalBottomSheet<T>(
         context: exNavigatorKey.currentContext!,

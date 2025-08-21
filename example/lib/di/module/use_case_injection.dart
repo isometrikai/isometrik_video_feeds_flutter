@@ -36,9 +36,9 @@ class UseCaseInjection {
     InjectionUtils.registerUseCase<LikePostUseCase>(
         () => LikePostUseCase(InjectionUtils.getRepo<SocialRepository>()));
     InjectionUtils.registerUseCase<ReportPostUseCase>(
-        () => ReportPostUseCase(InjectionUtils.getRepo<PostRepository>()));
+        () => ReportPostUseCase(InjectionUtils.getRepo<SocialRepository>()));
     InjectionUtils.registerUseCase<GetReportReasonsUseCase>(
-        () => GetReportReasonsUseCase(InjectionUtils.getRepo<PostRepository>()));
+        () => GetReportReasonsUseCase(InjectionUtils.getRepo<SocialRepository>()));
     InjectionUtils.registerUseCase<GetCloudDetailsUseCase>(
         () => GetCloudDetailsUseCase(InjectionUtils.getRepo<PostRepository>()));
     InjectionUtils.registerUseCase<GetTimelinePostUseCase>(

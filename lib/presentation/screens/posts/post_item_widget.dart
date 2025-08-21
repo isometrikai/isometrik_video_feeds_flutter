@@ -193,9 +193,20 @@ class _PostItemWidgetState extends State<PostItemWidget> {
             if (result is bool) {
               final isSuccess = result;
               if (isSuccess) {
-                setState(() {
-                  _reelsDataList.removeAt(index);
-                });
+                final postIndex =
+                    _reelsDataList.indexWhere((element) => element.postId == reelsData.postId);
+                if (postIndex != -1) {
+                  setState(() {
+                    _reelsDataList.removeAt(postIndex);
+                  });
+                  final imageUrl = _reelsDataList[postIndex].mediaUrl;
+                  final thumbnailUrl = _reelsDataList[postIndex].thumbnailUrl;
+                  if (_reelsDataList[postIndex].mediaType == 0) {
+                    await _evictDeletedPostImage(imageUrl);
+                  } else {
+                    await _evictDeletedPostImage(thumbnailUrl);
+                  }
+                }
               }
             }
             if (result is ReelsData) {

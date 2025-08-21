@@ -4,7 +4,7 @@ import 'package:ism_video_reel_player_example/domain/domain.dart';
 class GetReportReasonsUseCase extends BaseUseCase {
   GetReportReasonsUseCase(this._repository);
 
-  final PostRepository _repository;
+  final SocialRepository _repository;
 
   Future<ApiResult<List<String>?>> executeGetReportReasons({
     required bool isLoading,
