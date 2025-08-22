@@ -245,7 +245,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
         _reelData.mediaUrl,
         width: IsrDimens.getScreenWidth(context),
         height: IsrDimens.getScreenHeight(context),
-        fit: BoxFit.contain,
+        fit: BoxFit.cover,
       );
     }
 
@@ -259,7 +259,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
           _reelData.thumbnailUrl,
           width: IsrDimens.getScreenWidth(context),
           height: IsrDimens.getScreenHeight(context),
-          fit: BoxFit.cover,
+          fit: BoxFit.contain,
         ),
 
         // Video player with fade-in animation

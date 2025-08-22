@@ -72,11 +72,11 @@ class _PostItemWidgetState extends State<PostItemWidget> {
 
   void _onStartInit() async {
     _reelsDataList = widget.reelsDataList;
+    _pageController = PageController(initialPage: widget.startingPostIndex ?? 0);
 
     if (_reelsDataList.isListEmptyOrNull == false) {
-      _doMediaCaching(0);
+      await _doMediaCaching(0);
     }
-    _pageController = PageController(initialPage: widget.startingPostIndex ?? 0);
 
     // Check current state
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -97,6 +97,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
   void dispose() {
     _pageController.dispose();
     _videoCacheManager.clearAll();
+    // _clearAllCache();
     super.dispose();
   }
 
@@ -241,14 +242,14 @@ class _PostItemWidgetState extends State<PostItemWidget> {
     if (!mounted) return;
 
     // Use compute for background processing if needed
-    unawaited(compute((List<String> urls) => urls, urls).then((processedUrls) {
+    await compute((List<String> urls) => urls, urls).then((processedUrls) {
       if (!mounted) return;
       IsrVideoReelUtility.preCacheImages(urls, context);
-    }));
+    });
   }
 
   // Update your _doImageCaching method to handle both images and videos
-  void _doMediaCaching(int index) {
+  Future<void> _doMediaCaching(int index) async {
     final reelsData = _reelsDataList[index];
     final username = reelsData.userName;
     final mediaType = reelsData.mediaType;
@@ -256,9 +257,9 @@ class _PostItemWidgetState extends State<PostItemWidget> {
     debugPrint('🎯 MainWidget: Page changed to index $index (@$username - $mediaType)');
 
     // Precache images around current position
-    _precacheNearbyImages(index);
+    await _precacheNearbyImages(index);
     // Precache videos around current position
-    _precacheNearbyVideos(index);
+    await _precacheNearbyVideos(index);
 
     // Print cache stats every few scrolls
     if (index % 3 == 0) {
@@ -267,7 +268,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
     }
   }
 
-  void _precacheNearbyImages(int currentIndex) {
+  Future<void> _precacheNearbyImages(int currentIndex) async {
     if (_reelsDataList.isEmpty) return;
 
     // Cache more aggressively ahead since users typically scroll forward
@@ -290,7 +291,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
     if (imagesToCache.isNotEmpty) {
       // Priority: cache next post first, then others
       final prioritizedImages = _prioritizeNextPost(imagesToCache, currentIndex);
-      unawaited(_cacheImagesInBackground(prioritizedImages));
+      await _cacheImagesInBackground(prioritizedImages);
     }
   }
 
@@ -310,7 +311,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
   }
 
   // Add this new method for video precaching
-  void _precacheNearbyVideos(int currentIndex) {
+  Future<void> _precacheNearbyVideos(int currentIndex) async {
     if (_reelsDataList.isEmpty) return;
 
     debugPrint('🎬 MainWidget: Starting video precaching for index $currentIndex');
@@ -365,7 +366,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
       final prioritizedVideos = _prioritizeNextVideo(videosToCache, currentIndex);
       debugPrint('🚀 MainWidget: Starting precache for ${prioritizedVideos.length} videos');
 
-      unawaited(_videoCacheManager.precacheVideos(prioritizedVideos));
+      await _videoCacheManager.precacheVideos(prioritizedVideos);
     } else {
       debugPrint('✅ MainWidget: No new videos to cache around index $currentIndex');
     }

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -184,7 +185,31 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       // postBloc.add(PostsLoadedEvent([],
       //     widget.tabDataModelList[_currentIndex].postList));
     });
+
+    if (widget.tabDataModelList.isListEmptyOrNull == false) {
+      var tabData = widget.tabDataModelList[_currentIndex];
+      final reelsDataList = tabData.reelsDataList;
+      final listOfUrls = <String>[];
+      for (var reelsData in reelsDataList) {
+        listOfUrls.add(reelsData.mediaUrl);
+        if (reelsData.thumbnailUrl.isStringEmptyOrNull == false) {
+          listOfUrls.add(reelsData.thumbnailUrl);
+        }
+      }
+      // await _cacheImagesInBackground(listOfUrls);
+    }
     postBloc.add(const StartPost());
+  }
+
+  Future<void> _cacheImagesInBackground(List<String> urls) async {
+    debugPrint('cacheImagesInBackground:.... $urls');
+    if (!mounted) return;
+
+    // Use compute for background processing if needed
+    await compute((List<String> urls) => urls, urls).then((processedUrls) {
+      if (!mounted) return;
+      IsrVideoReelUtility.preCacheImages(urls, context);
+    });
   }
 
   @override
