@@ -245,7 +245,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
         _reelData.mediaUrl,
         width: IsrDimens.getScreenWidth(context),
         height: IsrDimens.getScreenHeight(context),
-        fit: BoxFit.cover,
+        fit: BoxFit.contain,
       );
     }
 
