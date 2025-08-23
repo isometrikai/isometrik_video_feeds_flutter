@@ -320,9 +320,25 @@ class SocialRepositoryImpl implements SocialRepository {
         onProgress: (progress) {
           if (onProgress == null) return;
           onProgress(progress);
-          // debugPrint('_uploadMediaToGoogleCloud......progress: ${progress * 100}');
-          // progressCallBackFunction.call(progress * 100);
         });
     return response ?? '';
+  }
+
+  @override
+  Future<CustomResponse<ResponseClass?>> processMedia({
+    required bool isLoading,
+    required String postId,
+  }) async {
+    try {
+      final header = await _dataSource.getHeader();
+      final response = await _apiService.processMedia(
+        isLoading: isLoading,
+        header: header,
+        postId: postId,
+      );
+      return _mapper.mapResponseData(response);
+    } catch (e) {
+      rethrow;
+    }
   }
 }

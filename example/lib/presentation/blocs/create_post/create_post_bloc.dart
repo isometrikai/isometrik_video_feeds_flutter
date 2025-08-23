@@ -26,18 +26,22 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     this._getPostDetailsUseCase,
     this._localDataUseCase,
     this.googleCloudStorageUploaderUseCase,
+    this.mediaProcessingUseCase,
   ) : super(CreatePostInitialState()) {
     on<CreatePostInitialEvent>(_initState);
     on<PostCreateEvent>(_createPost);
     on<MediaSourceEvent>(_openMediaSource);
     on<GetSocialPostDetailsEvent>(_getPostDetails);
     on<EditPostEvent>(_editPost);
+    on<MediaUploadEvent>(_uploadMedia);
+    on<MediaProcessingEvent>(_processMedia);
   }
 
   final CreatePostUseCase _createPostUseCase;
   final GetPostDetailsUseCase _getPostDetailsUseCase;
   final LocalDataUseCase _localDataUseCase;
   final GoogleCloudStorageUploaderUseCase googleCloudStorageUploaderUseCase;
+  final MediaProcessingUseCase mediaProcessingUseCase;
 
   var _createPostRequest = CreatePostRequest();
   var descriptionText = '';
@@ -60,6 +64,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   final List<MediaData> _mediaDataList = [];
   var _selectedMediaIndex = 0;
   var _tags = Tags();
+  var _isForEdit = false;
 
   FutureOr<void> _initState(CreatePostInitialEvent event, Emitter<CreatePostState> emit) {
     _resetData();
@@ -83,6 +88,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     _mediaDataList.clear();
     _selectedMediaIndex = 0;
     isScheduledPost = false;
+    _isForEdit = false;
     descriptionText = '';
     selectedDate = DateTime.now().add(const Duration(hours: 1));
     linkedProducts.clear();
@@ -159,39 +165,39 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       emit(
         event.isCoverImage
             ? CoverImageSelected(
-                coverImage: _mediaDataList.first.previewUrl,
-                isPostButtonEnable: mediaData.url.isEmptyOrNull == false &&
+                coverImage: _mediaDataList[_selectedMediaIndex].previewUrl,
+                isPostButtonEnable: mediaData.localPath.isEmptyOrNull == false &&
                     mediaData.previewUrl.isEmptyOrNull == false,
               )
             : MediaSelectedState(
                 mediaDataList: _mediaDataList,
-                isPostButtonEnable: mediaData.url.isEmptyOrNull == false &&
+                isPostButtonEnable: mediaData.localPath.isEmptyOrNull == false &&
                     mediaData.previewUrl.isEmptyOrNull == false,
               ),
       );
 
       if (AppConstants.isCompressionEnable &&
-          _mediaDataList[_selectedMediaIndex].url.isEmptyOrNull == false) {
+          _mediaDataList[_selectedMediaIndex].localPath.isEmptyOrNull == false) {
         final compressedFile =
-            await _compressFile(File(mediaData.url ?? ''), event.mediaType, emit);
-        _mediaDataList[_selectedMediaIndex].url = compressedFile?.path;
+            await _compressFile(File(mediaData.localPath ?? ''), event.mediaType, emit);
+        _mediaDataList[_selectedMediaIndex].localPath = compressedFile?.path;
       }
       emit(
         event.isCoverImage
             ? CoverImageSelected(
-                coverImage: _mediaDataList.first.previewUrl,
-                isPostButtonEnable: mediaData.url.isEmptyOrNull == false &&
+                coverImage: _mediaDataList[_selectedMediaIndex].previewUrl,
+                isPostButtonEnable: mediaData.localPath.isEmptyOrNull == false &&
                     mediaData.previewUrl.isEmptyOrNull == false,
               )
             : MediaSelectedState(
                 mediaDataList: _mediaDataList,
-                isPostButtonEnable: mediaData.url.isEmptyOrNull == false &&
+                isPostButtonEnable: mediaData.localPath.isEmptyOrNull == false &&
                     mediaData.previewUrl.isEmptyOrNull == false,
               ),
       );
       debugPrint('postAttribute: ${jsonEncode(mediaData.toMap())}');
+      debugPrint('postAttribute local path: ${mediaData.localPath}');
     }
-    debugPrint('createPostRequest: ${jsonEncode(_createPostRequest.toJson())}');
   }
 
   // Add this method in _CameraViewState
@@ -282,7 +288,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       if (isForCoverImage == false) {
         newMediaData.assetId = '';
         newMediaData.size = mediaFile.lengthSync();
-        newMediaData.url = mediaFile.path;
+        newMediaData.localPath = mediaFile.path;
         newMediaData.duration = mediaInfoClass.duration;
         newMediaData.mediaType = mediaType == MediaType.video ? 'video' : 'image';
         if (mediaType == MediaType.video) {
@@ -320,63 +326,16 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
   FutureOr<void> _createPost(PostCreateEvent event, Emitter<CreatePostState> emit) async {
     FocusManager.instance.primaryFocus?.unfocus();
-    if (_mediaDataList.isEmptyOrNull == false) {
-      for (var index = 0; index < _mediaDataList.length; index++) {
-        final mediaData = _mediaDataList[index];
-        if (mediaData.url.isEmptyOrNull == false && Utility.isLocalUrl(mediaData.url ?? '')) {
-          mediaData.url = await _uploadMediaToGoogleCloud(
-            File(mediaData.url ?? ''),
-            mediaData.fileName ?? '',
-            mediaData.mediaType?.mediaType,
-            (progress) {
-              emit(ShowProgressDialogState(
-                progress: progress,
-                title: mediaData.mediaType?.mediaType == MediaType.photo
-                    ? TranslationFile.uploadingImage
-                    : TranslationFile.uploadingVideo,
-                subTitle: 'Uploading media...',
-              ));
-            },
-            _mediaDataList[_selectedMediaIndex].mediaType?.mediaType == MediaType.photo
-                ? AppConstants.cloudinaryImageFolder
-                : AppConstants.cloudinaryVideoFolder,
-            mediaData.fileExtension ?? '',
-          );
-          if (mediaData.mediaType?.mediaType == MediaType.photo) {
-            mediaData.previewUrl = mediaData.url;
-          }
-        }
+    await _createMediaUrls();
 
-        if (mediaData.previewUrl.isEmptyOrNull || Utility.isLocalUrl(mediaData.previewUrl ?? '')) {
-          final thumbnailUrl = await _uploadMediaToGoogleCloud(
-            File(mediaData.previewUrl ?? ''),
-            mediaData.coverFileName ?? '',
-            MediaType.photo,
-            (progress) {
-              emit(ShowProgressDialogState(
-                progress: progress,
-                title: TranslationFile.uploadingCoverImage,
-                subTitle: 'Uploading cover image...',
-              ));
-            },
-            AppConstants.cloudinaryThumbnailFolder,
-            mediaData.coverFileExtension ?? '',
-          );
-          mediaData.previewUrl = thumbnailUrl;
-        }
-        _mediaDataList[index] = mediaData;
-      }
-    }
-
-    _createPostRequest.media = _mediaDataList;
-
-    if (_createPostRequest.media!.isEmptyOrNull == true) {
+    if (_mediaDataList.isEmptyOrNull == true) {
       return;
     }
+    _createPostRequest.media = _mediaDataList;
 
     _createPostRequest.type = _mediaDataList.length > 1
         ? SocialPostType.carousel
-        : _mediaDataList.first.mediaType?.mediaType == MediaType.video
+        : _mediaDataList[_selectedMediaIndex].mediaType?.mediaType == MediaType.video
             ? SocialPostType.video
             : SocialPostType.image;
     _createPostRequest.visibility = 'public';
@@ -420,27 +379,10 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       if (_postData != null) {
         _updatePostData();
       }
-      final createPostData = apiResult.data?.newData;
+      final createPostData = apiResult.data?.data;
       final postDataModelResponse =
           _postData != null ? jsonEncode(_postData?.toMap()) : jsonEncode(createPostData?.toJson());
-      emit(
-        PostCreatedState(
-          postDataModel: postDataModelResponse,
-          postSuccessMessage: event.isForEdit == true
-              ? TranslationFile.postUpdatedSuccessfully
-              : isScheduledPost
-                  ? TranslationFile.postScheduledSuccessfully
-                  : TranslationFile.socialPostCreatedSuccessfully,
-          postSuccessTitle: event.isForEdit == true
-              ? TranslationFile.successfullyEdited
-              : isScheduledPost
-                  ? TranslationFile.successfullyScheduled
-                  : TranslationFile.successfullyPosted,
-        ),
-      );
-
-      // Reset all variables after successful post creation
-      _resetData();
+      add(MediaUploadEvent(mediaDataList: _mediaDataList, postId: createPostData?.id ?? ''));
     } else {
       ErrorHandler.showAppError(appError: apiResult.error, isNeedToShowError: true);
     }
@@ -540,8 +482,19 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     _postData = event.postData;
     _mediaDataList.clear();
     _mediaDataList.addAll(_postData?.media ?? []);
+    for (var element in _mediaDataList) {
+      element.fileName = _extractFileName(element.url ?? '');
+    }
+    _isForEdit = true;
     _makePostRequest();
     emit(MediaSelectedState(mediaDataList: _mediaDataList, isPostButtonEnable: false));
+  }
+
+  String _extractFileName(String url) {
+    final uri = Uri.parse(url);
+    final fullName = uri.pathSegments.last;
+    final nameWithoutExt = fullName.split('.').first;
+    return nameWithoutExt;
   }
 
   void _makePostRequest() {
@@ -589,5 +542,120 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     final now = DateTime.now();
     final bufferedDate = now.add(const Duration(minutes: 15));
     return bufferedDate;
+  }
+
+  FutureOr<void> _uploadMedia(MediaUploadEvent event, Emitter<CreatePostState> emit) async {
+    if (_mediaDataList.isEmptyOrNull == false) {
+      for (var index = 0; index < _mediaDataList.length; index++) {
+        final mediaData = _mediaDataList[index];
+        if (mediaData.localPath.isEmptyOrNull == false &&
+            Utility.isLocalUrl(mediaData.localPath ?? '')) {
+          mediaData.url = await _uploadMediaToGoogleCloud(
+            File(mediaData.localPath ?? ''),
+            mediaData.fileName ?? '',
+            mediaData.mediaType?.mediaType,
+            (progress) {
+              emit(ShowProgressDialogState(
+                progress: progress,
+                title: mediaData.mediaType?.mediaType == MediaType.photo
+                    ? TranslationFile.uploadingImage
+                    : TranslationFile.uploadingVideo,
+                subTitle: 'Uploading media...',
+              ));
+            },
+            _mediaDataList[_selectedMediaIndex].mediaType?.mediaType == MediaType.photo
+                ? AppConstants.cloudinaryImageFolder
+                : AppConstants.cloudinaryVideoFolder,
+            mediaData.fileExtension ?? '',
+          );
+        }
+        _mediaDataList[index] = mediaData;
+      }
+    }
+    final isMediaChanged = _isMediaChanged();
+    if (isMediaChanged) {
+      add(MediaProcessingEvent(postId: event.postId));
+    } else {
+      if (_isForEdit) {
+        _updatePostData();
+      }
+      emit(PostCreatedState(
+        postDataModel: jsonEncode(_postData?.toMap()),
+        postSuccessMessage: _isForEdit
+            ? TranslationFile.postUpdatedSuccessfully
+            : isScheduledPost
+                ? TranslationFile.postScheduledSuccessfully
+                : TranslationFile.socialPostCreatedSuccessfully,
+        postSuccessTitle: _isForEdit
+            ? TranslationFile.successfullyEdited
+            : isScheduledPost
+                ? TranslationFile.successfullyScheduled
+                : TranslationFile.successfullyPosted,
+      ));
+    }
+  }
+
+  bool _isMediaChanged() => _mediaDataList.any((mediaData) =>
+      mediaData.localPath.isEmptyOrNull == false && Utility.isLocalUrl(mediaData.localPath ?? ''));
+
+  FutureOr<void> _processMedia(MediaProcessingEvent event, Emitter<CreatePostState> emit) async {
+    final apiResult = await mediaProcessingUseCase.executeMediaProcessing(
+      isLoading: true,
+      postId: event.postId,
+    );
+    if (apiResult.isSuccess) {
+      if (_isForEdit) {
+        _updatePostData();
+      }
+      emit(PostCreatedState(
+        postDataModel: _isForEdit ? jsonEncode(_postData?.toMap()) : '',
+        postSuccessMessage: _isForEdit
+            ? TranslationFile.postUpdatedSuccessfully
+            : isScheduledPost
+                ? TranslationFile.postScheduledSuccessfully
+                : TranslationFile.socialPostCreatedSuccessfully,
+        postSuccessTitle: _isForEdit
+            ? TranslationFile.successfullyEdited
+            : isScheduledPost
+                ? TranslationFile.successfullyScheduled
+                : TranslationFile.successfullyPosted,
+      ));
+      _resetData();
+    } else {
+      ErrorHandler.showAppError(appError: apiResult.error, isNeedToShowError: true);
+    }
+  }
+
+  Future<void> _createMediaUrls() async {
+    if (_mediaDataList.isEmptyOrNull == false) {
+      final userId = await _localDataUseCase.getUserId();
+      for (var index = 0; index < _mediaDataList.length; index++) {
+        final mediaData = _mediaDataList[index];
+        if (mediaData.localPath.isEmptyOrNull == false &&
+            Utility.isLocalUrl(mediaData.localPath ?? '')) {
+          final finalFileName = '${mediaData.fileName}_${DateTime.now().millisecondsSinceEpoch}';
+          mediaData.fileName = finalFileName;
+          final normalizedFolder =
+              '${AppConstants.tenantId}/${AppConstants.projectId}/user_$userId/posts/$finalFileName${mediaData.fileExtension}';
+          final uploadUrl = '${AppUrl.gumletUrl}/$normalizedFolder';
+          mediaData.url = uploadUrl;
+          if (mediaData.mediaType?.mediaType == MediaType.photo) {
+            mediaData.previewUrl = mediaData.url;
+          } else {
+            if (mediaData.previewUrl.isEmptyOrNull == false &&
+                Utility.isLocalUrl(mediaData.previewUrl ?? '')) {
+              final finalFileName =
+                  '${mediaData.coverFileName}_${DateTime.now().millisecondsSinceEpoch}';
+              mediaData.coverFileName = finalFileName;
+              final normalizedFolder =
+                  '${AppConstants.tenantId}/${AppConstants.projectId}/user_$userId/posts/$finalFileName${mediaData.coverFileExtension}';
+              final uploadUrl = '${AppUrl.gumletUrl}/$normalizedFolder';
+              mediaData.previewUrl = uploadUrl;
+            }
+          }
+        }
+        _mediaDataList[index] = mediaData;
+      }
+    }
   }
 }

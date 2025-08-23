@@ -48,3 +48,16 @@ class EditPostEvent extends CreatePostEvent {
   EditPostEvent({required this.postData});
   final TimeLineData postData;
 }
+
+class MediaUploadEvent extends CreatePostEvent {
+  MediaUploadEvent({required this.mediaDataList, required this.postId});
+
+  final List<MediaData> mediaDataList;
+  final String postId;
+}
+
+class MediaProcessingEvent extends CreatePostEvent {
+  MediaProcessingEvent({required this.postId});
+
+  final String postId;
+}

@@ -70,7 +70,7 @@ class AppImage extends StatelessWidget {
     super.key,
     this.name = 'U',
     this.fit,
-    this.isProfileImage = true,
+    this.isProfileImage = false,
     this.dimensions,
     this.height,
     this.width,

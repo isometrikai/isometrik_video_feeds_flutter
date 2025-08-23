@@ -52,5 +52,7 @@ class UseCaseInjection {
         () => CommentActionUseCase(InjectionUtils.getRepo<SocialRepository>()));
     InjectionUtils.registerUseCase<GetPostCommentUseCase>(
         () => GetPostCommentUseCase(InjectionUtils.getRepo<SocialRepository>()));
+    InjectionUtils.registerUseCase<MediaProcessingUseCase>(
+        () => MediaProcessingUseCase(InjectionUtils.getRepo<SocialRepository>()));
   }
 }

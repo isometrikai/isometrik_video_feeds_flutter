@@ -32,7 +32,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
         resizeToAvoidBottomInset: false,
-        backgroundColor: AppColors.grey.shade300,
+        backgroundColor: Colors.black.applyOpacity(0.50),
+        extendBodyBehindAppBar: true,
         body: BlocBuilder<HomeBloc, HomeState>(
           buildWhen: _filterBuildStates,
           builder: (context, state) {

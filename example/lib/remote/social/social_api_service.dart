@@ -116,4 +116,10 @@ abstract class SocialApiService extends BaseService {
     required String postId,
     required Header header,
   });
+
+  Future<ResponseModel> processMedia({
+    required bool isLoading,
+    required String postId,
+    required Header header,
+  });
 }

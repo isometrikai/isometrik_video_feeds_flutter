@@ -98,4 +98,9 @@ abstract class SocialRepository extends BaseRepository {
     Function(double)? onProgress,
     String? cloudFolderName,
   });
+
+  Future<CustomResponse<ResponseClass?>> processMedia({
+    required bool isLoading,
+    required String postId,
+  });
 }

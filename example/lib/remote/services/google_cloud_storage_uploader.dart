@@ -128,7 +128,7 @@ class GoogleCloudStorageUploader {
     String? cloudFolderName,
   }) async {
     try {
-      final finalFileName = '${DateTime.now().millisecondsSinceEpoch}_$fileName';
+      final finalFileName = fileName;
       final normalizedFolder = cloudFolderName.isEmptyOrNull == false
           ? cloudFolderName?.trim() ?? ''
           : '${AppConstants.tenantId}/${AppConstants.projectId}/user_$userId/posts/$finalFileName$fileExtension';

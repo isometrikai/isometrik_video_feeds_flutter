@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -196,20 +195,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           listOfUrls.add(reelsData.thumbnailUrl);
         }
       }
-      // await _cacheImagesInBackground(listOfUrls);
     }
     postBloc.add(const StartPost());
-  }
-
-  Future<void> _cacheImagesInBackground(List<String> urls) async {
-    debugPrint('cacheImagesInBackground:.... $urls');
-    if (!mounted) return;
-
-    // Use compute for background processing if needed
-    await compute((List<String> urls) => urls, urls).then((processedUrls) {
-      if (!mounted) return;
-      IsrVideoReelUtility.preCacheImages(urls, context);
-    });
   }
 
   @override
@@ -222,36 +209,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  // Widget _buildTabBarView(TabDataModel tabData, int index) => PostItemWidget(
-  //       onPressSave: tabData.onPressSave,
-  //       onTapMore: tabData.onTapMore,
-  //       onPressLike: tabData.onPressLike,
-  //       onPressFollow: tabData.onPressFollow,
-  //       onCreatePost: tabData.onCreatePost,
-  //       onLoadMore: tabData.onLoadMore,
-  //       onTapCartIcon: tabData.onTapCartIcon,
-  //       onRefresh: tabData.onRefresh,
-  //       placeHolderWidget: tabData.placeHolderWidget,
-  //       postSectionType: tabData.postSectionType,
-  //       onTapPlaceHolder: () {
-  //         if ((_postTabController?.length ?? 0) > 1) {
-  //           _tabsVisibilityNotifier.value = true;
-  //           _currentIndex++;
-  //           _postTabController?.animateTo(1);
-  //         }
-  //       },
-  //       onTapComment: tabData.onTapComment,
-  //       onTapShare: tabData.onTapShare,
-  //       isCreatePostButtonVisible: tabData.isCreatePostButtonVisible,
-  //       startingPostIndex: tabData.startingPostIndex,
-  //       onTapUserProfilePic: (userId) {
-  //         if (tabData.onTapUserProfile == null) return;
-  //         tabData.onTapUserProfile!(userId);
-  //       },
-  //       loggedInUserId: _loggedInUserId,
-  //       allowImplicitScrolling: widget.allowImplicitScrolling,
-  //       onPageChanged: widget.onPageChanged,
-  //     );
   Widget _buildTabBarView(TabDataModel tabData, int index) => PostItemWidget(
         onTapPlaceHolder: () {
           if ((_postTabController?.length ?? 0) > 1) {

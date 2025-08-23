@@ -104,9 +104,9 @@ class _CreatePostViewState extends State<CreatePostView> {
             if (_mediaDataList.isEmptyOrNull) return;
             final mediaData = _mediaDataList.first;
             _coverImage = mediaData.previewUrl ?? '';
-            if (mediaData.url.isEmptyOrNull == false &&
-                Utility.isLocalUrl(mediaData.url ?? '') == true) {
-              final localFile = File(mediaData.url ?? '');
+            if (mediaData.localPath.isEmptyOrNull == false &&
+                Utility.isLocalUrl(mediaData.localPath ?? '') == true) {
+              final localFile = File(mediaData.localPath ?? '');
               _mediaLength = localFile.lengthSync();
             }
             if (_isForEdit) {
@@ -589,7 +589,7 @@ class _CreatePostViewState extends State<CreatePostView> {
 
   Widget _buildSelectedMediaSection(MediaData mediaData) => Row(
         children: [
-          MediaPreviewWidget(mediaData: mediaData),
+          MediaPreviewWidget(key: Key(mediaData.localPath ?? ''), mediaData: mediaData),
           12.horizontalSpace,
           Expanded(
             child: Column(

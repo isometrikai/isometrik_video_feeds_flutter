@@ -41,6 +41,7 @@ class BlocInjection {
           InjectionUtils.getUseCase<GetPostDetailsUseCase>(),
           _localDataUseCase,
           InjectionUtils.getUseCase<GoogleCloudStorageUploaderUseCase>(),
+          InjectionUtils.getUseCase<MediaProcessingUseCase>(),
         ));
 
     InjectionUtils.registerBloc<UploadProgressCubit>(

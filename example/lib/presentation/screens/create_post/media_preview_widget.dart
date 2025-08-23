@@ -58,8 +58,9 @@ class _MediaPreviewWidgetState extends State<MediaPreviewWidget> {
   Future<void> _initializeVideoPlayer() async {
     if (_mediaData == null) return;
     if (_mediaData?.mediaType?.mediaType == MediaType.video) {
-      if (Utility.isLocalUrl(_mediaData!.url ?? '') == false) {
-        _initializedLocalVideoPlayer(File(_mediaData!.url!));
+      if (_mediaData!.localPath.isEmptyOrNull == false &&
+          Utility.isLocalUrl(_mediaData!.localPath ?? '') == false) {
+        _initializedLocalVideoPlayer(File(_mediaData!.localPath!));
       } else {
         _initializedVideoPlayer(_mediaData!.url!);
       }
@@ -139,9 +140,10 @@ class _MediaPreviewWidgetState extends State<MediaPreviewWidget> {
                                 borderRadius: Dimens.borderRadiusAll(4.scaledValue),
                                 fit: BoxFit.cover,
                               )
-                      else if (Utility.isLocalUrl(_mediaData?.url ?? '') == true)
+                      else if (_mediaData?.localPath.isEmptyOrNull == false &&
+                          Utility.isLocalUrl(_mediaData?.localPath ?? '') == true)
                         AppImage.file(
-                          _mediaData!.url!,
+                          _mediaData!.localPath!,
                           width: Dimens.sixty,
                           height: Dimens.sixty,
                           fit: BoxFit.cover,

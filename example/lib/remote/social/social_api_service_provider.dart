@@ -612,4 +612,31 @@ class SocialApiServiceProvider extends SocialApiService {
         },
         isLoading,
       );
+
+  @override
+  Future<ResponseModel> processMedia({
+    required bool isLoading,
+    required String postId,
+    required Header header,
+  }) async =>
+      await networkClient.makeRequest(
+        SocialApiEndPoints.postMediaProcess(postId),
+        NetworkRequestType.post,
+        null,
+        null,
+        {
+          'Accept': AppConstants.headerAccept,
+          'Content-Type': AppConstants.headerContentType,
+          'Authorization': header.accessToken,
+          'language': header.language,
+          'currencySymbol': header.currencySymbol,
+          'currencyCode': header.currencyCode,
+          'platform': header.platForm.toString(),
+          'latitude': header.latitude.toString(),
+          'longitude': header.longitude.toString(),
+          'x-tenant-id': AppConstants.tenantId,
+          'x-project-id': AppConstants.projectId,
+        },
+        isLoading,
+      );
 }

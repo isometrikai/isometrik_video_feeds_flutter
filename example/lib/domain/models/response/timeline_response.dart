@@ -302,6 +302,7 @@ class MediaData {
   String? assetId;
   num? position;
   String? url;
+  String? localPath;
   String? previewUrl;
   dynamic description;
   num? width;
