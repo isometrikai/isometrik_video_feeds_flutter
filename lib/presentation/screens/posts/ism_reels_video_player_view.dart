@@ -105,44 +105,34 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   var _isPlayPauseActioned = false;
 
-  var _isFollowLoading = false;
+  final ValueNotifier<bool> _isFollowLoading = ValueNotifier(false);
 
-  bool _isExpandedDescription = false;
+  final ValueNotifier<bool> _isExpandedDescription = ValueNotifier(false);
 
-  var _isSaveLoading = false;
+  final ValueNotifier<bool> _isSaveLoading = ValueNotifier(false);
 
-  var _isLikeLoading = false;
+  final ValueNotifier<bool> _isLikeLoading = ValueNotifier(false);
 
   var _isMuted = false;
 
   final _maxLengthToShow = 50;
-  late ReelsData _reelData;
 
-  // Fade animation for video reveal
-  late final AnimationController _fadeController;
-  late final Animation<double> _fadeAnimation;
+  late ReelsData _reelData;
 
   @override
   void initState() {
     super.initState();
-    _fadeController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 250),
-      value: 0.0,
-    );
-    _fadeAnimation = CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut);
     _onStartInit();
   }
 
   void _onStartInit() async {
     _reelData = widget.reelsData!;
-    // Always start unmuted
     _isMuted = false;
     _tapGestureRecognizer = TapGestureRecognizer();
     debugPrint(
         'IsmReelsVideoPlayerView ...Post by ...${_reelData.userName}\n Post url ${_reelData.mediaUrl}');
     if (_reelData.mediaType == kVideoType) {
-      await _initializeVideoPlayer(); // ✅ CHANGED: Make this await
+      await _initializeVideoPlayer();
       mountUpdate();
     }
   }
@@ -168,8 +158,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         // Use cached controller
         debugPrint('IsmReelsVideoPlayerView....Using cached video controller for $videoUrl');
         _setupVideoController();
-        _fadeController.forward(from: 0.0);
-        // mountUpdate();
         return;
       }
 
@@ -181,8 +169,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         _videoPlayerController = _videoCacheManager.getCachedController(videoUrl);
         if (_videoPlayerController != null) {
           _setupVideoController();
-          _fadeController.forward(from: 0.0);
-          mountUpdate();
           return;
         }
       }
@@ -209,8 +195,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     await _videoPlayerController?.initialize();
     _setupVideoController();
-    _fadeController.forward(from: 0.0);
-    mountUpdate();
   }
 
   // Setup video controller settings
@@ -223,8 +207,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   @override
   void dispose() {
     _tapGestureRecognizer?.dispose();
-    _fadeController.dispose();
-
     // Mark as not visible in cache manager
     if (_reelData.mediaUrl.isStringEmptyOrNull == false) {
       _videoCacheManager.markAsNotVisible(_reelData.mediaUrl);
@@ -501,24 +483,26 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             ],
             if (_reelData.postSetting?.isLikeButtonVisible == true)
               StatefulBuilder(
-                builder: (context, setState) => _buildActionButton(
-                  icon: _reelData.isLiked == true
-                      ? AssetConstants.icLikeSelected
-                      : AssetConstants.icLikeUnSelected,
-                  label: _reelData.likesCount.toString(),
-                  onTap: () {
-                    _callLikeFunction(setState);
-                  },
-                  isLoading: _isLikeLoading,
-                ),
+                builder: (context, setBuilderState) => ValueListenableBuilder(
+                    valueListenable: _isLikeLoading,
+                    builder: (context, value, child) => _buildActionButton(
+                          icon: _reelData.isLiked == true
+                              ? AssetConstants.icLikeSelected
+                              : AssetConstants.icLikeUnSelected,
+                          label: _reelData.likesCount.toString(),
+                          onTap: () {
+                            _callLikeFunction(setBuilderState);
+                          },
+                          isLoading: value,
+                        )),
               ),
             if (_reelData.postSetting?.isCommentButtonVisible == true)
               StatefulBuilder(
-                builder: (context, setState) => _buildActionButton(
+                builder: (context, setBuilderState) => _buildActionButton(
                   icon: AssetConstants.icCommentIcon,
                   label: _reelData.commentCount.toString(),
                   onTap: () {
-                    _handleCommentClick(setState);
+                    _handleCommentClick(setBuilderState);
                   },
                 ),
               ),
@@ -534,15 +518,18 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               ),
             if (_reelData.postStatus != 0 &&
                 _reelData.postSetting?.isSaveButtonVisible == true) ...[
-              _buildActionButton(
-                icon: _reelData.isSavedPost == true
-                    ? AssetConstants.icSaveSelected
-                    : AssetConstants.icSaveUnSelected,
-                label: _reelData.isSavedPost == true
-                    ? IsrTranslationFile.saved
-                    : IsrTranslationFile.save,
-                onTap: _callSaveFunction,
-                isLoading: _isSaveLoading,
+              ValueListenableBuilder<bool>(
+                valueListenable: _isSaveLoading,
+                builder: (context, value, child) => _buildActionButton(
+                  icon: _reelData.isSavedPost == true
+                      ? AssetConstants.icSaveSelected
+                      : AssetConstants.icSaveUnSelected,
+                  label: _reelData.isSavedPost == true
+                      ? IsrTranslationFile.saved
+                      : IsrTranslationFile.save,
+                  onTap: _callSaveFunction,
+                  isLoading: value,
+                ),
               ),
             ],
             if (_reelData.postSetting?.isMoreButtonVisible == true)
@@ -702,7 +689,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                   // Only show follow button if not following
                                   if (_reelData.postSetting?.isFollowButtonVisible == true &&
                                       _reelData.isFollow == false &&
-                                      !_isFollowLoading &&
+                                      _isFollowLoading.value == false &&
                                       _reelData.isSelfProfile == false)
                                     Container(
                                       height: IsrDimens.twentyFour,
@@ -729,7 +716,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                       ),
                                     ),
                                   // Show loading indicator while API call is in progress
-                                  if (_isFollowLoading)
+                                  if (_isFollowLoading.value)
                                     SizedBox(
                                       width: IsrDimens.sixty,
                                       height: IsrDimens.twentyFour,
@@ -755,69 +742,53 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       // Description
                       if (_reelData.description.isStringEmptyOrNull == false) ...[
                         IsrDimens.boxHeight(IsrDimens.four),
-                        RichText(
-                          text: TextSpan(
-                            children: [
-                              // Tags
-                              if (_reelData.hasTags?.isNotEmpty == true)
-                                ..._reelData.hasTags!.map(
-                                  (tag) => TextSpan(
-                                    text: '#$tag ',
-                                    style: IsrStyles.white14.copyWith(
-                                      color: IsrColors.white,
-                                      fontWeight: FontWeight.w600,
+                        ValueListenableBuilder<bool>(
+                          valueListenable: _isExpandedDescription,
+                          builder: (context, value, child) => RichText(
+                            text: TextSpan(
+                              children: [
+                                // Tags
+                                if (_reelData.hasTags?.isNotEmpty == true)
+                                  ..._reelData.hasTags!.map(
+                                    (tag) => TextSpan(
+                                      text: '#$tag ',
+                                      style: IsrStyles.white14.copyWith(
+                                        color: IsrColors.white,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ),
-                                ),
-                              // Description
-                              TextSpan(
-                                text: _isExpandedDescription
-                                    ? _reelData.description
-                                    : (_reelData.description?.length ?? 0) > _maxLengthToShow
-                                        ? '${_reelData.description?.substring(0, _maxLengthToShow)}...'
-                                        : _reelData.description,
-                                style: IsrStyles.white14.copyWith(
-                                  color: IsrColors.white.changeOpacity(0.9),
-                                ),
-                              ),
-                              // Read More / Read Less
-                              if ((_reelData.description?.length ?? 0) > _maxLengthToShow)
+                                // Description
                                 TextSpan(
-                                  text: _isExpandedDescription
-                                      ? ' ${IsrTranslationFile.viewLess}'
-                                      : ' ${IsrTranslationFile.viewMore}',
+                                  text: value
+                                      ? _reelData.description
+                                      : (_reelData.description?.length ?? 0) > _maxLengthToShow
+                                          ? '${_reelData.description?.substring(0, _maxLengthToShow)}...'
+                                          : _reelData.description,
                                   style: IsrStyles.white14.copyWith(
-                                    fontWeight: FontWeight.w700,
+                                    color: IsrColors.white.changeOpacity(0.9),
                                   ),
-                                  recognizer: _tapGestureRecognizer
-                                    ?..onTap = () {
-                                      setState(() {
-                                        _isExpandedDescription = !_isExpandedDescription;
-                                      });
-                                    },
                                 ),
-                            ],
+                                // Read More / Read Less
+                                if ((_reelData.description?.length ?? 0) > _maxLengthToShow)
+                                  TextSpan(
+                                    text: value
+                                        ? ' ${IsrTranslationFile.viewLess}'
+                                        : ' ${IsrTranslationFile.viewMore}',
+                                    style: IsrStyles.white14.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                    recognizer: _tapGestureRecognizer
+                                      ?..onTap = () {
+                                        _isExpandedDescription.value =
+                                            !_isExpandedDescription.value;
+                                      },
+                                  ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
-                      // if (widget.description.isNotEmpty && widget.description.length > _maxLengthToShow)
-                      //   Padding(
-                      //     padding: IsrDimens.edgeInsets(left: IsrDimens.eight),
-                      //     child: GestureDetector(
-                      //       onTap: () {
-                      //         setState(() {
-                      //           _isExpandedDescription = !_isExpandedDescription;
-                      //         });
-                      //       },
-                      //       child: Text(
-                      //         !_isExpandedDescription ? 'Read More' : 'Read Less',
-                      //         style: IsrStyles.white14.copyWith(
-                      //           color: IsrColors.appColor.changeOpacity(0.6),
-                      //           fontWeight: FontWeight.w500,
-                      //         ),
-                      //       ),
-                      //     ),
-                      //   ),
                     ],
                   ),
                 ),
@@ -849,49 +820,36 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   //calls api to follow and unfollow user
   Future<void> _callFollowFunction() async {
     if (_reelData.onPressFollowFollowing == null) return;
-    _isFollowLoading = true;
-    mountUpdate();
+    _isFollowLoading.value = true;
 
     try {
-      final success = await _reelData.onPressFollowFollowing!();
-      if (!success) {
-        // Reset loading if follow failed
-        _isFollowLoading = false;
-      }
+      await _reelData.onPressFollowFollowing!();
     } finally {
-      _isFollowLoading = false;
-      mountUpdate();
+      _isFollowLoading.value = false;
     }
   }
 
   Future<void> _callSaveFunction() async {
     if (_reelData.onPressSave == null) return;
-    _isSaveLoading = true;
-    mountUpdate();
+    _isSaveLoading.value = true;
 
     try {
       final success = await _reelData.onPressSave!(_reelData.isSavedPost ?? false);
-      if (!success) {
-        _isSaveLoading = false;
-      } else {
+      if (success) {
         _reelData.isSavedPost = _reelData.isSavedPost == false;
       }
     } finally {
-      _isSaveLoading = false;
-      mountUpdate();
+      _isSaveLoading.value = false;
     }
   }
 
-  Future<void> _callLikeFunction(StateSetter setState) async {
-    if (_reelData.onPressLike == null || _isLikeLoading) return;
-    _isLikeLoading = true;
-    mountUpdate();
+  Future<void> _callLikeFunction(StateSetter setBuilderState) async {
+    if (_reelData.onPressLike == null || _isLikeLoading.value) return;
+    _isLikeLoading.value = true;
 
     try {
       final success = await _reelData.onPressLike!(false);
-      if (!success) {
-        _isLikeLoading = false;
-      } else {
+      if (success) {
         if (_reelData.isLiked == false) {
           _reelData.likesCount = (_reelData.likesCount ?? 0) + 1;
         } else {
@@ -901,10 +859,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         }
         _reelData.isLiked = _reelData.isLiked == false;
       }
-      setState.call(() {});
+      setBuilderState.call(() {});
     } finally {
-      _isLikeLoading = false;
-      mountUpdate();
+      _isLikeLoading.value = false;
     }
   }
 
@@ -918,13 +875,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     // widget.onTapVolume?.call();
   }
 
-  void _handleCommentClick(StateSetter setState) async {
+  void _handleCommentClick(StateSetter setBuilderState) async {
     if (_reelData.onTapComment != null) {
       final commentCount = await _reelData.onTapComment!(_reelData.commentCount ?? 0);
       if (commentCount != null) {
         _reelData.commentCount = commentCount;
       }
-      setState.call(() {});
+      setBuilderState.call(() {});
     }
   }
 }
