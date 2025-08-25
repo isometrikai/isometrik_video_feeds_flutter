@@ -10,7 +10,7 @@ part 'post_state.dart';
 class PostBloc extends Bloc<PostEvent, PostState> {
   PostBloc(
     this._localDataUseCase,
-  ) : super(PostInitial(isLoading: true)) {
+  ) : super(PostInitial(isLoading: false)) {
     on<StartPost>(_onStartPost);
   }
 
