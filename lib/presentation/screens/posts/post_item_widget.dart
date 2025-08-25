@@ -318,7 +318,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
 
     // Cache more aggressively ahead since users typically scroll forward
     final startIndex = math.max(0, currentIndex - 1); // 1 behind
-    final endIndex = math.min(_reelsDataList.length - 1, currentIndex + 4); // 4 ahead
+    final endIndex = math.min(_reelsDataList.length - 1, currentIndex + 2); // 4 ahead
 
     debugPrint(
         '📍 MainWidget: Precaching range: $startIndex to $endIndex (current: $currentIndex)');

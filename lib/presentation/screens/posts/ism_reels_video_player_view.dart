@@ -238,49 +238,47 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
         height: IsrDimens.getScreenHeight(context),
         fit: BoxFit.contain,
       );
-    }
-
-    if (_reelData.mediaType == kPictureType) {
+    } else if (_reelData.mediaType == kPictureType) {
       return AppImage.network(
         _reelData.mediaUrl,
         width: IsrDimens.getScreenWidth(context),
         height: IsrDimens.getScreenHeight(context),
         fit: BoxFit.contain,
       );
-    }
-
-    // ✅ CHANGED: Check  instead of just isInitialized
-    return Stack(
-      fit: StackFit.expand,
-      alignment: Alignment.center,
-      children: [
-        // Always show thumbnail as background
-        AppImage.network(
-          _reelData.thumbnailUrl,
-          width: IsrDimens.getScreenWidth(context),
-          height: IsrDimens.getScreenHeight(context),
-          fit: BoxFit.cover,
-        ),
-
-        // Video player with fade-in animation
-        if (_videoPlayerController != null && _videoPlayerController!.value.isInitialized)
-          AnimatedOpacity(
-            opacity: 1.0,
-            duration: const Duration(milliseconds: 300),
-            child: FittedBox(
-              fit: BoxFit.cover,
-              child: SizedBox(
-                height: _videoPlayerController?.value.size.height,
-                width: _videoPlayerController?.value.size.width,
-                child: AspectRatio(
-                  aspectRatio: _videoPlayerController!.value.aspectRatio,
-                  child: VideoPlayer(_videoPlayerController!),
+    } else {
+      // ✅ CHANGED: Check  instead of just isInitialized
+      return Stack(
+        fit: StackFit.expand,
+        alignment: Alignment.center,
+        children: [
+          // Video player with fade-in animation
+          if (_videoPlayerController != null && _videoPlayerController!.value.isInitialized) ...[
+            AnimatedOpacity(
+              opacity: 1.0,
+              duration: const Duration(milliseconds: 300),
+              child: FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  height: _videoPlayerController?.value.size.height,
+                  width: _videoPlayerController?.value.size.width,
+                  child: AspectRatio(
+                    aspectRatio: _videoPlayerController!.value.aspectRatio,
+                    child: VideoPlayer(_videoPlayerController!),
+                  ),
                 ),
               ),
             ),
-          ),
-      ],
-    );
+          ] else ...[
+            AppImage.network(
+              _reelData.thumbnailUrl,
+              width: IsrDimens.getScreenWidth(context),
+              height: IsrDimens.getScreenHeight(context),
+              fit: BoxFit.cover,
+            ),
+          ]
+        ],
+      );
+    }
   }
 
   void _togglePlayPause() {
@@ -313,15 +311,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
 
                 // Update cache manager about visibility
                 if (_reelData.mediaUrl.isStringEmptyOrNull == false) {
-                  if (info.visibleFraction > 0.9) {
+                  if (info.visibleFraction > 0.7) {
                     _videoCacheManager.markAsVisible(_reelData.mediaUrl);
                   } else {
                     _videoCacheManager.markAsNotVisible(_reelData.mediaUrl);
                   }
                 }
 
-                if (info.visibleFraction > 0.9) {
-                  mountUpdate();
+                if (info.visibleFraction > 0.7) {
+                  // mountUpdate();
                   if (_videoPlayerController != null &&
                       _videoPlayerController?.value.isInitialized == true &&
                       _videoPlayerController?.value.isPlaying == false) {
@@ -331,11 +329,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                     mountUpdate();
                   }
                 } else {
-                  _isPlayPauseActioned = false;
-                  mountUpdate();
+                  // mountUpdate();
                   if (_videoPlayerController?.value.isPlaying == true) {
                     _videoPlayerController?.pause();
                     _isPlaying = false; // Update this line
+                    _isPlayPauseActioned = false;
                     mountUpdate();
                   }
                 }
