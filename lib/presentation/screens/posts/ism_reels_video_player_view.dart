@@ -90,7 +90,8 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
   State<IsmReelsVideoPlayerView> createState() => _IsmReelsVideoPlayerViewState();
 }
 
-class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
+class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
+    with SingleTickerProviderStateMixin {
   VideoCacheManager get _videoCacheManager => widget.videoCacheManager ?? VideoCacheManager();
 
   // Add constants for media types
@@ -117,9 +118,19 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
   final _maxLengthToShow = 50;
   late ReelsData _reelData;
 
+  // Fade animation for video reveal
+  late final AnimationController _fadeController;
+  late final Animation<double> _fadeAnimation;
+
   @override
   void initState() {
     super.initState();
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 250),
+      value: 0.0,
+    );
+    _fadeAnimation = CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut);
     _onStartInit();
   }
 
@@ -157,6 +168,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
         // Use cached controller
         debugPrint('IsmReelsVideoPlayerView....Using cached video controller for $videoUrl');
         _setupVideoController();
+        _fadeController.forward(from: 0.0);
         // mountUpdate();
         return;
       }
@@ -169,6 +181,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
         _videoPlayerController = _videoCacheManager.getCachedController(videoUrl);
         if (_videoPlayerController != null) {
           _setupVideoController();
+          _fadeController.forward(from: 0.0);
           mountUpdate();
           return;
         }
@@ -196,6 +209,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
 
     await _videoPlayerController?.initialize();
     _setupVideoController();
+    _fadeController.forward(from: 0.0);
     mountUpdate();
   }
 
@@ -209,6 +223,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
   @override
   void dispose() {
     _tapGestureRecognizer?.dispose();
+    _fadeController.dispose();
 
     // Mark as not visible in cache manager
     if (_reelData.mediaUrl.isStringEmptyOrNull == false) {
@@ -246,16 +261,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
         fit: BoxFit.contain,
       );
     } else {
-      // ✅ CHANGED: Check  instead of just isInitialized
       return Stack(
         fit: StackFit.expand,
         alignment: Alignment.center,
         children: [
-          // Video player with fade-in animation
           if (_videoPlayerController != null && _videoPlayerController!.value.isInitialized) ...[
-            AnimatedOpacity(
-              opacity: 1.0,
-              duration: const Duration(milliseconds: 300),
+            RepaintBoundary(
               child: FittedBox(
                 fit: BoxFit.cover,
                 child: SizedBox(
@@ -274,6 +285,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
               width: IsrDimens.getScreenWidth(context),
               height: IsrDimens.getScreenHeight(context),
               fit: BoxFit.cover,
+              filterQuality: FilterQuality.low,
             ),
           ]
         ],
