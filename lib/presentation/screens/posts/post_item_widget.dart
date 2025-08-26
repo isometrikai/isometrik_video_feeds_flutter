@@ -31,6 +31,7 @@ class PostItemWidget extends StatefulWidget {
     this.loggedInUserId,
     this.allowImplicitScrolling = true,
     this.onPageChanged,
+    this.onTapTag,
   });
 
   final Future<String?> Function()? onCreatePost;
@@ -54,6 +55,7 @@ class PostItemWidget extends StatefulWidget {
   final String? loggedInUserId;
   final bool? allowImplicitScrolling;
   final Function(int)? onPageChanged;
+  final Function(String tag, String postId)? onTapTag;
 
   @override
   State<PostItemWidget> createState() => _PostItemWidgetState();
@@ -335,6 +337,11 @@ class _PostItemWidgetState extends State<PostItemWidget> {
           isScheduledPost:
               _postList[index].scheduleTime != null && _postList[index].scheduleTime != 0,
           postStatus: _postList[index].postStatus?.toInt() ?? 0,
+          onTapTag: (tag) {
+            if (widget.onTapTag != null) {
+              widget.onTapTag!(tag, _postList[index].postId ?? '');
+            }
+          },
         ),
       );
 }

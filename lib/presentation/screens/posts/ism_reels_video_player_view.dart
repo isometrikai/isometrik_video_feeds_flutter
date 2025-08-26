@@ -53,6 +53,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
     this.isScheduledPost,
     this.postStatus,
     this.isFirstPost,
+    this.onTapTag,
   });
 
   final String? mediaUrl;
@@ -96,6 +97,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
   final bool? isScheduledPost;
   final int? postStatus;
   final bool? isFirstPost;
+  final Function(String tag)? onTapTag;
 
   @override
   State<IsmReelsVideoPlayerView> createState() => _IsmReelsVideoPlayerViewState();
@@ -709,6 +711,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                                       color: IsrColors.white,
                                       fontWeight: FontWeight.w600,
                                     ),
+                                    recognizer: TapGestureRecognizer()
+                                      ..onTap = () {
+                                        if (widget.onTapTag != null) {
+                                          widget.onTapTag!(tag);
+                                        }
+                                      },
                                   ),
                                 ),
                               // Description

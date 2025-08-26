@@ -23,6 +23,7 @@ class TabDataModel {
     this.isCreatePostButtonVisible,
     this.startingPostIndex = 0,
     this.onTapUserProfile,
+    this.onTapTag,
   });
 
   final String title;
@@ -44,4 +45,5 @@ class TabDataModel {
   final Function(String)? onTapUserProfile;
   final bool? isCreatePostButtonVisible;
   final int? startingPostIndex;
+  final Function(String tag, String postId)? onTapTag;
 }

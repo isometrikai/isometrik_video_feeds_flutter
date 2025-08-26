@@ -224,6 +224,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         loggedInUserId: _loggedInUserId,
         allowImplicitScrolling: widget.allowImplicitScrolling,
         onPageChanged: widget.onPageChanged,
+        onTapTag: tabData.onTapTag,
       );
 
   bool _isFollowingPostsEmpty() =>
