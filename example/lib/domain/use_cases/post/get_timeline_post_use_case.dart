@@ -4,7 +4,7 @@ import 'package:ism_video_reel_player_example/domain/domain.dart';
 class GetTimelinePostUseCase extends BaseUseCase {
   GetTimelinePostUseCase(this._repository);
 
-  final PostRepository _repository;
+  final SocialRepository _repository;
 
   Future<ApiResult<TimelineResponse?>> executeTimeLinePost({
     required bool isLoading,

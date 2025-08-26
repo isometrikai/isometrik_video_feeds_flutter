@@ -62,10 +62,12 @@ class SavePostEvent extends HomeEvent {
   const SavePostEvent({
     required this.postId,
     required this.onComplete,
+    required this.isSaved,
   });
 
   final String postId;
   final Function(bool) onComplete;
+  final bool isSaved;
 }
 
 class LikePostEvent extends HomeEvent {

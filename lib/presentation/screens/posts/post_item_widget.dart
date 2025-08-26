@@ -156,23 +156,14 @@ class _PostItemWidgetState extends State<PostItemWidget> {
               (value) {
                 if (value.isListEmptyOrNull) return;
                 if (mounted) {
-                  setState(
-                    () {
-                      // Filter out duplicates based on postId
-                      // final newPosts = value.where((newPost) =>
-                      //     !_postList.any((existingPost) => existingPost.id == newPost.id));
-                      // _postList.addAll(newPosts);
-                      // if (_postList.isNotEmpty) {
-                      //   _doMediaCaching(0);
-                      // }
-                      final newReels = value.where((newReel) => !_reelsDataList
-                          .any((existingReel) => existingReel.postId == newReel.postId));
-                      _reelsDataList.addAll(newReels);
-                      if (_reelsDataList.isNotEmpty) {
-                        _doMediaCaching(0);
-                      }
-                    },
-                  );
+                  setState(() {
+                    final newReels = value.where((newReel) => !_reelsDataList
+                        .any((existingReel) => existingReel.postId == newReel.postId));
+                    _reelsDataList.addAll(newReels);
+                    if (_reelsDataList.isNotEmpty) {
+                      _doMediaCaching(0);
+                    }
+                  });
                 }
               },
             );
@@ -188,7 +179,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
           child: IsmReelsVideoPlayerView(
             reelsData: reelsData,
             videoCacheManager: _videoCacheManager,
-            key: Key(reelsData.mediaUrl),
+            key: ValueKey(reelsData),
             onPressMoreButton: () async {
               if (reelsData.onPressMoreButton == null) return;
               final result = await reelsData.onPressMoreButton!.call();

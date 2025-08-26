@@ -99,6 +99,12 @@ abstract class SocialRepository extends BaseRepository {
     String? cloudFolderName,
   });
 
+  Future<CustomResponse<TimelineResponse?>> getTimeLinePosts({
+    required bool isLoading,
+    required int page,
+    required int pageLimit,
+  });
+
   Future<CustomResponse<ResponseClass?>> processMedia({
     required bool isLoading,
     required String postId,

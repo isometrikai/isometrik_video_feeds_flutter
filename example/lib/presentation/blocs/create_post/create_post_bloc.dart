@@ -448,6 +448,25 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     }).toList();
   }
 
+  List<ProductDataModel> _getProductDataModel(List<SocialProductData> linkedProducts) {
+    if (linkedProducts.isEmptyOrNull == true) return [];
+    return linkedProducts
+        .map((item) => ProductDataModel(
+              childProductId: item.id,
+              productName: item.name,
+              productImage: item.imageUrl ?? '',
+              finalPriceList: FinalPriceList(
+                basePrice: item.price,
+                finalPrice: item.price,
+                discountPrice: item.discountPrice,
+              ),
+              brandTitle: item.brandName,
+              currency: item.currency?.code,
+              currencySymbol: item.currency?.symbol,
+            ))
+        .toList();
+  }
+
   FutureOr<void> _getPostDetails(
       GetSocialPostDetailsEvent event, Emitter<CreatePostState> emit) async {
     var totalProductsCount = 0;
@@ -484,6 +503,17 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     _mediaDataList.addAll(_postData?.media ?? []);
     for (var element in _mediaDataList) {
       element.fileName = _extractFileName(element.url ?? '');
+      element.localPath = element.url ?? '';
+    }
+    if (_postData?.tags?.products.isEmptyOrNull == false) {
+      final socialProductList = _postData?.tags?.products;
+      linkedProducts = _getProductDataModel(socialProductList ?? []);
+      emit(
+        LoadLinkedProductsState(
+          productList: linkedProducts,
+          totalProductsCount: linkedProducts.length,
+        ),
+      );
     }
     _isForEdit = true;
     _makePostRequest();

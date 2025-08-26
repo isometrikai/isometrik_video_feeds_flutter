@@ -230,6 +230,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     final apiResult = await _savePostUseCase.executeSavePost(
       isLoading: false,
       postId: event.postId,
+      socialPostAction: event.isSaved ? SocialPostAction.unSave : SocialPostAction.save,
     );
 
     if (apiResult.isSuccess) {

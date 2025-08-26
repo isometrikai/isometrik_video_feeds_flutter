@@ -13,74 +13,12 @@ import 'package:visibility_detector/visibility_detector.dart';
 class IsmReelsVideoPlayerView extends StatefulWidget {
   const IsmReelsVideoPlayerView({
     super.key,
-    // required this.mediaUrl,
-    // required this.mediaType, // 0 for picture, 1 for video
-    // this.isReelsMuted,
-    // this.profilePhoto,
-    // this.hasTags,
-    // this.userName,
-    // this.firstName,
-    // this.lastName,
-    // this.isVerifiedUser = false,
-    // this.isFollow = true,
-    // this.onPressFollowFollowing,
-    // this.description = '',
-    // this.isSelfProfile = false,
-    // required this.onTapUserProfilePic,
-    // this.onTapReport,
-    // this.showBlur = false,
-    // required this.thumbnail,
-    // this.isSavedPost,
-    // this.productCount,
-    // this.onPressSave,
-    // this.isLiked = false,
-    // this.likesCount = 0,
-    // this.onPressLike,
-    // this.onPressMoreButton,
-    // this.onTapCartIcon,
-    // this.onTapComment,
-    // this.onTapShare,
-    // this.commentCount = 0,
-    // this.isCreatePostButtonVisible,
-    // this.isScheduledPost,
-    // this.postStatus,
     this.videoCacheManager,
     this.reelsData,
     this.onPressMoreButton,
     this.onCreatePost,
   });
 
-  // final String? mediaUrl;
-  // final int mediaType; // 0 for picture, 1 for video
-  // final bool? isReelsMuted;
-  // final String? profilePhoto;
-  // final List<String>? hasTags;
-  // final String? userName;
-  // final String? firstName;
-  // final String? lastName;
-  // final bool? isVerifiedUser;
-  // final bool? isFollow;
-  // final Future<bool> Function()? onPressFollowFollowing;
-  // final String? description;
-  // final bool? isSelfProfile;
-  // final Function()? onTapUserProfilePic;
-  // final Function()? onTapReport;
-  // final bool? showBlur;
-  // final String thumbnail;
-  // final bool? isSavedPost;
-  // final int? productCount;
-  // final Future<bool> Function()? onPressSave;
-  // final bool isLiked;
-  // final num likesCount;
-  // final Future<bool> Function()? onPressLike;
-  // final VoidCallback? onPressMoreButton;
-  // final VoidCallback? onTapCartIcon;
-  // final VoidCallback? onTapComment;
-  // final VoidCallback? onTapShare;
-  // final int? commentCount;
-  // final bool? isCreatePostButtonVisible;
-  // final bool? isScheduledPost;
-  // final int? postStatus;
   final VideoCacheManager? videoCacheManager;
   final ReelsData? reelsData;
   final VoidCallback? onPressMoreButton;

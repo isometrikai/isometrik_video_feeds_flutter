@@ -68,11 +68,4 @@ abstract class PostApiService extends BaseService {
     required String value,
     required Header header,
   });
-
-  Future<ResponseModel> getTimeLinePosts({
-    required bool isLoading,
-    required Header header,
-    required int page,
-    required int pageLimit,
-  });
 }

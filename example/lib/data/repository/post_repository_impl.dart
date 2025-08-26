@@ -204,24 +204,4 @@ class PostRepositoryImpl implements PostRepository {
       rethrow;
     }
   }
-
-  @override
-  Future<CustomResponse<TimelineResponse?>> getTimeLinePosts({
-    required bool isLoading,
-    required int page,
-    required int pageLimit,
-  }) async {
-    try {
-      final header = await _dataSource.getHeader();
-      final response = await _apiService.getTimeLinePosts(
-        isLoading: isLoading,
-        header: header,
-        page: page,
-        pageLimit: pageLimit,
-      );
-      return _postMapper.mapTimelineResponse(response);
-    } catch (e) {
-      rethrow;
-    }
-  }
 }

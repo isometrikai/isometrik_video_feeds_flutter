@@ -954,9 +954,12 @@ class _CreatePostViewState extends State<CreatePostView> {
 
   void _checkForChangesInLinkedProducts() {
     final hasAnyChanges = _createPostBloc.checkForChangesInLinkedProducts(_linkedProducts);
-    final mediaData = _mediaDataList.firstWhere((element) =>
-        element.url.isEmptyOrNull == true || Utility.isLocalUrl(element.url ?? '') == true);
-    debugPrint('hasAnyChanges: $hasAnyChanges');
+    final mediaData = _mediaDataList.isEmptyOrNull == false
+        ? null
+        : _mediaDataList.firstWhere((element) =>
+            element.localPath.isEmptyOrNull == true ||
+            Utility.isLocalUrl(element.localPath ?? '') == false);
+    debugPrint('mediaData: $mediaData');
     setState(() {
       _isCreateButtonDisable = _isForEdit ? !hasAnyChanges : mediaData != null;
     });
@@ -968,8 +971,11 @@ class _CreatePostViewState extends State<CreatePostView> {
     _isDialogOpen = false;
   }
 
-  Widget _buildSuccessBottomSheet(
-          {required Function() onTapBack, required String title, required String message}) =>
+  Widget _buildSuccessBottomSheet({
+    required Function() onTapBack,
+    required String title,
+    required String message,
+  }) =>
       Container(
         width: Dimens.getScreenWidth(context),
         padding: Dimens.edgeInsetsAll(16.scaledValue),

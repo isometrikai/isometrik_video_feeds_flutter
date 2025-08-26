@@ -31,7 +31,8 @@ class AppRouter {
           final otpId = extras['otpId'] as String;
           final countryCode = extras['countryCode'] as String;
           final loginType = extras['loginType'] as String;
-          return OtpScreen(mobile: mobileNumber, countryCode: countryCode, loginType: loginType, otpId: otpId);
+          return OtpScreen(
+              mobile: mobileNumber, countryCode: countryCode, loginType: loginType, otpId: otpId);
         },
       ),
       // GoRoute(
@@ -42,10 +43,14 @@ class AppRouter {
       GoRoute(
         path: AppRoutes.createPostView,
         name: RouteNames.createPostView,
-        pageBuilder: (context, state) => PageTransition(
-          child: const CreatePostView(),
-          transitionType: TransitionType.bottomToTop,
-        ),
+        pageBuilder: (context, state) {
+          final extras = state.extra as Map<String, dynamic>;
+          final postData = extras['postData'] as TimeLineData?;
+          return PageTransition(
+            child: CreatePostView(postData: postData),
+            transitionType: TransitionType.bottomToTop,
+          );
+        },
       ),
       GoRoute(
         path: AppRoutes.cameraView,

@@ -290,35 +290,4 @@ class PostApiServiceProvider extends PostApiService {
         },
         isLoading,
       );
-
-  @override
-  Future<ResponseModel> getTimeLinePosts({
-    required bool isLoading,
-    required Header header,
-    required int page,
-    required int pageLimit,
-  }) async =>
-      await networkClient.makeRequest(
-        PostApiEndPoints.getTimeLinePosts,
-        NetworkRequestType.get,
-        null,
-        {
-          'page': page.toString(),
-          'page_size': pageLimit.toString(),
-        },
-        {
-          'Accept': AppConstants.headerAccept,
-          'Content-Type': AppConstants.headerContentType,
-          'Authorization': header.accessToken,
-          'lan': header.language,
-          'currencySymbol': header.currencySymbol,
-          'currencyCode': header.currencyCode,
-          'platform': header.platForm.toString(),
-          'latitude': header.latitude.toString(),
-          'longitude': header.longitude.toString(),
-          'x-tenant-id': AppConstants.tenantId,
-          'x-project-id': AppConstants.projectId,
-        },
-        isLoading,
-      );
 }

@@ -312,6 +312,7 @@ class _HomeScreenState extends State<HomeScreen> {
           isShareButtonVisible: true,
           isMoreButtonVisible: true,
         ),
+        postId: postData.id,
         onCreatePost: () async => await _handleCreatePost(),
         mediaUrl: postData.media?.first.url ?? '',
         thumbnailUrl: postData.media?.first.previewUrl ?? '',
@@ -361,6 +362,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
             _homeBloc.add(SavePostEvent(
               postId: postData.id ?? '',
+              isSaved: isSavedPost,
               onComplete: (success) {
                 completer.complete(success);
               },
