@@ -57,7 +57,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: TranslationFile.following,
                     postList: state.followingPosts,
                     onCreatePost: () async {
-                      final postDataModel = await InjectionUtils.getRouteManagement().goToCreatePostView();
+                      final postDataModel =
+                          await InjectionUtils.getRouteManagement().goToCreatePostView();
                       return postDataModel;
                     },
                     onPressLike: (postId, userId, isLiked) async {
@@ -106,12 +107,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       );
                       return {'isSuccess': false};
                     },
-                    onPressSave: (postId, isSavedPost) async {
+                    onPressSave: (postDataModel, isSavedPost) async {
                       try {
                         final completer = Completer<bool>();
 
                         _homeBloc.add(SavePostEvent(
-                          postId: postId,
+                          postId: postDataModel.postId ?? '',
                           onComplete: (success) {
                             completer.complete(success);
                           },
@@ -166,7 +167,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: TranslationFile.trending,
                     postList: state.trendingPosts,
                     onCreatePost: () async {
-                      final postDataModel = await InjectionUtils.getRouteManagement().goToCreatePostView();
+                      final postDataModel =
+                          await InjectionUtils.getRouteManagement().goToCreatePostView();
                       return postDataModel;
                     },
                     onPressLike: (postId, userId, isLiked) async {
@@ -215,12 +217,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       );
                       return {'isSuccess': false};
                     },
-                    onPressSave: (postId, isSavedPost) async {
+                    onPressSave: (postData, isSavedPost) async {
                       try {
                         final completer = Completer<bool>();
 
                         _homeBloc.add(SavePostEvent(
-                          postId: postId,
+                          postId: postData.postId ?? '',
                           onComplete: (success) {
                             completer.complete(success);
                           },

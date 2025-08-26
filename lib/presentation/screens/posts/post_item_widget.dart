@@ -37,7 +37,7 @@ class PostItemWidget extends StatefulWidget {
   final Future<dynamic> Function(PostDataModel, String userId)? onTapMore;
   final bool? showBlur;
   final List<FeaturedProductDataItem>? productList;
-  final Future<bool> Function(String, bool)? onPressSave;
+  final Future<bool> Function(PostDataModel, bool)? onPressSave;
   final Future<bool> Function(String, String, bool)? onPressLike;
   final Future<bool> Function(String)? onPressFollow;
   final Future<List<PostDataModel>> Function(PostSectionType?)? onLoadMore;
@@ -92,8 +92,9 @@ class _PostItemWidgetState extends State<PostItemWidget> {
       }
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final targetPage =
-          _pageController.initialPage >= _postList.length ? _postList.length - 1 : _pageController.initialPage;
+      final targetPage = _pageController.initialPage >= _postList.length
+          ? _postList.length - 1
+          : _pageController.initialPage;
       if (targetPage > 0) {
         _pageController.animateToPage(
           targetPage,
@@ -166,8 +167,8 @@ class _PostItemWidgetState extends State<PostItemWidget> {
                 if (mounted) {
                   setState(() {
                     // Filter out duplicates based on postId
-                    final newPosts = value
-                        .where((newPost) => !_postList.any((existingPost) => existingPost.postId == newPost.postId));
+                    final newPosts = value.where((newPost) =>
+                        !_postList.any((existingPost) => existingPost.postId == newPost.postId));
                     _postList.addAll(newPosts);
                   });
                 }
@@ -197,8 +198,8 @@ class _PostItemWidgetState extends State<PostItemWidget> {
           description: _postList[index].title ?? '',
           isAssetUploading: false,
           isFollow: _postList[index].followStatus == 1,
-          isSelfProfile:
-              widget.loggedInUserId.isStringEmptyOrNull == false && widget.loggedInUserId == _postList[index].userId,
+          isSelfProfile: widget.loggedInUserId.isStringEmptyOrNull == false &&
+              widget.loggedInUserId == _postList[index].userId,
           firstName: _postList[index].firstName ?? '',
           lastName: _postList[index].lastName ?? '',
           name: '@${_postList[index].userName ?? ''}',
@@ -234,7 +235,8 @@ class _PostItemWidgetState extends State<PostItemWidget> {
             if (result is String) {
               final editedPostedData = result;
               if (editedPostedData.isStringEmptyOrNull == false) {
-                final postData = PostDataModel.fromJson(jsonDecode(editedPostedData) as Map<String, dynamic>);
+                final postData =
+                    PostDataModel.fromJson(jsonDecode(editedPostedData) as Map<String, dynamic>);
                 final index = _postList.indexWhere((element) => element.postId == postData.postId);
                 if (index != -1) {
                   setState(() {
@@ -259,11 +261,13 @@ class _PostItemWidgetState extends State<PostItemWidget> {
           onPressSave: () async {
             if (_postList[index].postId != null) {
               if (widget.onPressSave == null) return false;
-              final isSaved = await widget.onPressSave!(_postList[index].postId!, _postList[index].isSavedPost == true);
+              final isSaved =
+                  await widget.onPressSave!(_postList[index], _postList[index].isSavedPost == true);
 
               if (isSaved) {
                 setState(() {
-                  _postList[index] = _postList[index].copyWith(isSavedPost: _postList[index].isSavedPost == false);
+                  _postList[index] =
+                      _postList[index].copyWith(isSavedPost: _postList[index].isSavedPost == false);
                 });
               }
               return isSaved;
@@ -303,7 +307,8 @@ class _PostItemWidgetState extends State<PostItemWidget> {
             if (widget.onTapCartIcon != null) {
               final productList = _postList[index].productData;
               final jsonString = jsonEncode(productList?.map((e) => e.toJson()).toList());
-              final productDataList = await widget.onTapCartIcon!(jsonString, _postList[index].postId ?? '');
+              final productDataList =
+                  await widget.onTapCartIcon!(jsonString, _postList[index].postId ?? '');
               if (productDataList.isListEmptyOrNull) return;
               setState(() {
                 _postList[index] = _postList[index].copyWith(productData: productDataList);
@@ -327,7 +332,8 @@ class _PostItemWidgetState extends State<PostItemWidget> {
             }
           },
           commentCount: _postList[index].totalComments?.toInt() ?? 0,
-          isScheduledPost: _postList[index].scheduleTime != null && _postList[index].scheduleTime != 0,
+          isScheduledPost:
+              _postList[index].scheduleTime != null && _postList[index].scheduleTime != 0,
           postStatus: _postList[index].postStatus?.toInt() ?? 0,
         ),
       );

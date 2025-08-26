@@ -32,7 +32,7 @@ class TabDataModel {
   final Future<dynamic> Function(PostDataModel, String userId)? onTapMore;
   final bool? showBlur;
   final List<FeaturedProductDataItem>? productList;
-  final Future<bool> Function(String postId, bool isSavedPost)? onPressSave;
+  final Future<bool> Function(PostDataModel postData, bool isSavedPost)? onPressSave;
   final Future<bool> Function(String, String, bool)? onPressLike;
   final Future<bool> Function(String)? onPressFollow;
   final Future<bool> Function()? onRefresh;
