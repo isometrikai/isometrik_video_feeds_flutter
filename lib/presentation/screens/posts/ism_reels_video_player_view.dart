@@ -103,6 +103,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         debugPrint('IsmReelsVideoPlayerView....Using cached video controller for $videoUrl');
         _setupVideoController();
         return;
+      } else {
+        debugPrint('IsmReelsVideoPlayerView...._videoPlayerController is null for $videoUrl');
       }
 
       // If not cached, check if it's being initialized
@@ -115,6 +117,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           _setupVideoController();
           return;
         }
+      } else {
+        debugPrint('IsmReelsVideoPlayerView....Video is not being initialized, waiting...');
       }
 
       // If still not available, initialize normally (fallback)
@@ -143,6 +147,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   // Setup video controller settings
   void _setupVideoController() {
+    debugPrint('_setupVideoController....setup video controller');
     _videoPlayerController?.play();
     _videoPlayerController?.setVolume(1.0);
     _videoPlayerController?.setLooping(true);
