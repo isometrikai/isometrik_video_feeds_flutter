@@ -69,31 +69,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   bool get _controllerReady =>
       _videoPlayerController != null && !_isDisposed && _videoPlayerController!.value.isInitialized;
 
-  Future<void> _switchToNewData(ReelsData newData) async {
-    // Pause and dispose previous controller if not cached
-    final previousUrl = _reelData.mediaUrl;
-    try {
-      _videoPlayerController?.pause();
-    } catch (_) {}
-
-    if (previousUrl.isStringEmptyOrNull == false &&
-        !_videoCacheManager.isVideoCached(previousUrl)) {
-      try {
-        await _videoPlayerController?.dispose();
-      } catch (_) {}
-    }
-    _videoPlayerController = null;
-
-    _reelData = newData;
-    _isPlaying = true;
-    _isPlayPauseActioned = false;
-
-    if (_reelData.mediaType == kVideoType) {
-      await _initializeVideoPlayer();
-    }
-    mountUpdate();
-  }
-
   void _onStartInit() async {
     _reelData = widget.reelsData!;
     _isMuted = false;
@@ -175,7 +150,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   @override
   void dispose() {
-    _isDisposed = true;
     _tapGestureRecognizer?.dispose();
     // Mark as not visible in cache manager
     if (_reelData.mediaUrl.isStringEmptyOrNull == false) {
@@ -186,6 +160,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (_videoPlayerController != null &&
         _reelData.mediaUrl.isStringEmptyOrNull == false &&
         !_videoCacheManager.isVideoCached(_reelData.mediaUrl)) {
+      _isDisposed = true;
       _videoPlayerController?.pause();
       _videoPlayerController?.dispose();
     } else {
