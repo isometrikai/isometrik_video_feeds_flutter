@@ -43,6 +43,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   var _isPlayPauseActioned = false;
 
+  // Track disposal to avoid using controller after dispose
+  var _isDisposed = false;
+
   final ValueNotifier<bool> _isFollowLoading = ValueNotifier(false);
 
   final ValueNotifier<bool> _isExpandedDescription = ValueNotifier(false);
@@ -61,6 +64,34 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   void initState() {
     super.initState();
     _onStartInit();
+  }
+
+  bool get _controllerReady =>
+      _videoPlayerController != null && !_isDisposed && _videoPlayerController!.value.isInitialized;
+
+  Future<void> _switchToNewData(ReelsData newData) async {
+    // Pause and dispose previous controller if not cached
+    final previousUrl = _reelData.mediaUrl;
+    try {
+      _videoPlayerController?.pause();
+    } catch (_) {}
+
+    if (previousUrl.isStringEmptyOrNull == false &&
+        !_videoCacheManager.isVideoCached(previousUrl)) {
+      try {
+        await _videoPlayerController?.dispose();
+      } catch (_) {}
+    }
+    _videoPlayerController = null;
+
+    _reelData = newData;
+    _isPlaying = true;
+    _isPlayPauseActioned = false;
+
+    if (_reelData.mediaType == kVideoType) {
+      await _initializeVideoPlayer();
+    }
+    mountUpdate();
   }
 
   void _onStartInit() async {
@@ -144,6 +175,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   @override
   void dispose() {
+    _isDisposed = true;
     _tapGestureRecognizer?.dispose();
     // Mark as not visible in cache manager
     if (_reelData.mediaUrl.isStringEmptyOrNull == false) {
@@ -185,7 +217,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         fit: StackFit.expand,
         alignment: Alignment.center,
         children: [
-          if (_videoPlayerController != null && _videoPlayerController!.value.isInitialized) ...[
+          if (_controllerReady) ...[
             RepaintBoundary(
               child: FittedBox(
                 fit: BoxFit.cover,
@@ -217,6 +249,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (_reelData.showBlur == true || _reelData.mediaType == kPictureType) {
       return;
     }
+    if (!_controllerReady) return;
     if (_isPlaying) {
       _videoPlayerController?.pause();
     } else {
@@ -252,9 +285,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
                 if (info.visibleFraction > 0.7) {
                   // mountUpdate();
-                  if (_videoPlayerController != null &&
-                      _videoPlayerController?.value.isInitialized == true &&
-                      _videoPlayerController?.value.isPlaying == false) {
+                  if (_controllerReady && _videoPlayerController?.value.isPlaying == false) {
                     _videoPlayerController?.seekTo(Duration.zero);
                     _videoPlayerController?.play();
                     _isPlaying = true; // Update this line
@@ -262,7 +293,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   }
                 } else {
                   // mountUpdate();
-                  if (_videoPlayerController?.value.isPlaying == true) {
+                  if (_controllerReady && _videoPlayerController?.value.isPlaying == true) {
                     _videoPlayerController?.pause();
                     _isPlaying = false; // Update this line
                     _isPlayPauseActioned = false;
