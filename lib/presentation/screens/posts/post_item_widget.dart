@@ -109,9 +109,6 @@ class _PostItemWidgetState extends State<PostItemWidget> {
             if (widget.loggedInUserId.isStringEmptyOrNull == true) return;
             if (widget.onRefresh != null) {
               await widget.onRefresh?.call();
-              if (_reelsDataList.isListEmptyOrNull == false) {
-                await _doMediaCaching(0);
-              }
             }
           },
           child: _buildContent(context),
