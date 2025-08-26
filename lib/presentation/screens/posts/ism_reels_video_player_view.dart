@@ -47,6 +47,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   // Track disposal to avoid using controller after dispose
   var _isDisposed = false;
+  // Incremented on each init/swap to invalidate stale async completions
+  int _controllerGeneration = 0;
 
   final ValueNotifier<bool> _isFollowLoading = ValueNotifier(false);
 
@@ -66,6 +68,24 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   void initState() {
     super.initState();
     _onStartInit();
+  }
+
+  @override
+  void didUpdateWidget(covariant IsmReelsVideoPlayerView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final newData = widget.reelsData;
+    if (newData == null) return;
+
+    final shouldSwitch = _reelData.postId != newData.postId ||
+        _reelData.mediaUrl != newData.mediaUrl ||
+        _reelData.mediaType != newData.mediaType;
+
+    if (shouldSwitch) {
+      _switchToNewData(newData);
+    } else {
+      _reelData = newData; // metadata only
+      mountUpdate();
+    }
   }
 
   bool get _controllerReady =>
@@ -100,6 +120,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         'IsmReelsVideoPlayerView....initializeVideoPlayer video url $videoUrl');
 
     try {
+      // Start new generation for this init
+      _controllerGeneration++;
+      final currentGen = _controllerGeneration;
       // First, try to get cached controller
       _videoPlayerController = _videoCacheManager.getCachedController(videoUrl);
 
@@ -120,7 +143,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             'IsmReelsVideoPlayerView....Video is being initialized, waiting...');
         // Wait a bit and try again
         await Future.delayed(const Duration(milliseconds: 500));
-        if (!mounted || _isDisposed) return;
+        if (!mounted || _isDisposed || currentGen != _controllerGeneration)
+          return;
         _videoPlayerController =
             _videoCacheManager.getCachedController(videoUrl);
         if (_videoPlayerController != null) {
@@ -133,7 +157,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       }
 
       // If still not available, initialize normally (fallback)
-      await _initializeVideoControllerNormally(videoUrl);
+      await _initializeVideoControllerNormally(videoUrl,
+          expectedGen: currentGen);
     } catch (e) {
       debugPrint(
           'IsmReelsVideoPlayerView...catch video url ${_reelData.mediaUrl}');
@@ -142,7 +167,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   // Fallback initialization method
-  Future<void> _initializeVideoControllerNormally(String videoUrl) async {
+  Future<void> _initializeVideoControllerNormally(String videoUrl,
+      {int? expectedGen}) async {
     debugPrint(
         'IsmReelsVideoPlayerView....Initializing video controller normally $videoUrl');
     var mediaUrl = videoUrl;
@@ -156,7 +182,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (_videoPlayerController == null) return;
 
     await _videoPlayerController?.initialize();
-    if (!mounted || _isDisposed) {
+    if (!mounted ||
+        _isDisposed ||
+        (expectedGen != null && expectedGen != _controllerGeneration)) {
       try {
         await _videoPlayerController?.dispose();
       } catch (_) {}
@@ -164,6 +192,36 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       return;
     }
     _setupVideoController();
+  }
+
+  Future<void> _switchToNewData(ReelsData newData) async {
+    // Pause current controller safely
+    try {
+      _videoPlayerController?.pause();
+    } catch (_) {}
+
+    // Dispose if not cached to release platform texture
+    if (_reelData.mediaUrl.isStringEmptyOrNull == false &&
+        !_videoCacheManager.isVideoCached(_reelData.mediaUrl)) {
+      try {
+        await _videoPlayerController?.dispose();
+      } catch (_) {}
+    }
+    _videoPlayerController = null;
+
+    // Update reel data and bump generation
+    _reelData = newData;
+    _isPlaying = true;
+    _isPlayPauseActioned = false;
+    _controllerGeneration++;
+    final gen = _controllerGeneration;
+
+    if (_reelData.mediaType == kVideoType) {
+      await _initializeVideoControllerNormally(_reelData.mediaUrl,
+          expectedGen: gen);
+    }
+    if (!mounted || _isDisposed) return;
+    mountUpdate();
   }
 
   // Setup video controller settings
@@ -224,11 +282,24 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               child: FittedBox(
                 fit: BoxFit.cover,
                 child: SizedBox(
-                  height: _videoPlayerController?.value.size.height,
-                  width: _videoPlayerController?.value.size.width,
-                  child: AspectRatio(
-                    aspectRatio: _videoPlayerController!.value.aspectRatio,
-                    child: VideoPlayer(_videoPlayerController!),
+                  child: Builder(
+                    builder: (context) {
+                      final controller = _videoPlayerController;
+                      if (controller == null) {
+                        return const SizedBox.shrink();
+                      }
+                      final size = controller.value.size;
+                      final aspect = controller.value.aspectRatio;
+                      return SizedBox(
+                        height: size.height,
+                        width: size.width,
+                        child: AspectRatio(
+                          aspectRatio: aspect,
+                          child: VideoPlayer(controller,
+                              key: ValueKey(controller.hashCode)),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),

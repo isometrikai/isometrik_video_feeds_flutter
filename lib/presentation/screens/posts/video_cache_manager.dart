@@ -276,7 +276,7 @@ class VideoCacheManager {
     for (final entry in _videoControllerCache.entries) {
       final videoId = _extractVideoId(entry.key);
       debugPrint('🗑️ VideoCacheManager: Disposing controller for $videoId');
-      entry.value.dispose();
+      // entry.value.dispose();
     }
 
     _videoControllerCache.clear();
