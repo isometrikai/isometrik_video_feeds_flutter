@@ -825,6 +825,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   Future<void> _callLikeFunction(StateSetter setBuilderState) async {
     if (_reelData.onPressLike == null || _isLikeLoading.value) return;
     _isLikeLoading.value = true;
+    setBuilderState.call(() {});
 
     try {
       final success = await _reelData.onPressLike!(false);
@@ -841,6 +842,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       setBuilderState.call(() {});
     } finally {
       _isLikeLoading.value = false;
+      setBuilderState.call(() {});
     }
   }
 
