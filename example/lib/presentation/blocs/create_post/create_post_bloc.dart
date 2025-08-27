@@ -608,6 +608,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     } else {
       if (_isForEdit) {
         _updatePostData();
+      } else {
+        await _createPostData(event.postId);
       }
       emit(PostCreatedState(
         postDataModel: jsonEncode(_postData?.toMap()),
@@ -636,9 +638,11 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     if (apiResult.isSuccess) {
       if (_isForEdit) {
         _updatePostData();
+      } else {
+        await _createPostData(event.postId);
       }
       emit(PostCreatedState(
-        postDataModel: _isForEdit ? jsonEncode(_postData?.toMap()) : '',
+        postDataModel: jsonEncode(_postData?.toMap()),
         postSuccessMessage: _isForEdit
             ? TranslationFile.postUpdatedSuccessfully
             : isScheduledPost
@@ -687,5 +691,28 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
         _mediaDataList[index] = mediaData;
       }
     }
+  }
+
+  Future<void> _createPostData(String postId) async {
+    final myUserId = await _localDataUseCase.getUserId();
+    final userName = await _localDataUseCase.getFirstName();
+    _createPostRequest.media?.forEach((element) {
+      element.url = element.localPath ?? '';
+    });
+    _postData = TimeLineData(
+      isFromLocal: true,
+      id: postId,
+      caption: _createPostRequest.caption,
+      media: _createPostRequest.media,
+      tags: _createPostRequest.tags,
+      type: _createPostRequest.type,
+      user: User(
+        id: myUserId,
+        username: userName,
+      ),
+      visibility: _createPostRequest.visibility,
+      isLiked: false,
+      isSaved: false,
+    );
   }
 }

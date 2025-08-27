@@ -198,7 +198,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
                 final result = await reelsData.onCreatePost!();
                 if (result != null) {
                   setState(() {
-                    _reelsDataList.insert(index, result);
+                    _reelsDataList.insert(0, result);
                   });
                 }
               }

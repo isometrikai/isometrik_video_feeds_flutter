@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:collection';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:ism_video_reel_player/utils/isr_utils.dart';
 import 'package:video_player/video_player.dart';
 
 class VideoCacheManager {
@@ -112,7 +114,9 @@ class VideoCacheManager {
       }
 
       debugPrint('🌐 VideoCacheManager: Creating NetworkUrl controller for $videoId');
-      final controller = VideoPlayerController.networkUrl(Uri.parse(mediaUrl));
+      final controller = IsrVideoReelUtility.isLocalUrl(mediaUrl)
+          ? VideoPlayerController.file(File(mediaUrl))
+          : VideoPlayerController.networkUrl(Uri.parse(mediaUrl));
 
       debugPrint('⏳ VideoCacheManager: Initializing controller for $videoId');
       await controller.initialize();

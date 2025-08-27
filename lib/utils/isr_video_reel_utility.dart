@@ -573,4 +573,7 @@ class IsrVideoReelUtility {
           ? ''
           : jsonDecode(data.data)['message'] as String
       : data.statusCode.toString();
+
+  static bool isLocalUrl(String url) =>
+      url.startsWith('http://') == false && url.startsWith('https://') == false;
 }

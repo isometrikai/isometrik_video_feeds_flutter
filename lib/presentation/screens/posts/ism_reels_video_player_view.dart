@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -143,7 +144,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       mediaUrl = mediaUrl.replaceFirst('http:', 'https:');
     }
 
-    _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(mediaUrl));
+    _videoPlayerController = IsrVideoReelUtility.isLocalUrl(mediaUrl)
+        ? VideoPlayerController.file(File(mediaUrl))
+        : VideoPlayerController.networkUrl(Uri.parse(mediaUrl));
 
     if (_videoPlayerController == null) return;
 
