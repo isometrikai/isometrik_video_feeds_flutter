@@ -11,47 +11,27 @@ import 'package:ism_video_reel_player/utils/isr_utils.dart';
 class PostItemWidget extends StatefulWidget {
   const PostItemWidget({
     super.key,
-    this.showBlur,
-    this.onPressSave,
-    this.onPressLike,
-    this.onPressFollow,
     this.onLoadMore,
     this.onRefresh,
     this.placeHolderWidget,
     this.postSectionType,
     this.onTapPlaceHolder,
-    this.onTapShare,
-    this.onTapComment,
-    this.isCreatePostButtonVisible = false,
     this.startingPostIndex = 0,
-    this.onTapUserProfilePic,
     this.loggedInUserId,
     this.allowImplicitScrolling = true,
     this.onPageChanged,
-    this.footerWidget,
-    this.actionWidget,
     required this.reelsDataList,
   });
 
-  final bool? showBlur;
-  final Future<bool> Function(String, bool)? onPressSave;
-  final Future<bool> Function(String, String, bool)? onPressLike;
-  final Future<bool> Function(String)? onPressFollow;
   final Future<List<ReelsData>> Function()? onLoadMore;
   final Future<bool> Function()? onRefresh;
   final Widget? placeHolderWidget;
   final PostSectionType? postSectionType;
   final VoidCallback? onTapPlaceHolder;
-  final Future<num>? Function(String, int)? onTapComment;
-  final Function(String)? onTapShare;
-  final Function(String)? onTapUserProfilePic;
-  final bool? isCreatePostButtonVisible;
   final int? startingPostIndex;
   final String? loggedInUserId;
   final bool? allowImplicitScrolling;
   final Function(int)? onPageChanged;
-  final Widget? footerWidget;
-  final Widget? actionWidget;
   final List<ReelsData> reelsDataList;
 
   @override
