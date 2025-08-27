@@ -700,7 +700,6 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       element.url = element.localPath ?? '';
     });
     _postData = TimeLineData(
-      isFromLocal: true,
       id: postId,
       caption: _createPostRequest.caption,
       media: _createPostRequest.media,

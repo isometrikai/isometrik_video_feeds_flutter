@@ -82,7 +82,6 @@ class TimeLineData {
     this.previews,
     this.isLiked,
     this.isSaved,
-    this.isFromLocal = false,
   });
 
   factory TimeLineData.fromMap(Map<String, dynamic> json) => TimeLineData(
@@ -117,7 +116,6 @@ class TimeLineData {
                 .map((x) => PreviewMedia.fromMap(x as Map<String, dynamic>))),
         isLiked: json['is_liked'] as bool? ?? false,
         isSaved: json['is_saved'] as bool? ?? false,
-        isFromLocal: json['isFromLocal'] as bool? ?? false,
       );
   String? textFormatting;
   String? publishedAt;
