@@ -159,7 +159,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
           child: IsmReelsVideoPlayerView(
             reelsData: reelsData,
             videoCacheManager: _videoCacheManager,
-            key: ValueKey(reelsData.mediaUrl),
+            key: ValueKey(reelsData),
             onPressMoreButton: () async {
               if (reelsData.onPressMoreButton == null) return;
               final result = await reelsData.onPressMoreButton!.call();
