@@ -46,6 +46,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   // Track disposal to avoid using controller after dispose
   var _isDisposed = false;
+
   // Incremented on each init/swap to invalidate stale async completions
   int _controllerGeneration = 0;
 
@@ -55,7 +56,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   final ValueNotifier<bool> _isSaveLoading = ValueNotifier(false);
 
-  final ValueNotifier<bool> _isLikeLoading = ValueNotifier(false);
+  var _isLikeLoading = false;
 
   var _isMuted = false;
 
@@ -462,18 +463,16 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             ],
             if (_reelData.postSetting?.isLikeButtonVisible == true)
               StatefulBuilder(
-                builder: (context, setBuilderState) => ValueListenableBuilder(
-                    valueListenable: _isLikeLoading,
-                    builder: (context, value, child) => _buildActionButton(
-                          icon: _reelData.isLiked == true
-                              ? AssetConstants.icLikeSelected
-                              : AssetConstants.icLikeUnSelected,
-                          label: _reelData.likesCount.toString(),
-                          onTap: () {
-                            _callLikeFunction(setBuilderState);
-                          },
-                          isLoading: value,
-                        )),
+                builder: (context, setBuilderState) => _buildActionButton(
+                  icon: _reelData.isLiked == true
+                      ? AssetConstants.icLikeSelected
+                      : AssetConstants.icLikeUnSelected,
+                  label: _reelData.likesCount.toString(),
+                  onTap: () {
+                    _callLikeFunction(setBuilderState);
+                  },
+                  isLoading: _isLikeLoading,
+                ),
               ),
             if (_reelData.postSetting?.isCommentButtonVisible == true)
               StatefulBuilder(
@@ -823,9 +822,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   Future<void> _callLikeFunction(StateSetter setBuilderState) async {
-    if (_reelData.onPressLike == null || _isLikeLoading.value) return;
-    _isLikeLoading.value = true;
-
+    if (_reelData.onPressLike == null || _isLikeLoading) return;
+    _isLikeLoading = true;
+    setState(() {});
     try {
       final success = await _reelData.onPressLike!(false);
       if (success) {
@@ -840,7 +839,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       }
       setBuilderState.call(() {});
     } finally {
-      _isLikeLoading.value = false;
+      _isLikeLoading = false;
+      setState(() {});
     }
   }
 
