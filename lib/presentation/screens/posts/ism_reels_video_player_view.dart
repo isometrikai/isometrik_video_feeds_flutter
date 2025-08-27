@@ -461,20 +461,18 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               ),
             ],
             if (_reelData.postSetting?.isLikeButtonVisible == true)
-              StatefulBuilder(
-                builder: (context, setBuilderState) => ValueListenableBuilder(
-                    valueListenable: _isLikeLoading,
-                    builder: (context, value, child) => _buildActionButton(
-                          icon: _reelData.isLiked == true
-                              ? AssetConstants.icLikeSelected
-                              : AssetConstants.icLikeUnSelected,
-                          label: _reelData.likesCount.toString(),
-                          onTap: () {
-                            _callLikeFunction(setBuilderState);
-                          },
-                          isLoading: value,
-                        )),
-              ),
+              ValueListenableBuilder(
+                  valueListenable: _isLikeLoading,
+                  builder: (context, value, child) => _buildActionButton(
+                        icon: _reelData.isLiked == true
+                            ? AssetConstants.icLikeSelected
+                            : AssetConstants.icLikeUnSelected,
+                        label: _reelData.likesCount.toString(),
+                        onTap: () {
+                          _callLikeFunction();
+                        },
+                        isLoading: value,
+                      )),
             if (_reelData.postSetting?.isCommentButtonVisible == true)
               StatefulBuilder(
                 builder: (context, setBuilderState) => _buildActionButton(
@@ -822,10 +820,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
   }
 
-  Future<void> _callLikeFunction(StateSetter setBuilderState) async {
+  Future<void> _callLikeFunction() async {
     if (_reelData.onPressLike == null || _isLikeLoading.value) return;
     _isLikeLoading.value = true;
-    setBuilderState.call(() {});
+    // setBuilderState.call(() {});
 
     try {
       final success = await _reelData.onPressLike!(false);
@@ -839,10 +837,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         }
         _reelData.isLiked = _reelData.isLiked == false;
       }
-      setBuilderState.call(() {});
+      // setBuilderState.call(() {});
     } finally {
       _isLikeLoading.value = false;
-      setBuilderState.call(() {});
+      // setBuilderState.call(() {});
     }
   }
 
