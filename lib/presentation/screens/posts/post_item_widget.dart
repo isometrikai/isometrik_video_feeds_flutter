@@ -43,7 +43,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
   final Set<String> _cachedImages = {};
   final VideoCacheManager _videoCacheManager = VideoCacheManager();
   List<ReelsData> _reelsDataList = [];
-
+  PageStorageKey<dynamic>? _pageStorageKey;
   @override
   void initState() {
     _onStartInit();
@@ -52,6 +52,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
 
   void _onStartInit() async {
     _reelsDataList = widget.reelsDataList;
+    _pageStorageKey = PageStorageKey(_reelsDataList);
     _pageController = PageController(initialPage: widget.startingPostIndex ?? 0);
 
     if (_reelsDataList.isListEmptyOrNull == false) {
@@ -120,6 +121,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
   Widget _buildContent(BuildContext context) {
     debugPrint('reelsDataList length: ${_reelsDataList.length}');
     return PageView.builder(
+      key: _pageStorageKey,
       allowImplicitScrolling: widget.allowImplicitScrolling ?? true,
       controller: _pageController,
       clipBehavior: Clip.none,
@@ -159,7 +161,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
           child: IsmReelsVideoPlayerView(
             reelsData: reelsData,
             videoCacheManager: _videoCacheManager,
-            key: ValueKey(reelsData),
+            key: ValueKey(index),
             onPressMoreButton: () async {
               if (reelsData.onPressMoreButton == null) return;
               final result = await reelsData.onPressMoreButton!.call();
