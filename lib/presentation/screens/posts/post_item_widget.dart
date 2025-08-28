@@ -163,8 +163,56 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
       scrollDirection: Axis.vertical,
       itemBuilder: (context, index) {
         final reelsData = _reelsDataList[index];
-        return PageViewItemWidget(
-            reelsData: reelsData, index: index, videoCacheManager: _videoCacheManager);
+        return RepaintBoundary(
+          child: IsmReelsVideoPlayerView(
+            reelsData: reelsData,
+            videoCacheManager: _videoCacheManager,
+            key: ValueKey(index),
+            onPressMoreButton: () async {
+              if (reelsData.onPressMoreButton == null) return;
+              final result = await reelsData.onPressMoreButton!.call();
+              if (result == null) return;
+              if (result is bool) {
+                final isSuccess = result;
+                if (isSuccess) {
+                  final postIndex =
+                      _reelsDataList.indexWhere((element) => element.postId == reelsData.postId);
+                  if (postIndex != -1) {
+                    setState(() {
+                      _reelsDataList.removeAt(postIndex);
+                    });
+                    final imageUrl = _reelsDataList[postIndex].mediaUrl;
+                    final thumbnailUrl = _reelsDataList[postIndex].thumbnailUrl;
+                    if (_reelsDataList[postIndex].mediaType == 0) {
+                      await _evictDeletedPostImage(imageUrl);
+                    } else {
+                      await _evictDeletedPostImage(thumbnailUrl);
+                    }
+                  }
+                }
+              }
+              if (result is ReelsData) {
+                final index =
+                    _reelsDataList.indexWhere((element) => element.postId == result.postId);
+                if (index != -1) {
+                  setState(() {
+                    _reelsDataList[index] = result;
+                  });
+                }
+              }
+            },
+            onCreatePost: () async {
+              if (reelsData.onCreatePost != null) {
+                final result = await reelsData.onCreatePost!();
+                if (result != null) {
+                  setState(() {
+                    _reelsDataList.insert(index, result);
+                  });
+                }
+              }
+            },
+          ),
+        );
       },
     );
   }
