@@ -43,7 +43,8 @@ class _PostItemWidgetState extends State<PostItemWidget> {
   final Set<String> _cachedImages = {};
   final VideoCacheManager _videoCacheManager = VideoCacheManager();
   List<ReelsData> _reelsDataList = [];
-  PageStorageKey<dynamic>? _pageStorageKey;
+  final PageStorageKey<dynamic>? _pageStorageKey = PageStorageKey('_PostItemWidgetState');
+  ;
   @override
   void initState() {
     _onStartInit();
@@ -52,7 +53,6 @@ class _PostItemWidgetState extends State<PostItemWidget> {
 
   void _onStartInit() async {
     _reelsDataList = widget.reelsDataList;
-    _pageStorageKey = PageStorageKey(_reelsDataList);
     _pageController = PageController(initialPage: widget.startingPostIndex ?? 0);
 
     if (_reelsDataList.isListEmptyOrNull == false) {
