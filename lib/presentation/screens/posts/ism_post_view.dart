@@ -41,8 +41,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   }
 
   @override
-  Widget build(BuildContext context) =>
-      AnnotatedRegion(
+  Widget build(BuildContext context) => AnnotatedRegion(
         value: const SystemUiOverlayStyle(
           statusBarColor: IsrColors.transparent,
           statusBarBrightness: Brightness.dark,
@@ -63,94 +62,87 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
               _loggedInUserId = state is UserInformationLoaded ? state.userId : '';
               return state is PostInitial
                   ? state.isLoading == true
-                  ? Center(child: IsrVideoReelUtility.loaderWidget())
-                  : const SizedBox.shrink()
+                      ? Center(child: IsrVideoReelUtility.loaderWidget())
+                      : const SizedBox.shrink()
                   : DefaultTabController(
-                length: 2,
-                initialIndex: _currentIndex,
-                child: Stack(
-                  children: [
-                    TabBarView(
-                      physics: const NeverScrollableScrollPhysics(),
-                      controller: _postTabController,
-                      children: widget.tabDataModelList
-                          .map((tabData) =>
-                          _buildTabBarView(
-                              tabData, widget.tabDataModelList.indexOf(tabData)))
-                          .toList(),
-                    ),
-                    _buildTabBar(),
-                  ],
-                ),
-              );
+                      length: 2,
+                      initialIndex: _currentIndex,
+                      child: Stack(
+                        children: [
+                          TabBarView(
+                            physics: const NeverScrollableScrollPhysics(),
+                            controller: _postTabController,
+                            children: widget.tabDataModelList
+                                .map((tabData) => _buildTabBarView(
+                                    tabData, widget.tabDataModelList.indexOf(tabData)))
+                                .toList(),
+                          ),
+                          _buildTabBar(),
+                        ],
+                      ),
+                    );
             },
           ),
         ),
       );
 
-  Widget _buildTabBar() =>
-      ValueListenableBuilder<bool>(
-          valueListenable: _tabsVisibilityNotifier,
-          builder: (context, value, child) =>
-          value == true
-              ? Container(
-            color: Colors.transparent,
-            padding: EdgeInsets.only(
-              top: MediaQuery
-                  .of(context)
-                  .padding
-                  .top + IsrDimens.twenty,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  width: IsrDimens.getScreenWidth(context) * 0.7,
-                  child: Theme(
-                    data: ThemeData(
-                      splashColor: Colors.transparent,
-                      highlightColor: Colors.transparent,
-                    ),
-                    child: TabBar(
-                      controller: _postTabController,
-                      labelColor: _isFollowingPostsEmpty() ? IsrColors.black : IsrColors.white,
-                      unselectedLabelColor: _isFollowingPostsEmpty()
-                          ? IsrColors.black
-                          : IsrColors.white.changeOpacity(0.6),
-                      indicatorColor:
-                      _isFollowingPostsEmpty() ? IsrColors.black : IsrColors.white,
-                      indicatorWeight: 2,
-                      dividerColor: Colors.transparent,
-                      indicatorSize: TabBarIndicatorSize.label,
-                      labelPadding: IsrDimens.edgeInsetsSymmetric(
-                        horizontal: IsrDimens.eight,
+  Widget _buildTabBar() => ValueListenableBuilder<bool>(
+      valueListenable: _tabsVisibilityNotifier,
+      builder: (context, value, child) => value == true
+          ? Container(
+              color: Colors.transparent,
+              padding: EdgeInsets.only(
+                top: MediaQuery.of(context).padding.top + IsrDimens.twenty,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: IsrDimens.getScreenWidth(context) * 0.7,
+                    child: Theme(
+                      data: ThemeData(
+                        splashColor: Colors.transparent,
+                        highlightColor: Colors.transparent,
                       ),
-                      labelStyle: IsrStyles.white16.copyWith(
-                        fontWeight: FontWeight.w700,
-                        height: 1.5,
-                      ),
-                      unselectedLabelStyle: IsrStyles.white16.copyWith(
-                        fontWeight: FontWeight.w400,
-                        height: 1.5,
-                      ),
-                      tabs: widget.tabDataModelList
-                          .map(
-                            (tab) =>
-                            Tab(
-                              child: Text(
-                                tab.title,
-                                textAlign: TextAlign.center,
+                      child: TabBar(
+                        controller: _postTabController,
+                        labelColor: _isFollowingPostsEmpty() ? IsrColors.black : IsrColors.white,
+                        unselectedLabelColor: _isFollowingPostsEmpty()
+                            ? IsrColors.black
+                            : IsrColors.white.changeOpacity(0.6),
+                        indicatorColor:
+                            _isFollowingPostsEmpty() ? IsrColors.black : IsrColors.white,
+                        indicatorWeight: 2,
+                        dividerColor: Colors.transparent,
+                        indicatorSize: TabBarIndicatorSize.label,
+                        labelPadding: IsrDimens.edgeInsetsSymmetric(
+                          horizontal: IsrDimens.eight,
+                        ),
+                        labelStyle: IsrStyles.white16.copyWith(
+                          fontWeight: FontWeight.w700,
+                          height: 1.5,
+                        ),
+                        unselectedLabelStyle: IsrStyles.white16.copyWith(
+                          fontWeight: FontWeight.w400,
+                          height: 1.5,
+                        ),
+                        tabs: widget.tabDataModelList
+                            .map(
+                              (tab) => Tab(
+                                child: Text(
+                                  tab.title,
+                                  textAlign: TextAlign.center,
+                                ),
                               ),
-                            ),
-                      )
-                          .toList(),
+                            )
+                            .toList(),
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          )
-              : const SizedBox.shrink());
+                ],
+              ),
+            )
+          : const SizedBox.shrink());
 
   void _onStartInit() async {
     _currentIndex = widget.currentIndex?.toInt() ?? 0;
@@ -217,9 +209,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  Widget _buildTabBarView(TabDataModel tabData, int index) =>
-      PostItemWidget(
-        key: ValueKey(widget.tabDataModelList[index].reelsDataList),
+  Widget _buildTabBarView(TabDataModel tabData, int index) => PostItemWidget(
         onTapPlaceHolder: () {
           if ((_postTabController?.length ?? 0) > 1) {
             _tabsVisibilityNotifier.value = true;
