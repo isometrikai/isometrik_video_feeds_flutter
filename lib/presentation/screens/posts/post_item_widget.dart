@@ -38,13 +38,13 @@ class PostItemWidget extends StatefulWidget {
   State<PostItemWidget> createState() => _PostItemWidgetState();
 }
 
-class _PostItemWidgetState extends State<PostItemWidget> {
+class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAliveClientMixin {
   late PageController _pageController;
   final Set<String> _cachedImages = {};
   final VideoCacheManager _videoCacheManager = VideoCacheManager();
   List<ReelsData> _reelsDataList = [];
   final PageStorageKey<dynamic>? _pageStorageKey = PageStorageKey('_PostItemWidgetState');
-  ;
+
   @override
   void initState() {
     _onStartInit();
@@ -83,17 +83,23 @@ class _PostItemWidgetState extends State<PostItemWidget> {
   }
 
   @override
-  Widget build(BuildContext context) => _reelsDataList.isListEmptyOrNull == true
-      ? _buildPlaceHolder(context)
-      : RefreshIndicator(
-          onRefresh: () async {
-            if (widget.loggedInUserId.isStringEmptyOrNull == true) return;
-            if (widget.onRefresh != null) {
-              await widget.onRefresh?.call();
-            }
-          },
-          child: _buildContent(context),
-        );
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return _reelsDataList.isListEmptyOrNull == true
+        ? _buildPlaceHolder(context)
+        : RefreshIndicator(
+            onRefresh: () async {
+              if (widget.loggedInUserId.isStringEmptyOrNull == true) return;
+              if (widget.onRefresh != null) {
+                await widget.onRefresh?.call();
+              }
+            },
+            child: _buildContent(context),
+          );
+  }
 
   Widget _buildPlaceHolder(BuildContext context) => CustomScrollView(
         physics: const ClampingScrollPhysics(),
@@ -157,56 +163,8 @@ class _PostItemWidgetState extends State<PostItemWidget> {
       scrollDirection: Axis.vertical,
       itemBuilder: (context, index) {
         final reelsData = _reelsDataList[index];
-        return RepaintBoundary(
-          child: IsmReelsVideoPlayerView(
-            reelsData: reelsData,
-            videoCacheManager: _videoCacheManager,
-            key: ValueKey(index),
-            onPressMoreButton: () async {
-              if (reelsData.onPressMoreButton == null) return;
-              final result = await reelsData.onPressMoreButton!.call();
-              if (result == null) return;
-              if (result is bool) {
-                final isSuccess = result;
-                if (isSuccess) {
-                  final postIndex =
-                      _reelsDataList.indexWhere((element) => element.postId == reelsData.postId);
-                  if (postIndex != -1) {
-                    setState(() {
-                      _reelsDataList.removeAt(postIndex);
-                    });
-                    final imageUrl = _reelsDataList[postIndex].mediaUrl;
-                    final thumbnailUrl = _reelsDataList[postIndex].thumbnailUrl;
-                    if (_reelsDataList[postIndex].mediaType == 0) {
-                      await _evictDeletedPostImage(imageUrl);
-                    } else {
-                      await _evictDeletedPostImage(thumbnailUrl);
-                    }
-                  }
-                }
-              }
-              if (result is ReelsData) {
-                final index =
-                    _reelsDataList.indexWhere((element) => element.postId == result.postId);
-                if (index != -1) {
-                  setState(() {
-                    _reelsDataList[index] = result;
-                  });
-                }
-              }
-            },
-            onCreatePost: () async {
-              if (reelsData.onCreatePost != null) {
-                final result = await reelsData.onCreatePost!();
-                if (result != null) {
-                  setState(() {
-                    _reelsDataList.insert(index, result);
-                  });
-                }
-              }
-            },
-          ),
-        );
+        return PageViewItemWidget(
+            reelsData: reelsData, index: index, videoCacheManager: _videoCacheManager);
       },
     );
   }
@@ -410,5 +368,72 @@ class _PostItemWidgetState extends State<PostItemWidget> {
       await DefaultCacheManager().removeFile(imageUrl);
       debugPrint('🗑️ MainWidget: Evicted deleted post image from cache - $imageUrl');
     } catch (_) {}
+  }
+}
+
+class PageViewItemWidget extends StatefulWidget {
+  const PageViewItemWidget(
+      {super.key, required this.reelsData, required this.index, required this.videoCacheManager});
+
+  final ReelsData reelsData;
+  final int index;
+  final VideoCacheManager videoCacheManager;
+  @override
+  State<PageViewItemWidget> createState() => _PageViewItemWidgetState();
+}
+
+class _PageViewItemWidgetState extends State<PageViewItemWidget> {
+  @override
+  Widget build(BuildContext context) {
+    return RepaintBoundary(
+      child: IsmReelsVideoPlayerView(
+        reelsData: widget.reelsData,
+        videoCacheManager: widget.videoCacheManager,
+        key: ValueKey(widget.index),
+        onPressMoreButton: () async {
+          if (widget.reelsData.onPressMoreButton == null) return;
+          final result = await widget.reelsData.onPressMoreButton!.call();
+          if (result == null) return;
+          if (result is bool) {
+            // final isSuccess = result;
+            // if (isSuccess) {
+            //   final postIndex =
+            //   _reelsDataList.indexWhere((element) => element.postId == reelsData.postId);
+            //   if (postIndex != -1) {
+            //     setState(() {
+            //       _reelsDataList.removeAt(postIndex);
+            //     });
+            //     final imageUrl = _reelsDataList[postIndex].mediaUrl;
+            //     final thumbnailUrl = _reelsDataList[postIndex].thumbnailUrl;
+            //     if (_reelsDataList[postIndex].mediaType == 0) {
+            //       await _evictDeletedPostImage(imageUrl);
+            //     } else {
+            //       await _evictDeletedPostImage(thumbnailUrl);
+            //     }
+            //   }
+            // }
+          }
+          if (result is ReelsData) {
+            // final index =
+            // _reelsDataList.indexWhere((element) => element.postId == result.postId);
+            // if (index != -1) {
+            //   setState(() {
+            //     _reelsDataList[index] = result;
+            //   });
+            // }
+          }
+        },
+        onCreatePost: () async {
+          // if (reelsData.onCreatePost != null) {
+          //   final result = await reelsData.onCreatePost!();
+          //   if (result != null) {
+          //     setState(() {
+          //       _reelsDataList.insert(index, result);
+          //     });
+          //   }
+          // }
+        },
+      ),
+    );
   }
 }
