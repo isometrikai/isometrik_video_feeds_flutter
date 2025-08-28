@@ -167,7 +167,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
           child: IsmReelsVideoPlayerView(
             reelsData: reelsData,
             videoCacheManager: _videoCacheManager,
-            key: ValueKey(index),
+            key: ValueKey(reelsData),
             onPressMoreButton: () async {
               if (reelsData.onPressMoreButton == null) return;
               final result = await reelsData.onPressMoreButton!.call();
@@ -416,72 +416,5 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
       await DefaultCacheManager().removeFile(imageUrl);
       debugPrint('🗑️ MainWidget: Evicted deleted post image from cache - $imageUrl');
     } catch (_) {}
-  }
-}
-
-class PageViewItemWidget extends StatefulWidget {
-  const PageViewItemWidget(
-      {super.key, required this.reelsData, required this.index, required this.videoCacheManager});
-
-  final ReelsData reelsData;
-  final int index;
-  final VideoCacheManager videoCacheManager;
-  @override
-  State<PageViewItemWidget> createState() => _PageViewItemWidgetState();
-}
-
-class _PageViewItemWidgetState extends State<PageViewItemWidget> {
-  @override
-  Widget build(BuildContext context) {
-    return RepaintBoundary(
-      child: IsmReelsVideoPlayerView(
-        reelsData: widget.reelsData,
-        videoCacheManager: widget.videoCacheManager,
-        key: ValueKey(widget.index),
-        onPressMoreButton: () async {
-          if (widget.reelsData.onPressMoreButton == null) return;
-          final result = await widget.reelsData.onPressMoreButton!.call();
-          if (result == null) return;
-          if (result is bool) {
-            // final isSuccess = result;
-            // if (isSuccess) {
-            //   final postIndex =
-            //   _reelsDataList.indexWhere((element) => element.postId == reelsData.postId);
-            //   if (postIndex != -1) {
-            //     setState(() {
-            //       _reelsDataList.removeAt(postIndex);
-            //     });
-            //     final imageUrl = _reelsDataList[postIndex].mediaUrl;
-            //     final thumbnailUrl = _reelsDataList[postIndex].thumbnailUrl;
-            //     if (_reelsDataList[postIndex].mediaType == 0) {
-            //       await _evictDeletedPostImage(imageUrl);
-            //     } else {
-            //       await _evictDeletedPostImage(thumbnailUrl);
-            //     }
-            //   }
-            // }
-          }
-          if (result is ReelsData) {
-            // final index =
-            // _reelsDataList.indexWhere((element) => element.postId == result.postId);
-            // if (index != -1) {
-            //   setState(() {
-            //     _reelsDataList[index] = result;
-            //   });
-            // }
-          }
-        },
-        onCreatePost: () async {
-          // if (reelsData.onCreatePost != null) {
-          //   final result = await reelsData.onCreatePost!();
-          //   if (result != null) {
-          //     setState(() {
-          //       _reelsDataList.insert(index, result);
-          //     });
-          //   }
-          // }
-        },
-      ),
-    );
   }
 }
