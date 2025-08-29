@@ -4,7 +4,7 @@ import 'package:ism_video_reel_player_example/domain/domain.dart';
 class FollowPostUseCase extends BaseUseCase {
   FollowPostUseCase(this._repository);
 
-  final PostRepository _repository;
+  final SocialRepository _repository;
 
   Future<ApiResult<ResponseClass?>> executeFollowPost({
     required bool isLoading,
@@ -15,6 +15,9 @@ class FollowPostUseCase extends BaseUseCase {
           isLoading: isLoading,
           followingId: followingId,
         );
-        return ApiResult(data: response.responseCode == 200 || response.responseCode == 201 ? response.data : null);
+        return ApiResult(
+            data: response.responseCode == 200 || response.responseCode == 201
+                ? response.data
+                : null);
       });
 }

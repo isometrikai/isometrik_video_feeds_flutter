@@ -18,12 +18,14 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
     this.reelsData,
     this.onPressMoreButton,
     this.onCreatePost,
+    this.onPressFollowButton,
   });
 
   final VideoCacheManager? videoCacheManager;
   final ReelsData? reelsData;
   final VoidCallback? onPressMoreButton;
   final Future<void> Function()? onCreatePost;
+  final Future<void> Function()? onPressFollowButton;
 
   @override
   State<IsmReelsVideoPlayerView> createState() => _IsmReelsVideoPlayerViewState();
@@ -46,6 +48,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   // Track disposal to avoid using controller after dispose
   var _isDisposed = false;
+
   // Incremented on each init/swap to invalidate stale async completions
   int _controllerGeneration = 0;
 
@@ -651,65 +654,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                     ),
                                   ),
                                 ),
-                                if (_reelData.isSelfProfile == false) ...[
-                                  IsrDimens.boxWidth(IsrDimens.eight),
-                                  // // Check if the user is verified
-                                  // if (widget.isVerifiedUser == false) ...[
-                                  //   // Add the verified user icon
-                                  //   SizedBox(
-                                  //     height: IsrDimens.twentyFour,
-                                  //     width: IsrDimens.twentyFour,
-                                  //     child: const AppImage.svg(AssetConstants.icVerifiedIcon),
-                                  //   ),
-                                  //   IsrDimens.boxWidth(IsrDimens.eight),
-                                  // ],
-                                  // Only show follow button if not following
-                                  if (_reelData.postSetting?.isFollowButtonVisible == true &&
-                                      _reelData.isFollow == false &&
-                                      _isFollowLoading.value == false &&
-                                      _reelData.isSelfProfile == false)
-                                    Container(
-                                      height: IsrDimens.twentyFour,
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(context).primaryColor,
-                                        borderRadius: BorderRadius.circular(IsrDimens.twenty),
-                                      ),
-                                      child: MaterialButton(
-                                        minWidth: IsrDimens.sixty,
-                                        height: IsrDimens.twentyFour,
-                                        padding: IsrDimens.edgeInsetsSymmetric(
-                                          horizontal: IsrDimens.twelve,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(IsrDimens.twenty),
-                                        ),
-                                        onPressed: _callFollowFunction,
-                                        child: Text(
-                                          IsrTranslationFile.follow,
-                                          style: IsrStyles.white12.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  // Show loading indicator while API call is in progress
-                                  if (_isFollowLoading.value)
-                                    SizedBox(
-                                      width: IsrDimens.sixty,
-                                      height: IsrDimens.twentyFour,
-                                      child: Center(
-                                        child: SizedBox(
-                                          width: IsrDimens.sixteen,
-                                          height: IsrDimens.sixteen,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            valueColor: AlwaysStoppedAnimation<Color>(
-                                                Theme.of(context).primaryColor),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                ],
+                                IsrDimens.boxWidth(IsrDimens.eight),
+                                // Only show follow button if not following
+                                _buildFollowButton(),
                               ],
                             ),
                           ),
@@ -794,13 +741,91 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         ),
       );
 
+  Widget _buildFollowButton() {
+    // Hide if it's self profile
+    if (_reelData.isSelfProfile == true) return const SizedBox.shrink();
+
+    // FOLLOW button
+    if (_reelData.postSetting?.isFollowButtonVisible == true && _reelData.isFollow == false) {
+      return ValueListenableBuilder<bool>(
+        valueListenable: _isFollowLoading,
+        builder: (context, isLoading, child) => AnimatedSwitcher(
+          duration: const Duration(milliseconds: 50),
+          reverseDuration: const Duration(milliseconds: 200),
+          child: isLoading
+              ? SizedBox(
+                  width: IsrDimens.sixty,
+                  height: IsrDimens.twentyFour,
+                  child: Center(
+                    child: SizedBox(
+                      width: IsrDimens.sixteen,
+                      height: IsrDimens.sixteen,
+                      child: const CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+                )
+              : Container(
+                  height: IsrDimens.twentyFour,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor,
+                    borderRadius: BorderRadius.circular(IsrDimens.twenty),
+                  ),
+                  child: MaterialButton(
+                    minWidth: IsrDimens.sixty,
+                    height: IsrDimens.twentyFour,
+                    padding: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twelve),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(IsrDimens.twenty)),
+                    onPressed: _callFollowFunction,
+                    child: Text(
+                      IsrTranslationFile.follow,
+                      style: IsrStyles.white12.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+        ),
+      );
+    }
+
+    // FOLLOWING button (Unfollow option visible)
+    if (_reelData.isFollow == true && _reelData.postSetting?.isUnFollowButtonVisible == true) {
+      return Container(
+        height: IsrDimens.twentyFour,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade300,
+          borderRadius: BorderRadius.circular(IsrDimens.twenty),
+        ),
+        child: MaterialButton(
+          minWidth: IsrDimens.sixty,
+          height: IsrDimens.twentyFour,
+          padding: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twelve),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(IsrDimens.twenty),
+          ),
+          onPressed: _callFollowFunction, // <-- your unfollow logic
+          child: Text(
+            IsrTranslationFile.following,
+            style: IsrStyles.primaryText12.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Otherwise, show nothing
+    return const SizedBox.shrink();
+  }
+
   //calls api to follow and unfollow user
   Future<void> _callFollowFunction() async {
-    if (_reelData.onPressFollowFollowing == null) return;
+    if (widget.onPressFollowButton == null) return;
     _isFollowLoading.value = true;
 
     try {
-      await _reelData.onPressFollowFollowing!();
+      await widget.onPressFollowButton!();
     } finally {
       _isFollowLoading.value = false;
     }

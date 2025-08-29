@@ -97,6 +97,8 @@ class _HomeScreenState extends State<HomeScreen> {
           isLikeButtonVisible: true,
           isShareButtonVisible: true,
           isMoreButtonVisible: true,
+          isFollowButtonVisible: true,
+          isUnFollowButtonVisible: true,
         ),
         postId: postData.id,
         onCreatePost: () async => await _handleCreatePost(),
@@ -158,7 +160,7 @@ class _HomeScreenState extends State<HomeScreen> {
             return false;
           }
         },
-        onPressFollow: (userId) async {
+        onPressFollow: (userId, isFollow) async {
           try {
             final completer = Completer<bool>();
 

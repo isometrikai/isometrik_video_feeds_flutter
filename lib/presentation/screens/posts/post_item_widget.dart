@@ -211,6 +211,17 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                 }
               }
             },
+            onPressFollowButton: () async {
+              if (reelsData.onPressFollow != null) {
+                final result = await reelsData.onPressFollow!(
+                    reelsData.postId ?? '', reelsData.isFollow ?? false);
+                if (result == true) {
+                  setState(() {
+                    reelsData.isFollow = reelsData.isFollow == true ? false : true;
+                  });
+                }
+              }
+            },
           ),
         );
       },
