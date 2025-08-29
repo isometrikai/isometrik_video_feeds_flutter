@@ -127,7 +127,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
   Widget _buildContent(BuildContext context) {
     debugPrint('reelsDataList length: ${_reelsDataList.length}');
     return PageView.builder(
-      key: _pageStorageKey,
+      // key: _pageStorageKey,
       allowImplicitScrolling: widget.allowImplicitScrolling ?? true,
       controller: _pageController,
       clipBehavior: Clip.none,
