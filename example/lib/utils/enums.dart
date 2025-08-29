@@ -140,3 +140,8 @@ enum CommentAction {
   comment,
   edit,
 }
+
+enum FollowAction {
+  follow,
+  unfollow,
+}

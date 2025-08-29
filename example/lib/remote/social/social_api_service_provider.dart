@@ -124,7 +124,7 @@ class SocialApiServiceProvider extends SocialApiService {
         {
           'Accept': AppConstants.headerAccept,
           'Content-Type': AppConstants.headerContentType,
-          'Authorization': dummyToken,
+          'Authorization': header.accessToken,
           'lan': header.language,
           'currencySymbol': header.currencySymbol,
           'currencyCode': header.currencyCode,
@@ -171,15 +171,17 @@ class SocialApiServiceProvider extends SocialApiService {
     required bool isLoading,
     required String followingId,
     required Header header,
+    required FollowAction followAction,
   }) async {
     final appVersion = await Utility.getAppVersion();
+    final map = {
+      'following_id': followingId,
+    };
     return await networkClient.makeRequest(
       SocialApiEndPoints.postFollowPost,
-      NetworkRequestType.post,
-      {
-        'following_id': followingId,
-      },
-      null,
+      followAction == FollowAction.follow ? NetworkRequestType.post : NetworkRequestType.delete,
+      followAction == FollowAction.follow ? map : null,
+      followAction == FollowAction.unfollow ? map : null,
       {
         'Accept': AppConstants.headerAccept,
         'Content-Type': AppConstants.headerContentType,

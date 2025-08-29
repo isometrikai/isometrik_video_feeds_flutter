@@ -30,6 +30,7 @@ abstract class SocialRepository extends BaseRepository {
   Future<CustomResponse<ResponseClass?>> followPost({
     required bool isLoading,
     required String followingId,
+    required FollowAction followAction,
   });
 
   Future<CustomResponse<ResponseClass?>> savePost({

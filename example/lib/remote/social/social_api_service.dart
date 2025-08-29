@@ -41,6 +41,7 @@ abstract class SocialApiService extends BaseService {
     required bool isLoading,
     required String followingId,
     required Header header,
+    required FollowAction followAction,
   });
 
   Future<ResponseModel> unFollowPost({

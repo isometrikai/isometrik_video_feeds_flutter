@@ -95,6 +95,7 @@ class SocialRepositoryImpl implements SocialRepository {
   Future<CustomResponse<ResponseClass?>> followPost({
     required bool isLoading,
     required String followingId,
+    required FollowAction followAction,
   }) async {
     try {
       final header = await _dataSource.getHeader();
@@ -102,6 +103,7 @@ class SocialRepositoryImpl implements SocialRepository {
         isLoading: isLoading,
         header: header,
         followingId: followingId,
+        followAction: followAction,
       );
       return _mapper.mapResponseData(response);
     } catch (e) {

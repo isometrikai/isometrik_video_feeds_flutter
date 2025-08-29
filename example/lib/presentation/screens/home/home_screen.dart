@@ -107,13 +107,14 @@ class _HomeScreenState extends State<HomeScreen> {
         mediaType: postData.media?.first.mediaType == 'image' ? 0 : 1,
         // actionWidget: _buildActionButtons(postData),
         // footerWidget: _buildFooter(postData),
+        userId: postData.user?.id ?? '',
         userName: postData.user?.username ?? '',
         profilePhoto: postData.user?.avatarUrl ?? '',
         firstName: '',
         lastName: '',
         likesCount: postData.engagementMetrics?.likeTypes?.love?.toInt() ?? 0,
         commentCount: postData.engagementMetrics?.comments?.toInt() ?? 0,
-        isFollow: false,
+        isFollow: true,
         isLiked: postData.isLiked,
         isSavedPost: false,
         isVerifiedUser: false,
@@ -169,6 +170,7 @@ class _HomeScreenState extends State<HomeScreen> {
               onComplete: (success) {
                 completer.complete(success);
               },
+              followAction: isFollow ? FollowAction.unfollow : FollowAction.follow,
             ));
 
             return await completer.future;

@@ -19,6 +19,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
     this.onPressMoreButton,
     this.onCreatePost,
     this.onPressFollowButton,
+    this.onPressLikeButton,
   });
 
   final VideoCacheManager? videoCacheManager;
@@ -26,6 +27,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
   final VoidCallback? onPressMoreButton;
   final Future<void> Function()? onCreatePost;
   final Future<void> Function()? onPressFollowButton;
+  final Future<void> Function()? onPressLikeButton;
 
   @override
   State<IsmReelsVideoPlayerView> createState() => _IsmReelsVideoPlayerViewState();
@@ -471,9 +473,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                             ? AssetConstants.icLikeSelected
                             : AssetConstants.icLikeUnSelected,
                         label: _reelData.likesCount.toString(),
-                        onTap: () {
-                          _callLikeFunction();
-                        },
+                        onTap: _callLikeFunction,
                         isLoading: value,
                       )),
             if (_reelData.postSetting?.isCommentButtonVisible == true)
@@ -804,7 +804,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(IsrDimens.twenty),
           ),
-          onPressed: _callFollowFunction, // <-- your unfollow logic
+          onPressed: _callFollowFunction,
+          // <-- your unfollow logic
           child: Text(
             IsrTranslationFile.following,
             style: IsrStyles.primaryText12.copyWith(
@@ -846,26 +847,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   Future<void> _callLikeFunction() async {
-    if (_reelData.onPressLike == null || _isLikeLoading.value) return;
+    if (widget.onPressLikeButton == null || _isLikeLoading.value) return;
     _isLikeLoading.value = true;
-    // setBuilderState.call(() {});
 
     try {
-      final success = await _reelData.onPressLike!(false);
-      if (success) {
-        if (_reelData.isLiked == false) {
-          _reelData.likesCount = (_reelData.likesCount ?? 0) + 1;
-        } else {
-          if ((_reelData.likesCount ?? 0) > 0) {
-            _reelData.likesCount = (_reelData.likesCount ?? 0) - 1;
-          }
-        }
-        _reelData.isLiked = _reelData.isLiked == false;
-      }
-      // setBuilderState.call(() {});
+      await widget.onPressLikeButton!();
     } finally {
       _isLikeLoading.value = false;
-      // setBuilderState.call(() {});
     }
   }
 

@@ -35,6 +35,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<GetPostDetailsEvent>(_getPostDetails);
     on<GetPostCommentsEvent>(_getPostComments);
     on<CommentActionEvent>(_doActionOnComment);
+    on<LoadPostsEvent>(_loadPosts);
   }
 
   final LocalDataUseCase _localDataUseCase;
@@ -84,7 +85,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         _callGetFollowingPost(true, false, false, null),
         _callGetTimeLinePost(true, false, false, null)
       ]);
-      emit(HomeLoaded(timeLinePosts: _timeLinePostList, userId: userId));
+      add(LoadPostsEvent(timeLinePostList: _timeLinePostList));
     } catch (error) {
       emit(HomeError(error.toString()));
     }
@@ -287,9 +288,11 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   }
 
   FutureOr<void> _followUser(FollowUserEvent event, Emitter<HomeState> emit) async {
+    final myUserId = await _localDataUseCase.getUserId();
     final apiResult = await _followPostUseCase.executeFollowPost(
       isLoading: false,
       followingId: event.followingId,
+      followAction: event.followAction,
     );
 
     if (apiResult.isSuccess) {
@@ -298,6 +301,13 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       ErrorHandler.showAppError(appError: apiResult.error);
       event.onComplete.call(false);
     }
+    add(GetTimeLinePostEvent(
+        isLoading: false,
+        isPagination: false,
+        isRefresh: true,
+        onComplete: (postList) {
+          add(LoadPostsEvent(timeLinePostList: _timeLinePostList));
+        }));
   }
 
   Future<void> _callGetTimeLinePost(
@@ -344,13 +354,14 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
         if (isFromPagination) {
           _timeLinePostList.addAll(postDataList);
-          if (onComplete != null) {
-            onComplete(newPosts);
-          }
         } else {
           _timeLinePostList
             ..clear()
             ..addAll(postDataList);
+        }
+
+        if (onComplete != null) {
+          onComplete(newPosts);
         }
 
         _timeLineCurrentPage++;
@@ -450,5 +461,10 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     if (event.onComplete != null) {
       event.onComplete?.call(event.commentId ?? '', apiResult.isSuccess);
     }
+  }
+
+  FutureOr<void> _loadPosts(LoadPostsEvent event, Emitter<HomeState> emit) async {
+    final myUserId = await _localDataUseCase.getUserId();
+    emit(HomeLoaded(timeLinePosts: event.timeLinePostList, userId: myUserId));
   }
 }

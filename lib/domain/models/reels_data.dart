@@ -8,6 +8,7 @@ class ReelsData {
     required this.mediaType,
     this.postId,
     this.profilePhoto,
+    this.userId,
     this.userName,
     this.firstName,
     this.lastName,
@@ -47,6 +48,7 @@ class ReelsData {
   final String thumbnailUrl;
   final int mediaType;
   final String? userName;
+  final String? userId;
   final String? firstName;
   final String? lastName;
   final String? profilePhoto;

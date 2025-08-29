@@ -210,6 +210,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   }
 
   Widget _buildTabBarView(TabDataModel tabData, int index) => PostItemWidget(
+        key: ValueKey(tabData.reelsDataList),
         onTapPlaceHolder: () {
           if ((_postTabController?.length ?? 0) > 1) {
             _tabsVisibilityNotifier.value = true;

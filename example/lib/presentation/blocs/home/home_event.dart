@@ -8,6 +8,14 @@ class LoadHomeData extends HomeEvent {
   LoadHomeData();
 }
 
+class LoadPostsEvent extends HomeEvent {
+  LoadPostsEvent({
+    required this.timeLinePostList,
+  });
+
+  final List<TimeLineData> timeLinePostList;
+}
+
 class GetTimeLinePostEvent extends HomeEvent {
   GetTimeLinePostEvent({
     required this.isLoading,
@@ -52,10 +60,12 @@ class FollowUserEvent extends HomeEvent {
   const FollowUserEvent({
     required this.followingId,
     required this.onComplete,
+    required this.followAction,
   });
 
   final String followingId;
   final Function(bool) onComplete;
+  final FollowAction followAction;
 }
 
 class SavePostEvent extends HomeEvent {
