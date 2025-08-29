@@ -33,11 +33,66 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   var _currentIndex = 1;
   var _loggedInUserId = '';
   final ValueNotifier<bool> _tabsVisibilityNotifier = ValueNotifier<bool>(true);
-
+  List<TabDataModel> _tabDataModelList = [];
   @override
   void initState() {
     super.initState();
     _onStartInit();
+  }
+
+  void _onStartInit() async {
+    _tabDataModelList = widget.tabDataModelList;
+    _currentIndex = widget.currentIndex?.toInt() ?? 0;
+    if (_currentIndex >= _tabDataModelList.length) {
+      _currentIndex = 0;
+    }
+    if (!IsrVideoReelConfig.isSdkInitialize) {
+      IsrVideoReelUtility.showToastMessage('sdk not initialized');
+      return;
+    }
+    // Initialize TabController with initialIndex = _currentIndex
+    _postTabController = TabController(
+      length: _tabDataModelList.length,
+      vsync: this,
+      initialIndex: _currentIndex,
+    );
+
+    _refreshControllers = List.generate(_tabDataModelList.length, (index) => RefreshController());
+    var postBloc = IsmInjectionUtils.getBloc<PostBloc>();
+    if (postBloc.isClosed) {
+      isrConfigureInjection();
+      postBloc = IsmInjectionUtils.getBloc<PostBloc>();
+    }
+
+    _tabsVisibilityNotifier.value = _tabDataModelList.length > 1;
+
+    if (_isFollowingPostsEmpty()) {
+      // _tabsVisibilityNotifier.value = false;
+    }
+    _postTabController?.addListener(() {
+      final newIndex = _postTabController?.index ?? 0;
+      if (_isFollowingPostsEmpty()) {
+        // _tabsVisibilityNotifier.value = false;
+        _postTabController?.animateTo(0);
+        return;
+      }
+      _currentIndex = newIndex;
+      // postBloc.add(PostsLoadedEvent([],
+      //     _tabDataModelList[_currentIndex].postList));
+    });
+
+    if (_tabDataModelList.isListEmptyOrNull == false) {
+      var tabData = _tabDataModelList[_currentIndex];
+      final reelsDataList = tabData.reelsDataList;
+      final listOfUrls = <String>[];
+      for (var reelsData in reelsDataList) {
+        listOfUrls.add(reelsData.mediaUrl);
+        if (reelsData.thumbnailUrl.isStringEmptyOrNull == false) {
+          listOfUrls.add(reelsData.thumbnailUrl);
+        }
+      }
+    }
+    postBloc.add(const StartPost());
   }
 
   @override
@@ -54,7 +109,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
               if (state is UserInformationLoaded) {
                 // IsmInjectionUtils.getBloc<PostBloc>().add(PostsLoadedEvent(
                 //     [],
-                //     widget.tabDataModelList[_currentIndex].postList));
+                //     _tabDataModelList[_currentIndex].postList));
               }
             },
             buildWhen: (previousState, currentState) => currentState is UserInformationLoaded,
@@ -65,16 +120,16 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                       ? Center(child: IsrVideoReelUtility.loaderWidget())
                       : const SizedBox.shrink()
                   : DefaultTabController(
-                      length: 2,
+                      length: _tabDataModelList.length,
                       initialIndex: _currentIndex,
                       child: Stack(
                         children: [
                           TabBarView(
                             physics: const NeverScrollableScrollPhysics(),
                             controller: _postTabController,
-                            children: widget.tabDataModelList
-                                .map((tabData) => _buildTabBarView(
-                                    tabData, widget.tabDataModelList.indexOf(tabData)))
+                            children: _tabDataModelList
+                                .map((tabData) =>
+                                    _buildTabBarView(tabData, _tabDataModelList.indexOf(tabData)))
                                 .toList(),
                           ),
                           _buildTabBar(),
@@ -126,7 +181,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                           fontWeight: FontWeight.w400,
                           height: 1.5,
                         ),
-                        tabs: widget.tabDataModelList
+                        tabs: _tabDataModelList
                             .map(
                               (tab) => Tab(
                                 child: Text(
@@ -143,61 +198,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
               ),
             )
           : const SizedBox.shrink());
-
-  void _onStartInit() async {
-    _currentIndex = widget.currentIndex?.toInt() ?? 0;
-    if (_currentIndex >= widget.tabDataModelList.length) {
-      _currentIndex = 0;
-    }
-    if (!IsrVideoReelConfig.isSdkInitialize) {
-      IsrVideoReelUtility.showToastMessage('sdk not initialized');
-      return;
-    }
-    // Initialize TabController with initialIndex = _currentIndex
-    _postTabController = TabController(
-      length: widget.tabDataModelList.length,
-      vsync: this,
-      initialIndex: _currentIndex,
-    );
-
-    _refreshControllers =
-        List.generate(widget.tabDataModelList.length, (index) => RefreshController());
-    var postBloc = IsmInjectionUtils.getBloc<PostBloc>();
-    if (postBloc.isClosed) {
-      isrConfigureInjection();
-      postBloc = IsmInjectionUtils.getBloc<PostBloc>();
-    }
-
-    _tabsVisibilityNotifier.value = widget.tabDataModelList.length > 1;
-
-    if (_isFollowingPostsEmpty()) {
-      // _tabsVisibilityNotifier.value = false;
-    }
-    _postTabController?.addListener(() {
-      final newIndex = _postTabController?.index ?? 0;
-      if (_isFollowingPostsEmpty()) {
-        // _tabsVisibilityNotifier.value = false;
-        _postTabController?.animateTo(0);
-        return;
-      }
-      _currentIndex = newIndex;
-      // postBloc.add(PostsLoadedEvent([],
-      //     widget.tabDataModelList[_currentIndex].postList));
-    });
-
-    if (widget.tabDataModelList.isListEmptyOrNull == false) {
-      var tabData = widget.tabDataModelList[_currentIndex];
-      final reelsDataList = tabData.reelsDataList;
-      final listOfUrls = <String>[];
-      for (var reelsData in reelsDataList) {
-        listOfUrls.add(reelsData.mediaUrl);
-        if (reelsData.thumbnailUrl.isStringEmptyOrNull == false) {
-          listOfUrls.add(reelsData.thumbnailUrl);
-        }
-      }
-    }
-    postBloc.add(const StartPost());
-  }
 
   @override
   void dispose() {
@@ -221,15 +221,15 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         loggedInUserId: _loggedInUserId,
         allowImplicitScrolling: widget.allowImplicitScrolling,
         onPageChanged: widget.onPageChanged,
-        reelsDataList: widget.tabDataModelList[index].reelsDataList,
-        onLoadMore: widget.tabDataModelList[index].onLoadMore,
-        onRefresh: widget.tabDataModelList[index].onRefresh,
+        reelsDataList: _tabDataModelList[index].reelsDataList,
+        onLoadMore: _tabDataModelList[index].onLoadMore,
+        onRefresh: _tabDataModelList[index].onRefresh,
       );
 
   // bool _isFollowingPostsEmpty() =>
   //     _currentIndex == 0 &&
-  //     widget.tabDataModelList[_currentIndex].postSectionType == PostSectionType.following &&
-  //     widget.tabDataModelList[_currentIndex].postList.isListEmptyOrNull;
+  //     _tabDataModelList[_currentIndex].postSectionType == PostSectionType.following &&
+  //     _tabDataModelList[_currentIndex].postList.isListEmptyOrNull;
 
   bool _isFollowingPostsEmpty() => false;
 }
