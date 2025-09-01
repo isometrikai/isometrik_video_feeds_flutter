@@ -120,7 +120,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                       ? Center(child: IsrVideoReelUtility.loaderWidget())
                       : const SizedBox.shrink()
                   : DefaultTabController(
-                      length: _tabDataModelList.length,
+                      length: _tabDataModelList.isListEmptyOrNull ? 0 : _tabDataModelList.length,
                       initialIndex: _currentIndex,
                       child: Stack(
                         children: [
