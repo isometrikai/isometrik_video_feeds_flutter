@@ -21,9 +21,11 @@ class MediaSelectedState extends CreatePostState {
 class CompressionProgressState extends CreatePostState {
   CompressionProgressState({
     required this.progress,
+    required this.mediaKey,
   });
 
   final double progress;
+  final String mediaKey;
 }
 
 class UploadingCoverImageState extends CreatePostState {

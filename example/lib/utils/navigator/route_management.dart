@@ -50,7 +50,7 @@ class RouteManagement {
     return result;
   }
 
-  Future<PostAttributeClass?> goToVideoTrimView({
+  Future<PostAttributeClass?> goToVideoAttributionView({
     required BuildContext context,
     required PostAttributeClass postAttributeClass,
   }) async =>

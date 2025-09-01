@@ -99,30 +99,27 @@ class _CreatePostViewState extends State<CreatePostView> {
             _progressCubit.updateProgress(state.progress ?? 0);
           }
           if (state is MediaSelectedState) {
+            _isCreateButtonDisable = state.isPostButtonEnable == false;
             _mediaDataList.clear();
             _mediaDataList.addAll(state.mediaDataList as Iterable<MediaData>);
-            if (_mediaDataList.isEmptyOrNull) return;
+            if (_mediaDataList.isEmptyOrNull) {
+              _coverImage = '';
+              return;
+            }
             final mediaData = _mediaDataList.first;
             _coverImage = mediaData.previewUrl ?? '';
-            if (mediaData.localPath.isEmptyOrNull == false &&
-                Utility.isLocalUrl(mediaData.localPath ?? '') == true) {
-              final localFile = File(mediaData.localPath ?? '');
-              _mediaLength = localFile.lengthSync();
-            }
             if (_isForEdit) {
-              _mediaLength = mediaData.size?.toInt() ?? 0;
               _descriptionController.text = _createPostBloc.descriptionText;
               _descriptionLength = _descriptionController.text.length;
             }
-            _isCreateButtonDisable = state.isPostButtonEnable == false;
             setState(() {});
           }
           if (state is CoverImageSelected) {
+            _isCreateButtonDisable = state.isPostButtonEnable == false;
             _coverImage = state.coverImage ?? _coverImage;
             if (_mediaDataList.isEmptyOrNull == false) {
               // postAttributeClass!.coverImage = _coverImage;
             }
-            _isCreateButtonDisable = state.isPostButtonEnable == false;
             setState(() {});
           }
 
@@ -159,7 +156,7 @@ class _CreatePostViewState extends State<CreatePostView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   TapHandler(
-                    onTap: _isForEdit ? null : () => _showUploadOptionsDialog(context, false),
+                    onTap: _isForEdit ? null : () => _showUploadOptionsDialog(context, false, null),
                     child: DottedBorder(
                       borderType: BorderType.RRect,
                       radius: Radius.circular(12.scaledValue),
@@ -168,7 +165,25 @@ class _CreatePostViewState extends State<CreatePostView> {
                       strokeWidth: 1,
                       dashPattern: const [6, 3],
                       child: _mediaDataList.isEmptyOrNull == false
-                          ? _buildSelectedMediaSection(_mediaDataList.first)
+                          ? Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: List.generate(
+                                _mediaDataList.length,
+                                (index) {
+                                  final media = _mediaDataList[index];
+                                  return Column(
+                                    children: [
+                                      _buildSelectedMediaSection(media),
+                                      if (index < _mediaDataList.length - 1) ...[
+                                        SizedBox(height: 8.scaledValue),
+                                        const Divider(color: AppColors.colorDBDBDB, thickness: 1),
+                                        SizedBox(height: 8.scaledValue),
+                                      ],
+                                    ],
+                                  );
+                                },
+                              ),
+                            )
                           : _buildUploadSection(),
                     ),
                   ),
@@ -543,7 +558,7 @@ class _CreatePostViewState extends State<CreatePostView> {
     );
   }
 
-  void _showUploadOptionsDialog(BuildContext context, bool isCoverImage) {
+  void _showUploadOptionsDialog(BuildContext context, bool isCoverImage, MediaData? mediaData) {
     showDialog(
       context: context,
       builder: (BuildContext context) => UploadMediaDialog(
@@ -555,6 +570,7 @@ class _CreatePostViewState extends State<CreatePostView> {
               mediaType: result.mediaType,
               mediaSource: result.source,
               isCoverImage: isCoverImage,
+              mediaData: mediaData,
             ),
           );
         },
@@ -587,50 +603,72 @@ class _CreatePostViewState extends State<CreatePostView> {
         ],
       );
 
-  Widget _buildSelectedMediaSection(MediaData mediaData) => Row(
-        children: [
-          MediaPreviewWidget(key: Key(mediaData.localPath ?? ''), mediaData: mediaData),
-          12.horizontalSpace,
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  mediaData.fileName ?? '',
-                  style: Styles.primaryText14.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+  Widget _buildSelectedMediaSection(MediaData mediaData) {
+    if (_isForEdit) {
+      _mediaLength = mediaData.size?.toInt() ?? 0;
+    } else {
+      if (mediaData.localPath.isEmptyOrNull == false &&
+          Utility.isLocalUrl(mediaData.localPath ?? '') == true) {
+        final localFile = File(mediaData.localPath ?? '');
+        _mediaLength = localFile.lengthSync();
+      }
+    }
+    return Row(
+      children: [
+        MediaPreviewWidget(key: Key(mediaData.localPath ?? ''), mediaData: mediaData),
+        12.horizontalSpace,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                mediaData.fileName ?? '',
+                style: Styles.primaryText14.copyWith(
+                  fontWeight: FontWeight.w600,
                 ),
-                4.verticalSpace,
-                Text(
-                  '${TranslationFile.size}: ${Utility.formatFileSize(_mediaLength)}'
-                  '${mediaData.postType == PostType.video ? '  ${TranslationFile.duration}: ${Utility.formatDuration(Duration(seconds: mediaData.duration?.toInt() ?? 0))}' : ''}',
-                  style: Styles.secondaryText12.copyWith(
-                    color: AppColors.color909090,
-                  ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              4.verticalSpace,
+              Text(
+                '${TranslationFile.size}: ${Utility.formatFileSize(_mediaLength)}'
+                '${mediaData.postType == PostType.video ? '  ${TranslationFile.duration}: ${Utility.formatDuration(Duration(seconds: mediaData.duration?.toInt() ?? 0))}' : ''}',
+                style: Styles.secondaryText12.copyWith(
+                  color: AppColors.color909090,
                 ),
-                if (!_isForEdit) ...[
-                  8.verticalSpace,
-                  _isCompressing
-                      ? Text('${TranslationFile.optimizingMedia}...', style: Styles.primaryText10)
-                      : AppButton(
-                          width: 83.scaledValue,
-                          size: ButtonSize.small,
-                          backgroundColor: '001E57'.toHexColor,
-                          title: TranslationFile.change,
-                          onPress: () {
-                            _showUploadOptionsDialog(context, false);
-                          },
-                        ),
-                ],
+              ),
+              if (!_isForEdit) ...[
+                8.verticalSpace,
+                _isCompressing
+                    ? Text('${TranslationFile.optimizingMedia}...', style: Styles.primaryText10)
+                    : AppButton(
+                        width: 83.scaledValue,
+                        size: ButtonSize.small,
+                        backgroundColor: '001E57'.toHexColor,
+                        title: TranslationFile.change,
+                        onPress: () {
+                          _showUploadOptionsDialog(context, false, mediaData);
+                        },
+                      ),
               ],
-            ),
+            ],
           ),
-          // const AppImage.svg(AssetConstants.icBlueTick),
-        ],
-      );
+        ),
+        // const AppImage.svg(AssetConstants.icBlueTick),
+
+        // ❌ Remove Button
+        if (!_isForEdit)
+          IconButton(
+            icon: const Icon(Icons.close, color: Colors.red, size: 20),
+            onPressed: () {
+              setState(() {
+                _createPostBloc.add(RemoveMediaEvent(mediaData: mediaData));
+              });
+            },
+          ),
+      ],
+    );
+  }
 
   Widget _buildCoverImageSection() => // Cover Section
       BlocBuilder<CreatePostBloc, CreatePostState>(
@@ -693,7 +731,7 @@ class _CreatePostViewState extends State<CreatePostView> {
                       child: Center(
                         child: TapHandler(
                           onTap: () {
-                            _showUploadOptionsDialog(context, true);
+                            _showUploadOptionsDialog(context, true, null);
                           },
                           child: Text(
                             TranslationFile.editCover,

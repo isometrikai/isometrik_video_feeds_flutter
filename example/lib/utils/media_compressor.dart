@@ -54,6 +54,7 @@ class MediaCompressor {
         quality: VideoQuality.MediumQuality, // Options: Low, Medium, High
         deleteOrigin: false,
       );
+      if (onProgress != null) onProgress(100);
       subscription.unsubscribe();
       return info?.file;
     } catch (e) {

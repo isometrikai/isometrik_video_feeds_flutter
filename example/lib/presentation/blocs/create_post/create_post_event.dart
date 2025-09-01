@@ -22,12 +22,14 @@ class MediaSourceEvent extends CreatePostEvent {
     required this.mediaType,
     required this.mediaSource,
     this.isCoverImage = false,
+    this.mediaData,
   });
 
   final BuildContext context;
   final MediaType mediaType;
   final MediaSource mediaSource;
   final bool isCoverImage;
+  final MediaData? mediaData;
 }
 
 class GetProductsEvent extends CreatePostEvent {
@@ -60,4 +62,9 @@ class MediaProcessingEvent extends CreatePostEvent {
   MediaProcessingEvent({required this.postId});
 
   final String postId;
+}
+
+class RemoveMediaEvent extends CreatePostEvent {
+  RemoveMediaEvent({required this.mediaData});
+  final MediaData mediaData;
 }
