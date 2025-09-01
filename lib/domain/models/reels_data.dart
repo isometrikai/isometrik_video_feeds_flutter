@@ -3,9 +3,6 @@ import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 
 class ReelsData {
   ReelsData({
-    required this.mediaUrl,
-    required this.thumbnailUrl,
-    required this.mediaType,
     this.postId,
     this.profilePhoto,
     this.userId,
@@ -41,12 +38,10 @@ class ReelsData {
     this.isSavedPost,
     this.postSetting,
     this.onCreatePost,
+    required this.mediaMetaDataList,
   });
 
   final String? postId;
-  final String mediaUrl;
-  final String thumbnailUrl;
-  final int mediaType;
   final String? userName;
   final String? userId;
   final String? firstName;
@@ -55,6 +50,7 @@ class ReelsData {
   final bool? isVerifiedUser;
   final bool? isSelfProfile;
   final String? description;
+  final List<MediaMetaData> mediaMetaDataList;
   bool? isFollow;
   bool? isLiked;
   int? likesCount;
@@ -84,6 +80,18 @@ class ReelsData {
   final bool? isScheduledPost;
   bool? isSavedPost;
   final PostSetting? postSetting;
+}
+
+class MediaMetaData {
+  MediaMetaData({
+    required this.mediaUrl,
+    required this.thumbnailUrl,
+    required this.mediaType,
+  });
+
+  final String mediaUrl;
+  final String thumbnailUrl;
+  final int mediaType;
 }
 
 class PostSetting {

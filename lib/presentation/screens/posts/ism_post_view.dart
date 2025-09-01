@@ -86,9 +86,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       final reelsDataList = tabData.reelsDataList;
       final listOfUrls = <String>[];
       for (var reelsData in reelsDataList) {
-        listOfUrls.add(reelsData.mediaUrl);
-        if (reelsData.thumbnailUrl.isStringEmptyOrNull == false) {
-          listOfUrls.add(reelsData.thumbnailUrl);
+        listOfUrls.add(reelsData.mediaMetaDataList.first.mediaUrl);
+        if (reelsData.mediaMetaDataList.first.thumbnailUrl.isStringEmptyOrNull == false) {
+          listOfUrls.add(reelsData.mediaMetaDataList.first.thumbnailUrl);
         }
       }
     }

@@ -40,6 +40,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   // Add constants for media types
   static const int kPictureType = 0;
   static const int kVideoType = 1;
+  var _mediaPageIndex = 0;
   TapGestureRecognizer? _tapGestureRecognizer;
 
   VideoPlayerController? _videoPlayerController;
@@ -82,8 +83,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _isMuted = false;
     _tapGestureRecognizer = TapGestureRecognizer();
     debugPrint(
-        'IsmReelsVideoPlayerView ...Post by ...${_reelData.userName}\n Post url ${_reelData.mediaUrl}');
-    if (_reelData.mediaType == kVideoType) {
+        'IsmReelsVideoPlayerView ...Post by ...${_reelData.userName}\n Post url ${_reelData.mediaMetaDataList[_mediaPageIndex].mediaUrl}');
+    if (_reelData.mediaMetaDataList[_mediaPageIndex].mediaType == kVideoType) {
       await _initializeVideoPlayer();
       mountUpdate();
     }
@@ -97,9 +98,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   //initialize vide player controller and initialization to use cache
   Future<void> _initializeVideoPlayer() async {
-    if (_reelData.mediaUrl.isStringEmptyOrNull != false) return;
+    if (_reelData.mediaMetaDataList[_mediaPageIndex].mediaUrl.isStringEmptyOrNull != false) return;
 
-    final videoUrl = _reelData.mediaUrl;
+    final videoUrl = _reelData.mediaMetaDataList[_mediaPageIndex].mediaUrl;
     debugPrint('IsmReelsVideoPlayerView....initializeVideoPlayer video url $videoUrl');
 
     try {
@@ -136,7 +137,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       // If still not available, initialize normally (fallback)
       await _initializeVideoControllerNormally(videoUrl, expectedGen: currentGen);
     } catch (e) {
-      debugPrint('IsmReelsVideoPlayerView...catch video url ${_reelData.mediaUrl}');
+      debugPrint(
+          'IsmReelsVideoPlayerView...catch video url ${_reelData.mediaMetaDataList[_mediaPageIndex].mediaUrl}');
       IsrVideoReelUtility.debugCatchLog(error: e);
     }
   }
@@ -180,14 +182,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _isDisposed = true;
     _tapGestureRecognizer?.dispose();
     // Mark as not visible in cache manager
-    if (_reelData.mediaUrl.isStringEmptyOrNull == false) {
-      _videoCacheManager.markAsNotVisible(_reelData.mediaUrl);
+    if (_reelData.mediaMetaDataList[_mediaPageIndex].mediaUrl.isStringEmptyOrNull == false) {
+      _videoCacheManager.markAsNotVisible(_reelData.mediaMetaDataList[_mediaPageIndex].mediaUrl);
     }
 
     // Only dispose if this controller is not in cache
     if (_videoPlayerController != null &&
-        _reelData.mediaUrl.isStringEmptyOrNull == false &&
-        !_videoCacheManager.isVideoCached(_reelData.mediaUrl)) {
+        _reelData.mediaMetaDataList[_mediaPageIndex].mediaUrl.isStringEmptyOrNull == false &&
+        !_videoCacheManager.isVideoCached(_reelData.mediaMetaDataList[_mediaPageIndex].mediaUrl)) {
       _videoPlayerController?.pause();
       _videoPlayerController?.dispose();
     } else {
@@ -202,14 +204,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   Widget _buildMediaContent() {
     if (_reelData.showBlur == true) {
       return AppImage.network(
-        _reelData.thumbnailUrl,
+        _reelData.mediaMetaDataList[_mediaPageIndex].thumbnailUrl,
         width: IsrDimens.getScreenWidth(context),
         height: IsrDimens.getScreenHeight(context),
         fit: BoxFit.contain,
       );
-    } else if (_reelData.mediaType == kPictureType) {
+    } else if (_reelData.mediaMetaDataList[_mediaPageIndex].mediaType == kPictureType) {
       return AppImage.network(
-        _reelData.mediaUrl,
+        _reelData.mediaMetaDataList[_mediaPageIndex].mediaUrl,
         width: IsrDimens.getScreenWidth(context),
         height: IsrDimens.getScreenHeight(context),
         fit: BoxFit.contain,
@@ -247,7 +249,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             ),
           ] else ...[
             AppImage.network(
-              _reelData.thumbnailUrl,
+              _reelData.mediaMetaDataList[_mediaPageIndex].thumbnailUrl,
               width: IsrDimens.getScreenWidth(context),
               height: IsrDimens.getScreenHeight(context),
               fit: BoxFit.cover,
@@ -260,7 +262,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   void _togglePlayPause() {
-    if (_reelData.showBlur == true || _reelData.mediaType == kPictureType) {
+    if (_reelData.showBlur == true ||
+        _reelData.mediaMetaDataList[_mediaPageIndex].mediaType == kPictureType) {
       return;
     }
     if (!_controllerReady) return;
@@ -282,19 +285,23 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           GestureDetector(
             onTap: _togglePlayPause,
             child: VisibilityDetector(
-              key: Key(_reelData.mediaUrl),
+              key: Key(_reelData.mediaMetaDataList[_mediaPageIndex].mediaUrl),
               onVisibilityChanged: (info) {
                 if (_isDisposed) return;
-                if (_reelData.showBlur == true || _reelData.mediaType == kPictureType) {
+                if (_reelData.showBlur == true ||
+                    _reelData.mediaMetaDataList[_mediaPageIndex].mediaType == kPictureType) {
                   return;
                 }
 
                 // Update cache manager about visibility
-                if (_reelData.mediaUrl.isStringEmptyOrNull == false) {
+                if (_reelData.mediaMetaDataList[_mediaPageIndex].mediaUrl.isStringEmptyOrNull ==
+                    false) {
                   if (info.visibleFraction > 0.7) {
-                    _videoCacheManager.markAsVisible(_reelData.mediaUrl);
+                    _videoCacheManager
+                        .markAsVisible(_reelData.mediaMetaDataList[_mediaPageIndex].mediaUrl);
                   } else {
-                    _videoCacheManager.markAsNotVisible(_reelData.mediaUrl);
+                    _videoCacheManager
+                        .markAsNotVisible(_reelData.mediaMetaDataList[_mediaPageIndex].mediaUrl);
                   }
                 }
 
@@ -379,7 +386,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           ),
 
           // Video controls
-          if (_reelData.mediaType == kVideoType &&
+          if (_reelData.mediaMetaDataList[_mediaPageIndex].mediaType == kVideoType &&
               _videoPlayerController?.value.isInitialized == true)
             AnimatedOpacity(
               opacity: _isPlayPauseActioned ? 1.0 : 0.0,
@@ -858,7 +865,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   void _toggleSound() {
-    if (_reelData.mediaType != kVideoType) return;
+    if (_reelData.mediaMetaDataList[_mediaPageIndex].mediaType != kVideoType) return;
 
     setState(() {
       _isMuted = !_isMuted;

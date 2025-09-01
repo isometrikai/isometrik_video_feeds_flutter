@@ -181,9 +181,10 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                     setState(() {
                       _reelsDataList.removeAt(postIndex);
                     });
-                    final imageUrl = _reelsDataList[postIndex].mediaUrl;
-                    final thumbnailUrl = _reelsDataList[postIndex].thumbnailUrl;
-                    if (_reelsDataList[postIndex].mediaType == 0) {
+                    final imageUrl = _reelsDataList[postIndex].mediaMetaDataList[0].mediaUrl;
+                    final thumbnailUrl =
+                        _reelsDataList[postIndex].mediaMetaDataList[0].thumbnailUrl;
+                    if (_reelsDataList[postIndex].mediaMetaDataList[0].mediaType == 0) {
                       await _evictDeletedPostImage(imageUrl);
                     } else {
                       await _evictDeletedPostImage(thumbnailUrl);
@@ -262,7 +263,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
   Future<void> _doMediaCaching(int index) async {
     final reelsData = _reelsDataList[index];
     final username = reelsData.userName;
-    final mediaType = reelsData.mediaType;
+    final mediaType = reelsData.mediaMetaDataList[0].mediaType;
 
     debugPrint('🎯 MainWidget: Page changed to index $index (@$username - $mediaType)');
 
@@ -289,7 +290,9 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
 
     for (var i = startIndex; i <= endIndex; i++) {
       final reelData = _reelsDataList[i];
-      final imageUrl = reelData.mediaType == 0 ? reelData.mediaUrl : reelData.thumbnailUrl;
+      final imageUrl = reelData.mediaMetaDataList[0].mediaType == 0
+          ? reelData.mediaMetaDataList[0].mediaUrl
+          : reelData.mediaMetaDataList[0].thumbnailUrl;
 
       // Only cache if not already cached
       if (!_cachedImages.contains(imageUrl)) {
@@ -310,9 +313,11 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
     final nextPostIndex = currentIndex + 1;
     if (nextPostIndex < _reelsDataList.length) {
       final reelsData = _reelsDataList[nextPostIndex];
-      final nextImageUrl = reelsData.mediaType == 0 ? reelsData.mediaUrl : reelsData.thumbnailUrl;
+      final nextImageUrl = reelsData.mediaMetaDataList[0].mediaType == 0
+          ? reelsData.mediaMetaDataList[0].mediaUrl
+          : reelsData.mediaMetaDataList[0].thumbnailUrl;
       // Move next image to front
-      if (reelsData.mediaType == 0) {
+      if (reelsData.mediaMetaDataList[0].mediaType == 0) {
         images.remove(nextImageUrl);
       }
       return [nextImageUrl, ...images];
@@ -340,8 +345,8 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
       final reelsData = _reelsDataList[i];
 
       // Only cache videos, not images
-      if (reelsData.mediaType == 1) {
-        final videoUrl = reelsData.mediaUrl;
+      if (reelsData.mediaMetaDataList[0].mediaType == 1) {
+        final videoUrl = reelsData.mediaMetaDataList[0].mediaUrl;
         final username = reelsData.userName;
         final position = i == currentIndex
             ? 'CURRENT'
@@ -390,8 +395,8 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
     final nextPostIndex = currentIndex + 1;
     if (nextPostIndex < _reelsDataList.length) {
       final reelsData = _reelsDataList[nextPostIndex];
-      if (reelsData.mediaType == 1) {
-        final nextVideoUrl = reelsData.mediaUrl;
+      if (reelsData.mediaMetaDataList[0].mediaType == 1) {
+        final nextVideoUrl = reelsData.mediaMetaDataList[0].mediaUrl;
         final nextUsername = reelsData.userName;
 
         if (nextVideoUrl.isNotEmpty && videos.contains(nextVideoUrl)) {
@@ -407,7 +412,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
             // Find which post this URL belongs to
             for (var j = 0; j < _reelsDataList.length; j++) {
               final post = _reelsDataList[j];
-              if (post.mediaUrl == url) {
+              if (post.mediaMetaDataList[0].mediaUrl == url) {
                 final username = post.userName;
                 debugPrint('   ${i + 1}. Index $j (@$username)');
                 break;

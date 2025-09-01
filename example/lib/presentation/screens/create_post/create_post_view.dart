@@ -117,9 +117,6 @@ class _CreatePostViewState extends State<CreatePostView> {
           if (state is CoverImageSelected) {
             _isCreateButtonDisable = state.isPostButtonEnable == false;
             _coverImage = state.coverImage ?? _coverImage;
-            if (_mediaDataList.isEmptyOrNull == false) {
-              // postAttributeClass!.coverImage = _coverImage;
-            }
             setState(() {});
           }
 
