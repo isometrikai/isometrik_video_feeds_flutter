@@ -38,6 +38,7 @@ class AppConstants {
   static const String cloudinaryThumbnailFolder = 'thumbnail/folder/';
 
   static const bool isCompressionEnable = true;
+  static const bool isMultipleMediaSelectionEnabled = false;
 
   static const List<String> restrictedWords = [
     'null',
@@ -99,7 +100,7 @@ class AppConstants {
 abstract class AppUrl {
   static const String appBaseUrl = 'https://api.trulyfreehome.dev';
   static const String socialBaseUrl = 'https://social-apis.dev.trulyfree.com';
-  static const String gumletUrl = 'https://meolaa-cdn.gumlet.io';
+  static const String gumletUrl = 'https://cdn.trulyfreehome.dev';
 }
 
 abstract class DefaultValues {

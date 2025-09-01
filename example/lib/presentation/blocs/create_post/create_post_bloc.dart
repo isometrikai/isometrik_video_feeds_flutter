@@ -35,6 +35,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     on<EditPostEvent>(_editPost);
     on<MediaUploadEvent>(_uploadMedia);
     on<MediaProcessingEvent>(_processMedia);
+    on<RemoveMediaEvent>(_removeSelectedMedia);
   }
 
   final CreatePostUseCase _createPostUseCase;
@@ -139,65 +140,105 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   }
 
   FutureOr<void> _openMediaSource(MediaSourceEvent event, Emitter<CreatePostState> emit) async {
-    MediaInfoClass? mediaInfoClass;
+    var mediaInfoClass = <MediaInfoClass>[];
+
     if (event.mediaSource == MediaSource.camera) {
-      /*mediaInfoClass = await InjectionUtils.getRouteManagement().goToCameraView(
-        context: event.context,
-        mediaType: event.mediaType,
-      );*/
-      mediaInfoClass = await _pickFromFromCamera(event.context, event.mediaType, event.mediaSource);
-    }
-    if (event.mediaSource == MediaSource.gallery && event.context.mounted) {
-      mediaInfoClass = await _pickFromGallery(event.context, event.mediaType, event.mediaSource);
-    }
-    if (mediaInfoClass != null) {
-      // _postAttributeClass ??= PostAttributeClass();
-      // _postAttributeClass?.isCoverImage = event.isCoverImage;
-      var mediaData =
-          _mediaDataList.isEmptyOrNull == false ? _mediaDataList[_selectedMediaIndex] : null;
-      mediaData = await _processMediaInfo(
-          event.context, mediaInfoClass, emit, event.isCoverImage, mediaData);
-      if (_mediaDataList.isEmptyOrNull == false && _mediaDataList.length >= _selectedMediaIndex) {
-        _mediaDataList[_selectedMediaIndex] = mediaData!;
-      } else {
-        _mediaDataList.add(mediaData!);
+      final mediaInfo =
+          await _pickFromFromCamera(event.context, event.mediaType, event.mediaSource);
+      if (mediaInfo != null) {
+        mediaInfoClass.add(mediaInfo);
       }
+    }
+
+    if (event.mediaSource == MediaSource.gallery && event.context.mounted) {
+      if (AppConstants.isMultipleMediaSelectionEnabled) {
+        final mediaList = await _pickMultipleMedia(event.context, event.mediaSource);
+        mediaInfoClass = mediaList;
+      } else {
+        final mediaInfo = await _pickFromGallery(event.context, event.mediaType, event.mediaSource);
+        if (mediaInfo != null) {
+          mediaInfoClass.add(mediaInfo);
+        }
+      }
+    }
+
+    if (mediaInfoClass.isEmptyOrNull == false) {
+      for (var i = 0; i < mediaInfoClass.length; i++) {
+        // var mediaData = _mediaDataList.isEmptyOrNull == false ? _mediaDataList[i] : null;
+
+        final mediaData =
+            await _processMediaInfo(event.context, mediaInfoClass[i], emit, event.isCoverImage, i)
+                as MediaData;
+
+        final index =
+            _mediaDataList.indexWhere((element) => event.mediaData?.localPath == element.localPath);
+        if (index == -1) {
+          _mediaDataList.add(mediaData);
+        } else {
+          _mediaDataList[i] = mediaData;
+        }
+      }
+
+      // Emit initial state before compression
       emit(
         event.isCoverImage
             ? CoverImageSelected(
                 coverImage: _mediaDataList[_selectedMediaIndex].previewUrl,
-                isPostButtonEnable: mediaData.localPath.isEmptyOrNull == false &&
-                    mediaData.previewUrl.isEmptyOrNull == false,
+                isPostButtonEnable: _isPostButtonEnabled(_mediaDataList),
               )
             : MediaSelectedState(
                 mediaDataList: _mediaDataList,
-                isPostButtonEnable: mediaData.localPath.isEmptyOrNull == false &&
-                    mediaData.previewUrl.isEmptyOrNull == false,
+                isPostButtonEnable: _isPostButtonEnabled(_mediaDataList),
               ),
       );
 
-      if (AppConstants.isCompressionEnable &&
-          _mediaDataList[_selectedMediaIndex].localPath.isEmptyOrNull == false) {
-        final compressedFile =
-            await _compressFile(File(mediaData.localPath ?? ''), event.mediaType, emit);
-        _mediaDataList[_selectedMediaIndex].localPath = compressedFile?.path;
+      // 🔥 Compress media files one by one
+      if (AppConstants.isCompressionEnable) {
+        for (var i = 0; i < _mediaDataList.length; i++) {
+          final mediaData = _mediaDataList[i];
+          if (mediaData.localPath.isEmptyOrNull == false) {
+            final compressedFile = await _compressFile(
+              File(mediaData.localPath ?? ''),
+              event.mediaType,
+              emit,
+            );
+
+            if (compressedFile != null) {
+              _mediaDataList[i].localPath = compressedFile.path;
+            }
+          }
+        }
+        // Emit state after each compression so UI updates progressively
+        emit(
+          event.isCoverImage
+              ? CoverImageSelected(
+                  coverImage: _mediaDataList[_selectedMediaIndex].previewUrl,
+                  isPostButtonEnable: _isPostButtonEnabled(_mediaDataList),
+                )
+              : MediaSelectedState(
+                  mediaDataList: _mediaDataList,
+                  isPostButtonEnable: _isPostButtonEnabled(_mediaDataList),
+                ),
+        );
       }
-      emit(
-        event.isCoverImage
-            ? CoverImageSelected(
-                coverImage: _mediaDataList[_selectedMediaIndex].previewUrl,
-                isPostButtonEnable: mediaData.localPath.isEmptyOrNull == false &&
-                    mediaData.previewUrl.isEmptyOrNull == false,
-              )
-            : MediaSelectedState(
-                mediaDataList: _mediaDataList,
-                isPostButtonEnable: mediaData.localPath.isEmptyOrNull == false &&
-                    mediaData.previewUrl.isEmptyOrNull == false,
-              ),
-      );
-      debugPrint('postAttribute: ${jsonEncode(mediaData.toMap())}');
-      debugPrint('postAttribute local path: ${mediaData.localPath}');
+
+      debugPrint(
+          'postAttribute list: ${jsonEncode(_mediaDataList.map((e) => e.toMap()).toList())}');
     }
+  }
+
+  bool _isPostButtonEnabled(List<MediaData>? mediaList) {
+    var isPostButtonEnable = false;
+    if (mediaList.isEmptyOrNull) return false;
+
+    // Check if at least one media has valid localPath & previewUrl
+    for (final media in mediaList!) {
+      if (media.localPath.isEmptyOrNull == false && media.previewUrl.isEmptyOrNull == false) {
+        isPostButtonEnable = true;
+        break;
+      }
+    }
+    return isPostButtonEnable;
   }
 
   // Add this method in _CameraViewState
@@ -272,14 +313,51 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     return null;
   }
 
+  Future<List<MediaInfoClass>> _pickMultipleMedia(
+      BuildContext context, MediaSource mediaSource) async {
+    List<MediaInfoClass> pickedMedia = [];
+
+    try {
+      final result = await ImagePicker().pickMultipleMedia();
+
+      if (result.isNotEmpty) {
+        for (final file in result) {
+          final path = file.path;
+
+          final isVideo = path.endsWith(".mp4") || path.endsWith(".mov");
+          int duration = 0;
+
+          if (isVideo) {
+            final mediaInfo = await VideoCompress.getMediaInfo(path);
+            duration = (mediaInfo.duration ?? 0).toInt();
+          }
+
+          pickedMedia.add(MediaInfoClass(
+            duration: (duration / 1000).toInt(),
+            mediaType: isVideo ? MediaType.video : MediaType.photo,
+            mediaSource: mediaSource,
+            mediaFile: XFile(path),
+          ));
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Utility.showInSnackBar('Error picking media', context);
+      }
+    }
+
+    return pickedMedia;
+  }
+
   Future<MediaData?> _processMediaInfo(
     BuildContext context,
     MediaInfoClass mediaInfoClass,
     Emitter<CreatePostState> emit,
     bool isForCoverImage,
-    MediaData? mediaData,
+    int position,
+    // MediaData? mediaData,
   ) async {
-    final newMediaData = mediaData ?? MediaData();
+    final newMediaData = /*mediaData ??*/ MediaData();
     final mediaType = mediaInfoClass.mediaType;
     final mediaFile = File(mediaInfoClass.mediaFile?.path ?? '');
 
@@ -316,18 +394,18 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
         newMediaData.coverFileExtension = _getFileExtension(newMediaData.previewUrl ?? '');
       }
     }
-    newMediaData.position = mediaData == null
-        ? _selectedMediaIndex == 0
-            ? 1
-            : _selectedMediaIndex
-        : mediaData.position;
+    // newMediaData.position = mediaData == null
+    //     ? _selectedMediaIndex == 0
+    //         ? 1
+    //         : _selectedMediaIndex
+    //     : mediaData.position;
+    newMediaData.position = position;
     return newMediaData;
   }
 
   FutureOr<void> _createPost(PostCreateEvent event, Emitter<CreatePostState> emit) async {
     FocusManager.instance.primaryFocus?.unfocus();
     await _createMediaUrls();
-
     if (_mediaDataList.isEmptyOrNull == true) {
       return;
     }
@@ -541,7 +619,10 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   }
 
   Future<File?> _compressFile(
-      File? file, MediaType mediaType, Emitter<CreatePostState> emit) async {
+    File? file,
+    MediaType mediaType,
+    Emitter<CreatePostState> emit,
+  ) async {
     final fileLength = await file?.length();
     final fileSizeBeforeCompression = fileLength ?? 0 / (1024 * 1024);
     _isCompressionRunning = true;
@@ -552,7 +633,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       isVideo: mediaType == MediaType.video,
       onProgress: (progress) {
         if (_isCompressionRunning) {
-          emit(CompressionProgressState(progress: progress));
+          emit(CompressionProgressState(mediaKey: file.path, progress: progress));
         }
       },
     );
@@ -667,7 +748,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
         final mediaData = _mediaDataList[index];
         if (mediaData.localPath.isEmptyOrNull == false &&
             Utility.isLocalUrl(mediaData.localPath ?? '')) {
-          final finalFileName = '${mediaData.fileName}_${DateTime.now().millisecondsSinceEpoch}';
+          final finalFileName =
+              '${mediaData.fileName}_${index}_${DateTime.now().millisecondsSinceEpoch}';
           mediaData.fileName = finalFileName;
           final normalizedFolder =
               '${AppConstants.tenantId}/${AppConstants.projectId}/user_$userId/posts/$finalFileName${mediaData.fileExtension}';
@@ -713,5 +795,16 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       isLiked: false,
       isSaved: false,
     );
+  }
+
+  FutureOr<void> _removeSelectedMedia(RemoveMediaEvent event, Emitter<CreatePostState> emit) {
+    _mediaDataList.remove(event.mediaData);
+    CoverImageSelected(
+      coverImage:
+          _mediaDataList.isEmptyOrNull ? '' : _mediaDataList[_selectedMediaIndex].previewUrl,
+      isPostButtonEnable: _isPostButtonEnabled(_mediaDataList),
+    );
+    emit(MediaSelectedState(
+        mediaDataList: _mediaDataList, isPostButtonEnable: _isPostButtonEnabled(_mediaDataList)));
   }
 }

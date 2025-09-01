@@ -14,7 +14,7 @@ class MediaPreviewWidget extends StatefulWidget {
     required this.mediaData,
   });
 
-  final MediaData? mediaData;
+  final MediaData mediaData;
 
   @override
   State<MediaPreviewWidget> createState() => _MediaPreviewWidgetState();
@@ -23,25 +23,19 @@ class MediaPreviewWidget extends StatefulWidget {
 class _MediaPreviewWidgetState extends State<MediaPreviewWidget> {
   VideoPlayerController? _controller;
   bool _isPlaying = false;
-  final ValueNotifier<double> _compressionProgress = ValueNotifier(60.0);
+  double _compressionProgress = 0.0;
   bool _isCompressing = false;
-  MediaData? _mediaData;
+  late final String _mediaKey; // 🔑 unique identifier
 
   @override
   void initState() {
     super.initState();
-    _onStartInit();
-    _initializeVideoPlayer();
-  }
-
-  void _onStartInit() {
-    _mediaData = widget.mediaData;
+    _mediaKey = widget.mediaData.localPath ?? widget.mediaData.url ?? UniqueKey().toString();
     _initializeVideoPlayer();
   }
 
   @override
   void dispose() {
-    _compressionProgress.dispose();
     _controller?.dispose();
     super.dispose();
   }
@@ -49,57 +43,43 @@ class _MediaPreviewWidgetState extends State<MediaPreviewWidget> {
   @override
   void didUpdateWidget(MediaPreviewWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Check if the mediaData has changed
-    if (_mediaData != oldWidget.mediaData) {
+    if (oldWidget.mediaData != widget.mediaData) {
+      _mediaKey = widget.mediaData.localPath ?? widget.mediaData.url ?? UniqueKey().toString();
       _initializeVideoPlayer();
     }
   }
 
   Future<void> _initializeVideoPlayer() async {
-    if (_mediaData == null) return;
-    if (_mediaData?.mediaType?.mediaType == MediaType.video) {
-      if (_mediaData!.localPath.isEmptyOrNull == false &&
-          Utility.isLocalUrl(_mediaData!.localPath ?? '') == false) {
-        _initializedLocalVideoPlayer(File(_mediaData!.localPath!));
-      } else {
-        _initializedVideoPlayer(_mediaData!.url!);
-      }
-      await _controller?.initialize().then((_) {
-        setState(() {});
-      });
-
-      // Add listener to update play state
-      _controller?.addListener(() {
-        if (_controller?.value.isPlaying != _isPlaying) {
-          setState(() {
-            _isPlaying = _controller?.value.isPlaying ?? false;
-          });
+    if (widget.mediaData.mediaType?.mediaType == MediaType.video) {
+      try {
+        if (widget.mediaData.localPath?.isNotEmpty == true &&
+            Utility.isLocalUrl(widget.mediaData.localPath!)) {
+          _controller = VideoPlayerController.file(File(widget.mediaData.localPath!));
+        } else if (widget.mediaData.url?.isNotEmpty == true) {
+          _controller = VideoPlayerController.networkUrl(Uri.parse(widget.mediaData.url!));
         }
-      });
-    }
-  }
+        await _controller?.initialize();
+        setState(() {});
 
-  void _initializedLocalVideoPlayer(File file) {
-    _controller = VideoPlayerController.file(file);
-  }
-
-  void _initializedVideoPlayer(String videoUrl) {
-    try {
-      _controller = VideoPlayerController.networkUrl(Uri.parse(_mediaData!.url!));
-    } catch (e) {
-      debugPrint('Error initializing video player: $e');
+        _controller?.addListener(() {
+          if (_controller?.value.isPlaying != _isPlaying) {
+            setState(() => _isPlaying = _controller?.value.isPlaying ?? false);
+          }
+        });
+      } catch (e) {
+        debugPrint("Video init error: $e");
+      }
     }
   }
 
   void _togglePlayPause() {
-    if (_controller?.value.isInitialized == false) return;
+    if (_controller?.value.isInitialized != true) return;
     setState(() {
-      if (_controller?.value.isPlaying ?? false) {
+      if (_controller!.value.isPlaying) {
         _controller?.pause();
       } else {
         _controller?.play();
       }
-      _isPlaying = _controller?.value.isPlaying ?? false;
     });
   }
 
@@ -107,16 +87,18 @@ class _MediaPreviewWidgetState extends State<MediaPreviewWidget> {
   Widget build(BuildContext context) => BlocConsumer<CreatePostBloc, CreatePostState>(
         listenWhen: (previous, current) => current is CompressionProgressState,
         listener: (context, state) {
-          if (state is CompressionProgressState) {
-            _compressionProgress.value = state.progress;
-            _isCompressing = state.progress > 0 && state.progress < 100;
+          if (state is CompressionProgressState && state.mediaKey == _mediaKey) {
+            // 🎯 Only update progress if this widget’s media matches
+            setState(() {
+              _compressionProgress = state.progress;
+              _isCompressing = state.progress > 0 && state.progress < 100;
+            });
           }
         },
-        builder: (context, state) => ValueListenableBuilder<double>(
-          valueListenable: _compressionProgress,
-          builder: (context, progress, _) => Stack(
+        builder: (context, state) {
+          return Stack(
             children: [
-              // Media Preview Container
+              // Preview Box
               Container(
                 width: 60.scaledValue,
                 height: 60.scaledValue,
@@ -125,70 +107,55 @@ class _MediaPreviewWidgetState extends State<MediaPreviewWidget> {
                   border: Border.all(color: AppColors.colorDBDBDB),
                 ),
                 clipBehavior: Clip.hardEdge,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(4.scaledValue),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      if (_mediaData?.mediaType?.mediaType == MediaType.video)
-                        _controller?.value.isInitialized ?? false
-                            ? VideoPlayer(_controller!)
-                            : AppImage.network(
-                                _mediaData!.previewUrl!,
-                                width: Dimens.sixty,
-                                height: Dimens.sixty,
-                                borderRadius: Dimens.borderRadiusAll(4.scaledValue),
-                                fit: BoxFit.cover,
-                              )
-                      else if (_mediaData?.localPath.isEmptyOrNull == false &&
-                          Utility.isLocalUrl(_mediaData?.localPath ?? '') == true)
-                        AppImage.file(
-                          _mediaData!.localPath!,
-                          width: Dimens.sixty,
-                          height: Dimens.sixty,
-                          fit: BoxFit.cover,
-                        )
-                      else
-                        AppImage.network(
-                          _mediaData?.url ?? '',
-                          width: Dimens.sixty,
-                          height: Dimens.sixty,
-                          borderRadius: Dimens.borderRadiusAll(4.scaledValue),
-                          fit: BoxFit.cover,
-                        ),
-                      if (_mediaData?.mediaType?.mediaType == MediaType.video && !_isCompressing)
-                        TapHandler(
-                          onTap: _togglePlayPause,
-                          child: Container(
-                            width: Dimens.sixty,
-                            height: Dimens.sixty,
-                            color: Colors.black26,
-                            child: Icon(
-                              _isPlaying ? Icons.pause : Icons.play_arrow,
-                              color: AppColors.white,
-                              size: Dimens.twentyFour,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
+                child: _buildMediaPreview(),
               ),
 
-              // 🔵 Progress Border - Top
+              // Compression Overlay
               if (_isCompressing)
-                // Rectangular border progress overlay
                 CustomPaint(
                   size: Size(60.scaledValue, 60.scaledValue),
                   painter: RectangularProgressBar(
-                    progress: progress / 100,
+                    progress: _compressionProgress / 100,
                     color: Colors.amber,
                     strokeWidth: 3.scaledValue,
                     borderRadius: 8.scaledValue,
                   ),
                 ),
             ],
-          ),
-        ),
+          );
+        },
       );
+
+  Widget _buildMediaPreview() {
+    if (widget.mediaData.mediaType?.mediaType == MediaType.video) {
+      return _controller?.value.isInitialized == true
+          ? Stack(
+              alignment: Alignment.center,
+              children: [
+                VideoPlayer(_controller!),
+                if (!_isCompressing)
+                  TapHandler(
+                    onTap: _togglePlayPause,
+                    child: Container(
+                      color: Colors.black26,
+                      child: Icon(
+                        _isPlaying ? Icons.pause : Icons.play_arrow,
+                        color: AppColors.white,
+                        size: Dimens.twentyFour,
+                      ),
+                    ),
+                  ),
+              ],
+            )
+          : AppImage.network(widget.mediaData.previewUrl ?? '',
+              width: Dimens.sixty, height: Dimens.sixty, fit: BoxFit.cover);
+    } else {
+      return widget.mediaData.localPath?.isNotEmpty == true &&
+              Utility.isLocalUrl(widget.mediaData.localPath!)
+          ? AppImage.file(widget.mediaData.localPath!,
+              width: Dimens.sixty, height: Dimens.sixty, fit: BoxFit.cover)
+          : AppImage.network(widget.mediaData.url ?? '',
+              width: Dimens.sixty, height: Dimens.sixty, fit: BoxFit.cover);
+    }
+  }
 }
