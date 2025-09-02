@@ -41,8 +41,10 @@ class RouteManagement {
     return result;
   }
 
-  Future<MediaInfoClass?> goToCameraView(
-      {required BuildContext context, MediaType mediaType = MediaType.photo}) async {
+  Future<MediaInfoClass?> goToCameraView({
+    required BuildContext context,
+    MediaType mediaType = MediaType.photo,
+  }) async {
     final result = await _navigationService.pushNamed(
       RouteNames.cameraView,
       arguments: {'mediaType': mediaType},
@@ -50,14 +52,17 @@ class RouteManagement {
     return result;
   }
 
-  Future<PostAttributeClass?> goToVideoAttributionView({
-    required BuildContext context,
-    required PostAttributeClass postAttributeClass,
+  Future<PostAttributeClass?> goToPostAttributionView({
+    PostAttributeClass? postAttributeClass,
   }) async =>
       await _navigationService.pushNamed<PostAttributeClass>(
-        RouteNames.videoTrimView,
+        RouteNames.postAttributeView,
         arguments: {
           'postAttributeClass': postAttributeClass,
         },
       );
+
+  void goToSearchUserScreen() {
+    _navigationService.pushNamed(RouteNames.searchUserScreen);
+  }
 }

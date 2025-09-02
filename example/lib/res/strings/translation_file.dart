@@ -31,8 +31,9 @@ class TranslationFile {
   static const String writeCaption = 'Write a caption...';
   static const String category = 'Category';
   static const String selectCategory = 'Select Category';
-  static const String allowComments = 'Allow Comments';
-  static const String allowDownloads = 'Allow Downloads';
+  static const String allowComments = 'Allow comments';
+  static const String allowDownloads = 'Allow downloads';
+  static const String tagPeople = 'Tag people';
   static const String post = 'Post';
   static const String sdkNotInitialized = 'sdk not initialized';
 

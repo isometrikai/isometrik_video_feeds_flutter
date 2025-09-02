@@ -117,7 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
         isSavedPost: false,
         isVerifiedUser: false,
         productCount: postData.tags?.products?.length ?? 0,
-        description: '',
+        description: postData.caption ?? '',
         onTapComment: (totalCommentsCount) async {
           final result = await _handleCommentAction(postData.id ?? '', totalCommentsCount);
           return result;

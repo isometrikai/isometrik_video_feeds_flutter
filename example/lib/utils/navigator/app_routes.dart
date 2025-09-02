@@ -13,6 +13,7 @@ class AppRoutes {
   static const String videoTrimView = '/${RouteNames.videoTrimView}';
   static const String postAttributeView = '/${RouteNames.postAttributeView}';
   static const String createPostView = '/${RouteNames.createPostView}';
+  static const String searchUserScreen = '/${RouteNames.searchUserScreen}';
 }
 
 class RouteNames {
@@ -27,4 +28,5 @@ class RouteNames {
   static const String videoTrimView = 'videoTrimView';
   static const String postAttributeView = 'postAttributeView';
   static const String createPostView = 'createPostView';
+  static const String searchUserScreen = 'searchUserScreen';
 }

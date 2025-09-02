@@ -1,36 +1,17 @@
-import 'dart:io';
-import 'dart:typed_data';
-
-import 'package:ism_video_reel_player_example/utils/utils.dart';
+import 'package:ism_video_reel_player_example/domain/domain.dart';
 
 class PostAttributeClass {
   PostAttributeClass({
-    this.description,
-    this.file,
-    this.postType,
     this.price,
-    this.url,
-    this.imageBaseUrl,
-    this.thumbnailUrl,
-    this.coverImage,
-    this.duration,
-    this.isCaptionRequired,
-    this.videoBytes,
-    this.thumbnailBytes,
-    this.size,
+    this.caption,
+    this.mediaDataList,
+    this.allowDownload,
+    this.allowComment,
   });
 
-  File? file;
-  String? description;
   String? price;
-  String? url;
-  String? imageBaseUrl;
-  String? thumbnailUrl;
-  String? coverImage;
-  int? duration;
-  bool? isCaptionRequired;
-  Uint8List? videoBytes;
-  Uint8List? thumbnailBytes;
-  MediaType? postType;
-  int? size;
+  String? caption;
+  List<MediaData>? mediaDataList;
+  bool? allowDownload;
+  bool? allowComment;
 }

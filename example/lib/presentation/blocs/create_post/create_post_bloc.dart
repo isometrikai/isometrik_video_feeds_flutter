@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_thumbnail_video/video_thumbnail.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ism_video_reel_player_example/core/core.dart';
+import 'package:ism_video_reel_player_example/di/injection_utils.dart';
 import 'package:ism_video_reel_player_example/domain/domain.dart';
 import 'package:ism_video_reel_player_example/res/res.dart';
 import 'package:ism_video_reel_player_example/utils/utils.dart';
@@ -30,6 +31,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   ) : super(CreatePostInitialState()) {
     on<CreatePostInitialEvent>(_initState);
     on<PostCreateEvent>(_createPost);
+    on<PostAttributeNavigationEvent>(_goToPostAttributeView);
     on<MediaSourceEvent>(_openMediaSource);
     on<GetSocialPostDetailsEvent>(_getPostDetails);
     on<EditPostEvent>(_editPost);
@@ -61,7 +63,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   CloudDetailsData? cloudDetailsData;
   TimeLineData? _postData;
 
-  // PostAttributeClass? _postAttributeClass;
+  final PostAttributeClass _postAttributeClass = PostAttributeClass();
   final List<MediaData> _mediaDataList = [];
   var _selectedMediaIndex = 0;
   var _tags = Tags();
@@ -805,5 +807,12 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     );
     emit(MediaSelectedState(
         mediaDataList: _mediaDataList, isPostButtonEnable: _isPostButtonEnabled(_mediaDataList)));
+  }
+
+  FutureOr<void> _goToPostAttributeView(
+      PostAttributeNavigationEvent event, Emitter<CreatePostState> emit) {
+    _postAttributeClass.mediaDataList = _mediaDataList;
+    final postAttribution = InjectionUtils.getRouteManagement()
+        .goToPostAttributionView(postAttributeClass: _postAttributeClass);
   }
 }

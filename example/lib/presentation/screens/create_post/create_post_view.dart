@@ -139,6 +139,7 @@ class _CreatePostViewState extends State<CreatePostView> {
                 width: Dimens.oneHundredForty,
                 onPress: () {
                   _createPostBloc.add(PostCreateEvent(isForEdit: _isForEdit));
+                  // _createPostBloc.add(PostAttributeNavigationEvent());
                 },
                 isDisable: _isCreateButtonDisable || _isCompressing,
                 title: _isForEdit ? TranslationFile.updatePost : TranslationFile.create,
