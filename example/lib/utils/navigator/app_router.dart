@@ -71,6 +71,14 @@ class AppRouter {
           );
         },
       ),
+      GoRoute(
+        path: AppRoutes.searchUserScreen,
+        name: RouteNames.searchUserScreen,
+        pageBuilder: (context, state) => PageTransition(
+          child: SearchUserView(),
+          transitionType: TransitionType.rightToLeft,
+        ),
+      ),
       ..._landingRoutes,
     ],
   );

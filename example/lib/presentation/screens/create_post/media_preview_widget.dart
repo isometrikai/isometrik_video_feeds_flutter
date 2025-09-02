@@ -12,9 +12,13 @@ class MediaPreviewWidget extends StatefulWidget {
   const MediaPreviewWidget({
     super.key,
     required this.mediaData,
+    this.height,
+    this.width,
   });
 
   final MediaData mediaData;
+  final double? width;
+  final double? height;
 
   @override
   State<MediaPreviewWidget> createState() => _MediaPreviewWidgetState();
@@ -99,8 +103,8 @@ class _MediaPreviewWidgetState extends State<MediaPreviewWidget> {
           children: [
             // Preview Box
             Container(
-              width: 60.scaledValue,
-              height: 60.scaledValue,
+              width: widget.width ?? 60.scaledValue,
+              height: widget.height ?? 60.scaledValue,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(4.scaledValue),
                 border: Border.all(color: AppColors.colorDBDBDB),

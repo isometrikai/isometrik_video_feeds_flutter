@@ -32,4 +32,5 @@ class AssetConstants {
   static const String icHeartIconUnSelected = 'assets/icons/ic_heart_icon_un_selected.svg';
   static const String icVerticalMoreMenu = 'assets/icons/ic_vertical_more_icon.svg';
   static const String icCommentsPlaceHolder = 'assets/icons/ic_comments_place_holder.svg';
+  static const String icChevronRight = 'assets/icons/ic_chevron_right.svg';
 }

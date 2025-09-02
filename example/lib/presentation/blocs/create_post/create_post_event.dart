@@ -16,6 +16,8 @@ class PostCreateEvent extends CreatePostEvent {
   final bool? isForEdit;
 }
 
+class PostAttributeNavigationEvent extends CreatePostEvent {}
+
 class MediaSourceEvent extends CreatePostEvent {
   MediaSourceEvent({
     required this.context,
@@ -48,6 +50,7 @@ class GetSocialPostDetailsEvent extends CreatePostEvent {
 
 class EditPostEvent extends CreatePostEvent {
   EditPostEvent({required this.postData});
+
   final TimeLineData postData;
 }
 
@@ -66,5 +69,6 @@ class MediaProcessingEvent extends CreatePostEvent {
 
 class RemoveMediaEvent extends CreatePostEvent {
   RemoveMediaEvent({required this.mediaData});
+
   final MediaData mediaData;
 }

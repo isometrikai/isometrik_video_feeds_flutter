@@ -21,25 +21,37 @@ class PostAttributeView extends StatefulWidget {
 }
 
 class _PostAttributeViewState extends State<PostAttributeView> {
-  final _createPostRequest = CreatePostRequest();
+  // var _createPostRequest = CreatePostRequest();
   VideoPlayerController? _videoPlayerController;
   var _isVideoInitializing = false;
+  var _mediaDataList = <MediaData>[];
+  PostAttributeClass? _postAttributeClass;
 
   @override
   void initState() {
+    _onStartInit();
     super.initState();
-    initializeVideoPlayer(widget.postAttributeClass?.url ?? '');
+  }
+
+  void _onStartInit() {
+    _postAttributeClass = widget.postAttributeClass;
+    _mediaDataList = _postAttributeClass?.mediaDataList ?? [];
+    for (var mediaData in _mediaDataList) {
+      if (mediaData.mediaType?.mediaType == MediaType.video) {
+        initializeVideoPlayer(mediaData);
+      }
+    }
     setRequest();
   }
 
   /// Method For Initialize Video Player
   Future<void> initializeVideoPlayer(
-    String path,
+    MediaData mediaData,
   ) async {
-    if (widget.postAttributeClass?.postType == MediaType.video) {
+    if (mediaData.mediaType?.mediaType == MediaType.video) {
       _isVideoInitializing = true;
       setState(() {});
-      _videoPlayerController = VideoPlayerController.file(File(path));
+      _videoPlayerController = VideoPlayerController.file(File(mediaData.localPath ?? ''));
       await _videoPlayerController?.initialize();
       await _videoPlayerController?.setLooping(true);
       await _videoPlayerController?.setVolume(1.0);
@@ -78,122 +90,141 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                 Padding(
                   padding:
                       Dimens.edgeInsetsSymmetric(horizontal: Dimens.twenty, vertical: Dimens.ten),
-                  child: Row(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Center(
-                        child: SizedBox(
-                          width: Dimens.seventy,
-                          height: Dimens.hundred,
-                          child: widget.postAttributeClass?.postType == MediaType.photo
-                              ? AppImage.file(
-                                  widget.postAttributeClass?.url ?? '',
-                                  fit: BoxFit.cover,
-                                  width: Dimens.seventy,
-                                  height: Dimens.hundred,
-                                )
-                              : _isVideoInitializing
-                                  ? AppImage.file(
-                                      widget.postAttributeClass?.thumbnailUrl ?? '',
-                                      fit: BoxFit.cover,
-                                      width: Dimens.seventy,
-                                      height: Dimens.hundred,
-                                    )
-                                  : TapHandler(
-                                      onTap: () async {
-                                        FocusManager.instance.primaryFocus?.unfocus();
-                                        _playPause();
-                                      },
-                                      child: Stack(
-                                        alignment: Alignment.center,
-                                        children: [
-                                          _videoPlayerController?.value.isInitialized == true &&
-                                                  _videoPlayerController != null &&
-                                                  _videoPlayerController?.value.isPlaying == true
-                                              ? Stack(
-                                                  alignment: Alignment.center,
-                                                  children: [
-                                                    VideoPlayer(_videoPlayerController!),
-                                                    if (_videoPlayerController?.value.isBuffering ==
-                                                        true)
-                                                      const UnconstrainedBox(
-                                                        child: CircularProgressIndicator(),
-                                                      ),
-                                                  ],
-                                                )
-                                              : Stack(
-                                                  alignment: Alignment.center,
-                                                  children: [
-                                                    Container(
-                                                      height: Dimens.hundred,
-                                                      width: Dimens.seventy,
-                                                      decoration: BoxDecoration(
-                                                        gradient: LinearGradient(
-                                                          begin: Alignment.topCenter,
-                                                          end: Alignment.bottomCenter,
-                                                          colors: [
-                                                            AppColors.blackColor.applyOpacity(.25),
-                                                            AppColors.blackColor.applyOpacity(.1),
-                                                            AppColors.blackColor.applyOpacity(.1),
-                                                            AppColors.blackColor.applyOpacity(.1),
-                                                            AppColors.blackColor.applyOpacity(.1),
-                                                            AppColors.blackColor.applyOpacity(.1),
-                                                            AppColors.blackColor.applyOpacity(.1),
-                                                            AppColors.blackColor.applyOpacity(.25),
-                                                          ],
-                                                        ),
-                                                        image: DecorationImage(
-                                                          image: FileImage(File(widget
-                                                                  .postAttributeClass
-                                                                  ?.thumbnailUrl ??
-                                                              '')),
-                                                          fit: BoxFit.cover,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    if (_videoPlayerController
-                                                                ?.value.isInitialized ==
-                                                            true &&
-                                                        _videoPlayerController?.value.isPlaying ==
-                                                            false)
-                                                      Container(
-                                                        padding: Dimens.edgeInsetsAll(Dimens.five),
-                                                        decoration: BoxDecoration(
-                                                          shape: BoxShape.circle,
-                                                          gradient: LinearGradient(
-                                                            begin: Alignment.topCenter,
-                                                            end: Alignment.bottomCenter,
-                                                            colors: [
-                                                              AppColors.white.applyOpacity(.7),
-                                                              AppColors.white.applyOpacity(.9),
-                                                              AppColors.white.applyOpacity(.9),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                        child: const Icon(
-                                                          Icons.play_arrow,
-                                                          color: AppColors.black,
-                                                        ),
-                                                      ),
-                                                  ],
-                                                ),
-                                        ],
-                                      ),
-                                    ),
-                        ),
-                      ),
-                      Dimens.boxWidth(Dimens.ten),
-                      Expanded(
-                        child: TextFormField(
-                          maxLines: 5,
-                          onChanged: (value) {
-                            _createPostRequest.caption = value;
-                          },
-                          decoration: InputDecoration(
-                            hintText: TranslationFile.writeCaption,
-                            hintStyle: Styles.primaryText12,
-                            border: InputBorder.none,
+                      // Center(
+                      //   child: SizedBox(
+                      //     width: Dimens.seventy,
+                      //     height: Dimens.hundred,
+                      //     child: _postAttributeClass?.postType == MediaType.photo
+                      //         ? AppImage.file(
+                      //             _postAttributeClass?.url ?? '',
+                      //             fit: BoxFit.cover,
+                      //             width: Dimens.seventy,
+                      //             height: Dimens.hundred,
+                      //           )
+                      //         : _isVideoInitializing
+                      //             ? AppImage.file(
+                      //                 _postAttributeClass?.thumbnailUrl ?? '',
+                      //                 fit: BoxFit.cover,
+                      //                 width: Dimens.seventy,
+                      //                 height: Dimens.hundred,
+                      //               )
+                      //             : TapHandler(
+                      //                 onTap: () async {
+                      //                   FocusManager.instance.primaryFocus?.unfocus();
+                      //                   _playPause();
+                      //                 },
+                      //                 child: Stack(
+                      //                   alignment: Alignment.center,
+                      //                   children: [
+                      //                     _videoPlayerController?.value.isInitialized == true &&
+                      //                             _videoPlayerController != null &&
+                      //                             _videoPlayerController?.value.isPlaying == true
+                      //                         ? Stack(
+                      //                             alignment: Alignment.center,
+                      //                             children: [
+                      //                               VideoPlayer(_videoPlayerController!),
+                      //                               if (_videoPlayerController?.value.isBuffering ==
+                      //                                   true)
+                      //                                 const UnconstrainedBox(
+                      //                                   child: CircularProgressIndicator(),
+                      //                                 ),
+                      //                             ],
+                      //                           )
+                      //                         : Stack(
+                      //                             alignment: Alignment.center,
+                      //                             children: [
+                      //                               Container(
+                      //                                 height: Dimens.hundred,
+                      //                                 width: Dimens.seventy,
+                      //                                 decoration: BoxDecoration(
+                      //                                   gradient: LinearGradient(
+                      //                                     begin: Alignment.topCenter,
+                      //                                     end: Alignment.bottomCenter,
+                      //                                     colors: [
+                      //                                       AppColors.blackColor.applyOpacity(.25),
+                      //                                       AppColors.blackColor.applyOpacity(.1),
+                      //                                       AppColors.blackColor.applyOpacity(.1),
+                      //                                       AppColors.blackColor.applyOpacity(.1),
+                      //                                       AppColors.blackColor.applyOpacity(.1),
+                      //                                       AppColors.blackColor.applyOpacity(.1),
+                      //                                       AppColors.blackColor.applyOpacity(.1),
+                      //                                       AppColors.blackColor.applyOpacity(.25),
+                      //                                     ],
+                      //                                   ),
+                      //                                   image: DecorationImage(
+                      //                                     image: FileImage(File(widget
+                      //                                             .postAttributeClass
+                      //                                             ?.thumbnailUrl ??
+                      //                                         '')),
+                      //                                     fit: BoxFit.cover,
+                      //                                   ),
+                      //                                 ),
+                      //                               ),
+                      //                               if (_videoPlayerController
+                      //                                           ?.value.isInitialized ==
+                      //                                       true &&
+                      //                                   _videoPlayerController?.value.isPlaying ==
+                      //                                       false)
+                      //                                 Container(
+                      //                                   padding: Dimens.edgeInsetsAll(Dimens.five),
+                      //                                   decoration: BoxDecoration(
+                      //                                     shape: BoxShape.circle,
+                      //                                     gradient: LinearGradient(
+                      //                                       begin: Alignment.topCenter,
+                      //                                       end: Alignment.bottomCenter,
+                      //                                       colors: [
+                      //                                         AppColors.white.applyOpacity(.7),
+                      //                                         AppColors.white.applyOpacity(.9),
+                      //                                         AppColors.white.applyOpacity(.9),
+                      //                                       ],
+                      //                                     ),
+                      //                                   ),
+                      //                                   child: const Icon(
+                      //                                     Icons.play_arrow,
+                      //                                     color: AppColors.black,
+                      //                                   ),
+                      //                                 ),
+                      //                             ],
+                      //                           ),
+                      //                   ],
+                      //                 ),
+                      //               ),
+                      //   ),
+                      // ),
+                      if (_mediaDataList.isNotEmpty)
+                        Container(
+                          alignment: Alignment.center,
+                          height: 120.scaledValue, // Adjust as needed
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: _mediaDataList.length,
+                            itemBuilder: (context, index) {
+                              final media = _mediaDataList[index];
+                              return Container(
+                                alignment: Alignment.center,
+                                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                child: MediaPreviewWidget(
+                                  mediaData: media,
+                                  height: 100.scaledValue,
+                                  width: 100.scaledValue,
+                                ),
+                              );
+                            },
                           ),
+                        ),
+                      Dimens.boxHeight(Dimens.ten),
+                      TextFormField(
+                        maxLines: 5,
+                        onChanged: (value) {
+                          _postAttributeClass?.caption = value;
+                        },
+                        decoration: InputDecoration(
+                          hintText: TranslationFile.writeCaption,
+                          hintStyle: Styles.primaryText12,
+                          border: InputBorder.none,
                         ),
                       ),
                     ],
@@ -234,7 +265,8 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                 TapHandler(
                   onTap: () {
                     setState(() {
-                      // _createPostRequest.allowComment = _createPostRequest.allowComment == false;
+                      _postAttributeClass?.allowComment =
+                          _postAttributeClass?.allowComment == false;
                     });
                   },
                   child: Padding(
@@ -249,15 +281,15 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        // const Spacer(),
-                        // Switch(
-                        //   value: _createPostRequest.allowComment == true,
-                        //   onChanged: (value) {
-                        //     setState(() {
-                        //       _createPostRequest.allowComment = value;
-                        //     });
-                        //   },
-                        // ),
+                        const Spacer(),
+                        Switch(
+                          value: _postAttributeClass?.allowComment == true,
+                          onChanged: (value) {
+                            setState(() {
+                              _postAttributeClass?.allowComment = value;
+                            });
+                          },
+                        ),
                       ],
                     ),
                   ),
@@ -281,15 +313,41 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        // const Spacer(),
-                        // Switch(
-                        //   value: _createPostRequest.allowDownload == true,
-                        //   onChanged: (value) {
-                        //     setState(() {
-                        //       _createPostRequest.allowComment = value;
-                        //     });
-                        //   },
-                        // ),
+                        const Spacer(),
+                        Switch(
+                          value: _postAttributeClass?.allowDownload == true,
+                          onChanged: (value) {
+                            setState(() {
+                              _postAttributeClass?.allowDownload = value;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const CustomDivider(),
+                TapHandler(
+                  onTap: () {
+                    InjectionUtils.getRouteManagement().goToSearchUserScreen();
+                  },
+                  child: Padding(
+                    padding:
+                        Dimens.edgeInsetsSymmetric(horizontal: Dimens.twenty, vertical: Dimens.ten),
+                    child: Row(
+                      children: [
+                        Text(
+                          TranslationFile.tagPeople,
+                          style: Styles.primaryText14.copyWith(
+                            color: AppColors.color2783FB,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const Spacer(),
+                        TapHandler(
+                          onTap: () {},
+                          child: AppImage.svg(AssetConstants.icChevronRight),
+                        ),
                       ],
                     ),
                   ),
@@ -310,12 +368,11 @@ class _PostAttributeViewState extends State<PostAttributeView> {
   }
 
   void setRequest() {
-    _createPostRequest.caption = widget.postAttributeClass?.description;
-    // _createPostRequest.url = widget.postAttributeClass?.url;
-    // _createPostRequest.thumbnailUrl = widget.postAttributeClass?.thumbnailUrl;
-    // _createPostRequest.mediaType = widget.postAttributeClass?.postType == MediaType.video ? 2 : 1;
-    // _createPostRequest.imageUrl = widget.postAttributeClass?.url;
-    // _createPostRequest.duration = widget.postAttributeClass?.duration;
-    // _createPostRequest.mediaType = widget.postAttributeClass?.postType?.mediaType;
+    // _createPostRequest.url = _postAttributeClass?.url;
+    // _createPostRequest.thumbnailUrl = _postAttributeClass?.thumbnailUrl;
+    // _createPostRequest.mediaType = _postAttributeClass?.postType == MediaType.video ? 2 : 1;
+    // _createPostRequest.imageUrl = _postAttributeClass?.url;
+    // _createPostRequest.duration = _postAttributeClass?.duration;
+    // _createPostRequest.mediaType = _postAttributeClass?.postType?.mediaType;
   }
 }
