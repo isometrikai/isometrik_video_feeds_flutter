@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:ism_video_reel_player/utils/isr_utils.dart';
 
@@ -122,4 +123,12 @@ extension RemoveEmptyElementExtension on Map<String, dynamic> {
 
 extension ColorExt on Color {
   Color changeOpacity(double opacity) => withValues(alpha: opacity);
+}
+
+extension PercentageWidthExtension on num {
+  double get percentWidth => (this / 100).toDouble().sw;
+}
+
+extension PercentageHeightExtension on num {
+  double get percentHeight => (this / 100).toDouble().sh;
 }
