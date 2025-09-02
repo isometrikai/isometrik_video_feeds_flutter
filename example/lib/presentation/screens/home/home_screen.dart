@@ -102,9 +102,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         postId: postData.id,
         onCreatePost: () async => await _handleCreatePost(),
-        mediaUrl: postData.media?.first.url ?? '',
-        thumbnailUrl: postData.media?.first.previewUrl ?? '',
-        mediaType: postData.media?.first.mediaType == 'image' ? 0 : 1,
+        mediaMetaDataList: postData.media?.map(_getMediaMetaData).toList() ?? [],
         // actionWidget: _buildActionButtons(postData),
         // footerWidget: _buildFooter(postData),
         userId: postData.user?.id ?? '',
@@ -870,4 +868,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return completer.future;
   }
+
+  isr.MediaMetaData _getMediaMetaData(MediaData mediaData) => isr.MediaMetaData(
+        mediaType: mediaData.mediaType == 'image' ? 0 : 1,
+        mediaUrl: mediaData.url ?? '',
+        thumbnailUrl: mediaData.previewUrl ?? '',
+      );
 }

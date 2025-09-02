@@ -315,7 +315,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
   Future<List<MediaInfoClass>> _pickMultipleMedia(
       BuildContext context, MediaSource mediaSource) async {
-    List<MediaInfoClass> pickedMedia = [];
+    final pickedMedia = <MediaInfoClass>[];
 
     try {
       final result = await ImagePicker().pickMultipleMedia();
@@ -345,7 +345,6 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
         Utility.showInSnackBar('Error picking media', context);
       }
     }
-
     return pickedMedia;
   }
 
@@ -399,7 +398,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     //         ? 1
     //         : _selectedMediaIndex
     //     : mediaData.position;
-    newMediaData.position = position;
+    newMediaData.position = position == 0 ? position + 1 : position;
     return newMediaData;
   }
 
@@ -761,7 +760,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
             if (mediaData.previewUrl.isEmptyOrNull == false &&
                 Utility.isLocalUrl(mediaData.previewUrl ?? '')) {
               final finalFileName =
-                  '${mediaData.coverFileName}_${DateTime.now().millisecondsSinceEpoch}';
+                  '${mediaData.coverFileName}_${index}_${DateTime.now().millisecondsSinceEpoch}';
               mediaData.coverFileName = finalFileName;
               final normalizedFolder =
                   '${AppConstants.tenantId}/${AppConstants.projectId}/user_$userId/posts/$finalFileName${mediaData.coverFileExtension}';

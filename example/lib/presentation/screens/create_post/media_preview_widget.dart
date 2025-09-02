@@ -95,35 +95,33 @@ class _MediaPreviewWidgetState extends State<MediaPreviewWidget> {
             });
           }
         },
-        builder: (context, state) {
-          return Stack(
-            children: [
-              // Preview Box
-              Container(
-                width: 60.scaledValue,
-                height: 60.scaledValue,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(4.scaledValue),
-                  border: Border.all(color: AppColors.colorDBDBDB),
-                ),
-                clipBehavior: Clip.hardEdge,
-                child: _buildMediaPreview(),
+        builder: (context, state) => Stack(
+          children: [
+            // Preview Box
+            Container(
+              width: 60.scaledValue,
+              height: 60.scaledValue,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(4.scaledValue),
+                border: Border.all(color: AppColors.colorDBDBDB),
               ),
+              clipBehavior: Clip.hardEdge,
+              child: _buildMediaPreview(),
+            ),
 
-              // Compression Overlay
-              if (_isCompressing)
-                CustomPaint(
-                  size: Size(60.scaledValue, 60.scaledValue),
-                  painter: RectangularProgressBar(
-                    progress: _compressionProgress / 100,
-                    color: Colors.amber,
-                    strokeWidth: 3.scaledValue,
-                    borderRadius: 8.scaledValue,
-                  ),
+            // Compression Overlay
+            if (_isCompressing)
+              CustomPaint(
+                size: Size(60.scaledValue, 60.scaledValue),
+                painter: RectangularProgressBar(
+                  progress: _compressionProgress / 100,
+                  color: Colors.amber,
+                  strokeWidth: 3.scaledValue,
+                  borderRadius: 8.scaledValue,
                 ),
-            ],
-          );
-        },
+              ),
+          ],
+        ),
       );
 
   Widget _buildMediaPreview() {
