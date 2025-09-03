@@ -266,12 +266,10 @@ class _PostItemWidgetState extends State<PostItemWidget> {
               final isSaved =
                   await widget.onPressSave!(_postList[index], _postList[index].isSavedPost == true);
 
-              if (isSaved) {
-                setState(() {
-                  _postList[index] =
-                      _postList[index].copyWith(isSavedPost: _postList[index].isSavedPost == false);
-                });
-              }
+              setState(() {
+                _postList[index] = _postList[index].copyWith(isSavedPost: isSaved);
+              });
+
               return isSaved;
             }
             return false;
