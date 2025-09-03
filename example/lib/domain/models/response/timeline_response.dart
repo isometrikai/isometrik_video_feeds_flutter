@@ -94,7 +94,9 @@ class TimeLineData {
         soundId: json['sound_id'] as String? ?? '',
         caption: json['caption'] as String? ?? '',
         userId: json['user_id'] as String? ?? '',
-        user: json['user'] == null ? null : User.fromMap(json['user'] as Map<String, dynamic>),
+        user: json['user'] == null
+            ? null
+            : SocialUserData.fromMap(json['user'] as Map<String, dynamic>),
         visibility: json['visibility'] as String? ?? '',
         id: json['id'] as String? ?? '',
         soundSnapshot: json['sound_snapshot'] as String? ?? '',
@@ -123,7 +125,7 @@ class TimeLineData {
   String? soundId;
   String? caption;
   String? userId;
-  User? user;
+  SocialUserData? user;
   String? visibility;
   String? id;
   String? soundSnapshot;
@@ -411,22 +413,24 @@ class Tags {
       };
 }
 
-class User {
-  User({
+class SocialUserData {
+  SocialUserData({
     this.id,
     this.username,
     this.fullName,
     this.displayName,
     this.avatarUrl,
     this.userMetadata,
+    this.profileType,
   });
 
-  factory User.fromMap(Map<String, dynamic> json) => User(
+  factory SocialUserData.fromMap(Map<String, dynamic> json) => SocialUserData(
         id: json['id'] as String? ?? '',
         username: json['username'] as String? ?? '',
         fullName: json['full_name'] as String? ?? '',
         displayName: json['display_name'] as String? ?? '',
         avatarUrl: json['avatar_url'] as String? ?? '',
+        profileType: json['profile_type'] as String? ?? '',
         userMetadata: json['user_metadata'] == null
             ? null
             : UserMetadata.fromMap(json['user_metadata'] as Map<String, dynamic>),
@@ -436,6 +440,7 @@ class User {
   String? fullName;
   String? displayName;
   String? avatarUrl;
+  String? profileType;
   UserMetadata? userMetadata;
 
   Map<String, dynamic> toMap() => {
@@ -444,6 +449,7 @@ class User {
         'full_name': fullName,
         'display_name': displayName,
         'avatar_url': avatarUrl,
+        'profile_type': profileType,
         'user_metadata': userMetadata?.toMap(),
       };
 }

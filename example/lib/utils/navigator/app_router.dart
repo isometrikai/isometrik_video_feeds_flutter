@@ -74,10 +74,14 @@ class AppRouter {
       GoRoute(
         path: AppRoutes.searchUserScreen,
         name: RouteNames.searchUserScreen,
-        pageBuilder: (context, state) => PageTransition(
-          child: SearchUserView(),
-          transitionType: TransitionType.rightToLeft,
-        ),
+        pageBuilder: (context, state) {
+          final extraMap = state.extra as Map;
+          final socialUserList = extraMap['socialUserList'] as List<SocialUserData>? ?? [];
+          return PageTransition(
+            child: SearchUserView(socialUserList: socialUserList),
+            transitionType: TransitionType.rightToLeft,
+          );
+        },
       ),
       ..._landingRoutes,
     ],

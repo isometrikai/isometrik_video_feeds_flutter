@@ -52,5 +52,10 @@ class BlocInjection {
           _localDataUseCase,
           InjectionUtils.getUseCase<CommentActionUseCase>(),
         ));
+
+    InjectionUtils.registerBloc<SearchUserBloc>(() => SearchUserBloc(
+          _localDataUseCase,
+          InjectionUtils.getUseCase<SearchUserUseCase>(),
+        ));
   }
 }

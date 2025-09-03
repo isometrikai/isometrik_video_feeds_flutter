@@ -11,9 +11,11 @@ class CreatePostInitialEvent extends CreatePostEvent {
 class PostCreateEvent extends CreatePostEvent {
   PostCreateEvent({
     this.isForEdit = false,
+    this.createPostRequest,
   });
 
   final bool? isForEdit;
+  final CreatePostRequest? createPostRequest;
 }
 
 class PostAttributeNavigationEvent extends CreatePostEvent {}

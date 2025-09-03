@@ -62,7 +62,9 @@ class RouteManagement {
         },
       );
 
-  void goToSearchUserScreen() {
-    _navigationService.pushNamed(RouteNames.searchUserScreen);
+  Future<List<SocialUserData>> goToSearchUserScreen({List<SocialUserData>? socialUserList}) async {
+    final result = await _navigationService.pushNamed(RouteNames.searchUserScreen,
+        arguments: {'socialUserList': socialUserList}) as List<SocialUserData>;
+    return result;
   }
 }

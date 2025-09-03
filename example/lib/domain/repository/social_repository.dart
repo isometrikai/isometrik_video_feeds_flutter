@@ -110,4 +110,11 @@ abstract class SocialRepository extends BaseRepository {
     required bool isLoading,
     required String postId,
   });
+
+  Future<CustomResponse<SearchUserResponse?>> searchUser({
+    required bool isLoading,
+    required int limit,
+    required int page,
+    required String searchText,
+  });
 }

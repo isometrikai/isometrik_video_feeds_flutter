@@ -641,4 +641,37 @@ class SocialApiServiceProvider extends SocialApiService {
         },
         isLoading,
       );
+
+  @override
+  Future<ResponseModel> searchUser({
+    required bool isLoading,
+    required int limit,
+    required int page,
+    required String searchText,
+    required Header header,
+  }) async =>
+      await networkClient.makeRequest(
+        SocialApiEndPoints.getSearchUsers,
+        NetworkRequestType.get,
+        null,
+        {
+          'search': searchText,
+          'page': page.toString(),
+          'page_size': limit.toString(),
+        },
+        {
+          'Accept': AppConstants.headerAccept,
+          'Content-Type': AppConstants.headerContentType,
+          'Authorization': header.accessToken,
+          'language': header.language,
+          'currencySymbol': header.currencySymbol,
+          'currencyCode': header.currencyCode,
+          'platform': header.platForm.toString(),
+          'latitude': header.latitude.toString(),
+          'longitude': header.longitude.toString(),
+          'x-tenant-id': AppConstants.tenantId,
+          'x-project-id': AppConstants.projectId,
+        },
+        isLoading,
+      );
 }

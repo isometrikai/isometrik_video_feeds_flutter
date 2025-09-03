@@ -22,7 +22,7 @@ class UseCaseInjection {
     InjectionUtils.registerUseCase<GuestLoginUseCase>(
         () => GuestLoginUseCase(InjectionUtils.getRepo<AuthRepository>()));
 
-    /// Post UseCase
+    /// Social Repository UseCase
     InjectionUtils.registerUseCase<CreatePostUseCase>(
         () => CreatePostUseCase(InjectionUtils.getRepo<SocialRepository>()));
     InjectionUtils.registerUseCase<GetFollowingPostUseCase>(
@@ -54,5 +54,7 @@ class UseCaseInjection {
         () => GetPostCommentUseCase(InjectionUtils.getRepo<SocialRepository>()));
     InjectionUtils.registerUseCase<MediaProcessingUseCase>(
         () => MediaProcessingUseCase(InjectionUtils.getRepo<SocialRepository>()));
+    InjectionUtils.registerUseCase<SearchUserUseCase>(
+        () => SearchUserUseCase(InjectionUtils.getRepo<SocialRepository>()));
   }
 }

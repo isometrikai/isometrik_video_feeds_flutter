@@ -33,6 +33,7 @@ class TranslationFile {
   static const String selectCategory = 'Select Category';
   static const String allowComments = 'Allow comments';
   static const String allowDownloads = 'Allow downloads';
+  static const String allowSave = 'Allow save';
   static const String tagPeople = 'Tag people';
   static const String post = 'Post';
   static const String sdkNotInitialized = 'sdk not initialized';

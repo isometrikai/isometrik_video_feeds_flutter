@@ -1,8 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:ism_video_reel_player/ism_video_reel_player.dart';
+import 'package:ism_video_reel_player_example/di/di.dart';
+import 'package:ism_video_reel_player_example/domain/domain.dart';
 import 'package:ism_video_reel_player_example/example_export.dart';
+import 'package:ism_video_reel_player_example/presentation/presentation.dart';
 
 class SearchUserView extends StatefulWidget {
+  const SearchUserView({super.key, required this.socialUserList});
+
+  final List<SocialUserData> socialUserList;
+
   @override
   _SearchUserViewState createState() => _SearchUserViewState();
 }
@@ -10,13 +18,19 @@ class SearchUserView extends StatefulWidget {
 class _SearchUserViewState extends State<SearchUserView> with TickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   bool _isSearching = false;
-  List<SearchResult> _searchResults = [];
+  final _searchUserBloc = InjectionUtils.getBloc<SearchUserBloc>();
+  final List<SocialUserData> _searchResults = [];
   late AnimationController _loadingAnimationController;
   late AnimationController _resultsAnimationController;
+  final Set<SocialUserData> _selectedUsers = {};
 
   @override
   void initState() {
+    _onStartInit();
     super.initState();
+  }
+
+  void _onStartInit() {
     _loadingAnimationController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
@@ -25,6 +39,11 @@ class _SearchUserViewState extends State<SearchUserView> with TickerProviderStat
       duration: const Duration(milliseconds: 600),
       vsync: this,
     );
+    _selectedUsers.clear();
+    if (widget.socialUserList.isEmptyOrNull == false) {
+      _selectedUsers.addAll(widget.socialUserList);
+      setState(() {});
+    }
   }
 
   @override
@@ -51,68 +70,27 @@ class _SearchUserViewState extends State<SearchUserView> with TickerProviderStat
 
     _loadingAnimationController.repeat();
 
+    final completer = Completer<void>();
+    _searchUserBloc.add(SearchUserEvent(
+        searchText: query,
+        onComplete: (userList) {
+          completer.complete();
+          _setResult(userList);
+        }));
     // Simulate search delay
-    Future.delayed(const Duration(milliseconds: 1200), () {
-      if (mounted) {
-        _loadingAnimationController.stop();
-        setState(() {
-          _isSearching = false;
-          _searchResults = _getMockResults(query);
-        });
-        _resultsAnimationController.forward();
-      }
-    });
+    Future.delayed(const Duration(milliseconds: 1200), () {});
   }
 
-  List<SearchResult> _getMockResults(String query) {
-    // Mock data based on your images
-    if (query.toLowerCase().contains('cool')) {
-      return [
-        SearchResult(
-          username: 'cookininshort',
-          displayName: 'cookininshort',
-          avatarUrl: null,
-          isVerified: false,
-        ),
-        SearchResult(
-          username: 'coolguy_swaroop',
-          displayName: 'swaroop',
-          avatarUrl: null,
-          isVerified: false,
-        ),
-        SearchResult(
-          username: 'cool_services',
-          displayName: 'COOL SERVICE',
-          avatarUrl: null,
-          isVerified: false,
-        ),
-        SearchResult(
-          username: 'that_cool_dude_sunil',
-          displayName: 'Sunil',
-          avatarUrl: null,
-          isVerified: false,
-        ),
-        SearchResult(
-          username: 'cookwithparul',
-          displayName: 'Cook with Parul (ChefParulGupta)',
-          avatarUrl: null,
-          isVerified: true,
-        ),
-        SearchResult(
-          username: 'cool_dude_2405',
-          displayName: 'cool_dude_2405',
-          avatarUrl: null,
-          isVerified: false,
-        ),
-        SearchResult(
-          username: 'cook_with_ashura',
-          displayName: 'Ashura Sadiq',
-          avatarUrl: null,
-          isVerified: false,
-        ),
-      ];
+  void _setResult(List<SocialUserData> userList) {
+    if (mounted) {
+      _loadingAnimationController.stop();
+      setState(() {
+        _isSearching = false;
+        _searchResults.clear();
+        _searchResults.addAll(userList);
+      });
+      _resultsAnimationController.forward();
     }
-    return [];
   }
 
   @override
@@ -173,9 +151,9 @@ class _SearchUserViewState extends State<SearchUserView> with TickerProviderStat
           ),
           actions: [
             TapHandler(
-              onTap: () => Navigator.pop(context),
+              onTap: () => Navigator.pop(context, _selectedUsers.toList()),
               child: const Text(
-                'Cancel',
+                'Done',
                 style: TextStyle(
                   color: Colors.black87,
                   fontSize: 16,
@@ -186,15 +164,17 @@ class _SearchUserViewState extends State<SearchUserView> with TickerProviderStat
             const SizedBox(width: 8),
           ],
         ),
-        body: Column(
-          children: [
-            if (_isSearching) _buildLoadingIndicator(),
-            Expanded(
-              child: _searchResults.isEmpty && !_isSearching
-                  ? _buildEmptyState()
-                  : _buildSearchResults(),
-            ),
-          ],
+        body: SafeArea(
+          child: Column(
+            children: [
+              if (_isSearching) _buildLoadingIndicator(),
+              Expanded(
+                child: _searchResults.isEmpty && !_isSearching
+                    ? _buildEmptyState()
+                    : _buildSearchResults(),
+              ),
+            ],
+          ),
         ),
       );
 
@@ -269,101 +249,62 @@ class _SearchUserViewState extends State<SearchUserView> with TickerProviderStat
         ),
       );
 
-  Widget _buildSearchResultItem(SearchResult result, int index) => Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.applyOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          leading: CircleAvatar(
-            radius: 24,
-            backgroundColor: _getAvatarColor(index),
-            child: result.avatarUrl != null
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(24),
-                    child: Image.network(
-                      result.avatarUrl!,
-                      width: 48,
-                      height: 48,
-                      fit: BoxFit.cover,
-                    ),
-                  )
-                : Text(
-                    result.username[0].toUpperCase(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 18,
-                    ),
-                  ),
-          ),
-          title: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  result.username,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
-              if (result.isVerified)
-                const Icon(
-                  Icons.verified,
-                  color: Colors.blue,
-                  size: 20,
-                ),
-            ],
-          ),
-          subtitle: Text(
-            result.displayName,
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-          onTap: () {
-            // Handle tap
-            debugPrint('Tapped on ${result.username}');
-          },
-        ),
-      );
+  Widget _buildSearchResultItem(SocialUserData result, int index) {
+    final isSelected = _selectedUsers.contains(result);
 
-  Color _getAvatarColor(int index) {
-    final colors = [
-      const Color(0xFF6366F1),
-      const Color(0xFF8B5CF6),
-      const Color(0xFF06B6D4),
-      const Color(0xFF10B981),
-      const Color(0xFFF59E0B),
-      const Color(0xFFEF4444),
-      const Color(0xFFEC4899),
-    ];
-    return colors[index % colors.length];
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: isSelected ? Colors.blue.applyOpacity(0.1) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.applyOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: AppImage.network(
+          result.avatarUrl ?? '',
+          isProfileImage: true,
+          height: 30.scaledValue,
+          width: 30.scaledValue,
+          name: result.fullName ?? '',
+        ),
+        title: Text(
+          result.username ?? '',
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+            color: Colors.black87,
+          ),
+        ),
+        subtitle: Text(
+          result.displayName ?? '',
+          style: TextStyle(
+            color: Colors.grey[600],
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+          ),
+        ),
+        trailing: isSelected
+            ? const Icon(Icons.check_circle, color: Colors.blue)
+            : const Icon(Icons.circle_outlined, color: Colors.grey),
+        onTap: () => _toggleSelection(result),
+      ),
+    );
   }
-}
 
-class SearchResult {
-  SearchResult({
-    required this.username,
-    required this.displayName,
-    this.avatarUrl,
-    this.isVerified = false,
-  });
-  final String username;
-  final String displayName;
-  final String? avatarUrl;
-  final bool isVerified;
+  void _toggleSelection(SocialUserData user) {
+    setState(() {
+      if (_selectedUsers.contains(user)) {
+        _selectedUsers.remove(user);
+      } else {
+        _selectedUsers.add(user);
+      }
+    });
+  }
 }

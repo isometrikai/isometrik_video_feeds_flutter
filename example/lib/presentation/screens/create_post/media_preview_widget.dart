@@ -71,7 +71,7 @@ class _MediaPreviewWidgetState extends State<MediaPreviewWidget> {
           }
         });
       } catch (e) {
-        debugPrint("Video init error: $e");
+        debugPrint('Video init error: $e');
       }
     }
   }
