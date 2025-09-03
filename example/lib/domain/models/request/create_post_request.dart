@@ -18,6 +18,8 @@ class CreatePostRequest {
     this.visibility,
     this.scheduleTime,
     this.postId,
+    this.settings,
+    this.mentions,
   });
 
   factory CreatePostRequest.fromJson(Map<String, dynamic> json) => CreatePostRequest(
@@ -36,6 +38,13 @@ class CreatePostRequest {
         type: json['type'] as String? ?? '',
         visibility: json['visibility'] as String? ?? '',
         scheduleTime: json['scheduled_at'] as String? ?? '',
+        settings: json['settings'] == null
+            ? null
+            : PostSetting.fromJson(json['settings'] as Map<String, dynamic>),
+        mentions: json['mentions'] == null
+            ? []
+            : List<MentionData>.from((json['mentions'] as List)
+                .map((x) => MentionData.fromJson(x as Map<String, dynamic>))),
       );
   String? postId;
   String? caption;
@@ -46,31 +55,8 @@ class CreatePostRequest {
   String? type;
   String? visibility;
   String? scheduleTime;
-
-  CreatePostRequest copyWith({
-    String? postId,
-    String? caption,
-    List<MediaData>? media,
-    List<PreviewMedia>? previews,
-    Settings? settings,
-    String? soundId,
-    String? status,
-    Tags? tags,
-    String? type,
-    String? visibility,
-    String? scheduleTime,
-  }) =>
-      CreatePostRequest(
-        postId: postId ?? this.postId,
-        caption: caption ?? this.caption,
-        media: media ?? this.media,
-        previews: previews ?? this.previews,
-        status: status ?? this.status,
-        type: type ?? this.type,
-        visibility: visibility ?? this.visibility,
-        scheduleTime: scheduleTime ?? this.scheduleTime,
-        tags: tags ?? this.tags,
-      );
+  PostSetting? settings;
+  List<MentionData>? mentions;
 
   Map<String, dynamic> toJson() => {
         'id': postId,
@@ -82,5 +68,47 @@ class CreatePostRequest {
         'visibility': visibility,
         'scheduled_at': scheduleTime,
         'tags': tags?.toMap(),
+        'settings': settings?.toJson(),
+        'mentions': mentions == null ? [] : List<dynamic>.from(mentions!.map((x) => x.toJson())),
+      };
+}
+
+class PostSetting {
+  factory PostSetting.fromJson(Map<String, dynamic> json) => PostSetting(
+        advanceInterval: json['advance_interval'] as num? ?? 0,
+        ageRestriction: json['age_restriction'] as bool? ?? false,
+        autoAdvance: json['auto_advance'] as bool? ?? false,
+        commentsEnabled: json['comments_enabled'] as bool? ?? false,
+        duetEnabled: json['duet_enabled'] as bool? ?? false,
+        saveEnabled: json['save_enabled'] as bool? ?? false,
+        stitchEnabled: json['stitch_enabled'] as bool? ?? false,
+      );
+
+  PostSetting({
+    this.advanceInterval,
+    this.ageRestriction,
+    this.autoAdvance,
+    this.commentsEnabled,
+    this.duetEnabled,
+    this.saveEnabled,
+    this.stitchEnabled,
+  });
+
+  final num? advanceInterval;
+  final bool? ageRestriction;
+  final bool? autoAdvance;
+  final bool? commentsEnabled;
+  final bool? duetEnabled;
+  final bool? saveEnabled;
+  final bool? stitchEnabled;
+
+  Map<String, dynamic> toJson() => {
+        'advance_interval': advanceInterval,
+        'age_restriction': ageRestriction,
+        'auto_advance': autoAdvance,
+        'comments_enabled': commentsEnabled,
+        'duet_enabled': duetEnabled,
+        'save_enabled': saveEnabled,
+        'stitch_enabled': stitchEnabled,
       };
 }

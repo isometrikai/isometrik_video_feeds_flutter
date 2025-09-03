@@ -27,6 +27,7 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (context) => InjectionUtils.getBloc<ProfileBloc>()),
           BlocProvider(create: (context) => InjectionUtils.getBloc<UploadProgressCubit>()),
           BlocProvider(create: (context) => InjectionUtils.getBloc<CommentActionCubit>()),
+          BlocProvider(create: (context) => InjectionUtils.getBloc<SearchUserBloc>()),
         ],
         child: ScreenUtilInit(
           useInheritedMediaQuery: true,

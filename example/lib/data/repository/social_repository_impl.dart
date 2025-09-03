@@ -363,4 +363,26 @@ class SocialRepositoryImpl implements SocialRepository {
       rethrow;
     }
   }
+
+  @override
+  Future<CustomResponse<SearchUserResponse?>> searchUser({
+    required bool isLoading,
+    required int limit,
+    required int page,
+    required String searchText,
+  }) async {
+    try {
+      final header = await _dataSource.getHeader();
+      final response = await _apiService.searchUser(
+        isLoading: isLoading,
+        header: header,
+        limit: limit,
+        page: page,
+        searchText: searchText,
+      );
+      return _socialMapper.mapSearchUserResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

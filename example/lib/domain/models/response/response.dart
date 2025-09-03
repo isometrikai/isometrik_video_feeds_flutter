@@ -8,5 +8,6 @@ export 'post_location.dart';
 export 'post_response.dart';
 export 'report_reason_response.dart';
 export 'response_class.dart';
+export 'search_user_response.dart';
 export 'signup_response_model.dart';
 export 'timeline_response.dart';

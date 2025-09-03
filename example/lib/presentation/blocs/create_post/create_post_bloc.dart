@@ -63,7 +63,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   CloudDetailsData? cloudDetailsData;
   TimeLineData? _postData;
 
-  final PostAttributeClass _postAttributeClass = PostAttributeClass();
+  PostAttributeClass _postAttributeClass = PostAttributeClass();
   final List<MediaData> _mediaDataList = [];
   var _selectedMediaIndex = 0;
   var _tags = Tags();
@@ -406,6 +406,9 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
   FutureOr<void> _createPost(PostCreateEvent event, Emitter<CreatePostState> emit) async {
     FocusManager.instance.primaryFocus?.unfocus();
+    if (event.createPostRequest != null) {
+      _createPostRequest = event.createPostRequest!;
+    }
     await _createMediaUrls();
     if (_mediaDataList.isEmptyOrNull == true) {
       return;
@@ -788,7 +791,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       media: _createPostRequest.media,
       tags: _createPostRequest.tags,
       type: _createPostRequest.type,
-      user: User(
+      user: SocialUserData(
         id: myUserId,
         username: userName,
       ),
@@ -810,9 +813,11 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   }
 
   FutureOr<void> _goToPostAttributeView(
-      PostAttributeNavigationEvent event, Emitter<CreatePostState> emit) {
+      PostAttributeNavigationEvent event, Emitter<CreatePostState> emit) async {
     _postAttributeClass.mediaDataList = _mediaDataList;
-    final postAttribution = InjectionUtils.getRouteManagement()
-        .goToPostAttributionView(postAttributeClass: _postAttributeClass);
+    _postAttributeClass.createPostRequest = _createPostRequest;
+    _postAttributeClass = await InjectionUtils.getRouteManagement()
+            .goToPostAttributionView(postAttributeClass: _postAttributeClass) ??
+        _postAttributeClass;
   }
 }

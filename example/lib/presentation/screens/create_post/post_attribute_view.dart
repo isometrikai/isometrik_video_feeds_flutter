@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -26,6 +27,7 @@ class _PostAttributeViewState extends State<PostAttributeView> {
   var _isVideoInitializing = false;
   var _mediaDataList = <MediaData>[];
   PostAttributeClass? _postAttributeClass;
+  List<SocialUserData> _socialUserDataList = [];
 
   @override
   void initState() {
@@ -76,9 +78,7 @@ class _PostAttributeViewState extends State<PostAttributeView> {
           child: AppButton(
             margin: Dimens.edgeInsetsSymmetric(horizontal: Dimens.fifteen, vertical: Dimens.ten),
             title: TranslationFile.post,
-            onPress: () {
-              InjectionUtils.getBloc<CreatePostBloc>().add(PostCreateEvent());
-            },
+            onPress: _createPost,
           ),
         ),
         body: SafeArea(
@@ -93,107 +93,6 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Center(
-                      //   child: SizedBox(
-                      //     width: Dimens.seventy,
-                      //     height: Dimens.hundred,
-                      //     child: _postAttributeClass?.postType == MediaType.photo
-                      //         ? AppImage.file(
-                      //             _postAttributeClass?.url ?? '',
-                      //             fit: BoxFit.cover,
-                      //             width: Dimens.seventy,
-                      //             height: Dimens.hundred,
-                      //           )
-                      //         : _isVideoInitializing
-                      //             ? AppImage.file(
-                      //                 _postAttributeClass?.thumbnailUrl ?? '',
-                      //                 fit: BoxFit.cover,
-                      //                 width: Dimens.seventy,
-                      //                 height: Dimens.hundred,
-                      //               )
-                      //             : TapHandler(
-                      //                 onTap: () async {
-                      //                   FocusManager.instance.primaryFocus?.unfocus();
-                      //                   _playPause();
-                      //                 },
-                      //                 child: Stack(
-                      //                   alignment: Alignment.center,
-                      //                   children: [
-                      //                     _videoPlayerController?.value.isInitialized == true &&
-                      //                             _videoPlayerController != null &&
-                      //                             _videoPlayerController?.value.isPlaying == true
-                      //                         ? Stack(
-                      //                             alignment: Alignment.center,
-                      //                             children: [
-                      //                               VideoPlayer(_videoPlayerController!),
-                      //                               if (_videoPlayerController?.value.isBuffering ==
-                      //                                   true)
-                      //                                 const UnconstrainedBox(
-                      //                                   child: CircularProgressIndicator(),
-                      //                                 ),
-                      //                             ],
-                      //                           )
-                      //                         : Stack(
-                      //                             alignment: Alignment.center,
-                      //                             children: [
-                      //                               Container(
-                      //                                 height: Dimens.hundred,
-                      //                                 width: Dimens.seventy,
-                      //                                 decoration: BoxDecoration(
-                      //                                   gradient: LinearGradient(
-                      //                                     begin: Alignment.topCenter,
-                      //                                     end: Alignment.bottomCenter,
-                      //                                     colors: [
-                      //                                       AppColors.blackColor.applyOpacity(.25),
-                      //                                       AppColors.blackColor.applyOpacity(.1),
-                      //                                       AppColors.blackColor.applyOpacity(.1),
-                      //                                       AppColors.blackColor.applyOpacity(.1),
-                      //                                       AppColors.blackColor.applyOpacity(.1),
-                      //                                       AppColors.blackColor.applyOpacity(.1),
-                      //                                       AppColors.blackColor.applyOpacity(.1),
-                      //                                       AppColors.blackColor.applyOpacity(.25),
-                      //                                     ],
-                      //                                   ),
-                      //                                   image: DecorationImage(
-                      //                                     image: FileImage(File(widget
-                      //                                             .postAttributeClass
-                      //                                             ?.thumbnailUrl ??
-                      //                                         '')),
-                      //                                     fit: BoxFit.cover,
-                      //                                   ),
-                      //                                 ),
-                      //                               ),
-                      //                               if (_videoPlayerController
-                      //                                           ?.value.isInitialized ==
-                      //                                       true &&
-                      //                                   _videoPlayerController?.value.isPlaying ==
-                      //                                       false)
-                      //                                 Container(
-                      //                                   padding: Dimens.edgeInsetsAll(Dimens.five),
-                      //                                   decoration: BoxDecoration(
-                      //                                     shape: BoxShape.circle,
-                      //                                     gradient: LinearGradient(
-                      //                                       begin: Alignment.topCenter,
-                      //                                       end: Alignment.bottomCenter,
-                      //                                       colors: [
-                      //                                         AppColors.white.applyOpacity(.7),
-                      //                                         AppColors.white.applyOpacity(.9),
-                      //                                         AppColors.white.applyOpacity(.9),
-                      //                                       ],
-                      //                                     ),
-                      //                                   ),
-                      //                                   child: const Icon(
-                      //                                     Icons.play_arrow,
-                      //                                     color: AppColors.black,
-                      //                                   ),
-                      //                                 ),
-                      //                             ],
-                      //                           ),
-                      //                   ],
-                      //                 ),
-                      //               ),
-                      //   ),
-                      // ),
                       if (_mediaDataList.isNotEmpty)
                         Container(
                           alignment: Alignment.center,
@@ -215,18 +114,18 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                             },
                           ),
                         ),
-                      Dimens.boxHeight(Dimens.ten),
-                      TextFormField(
-                        maxLines: 5,
-                        onChanged: (value) {
-                          _postAttributeClass?.caption = value;
-                        },
-                        decoration: InputDecoration(
-                          hintText: TranslationFile.writeCaption,
-                          hintStyle: Styles.primaryText12,
-                          border: InputBorder.none,
-                        ),
-                      ),
+                      // Dimens.boxHeight(Dimens.ten),
+                      // TextFormField(
+                      //   maxLines: 5,
+                      //   onChanged: (value) {
+                      //     _postAttributeClass?.caption = value;
+                      //   },
+                      //   decoration: InputDecoration(
+                      //     hintText: TranslationFile.writeCaption,
+                      //     hintStyle: Styles.primaryText12,
+                      //     border: InputBorder.none,
+                      //   ),
+                      // ),
                     ],
                   ),
                 ),
@@ -253,9 +152,10 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        const Icon(
-                          Icons.chevron_right,
-                          color: AppColors.color2783FB,
+                        10.horizontalSpace,
+                        const AppImage.svg(
+                          AssetConstants.icChevronRight,
+                          height: 15,
                         ),
                       ],
                     ),
@@ -298,7 +198,7 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                 TapHandler(
                   onTap: () {
                     setState(() {
-                      // _createPostRequest.allowDownload = _createPostRequest.allowDownload == false;
+                      _postAttributeClass?.allowSave = _postAttributeClass?.allowSave == false;
                     });
                   },
                   child: Padding(
@@ -307,7 +207,7 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                     child: Row(
                       children: [
                         Text(
-                          TranslationFile.allowDownloads,
+                          TranslationFile.allowSave,
                           style: Styles.primaryText14.copyWith(
                             color: AppColors.color2783FB,
                             fontWeight: FontWeight.w500,
@@ -315,10 +215,10 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                         ),
                         const Spacer(),
                         Switch(
-                          value: _postAttributeClass?.allowDownload == true,
+                          value: _postAttributeClass?.allowSave == true,
                           onChanged: (value) {
                             setState(() {
-                              _postAttributeClass?.allowDownload = value;
+                              _postAttributeClass?.allowSave = value;
                             });
                           },
                         ),
@@ -328,8 +228,10 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                 ),
                 const CustomDivider(),
                 TapHandler(
-                  onTap: () {
-                    InjectionUtils.getRouteManagement().goToSearchUserScreen();
+                  onTap: () async {
+                    final result = await InjectionUtils.getRouteManagement()
+                        .goToSearchUserScreen(socialUserList: _socialUserDataList);
+                    _socialUserDataList = result;
                   },
                   child: Padding(
                     padding:
@@ -344,14 +246,15 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                           ),
                         ),
                         const Spacer(),
-                        TapHandler(
-                          onTap: () {},
-                          child: AppImage.svg(AssetConstants.icChevronRight),
+                        const AppImage.svg(
+                          AssetConstants.icChevronRight,
+                          height: 15,
                         ),
                       ],
                     ),
                   ),
                 ),
+                _buildTaggedUsers(_socialUserDataList),
               ],
             ),
           ),
@@ -367,6 +270,71 @@ class _PostAttributeViewState extends State<PostAttributeView> {
     setState(() {});
   }
 
+  Widget _buildTaggedUsers(List<SocialUserData> taggedUsers) {
+    if (taggedUsers.isEmpty) {
+      return const SizedBox.shrink(); // nothing if no tagged users
+    }
+
+    return Container(
+      height: 100.scaledValue,
+      margin: const EdgeInsets.only(top: 8, left: 16),
+      child: ListView.separated(
+        padding: Dimens.edgeInsetsAll(10.scaledValue),
+        scrollDirection: Axis.horizontal,
+        itemCount: taggedUsers.length,
+        separatorBuilder: (_, __) => 15.horizontalSpace,
+        itemBuilder: (context, index) {
+          final user = taggedUsers[index];
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  AppImage.network(
+                    user.avatarUrl ?? '',
+                    height: 40.scaledValue,
+                    width: 40.scaledValue,
+                    isProfileImage: true,
+                    name: user.fullName ?? '',
+                    border: Border.all(color: Colors.black12),
+                  ),
+                  Positioned(
+                    right: -6,
+                    top: -6,
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          taggedUsers.removeAt(index);
+                        });
+                      },
+                      child: const CircleAvatar(
+                        radius: 10,
+                        backgroundColor: Colors.red,
+                        child: Icon(Icons.close, size: 14, color: Colors.white),
+                      ),
+                    ),
+                  )
+                ],
+              ),
+              const SizedBox(height: 4),
+              SizedBox(
+                width: 60,
+                child: Text(
+                  user.username ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   void setRequest() {
     // _createPostRequest.url = _postAttributeClass?.url;
     // _createPostRequest.thumbnailUrl = _postAttributeClass?.thumbnailUrl;
@@ -374,5 +342,31 @@ class _PostAttributeViewState extends State<PostAttributeView> {
     // _createPostRequest.imageUrl = _postAttributeClass?.url;
     // _createPostRequest.duration = _postAttributeClass?.duration;
     // _createPostRequest.mediaType = _postAttributeClass?.postType?.mediaType;
+  }
+
+  void _createPost() {
+    final createPostRequest = _postAttributeClass?.createPostRequest;
+    if (createPostRequest != null) {
+      final settings = PostSetting(
+        saveEnabled: _postAttributeClass?.allowSave,
+        commentsEnabled: _postAttributeClass?.allowComment,
+      );
+      createPostRequest.settings = settings;
+      if (_socialUserDataList.isEmptyOrNull == false) {
+        final mentionedUserList = <MentionData>[];
+        for (final socialUser in _socialUserDataList) {
+          mentionedUserList.add(MentionData(
+              userId: socialUser.id,
+              username: socialUser.username,
+              position: Position(start: 0, end: 0)));
+        }
+        createPostRequest.mentions = mentionedUserList;
+      }
+
+      debugPrint('createPostRequest.....${jsonEncode(createPostRequest.toJson())}');
+    }
+
+    InjectionUtils.getBloc<CreatePostBloc>()
+        .add(PostCreateEvent(createPostRequest: createPostRequest));
   }
 }

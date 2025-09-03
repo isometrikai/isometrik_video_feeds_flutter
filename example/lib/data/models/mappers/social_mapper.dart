@@ -32,4 +32,8 @@ class SocialMapper {
 
   CustomResponse<TimelineResponse?> mapTimelineResponse(ResponseModel response) => CustomResponse(
       data: timelineResponseFromJson(response.data), responseCode: response.statusCode);
+
+  CustomResponse<SearchUserResponse?> mapSearchUserResponse(ResponseModel response) =>
+      CustomResponse(
+          data: searchUserResponseFromJson(response.data), responseCode: response.statusCode);
 }

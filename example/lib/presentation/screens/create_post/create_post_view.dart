@@ -154,7 +154,13 @@ class _CreatePostViewState extends State<CreatePostView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   TapHandler(
-                    onTap: _isForEdit ? null : () => _showUploadOptionsDialog(context, false, null),
+                    onTap: _isForEdit ||
+                            (_mediaDataList.isEmptyOrNull == false &&
+                                AppConstants.isMultipleMediaSelectionEnabled == false)
+                        ? null
+                        : () {
+                            _showUploadOptionsDialog(context, false, null);
+                          },
                     child: DottedBorder(
                       borderType: BorderType.RRect,
                       radius: Radius.circular(12.scaledValue),
