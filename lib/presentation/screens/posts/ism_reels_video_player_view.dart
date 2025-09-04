@@ -63,6 +63,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   final _maxLengthToShow = 50;
   late ReelsData _reelData;
 
+  bool _showMentions = true;
+  bool _mentionsVisible = false;
+
   @override
   void initState() {
     super.initState();
@@ -229,57 +232,121 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     super.dispose();
   }
 
+  Widget _getImageWidget({
+    required String imageUrl,
+    required double width,
+    required double height,
+    BoxFit fit = BoxFit.contain,
+    FilterQuality filterQuality = FilterQuality.high,
+  }) {
+    final isLocalUrl = IsrVideoReelUtility.isLocalUrl(imageUrl);
+    return isLocalUrl
+        ? AppImage.file(
+            imageUrl,
+            width: width,
+            height: height,
+            fit: fit,
+            filterQuality: filterQuality,
+          )
+        : AppImage.network(
+            imageUrl,
+            width: width,
+            height: height,
+            fit: fit,
+            filterQuality: filterQuality,
+          );
+  }
+
   Widget _buildMediaContent() {
+    Widget mediaWidget;
+
     if (_reelData.showBlur == true) {
-      return AppImage.network(
-        _reelData.mediaMetaDataList[_mediaPageIndex].thumbnailUrl,
+      mediaWidget = _getImageWidget(
+        imageUrl: _reelData.mediaMetaDataList[_mediaPageIndex].thumbnailUrl,
         width: IsrDimens.getScreenWidth(context),
         height: IsrDimens.getScreenHeight(context),
         fit: BoxFit.contain,
       );
+    } else if (_hasMultipleMedia) {
+      mediaWidget = _buildMediaCarousel();
+    } else {
+      mediaWidget = _buildSingleMediaContent();
     }
 
-    // Build carousel for multiple media
-    if (_hasMultipleMedia) {
-      return _buildMediaCarousel();
-    }
+    // Wrap media content with mentions overlay
+    return GestureDetector(
+      onTap: () {
+        if (_reelData.mentions?.isListEmptyOrNull == false) {
+          _toggleMentions();
+        }
+      },
+      child: Stack(
+        children: [
+          mediaWidget,
 
-    // Single media content
-    return _buildSingleMediaContent();
+          // Mentions overlay
+          if (_mentionsVisible && _reelData.mentions?.isListEmptyOrNull == false)
+            ..._buildMentionsOverlay(),
+
+          // Mentions toggle button (top-right)
+          if (_reelData.mentions?.isListEmptyOrNull == false)
+            Positioned(
+              top: IsrDimens.fifty + IsrDimens.ten,
+              left: IsrDimens.sixteen,
+              child: _buildMentionsToggleButton(),
+            ),
+        ],
+      ),
+    );
   }
 
   Widget _buildMediaCarousel() => Stack(
         children: [
-          PageView.builder(
-            controller: _pageController,
-            onPageChanged: _onPageChanged,
-            itemCount: _reelData.mediaMetaDataList.length,
-            itemBuilder: (context, index) {
-              final media = _reelData.mediaMetaDataList[index];
+          GestureDetector(
+            onTap: () {
+              if (_reelData.mentions?.isListEmptyOrNull == false) {
+                _toggleMentions();
+              }
+            },
+            child: PageView.builder(
+              controller: _pageController,
+              onPageChanged: (index) {
+                _onPageChanged(index);
+                // Hide mentions when changing pages
+                if (_mentionsVisible) {
+                  setState(() {
+                    _mentionsVisible = false;
+                  });
+                }
+              },
+              itemCount: _reelData.mediaMetaDataList.length,
+              itemBuilder: (context, index) {
+                final media = _reelData.mediaMetaDataList[index];
 
-              if (media.mediaType == kPictureType) {
-                return AppImage.network(
-                  media.mediaUrl,
-                  width: IsrDimens.getScreenWidth(context),
-                  height: IsrDimens.getScreenHeight(context),
-                  fit: BoxFit.cover,
-                );
-              } else {
-                // Video content - only show video player for current index
-                if (index == _mediaPageIndex) {
-                  return _buildCarousalVideoContent();
-                } else {
-                  // Show thumbnail for non-active videos
-                  return AppImage.network(
-                    media.thumbnailUrl,
+                if (media.mediaType == kPictureType) {
+                  return _getImageWidget(
+                    imageUrl: media.mediaUrl,
                     width: IsrDimens.getScreenWidth(context),
                     height: IsrDimens.getScreenHeight(context),
                     fit: BoxFit.cover,
-                    filterQuality: FilterQuality.low,
                   );
+                } else {
+                  // Video content - only show video player for current index
+                  if (index == _mediaPageIndex) {
+                    return _buildCarousalVideoContent();
+                  } else {
+                    // Show thumbnail for non-active videos
+                    return _getImageWidget(
+                      imageUrl: media.thumbnailUrl,
+                      width: IsrDimens.getScreenWidth(context),
+                      height: IsrDimens.getScreenHeight(context),
+                      fit: BoxFit.cover,
+                      filterQuality: FilterQuality.low,
+                    );
+                  }
                 }
-              }
-            },
+              },
+            ),
           ),
 
           // Media indicators (dots)
@@ -301,8 +368,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   Widget _buildSingleMediaContent() {
     if (_reelData.mediaMetaDataList[_mediaPageIndex].mediaType == kPictureType) {
-      return AppImage.network(
-        _reelData.mediaMetaDataList[_mediaPageIndex].mediaUrl,
+      return _getImageWidget(
+        imageUrl: _reelData.mediaMetaDataList[_mediaPageIndex].mediaUrl,
         width: IsrDimens.getScreenWidth(context),
         height: IsrDimens.getScreenHeight(context),
         fit: BoxFit.contain,
@@ -343,11 +410,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               ),
             ),
           ] else ...[
-            AppImage.network(
-              _reelData.mediaMetaDataList[_mediaPageIndex].thumbnailUrl,
+            _getImageWidget(
+              imageUrl: _reelData.mediaMetaDataList[_mediaPageIndex].thumbnailUrl,
               width: IsrDimens.getScreenWidth(context),
               height: IsrDimens.getScreenHeight(context),
-              fit: BoxFit.cover,
+              fit: BoxFit.contain,
               filterQuality: FilterQuality.low,
             ),
           ]
@@ -375,10 +442,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               ),
             ] else ...[
               Center(
-                child: AppImage.network(
-                  _reelData.mediaMetaDataList[_mediaPageIndex].thumbnailUrl,
-
-                  fit: BoxFit.contain, // Changed from cover to contain
+                child: _getImageWidget(
+                  imageUrl: _reelData.mediaMetaDataList[_mediaPageIndex].thumbnailUrl,
+                  width: IsrDimens.getScreenWidth(context),
+                  height: IsrDimens.getScreenHeight(context),
+                  fit: BoxFit.contain,
                   filterQuality: FilterQuality.low,
                 ),
               ),
@@ -386,6 +454,295 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           ],
         ),
       );
+
+  // New methods for mentions functionality
+  List<Widget> _buildMentionsOverlay() => _reelData.mentions!
+      .map<Widget>((mention) => Positioned(
+            left: ((mention.position?.start ?? 0) / 100 * IsrDimens.getScreenWidth(context)) - 60,
+            top: ((mention.position?.end ?? 0) / 100 * IsrDimens.getScreenHeight(context)) - 30,
+            child: _buildMentionTag(mention),
+          ))
+      .toList();
+
+  Widget _buildMentionTag(MentionMetaData mention) => AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.elasticOut,
+        child: GestureDetector(
+          onTap: () => _showMentionDetails(mention),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 140),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // User Tag
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.4),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 22,
+                        height: 22,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            (mention.name?[0] ?? '').toUpperCase(),
+                            style: const TextStyle(
+                              color: Color(0xFF667eea),
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          '@${mention.username}',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            shadows: [
+                              Shadow(
+                                offset: const Offset(0, 1),
+                                blurRadius: 2,
+                                color: Colors.black.withOpacity(0.5),
+                              ),
+                            ],
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Pointer triangle
+                CustomPaint(
+                  painter: TrianglePainter(
+                    color: Colors.white,
+                  ),
+                  size: const Size(12, 8),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+  Widget _buildMentionsToggleButton() => GestureDetector(
+        onTap: _toggleMentions,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: _mentionsVisible ? Colors.blue.withOpacity(0.9) : Colors.black.withOpacity(0.6),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.3),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                _mentionsVisible ? Icons.person_pin : Icons.person_pin_circle_outlined,
+                color: Colors.white,
+                size: 16,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '${_reelData.mentions?.length}',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  shadows: [
+                    Shadow(
+                      offset: const Offset(0, 1),
+                      blurRadius: 2,
+                      color: Colors.black.withOpacity(0.5),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+
+  void _toggleMentions() {
+    setState(() {
+      _mentionsVisible = !_mentionsVisible;
+    });
+
+    if (_mentionsVisible) {
+      _autoHideMentions();
+    }
+  }
+
+  void _autoHideMentions() {
+    Future.delayed(const Duration(seconds: 4), () {
+      if (mounted && _mentionsVisible) {
+        setState(() {
+          _mentionsVisible = false;
+        });
+      }
+    });
+  }
+
+  void _showMentionDetails(MentionMetaData mention) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // User avatar
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 3),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Text(
+                  mention.username![0].toUpperCase(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Username
+            Text(
+              '@${mention.username}',
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // User ID
+            Text(
+              'User ID: ${mention.userId}',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 12,
+              ),
+            ),
+            const SizedBox(height: 4),
+
+            // Position info
+            Text(
+              'Position: ${mention.position?.start?.toInt()}%, ${mention.position?.end?.toInt()}%',
+              style: TextStyle(
+                color: Colors.grey[500],
+                fontSize: 11,
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Action buttons
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      // Add your profile navigation logic here
+                      // Navigator.pushNamed(context, '/profile', arguments: mention.userId);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF667eea),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      elevation: 2,
+                    ),
+                    child: const Text(
+                      'View Profile',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: MediaQuery.of(context).padding.bottom),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildMediaIndicators() {
     if (!_hasMultipleMedia) return const SizedBox.shrink();
@@ -995,4 +1352,36 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       setBuilderState.call(() {});
     }
   }
+}
+
+class TrianglePainter extends CustomPainter {
+  final Color color;
+
+  TrianglePainter({this.color = Colors.white});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    final path = Path()
+      ..moveTo(size.width / 2, size.height)
+      ..lineTo(0, 0)
+      ..lineTo(size.width, 0)
+      ..close();
+
+    canvas.drawPath(path, paint);
+
+    // Add shadow
+    canvas.drawShadow(
+      path,
+      Colors.black.withOpacity(0.2),
+      2.0,
+      false,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

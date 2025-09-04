@@ -39,6 +39,7 @@ class ReelsData {
     this.postSetting,
     this.onCreatePost,
     required this.mediaMetaDataList,
+    this.mentions,
   });
 
   final String? postId;
@@ -80,6 +81,7 @@ class ReelsData {
   final bool? isScheduledPost;
   bool? isSavedPost;
   final PostSetting? postSetting;
+  final List<MentionMetaData>? mentions;
 }
 
 class MediaMetaData {
@@ -92,6 +94,56 @@ class MediaMetaData {
   final String mediaUrl;
   final String thumbnailUrl;
   final int mediaType;
+}
+
+class MentionMetaData {
+  MentionMetaData({
+    required this.userId,
+    required this.username,
+    required this.position,
+    this.name,
+    this.avatarUrl,
+  });
+
+  factory MentionMetaData.fromJson(Map<String, dynamic> json) => MentionMetaData(
+        userId: json['user_id'] as String? ?? '',
+        username: json['username'] as String? ?? '',
+        name: json['name'] as String? ?? '',
+        avatarUrl: json['avatarUrl'] as String? ?? '',
+        position: json['position'] == null
+            ? null
+            : MentionPosition.fromJson(json['position'] as Map<String, dynamic>),
+      );
+  String? userId;
+  String? username;
+  String? name;
+  String? avatarUrl;
+  MentionPosition? position;
+
+  Map<String, dynamic> toJson() => {
+        'user_id': userId,
+        'username': username,
+        'position': position?.toJson(),
+      };
+}
+
+class MentionPosition {
+  MentionPosition({
+    required this.start,
+    required this.end,
+  });
+
+  factory MentionPosition.fromJson(Map<String, dynamic> json) => MentionPosition(
+        start: json['start'] as num? ?? 0,
+        end: json['end'] as num? ?? 0,
+      );
+  num? start;
+  num? end;
+
+  Map<String, dynamic> toJson() => {
+        'start': start,
+        'end': end,
+      };
 }
 
 class PostSetting {
