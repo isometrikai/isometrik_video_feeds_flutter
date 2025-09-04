@@ -21,7 +21,7 @@ class IsmPostView extends StatefulWidget {
   final List<TabDataModel> tabDataModelList;
   final num? currentIndex;
   final bool? allowImplicitScrolling;
-  final Function(int)? onPageChanged;
+  final Function(int, String)? onPageChanged;
 
   @override
   State<IsmPostView> createState() => _PostViewState();

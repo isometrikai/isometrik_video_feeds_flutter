@@ -54,7 +54,7 @@ class PostItemWidget extends StatefulWidget {
   final int? startingPostIndex;
   final String? loggedInUserId;
   final bool? allowImplicitScrolling;
-  final Function(int)? onPageChanged;
+  final Function(int, String)? onPageChanged;
   final Function(String tag, String postId)? onTapTag;
 
   @override
@@ -177,7 +177,8 @@ class _PostItemWidgetState extends State<PostItemWidget> {
               });
             }
           }
-          if (widget.onPageChanged != null) widget.onPageChanged!(index);
+          if (widget.onPageChanged != null)
+            widget.onPageChanged!(index, _postList[index].postId ?? '');
         },
         itemCount: _postList.length,
         scrollDirection: Axis.vertical,
