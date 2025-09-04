@@ -124,7 +124,7 @@ class SocialApiServiceProvider extends SocialApiService {
         {
           'Accept': AppConstants.headerAccept,
           'Content-Type': AppConstants.headerContentType,
-          'Authorization': dummyToken,
+          'Authorization': header.accessToken,
           'lan': header.language,
           'currencySymbol': header.currencySymbol,
           'currencyCode': header.currencyCode,

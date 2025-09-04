@@ -92,14 +92,17 @@ class _HomeScreenState extends State<HomeScreen> {
         postSetting: isr.PostSetting(
           isProfilePicVisible: true,
           isCreatePostButtonVisible: true,
-          isCommentButtonVisible: true,
-          isSaveButtonVisible: true,
+          isCommentButtonVisible: postData.settings?.commentsEnabled == true,
+          isSaveButtonVisible: postData.settings?.saveEnabled == true,
           isLikeButtonVisible: true,
           isShareButtonVisible: true,
           isMoreButtonVisible: true,
           isFollowButtonVisible: true,
           isUnFollowButtonVisible: true,
         ),
+        mentions: postData.tags != null && postData.tags?.mentions.isEmptyOrNull == false
+            ? postData.tags?.mentions?.map(_getMentionMetaData).toList()
+            : null,
         postId: postData.id,
         onCreatePost: () async => await _handleCreatePost(),
         mediaMetaDataList: postData.media?.map(_getMediaMetaData).toList() ?? [],
@@ -873,5 +876,13 @@ class _HomeScreenState extends State<HomeScreen> {
         mediaType: mediaData.mediaType == 'image' ? 0 : 1,
         mediaUrl: mediaData.url ?? '',
         thumbnailUrl: mediaData.previewUrl ?? '',
+      );
+
+  isr.MentionMetaData _getMentionMetaData(MentionData mentionData) => isr.MentionMetaData(
+        userId: mentionData.userId,
+        username: mentionData.username,
+        avatarUrl: mentionData.avatarUrl,
+        position:
+            isr.MentionPosition(start: mentionData.position?.start, end: mentionData.position?.end),
       );
 }

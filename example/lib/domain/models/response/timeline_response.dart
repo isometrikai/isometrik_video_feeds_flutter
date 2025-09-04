@@ -495,23 +495,33 @@ class MentionData {
     required this.userId,
     required this.username,
     required this.position,
+    this.name,
+    this.avatarUrl,
+    this.mediaPosition,
   });
 
   factory MentionData.fromJson(Map<String, dynamic> json) => MentionData(
         userId: json['user_id'] as String? ?? '',
         username: json['username'] as String? ?? '',
+        name: json['name'] as String? ?? '',
+        avatarUrl: json['avatarUrl'] as String? ?? '',
         position: json['position'] == null
             ? null
             : Position.fromJson(json['position'] as Map<String, dynamic>),
+        mediaPosition: json['mediaPosition'] as num? ?? 0,
       );
   String? userId;
   String? username;
+  String? name;
+  String? avatarUrl;
   Position? position;
+  num? mediaPosition;
 
   Map<String, dynamic> toJson() => {
         'user_id': userId,
         'username': username,
         'position': position?.toJson(),
+        'mediaPosition': mediaPosition,
       };
 }
 
