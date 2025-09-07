@@ -63,7 +63,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   final _maxLengthToShow = 50;
   late ReelsData _reelData;
 
-  bool _showMentions = true;
   bool _mentionsVisible = false;
 
   @override
@@ -275,11 +274,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     // Wrap media content with mentions overlay
     return GestureDetector(
-      onTap: () {
-        if (_reelData.mentions?.isListEmptyOrNull == false) {
-          _toggleMentions();
-        }
-      },
+      onTap: _toggleMentions,
       child: Stack(
         children: [
           mediaWidget,
@@ -303,11 +298,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   Widget _buildMediaCarousel() => Stack(
         children: [
           GestureDetector(
-            onTap: () {
-              if (_reelData.mentions?.isListEmptyOrNull == false) {
-                _toggleMentions();
-              }
-            },
+            onTap: _toggleMentions,
             child: PageView.builder(
               controller: _pageController,
               onPageChanged: (index) {
@@ -487,7 +478,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                     border: Border.all(color: Colors.white, width: 2),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.4),
+                        color: Colors.black.changeOpacity(0.4),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -526,7 +517,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                               Shadow(
                                 offset: const Offset(0, 1),
                                 blurRadius: 2,
-                                color: Colors.black.withOpacity(0.5),
+                                color: Colors.black.changeOpacity(0.5),
                               ),
                             ],
                           ),
@@ -555,15 +546,16 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: _mentionsVisible ? Colors.blue.withOpacity(0.9) : Colors.black.withOpacity(0.6),
+            color:
+                _mentionsVisible ? Colors.blue.changeOpacity(0.9) : Colors.black.changeOpacity(0.6),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: Colors.white.withOpacity(0.3),
+              color: Colors.white.changeOpacity(0.3),
               width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.3),
+                color: Colors.black.changeOpacity(0.3),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
@@ -588,7 +580,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                     Shadow(
                       offset: const Offset(0, 1),
                       blurRadius: 2,
-                      color: Colors.black.withOpacity(0.5),
+                      color: Colors.black.changeOpacity(0.5),
                     ),
                   ],
                 ),
@@ -599,12 +591,16 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       );
 
   void _toggleMentions() {
-    setState(() {
-      _mentionsVisible = !_mentionsVisible;
-    });
+    if (_reelData.mentions.isListEmptyOrNull == false) {
+      setState(() {
+        _mentionsVisible = !_mentionsVisible;
+      });
 
-    if (_mentionsVisible) {
-      _autoHideMentions();
+      if (_mentionsVisible) {
+        _autoHideMentions();
+      }
+    } else {
+      _togglePlayPause();
     }
   }
 
@@ -657,7 +653,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 border: Border.all(color: Colors.white, width: 3),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.changeOpacity(0.1),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -1376,7 +1372,7 @@ class TrianglePainter extends CustomPainter {
     // Add shadow
     canvas.drawShadow(
       path,
-      Colors.black.withOpacity(0.2),
+      Colors.black.changeOpacity(0.2),
       2.0,
       false,
     );
