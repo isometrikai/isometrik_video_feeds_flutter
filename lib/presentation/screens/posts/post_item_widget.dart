@@ -124,126 +124,123 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
         ],
       );
 
-  Widget _buildContent(BuildContext context) {
-    debugPrint('reelsDataList length: ${_reelsDataList.length}');
-    return PageView.builder(
-      // key: _pageStorageKey,
-      allowImplicitScrolling: widget.allowImplicitScrolling ?? true,
-      controller: _pageController,
-      clipBehavior: Clip.none,
-      padEnds: false,
-      physics: const ClampingScrollPhysics(),
-      onPageChanged: (index) {
-        _doMediaCaching(index);
-        debugPrint('page index: $index');
-        // Check if we're at 65% of the list
-        final threshold = (_reelsDataList.length * 0.65).floor();
-        if (index >= threshold || index == _reelsDataList.length - 1) {
-          if (widget.onLoadMore != null) {
-            widget.onLoadMore!().then(
-              (value) {
-                if (value.isListEmptyOrNull) return;
-                if (mounted) {
-                  setState(() {
-                    final newReels = value.where((newReel) => !_reelsDataList
-                        .any((existingReel) => existingReel.postId == newReel.postId));
-                    _reelsDataList.addAll(newReels);
-                    if (_reelsDataList.isNotEmpty) {
-                      _doMediaCaching(0);
+  Widget _buildContent(BuildContext context) => PageView.builder(
+        // key: _pageStorageKey,
+        allowImplicitScrolling: widget.allowImplicitScrolling ?? true,
+        controller: _pageController,
+        clipBehavior: Clip.none,
+        padEnds: false,
+        physics: const ClampingScrollPhysics(),
+        onPageChanged: (index) {
+          _doMediaCaching(index);
+          debugPrint('page index: $index');
+          // Check if we're at 65% of the list
+          final threshold = (_reelsDataList.length * 0.65).floor();
+          if (index >= threshold || index == _reelsDataList.length - 1) {
+            if (widget.onLoadMore != null) {
+              widget.onLoadMore!().then(
+                (value) {
+                  if (value.isListEmptyOrNull) return;
+                  if (mounted) {
+                    setState(() {
+                      final newReels = value.where((newReel) => !_reelsDataList
+                          .any((existingReel) => existingReel.postId == newReel.postId));
+                      _reelsDataList.addAll(newReels);
+                      if (_reelsDataList.isNotEmpty) {
+                        _doMediaCaching(0);
+                      }
+                    });
+                  }
+                },
+              );
+            }
+          }
+          if (widget.onPageChanged != null) widget.onPageChanged!(index);
+        },
+        itemCount: _reelsDataList.length,
+        scrollDirection: Axis.vertical,
+        itemBuilder: (context, index) {
+          final reelsData = _reelsDataList[index];
+          return RepaintBoundary(
+            child: IsmReelsVideoPlayerView(
+              reelsData: reelsData,
+              videoCacheManager: _videoCacheManager,
+              key: ValueKey(reelsData),
+              onPressMoreButton: () async {
+                if (reelsData.onPressMoreButton == null) return;
+                final result = await reelsData.onPressMoreButton!.call();
+                if (result == null) return;
+                if (result is bool) {
+                  final isSuccess = result;
+                  if (isSuccess) {
+                    final postIndex =
+                        _reelsDataList.indexWhere((element) => element.postId == reelsData.postId);
+                    if (postIndex != -1) {
+                      setState(() {
+                        _reelsDataList.removeAt(postIndex);
+                      });
+                      final imageUrl = _reelsDataList[postIndex].mediaMetaDataList[0].mediaUrl;
+                      final thumbnailUrl =
+                          _reelsDataList[postIndex].mediaMetaDataList[0].thumbnailUrl;
+                      if (_reelsDataList[postIndex].mediaMetaDataList[0].mediaType == 0) {
+                        await _evictDeletedPostImage(imageUrl);
+                      } else {
+                        await _evictDeletedPostImage(thumbnailUrl);
+                      }
                     }
-                  });
+                  }
+                }
+                if (result is ReelsData) {
+                  final index =
+                      _reelsDataList.indexWhere((element) => element.postId == result.postId);
+                  if (index != -1) {
+                    setState(() {
+                      _reelsDataList[index] = result;
+                    });
+                  }
                 }
               },
-            );
-          }
-        }
-        if (widget.onPageChanged != null) widget.onPageChanged!(index);
-      },
-      itemCount: _reelsDataList.length,
-      scrollDirection: Axis.vertical,
-      itemBuilder: (context, index) {
-        final reelsData = _reelsDataList[index];
-        return RepaintBoundary(
-          child: IsmReelsVideoPlayerView(
-            reelsData: reelsData,
-            videoCacheManager: _videoCacheManager,
-            key: ValueKey(reelsData),
-            onPressMoreButton: () async {
-              if (reelsData.onPressMoreButton == null) return;
-              final result = await reelsData.onPressMoreButton!.call();
-              if (result == null) return;
-              if (result is bool) {
-                final isSuccess = result;
-                if (isSuccess) {
-                  final postIndex =
-                      _reelsDataList.indexWhere((element) => element.postId == reelsData.postId);
-                  if (postIndex != -1) {
+              onCreatePost: () async {
+                if (reelsData.onCreatePost != null) {
+                  final result = await reelsData.onCreatePost!();
+                  if (result != null) {
                     setState(() {
-                      _reelsDataList.removeAt(postIndex);
+                      _reelsDataList.insert(index, result);
                     });
-                    final imageUrl = _reelsDataList[postIndex].mediaMetaDataList[0].mediaUrl;
-                    final thumbnailUrl =
-                        _reelsDataList[postIndex].mediaMetaDataList[0].thumbnailUrl;
-                    if (_reelsDataList[postIndex].mediaMetaDataList[0].mediaType == 0) {
-                      await _evictDeletedPostImage(imageUrl);
+                  }
+                }
+              },
+              onPressFollowButton: () async {
+                if (reelsData.onPressFollow != null) {
+                  final result = await reelsData.onPressFollow!(
+                      reelsData.userId ?? '', reelsData.isFollow ?? false);
+                  if (result == true) {
+                    setState(() {
+                      reelsData.isFollow = reelsData.isFollow == true ? false : true;
+                    });
+                  }
+                }
+              },
+              onPressLikeButton: () async {
+                if (reelsData.onPressLike != null) {
+                  final result = await reelsData.onPressLike!(reelsData.isLiked ?? false);
+                  if (result == true) {
+                    reelsData.isLiked = reelsData.isLiked == true ? false : true;
+                    if (reelsData.isLiked == true) {
+                      reelsData.likesCount = (reelsData.likesCount ?? 0) + 1;
                     } else {
-                      await _evictDeletedPostImage(thumbnailUrl);
+                      if ((reelsData.likesCount ?? 0) > 0) {
+                        reelsData.likesCount = (reelsData.likesCount ?? 0) - 1;
+                      }
                     }
+                    setState(() {});
                   }
                 }
-              }
-              if (result is ReelsData) {
-                final index =
-                    _reelsDataList.indexWhere((element) => element.postId == result.postId);
-                if (index != -1) {
-                  setState(() {
-                    _reelsDataList[index] = result;
-                  });
-                }
-              }
-            },
-            onCreatePost: () async {
-              if (reelsData.onCreatePost != null) {
-                final result = await reelsData.onCreatePost!();
-                if (result != null) {
-                  setState(() {
-                    _reelsDataList.insert(index, result);
-                  });
-                }
-              }
-            },
-            onPressFollowButton: () async {
-              if (reelsData.onPressFollow != null) {
-                final result = await reelsData.onPressFollow!(
-                    reelsData.userId ?? '', reelsData.isFollow ?? false);
-                if (result == true) {
-                  setState(() {
-                    reelsData.isFollow = reelsData.isFollow == true ? false : true;
-                  });
-                }
-              }
-            },
-            onPressLikeButton: () async {
-              if (reelsData.onPressLike != null) {
-                final result = await reelsData.onPressLike!(reelsData.isLiked ?? false);
-                if (result == true) {
-                  reelsData.isLiked = reelsData.isLiked == true ? false : true;
-                  if (reelsData.isLiked == true) {
-                    reelsData.likesCount = (reelsData.likesCount ?? 0) + 1;
-                  } else {
-                    if ((reelsData.likesCount ?? 0) > 0) {
-                      reelsData.likesCount = (reelsData.likesCount ?? 0) - 1;
-                    }
-                  }
-                  setState(() {});
-                }
-              }
-            },
-          ),
-        );
-      },
-    );
-  }
+              },
+            ),
+          );
+        },
+      );
 
   /// Background version of image caching using compute
   /// Then caches images on main thread

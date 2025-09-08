@@ -343,7 +343,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           // Mentions toggle button (top-right)
           if (_pageMentionMetaDataList.isListEmptyOrNull == false)
             Positioned(
-              top: IsrDimens.fifty + IsrDimens.ten,
+              top: IsrDimens.sixty,
               left: IsrDimens.sixteen,
               child: _buildMentionsToggleButton(),
             ),
@@ -374,7 +374,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
           // Media indicators (dots)
           Positioned(
-            bottom: IsrDimens.fifty,
+            bottom: IsrDimens.eighty,
             left: 0,
             right: 0,
             child: _buildMediaIndicators(),
@@ -382,7 +382,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
           // Media counter
           Positioned(
-            top: IsrDimens.fifty,
+            top: IsrDimens.sixty,
             right: IsrDimens.sixteen,
             child: _buildMediaCounter(),
           ),
@@ -714,7 +714,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               ),
             ),
 
-            const SizedBox(height: 4),
+            const SizedBox(height: 12),
 
             // Action buttons
             Row(
