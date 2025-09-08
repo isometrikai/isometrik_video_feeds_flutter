@@ -152,6 +152,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   // Handle page change in carousel
   void _onPageChanged(int index) async {
     if (_mediaPageIndex == index) return;
+    debugPrint('_mediaPageIndex...1 $_mediaPageIndex');
 
     // Pause current video if playing
     if (_reelData.mediaMetaDataList[_mediaPageIndex].mediaType == kVideoType) {
@@ -160,6 +161,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
 
     _mediaPageIndex = index;
+
+    debugPrint('_mediaPageIndex...2 $_mediaPageIndex');
     _pageMentionMetaDataList = _mentionedMetaDataList
         .where((mention) => mention.mediaPosition?.position == _mediaPageIndex + 1)
         .toList();
@@ -365,32 +368,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 }
               },
               itemCount: _reelData.mediaMetaDataList.length,
-              itemBuilder: (context, index) {
-                final media = _reelData.mediaMetaDataList[index];
-
-                if (media.mediaType == kPictureType) {
-                  return _getImageWidget(
-                    imageUrl: media.mediaUrl,
-                    width: IsrDimens.getScreenWidth(context),
-                    height: IsrDimens.getScreenHeight(context),
-                    fit: BoxFit.contain,
-                  );
-                } else {
-                  // Video content - only show video player for current index
-                  if (index == _mediaPageIndex) {
-                    return _buildCarousalVideoContent();
-                  } else {
-                    // Show thumbnail for non-active videos
-                    return _getImageWidget(
-                      imageUrl: media.thumbnailUrl,
-                      width: IsrDimens.getScreenWidth(context),
-                      height: IsrDimens.getScreenHeight(context),
-                      fit: BoxFit.cover,
-                      filterQuality: FilterQuality.low,
-                    );
-                  }
-                }
-              },
+              itemBuilder: (context, index) => _buildPageView(index),
             ),
           ),
 
@@ -550,7 +528,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                         ),
                         child: Center(
                           child: Text(
-                            (mention.name?[0] ?? '').toUpperCase(),
+                            (mention.name ?? '').toUpperCase(),
                             style: const TextStyle(
                               color: Color(0xFF667eea),
                               fontSize: 11,
@@ -735,16 +713,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 color: Colors.black87,
               ),
             ),
-            const SizedBox(height: 8),
 
-            // User ID
-            Text(
-              'User ID: ${mention.userId}',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 12,
-              ),
-            ),
             const SizedBox(height: 4),
 
             // Action buttons
@@ -754,6 +723,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.pop(context);
+                      _reelData.onTapMention?.call(mention);
                       // Add your profile navigation logic here
                       // Navigator.pushNamed(context, '/profile', arguments: mention.userId);
                     },
@@ -1190,11 +1160,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                           builder: (context, value, child) {
                             // Determine the full or truncated description
                             final fullDescription = _reelData.description ?? '';
-                            final displayDescription =
-                                value || fullDescription.length <= _maxLengthToShow
-                                    ? fullDescription
-                                    : '${fullDescription.substring(0, _maxLengthToShow)}...';
-
                             return RichText(
                               text: TextSpan(
                                 children: [
@@ -1216,9 +1181,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                     IsrStyles.white14
                                         .copyWith(color: IsrColors.white.changeOpacity(0.9)),
                                     (mention) {
-                                      // ✅ Handle mention tap here
-                                      print('Mention clicked: ${mention.username}');
-                                      // You can navigate, show a dialog, etc.
+                                      _reelData.onTapMention?.call(mention);
                                     },
                                   ),
                                   // View More / Less toggle
@@ -1457,12 +1420,37 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     return TextSpan(children: spans, style: defaultStyle);
   }
+
+  Widget _buildPageView(int index) {
+    final media = _reelData.mediaMetaDataList[index];
+    if (media.mediaType == kPictureType) {
+      return _getImageWidget(
+        imageUrl: media.mediaUrl,
+        width: IsrDimens.getScreenWidth(context),
+        height: IsrDimens.getScreenHeight(context),
+        fit: BoxFit.contain,
+      );
+    } else {
+      // Video content - only show video player for current index
+      if (index == _mediaPageIndex) {
+        return _buildCarousalVideoContent();
+      } else {
+        return _getImageWidget(
+          imageUrl: media.thumbnailUrl,
+          width: IsrDimens.getScreenWidth(context),
+          height: IsrDimens.getScreenHeight(context),
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.low,
+        );
+      }
+    }
+  }
 }
 
 class TrianglePainter extends CustomPainter {
-  final Color color;
-
   TrianglePainter({this.color = Colors.white});
+
+  final Color color;
 
   @override
   void paint(Canvas canvas, Size size) {
