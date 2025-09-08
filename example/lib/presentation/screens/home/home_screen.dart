@@ -103,6 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
         mentions: postData.tags != null && postData.tags?.mentions.isEmptyOrNull == false
             ? postData.tags?.mentions?.map(_getMentionMetaData).toList()
             : null,
+        onTapMention: (mention) {},
         postId: postData.id,
         onCreatePost: () async => await _handleCreatePost(),
         mediaMetaDataList: postData.media?.map(_getMediaMetaData).toList() ?? [],
@@ -881,8 +882,20 @@ class _HomeScreenState extends State<HomeScreen> {
   isr.MentionMetaData _getMentionMetaData(MentionData mentionData) => isr.MentionMetaData(
         userId: mentionData.userId,
         username: mentionData.username,
+        name: mentionData.name,
         avatarUrl: mentionData.avatarUrl,
-        position:
-            isr.MentionPosition(start: mentionData.position?.start, end: mentionData.position?.end),
+        textPosition: mentionData.textPosition != null
+            ? isr.MentionPosition(
+                start: mentionData.textPosition?.start,
+                end: mentionData.textPosition?.end,
+              )
+            : null,
+        mediaPosition: mentionData.mediaPosition != null
+            ? isr.MediaPosition(
+                position: mentionData.mediaPosition?.position,
+                x: mentionData.mediaPosition?.x,
+                y: mentionData.mediaPosition?.y,
+              )
+            : null,
       );
 }

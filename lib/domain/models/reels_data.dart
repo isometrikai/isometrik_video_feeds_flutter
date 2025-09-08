@@ -40,6 +40,7 @@ class ReelsData {
     this.onCreatePost,
     required this.mediaMetaDataList,
     this.mentions,
+    this.onTapMention,
   });
 
   final String? postId;
@@ -82,6 +83,7 @@ class ReelsData {
   bool? isSavedPost;
   final PostSetting? postSetting;
   final List<MentionMetaData>? mentions;
+  final Function(MentionMetaData)? onTapMention;
 }
 
 class MediaMetaData {
@@ -100,9 +102,10 @@ class MentionMetaData {
   MentionMetaData({
     required this.userId,
     required this.username,
-    required this.position,
+    this.textPosition,
     this.name,
     this.avatarUrl,
+    this.mediaPosition,
   });
 
   factory MentionMetaData.fromJson(Map<String, dynamic> json) => MentionMetaData(
@@ -110,20 +113,25 @@ class MentionMetaData {
         username: json['username'] as String? ?? '',
         name: json['name'] as String? ?? '',
         avatarUrl: json['avatarUrl'] as String? ?? '',
-        position: json['position'] == null
+        textPosition: json['text_position'] == null
             ? null
-            : MentionPosition.fromJson(json['position'] as Map<String, dynamic>),
+            : MentionPosition.fromJson(json['text_position'] as Map<String, dynamic>),
+        mediaPosition: json['media_position'] == null
+            ? null
+            : MediaPosition.fromJson(json['media_position'] as Map<String, dynamic>),
       );
   String? userId;
   String? username;
   String? name;
   String? avatarUrl;
-  MentionPosition? position;
+  MentionPosition? textPosition;
+  MediaPosition? mediaPosition;
 
   Map<String, dynamic> toJson() => {
         'user_id': userId,
         'username': username,
-        'position': position?.toJson(),
+        'text_position': textPosition?.toJson(),
+        'media_position': mediaPosition?.toJson(),
       };
 }
 
@@ -143,6 +151,29 @@ class MentionPosition {
   Map<String, dynamic> toJson() => {
         'start': start,
         'end': end,
+      };
+}
+
+class MediaPosition {
+  MediaPosition({
+    required this.position,
+    required this.x,
+    required this.y,
+  });
+
+  factory MediaPosition.fromJson(Map<String, dynamic> json) => MediaPosition(
+        position: json['position'] as num? ?? 0,
+        x: json['x'] as num? ?? 0,
+        y: json['y'] as num? ?? 0,
+      );
+  num? position;
+  num? x;
+  num? y;
+
+  Map<String, dynamic> toJson() => {
+        'position': position,
+        'x': x,
+        'y': y,
       };
 }
 

@@ -358,7 +358,7 @@ class _PostAttributeViewState extends State<PostAttributeView> {
           mentionedUserList.add(MentionData(
               userId: socialUser.id,
               username: socialUser.username,
-              position: Position(start: 0, end: 0)));
+              textPosition: TaggedPosition(start: 0, end: 0)));
         }
         createPostRequest.mentions = mentionedUserList;
       }
