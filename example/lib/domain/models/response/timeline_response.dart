@@ -85,7 +85,7 @@ class TimeLineData {
   });
 
   factory TimeLineData.fromMap(Map<String, dynamic> json) => TimeLineData(
-        textFormatting: json['text_formatting'] as String? ?? '',
+        textFormatting: json['text_formatting'],
         publishedAt: json['published_at'] as String? ?? '',
         media: json['media'] == null
             ? []
@@ -99,7 +99,7 @@ class TimeLineData {
             : SocialUserData.fromMap(json['user'] as Map<String, dynamic>),
         visibility: json['visibility'] as String? ?? '',
         id: json['id'] as String? ?? '',
-        soundSnapshot: json['sound_snapshot'] as String? ?? '',
+        soundSnapshot: json['sound_snapshot'],
         tags: json['tags'] == null
             ? null
             : json['tags'] is String && (json['tags'] as String).isEmptyOrNull
@@ -119,7 +119,7 @@ class TimeLineData {
         isLiked: json['is_liked'] as bool? ?? false,
         isSaved: json['is_saved'] as bool? ?? false,
       );
-  String? textFormatting;
+  dynamic textFormatting;
   String? publishedAt;
   List<MediaData>? media;
   String? soundId;
@@ -128,7 +128,7 @@ class TimeLineData {
   SocialUserData? user;
   String? visibility;
   String? id;
-  String? soundSnapshot;
+  dynamic soundSnapshot;
   Tags? tags;
   Settings? settings;
   EngagementMetrics? engagementMetrics;
@@ -494,7 +494,7 @@ class MentionData {
   MentionData({
     required this.userId,
     required this.username,
-    required this.position,
+    this.textPosition,
     this.name,
     this.avatarUrl,
     this.mediaPosition,
@@ -505,33 +505,35 @@ class MentionData {
         username: json['username'] as String? ?? '',
         name: json['name'] as String? ?? '',
         avatarUrl: json['avatarUrl'] as String? ?? '',
-        position: json['position'] == null
+        textPosition: json['text_position'] == null
             ? null
-            : Position.fromJson(json['position'] as Map<String, dynamic>),
-        mediaPosition: json['mediaPosition'] as num? ?? 0,
+            : TaggedPosition.fromJson(json['text_position'] as Map<String, dynamic>),
+        mediaPosition: json['media_position'] == null
+            ? null
+            : MediaPosition.fromJson(json['media_position'] as Map<String, dynamic>),
       );
   String? userId;
   String? username;
   String? name;
   String? avatarUrl;
-  Position? position;
-  num? mediaPosition;
+  TaggedPosition? textPosition;
+  MediaPosition? mediaPosition;
 
   Map<String, dynamic> toJson() => {
         'user_id': userId,
         'username': username,
-        'position': position?.toJson(),
-        'mediaPosition': mediaPosition,
+        'text_position': textPosition?.toJson(),
+        'media_position': mediaPosition?.toJson(),
       };
 }
 
-class Position {
-  Position({
+class TaggedPosition {
+  TaggedPosition({
     required this.start,
     required this.end,
   });
 
-  factory Position.fromJson(Map<String, dynamic> json) => Position(
+  factory TaggedPosition.fromJson(Map<String, dynamic> json) => TaggedPosition(
         start: json['start'] as num? ?? 0,
         end: json['end'] as num? ?? 0,
       );
@@ -632,6 +634,29 @@ class ProductPosition {
 
   Map<String, dynamic> toJson() => {
         'media_position': mediaPosition,
+        'x': x,
+        'y': y,
+      };
+}
+
+class MediaPosition {
+  MediaPosition({
+    this.position,
+    required this.x,
+    required this.y,
+  });
+
+  factory MediaPosition.fromJson(Map<String, dynamic> json) => MediaPosition(
+        position: json['position'] as num? ?? 0,
+        x: json['x'] as num? ?? 0,
+        y: json['y'] as num? ?? 0,
+      );
+  num? position;
+  num? x;
+  num? y;
+
+  Map<String, dynamic> toJson() => {
+        'position': position,
         'x': x,
         'y': y,
       };

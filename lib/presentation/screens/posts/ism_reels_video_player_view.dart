@@ -64,11 +64,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   late ReelsData _reelData;
 
   bool _mentionsVisible = false;
+  var _postDescription = '';
+  List<MentionMetaData> _mentionedMetaDataList = [];
+  List<MentionMetaData> _pageMentionMetaDataList = [];
+  List<MentionMetaData> _taggedUserDataList = [];
 
   @override
   void initState() {
-    super.initState();
     _onStartInit();
+    super.initState();
   }
 
   bool get _controllerReady =>
@@ -78,6 +82,17 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   void _onStartInit() async {
     _reelData = widget.reelsData!;
+    _mentionedMetaDataList =
+        _reelData.mentions?.where((mentionData) => mentionData.mediaPosition != null).toList() ??
+            [];
+    _pageMentionMetaDataList = _mentionedMetaDataList
+        .where((mention) => mention.mediaPosition?.position == _mediaPageIndex + 1)
+        .toList();
+    _taggedUserDataList =
+        _reelData.mentions?.where((mentionData) => mentionData.textPosition != null).toList() ?? [];
+    _postDescription = _reelData.description ?? '';
+    // ✅ Rebuild description with mentions
+    _postDescription = _buildDescriptionWithMentions(_postDescription, _taggedUserDataList);
     _isMuted = false;
     _tapGestureRecognizer = TapGestureRecognizer();
 
@@ -91,6 +106,41 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       await _initializeVideoPlayer();
       mountUpdate();
     }
+  }
+
+  String _buildDescriptionWithMentions(String description, List<MentionMetaData> taggedUsers) {
+    if (taggedUsers.isEmpty) return description;
+
+    // Sort mentions by start index to avoid misplacements
+    final sortedMentions = List<MentionMetaData>.from(taggedUsers)
+      ..sort((a, b) =>
+          (a.textPosition?.start?.toInt() ?? 0).compareTo(b.textPosition?.start?.toInt() ?? 0));
+
+    final buffer = StringBuffer();
+    var lastIndex = 0;
+
+    for (final mention in sortedMentions) {
+      final start = mention.textPosition?.start?.toInt() ?? 0;
+      final end = mention.textPosition?.end?.toInt() ?? 0;
+
+      // Add normal text before the mention
+      if (lastIndex < start) {
+        buffer.write(description.substring(lastIndex, start));
+      }
+
+      // Add @username (instead of raw text slice)
+      buffer.write('@${mention.username}');
+
+      // Move pointer after the mention
+      lastIndex = end;
+    }
+
+    // Add remaining text after the last mention
+    if (lastIndex < description.length) {
+      buffer.write(description.substring(lastIndex));
+    }
+
+    return buffer.toString();
   }
 
   /// Method For Update The Tree Carefully
@@ -110,6 +160,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
 
     _mediaPageIndex = index;
+    _pageMentionMetaDataList = _mentionedMetaDataList
+        .where((mention) => mention.mediaPosition?.position == _mediaPageIndex + 1)
+        .toList();
     _isPlaying = true;
     _isPlayPauseActioned = false;
     mountUpdate();
@@ -238,7 +291,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     BoxFit fit = BoxFit.contain,
     FilterQuality filterQuality = FilterQuality.high,
   }) {
-    final isLocalUrl = IsrVideoReelUtility.isLocalUrl(imageUrl);
+    final isLocalUrl =
+        imageUrl.isStringEmptyOrNull == false && IsrVideoReelUtility.isLocalUrl(imageUrl);
     return isLocalUrl
         ? AppImage.file(
             imageUrl,
@@ -280,11 +334,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           mediaWidget,
 
           // Mentions overlay
-          if (_mentionsVisible && _reelData.mentions?.isListEmptyOrNull == false)
+          if (_mentionsVisible && _pageMentionMetaDataList.isListEmptyOrNull == false)
             ..._buildMentionsOverlay(),
 
           // Mentions toggle button (top-right)
-          if (_reelData.mentions?.isListEmptyOrNull == false)
+          if (_pageMentionMetaDataList.isListEmptyOrNull == false)
             Positioned(
               top: IsrDimens.fifty + IsrDimens.ten,
               left: IsrDimens.sixteen,
@@ -319,7 +373,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                     imageUrl: media.mediaUrl,
                     width: IsrDimens.getScreenWidth(context),
                     height: IsrDimens.getScreenHeight(context),
-                    fit: BoxFit.cover,
+                    fit: BoxFit.contain,
                   );
                 } else {
                   // Video content - only show video player for current index
@@ -447,10 +501,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       );
 
   // New methods for mentions functionality
-  List<Widget> _buildMentionsOverlay() => _reelData.mentions!
+  List<Widget> _buildMentionsOverlay() => _pageMentionMetaDataList
       .map<Widget>((mention) => Positioned(
-            left: ((mention.position?.start ?? 0) / 100 * IsrDimens.getScreenWidth(context)) - 60,
-            top: ((mention.position?.end ?? 0) / 100 * IsrDimens.getScreenHeight(context)) - 30,
+            left: ((mention.mediaPosition?.x ?? 0) / 100 * IsrDimens.getScreenWidth(context)) - 60,
+            top: ((mention.mediaPosition?.y ?? 0) / 100 * IsrDimens.getScreenHeight(context)) - 30,
             child: _buildMentionTag(mention),
           ))
       .toList();
@@ -571,7 +625,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               ),
               const SizedBox(width: 4),
               Text(
-                '${_reelData.mentions?.length}',
+                '${_pageMentionMetaDataList.length}',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 12,
@@ -591,7 +645,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       );
 
   void _toggleMentions() {
-    if (_reelData.mentions.isListEmptyOrNull == false) {
+    if (_pageMentionMetaDataList.isListEmptyOrNull == false) {
       setState(() {
         _mentionsVisible = !_mentionsVisible;
       });
@@ -692,16 +746,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               ),
             ),
             const SizedBox(height: 4),
-
-            // Position info
-            Text(
-              'Position: ${mention.position?.start?.toInt()}%, ${mention.position?.end?.toInt()}%',
-              style: TextStyle(
-                color: Colors.grey[500],
-                fontSize: 11,
-              ),
-            ),
-            const SizedBox(height: 24),
 
             // Action buttons
             Row(
@@ -1139,50 +1183,62 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                           ),
                         ],
                       ),
-                      if (_reelData.description.isStringEmptyOrNull == false) ...[
+                      if (_postDescription.isStringEmptyOrNull == false) ...[
                         IsrDimens.boxHeight(IsrDimens.four),
                         ValueListenableBuilder<bool>(
                           valueListenable: _isExpandedDescription,
-                          builder: (context, value, child) => RichText(
-                            text: TextSpan(
-                              children: [
-                                if (_reelData.hasTags?.isNotEmpty == true)
-                                  ..._reelData.hasTags!.map(
-                                    (tag) => TextSpan(
-                                      text: '#$tag ',
-                                      style: IsrStyles.white14.copyWith(
-                                        color: IsrColors.white,
-                                        fontWeight: FontWeight.w600,
+                          builder: (context, value, child) {
+                            // Determine the full or truncated description
+                            final fullDescription = _reelData.description ?? '';
+                            final displayDescription =
+                                value || fullDescription.length <= _maxLengthToShow
+                                    ? fullDescription
+                                    : '${fullDescription.substring(0, _maxLengthToShow)}...';
+
+                            return RichText(
+                              text: TextSpan(
+                                children: [
+                                  // Hashtags
+                                  if (_reelData.hasTags?.isNotEmpty == true)
+                                    ..._reelData.hasTags!.map(
+                                      (tag) => TextSpan(
+                                        text: '#$tag ',
+                                        style: IsrStyles.white14.copyWith(
+                                          color: IsrColors.white,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                       ),
                                     ),
+                                  // Description with mentions styled
+                                  _buildDescriptionTextSpan(
+                                    fullDescription,
+                                    _taggedUserDataList,
+                                    IsrStyles.white14
+                                        .copyWith(color: IsrColors.white.changeOpacity(0.9)),
+                                    (mention) {
+                                      // ✅ Handle mention tap here
+                                      print('Mention clicked: ${mention.username}');
+                                      // You can navigate, show a dialog, etc.
+                                    },
                                   ),
-                                TextSpan(
-                                  text: value
-                                      ? _reelData.description
-                                      : (_reelData.description?.length ?? 0) > _maxLengthToShow
-                                          ? '${_reelData.description?.substring(0, _maxLengthToShow)}...'
-                                          : _reelData.description,
-                                  style: IsrStyles.white14.copyWith(
-                                    color: IsrColors.white.changeOpacity(0.9),
-                                  ),
-                                ),
-                                if ((_reelData.description?.length ?? 0) > _maxLengthToShow)
-                                  TextSpan(
-                                    text: value
-                                        ? ' ${IsrTranslationFile.viewLess}'
-                                        : ' ${IsrTranslationFile.viewMore}',
-                                    style: IsrStyles.white14.copyWith(
-                                      fontWeight: FontWeight.w700,
+                                  // View More / Less toggle
+                                  if (fullDescription.length > _maxLengthToShow)
+                                    TextSpan(
+                                      text: value
+                                          ? ' ${IsrTranslationFile.viewLess}'
+                                          : ' ${IsrTranslationFile.viewMore}',
+                                      style:
+                                          IsrStyles.white14.copyWith(fontWeight: FontWeight.w700),
+                                      recognizer: _tapGestureRecognizer
+                                        ?..onTap = () {
+                                          _isExpandedDescription.value =
+                                              !_isExpandedDescription.value;
+                                        },
                                     ),
-                                    recognizer: _tapGestureRecognizer
-                                      ?..onTap = () {
-                                        _isExpandedDescription.value =
-                                            !_isExpandedDescription.value;
-                                      },
-                                  ),
-                              ],
-                            ),
-                          ),
+                                ],
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ],
@@ -1347,6 +1403,59 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       }
       setBuilderState.call(() {});
     }
+  }
+
+  TextSpan _buildDescriptionTextSpan(
+    String description,
+    List<MentionMetaData> taggedUsers,
+    TextStyle defaultStyle,
+    void Function(MentionMetaData) onMentionTap,
+  ) {
+    if (taggedUsers.isEmpty) {
+      return TextSpan(text: description, style: defaultStyle);
+    }
+
+    final sortedMentions = List<MentionMetaData>.from(taggedUsers)
+      ..sort((a, b) =>
+          (a.textPosition?.start?.toInt() ?? 0).compareTo(b.textPosition?.start?.toInt() ?? 0));
+
+    final spans = <InlineSpan>[];
+    var lastIndex = 0;
+
+    for (final mention in sortedMentions) {
+      final start = mention.textPosition?.start?.toInt() ?? 0;
+      final end = mention.textPosition?.end?.toInt() ?? 0;
+
+      // Add normal text before the mention
+      if (lastIndex < start) {
+        spans.add(TextSpan(
+          text: description.substring(lastIndex, start),
+          style: defaultStyle,
+        ));
+      }
+
+      // Add mention text styled bold and clickable
+      spans.add(TextSpan(
+        text: description.substring(start, end),
+        style: defaultStyle.copyWith(fontWeight: FontWeight.w800),
+        recognizer: TapGestureRecognizer()
+          ..onTap = () {
+            onMentionTap(mention);
+          },
+      ));
+
+      lastIndex = end;
+    }
+
+    // Add remaining text after last mention
+    if (lastIndex < description.length) {
+      spans.add(TextSpan(
+        text: description.substring(lastIndex),
+        style: defaultStyle,
+      ));
+    }
+
+    return TextSpan(children: spans, style: defaultStyle);
   }
 }
 
