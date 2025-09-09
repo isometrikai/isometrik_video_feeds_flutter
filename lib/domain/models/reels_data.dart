@@ -40,7 +40,8 @@ class ReelsData {
     this.onCreatePost,
     required this.mediaMetaDataList,
     this.mentions,
-    this.onTapMention,
+    this.tagDataList,
+    this.onTapMentionTag,
   });
 
   final String? postId;
@@ -83,7 +84,8 @@ class ReelsData {
   bool? isSavedPost;
   final PostSetting? postSetting;
   final List<MentionMetaData>? mentions;
-  final Function(MentionMetaData)? onTapMention;
+  final List<MentionMetaData>? tagDataList;
+  final Function(MentionMetaData)? onTapMentionTag;
 }
 
 class MediaMetaData {
@@ -100,8 +102,9 @@ class MediaMetaData {
 
 class MentionMetaData {
   MentionMetaData({
-    required this.userId,
-    required this.username,
+    this.userId,
+    this.username,
+    this.tag,
     this.textPosition,
     this.name,
     this.avatarUrl,
@@ -111,6 +114,7 @@ class MentionMetaData {
   factory MentionMetaData.fromJson(Map<String, dynamic> json) => MentionMetaData(
         userId: json['user_id'] as String? ?? '',
         username: json['username'] as String? ?? '',
+        tag: json['tag'] as String? ?? '',
         name: json['name'] as String? ?? '',
         avatarUrl: json['avatarUrl'] as String? ?? '',
         textPosition: json['text_position'] == null
@@ -122,6 +126,7 @@ class MentionMetaData {
       );
   String? userId;
   String? username;
+  String? tag;
   String? name;
   String? avatarUrl;
   MentionPosition? textPosition;
@@ -130,9 +135,10 @@ class MentionMetaData {
   Map<String, dynamic> toJson() => {
         'user_id': userId,
         'username': username,
+        'tag': tag,
         'text_position': textPosition?.toJson(),
         'media_position': mediaPosition?.toJson(),
-      };
+      }.removeEmptyValues();
 }
 
 class MentionPosition {
