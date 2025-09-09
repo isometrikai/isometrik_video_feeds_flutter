@@ -67,7 +67,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   var _postDescription = '';
   List<MentionMetaData> _mentionedMetaDataList = [];
   List<MentionMetaData> _pageMentionMetaDataList = [];
-  List<MentionMetaData> _taggedUserDataList = [];
+  List<MentionMetaData> _mentionedDataList = [];
+  List<MentionMetaData> _taggedDataList = [];
 
   @override
   void initState() {
@@ -88,11 +89,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _pageMentionMetaDataList = _mentionedMetaDataList
         .where((mention) => mention.mediaPosition?.position == _mediaPageIndex + 1)
         .toList();
-    _taggedUserDataList =
+    _mentionedDataList =
         _reelData.mentions?.where((mentionData) => mentionData.textPosition != null).toList() ?? [];
+    _taggedDataList =
+        _reelData.tagDataList?.where((mentionData) => mentionData.textPosition != null).toList() ??
+            [];
     _postDescription = _reelData.description ?? '';
-    // ✅ Rebuild description with mentions
-    _postDescription = _buildDescriptionWithMentions(_postDescription, _taggedUserDataList);
     _isMuted = false;
     _tapGestureRecognizer = TapGestureRecognizer();
 
@@ -108,41 +110,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
   }
 
-  String _buildDescriptionWithMentions(String description, List<MentionMetaData> taggedUsers) {
-    if (taggedUsers.isEmpty) return description;
-
-    // Sort mentions by start index to avoid misplacements
-    final sortedMentions = List<MentionMetaData>.from(taggedUsers)
-      ..sort((a, b) =>
-          (a.textPosition?.start?.toInt() ?? 0).compareTo(b.textPosition?.start?.toInt() ?? 0));
-
-    final buffer = StringBuffer();
-    var lastIndex = 0;
-
-    for (final mention in sortedMentions) {
-      final start = mention.textPosition?.start?.toInt() ?? 0;
-      final end = mention.textPosition?.end?.toInt() ?? 0;
-
-      // Add normal text before the mention
-      if (lastIndex < start) {
-        buffer.write(description.substring(lastIndex, start));
-      }
-
-      // Add @username (instead of raw text slice)
-      buffer.write('@${mention.username}');
-
-      // Move pointer after the mention
-      lastIndex = end;
-    }
-
-    // Add remaining text after the last mention
-    if (lastIndex < description.length) {
-      buffer.write(description.substring(lastIndex));
-    }
-
-    return buffer.toString();
-  }
-
   /// Method For Update The Tree Carefully
   void mountUpdate() {
     if (!mounted) return;
@@ -153,6 +120,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   void _onPageChanged(int index) async {
     if (_mediaPageIndex == index) return;
     debugPrint('_mediaPageIndex...1 $_mediaPageIndex');
+
+    // Hide mentions when changing pages
+    if (_mentionsVisible) {
+      _mentionsVisible = false;
+    }
 
     // Pause current video if playing
     if (_reelData.mediaMetaDataList[_mediaPageIndex].mediaType == kVideoType) {
@@ -343,7 +315,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           // Mentions toggle button (top-right)
           if (_pageMentionMetaDataList.isListEmptyOrNull == false)
             Positioned(
-              top: IsrDimens.fifty + IsrDimens.ten,
+              top: IsrDimens.sixty,
               left: IsrDimens.sixteen,
               child: _buildMentionsToggleButton(),
             ),
@@ -358,14 +330,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             onTap: _toggleMentions,
             child: PageView.builder(
               controller: _pageController,
+              padEnds: false,
               onPageChanged: (index) {
+                debugPrint('PageView...index... $index');
+                // _onPageChanged(index == 0 ? index : index - 1);
                 _onPageChanged(index);
-                // Hide mentions when changing pages
-                if (_mentionsVisible) {
-                  setState(() {
-                    _mentionsVisible = false;
-                  });
-                }
               },
               itemCount: _reelData.mediaMetaDataList.length,
               itemBuilder: (context, index) => _buildPageView(index),
@@ -374,7 +343,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
           // Media indicators (dots)
           Positioned(
-            bottom: IsrDimens.fifty,
+            bottom: IsrDimens.eighty,
             left: 0,
             right: 0,
             child: _buildMediaIndicators(),
@@ -382,7 +351,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
           // Media counter
           Positioned(
-            top: IsrDimens.fifty,
+            top: IsrDimens.sixty,
             right: IsrDimens.sixteen,
             child: _buildMediaCounter(),
           ),
@@ -714,7 +683,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               ),
             ),
 
-            const SizedBox(height: 4),
+            const SizedBox(height: 12),
 
             // Action buttons
             Row(
@@ -723,7 +692,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.pop(context);
-                      _reelData.onTapMention?.call(mention);
+                      _reelData.onTapMentionTag?.call(mention);
                       // Add your profile navigation logic here
                       // Navigator.pushNamed(context, '/profile', arguments: mention.userId);
                     },
@@ -762,16 +731,20 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         mainAxisAlignment: MainAxisAlignment.center,
         children: List.generate(
           _reelData.mediaMetaDataList.length,
-          (index) => Container(
-            margin: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.two),
-            width: IsrDimens.six,
-            height: IsrDimens.six,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color:
-                  index == _mediaPageIndex ? IsrColors.white : IsrColors.white.changeOpacity(0.4),
-            ),
-          ),
+          (index) {
+            // debugPrint('_buildMediaIndicators.. index... $index');
+            // debugPrint('_buildMediaIndicators.. _mediaPageIndex... $_mediaPageIndex');
+            return Container(
+              margin: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.two),
+              width: IsrDimens.six,
+              height: IsrDimens.six,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color:
+                    index == _mediaPageIndex ? IsrColors.white : IsrColors.white.changeOpacity(0.4),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -1154,42 +1127,36 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                         ],
                       ),
                       if (_postDescription.isStringEmptyOrNull == false) ...[
-                        IsrDimens.boxHeight(IsrDimens.four),
+                        IsrDimens.boxHeight(IsrDimens.eight),
                         ValueListenableBuilder<bool>(
                           valueListenable: _isExpandedDescription,
                           builder: (context, value, child) {
-                            // Determine the full or truncated description
                             final fullDescription = _reelData.description ?? '';
+                            final shouldTruncate = fullDescription.length > _maxLengthToShow;
+
+                            // Show truncated version when collapsed, full version when expanded
+                            final displayText = shouldTruncate && !value
+                                ? fullDescription.substring(0, _maxLengthToShow)
+                                : fullDescription;
+
                             return RichText(
                               text: TextSpan(
                                 children: [
-                                  // Hashtags
-                                  if (_reelData.hasTags?.isNotEmpty == true)
-                                    ..._reelData.hasTags!.map(
-                                      (tag) => TextSpan(
-                                        text: '#$tag ',
-                                        style: IsrStyles.white14.copyWith(
-                                          color: IsrColors.white,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  // Description with mentions styled
                                   _buildDescriptionTextSpan(
-                                    fullDescription,
-                                    _taggedUserDataList,
+                                    displayText,
+                                    _mentionedDataList,
+                                    _taggedDataList,
                                     IsrStyles.white14
                                         .copyWith(color: IsrColors.white.changeOpacity(0.9)),
                                     (mention) {
-                                      _reelData.onTapMention?.call(mention);
+                                      _reelData.onTapMentionTag?.call(mention);
                                     },
                                   ),
-                                  // View More / Less toggle
-                                  if (fullDescription.length > _maxLengthToShow)
+                                  if (shouldTruncate)
                                     TextSpan(
                                       text: value
                                           ? ' ${IsrTranslationFile.viewLess}'
-                                          : ' ${IsrTranslationFile.viewMore}',
+                                          : '... ${IsrTranslationFile.viewMore}',
                                       style:
                                           IsrStyles.white14.copyWith(fontWeight: FontWeight.w700),
                                       recognizer: _tapGestureRecognizer
@@ -1216,6 +1183,25 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           ],
         ),
       );
+
+  int _getTextSpanLength(TextSpan textSpan) {
+    var length = 0;
+
+    // Add length from the main text
+    if (textSpan.text != null) {
+      length += textSpan.text!.length;
+    }
+
+    // Add length from children
+    if (textSpan.children != null) {
+      for (final child in textSpan.children!) {
+        if (child is TextSpan) {
+          length += _getTextSpanLength(child);
+        }
+      }
+    }
+    return length;
+  }
 
   Widget _buildCommissionTag() => Container(
         padding:
@@ -1358,6 +1344,130 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     // widget.onTapVolume?.call();
   }
 
+  TextSpan _buildDescriptionTextSpan(
+    String description,
+    List<MentionMetaData> mentions,
+    List<MentionMetaData> hashtags,
+    TextStyle defaultStyle,
+    void Function(MentionMetaData) onMentionTap,
+  ) {
+    for (var mention in mentions) {
+      print('Mention: ${mention.username}');
+    }
+
+    for (var hashtag in hashtags) {
+      print('Hashtag: ${hashtag.tag}');
+    }
+
+    final spans = <InlineSpan>[];
+    // Updated regex to handle usernames and hashtags with numbers, letters, underscores
+    final pattern = RegExp(r'(@[a-zA-Z0-9_]+)|(#[a-zA-Z0-9_]+)');
+    final matches = pattern.allMatches(description).toList();
+
+    var lastIndex = 0;
+
+    for (final match in matches) {
+      final start = match.start;
+      final end = match.end;
+      final matchedText = match.group(0)!;
+
+      // Add normal text before the match (only if not empty/whitespace)
+      if (lastIndex < start) {
+        final textBefore = description.substring(lastIndex, start);
+        if (textBefore.trim().isNotEmpty) {
+          spans.add(TextSpan(
+            text: textBefore,
+            style: defaultStyle,
+          ));
+        } else if (textBefore.isNotEmpty) {
+          // Add whitespace as-is for proper spacing
+          spans.add(TextSpan(
+            text: textBefore,
+            style: defaultStyle,
+          ));
+        }
+      }
+
+      if (matchedText.startsWith('@') && mentions.isNotEmpty) {
+        // Find the mention by username using where
+        final matchingMentions = mentions.where(
+          (m) => '@${m.username}' == matchedText,
+        );
+
+        if (matchingMentions.isNotEmpty && matchedText.isNotEmpty) {
+          final mention = matchingMentions.first;
+          spans.add(TextSpan(
+            text: matchedText,
+            style: defaultStyle.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () {
+                onMentionTap(mention);
+              },
+          ));
+        } else {
+          if (matchedText.isNotEmpty) {
+            spans.add(TextSpan(
+              text: matchedText,
+              style: defaultStyle.copyWith(fontWeight: FontWeight.w800),
+            ));
+          }
+        }
+      } else if (matchedText.startsWith('#') && hashtags.isNotEmpty) {
+        // Find the hashtag by tag using where
+        final matchingHashtags = hashtags.where(
+          (m) => '#${m.tag}' == matchedText,
+        );
+
+        if (matchingHashtags.isNotEmpty && matchedText.isNotEmpty) {
+          final hashTag = matchingHashtags.first;
+          spans.add(TextSpan(
+            text: matchedText,
+            style: defaultStyle.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () {
+                onMentionTap(hashTag);
+              },
+          ));
+        } else {
+          if (matchedText.isNotEmpty) {
+            spans.add(TextSpan(
+              text: matchedText,
+              style: defaultStyle.copyWith(fontWeight: FontWeight.w800),
+            ));
+          }
+        }
+      } else {
+        if (matchedText.isNotEmpty) {
+          spans.add(TextSpan(
+            text: matchedText,
+            style: defaultStyle.copyWith(fontWeight: FontWeight.w800),
+          ));
+        }
+      }
+
+      lastIndex = end;
+    }
+
+    // Add remaining text after last match
+    if (lastIndex < description.length) {
+      final remainingText = description.substring(lastIndex);
+      if (remainingText.trim().isNotEmpty) {
+        spans.add(TextSpan(
+          text: remainingText,
+          style: defaultStyle,
+        ));
+      }
+    }
+
+    final textSpan = TextSpan(children: spans, style: defaultStyle);
+
+    return textSpan;
+  }
+
   void _handleCommentClick(StateSetter setBuilderState) async {
     if (_reelData.onTapComment != null) {
       final commentCount = await _reelData.onTapComment!(_reelData.commentCount ?? 0);
@@ -1366,59 +1476,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       }
       setBuilderState.call(() {});
     }
-  }
-
-  TextSpan _buildDescriptionTextSpan(
-    String description,
-    List<MentionMetaData> taggedUsers,
-    TextStyle defaultStyle,
-    void Function(MentionMetaData) onMentionTap,
-  ) {
-    if (taggedUsers.isEmpty) {
-      return TextSpan(text: description, style: defaultStyle);
-    }
-
-    final sortedMentions = List<MentionMetaData>.from(taggedUsers)
-      ..sort((a, b) =>
-          (a.textPosition?.start?.toInt() ?? 0).compareTo(b.textPosition?.start?.toInt() ?? 0));
-
-    final spans = <InlineSpan>[];
-    var lastIndex = 0;
-
-    for (final mention in sortedMentions) {
-      final start = mention.textPosition?.start?.toInt() ?? 0;
-      final end = mention.textPosition?.end?.toInt() ?? 0;
-
-      // Add normal text before the mention
-      if (lastIndex < start) {
-        spans.add(TextSpan(
-          text: description.substring(lastIndex, start),
-          style: defaultStyle,
-        ));
-      }
-
-      // Add mention text styled bold and clickable
-      spans.add(TextSpan(
-        text: description.substring(start, end),
-        style: defaultStyle.copyWith(fontWeight: FontWeight.w800),
-        recognizer: TapGestureRecognizer()
-          ..onTap = () {
-            onMentionTap(mention);
-          },
-      ));
-
-      lastIndex = end;
-    }
-
-    // Add remaining text after last mention
-    if (lastIndex < description.length) {
-      spans.add(TextSpan(
-        text: description.substring(lastIndex),
-        style: defaultStyle,
-      ));
-    }
-
-    return TextSpan(children: spans, style: defaultStyle);
   }
 
   Widget _buildPageView(int index) {

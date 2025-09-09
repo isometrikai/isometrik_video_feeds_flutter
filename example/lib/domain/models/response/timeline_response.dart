@@ -492,8 +492,9 @@ class Preferences {
 
 class MentionData {
   MentionData({
-    required this.userId,
-    required this.username,
+    this.userId,
+    this.username,
+    this.tag,
     this.textPosition,
     this.name,
     this.avatarUrl,
@@ -503,6 +504,7 @@ class MentionData {
   factory MentionData.fromJson(Map<String, dynamic> json) => MentionData(
         userId: json['user_id'] as String? ?? '',
         username: json['username'] as String? ?? '',
+        tag: json['tag'] as String? ?? '',
         name: json['name'] as String? ?? '',
         avatarUrl: json['avatarUrl'] as String? ?? '',
         textPosition: json['text_position'] == null
@@ -514,6 +516,7 @@ class MentionData {
       );
   String? userId;
   String? username;
+  String? tag;
   String? name;
   String? avatarUrl;
   TaggedPosition? textPosition;
@@ -522,9 +525,10 @@ class MentionData {
   Map<String, dynamic> toJson() => {
         'user_id': userId,
         'username': username,
+        'tag': tag,
         'text_position': textPosition?.toJson(),
         'media_position': mediaPosition?.toJson(),
-      };
+      }.removeEmptyValues();
 }
 
 class TaggedPosition {
