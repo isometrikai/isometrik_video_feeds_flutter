@@ -52,57 +52,12 @@ class TabDataModel {
     required this.reelsDataList,
     this.onLoadMore,
     this.onRefresh,
+    this.startingPostIndex = 0,
   });
 
   final String title;
   final List<ReelsData> reelsDataList;
   final Future<List<ReelsData>> Function()? onLoadMore;
   final Future<bool> Function()? onRefresh;
-
-// final tabs = [
-//   TabDataModel(
-//     title: 'Following',
-//     postList: followingPosts,
-//     footerBuilder: (context, post) => Row(
-//       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-//       children: [
-//         IconButton(
-//           icon: Icon(Icons.favorite_border),
-//           onPressed: () => print("Liked ${post.id}"),
-//         ),
-//         IconButton(
-//           icon: Icon(Icons.comment),
-//           onPressed: () => print("Commented on ${post.id}"),
-//         ),
-//         IconButton(
-//           icon: Icon(Icons.share),
-//           onPressed: () => print("Shared ${post.id}"),
-//         ),
-//       ],
-//     ),
-//   ),
-//   TabDataModel(
-//     title: 'Trending',
-//     postList: trendingPosts,
-//     footerBuilder: (context, post) => Column(
-//       children: [
-//         Text(post.title, style: TextStyle(fontWeight: FontWeight.bold)),
-//         SizedBox(height: 4),
-//         Row(
-//           children: [
-//             ElevatedButton(
-//               onPressed: () => print("Buy ${post.id}"),
-//               child: Text("Buy"),
-//             ),
-//             SizedBox(width: 8),
-//             OutlinedButton(
-//               onPressed: () => print("Wishlist ${post.id}"),
-//               child: Text("Wishlist"),
-//             ),
-//           ],
-//         ),
-//       ],
-//     ),
-//   ),
-// ];
+  final int? startingPostIndex;
 }
