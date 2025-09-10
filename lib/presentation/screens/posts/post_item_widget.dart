@@ -155,8 +155,9 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
               );
             }
           }
-          if (widget.onPageChanged != null)
+          if (widget.onPageChanged != null) {
             widget.onPageChanged!(index, _reelsDataList[index].postId ?? '');
+          }
         },
         itemCount: _reelsDataList.length,
         scrollDirection: Axis.vertical,
