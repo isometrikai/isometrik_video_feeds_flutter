@@ -42,7 +42,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   static const int kVideoType = 1;
 
   // Carousel related variables
-  var _mediaPageIndex = 0;
+  final ValueNotifier<int> _currentPageNotifier = ValueNotifier<int>(0);
   PageController? _pageController;
 
   TapGestureRecognizer? _tapGestureRecognizer;
@@ -87,7 +87,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         _reelData.mentions?.where((mentionData) => mentionData.mediaPosition != null).toList() ??
             [];
     _pageMentionMetaDataList = _mentionedMetaDataList
-        .where((mention) => mention.mediaPosition?.position == _mediaPageIndex + 1)
+        .where((mention) => mention.mediaPosition?.position == _currentPageNotifier.value + 1)
         .toList();
     _mentionedDataList =
         _reelData.mentions?.where((mentionData) => mentionData.textPosition != null).toList() ?? [];
@@ -99,12 +99,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _tapGestureRecognizer = TapGestureRecognizer();
 
     // Initialize PageController for carousel
-    _pageController = PageController(initialPage: _mediaPageIndex);
+    _pageController = PageController(initialPage: 0);
 
     debugPrint(
-        'IsmReelsVideoPlayerView ...Post by ...${_reelData.userName}\n Post url ${_reelData.mediaMetaDataList[_mediaPageIndex].mediaUrl}');
+        'IsmReelsVideoPlayerView ...Post by ...${_reelData.userName}\n Post url ${_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl}');
 
-    if (_reelData.mediaMetaDataList[_mediaPageIndex].mediaType == kVideoType) {
+    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kVideoType) {
       await _initializeVideoPlayer();
       mountUpdate();
     }
@@ -118,7 +118,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   // Handle page change in carousel
   void _onPageChanged(int index) async {
-    if (_mediaPageIndex == index) return;
+    if (_currentPageNotifier.value == index) return;
 
     // Hide mentions when changing pages
     if (_mentionsVisible) {
@@ -126,22 +126,22 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
 
     // Pause current video if playing
-    if (_reelData.mediaMetaDataList[_mediaPageIndex].mediaType == kVideoType) {
+    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kVideoType) {
       await _videoPlayerController?.pause();
       _disposeCurrentVideoController();
     }
 
-    _mediaPageIndex = index;
+    _currentPageNotifier.value = index;
 
     _pageMentionMetaDataList = _mentionedMetaDataList
-        .where((mention) => mention.mediaPosition?.position == _mediaPageIndex + 1)
+        .where((mention) => mention.mediaPosition?.position == _currentPageNotifier.value + 1)
         .toList();
     _isPlaying = true;
     _isPlayPauseActioned = false;
-    mountUpdate();
+    // mountUpdate();
 
     // Initialize new video if needed
-    if (_reelData.mediaMetaDataList[_mediaPageIndex].mediaType == kVideoType) {
+    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kVideoType) {
       await _initializeVideoPlayer();
       mountUpdate();
     }
@@ -151,8 +151,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   void _disposeCurrentVideoController() {
     if (_videoPlayerController != null &&
         _reelData.mediaMetaDataList.isNotEmpty &&
-        _mediaPageIndex < _reelData.mediaMetaDataList.length &&
-        !_videoCacheManager.isVideoCached(_reelData.mediaMetaDataList[_mediaPageIndex].mediaUrl)) {
+        _currentPageNotifier.value < _reelData.mediaMetaDataList.length &&
+        !_videoCacheManager
+            .isVideoCached(_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl)) {
       _videoPlayerController?.dispose();
     }
     _videoPlayerController = null;
@@ -160,9 +161,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   //initialize video player controller and initialization to use cache
   Future<void> _initializeVideoPlayer() async {
-    if (_reelData.mediaMetaDataList[_mediaPageIndex].mediaUrl.isStringEmptyOrNull != false) return;
+    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl.isStringEmptyOrNull !=
+        false) return;
 
-    final videoUrl = _reelData.mediaMetaDataList[_mediaPageIndex].mediaUrl;
+    final videoUrl = _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl;
     debugPrint('IsmReelsVideoPlayerView....initializeVideoPlayer video url $videoUrl');
 
     try {
@@ -196,7 +198,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       await _initializeVideoControllerNormally(videoUrl, expectedGen: currentGen);
     } catch (e) {
       debugPrint(
-          'IsmReelsVideoPlayerView...catch video url ${_reelData.mediaMetaDataList[_mediaPageIndex].mediaUrl}');
+          'IsmReelsVideoPlayerView...catch video url ${_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl}');
       IsrVideoReelUtility.debugCatchLog(error: e);
     }
   }
@@ -233,13 +235,17 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _tapGestureRecognizer?.dispose();
     _pageController?.dispose();
 
-    if (_reelData.mediaMetaDataList[_mediaPageIndex].mediaUrl.isStringEmptyOrNull == false) {
-      _videoCacheManager.markAsNotVisible(_reelData.mediaMetaDataList[_mediaPageIndex].mediaUrl);
+    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl.isStringEmptyOrNull ==
+        false) {
+      _videoCacheManager
+          .markAsNotVisible(_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl);
     }
 
     if (_videoPlayerController != null &&
-        _reelData.mediaMetaDataList[_mediaPageIndex].mediaUrl.isStringEmptyOrNull == false &&
-        !_videoCacheManager.isVideoCached(_reelData.mediaMetaDataList[_mediaPageIndex].mediaUrl)) {
+        _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl.isStringEmptyOrNull ==
+            false &&
+        !_videoCacheManager
+            .isVideoCached(_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl)) {
       _videoPlayerController?.pause();
       _videoPlayerController?.dispose();
     } else {
@@ -281,7 +287,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     if (_reelData.showBlur == true) {
       mediaWidget = _getImageWidget(
-        imageUrl: _reelData.mediaMetaDataList[_mediaPageIndex].thumbnailUrl,
+        imageUrl: _reelData.mediaMetaDataList[_currentPageNotifier.value].thumbnailUrl,
         width: IsrDimens.getScreenWidth(context),
         height: IsrDimens.getScreenHeight(context),
         fit: BoxFit.contain,
@@ -322,9 +328,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             child: PageView.builder(
               controller: _pageController,
               padEnds: false,
+              key: const PageStorageKey('media_pageview'), // Add a key
               onPageChanged: (index) {
                 debugPrint('PageView...index... $index');
-                debugPrint('PageView..._mediaPageIndex... $_mediaPageIndex');
+                debugPrint('PageView..._mediaPageIndex... $_currentPageNotifier.value');
                 _onPageChanged(index);
               },
               itemCount: _reelData.mediaMetaDataList.length,
@@ -332,27 +339,42 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             ),
           ),
 
+          // IsolatedPageView(
+          //   key: ValueKey('iso_lated_page_view'),
+          //   controller: _pageController!,
+          //   currentPageIndex: _mediaPageIndex,
+          //   itemCount: _reelData.mediaMetaDataList.length,
+          //   onPageChanged: _onPageChanged,
+          //   widgetFunction: _buildPageView,
+          //   onTap: _toggleMentions,
+          // ),
           // Media indicators (dots)
           Positioned(
             bottom: IsrDimens.eighty,
             left: 0,
             right: 0,
-            child: _buildMediaIndicators(),
+            child: ValueListenableBuilder<int>(
+              valueListenable: _currentPageNotifier,
+              builder: (context, value, child) => _buildMediaIndicators(value),
+            ),
           ),
 
           // Media counter
           Positioned(
             top: IsrDimens.sixty,
             right: IsrDimens.sixteen,
-            child: _buildMediaCounter(),
+            child: ValueListenableBuilder<int>(
+              valueListenable: _currentPageNotifier,
+              builder: (context, value, child) => _buildMediaCounter(value),
+            ),
           ),
         ],
       );
 
   Widget _buildSingleMediaContent() {
-    if (_reelData.mediaMetaDataList[_mediaPageIndex].mediaType == kPictureType) {
+    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kPictureType) {
       return _getImageWidget(
-        imageUrl: _reelData.mediaMetaDataList[_mediaPageIndex].mediaUrl,
+        imageUrl: _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl,
         width: IsrDimens.getScreenWidth(context),
         height: IsrDimens.getScreenHeight(context),
         fit: BoxFit.contain,
@@ -394,7 +416,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             ),
           ] else ...[
             _getImageWidget(
-              imageUrl: _reelData.mediaMetaDataList[_mediaPageIndex].thumbnailUrl,
+              imageUrl: _reelData.mediaMetaDataList[_currentPageNotifier.value].thumbnailUrl,
               width: IsrDimens.getScreenWidth(context),
               height: IsrDimens.getScreenHeight(context),
               fit: BoxFit.contain,
@@ -426,7 +448,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             ] else ...[
               Center(
                 child: _getImageWidget(
-                  imageUrl: _reelData.mediaMetaDataList[_mediaPageIndex].thumbnailUrl,
+                  imageUrl: _reelData.mediaMetaDataList[_currentPageNotifier.value].thumbnailUrl,
                   width: IsrDimens.getScreenWidth(context),
                   height: IsrDimens.getScreenHeight(context),
                   fit: BoxFit.contain,
@@ -714,7 +736,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     );
   }
 
-  Widget _buildMediaIndicators() {
+  Widget _buildMediaIndicators(int currentPage) {
     if (!_hasMultipleMedia) return const SizedBox.shrink();
 
     return Center(
@@ -728,8 +750,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             height: IsrDimens.six,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color:
-                  index == _mediaPageIndex ? IsrColors.white : IsrColors.white.changeOpacity(0.4),
+              color: index == currentPage ? IsrColors.white : IsrColors.white.changeOpacity(0.4),
             ),
           ),
         ),
@@ -737,7 +758,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     );
   }
 
-  Widget _buildMediaCounter() {
+  Widget _buildMediaCounter(int currentPage) {
     if (!_hasMultipleMedia) return const SizedBox.shrink();
 
     return Container(
@@ -750,7 +771,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         borderRadius: BorderRadius.circular(IsrDimens.twelve),
       ),
       child: Text(
-        '${_mediaPageIndex + 1}/${_reelData.mediaMetaDataList.length}',
+        '${currentPage + 1}/${_reelData.mediaMetaDataList.length}',
         style: IsrStyles.white12.copyWith(
           fontWeight: FontWeight.w500,
         ),
@@ -760,7 +781,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   void _togglePlayPause() {
     if (_reelData.showBlur == true ||
-        _reelData.mediaMetaDataList[_mediaPageIndex].mediaType == kPictureType) {
+        _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kPictureType) {
       return;
     }
     if (!_controllerReady) return;
@@ -782,22 +803,24 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           GestureDetector(
             onTap: _togglePlayPause,
             child: VisibilityDetector(
-              key: Key(_reelData.mediaMetaDataList[_mediaPageIndex].mediaUrl),
+              key: Key(_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl),
               onVisibilityChanged: (info) {
                 if (_isDisposed) return;
                 if (_reelData.showBlur == true ||
-                    _reelData.mediaMetaDataList[_mediaPageIndex].mediaType == kPictureType) {
+                    _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType ==
+                        kPictureType) {
                   return;
                 }
 
-                if (_reelData.mediaMetaDataList[_mediaPageIndex].mediaUrl.isStringEmptyOrNull ==
+                if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl
+                        .isStringEmptyOrNull ==
                     false) {
                   if (info.visibleFraction > 0.7) {
-                    _videoCacheManager
-                        .markAsVisible(_reelData.mediaMetaDataList[_mediaPageIndex].mediaUrl);
+                    _videoCacheManager.markAsVisible(
+                        _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl);
                   } else {
-                    _videoCacheManager
-                        .markAsNotVisible(_reelData.mediaMetaDataList[_mediaPageIndex].mediaUrl);
+                    _videoCacheManager.markAsNotVisible(
+                        _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl);
                   }
                 }
 
@@ -836,7 +859,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           ),
 
           // Video controls
-          if (_reelData.mediaMetaDataList[_mediaPageIndex].mediaType == kVideoType &&
+          if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kVideoType &&
               _videoPlayerController?.value.isInitialized == true)
             AnimatedOpacity(
               opacity: _isPlayPauseActioned ? 1.0 : 0.0,
@@ -1303,7 +1326,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   void _toggleSound() {
-    if (_reelData.mediaMetaDataList[_mediaPageIndex].mediaType != kVideoType) return;
+    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType != kVideoType) return;
 
     setState(() {
       _isMuted = !_isMuted;
@@ -1439,24 +1462,37 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   Widget _buildPageView(int index) {
     final media = _reelData.mediaMetaDataList[index];
+    debugPrint('index $index');
+    debugPrint('mediaUrl ${media.mediaUrl}');
     if (media.mediaType == kPictureType) {
-      return _getImageWidget(
-        imageUrl: media.mediaUrl,
-        width: IsrDimens.getScreenWidth(context),
-        height: IsrDimens.getScreenHeight(context),
-        fit: BoxFit.contain,
+      return SizedBox(
+        key: ValueKey('media_$index'), // Consistent key
+        child: _getImageWidget(
+          imageUrl: media.mediaUrl,
+          width: IsrDimens.getScreenWidth(context),
+          height: IsrDimens.getScreenHeight(context),
+          fit: BoxFit.contain,
+        ),
       );
     } else {
       // Video content - only show video player for current index
-      if (index == _mediaPageIndex) {
-        return _buildCarousalVideoContent();
+      if (index == _currentPageNotifier.value) {
+        return SizedBox(
+          key: ValueKey('media_$index'), // Consistent key
+
+          child: _buildCarousalVideoContent(),
+        );
       } else {
-        return _getImageWidget(
-          imageUrl: media.thumbnailUrl,
-          width: IsrDimens.getScreenWidth(context),
-          height: IsrDimens.getScreenHeight(context),
-          fit: BoxFit.cover,
-          filterQuality: FilterQuality.low,
+        return SizedBox(
+          key: ValueKey('media_$index'), // Consistent key
+
+          child: _getImageWidget(
+            imageUrl: media.thumbnailUrl,
+            width: IsrDimens.getScreenWidth(context),
+            height: IsrDimens.getScreenHeight(context),
+            fit: BoxFit.cover,
+            filterQuality: FilterQuality.low,
+          ),
         );
       }
     }
