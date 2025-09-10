@@ -308,14 +308,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           // Mentions overlay
           if (_mentionsVisible && _pageMentionMetaDataList.isListEmptyOrNull == false)
             ..._buildMentionsOverlay(),
-
-          // Mentions toggle button (top-right)
-          if (_pageMentionMetaDataList.isListEmptyOrNull == false)
-            Positioned(
-              top: IsrDimens.sixty,
-              left: IsrDimens.sixteen,
-              child: _buildMentionsToggleButton(),
-            ),
         ],
       ),
     );
@@ -1105,6 +1097,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Mentions toggle button (top-right)
+                      if (_pageMentionMetaDataList.isListEmptyOrNull == false) ...[
+                        _buildMentionsToggleButton(),
+                        IsrDimens.boxHeight(IsrDimens.fifteen),
+                      ],
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.center,
