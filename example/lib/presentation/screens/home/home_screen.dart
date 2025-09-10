@@ -93,7 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
           isProfilePicVisible: true,
           isCreatePostButtonVisible: true,
           isCommentButtonVisible: postData.settings?.commentsEnabled == true,
-          isSaveButtonVisible: postData.settings?.saveEnabled == true,
+          isSaveButtonVisible: true,
           isLikeButtonVisible: true,
           isShareButtonVisible: true,
           isMoreButtonVisible: true,

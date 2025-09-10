@@ -245,8 +245,8 @@ class SocialApiServiceProvider extends SocialApiService {
     final methodType = socialPostAction == SocialPostAction.unSave
         ? NetworkRequestType.delete
         : NetworkRequestType.post;
-    final queryParams = socialPostAction == SocialPostAction.unSave ? {'postId': postId} : null;
-    final bodyParams = socialPostAction == SocialPostAction.save ? {'postId': postId} : null;
+    final queryParams = socialPostAction == SocialPostAction.unSave ? {'post_id': postId} : null;
+    final bodyParams = socialPostAction == SocialPostAction.save ? {'post_id': postId} : null;
     return await networkClient.makeRequest(
       SocialApiEndPoints.postSavePost,
       methodType,
@@ -256,14 +256,18 @@ class SocialApiServiceProvider extends SocialApiService {
         'Accept': AppConstants.headerAccept,
         'Content-Type': AppConstants.headerContentType,
         'Authorization': header.accessToken,
-        'language': header.language,
+        'lan': header.language,
         'currencySymbol': header.currencySymbol,
         'currencyCode': header.currencyCode,
-        'platform': header.platForm.toString(),
+        'platform': header.platForm.platformText,
         'latitude': header.latitude.toString(),
         'longitude': header.longitude.toString(),
         'x-tenant-id': AppConstants.tenantId,
         'x-project-id': AppConstants.projectId,
+        'city': header.city,
+        'country': header.country,
+        'ipaddress': header.ipAddress,
+        'version': deviceInfoManager.appVersion,
       },
       isLoading,
     );
