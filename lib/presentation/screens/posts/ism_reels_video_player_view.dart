@@ -20,6 +20,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
     this.onCreatePost,
     this.onPressFollowButton,
     this.onPressLikeButton,
+    this.onPressSaveButton,
   });
 
   final VideoCacheManager? videoCacheManager;
@@ -28,6 +29,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
   final Future<void> Function()? onCreatePost;
   final Future<void> Function()? onPressFollowButton;
   final Future<void> Function()? onPressLikeButton;
+  final Future<void> Function()? onPressSaveButton;
 
   @override
   State<IsmReelsVideoPlayerView> createState() => _IsmReelsVideoPlayerViewState();
@@ -1298,14 +1300,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   Future<void> _callSaveFunction() async {
-    if (_reelData.onPressSave == null) return;
+    if (widget.onPressSaveButton == null || _isSaveLoading.value) return;
     _isSaveLoading.value = true;
 
     try {
-      final success = await _reelData.onPressSave!(_reelData.isSavedPost ?? false);
-      if (success) {
-        _reelData.isSavedPost = _reelData.isSavedPost == false;
-      }
+      await widget.onPressSaveButton!();
     } finally {
       _isSaveLoading.value = false;
     }
