@@ -119,7 +119,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   // Handle page change in carousel
   void _onPageChanged(int index) async {
     if (_mediaPageIndex == index) return;
-    debugPrint('_mediaPageIndex...1 $_mediaPageIndex');
 
     // Hide mentions when changing pages
     if (_mentionsVisible) {
@@ -134,7 +133,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     _mediaPageIndex = index;
 
-    debugPrint('_mediaPageIndex...2 $_mediaPageIndex');
     _pageMentionMetaDataList = _mentionedMetaDataList
         .where((mention) => mention.mediaPosition?.position == _mediaPageIndex + 1)
         .toList();
@@ -218,13 +216,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (_videoPlayerController == null) return;
 
     await _videoPlayerController?.initialize();
-    // if (!mounted || _isDisposed || (expectedGen != null && expectedGen != _controllerGeneration)) {
-    //   try {
-    //     await _videoPlayerController?.dispose();
-    //   } catch (_) {}
-    //   _videoPlayerController = null;
-    //   return;
-    // }
     _setupVideoController();
   }
 
@@ -333,7 +324,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               padEnds: false,
               onPageChanged: (index) {
                 debugPrint('PageView...index... $index');
-                // _onPageChanged(index == 0 ? index : index - 1);
+                debugPrint('PageView..._mediaPageIndex... $_mediaPageIndex');
                 _onPageChanged(index);
               },
               itemCount: _reelData.mediaMetaDataList.length,
@@ -731,20 +722,16 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         mainAxisAlignment: MainAxisAlignment.center,
         children: List.generate(
           _reelData.mediaMetaDataList.length,
-          (index) {
-            // debugPrint('_buildMediaIndicators.. index... $index');
-            // debugPrint('_buildMediaIndicators.. _mediaPageIndex... $_mediaPageIndex');
-            return Container(
-              margin: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.two),
-              width: IsrDimens.six,
-              height: IsrDimens.six,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color:
-                    index == _mediaPageIndex ? IsrColors.white : IsrColors.white.changeOpacity(0.4),
-              ),
-            );
-          },
+          (index) => Container(
+            margin: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.two),
+            width: IsrDimens.six,
+            height: IsrDimens.six,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color:
+                  index == _mediaPageIndex ? IsrColors.white : IsrColors.white.changeOpacity(0.4),
+            ),
+          ),
         ),
       ),
     );
@@ -1184,25 +1171,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         ),
       );
 
-  int _getTextSpanLength(TextSpan textSpan) {
-    var length = 0;
-
-    // Add length from the main text
-    if (textSpan.text != null) {
-      length += textSpan.text!.length;
-    }
-
-    // Add length from children
-    if (textSpan.children != null) {
-      for (final child in textSpan.children!) {
-        if (child is TextSpan) {
-          length += _getTextSpanLength(child);
-        }
-      }
-    }
-    return length;
-  }
-
   Widget _buildCommissionTag() => Container(
         padding:
             IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.six, vertical: IsrDimens.three),
@@ -1341,7 +1309,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       _isMuted = !_isMuted;
       _videoPlayerController?.setVolume(_isMuted ? 0.0 : 1.0);
     });
-    // widget.onTapVolume?.call();
   }
 
   TextSpan _buildDescriptionTextSpan(
@@ -1351,14 +1318,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     TextStyle defaultStyle,
     void Function(MentionMetaData) onMentionTap,
   ) {
-    for (var mention in mentions) {
-      print('Mention: ${mention.username}');
-    }
-
-    for (var hashtag in hashtags) {
-      print('Hashtag: ${hashtag.tag}');
-    }
-
     final spans = <InlineSpan>[];
     // Updated regex to handle usernames and hashtags with numbers, letters, underscores
     final pattern = RegExp(r'(@[a-zA-Z0-9_]+)|(#[a-zA-Z0-9_]+)');

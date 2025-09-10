@@ -31,7 +31,7 @@ class PostItemWidget extends StatefulWidget {
   final int? startingPostIndex;
   final String? loggedInUserId;
   final bool? allowImplicitScrolling;
-  final Function(int)? onPageChanged;
+  final Function(int, String)? onPageChanged;
   final List<ReelsData> reelsDataList;
 
   @override
@@ -155,7 +155,8 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
               );
             }
           }
-          if (widget.onPageChanged != null) widget.onPageChanged!(index);
+          if (widget.onPageChanged != null)
+            widget.onPageChanged!(index, _reelsDataList[index].postId ?? '');
         },
         itemCount: _reelsDataList.length,
         scrollDirection: Axis.vertical,
