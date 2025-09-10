@@ -4,7 +4,7 @@ class SocialApiEndPoints {
   static const getTrendingPosts = '/v2/trendingPosts/';
   static const postCreatePost = '/api/v1/posts';
   static const postFollowPost = '/api/v1/follows';
-  static const postSavePost = '/social/v1/savedPosts';
+  static const postSavePost = '/api/v1/posts/save';
   static const postLike = '/api/v1/likes/post';
   static const postUnLike = '/api/v1/likes/post';
   static const String reportPost = '/api/v1/reports';
