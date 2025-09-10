@@ -227,7 +227,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                 if (reelsData.onPressLike != null) {
                   final result = await reelsData.onPressLike!(reelsData.isLiked ?? false);
                   if (result == true) {
-                    reelsData.isLiked = reelsData.isLiked == true ? false : true;
+                    reelsData.isLiked = reelsData.isLiked == false;
                     if (reelsData.isLiked == true) {
                       reelsData.likesCount = (reelsData.likesCount ?? 0) + 1;
                     } else {
@@ -235,6 +235,15 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                         reelsData.likesCount = (reelsData.likesCount ?? 0) - 1;
                       }
                     }
+                    setState(() {});
+                  }
+                }
+              },
+              onPressSaveButton: () async {
+                if (reelsData.onPressSave != null) {
+                  final result = await reelsData.onPressSave!(reelsData.isSavedPost ?? false);
+                  if (result == true) {
+                    reelsData.isSavedPost = reelsData.isSavedPost == false;
                     setState(() {});
                   }
                 }
