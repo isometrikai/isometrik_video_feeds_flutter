@@ -243,7 +243,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                 if (reelsData.onPressSave != null) {
                   final result = await reelsData.onPressSave!(reelsData.isSavedPost ?? false);
                   if (result == true) {
-                    _reelsDataList[index].isSavedPost = reelsData.isSavedPost == false;
+                    reelsData.isSavedPost = reelsData.isSavedPost == false;
                     setState(() {});
                   }
                 }
