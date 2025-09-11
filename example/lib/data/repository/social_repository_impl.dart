@@ -385,4 +385,26 @@ class SocialRepositoryImpl implements SocialRepository {
       rethrow;
     }
   }
+
+  @override
+  Future<CustomResponse<HashTagResponse?>> searchTag({
+    required bool isLoading,
+    required int limit,
+    required int page,
+    required String searchText,
+  }) async {
+    try {
+      final header = await _dataSource.getHeader();
+      final response = await _apiService.searchTag(
+        isLoading: isLoading,
+        header: header,
+        limit: limit,
+        page: page,
+        searchText: searchText,
+      );
+      return _socialMapper.mapSearchTagResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

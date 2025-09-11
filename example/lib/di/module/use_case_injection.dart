@@ -56,5 +56,17 @@ class UseCaseInjection {
         () => MediaProcessingUseCase(InjectionUtils.getRepo<SocialRepository>()));
     InjectionUtils.registerUseCase<SearchUserUseCase>(
         () => SearchUserUseCase(InjectionUtils.getRepo<SocialRepository>()));
+    InjectionUtils.registerUseCase<SearchTagUseCase>(
+        () => SearchTagUseCase(InjectionUtils.getRepo<SocialRepository>()));
+
+    // Google Repository use cases
+    InjectionUtils.registerUseCase<GetAddressFromPinCodeUseCase>(
+        () => GetAddressFromPinCodeUseCase(InjectionUtils.getRepo<GoogleRepository>()));
+    InjectionUtils.registerUseCase<GetAddressFromLatLongUseCase>(
+        () => GetAddressFromLatLongUseCase(InjectionUtils.getRepo<GoogleRepository>()));
+    InjectionUtils.registerUseCase<GeocodeSearchAddressUseCase>(
+        () => GeocodeSearchAddressUseCase(InjectionUtils.getRepo<GoogleRepository>()));
+    InjectionUtils.registerUseCase<GetPlaceDetailsUseCase>(
+        () => GetPlaceDetailsUseCase(InjectionUtils.getRepo<GoogleRepository>()));
   }
 }

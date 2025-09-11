@@ -83,6 +83,26 @@ class AppRouter {
           );
         },
       ),
+      GoRoute(
+        path: AppRoutes.tagPeopleScreen,
+        name: RouteNames.tagPeopleScreen,
+        pageBuilder: (context, state) {
+          final extraMap = state.extra as Map;
+          final postAttributeClass = extraMap['postAttributeClass'] as PostAttributeClass;
+          return PageTransition(
+            child: TagPeopleScreen(postAttributeClass: postAttributeClass),
+            transitionType: TransitionType.rightToLeft,
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.searchLocationScreen,
+        name: RouteNames.searchLocationScreen,
+        pageBuilder: (context, state) => PageTransition(
+          child: const SearchLocationScreen(),
+          transitionType: TransitionType.rightToLeft,
+        ),
+      ),
       ..._landingRoutes,
     ],
   );

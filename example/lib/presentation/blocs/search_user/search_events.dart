@@ -13,3 +13,13 @@ class SearchUserEvent extends SearchEvents {
   final String searchText;
   final Function(List<SocialUserData>)? onComplete;
 }
+
+class SearchTagEvent extends SearchEvents {
+  const SearchTagEvent({
+    required this.searchText,
+    this.onComplete,
+  });
+
+  final String searchText;
+  final Function(List<HashTagData>)? onComplete;
+}

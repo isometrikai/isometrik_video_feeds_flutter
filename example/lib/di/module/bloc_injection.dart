@@ -56,6 +56,11 @@ class BlocInjection {
     InjectionUtils.registerBloc<SearchUserBloc>(() => SearchUserBloc(
           _localDataUseCase,
           InjectionUtils.getUseCase<SearchUserUseCase>(),
+          InjectionUtils.getUseCase<SearchTagUseCase>(),
+        ));
+    InjectionUtils.registerBloc<SearchLocationBloc>(() => SearchLocationBloc(
+          InjectionUtils.getUseCase<GeocodeSearchAddressUseCase>(),
+          InjectionUtils.getUseCase<GetPlaceDetailsUseCase>(),
         ));
   }
 }

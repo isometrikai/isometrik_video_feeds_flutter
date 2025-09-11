@@ -11,13 +11,17 @@ class SearchUserBloc extends Bloc<SearchEvents, SearchStates> {
   SearchUserBloc(
     this.localDataUseCase,
     this.searchUserUseCase,
+    this.searchTagUseCase,
   ) : super(LoadingSearchState()) {
     on<SearchUserEvent>(_searchUser);
+    on<SearchTagEvent>(_searchTag);
   }
 
   final LocalDataUseCase localDataUseCase;
   final SearchUserUseCase searchUserUseCase;
+  final SearchTagUseCase searchTagUseCase;
   final List<SocialUserData> _searchUsersList = [];
+  final List<HashTagData> _searchTagList = [];
   final DeBouncer _deBouncer = DeBouncer();
 
   FutureOr<void> _searchUser(SearchUserEvent event, Emitter<SearchStates> emit) async {
@@ -33,11 +37,34 @@ class SearchUserBloc extends Bloc<SearchEvents, SearchStates> {
       page: 1,
       searchText: event.searchText,
     );
+    _searchUsersList.clear();
     if (apiResult.isSuccess) {
       _searchUsersList.addAll(apiResult.data?.data ?? []);
     }
     if (event.onComplete != null) {
       event.onComplete!(_searchUsersList);
+    }
+  }
+
+  FutureOr<void> _searchTag(SearchTagEvent event, Emitter<SearchStates> emit) async {
+    _deBouncer.run(() {
+      _getTags(event, emit);
+    });
+  }
+
+  void _getTags(SearchTagEvent event, Emitter<SearchStates> emit) async {
+    final apiResult = await searchTagUseCase.executeSearchTag(
+      isLoading: true,
+      limit: 20,
+      page: 1,
+      searchText: event.searchText,
+    );
+    _searchTagList.clear();
+    if (apiResult.isSuccess) {
+      _searchTagList.addAll(apiResult.data?.data ?? []);
+    }
+    if (event.onComplete != null) {
+      event.onComplete!(_searchTagList);
     }
   }
 }

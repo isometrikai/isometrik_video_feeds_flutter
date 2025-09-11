@@ -22,12 +22,11 @@ class PostAttributeView extends StatefulWidget {
 }
 
 class _PostAttributeViewState extends State<PostAttributeView> {
-  // var _createPostRequest = CreatePostRequest();
   VideoPlayerController? _videoPlayerController;
   var _isVideoInitializing = false;
   var _mediaDataList = <MediaData>[];
+  var _taggedPlaces = <TaggedPlace>[];
   PostAttributeClass? _postAttributeClass;
-  List<SocialUserData> _socialUserDataList = [];
 
   @override
   void initState() {
@@ -43,7 +42,6 @@ class _PostAttributeViewState extends State<PostAttributeView> {
         initializeVideoPlayer(mediaData);
       }
     }
-    setRequest();
   }
 
   /// Method For Initialize Video Player
@@ -70,9 +68,13 @@ class _PostAttributeViewState extends State<PostAttributeView> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(
-          title: const Text('New Post'),
+        appBar: CustomAppBar(
+          titleText: 'New Post',
           centerTitle: true,
+          onTap: () {
+            _setPostRequest();
+            Navigator.pop(context, _postAttributeClass);
+          },
         ),
         bottomNavigationBar: SafeArea(
           child: AppButton(
@@ -96,7 +98,7 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                       if (_mediaDataList.isNotEmpty)
                         Container(
                           alignment: Alignment.center,
-                          height: 120.scaledValue, // Adjust as needed
+                          height: 140.scaledValue, // Adjust as needed
                           child: ListView.builder(
                             scrollDirection: Axis.horizontal,
                             itemCount: _mediaDataList.length,
@@ -107,8 +109,8 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
                                 child: MediaPreviewWidget(
                                   mediaData: media,
-                                  height: 100.scaledValue,
-                                  width: 100.scaledValue,
+                                  height: 140.scaledValue,
+                                  width: 140.scaledValue,
                                 ),
                               );
                             },
@@ -130,131 +132,139 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                   ),
                 ),
                 CustomDivider(thickness: Dimens.five),
-                TapHandler(
-                  onTap: () {},
-                  child: Padding(
-                    padding:
-                        Dimens.edgeInsetsSymmetric(horizontal: Dimens.twenty, vertical: Dimens.ten),
-                    child: Row(
-                      children: [
-                        Text(
-                          TranslationFile.category,
-                          style: Styles.primaryText14.copyWith(
-                            color: AppColors.color2783FB,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          TranslationFile.selectCategory,
-                          style: Styles.primaryText14.copyWith(
-                            color: AppColors.color2783FB,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        10.horizontalSpace,
-                        const AppImage.svg(
-                          AssetConstants.icChevronRight,
-                          height: 15,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const CustomDivider(),
-                TapHandler(
+                // TapHandler(
+                //   onTap: () {},
+                //   child: Padding(
+                //     padding:
+                //         Dimens.edgeInsetsSymmetric(horizontal: Dimens.twenty, vertical: Dimens.ten),
+                //     child: Row(
+                //       children: [
+                //         Text(
+                //           TranslationFile.category,
+                //           style: Styles.primaryText14.copyWith(
+                //             color: AppColors.color2783FB,
+                //             fontWeight: FontWeight.w500,
+                //           ),
+                //         ),
+                //         const Spacer(),
+                //         Text(
+                //           TranslationFile.selectCategory,
+                //           style: Styles.primaryText14.copyWith(
+                //             color: AppColors.color2783FB,
+                //             fontWeight: FontWeight.w500,
+                //           ),
+                //         ),
+                //         10.horizontalSpace,
+                //         const AppImage.svg(
+                //           AssetConstants.icChevronRight,
+                //           height: 15,
+                //         ),
+                //       ],
+                //     ),
+                //   ),
+                // ),
+                // const CustomDivider(),
+                ListTile(
                   onTap: () {
                     setState(() {
                       _postAttributeClass?.allowComment =
                           _postAttributeClass?.allowComment == false;
                     });
                   },
-                  child: Padding(
-                    padding:
-                        Dimens.edgeInsetsSymmetric(horizontal: Dimens.twenty, vertical: Dimens.ten),
-                    child: Row(
-                      children: [
-                        Text(
-                          TranslationFile.allowComments,
-                          style: Styles.primaryText14.copyWith(
-                            color: AppColors.color2783FB,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const Spacer(),
-                        Switch(
-                          value: _postAttributeClass?.allowComment == true,
-                          onChanged: (value) {
-                            setState(() {
-                              _postAttributeClass?.allowComment = value;
-                            });
-                          },
-                        ),
-                      ],
+                  title: Text(
+                    TranslationFile.allowComments,
+                    style: Styles.primaryText14.copyWith(
+                      color: AppColors.color2783FB,
+                      fontWeight: FontWeight.w500,
                     ),
+                  ),
+                  trailing: Switch(
+                    value: _postAttributeClass?.allowComment == true,
+                    onChanged: (value) {
+                      setState(() {
+                        _postAttributeClass?.allowComment = value;
+                      });
+                    },
                   ),
                 ),
                 const CustomDivider(),
-                TapHandler(
+                ListTile(
                   onTap: () {
                     setState(() {
                       _postAttributeClass?.allowSave = _postAttributeClass?.allowSave == false;
                     });
                   },
-                  child: Padding(
-                    padding:
-                        Dimens.edgeInsetsSymmetric(horizontal: Dimens.twenty, vertical: Dimens.ten),
-                    child: Row(
-                      children: [
-                        Text(
-                          TranslationFile.allowSave,
-                          style: Styles.primaryText14.copyWith(
-                            color: AppColors.color2783FB,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const Spacer(),
-                        Switch(
-                          value: _postAttributeClass?.allowSave == true,
-                          onChanged: (value) {
-                            setState(() {
-                              _postAttributeClass?.allowSave = value;
-                            });
-                          },
-                        ),
-                      ],
+                  title: Text(
+                    TranslationFile.allowSave,
+                    style: Styles.primaryText14.copyWith(
+                      color: AppColors.color2783FB,
+                      fontWeight: FontWeight.w500,
                     ),
+                  ),
+                  trailing: Switch(
+                    value: _postAttributeClass?.allowSave == true,
+                    onChanged: (value) {
+                      setState(() {
+                        _postAttributeClass?.allowSave = value;
+                      });
+                    },
                   ),
                 ),
                 const CustomDivider(),
-                TapHandler(
+                ListTile(
                   onTap: () async {
+                    // final result = await InjectionUtils.getRouteManagement()
+                    //     .goToSearchUserScreen(socialUserList: _socialUserDataList);
+                    // _socialUserDataList = result;
+
                     final result = await InjectionUtils.getRouteManagement()
-                        .goToSearchUserScreen(socialUserList: _socialUserDataList);
-                    _socialUserDataList = result;
+                        .goToTagPeopleScreen(postAttributeClass: _postAttributeClass);
+                    if (result != null) {
+                      _postAttributeClass = result;
+                    }
                   },
-                  child: Padding(
-                    padding:
-                        Dimens.edgeInsetsSymmetric(horizontal: Dimens.twenty, vertical: Dimens.ten),
-                    child: Row(
-                      children: [
-                        Text(
-                          TranslationFile.tagPeople,
+                  title: Text(
+                    TranslationFile.tagPeople,
+                    style: Styles.primaryText14.copyWith(
+                      color: AppColors.color2783FB,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  trailing: const AppImage.svg(
+                    AssetConstants.icChevronRight,
+                    height: 15,
+                  ),
+                ),
+                _buildTaggedUsers(_postAttributeClass?.mentionedUserList ?? []),
+
+                const CustomDivider(),
+                ListTile(
+                  onTap: _taggedPlaces.isEmptyOrNull == false
+                      ? null
+                      : () async {
+                          final result =
+                              await InjectionUtils.getRouteManagement().goToSearchLocationScreen();
+                          if (result != null) {
+                            _taggedPlaces = result;
+                            setState(() {});
+                          }
+                        },
+                  title: _taggedPlaces.isEmptyOrNull == true
+                      ? Text(
+                          TranslationFile.tagLocation,
                           style: Styles.primaryText14.copyWith(
                             color: AppColors.color2783FB,
                             fontWeight: FontWeight.w500,
                           ),
-                        ),
-                        const Spacer(),
-                        const AppImage.svg(
+                        )
+                      : _buildTaggedPlaces(),
+                  trailing: _taggedPlaces.isEmptyOrNull == true
+                      ? const AppImage.svg(
                           AssetConstants.icChevronRight,
                           height: 15,
-                        ),
-                      ],
-                    ),
-                  ),
+                        )
+                      : null,
                 ),
-                _buildTaggedUsers(_socialUserDataList),
               ],
             ),
           ),
@@ -270,7 +280,7 @@ class _PostAttributeViewState extends State<PostAttributeView> {
     setState(() {});
   }
 
-  Widget _buildTaggedUsers(List<SocialUserData> taggedUsers) {
+  Widget _buildTaggedUsers(List<MentionData> taggedUsers) {
     if (taggedUsers.isEmpty) {
       return const SizedBox.shrink(); // nothing if no tagged users
     }
@@ -296,7 +306,7 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                     height: 40.scaledValue,
                     width: 40.scaledValue,
                     isProfileImage: true,
-                    name: user.fullName ?? '',
+                    name: user.name ?? '',
                     border: Border.all(color: Colors.black12),
                   ),
                   Positioned(
@@ -335,16 +345,13 @@ class _PostAttributeViewState extends State<PostAttributeView> {
     );
   }
 
-  void setRequest() {
-    // _createPostRequest.url = _postAttributeClass?.url;
-    // _createPostRequest.thumbnailUrl = _postAttributeClass?.thumbnailUrl;
-    // _createPostRequest.mediaType = _postAttributeClass?.postType == MediaType.video ? 2 : 1;
-    // _createPostRequest.imageUrl = _postAttributeClass?.url;
-    // _createPostRequest.duration = _postAttributeClass?.duration;
-    // _createPostRequest.mediaType = _postAttributeClass?.postType?.mediaType;
+  void _createPost() {
+    _setPostRequest();
+    InjectionUtils.getBloc<CreatePostBloc>()
+        .add(PostCreateEvent(createPostRequest: _postAttributeClass?.createPostRequest));
   }
 
-  void _createPost() {
+  void _setPostRequest() {
     final createPostRequest = _postAttributeClass?.createPostRequest;
     if (createPostRequest != null) {
       final settings = PostSetting(
@@ -352,21 +359,58 @@ class _PostAttributeViewState extends State<PostAttributeView> {
         commentsEnabled: _postAttributeClass?.allowComment,
       );
       createPostRequest.settings = settings;
-      if (_socialUserDataList.isEmptyOrNull == false) {
-        final mentionedUserList = <MentionData>[];
-        for (final socialUser in _socialUserDataList) {
-          mentionedUserList.add(MentionData(
-              userId: socialUser.id,
-              username: socialUser.username,
-              textPosition: TaggedPosition(start: 0, end: 0)));
-        }
-        createPostRequest.mentions = mentionedUserList;
+      final tags = createPostRequest.tags ?? Tags();
+      if (_postAttributeClass?.mentionedUserList?.isEmptyOrNull == false) {
+        tags.mentions = _postAttributeClass?.mentionedUserList;
+      }
+      if (_postAttributeClass?.tagDataList?.isEmptyOrNull == false) {
+        tags.hashtags = _postAttributeClass?.tagDataList;
+      }
+      if (_taggedPlaces.isEmptyOrNull == false) {
+        tags.places = _taggedPlaces;
       }
 
-      debugPrint('createPostRequest.....${jsonEncode(createPostRequest.toJson())}');
-    }
+      createPostRequest.tags = tags;
 
-    InjectionUtils.getBloc<CreatePostBloc>()
-        .add(PostCreateEvent(createPostRequest: createPostRequest));
+      debugPrint('createPostRequest.....${jsonEncode(createPostRequest.toJson())}');
+      debugPrint('createPostRequest.....${jsonEncode(createPostRequest.tags?.mentions)}');
+      debugPrint('createPostRequest.....${jsonEncode(createPostRequest.tags?.hashtags)}');
+      debugPrint('createPostRequest.....${jsonEncode(createPostRequest.tags?.places)}');
+    }
+    _postAttributeClass?.createPostRequest = createPostRequest;
   }
+
+  Widget _buildTaggedPlaces() =>
+      Row(children: List.generate(_taggedPlaces.length, _buildSelectedPlaceWidget));
+
+  Widget _buildSelectedPlaceWidget(int index) => Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(25),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.location_on, color: Colors.black54, size: 20),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                _taggedPlaces[index].placeName ?? '',
+                style: const TextStyle(fontSize: 14, color: Colors.black87),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () {
+                _taggedPlaces.removeAt(index);
+                setState(() {});
+              },
+              child: const Icon(Icons.close, color: Colors.black54, size: 20),
+            ),
+          ],
+        ),
+      );
 }

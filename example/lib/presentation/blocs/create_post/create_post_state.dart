@@ -57,11 +57,13 @@ class PostCreatedState extends CreatePostState {
     required this.postDataModel,
     this.postSuccessMessage,
     this.postSuccessTitle,
+    this.mediaDataList,
   });
 
   final String? postDataModel;
   final String? postSuccessMessage;
   final String? postSuccessTitle;
+  final List<MediaData>? mediaDataList;
 }
 
 class GetProductsLoadingState extends CreatePostState {

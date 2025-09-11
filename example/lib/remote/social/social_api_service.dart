@@ -131,4 +131,12 @@ abstract class SocialApiService extends BaseService {
     required String searchText,
     required Header header,
   });
+
+  Future<ResponseModel> searchTag({
+    required bool isLoading,
+    required int limit,
+    required int page,
+    required String searchText,
+    required Header header,
+  });
 }

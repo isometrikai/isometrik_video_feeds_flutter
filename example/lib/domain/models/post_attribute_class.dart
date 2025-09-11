@@ -9,6 +9,8 @@ class PostAttributeClass {
     this.allowComment = false,
     this.allowSave = false,
     this.createPostRequest,
+    this.mentionedUserList,
+    this.tagDataList,
   });
 
   double? price;
@@ -18,4 +20,6 @@ class PostAttributeClass {
   bool? allowComment;
   bool? allowSave;
   CreatePostRequest? createPostRequest;
+  List<MentionData>? mentionedUserList;
+  List<MentionData>? tagDataList;
 }

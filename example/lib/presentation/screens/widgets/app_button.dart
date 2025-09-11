@@ -14,6 +14,7 @@ class AppButton extends StatelessWidget {
     this.prefixIcon,
     this.suffixIcon,
     this.width,
+    this.height,
     this.margin,
     this.backgroundColor,
     this.textColor,
@@ -28,6 +29,7 @@ class AppButton extends StatelessWidget {
   final Widget? prefixIcon;
   final Widget? suffixIcon;
   final double? width;
+  final double? height;
   final EdgeInsets? margin;
   final Color? backgroundColor;
   final Color? textColor;
@@ -37,7 +39,7 @@ class AppButton extends StatelessWidget {
         padding: margin ?? EdgeInsets.zero,
         child: SizedBox(
           width: width ?? double.infinity,
-          height: _getButtonHeight(),
+          height: height ?? _getButtonHeight(),
           child: _buildButton(context),
         ),
       );

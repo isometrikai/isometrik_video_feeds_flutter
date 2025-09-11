@@ -284,6 +284,7 @@ class MediaData {
     this.width,
     this.height,
     this.duration,
+    this.file,
     this.fileName,
     this.postType,
     this.size,
@@ -298,6 +299,7 @@ class MediaData {
         width: json['width'] as num? ?? 0,
         height: json['height'] as num? ?? 0,
         duration: json['duration'] as num? ?? 0,
+        file: json['file'] as File?,
         fileName: json['fileName'] as String? ?? '',
         postType: json['postType'] as PostType? ?? PostType.photo,
         size: json['size'] as num? ?? 0,
@@ -313,6 +315,8 @@ class MediaData {
   num? height;
   num? duration;
   String? fileName;
+  File? file;
+  File? previewFile;
   String? fileExtension;
   String? coverFileName;
   String? coverFileExtension;

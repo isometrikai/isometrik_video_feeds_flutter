@@ -10,7 +10,7 @@ class ApiServiceInjection {
     // Create instances of network clients with base URLs
     final networkClient = NetworkClient(baseUrl: AppUrl.appBaseUrl);
     final deviceInfoManager = InjectionUtils.getOtherClass<DeviceInfoManager>();
-    InjectionUtils.getOtherClass<LocalStorageManager>();
+    final localStorageManager = InjectionUtils.getOtherClass<LocalStorageManager>();
 
     // Register the API services with their respective providers
     InjectionUtils.registerApiService<AuthApiService>(
@@ -21,5 +21,8 @@ class ApiServiceInjection {
         () => PostApiServiceProvider(networkClient: networkClient));
     InjectionUtils.registerApiService<SocialApiService>(() => SocialApiServiceProvider(
         networkClient: networkClient, deviceInfoManager: deviceInfoManager));
+    InjectionUtils.registerApiService<GoogleApiService>(() => GoogleApiServiceProvider(
+        localStorageManager,
+        apiKey: 'AIzaSyAtEV8g9_ndGsbBaeZuIpTpFRqpd8JE1RY'));
   }
 }

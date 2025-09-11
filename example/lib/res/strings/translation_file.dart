@@ -35,6 +35,7 @@ class TranslationFile {
   static const String allowDownloads = 'Allow downloads';
   static const String allowSave = 'Allow save';
   static const String tagPeople = 'Tag people';
+  static const String tagLocation = 'Tag location';
   static const String post = 'Post';
   static const String sdkNotInitialized = 'sdk not initialized';
 

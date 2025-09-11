@@ -15,9 +15,6 @@ import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:video_compress/video_compress.dart';
 
-// import 'package:video_compress/video_compress.dart';
-// import 'package:video_thumbnail/video_thumbnail.dart';
-
 part 'create_post_event.dart';
 part 'create_post_state.dart';
 
@@ -69,6 +66,9 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   var _tags = Tags();
   var _isForEdit = false;
 
+  final List<MentionData> mentionedUserData = [];
+  final List<MentionData> hashTagDataList = [];
+
   FutureOr<void> _initState(CreatePostInitialEvent event, Emitter<CreatePostState> emit) {
     _resetData();
     selectedDate = getBufferedDate();
@@ -83,8 +83,10 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     _searchQuery = '';
   }
 
+  // Reset all variables after successful post creation
   void _resetData() {
     // Dismiss keyboard
+    _postAttributeClass = PostAttributeClass();
     FocusManager.instance.primaryFocus?.unfocus();
     _cancelCompression();
     _createPostRequest = CreatePostRequest();
@@ -243,6 +245,41 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     return isPostButtonEnable;
   }
 
+  Future<List<MediaInfoClass>> _pickMultipleMedia(
+      BuildContext context, MediaSource mediaSource) async {
+    final pickedMedia = <MediaInfoClass>[];
+
+    try {
+      final result = await ImagePicker().pickMultipleMedia();
+
+      if (result.isNotEmpty) {
+        for (final file in result) {
+          final path = file.path;
+
+          final isVideo = path.endsWith('.mp4') || path.endsWith('.mov');
+          var duration = 0;
+
+          if (isVideo) {
+            final mediaInfo = await VideoCompress.getMediaInfo(path);
+            duration = (mediaInfo.duration ?? 0).toInt();
+          }
+
+          pickedMedia.add(MediaInfoClass(
+            duration: (duration / 1000).toInt(),
+            mediaType: isVideo ? MediaType.video : MediaType.photo,
+            mediaSource: mediaSource,
+            mediaFile: XFile(path),
+          ));
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Utility.showInSnackBar('Error picking media', context);
+      }
+    }
+    return pickedMedia;
+  }
+
   // Add this method in _CameraViewState
   Future<MediaInfoClass?> _pickFromFromCamera(
       BuildContext context, MediaType mediaType, MediaSource mediaSource) async {
@@ -307,47 +344,13 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
         );
         return mediaInfoClass;
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      AppLog.error('Error picking video from gallery...${e.toString()}', stackTrace);
       if (context.mounted) {
         Utility.showInSnackBar('Error picking video from gallery', context);
       }
     }
     return null;
-  }
-
-  Future<List<MediaInfoClass>> _pickMultipleMedia(
-      BuildContext context, MediaSource mediaSource) async {
-    final pickedMedia = <MediaInfoClass>[];
-
-    try {
-      final result = await ImagePicker().pickMultipleMedia();
-
-      if (result.isNotEmpty) {
-        for (final file in result) {
-          final path = file.path;
-
-          final isVideo = path.endsWith(".mp4") || path.endsWith(".mov");
-          int duration = 0;
-
-          if (isVideo) {
-            final mediaInfo = await VideoCompress.getMediaInfo(path);
-            duration = (mediaInfo.duration ?? 0).toInt();
-          }
-
-          pickedMedia.add(MediaInfoClass(
-            duration: (duration / 1000).toInt(),
-            mediaType: isVideo ? MediaType.video : MediaType.photo,
-            mediaSource: mediaSource,
-            mediaFile: XFile(path),
-          ));
-        }
-      }
-    } catch (e) {
-      if (context.mounted) {
-        Utility.showInSnackBar('Error picking media', context);
-      }
-    }
-    return pickedMedia;
   }
 
   Future<MediaData?> _processMediaInfo(
@@ -358,7 +361,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     int position,
     // MediaData? mediaData,
   ) async {
-    final newMediaData = /*mediaData ??*/ MediaData();
+    final newMediaData = MediaData();
     final mediaType = mediaInfoClass.mediaType;
     final mediaFile = File(mediaInfoClass.mediaFile?.path ?? '');
 
@@ -395,49 +398,14 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
         newMediaData.coverFileExtension = _getFileExtension(newMediaData.previewUrl ?? '');
       }
     }
-    // newMediaData.position = mediaData == null
-    //     ? _selectedMediaIndex == 0
-    //         ? 1
-    //         : _selectedMediaIndex
-    //     : mediaData.position;
-    newMediaData.position = position == 0 ? position + 1 : position;
+    newMediaData.position = position + 1;
     return newMediaData;
   }
 
   FutureOr<void> _createPost(PostCreateEvent event, Emitter<CreatePostState> emit) async {
-    FocusManager.instance.primaryFocus?.unfocus();
-    if (event.createPostRequest != null) {
-      _createPostRequest = event.createPostRequest!;
+    if (event.createPostRequest == null) {
+      _setPostRequest();
     }
-    await _createMediaUrls();
-    if (_mediaDataList.isEmptyOrNull == true) {
-      return;
-    }
-    _createPostRequest.media = _mediaDataList;
-
-    _createPostRequest.type = _mediaDataList.length > 1
-        ? SocialPostType.carousel
-        : _mediaDataList[_selectedMediaIndex].mediaType?.mediaType == MediaType.video
-            ? SocialPostType.video
-            : SocialPostType.image;
-    _createPostRequest.visibility = 'public';
-    _createPostRequest.caption = descriptionText;
-
-    if (event.isForEdit == false && isScheduledPost && selectedDate != null) {
-      // Check if selected date is today
-      if (DateTimeUtil.isTodayDate(selectedDate!)) {
-        // If it's today, ensure time is at least one hour later
-        final oneHourLater = getBufferedDate();
-        if (selectedDate!.isBefore(oneHourLater)) {
-          selectedDate = oneHourLater;
-        }
-      }
-      _createPostRequest.scheduleTime =
-          DateTimeUtil.getIsoDate(selectedDate!.millisecondsSinceEpoch);
-      _createPostRequest.visibility = 'scheduled';
-    }
-
-    _createPostRequest.tags = _tags;
 
     debugPrint('_createPostRequest....${jsonEncode(_createPostRequest)}');
 
@@ -462,8 +430,6 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
         _updatePostData();
       }
       final createPostData = apiResult.data?.data;
-      final postDataModelResponse =
-          _postData != null ? jsonEncode(_postData?.toMap()) : jsonEncode(createPostData?.toJson());
       add(MediaUploadEvent(mediaDataList: _mediaDataList, postId: createPostData?.id ?? ''));
     } else {
       ErrorHandler.showAppError(appError: apiResult.error, isNeedToShowError: true);
@@ -474,23 +440,6 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     _postData?.tags = _createPostRequest.tags;
     _postData?.caption = _createPostRequest.caption;
     _postData?.media = _createPostRequest.media;
-  }
-
-  /// search product
-  void searchProduct(String query) {
-    resetApiCall();
-    _deBouncer.run(() {
-      _searchQuery = query;
-      add(GetProductsEvent());
-    });
-  }
-
-  List<String>? _getProductIds(List<ProductDataModel> linkedProducts) {
-    final productIds = <String>[];
-    for (final product in linkedProducts) {
-      productIds.add(product.childProductId ?? '');
-    }
-    return productIds;
   }
 
   List<SocialProductData> _getSocialProductList(List<ProductDataModel> linkedProducts) {
@@ -586,6 +535,9 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     for (var element in _mediaDataList) {
       element.fileName = _extractFileName(element.url ?? '');
       element.localPath = element.url ?? '';
+      element.previewUrl = element.mediaType?.mediaType == MediaType.photo
+          ? (element.url ?? '')
+          : element.previewUrl ?? '';
     }
     if (_postData?.tags?.products.isEmptyOrNull == false) {
       final socialProductList = _postData?.tags?.products;
@@ -623,10 +575,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   }
 
   Future<File?> _compressFile(
-    File? file,
-    MediaType mediaType,
-    Emitter<CreatePostState> emit,
-  ) async {
+      File? file, MediaType mediaType, Emitter<CreatePostState> emit) async {
     final fileLength = await file?.length();
     final fileSizeBeforeCompression = fileLength ?? 0 / (1024 * 1024);
     _isCompressionRunning = true;
@@ -636,6 +585,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       file!,
       isVideo: mediaType == MediaType.video,
       onProgress: (progress) {
+        debugPrint('Compression progress: $progress');
         if (_isCompressionRunning) {
           emit(CompressionProgressState(mediaKey: file.path, progress: progress));
         }
@@ -697,7 +647,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
         await _createPostData(event.postId);
       }
       emit(PostCreatedState(
-        postDataModel: jsonEncode(_postData?.toMap()),
+        postDataModel: _isForEdit ? jsonEncode(_postData?.toMap()) : null,
         postSuccessMessage: _isForEdit
             ? TranslationFile.postUpdatedSuccessfully
             : isScheduledPost
@@ -708,6 +658,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
             : isScheduledPost
                 ? TranslationFile.successfullyScheduled
                 : TranslationFile.successfullyPosted,
+        mediaDataList: _createPostRequest.media,
       ));
     }
   }
@@ -727,7 +678,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
         await _createPostData(event.postId);
       }
       emit(PostCreatedState(
-        postDataModel: jsonEncode(_postData?.toMap()),
+        postDataModel: _isForEdit ? jsonEncode(_postData?.toMap()) : null,
         postSuccessMessage: _isForEdit
             ? TranslationFile.postUpdatedSuccessfully
             : isScheduledPost
@@ -738,6 +689,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
             : isScheduledPost
                 ? TranslationFile.successfullyScheduled
                 : TranslationFile.successfullyPosted,
+        mediaDataList: _createPostRequest.media,
       ));
       _resetData();
     } else {
@@ -754,6 +706,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
             Utility.isLocalUrl(mediaData.localPath ?? '')) {
           final finalFileName =
               '${mediaData.fileName}_${index}_${DateTime.now().millisecondsSinceEpoch}';
+
           mediaData.fileName = finalFileName;
           final normalizedFolder =
               '${AppConstants.tenantId}/${AppConstants.projectId}/user_$userId/posts/$finalFileName${mediaData.fileExtension}';
@@ -782,6 +735,9 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   Future<void> _createPostData(String postId) async {
     final myUserId = await _localDataUseCase.getUserId();
     final userName = await _localDataUseCase.getFirstName();
+    final firstName = await _localDataUseCase.getFirstName();
+    final lastName = await _localDataUseCase.getLastName();
+    final avatarUrl = await _localDataUseCase.getProfilePic();
     _createPostRequest.media?.forEach((element) {
       element.url = element.localPath ?? '';
     });
@@ -794,11 +750,25 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       user: SocialUserData(
         id: myUserId,
         username: userName,
+        avatarUrl: avatarUrl,
+        fullName: '$firstName $lastName',
       ),
       visibility: _createPostRequest.visibility,
       isLiked: false,
       isSaved: false,
     );
+  }
+
+  Future<File> saveWithShortName(File originalFile) async {
+    final appDir = await getTemporaryDirectory();
+
+    // short safe name
+    final newPath = path.join(
+      appDir.path,
+      'thumb_${DateTime.now().millisecondsSinceEpoch}${path.extension(originalFile.path)}',
+    );
+
+    return await originalFile.copy(newPath);
   }
 
   FutureOr<void> _removeSelectedMedia(RemoveMediaEvent event, Emitter<CreatePostState> emit) {
@@ -814,10 +784,48 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
   FutureOr<void> _goToPostAttributeView(
       PostAttributeNavigationEvent event, Emitter<CreatePostState> emit) async {
+    _setPostRequest();
+    _postAttributeClass.mentionedUserList = mentionedUserData;
+    _postAttributeClass.tagDataList = hashTagDataList;
     _postAttributeClass.mediaDataList = _mediaDataList;
     _postAttributeClass.createPostRequest = _createPostRequest;
     _postAttributeClass = await InjectionUtils.getRouteManagement()
             .goToPostAttributionView(postAttributeClass: _postAttributeClass) ??
         _postAttributeClass;
+    debugPrint('post attribution...$_postAttributeClass');
+  }
+
+  void _setPostRequest() async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    await _createMediaUrls();
+
+    if (_mediaDataList.isEmptyOrNull == true) {
+      return;
+    }
+    _createPostRequest.media = _mediaDataList;
+
+    _createPostRequest.type = _mediaDataList.length > 1
+        ? SocialPostType.carousel
+        : _mediaDataList[_selectedMediaIndex].mediaType?.mediaType == MediaType.video
+            ? SocialPostType.video
+            : SocialPostType.image;
+    _createPostRequest.visibility = SocialPostVisibility.public;
+    _createPostRequest.caption = descriptionText;
+
+    if (_isForEdit == false && isScheduledPost && selectedDate != null) {
+      // Check if selected date is today
+      if (DateTimeUtil.isTodayDate(selectedDate!)) {
+        // If it's today, ensure time is at least one hour later
+        final oneHourLater = getBufferedDate();
+        if (selectedDate!.isBefore(oneHourLater)) {
+          selectedDate = oneHourLater;
+        }
+      }
+      _createPostRequest.scheduleTime =
+          DateTimeUtil.getIsoDate(selectedDate!.millisecondsSinceEpoch);
+      _createPostRequest.visibility = SocialPostVisibility.scheduled;
+    }
+
+    // _createPostRequest.tags = _tags;
   }
 }

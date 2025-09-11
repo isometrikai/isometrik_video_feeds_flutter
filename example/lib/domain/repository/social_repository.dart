@@ -117,4 +117,11 @@ abstract class SocialRepository extends BaseRepository {
     required int page,
     required String searchText,
   });
+
+  Future<CustomResponse<HashTagResponse?>> searchTag({
+    required bool isLoading,
+    required int limit,
+    required int page,
+    required String searchText,
+  });
 }

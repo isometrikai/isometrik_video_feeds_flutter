@@ -36,4 +36,7 @@ class SocialMapper {
   CustomResponse<SearchUserResponse?> mapSearchUserResponse(ResponseModel response) =>
       CustomResponse(
           data: searchUserResponseFromJson(response.data), responseCode: response.statusCode);
+
+  CustomResponse<HashTagResponse?> mapSearchTagResponse(ResponseModel response) => CustomResponse(
+      data: hashTagResponseFromJson(response.data), responseCode: response.statusCode);
 }

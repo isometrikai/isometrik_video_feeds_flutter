@@ -71,14 +71,15 @@ class _SearchUserViewState extends State<SearchUserView> with TickerProviderStat
     _loadingAnimationController.repeat();
 
     final completer = Completer<void>();
-    _searchUserBloc.add(SearchUserEvent(
+    _searchUserBloc.add(
+      SearchUserEvent(
         searchText: query,
         onComplete: (userList) {
           completer.complete();
           _setResult(userList);
-        }));
-    // Simulate search delay
-    Future.delayed(const Duration(milliseconds: 1200), () {});
+        },
+      ),
+    );
   }
 
   void _setResult(List<SocialUserData> userList) {
@@ -284,6 +285,7 @@ class _SearchUserViewState extends State<SearchUserView> with TickerProviderStat
         ),
         subtitle: Text(
           result.displayName ?? '',
+          maxLines: 1,
           style: TextStyle(
             color: Colors.grey[600],
             fontSize: 14,

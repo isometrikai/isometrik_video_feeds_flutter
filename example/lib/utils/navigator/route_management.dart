@@ -62,9 +62,24 @@ class RouteManagement {
         },
       );
 
-  Future<List<SocialUserData>> goToSearchUserScreen({List<SocialUserData>? socialUserList}) async {
+  Future<PostAttributeClass?> goToTagPeopleScreen({
+    PostAttributeClass? postAttributeClass,
+  }) async =>
+      await _navigationService.pushNamed<PostAttributeClass>(
+        RouteNames.tagPeopleScreen,
+        arguments: {
+          'postAttributeClass': postAttributeClass,
+        },
+      );
+
+  Future<List<dynamic>> goToSearchUserScreen({List<SocialUserData>? socialUserList}) async {
     final result = await _navigationService.pushNamed(RouteNames.searchUserScreen,
-        arguments: {'socialUserList': socialUserList}) as List<SocialUserData>;
-    return result;
+        arguments: {'socialUserList': socialUserList}) as List<dynamic>?;
+    return result == null ? [] : result;
+  }
+
+  Future<List<TaggedPlace>?> goToSearchLocationScreen() async {
+    final result = await _navigationService.pushNamed(RouteNames.searchLocationScreen);
+    return result as List<TaggedPlace>?;
   }
 }

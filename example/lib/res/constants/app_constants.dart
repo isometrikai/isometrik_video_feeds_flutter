@@ -135,3 +135,10 @@ abstract class SocialPostType {
   static const String product = 'product';
   static const String audio = 'audio';
 }
+
+abstract class SocialPostVisibility {
+  static const String public = 'public';
+  static const String private = 'private';
+  static const String followers = 'followers';
+  static const String scheduled = 'scheduled';
+}

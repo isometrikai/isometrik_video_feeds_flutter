@@ -22,5 +22,7 @@ class RepositoryInjection {
         () => PostRepositoryImpl(InjectionUtils.getApiService<PostApiService>(), dataSource));
     InjectionUtils.registerRepo<SocialRepository>(
         () => SocialRepositoryImpl(InjectionUtils.getApiService<SocialApiService>(), dataSource));
+    InjectionUtils.registerRepo<GoogleRepository>(
+        () => GoogleRepositoryImpl(InjectionUtils.getApiService<GoogleApiService>()));
   }
 }

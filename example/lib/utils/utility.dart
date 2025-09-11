@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
+import 'dart:math' show Random;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -684,6 +685,12 @@ class Utility {
   static String formatDuration(Duration? duration) {
     if (duration == null) return '0m 0s';
     return '${duration.inMinutes}m ${duration.inSeconds % 60}s';
+  }
+
+  static String generateRandomId(int length) {
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final rand = Random.secure();
+    return List.generate(length, (index) => chars[rand.nextInt(chars.length)]).join();
   }
 }
 

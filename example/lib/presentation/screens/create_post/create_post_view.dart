@@ -1,14 +1,16 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:dotted_border/dotted_border.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:ism_video_reel_player_example/di/di.dart';
 import 'package:ism_video_reel_player_example/domain/domain.dart';
+import 'package:ism_video_reel_player_example/example_export.dart';
 import 'package:ism_video_reel_player_example/presentation/presentation.dart';
 import 'package:ism_video_reel_player_example/res/res.dart';
-import 'package:ism_video_reel_player_example/utils/utils.dart';
 import 'package:lottie/lottie.dart';
 
 class CreatePostView extends StatefulWidget {
@@ -27,7 +29,6 @@ class _CreatePostViewState extends State<CreatePostView> {
   int _descriptionLength = 0;
   final int _maxLength = 200;
 
-  // PostAttributeClass? postAttributeClass;
   final _mediaDataList = <MediaData>[];
   final _createPostBloc = InjectionUtils.getBloc<CreatePostBloc>();
   var _coverImage = '';
@@ -39,6 +40,8 @@ class _CreatePostViewState extends State<CreatePostView> {
   bool _isDialogOpen = false;
   final _progressCubit = InjectionUtils.getBloc<UploadProgressCubit>();
   var _isCompressing = false;
+  final List<MentionData> _mentionedUsers = [];
+  final List<MentionData> _hashTags = [];
 
   @override
   void initState() {
@@ -69,15 +72,18 @@ class _CreatePostViewState extends State<CreatePostView> {
               child: _buildSuccessBottomSheet(
                 onTapBack: () {
                   Navigator.pop(context, state.postDataModel);
+                  Navigator.pop(context, state.postDataModel);
                 },
                 title: state.postSuccessTitle ?? '',
                 message: state.postSuccessMessage ?? '',
               ),
               isDismissible: false,
             );
+            _doMediaCaching(state.mediaDataList);
             // Auto-dismiss after 2 seconds
-            Future.delayed(const Duration(seconds: 2), () {
+            Future.delayed(const Duration(seconds: 2), () async {
               Navigator.pop(context);
+              Navigator.pop(context, state.postDataModel);
               Navigator.pop(context, state.postDataModel);
             });
           }
@@ -137,10 +143,7 @@ class _CreatePostViewState extends State<CreatePostView> {
               padding: Dimens.edgeInsetsSymmetric(vertical: Dimens.ten, horizontal: Dimens.twenty),
               child: AppButton(
                 width: Dimens.oneHundredForty,
-                onPress: () {
-                  _createPostBloc.add(PostCreateEvent(isForEdit: _isForEdit));
-                  // _createPostBloc.add(PostAttributeNavigationEvent());
-                },
+                onPress: _onPressCreateButton,
                 isDisable: _isCreateButtonDisable || _isCompressing,
                 title: _isForEdit ? TranslationFile.updatePost : TranslationFile.create,
               ),
@@ -200,30 +203,47 @@ class _CreatePostViewState extends State<CreatePostView> {
                     style: Styles.secondaryText12,
                   ),
                   8.verticalSpace,
-                  TextField(
+                  // TextField(
+                  //   controller: _descriptionController,
+                  //   maxLength: _maxLength,
+                  //   maxLines: 4,
+                  //   style: Styles.primaryText14,
+                  //   decoration: InputDecoration(
+                  //     hintText: TranslationFile.writeDescription,
+                  //     hintStyle: Styles.secondaryText14.copyWith(color: AppColors.colorBBBBBB),
+                  //     border: OutlineInputBorder(
+                  //       borderRadius: BorderRadius.circular(12),
+                  //       borderSide: const BorderSide(color: AppColors.colorDBDBDB),
+                  //     ),
+                  //     enabledBorder: OutlineInputBorder(
+                  //       borderRadius: BorderRadius.circular(12),
+                  //       borderSide: const BorderSide(color: AppColors.colorDBDBDB),
+                  //     ),
+                  //     focusedBorder: OutlineInputBorder(
+                  //       borderRadius: BorderRadius.circular(12),
+                  //       borderSide: const BorderSide(color: AppColors.colorDBDBDB),
+                  //     ),
+                  //     counterText: '',
+                  //   ),
+                  //   onChanged: (value) {
+                  //     _createPostBloc.descriptionText = value;
+                  //     setState(() {
+                  //       if (_isForEdit) {
+                  //         _isCreateButtonDisable =
+                  //             _descriptionController.text == widget.postData?.caption;
+                  //       }
+                  //       _descriptionLength = value.length;
+                  //     });
+                  //   },
+                  // ),
+                  UserMentionTextField(
                     controller: _descriptionController,
+                    hintText: TranslationFile.writeDescription,
                     maxLength: _maxLength,
-                    maxLines: 4,
                     style: Styles.primaryText14,
-                    decoration: InputDecoration(
-                      hintText: TranslationFile.writeDescription,
-                      hintStyle: Styles.secondaryText14.copyWith(color: AppColors.colorBBBBBB),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.colorDBDBDB),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.colorDBDBDB),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.colorDBDBDB),
-                      ),
-                      counterText: '',
-                    ),
+                    hintStyle: Styles.secondaryText14.copyWith(color: AppColors.colorBBBBBB),
                     onChanged: (value) {
-                      _createPostBloc.descriptionText = value;
+                      _createPostBloc.descriptionText = _descriptionController.text;
                       setState(() {
                         if (_isForEdit) {
                           _isCreateButtonDisable =
@@ -231,6 +251,26 @@ class _CreatePostViewState extends State<CreatePostView> {
                         }
                         _descriptionLength = value.length;
                       });
+                    },
+                    onAddMentionData: (mentionData) {
+                      if (!_mentionedUsers.any((u) => u.userId == mentionData.userId)) {
+                        _mentionedUsers.add(mentionData);
+                      }
+                      debugPrint('_mentionedUsers: ${jsonEncode(_mentionedUsers)}');
+                    },
+                    onRemoveMentionData: (mentionData) {
+                      _mentionedUsers.removeWhere((u) => u.userId == mentionData.userId);
+                      debugPrint('_mentionedUsers: ${jsonEncode(_mentionedUsers)}');
+                    },
+                    onAddHashTagData: (hashTagData) {
+                      if (!_hashTags.any((u) => u.tag == hashTagData.tag)) {
+                        _hashTags.add(hashTagData);
+                      }
+                      debugPrint('hashTagData: ${jsonEncode(_hashTags)}');
+                    },
+                    onRemoveHashTagData: (hashTagData) {
+                      _hashTags.removeWhere((u) => u.tag == hashTagData.tag);
+                      debugPrint('hashTagData: ${jsonEncode(_hashTags)}');
                     },
                   ),
                   Align(
@@ -618,6 +658,7 @@ class _CreatePostViewState extends State<CreatePostView> {
       }
     }
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         MediaPreviewWidget(key: Key(mediaData.localPath ?? ''), mediaData: mediaData),
         12.horizontalSpace,
@@ -633,14 +674,14 @@ class _CreatePostViewState extends State<CreatePostView> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              4.verticalSpace,
-              Text(
-                '${TranslationFile.size}: ${Utility.formatFileSize(_mediaLength)}'
-                '${mediaData.postType == PostType.video ? '  ${TranslationFile.duration}: ${Utility.formatDuration(Duration(seconds: mediaData.duration?.toInt() ?? 0))}' : ''}',
-                style: Styles.secondaryText12.copyWith(
-                  color: AppColors.color909090,
-                ),
-              ),
+              // 4.verticalSpace,
+              // Text(
+              //   '${TranslationFile.size}: ${Utility.formatFileSize(_mediaLength)}'
+              //   '${mediaData.postType == PostType.video ? '  ${TranslationFile.duration}: ${Utility.formatDuration(Duration(seconds: mediaData.duration?.toInt() ?? 0))}' : ''}',
+              //   style: Styles.secondaryText12.copyWith(
+              //     color: AppColors.color909090,
+              //   ),
+              // ),
               if (!_isForEdit) ...[
                 8.verticalSpace,
                 _isCompressing
@@ -648,6 +689,7 @@ class _CreatePostViewState extends State<CreatePostView> {
                     : AppButton(
                         width: 83.scaledValue,
                         size: ButtonSize.small,
+                        height: 28.scaledValue,
                         backgroundColor: '001E57'.toHexColor,
                         title: TranslationFile.change,
                         onPress: () {
@@ -1001,7 +1043,6 @@ class _CreatePostViewState extends State<CreatePostView> {
         : _mediaDataList.firstWhere((element) =>
             element.localPath.isEmptyOrNull == true ||
             Utility.isLocalUrl(element.localPath ?? '') == false);
-    debugPrint('mediaData: $mediaData');
     setState(() {
       _isCreateButtonDisable = _isForEdit ? !hasAnyChanges : mediaData != null;
     });
@@ -1072,4 +1113,33 @@ class _CreatePostViewState extends State<CreatePostView> {
           ],
         ),
       );
+
+  void _doMediaCaching(List<MediaData>? mediaDataList) async {
+    if (mediaDataList.isEmptyOrNull) return;
+    final urls = <String>[];
+    for (var media in mediaDataList!) {
+      if (media.url.isEmptyOrNull == false) {
+        urls.add(media.url!);
+      }
+      if (media.previewUrl.isEmptyOrNull == false) {
+        urls.add(media.previewUrl!);
+      }
+    }
+    if (!mounted) return;
+
+    // Use compute for background processing if needed
+    await compute((List<String> urls) => urls, urls).then((processedUrls) {
+      if (!mounted) return;
+      Utility.preCacheImages(urls, context);
+    });
+  }
+
+  void _onPressCreateButton() {
+    // _createPostBloc.add(PostCreateEvent(isForEdit: _isForEdit));
+    _createPostBloc.hashTagDataList.clear();
+    _createPostBloc.mentionedUserData.clear();
+    _createPostBloc.mentionedUserData.addAll(_mentionedUsers);
+    _createPostBloc.hashTagDataList.addAll(_hashTags);
+    _createPostBloc.add(PostAttributeNavigationEvent());
+  }
 }
