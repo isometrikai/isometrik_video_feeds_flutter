@@ -106,6 +106,9 @@ class _HomeScreenState extends State<HomeScreen> {
         tagDataList: postData.tags != null && postData.tags?.hashtags.isEmptyOrNull == false
             ? postData.tags?.hashtags?.map(_getMentionMetaData).toList()
             : null,
+        placeDataList: postData.tags != null && postData.tags?.places.isEmptyOrNull == false
+            ? postData.tags?.places?.map(_getPlaceMetaData).toList()
+            : null,
         onTapMentionTag: (mention) {},
         postId: postData.id,
         onCreatePost: () async => await _handleCreatePost(),
@@ -901,5 +904,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 y: mentionData.mediaPosition?.y,
               )
             : null,
+      );
+
+  isr.PlaceMetaData _getPlaceMetaData(TaggedPlace placeData) => isr.PlaceMetaData(
+        address: placeData.address,
+        city: placeData.city,
+        coordinates: placeData.coordinates,
+        country: placeData.country,
+        description: placeData.placeData?.description,
+        placeId: placeData.placeId,
+        placeName: placeData.placeName,
+        placeType: placeData.placeType,
+        postalCode: placeData.postalCode,
+        state: placeData.state,
       );
 }

@@ -43,7 +43,6 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
   final Set<String> _cachedImages = {};
   final VideoCacheManager _videoCacheManager = VideoCacheManager();
   List<ReelsData> _reelsDataList = [];
-  final PageStorageKey<dynamic> _pageStorageKey = const PageStorageKey('_PostItemWidgetState');
 
   @override
   void initState() {

@@ -36,8 +36,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   List<TabDataModel> _tabDataModelList = [];
   @override
   void initState() {
-    super.initState();
     _onStartInit();
+    super.initState();
   }
 
   void _onStartInit() async {

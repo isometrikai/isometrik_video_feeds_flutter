@@ -322,7 +322,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             child: PageView.builder(
               controller: _pageController,
               padEnds: false,
-              key: const PageStorageKey('media_pageview'), // Add a key
+              key: const PageStorageKey('media_pageview'),
+              // Add a key
               onPageChanged: (index) {
                 debugPrint('PageView...index... $index');
                 debugPrint('PageView..._mediaPageIndex... $_currentPageNotifier.value');
@@ -1178,6 +1179,28 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                               ),
                             );
                           },
+                        ),
+                      ],
+                      if (_reelData.placeDataList?.isListEmptyOrNull == false) ...[
+                        IsrDimens.boxHeight(IsrDimens.eight),
+                        Row(
+                          children: [
+                            Icon(Icons.location_on, size: IsrDimens.fifteen),
+                            IsrDimens.boxWidth(IsrDimens.five),
+                            Expanded(
+                              child: Row(
+                                children: List.generate(
+                                  _reelData.placeDataList?.length ?? 0,
+                                  (index) => Text(
+                                    _reelData.placeDataList?.first.placeName ?? '',
+                                    style: IsrStyles.white14.copyWith(fontWeight: FontWeight.w800),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ],

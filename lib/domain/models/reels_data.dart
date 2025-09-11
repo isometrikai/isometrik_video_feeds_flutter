@@ -42,6 +42,7 @@ class ReelsData {
     this.mentions,
     this.tagDataList,
     this.onTapMentionTag,
+    this.placeDataList,
   });
 
   final String? postId;
@@ -85,6 +86,7 @@ class ReelsData {
   final PostSetting? postSetting;
   final List<MentionMetaData>? mentions;
   final List<MentionMetaData>? tagDataList;
+  final List<PlaceMetaData>? placeDataList;
   final Function(MentionMetaData)? onTapMentionTag;
 }
 
@@ -205,4 +207,57 @@ class PostSetting {
   final bool isLikeButtonVisible;
   final bool isSaveButtonVisible;
   final bool isMoreButtonVisible;
+}
+
+class PlaceMetaData {
+  PlaceMetaData({
+    this.address,
+    this.city,
+    this.coordinates,
+    this.country,
+    this.description,
+    this.placeId,
+    this.placeName,
+    this.placeType,
+    this.postalCode,
+    this.state,
+  });
+
+  factory PlaceMetaData.fromJson(Map<String, dynamic> json) => PlaceMetaData(
+        address: json['address'] as String? ?? '',
+        city: json['city'] as String? ?? '',
+        coordinates: json['coordinates'] == null
+            ? []
+            : List<double>.from((json['coordinates'] as List).map((x) => x?.toDouble())),
+        country: json['country'] as String? ?? '',
+        description: json['description'] as String? ?? '',
+        placeId: json['place_id'] as String? ?? '',
+        placeName: json['place_name'] as String? ?? '',
+        placeType: json['place_type'] as String? ?? '',
+        postalCode: json['postal_code'] as String? ?? '',
+        state: json['state'] as String? ?? '',
+      );
+  final String? address;
+  final String? city;
+  final List<double>? coordinates;
+  final String? country;
+  final String? description;
+  final String? placeId;
+  final String? placeName;
+  final String? placeType;
+  final String? postalCode;
+  final String? state;
+
+  Map<String, dynamic> toJson() => {
+        'address': address,
+        'city': city,
+        'coordinates': coordinates == null ? [] : List<dynamic>.from(coordinates!.map((x) => x)),
+        'country': country,
+        'description': description,
+        'place_id': placeId,
+        'place_name': placeName,
+        'place_type': placeType,
+        'postal_code': postalCode,
+        'state': state,
+      };
 }

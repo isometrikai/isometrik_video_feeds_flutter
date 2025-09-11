@@ -393,8 +393,10 @@ class Tags {
             ? []
             : List<MentionData>.from((json['hashtags'] as List).map((x) =>
                 x is Map<String, dynamic> ? MentionData.fromJson(x) : MentionData.fromJson({}))),
-        places:
-            json['places'] == null ? [] : List<String>.from((json['places'] as List).map((x) => x)),
+        places: json['places'] == null
+            ? []
+            : List<TaggedPlace>.from((json['places'] as List).map((x) =>
+                x is Map<String, dynamic> ? TaggedPlace.fromJson(x) : TaggedPlace.fromJson({}))),
         products: json['products'] == null
             ? []
             : List<SocialProductData>.from((json['products'] as List)
@@ -402,7 +404,7 @@ class Tags {
       );
   List<MentionData>? mentions;
   List<MentionData>? hashtags;
-  List<String>? places;
+  List<TaggedPlace>? places;
   List<SocialProductData>? products;
 
   Map<String, dynamic> toMap() => {
@@ -663,5 +665,75 @@ class MediaPosition {
         'position': position,
         'x': x,
         'y': y,
+      };
+}
+
+class TaggedPlace {
+  TaggedPlace({
+    this.address,
+    this.city,
+    this.coordinates,
+    this.country,
+    this.placeData,
+    this.placeId,
+    this.placeName,
+    this.placeType,
+    this.postalCode,
+    this.state,
+  });
+
+  factory TaggedPlace.fromJson(Map<String, dynamic> json) => TaggedPlace(
+        address: json['address'] as String? ?? '',
+        city: json['city'] as String? ?? '',
+        coordinates: json['coordinates'] == null
+            ? []
+            : List<double>.from((json['coordinates'] as List).map((x) => x?.toDouble())),
+        country: json['country'] as String? ?? '',
+        placeData: json['place_data'] == null
+            ? null
+            : PlaceData.fromJson(json['place_data'] as Map<String, dynamic>),
+        placeId: json['place_id'] as String? ?? '',
+        placeName: json['place_name'] as String? ?? '',
+        placeType: json['place_type'] as String? ?? '',
+        postalCode: json['postal_code'] as String? ?? '',
+        state: json['state'] as String? ?? '',
+      );
+  final String? address;
+  final String? city;
+  final List<double>? coordinates;
+  final String? country;
+  final PlaceData? placeData;
+  final String? placeId;
+  final String? placeName;
+  final String? placeType;
+  final String? postalCode;
+  final String? state;
+
+  Map<String, dynamic> toJson() => {
+        'address': address,
+        'city': city,
+        'coordinates': coordinates == null ? [] : List<dynamic>.from(coordinates!.map((x) => x)),
+        'country': country,
+        'place_data': placeData?.toJson(),
+        'place_id': placeId,
+        'place_name': placeName,
+        'place_type': placeType,
+        'postal_code': postalCode,
+        'state': state,
+      };
+}
+
+class PlaceData {
+  PlaceData({
+    this.description,
+  });
+
+  factory PlaceData.fromJson(Map<String, dynamic> json) => PlaceData(
+        description: json['description'] as String? ?? '',
+      );
+  final String? description;
+
+  Map<String, dynamic> toJson() => {
+        'description': description,
       };
 }
