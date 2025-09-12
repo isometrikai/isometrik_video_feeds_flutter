@@ -9,7 +9,8 @@ class CreatePostBottomSheet extends StatelessWidget {
   final Function()? onCreateNewPost;
   @override
   Widget build(BuildContext context) => Padding(
-        padding: IsrDimens.edgeInsetsSymmetric(vertical: IsrDimens.sixteen, horizontal: IsrDimens.eighteen)
+        padding: IsrDimens.edgeInsetsSymmetric(
+                vertical: IsrDimens.sixteen, horizontal: IsrDimens.eighteen)
             .copyWith(top: IsrDimens.twentyFour, bottom: IsrDimens.thirty),
         child: Stack(
           clipBehavior: Clip.none,

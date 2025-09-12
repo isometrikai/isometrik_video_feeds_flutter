@@ -17,6 +17,7 @@ class GetCloudDetailsUseCase extends BaseUseCase {
           key: key,
           value: value,
         );
-        return ApiResult(data: response.responseCode == 200 ? response.data : null);
+        return ApiResult(
+            data: response.responseCode == 200 ? response.data : null);
       });
 }

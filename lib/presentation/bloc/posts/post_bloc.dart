@@ -22,7 +22,8 @@ class PostBloc extends Bloc<PostEvent, PostState> {
 
   void _onStartPost(StartPost event, Emitter<PostState> emit) async {
     final userInfoString = await _localDataUseCase.getUserInfo();
-    _userInfoClass = UserInfoClass.fromJson(jsonDecode(userInfoString) as Map<String, dynamic>);
+    _userInfoClass = UserInfoClass.fromJson(
+        jsonDecode(userInfoString) as Map<String, dynamic>);
     final userId = await _localDataUseCase.getUserId();
     emit(UserInformationLoaded(
       userInfoClass: _userInfoClass,

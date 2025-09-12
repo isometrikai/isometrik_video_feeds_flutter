@@ -9,9 +9,11 @@ class RepositoryInjection {
   /// Registers all repository implementations with the dependency injection container.
   static void inject() {
     // Retrieve the data source instance from the service locator
-    final localStorageManager = IsmInjectionUtils.getOtherClass<IsrLocalStorageManager>();
+    final localStorageManager =
+        IsmInjectionUtils.getOtherClass<IsrLocalStorageManager>();
 
     // Register the repositories with their respective implementations
-    IsmInjectionUtils.registerRepo<IsrLocalStorageRepository>(() => IsrLocalStorageRepositoryImpl(localStorageManager));
+    IsmInjectionUtils.registerRepo<IsrLocalStorageRepository>(
+        () => IsrLocalStorageRepositoryImpl(localStorageManager));
   }
 }

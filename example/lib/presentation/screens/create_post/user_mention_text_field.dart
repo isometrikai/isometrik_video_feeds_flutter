@@ -74,7 +74,8 @@ class _UserMentionTextFieldState extends State<UserMentionTextField> {
       if (lastAtIndex > lastHashIndex) {
         // @ is more recent
         final textFromAt = text.substring(lastAtIndex + 1, cursorPosition);
-        final hasMultipleAts = lastAtIndex > 0 && textBeforeCursor[lastAtIndex - 1] == '@';
+        final hasMultipleAts =
+            lastAtIndex > 0 && textBeforeCursor[lastAtIndex - 1] == '@';
 
         if (!textFromAt.contains(' ') &&
             !textFromAt.contains('\n') &&
@@ -87,7 +88,8 @@ class _UserMentionTextFieldState extends State<UserMentionTextField> {
       } else {
         // # is more recent
         final textFromHash = text.substring(lastHashIndex + 1, cursorPosition);
-        final hasMultipleHashes = lastHashIndex > 0 && textBeforeCursor[lastHashIndex - 1] == '#';
+        final hasMultipleHashes =
+            lastHashIndex > 0 && textBeforeCursor[lastHashIndex - 1] == '#';
 
         if (!textFromHash.contains(' ') &&
             !textFromHash.contains('\n') &&
@@ -101,7 +103,8 @@ class _UserMentionTextFieldState extends State<UserMentionTextField> {
     } else if (lastAtIndex != -1) {
       // Only @ trigger exists
       final textFromAt = text.substring(lastAtIndex + 1, cursorPosition);
-      final hasMultipleAts = lastAtIndex > 0 && textBeforeCursor[lastAtIndex - 1] == '@';
+      final hasMultipleAts =
+          lastAtIndex > 0 && textBeforeCursor[lastAtIndex - 1] == '@';
 
       if (!textFromAt.contains(' ') &&
           !textFromAt.contains('\n') &&
@@ -114,7 +117,8 @@ class _UserMentionTextFieldState extends State<UserMentionTextField> {
     } else if (lastHashIndex != -1) {
       // Only # trigger exists
       final textFromHash = text.substring(lastHashIndex + 1, cursorPosition);
-      final hasMultipleHashes = lastHashIndex > 0 && textBeforeCursor[lastHashIndex - 1] == '#';
+      final hasMultipleHashes =
+          lastHashIndex > 0 && textBeforeCursor[lastHashIndex - 1] == '#';
 
       if (!textFromHash.contains(' ') &&
           !textFromHash.contains('\n') &&
@@ -165,8 +169,10 @@ class _UserMentionTextFieldState extends State<UserMentionTextField> {
   }
 
   void _addHashtag() {
-    final start = widget.controller.selection.baseOffset - _currentSearchTerm.length - 1;
-    final end = start + _currentSearchTerm.length + 1; // +1 for the '#' character
+    final start =
+        widget.controller.selection.baseOffset - _currentSearchTerm.length - 1;
+    final end =
+        start + _currentSearchTerm.length + 1; // +1 for the '#' character
     final newTag = HashTagData(
       hashtag: _currentSearchTerm.trim(),
       slug: _currentSearchTerm.trim(),
@@ -174,8 +180,9 @@ class _UserMentionTextFieldState extends State<UserMentionTextField> {
       id: Utility.generateRandomId(6),
     );
 
-    final mentionData =
-        MentionData(tag: newTag.hashtag, textPosition: TaggedPosition(start: start, end: end));
+    final mentionData = MentionData(
+        tag: newTag.hashtag,
+        textPosition: TaggedPosition(start: start, end: end));
     _addedHashtags.add(mentionData);
 
     widget.onAddHashTagData?.call(mentionData);
@@ -184,15 +191,17 @@ class _UserMentionTextFieldState extends State<UserMentionTextField> {
 
   void _checkAndRemoveUnusedTags(String text) {
     // Check hashtags
-    final removedHashtags = _addedHashtags.where((tag) => !text.contains('#${tag.tag}')).toList();
+    final removedHashtags =
+        _addedHashtags.where((tag) => !text.contains('#${tag.tag}')).toList();
     for (var tag in removedHashtags) {
       _addedHashtags.remove(tag);
       widget.onRemoveHashTagData?.call(tag); // Notify or handle removal
     }
 
     // Check mentions
-    final removedMentions =
-        _addedMentions.where((mention) => !text.contains('@${mention.name}')).toList();
+    final removedMentions = _addedMentions
+        .where((mention) => !text.contains('@${mention.name}'))
+        .toList();
     for (var mention in removedMentions) {
       _addedMentions.remove(mention);
       widget.onRemoveMentionData?.call(mention); // Notify or handle removal
@@ -362,7 +371,9 @@ class _UserMentionTextFieldState extends State<UserMentionTextField> {
       // Calculate the position of the inserted mention
       final start = lastAtIndex;
       final end = start +
-          (tagText.trim().length); // trim() to remove trailing space if you don't want it included
+          (tagText
+              .trim()
+              .length); // trim() to remove trailing space if you don't want it included
 
       final mentionData = MentionData(
         tag: hashTag.hashtag,
@@ -442,12 +453,16 @@ class _UserMentionTextFieldState extends State<UserMentionTextField> {
                         children: [
                           CircleAvatar(
                             radius: 18,
-                            backgroundImage:
-                                user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
+                            backgroundImage: user.avatarUrl != null
+                                ? NetworkImage(user.avatarUrl!)
+                                : null,
                             backgroundColor: Colors.grey.shade300,
                             child: user.avatarUrl == null
                                 ? Text(
-                                    user.username?.substring(0, 1).toUpperCase() ?? '',
+                                    user.username
+                                            ?.substring(0, 1)
+                                            .toUpperCase() ??
+                                        '',
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
@@ -500,79 +515,82 @@ class _UserMentionTextFieldState extends State<UserMentionTextField> {
         )
       : const SizedBox.shrink();
 
-  Widget _buildHashtagSuggestions() => _isSearching && _hashTagResults.isNotEmpty
-      ? Column(
-          children: [
-            const Divider(height: 1, thickness: 1),
-            Container(
-              constraints: const BoxConstraints(maxHeight: 240),
-              child: ListView.separated(
-                shrinkWrap: true,
-                padding: const EdgeInsets.all(8),
-                itemCount: _hashTagResults.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 4),
-                itemBuilder: (context, index) {
-                  final hasTag = _hashTagResults[index];
-                  return InkWell(
-                    onTap: () => _selectHashTag(hasTag),
-                    borderRadius: BorderRadius.circular(8),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                      child: Row(
-                        children: [
-                          // Circle with '#' icon
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.grey.shade200,
-                            ),
-                            alignment: Alignment.center,
-                            child: const Text(
-                              '#',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          // Hashtag text and usage count
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  hasTag.hashtag ?? '',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14,
+  Widget _buildHashtagSuggestions() =>
+      _isSearching && _hashTagResults.isNotEmpty
+          ? Column(
+              children: [
+                const Divider(height: 1, thickness: 1),
+                Container(
+                  constraints: const BoxConstraints(maxHeight: 240),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.all(8),
+                    itemCount: _hashTagResults.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 4),
+                    itemBuilder: (context, index) {
+                      final hasTag = _hashTagResults[index];
+                      return InkWell(
+                        onTap: () => _selectHashTag(hasTag),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 8, horizontal: 12),
+                          child: Row(
+                            children: [
+                              // Circle with '#' icon
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.grey.shade200,
+                                ),
+                                alignment: Alignment.center,
+                                child: const Text(
+                                  '#',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
                                     color: Colors.black87,
                                   ),
-                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  '${hasTag.usageCount ?? 0} posts',
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontSize: 12,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(width: 12),
+                              // Hashtag text and usage count
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      hasTag.hashtag ?? '',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14,
+                                        color: Colors.black87,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${hasTag.usageCount ?? 0} posts',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade600,
+                                        fontSize: 12,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        )
-      : const SizedBox.shrink();
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            )
+          : const SizedBox.shrink();
 }

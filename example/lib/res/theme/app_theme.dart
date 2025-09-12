@@ -23,17 +23,24 @@ ThemeData appTheme = ThemeData(
     displayMedium: Styles.secondaryText16.copyWith(fontWeight: FontWeight.w600),
     displaySmall: Styles.secondaryText12.copyWith(fontWeight: FontWeight.w600),
     headlineLarge: Styles.secondaryText20.copyWith(fontWeight: FontWeight.w600),
-    headlineMedium: Styles.secondaryText16.copyWith(fontWeight: FontWeight.w600),
+    headlineMedium:
+        Styles.secondaryText16.copyWith(fontWeight: FontWeight.w600),
     headlineSmall: Styles.secondaryText14.copyWith(fontWeight: FontWeight.w600),
     titleLarge: Styles.secondaryText16.copyWith(fontWeight: FontWeight.w600),
     titleMedium: Styles.secondaryText14.copyWith(fontWeight: FontWeight.w600),
     titleSmall: Styles.secondaryText12.copyWith(fontWeight: FontWeight.w600),
-    bodyLarge: Styles.secondaryText16.copyWith(fontFamily: AppConstants.primaryFontFamily),
-    bodyMedium: Styles.secondaryText14.copyWith(fontFamily: AppConstants.primaryFontFamily),
-    bodySmall: Styles.secondaryText12.copyWith(fontFamily: AppConstants.primaryFontFamily),
-    labelLarge: Styles.secondaryText12.copyWith(fontFamily: AppConstants.primaryFontFamily),
-    labelMedium: Styles.secondaryText10.copyWith(fontFamily: AppConstants.primaryFontFamily),
-    labelSmall: Styles.secondaryText8.copyWith(fontFamily: AppConstants.primaryFontFamily),
+    bodyLarge: Styles.secondaryText16
+        .copyWith(fontFamily: AppConstants.primaryFontFamily),
+    bodyMedium: Styles.secondaryText14
+        .copyWith(fontFamily: AppConstants.primaryFontFamily),
+    bodySmall: Styles.secondaryText12
+        .copyWith(fontFamily: AppConstants.primaryFontFamily),
+    labelLarge: Styles.secondaryText12
+        .copyWith(fontFamily: AppConstants.primaryFontFamily),
+    labelMedium: Styles.secondaryText10
+        .copyWith(fontFamily: AppConstants.primaryFontFamily),
+    labelSmall: Styles.secondaryText8
+        .copyWith(fontFamily: AppConstants.primaryFontFamily),
   ),
   datePickerTheme: DatePickerThemeData(
     backgroundColor: AppColors.white,
@@ -41,11 +48,14 @@ ThemeData appTheme = ThemeData(
     rangeSelectionBackgroundColor: AppColors.appColor,
     rangeSelectionOverlayColor: const WidgetStatePropertyAll(AppColors.white),
     dayBackgroundColor: WidgetStateProperty.resolveWith<Color?>(
-      (states) => states.contains(WidgetState.selected) ? AppColors.appColor : null,
+      (states) =>
+          states.contains(WidgetState.selected) ? AppColors.appColor : null,
     ),
     dividerColor: AppColors.appColor,
     dayForegroundColor: WidgetStateProperty.resolveWith<Color?>(
-      (states) => states.contains(WidgetState.selected) ? AppColors.white : AppColors.black,
+      (states) => states.contains(WidgetState.selected)
+          ? AppColors.white
+          : AppColors.black,
     ),
   ),
   elevatedButtonTheme: ElevatedButtonThemeData(
@@ -62,7 +72,8 @@ ThemeData appTheme = ThemeData(
       disabledBackgroundColor: AppColors.buttonDisabledBackgroundColor,
       disabledIconColor: AppColors.buttonDisabledBackgroundColor,
       shape: RoundedRectangleBorder(
-        borderRadius: Dimens.appButtonBorderRadius(), // Adjust the radius as needed
+        borderRadius:
+            Dimens.appButtonBorderRadius(), // Adjust the radius as needed
       ),
     ),
   ),
@@ -77,7 +88,8 @@ ThemeData appTheme = ThemeData(
     backgroundColor: AppColors.appBarColor,
     iconTheme: const IconThemeData(color: AppColors.black),
     actionsIconTheme: const IconThemeData(color: AppColors.black),
-    titleTextStyle: Styles.secondaryText16.copyWith(fontWeight: FontWeight.w500),
+    titleTextStyle:
+        Styles.secondaryText16.copyWith(fontWeight: FontWeight.w500),
     toolbarTextStyle: Styles.secondaryText12,
   ),
   bottomSheetTheme: BottomSheetThemeData(

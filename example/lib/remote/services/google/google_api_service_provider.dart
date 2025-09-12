@@ -17,7 +17,8 @@ class GoogleApiServiceProvider extends GoogleApiService with AppMixin {
     required bool isLoading,
     required String pinCode,
   }) async {
-    final url = '${GoogleApiEndPoints.getAddressFromPinCode}$pinCode&key=$apiKey';
+    final url =
+        '${GoogleApiEndPoints.getAddressFromPinCode}$pinCode&key=$apiKey';
 
     if (isLoading) Utility.showLoader();
 
@@ -97,7 +98,8 @@ class GoogleApiServiceProvider extends GoogleApiService with AppMixin {
   Future<ResponseModel> getPlaceDetails({
     required String placeId,
   }) async {
-    final apiURL = '${GoogleApiEndPoints.getPlaceDetails}?placeid=$placeId&key=$apiKey';
+    final apiURL =
+        '${GoogleApiEndPoints.getPlaceDetails}?placeid=$placeId&key=$apiKey';
 
     final response = await http.get(Uri.parse(apiURL));
     printLog(

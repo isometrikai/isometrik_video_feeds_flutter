@@ -88,10 +88,8 @@ class AuthApiServiceProvider extends AuthApiService {
     required bool isLoading,
     required Header header,
     required String mobileNumber,
-  }) {
-    // TODO: implement sendOtp
-    throw UnimplementedError();
-  }
+  }) =>
+      throw UnimplementedError();
 
   @override
   Future<ResponseModel> guestLogin({

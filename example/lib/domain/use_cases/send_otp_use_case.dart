@@ -15,6 +15,7 @@ class SendOtpUseCase extends BaseUseCase {
           isLoading: isLoading,
           mobileNumber: mobileNumber,
         );
-        return ApiResult(data: response.responseCode == 200 ? response.data : null);
+        return ApiResult(
+            data: response.responseCode == 200 ? response.data : null);
       });
 }

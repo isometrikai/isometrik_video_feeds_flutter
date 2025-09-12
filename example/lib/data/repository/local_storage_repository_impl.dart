@@ -7,7 +7,8 @@ class LocalStorageRepositoryImpl implements LocalStorageRepository {
 
   final LocalStorageManager _localStorageManager;
 
-  Future<dynamic> getValue(String key, SavedValueDataType saveValueDataType) async {
+  Future<dynamic> getValue(
+      String key, SavedValueDataType saveValueDataType) async {
     final value = await _localStorageManager.getValue(key, saveValueDataType);
     return value == null
         ? null
@@ -22,9 +23,11 @@ class LocalStorageRepositoryImpl implements LocalStorageRepository {
                         : value as bool;
   }
 
-  Future<String> getSecuredValue(String key) async => await _localStorageManager.getSecuredValue(key);
+  Future<String> getSecuredValue(String key) async =>
+      await _localStorageManager.getSecuredValue(key);
 
-  void saveValue(String key, dynamic value, SavedValueDataType savedValueDataType) {
+  void saveValue(
+      String key, dynamic value, SavedValueDataType savedValueDataType) {
     _localStorageManager.saveValue(key, value, savedValueDataType);
   }
 
@@ -56,73 +59,95 @@ class LocalStorageRepositoryImpl implements LocalStorageRepository {
   void clearSession() {}
 
   @override
-  Future<String> getUserId() async => await _localStorageManager.getSecuredValue(LocalStorageKeys.userId);
+  Future<String> getUserId() async =>
+      await _localStorageManager.getSecuredValue(LocalStorageKeys.userId);
 
   @override
-  Future<String> getEmail() async => await _localStorageManager.getSecuredValue(LocalStorageKeys.email);
+  Future<String> getEmail() async =>
+      await _localStorageManager.getSecuredValue(LocalStorageKeys.email);
 
   @override
-  Future<bool> isLoggedIn() async =>
-      await _localStorageManager.getValue(LocalStorageKeys.isLoggedIn, SavedValueDataType.bool) as bool;
+  Future<bool> isLoggedIn() async => await _localStorageManager.getValue(
+      LocalStorageKeys.isLoggedIn, SavedValueDataType.bool) as bool;
 
   @override
-  Future<String> getCurrencyCode() async => await _localStorageManager.getSecuredValue(LocalStorageKeys.currencyCode);
+  Future<String> getCurrencyCode() async =>
+      await _localStorageManager.getSecuredValue(LocalStorageKeys.currencyCode);
 
   @override
-  Future<String> getCurrencySymbol() async =>
-      await _localStorageManager.getSecuredValue(LocalStorageKeys.currencySymbol);
+  Future<String> getCurrencySymbol() async => await _localStorageManager
+      .getSecuredValue(LocalStorageKeys.currencySymbol);
 
   // Implementations for all keys
   @override
-  Future<String> getLanguage() async => await getValue(LocalStorageKeys.language, SavedValueDataType.string) as String;
+  Future<String> getLanguage() async =>
+      await getValue(LocalStorageKeys.language, SavedValueDataType.string)
+          as String;
 
   @override
-  Future<String> getAccessToken() async => await getSecuredValue(LocalStorageKeys.accessToken);
+  Future<String> getAccessToken() async =>
+      await getSecuredValue(LocalStorageKeys.accessToken);
 
   @override
-  Future<String> getRefreshToken() async => await getSecuredValue(LocalStorageKeys.refreshToken);
+  Future<String> getRefreshToken() async =>
+      await getSecuredValue(LocalStorageKeys.refreshToken);
 
   @override
-  Future<String> getPhoneNumber() async => await getSecuredValue(LocalStorageKeys.phoneNumber);
+  Future<String> getPhoneNumber() async =>
+      await getSecuredValue(LocalStorageKeys.phoneNumber);
 
   @override
   Future<String> getFirstName() async =>
-      await getValue(LocalStorageKeys.firstName, SavedValueDataType.string) as String;
+      await getValue(LocalStorageKeys.firstName, SavedValueDataType.string)
+          as String;
 
   @override
-  Future<String> getLastName() async => await getValue(LocalStorageKeys.lastName, SavedValueDataType.string) as String;
+  Future<String> getLastName() async =>
+      await getValue(LocalStorageKeys.lastName, SavedValueDataType.string)
+          as String;
 
   @override
   Future<String> getProfilePic() async =>
-      await getValue(LocalStorageKeys.profilePic, SavedValueDataType.string) as String;
+      await getValue(LocalStorageKeys.profilePic, SavedValueDataType.string)
+          as String;
 
   @override
-  Future<String> getUserInfo() async => await getValue(LocalStorageKeys.userInfo, SavedValueDataType.string) as String;
+  Future<String> getUserInfo() async =>
+      await getValue(LocalStorageKeys.userInfo, SavedValueDataType.string)
+          as String;
 
   // Implementations for setters
   @override
-  void saveLanguage(String value) => saveValue(LocalStorageKeys.language, value, SavedValueDataType.string);
+  void saveLanguage(String value) =>
+      saveValue(LocalStorageKeys.language, value, SavedValueDataType.string);
 
   @override
-  void saveIsLoggedIn(bool value) => saveValue(LocalStorageKeys.isLoggedIn, value, SavedValueDataType.bool);
+  void saveIsLoggedIn(bool value) =>
+      saveValue(LocalStorageKeys.isLoggedIn, value, SavedValueDataType.bool);
 
   @override
-  void saveAccessToken(String value) => saveSecuredValue(LocalStorageKeys.accessToken, value);
+  void saveAccessToken(String value) =>
+      saveSecuredValue(LocalStorageKeys.accessToken, value);
 
   @override
-  void saveRefreshToken(String value) => saveSecuredValue(LocalStorageKeys.refreshToken, value);
+  void saveRefreshToken(String value) =>
+      saveSecuredValue(LocalStorageKeys.refreshToken, value);
 
   @override
-  void savePhoneNumber(String value) => saveSecuredValue(LocalStorageKeys.phoneNumber, value);
+  void savePhoneNumber(String value) =>
+      saveSecuredValue(LocalStorageKeys.phoneNumber, value);
 
   @override
-  void saveFirstName(String value) => saveValue(LocalStorageKeys.firstName, value, SavedValueDataType.string);
+  void saveFirstName(String value) =>
+      saveValue(LocalStorageKeys.firstName, value, SavedValueDataType.string);
 
   @override
-  void saveLastName(String value) => saveValue(LocalStorageKeys.lastName, value, SavedValueDataType.string);
+  void saveLastName(String value) =>
+      saveValue(LocalStorageKeys.lastName, value, SavedValueDataType.string);
 
   @override
-  void saveProfilePic(String value) => saveValue(LocalStorageKeys.profilePic, value, SavedValueDataType.string);
+  void saveProfilePic(String value) =>
+      saveValue(LocalStorageKeys.profilePic, value, SavedValueDataType.string);
 
   @override
   void saveEmail(String value) {

@@ -13,6 +13,7 @@ class GetPlaceDetailsUseCase extends BaseUseCase {
         final response = await _repository.getPlaceDetail(
           placeId: placeId,
         );
-        return ApiResult(data: response.responseCode == 200 ? response.data : null);
+        return ApiResult(
+            data: response.responseCode == 200 ? response.data : null);
       });
 }

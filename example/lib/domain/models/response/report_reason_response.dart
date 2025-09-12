@@ -7,7 +7,8 @@ import 'dart:convert';
 ReportReasonResponse reportReasonResponseFromJson(String str) =>
     ReportReasonResponse.fromJson(json.decode(str) as Map<String, dynamic>);
 
-String reportReasonResponseToJson(ReportReasonResponse data) => json.encode(data.toJson());
+String reportReasonResponseToJson(ReportReasonResponse data) =>
+    json.encode(data.toJson());
 
 class ReportReasonResponse {
   ReportReasonResponse({
@@ -15,9 +16,12 @@ class ReportReasonResponse {
     this.data,
   });
 
-  factory ReportReasonResponse.fromJson(Map<String, dynamic> json) => ReportReasonResponse(
+  factory ReportReasonResponse.fromJson(Map<String, dynamic> json) =>
+      ReportReasonResponse(
         message: json['message'] as String? ?? '',
-        data: json['data'] == null ? [] : List<String>.from((json['data'] as List).map((x) => x)),
+        data: json['data'] == null
+            ? []
+            : List<String>.from((json['data'] as List).map((x) => x)),
       );
   String? message;
   List<String>? data;

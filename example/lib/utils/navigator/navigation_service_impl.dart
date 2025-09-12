@@ -9,13 +9,15 @@ class NavigationServiceImpl implements NavigationService {
 
   @override
   Future<T?> pushNamed<T>(String routeName, {Object? arguments}) async {
-    final result = await navigatorKey.currentContext!.pushNamed(routeName, extra: arguments);
+    final result = await navigatorKey.currentContext!
+        .pushNamed(routeName, extra: arguments);
     return result as T?; // Cast the result to the expected type
   }
 
   @override
   void pushReplacementNamed<T>(String routeName, {Object? arguments}) async {
-    navigatorKey.currentContext!.pushReplacementNamed(routeName, extra: arguments);
+    navigatorKey.currentContext!
+        .pushReplacementNamed(routeName, extra: arguments);
   }
 
   @override
@@ -25,7 +27,8 @@ class NavigationServiceImpl implements NavigationService {
 
   @override
   void popUntil(String routeName, {Object? arguments}) {
-    Navigator.popUntil(navigatorKey.currentContext!, ModalRoute.withName(routeName));
+    Navigator.popUntil(
+        navigatorKey.currentContext!, ModalRoute.withName(routeName));
   }
 
   @override

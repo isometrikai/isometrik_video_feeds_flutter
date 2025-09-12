@@ -125,7 +125,9 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: isSelected ? Theme.of(context).primaryColor : '838383'.toHexColor,
+                color: isSelected
+                    ? Theme.of(context).primaryColor
+                    : '838383'.toHexColor,
                 width: 2.scaledValue,
               ),
             ),

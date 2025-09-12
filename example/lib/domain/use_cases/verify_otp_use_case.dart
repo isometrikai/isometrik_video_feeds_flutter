@@ -19,6 +19,7 @@ class VerifyOtpUseCase extends BaseUseCase {
           otp: otp,
           mobileNumber: mobileNumber,
         );
-        return ApiResult(data: response.responseCode == 200 ? response.data : null);
+        return ApiResult(
+            data: response.responseCode == 200 ? response.data : null);
       });
 }

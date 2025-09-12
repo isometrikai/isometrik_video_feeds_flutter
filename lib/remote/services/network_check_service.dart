@@ -5,7 +5,8 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 class NetworkCheckService {
   NetworkCheckService() {
     _connectivity.onConnectivityChanged.listen((result) {
-      _controller.add(result.isNotEmpty && result.first != ConnectivityResult.none);
+      _controller
+          .add(result.isNotEmpty && result.first != ConnectivityResult.none);
     });
   }
 

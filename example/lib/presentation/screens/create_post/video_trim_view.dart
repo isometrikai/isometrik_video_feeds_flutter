@@ -90,7 +90,9 @@ class _VideoTrimViewState extends State<VideoTrimView> {
                           color: AppColors.white.applyOpacity(.1),
                         ),
                         child: Icon(
-                          !_isMuted ? Icons.volume_up_rounded : Icons.volume_off,
+                          !_isMuted
+                              ? Icons.volume_up_rounded
+                              : Icons.volume_off,
                           color: AppColors.white,
                         ),
                       ),

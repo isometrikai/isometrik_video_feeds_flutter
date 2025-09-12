@@ -4,7 +4,8 @@ import 'package:timeago/timeago.dart' as timeago;
 class DateTimeUtil {
   static bool isTodayDate(DateTime date) {
     final now = DateTime.now();
-    return DateTime(date.year, date.month, date.day) == DateTime(now.year, now.month, now.day);
+    return DateTime(date.year, date.month, date.day) ==
+        DateTime(now.year, now.month, now.day);
   }
 
   static String getIsoDate(int timestamp) {

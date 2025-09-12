@@ -1,7 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class UploadProgressCubit extends Cubit<ProgressState> {
-  UploadProgressCubit() : super(ProgressState(progress: 0, title: 'Loading', subtitle: ''));
+  UploadProgressCubit()
+      : super(ProgressState(progress: 0, title: 'Loading', subtitle: ''));
 
   void updateProgress(double value) {
     emit(state.copyWith(progress: value));

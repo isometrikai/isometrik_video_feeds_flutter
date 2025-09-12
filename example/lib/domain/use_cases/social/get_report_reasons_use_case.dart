@@ -13,6 +13,7 @@ class GetReportReasonsUseCase extends BaseUseCase {
         final response = await _repository.getReportReasons(
           isLoading: isLoading,
         );
-        return ApiResult(data: response.responseCode == 200 ? response.data : null);
+        return ApiResult(
+            data: response.responseCode == 200 ? response.data : null);
       });
 }

@@ -45,12 +45,14 @@ class IsrLocalStorageManager {
   Future<void> clearData() async {
     final userId = await getSecuredValue(IsrLocalStorageKeys.userId);
     // Retrieve the value you want to keep
-    final preservedValue = _sharedPreferencesManager.getValue(userId, SavedValueDataType.string) as String;
+    final preservedValue = _sharedPreferencesManager.getValue(
+        userId, SavedValueDataType.string) as String;
     await _sharedPreferencesManager.clearData();
     await saveValue(userId, preservedValue, SavedValueDataType.string);
   }
 
-  Future<void> saveValue(String key, dynamic value, SavedValueDataType saveValueDataType) async {
+  Future<void> saveValue(
+      String key, dynamic value, SavedValueDataType saveValueDataType) async {
     await _sharedPreferencesManager.saveValue(key, value, saveValueDataType);
   }
 
@@ -63,7 +65,8 @@ class IsrLocalStorageManager {
 
   /// store the data
   void saveBooleanValue(String key, bool value) async {
-    await _sharedPreferencesManager.saveValue(key, value, SavedValueDataType.bool);
+    await _sharedPreferencesManager.saveValue(
+        key, value, SavedValueDataType.bool);
   }
 
   /// Method For Delete & Override from Secure Storage

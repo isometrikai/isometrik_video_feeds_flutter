@@ -5,7 +5,8 @@ import 'package:ism_video_reel_player_example/res/res.dart';
 import 'package:ism_video_reel_player_example/utils/utils.dart';
 
 class UploadProgressBottomSheet extends StatelessWidget {
-  const UploadProgressBottomSheet({Key? key, this.onClose, this.message}) : super(key: key);
+  const UploadProgressBottomSheet({Key? key, this.onClose, this.message})
+      : super(key: key);
   final VoidCallback? onClose;
   final String? message;
 
@@ -31,7 +32,8 @@ class UploadProgressBottomSheet extends StatelessWidget {
                 minHeight: 6,
                 backgroundColor: Colors.grey,
                 borderRadius: Dimens.borderRadiusAll(Dimens.ten),
-                valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                    Theme.of(context).primaryColor),
               ),
               32.verticalSpace,
               Text(

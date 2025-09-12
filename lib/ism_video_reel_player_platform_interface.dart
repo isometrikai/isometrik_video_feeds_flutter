@@ -7,7 +7,8 @@ abstract class IsmVideoReelPlayerPlatform extends PlatformInterface {
 
   static final Object _token = Object();
 
-  static IsmVideoReelPlayerPlatform _instance = MethodChannelIsmVideoReelPlayer();
+  static IsmVideoReelPlayerPlatform _instance =
+      MethodChannelIsmVideoReelPlayer();
 
   /// The default instance of [IsmVideoReelPlayerPlatform] to use.
   ///

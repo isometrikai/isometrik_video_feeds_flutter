@@ -10,10 +10,12 @@ class InjectionUtils {
   static T getBloc<T extends BlocBase<Object>>() => kGetIt<T>();
   static T getCubit<T extends BlocBase<Object>>() => kGetIt<T>();
 
-  static T getUseCase<T extends BaseUseCase>() => kGetIt<T>(); // Generic method to get use cases
+  static T getUseCase<T extends BaseUseCase>() =>
+      kGetIt<T>(); // Generic method to get use cases
 
   // Generic function to register a Bloc
-  static void registerBloc<T extends BlocBase<Object>>(T Function() factoryFunc) {
+  static void registerBloc<T extends BlocBase<Object>>(
+      T Function() factoryFunc) {
     kGetIt.registerLazySingleton<T>(factoryFunc);
   }
 
@@ -29,15 +31,18 @@ class InjectionUtils {
     kGetIt.registerLazySingleton<T>(factoryFunc);
   }
 
-  static T getRepo<T extends BaseRepository>() => kGetIt<T>(); // Generic method to get repository
+  static T getRepo<T extends BaseRepository>() =>
+      kGetIt<T>(); // Generic method to get repository
 
   // Generic function to register a api service
-  static void registerApiService<T extends BaseService>(T Function() factoryFunc) {
+  static void registerApiService<T extends BaseService>(
+      T Function() factoryFunc) {
     if (_isRegistered<T>()) return;
     kGetIt.registerLazySingleton<T>(factoryFunc);
   }
 
-  static T getApiService<T extends BaseService>() => kGetIt<T>(); // Generic method to get api service
+  static T getApiService<T extends BaseService>() =>
+      kGetIt<T>(); // Generic method to get api service
 
   static RouteManagement getRouteManagement() => kGetIt<RouteManagement>();
 
@@ -47,5 +52,6 @@ class InjectionUtils {
     kGetIt.registerLazySingleton<T>(factoryFunc);
   }
 
-  static T getOtherClass<T extends Object>() => kGetIt<T>(); // Generic method to get api service
+  static T getOtherClass<T extends Object>() =>
+      kGetIt<T>(); // Generic method to get api service
 }

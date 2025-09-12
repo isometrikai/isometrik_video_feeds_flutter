@@ -7,7 +7,8 @@ import 'dart:convert';
 SignupResponseModel signupResponseModelFromJson(String str) =>
     SignupResponseModel.fromJson(json.decode(str) as Map<String, dynamic>);
 
-String signupResponseModelToJson(SignupResponseModel data) => json.encode(data.toJson());
+String signupResponseModelToJson(SignupResponseModel data) =>
+    json.encode(data.toJson());
 
 class SignupResponseModel {
   SignupResponseModel({
@@ -15,9 +16,12 @@ class SignupResponseModel {
     this.data,
   });
 
-  factory SignupResponseModel.fromJson(Map<String, dynamic> json) => SignupResponseModel(
+  factory SignupResponseModel.fromJson(Map<String, dynamic> json) =>
+      SignupResponseModel(
         message: json['message'] as String? ?? '',
-        data: json['data'] == null ? LoginSignupData() : LoginSignupData.fromJson(json['data'] as Map<String, dynamic>),
+        data: json['data'] == null
+            ? LoginSignupData()
+            : LoginSignupData.fromJson(json['data'] as Map<String, dynamic>),
       );
   String? message;
   LoginSignupData? data;
@@ -108,8 +112,11 @@ class LoginSignupData {
     // this.idProof,
   });
 
-  factory LoginSignupData.fromJson(Map<String, dynamic> json) => LoginSignupData(
-        token: json['token'] == null ? Tokens() : Tokens.fromJson(json['token'] as Map<String, dynamic>),
+  factory LoginSignupData.fromJson(Map<String, dynamic> json) =>
+      LoginSignupData(
+        token: json['token'] == null
+            ? Tokens()
+            : Tokens.fromJson(json['token'] as Map<String, dynamic>),
         // storeToken: json['storeToken'] == null ? InstitutionsDetails() : InstitutionsDetails.fromJson(json['storeToken'] as Map<String, dynamic>),
         userId: json['userId'] as String? ?? '',
         userType: json['userType'] as int? ?? 0,
@@ -122,7 +129,8 @@ class LoginSignupData {
         private: json['private'] as int? ?? 0,
         // businessProfile:
         //     List<dynamic>.from(json['businessProfile'].map((x) => x)),
-        isActiveBusinessProfile: json['isActiveBusinessProfile'] as bool? ?? false,
+        isActiveBusinessProfile:
+            json['isActiveBusinessProfile'] as bool? ?? false,
         fcmTopic: json['fcmTopic'] as String? ?? '',
         mqttTopic: json['mqttTopic'] as String? ?? '',
         city: json['city'] as String? ?? '',
@@ -132,7 +140,8 @@ class LoginSignupData {
         countryName: json['countryName'] as String? ?? '',
         location: json['location'] == null
             ? LoginSignupLocation()
-            : LoginSignupLocation.fromJson(json['location'] as Map<String, dynamic>),
+            : LoginSignupLocation.fromJson(
+                json['location'] as Map<String, dynamic>),
         userName: json['userName'] as String? ?? '',
         name: json['name'] as String? ?? '',
         firstName: json['firstName'] as String? ?? '',
@@ -386,7 +395,8 @@ class LoginSignupCard {
     this.verified,
   });
 
-  factory LoginSignupCard.fromJson(Map<String, dynamic> json) => LoginSignupCard(
+  factory LoginSignupCard.fromJson(Map<String, dynamic> json) =>
+      LoginSignupCard(
         url: json['url'] as String? ?? '',
         verified: json['verified'] as bool? ?? false,
       );
@@ -413,7 +423,8 @@ class LoginSignupLocation {
     this.long,
   });
 
-  factory LoginSignupLocation.fromJson(Map<String, dynamic> json) => LoginSignupLocation(
+  factory LoginSignupLocation.fromJson(Map<String, dynamic> json) =>
+      LoginSignupLocation(
         lat: json['lat'] as num? ?? 0,
         long: json['lon'] as num? ?? 0,
       );
@@ -438,7 +449,9 @@ class Tokens {
         accessExpireAt: json['accessExpireAt'] as int? ?? 0,
         accessToken: json['accessToken'] as String? ?? '',
         refreshToken: json['refreshToken'] as String? ?? '',
-        userData: json['userData'] == null ? null : UserData.fromJson(json['userData'] as Map<String, dynamic>),
+        userData: json['userData'] == null
+            ? null
+            : UserData.fromJson(json['userData'] as Map<String, dynamic>),
       );
   int? accessExpireAt;
   String? accessToken;

@@ -22,13 +22,17 @@ class DeviceInfoManager {
   }
 
   /// Device id
-  String? get deviceId => Platform.isAndroid ? androidDeviceInfo?.id : iosDeviceInfo?.identifierForVendor;
+  String? get deviceId => Platform.isAndroid
+      ? androidDeviceInfo?.id
+      : iosDeviceInfo?.identifierForVendor;
 
   /// Device make brand
-  String? get deviceMake => Platform.isAndroid ? androidDeviceInfo?.brand : 'Apple';
+  String? get deviceMake =>
+      Platform.isAndroid ? androidDeviceInfo?.brand : 'Apple';
 
   /// Device Model
-  String? get deviceModel => Platform.isAndroid ? androidDeviceInfo?.model : iosDeviceInfo?.model;
+  String? get deviceModel =>
+      Platform.isAndroid ? androidDeviceInfo?.model : iosDeviceInfo?.model;
 
   /// Device is a type of 1 for Android and 2 for iOS
   String get deviceTypeCode => Platform.isAndroid ? '1' : '2';

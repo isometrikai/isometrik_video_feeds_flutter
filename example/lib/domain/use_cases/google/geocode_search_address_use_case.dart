@@ -6,17 +6,19 @@ class GeocodeSearchAddressUseCase extends BaseUseCase {
 
   final GoogleRepository _repository;
 
-  Future<ApiResult<AddressPlacesAutocompleteResponse?>> executeGetAddressByAutoCompleteSearch({
+  Future<ApiResult<AddressPlacesAutocompleteResponse?>>
+      executeGetAddressByAutoCompleteSearch({
     required String searchText,
     required String placeType,
     required List<String>? countries,
   }) async =>
-      await super.execute(() async {
-        final response = await _repository.getAddressByAutoCompleteSearch(
-          searchText: searchText,
-          countries: countries,
-          placeType: placeType,
-        );
-        return ApiResult(data: response.responseCode == 200 ? response.data : null);
-      });
+          await super.execute(() async {
+            final response = await _repository.getAddressByAutoCompleteSearch(
+              searchText: searchText,
+              countries: countries,
+              placeType: placeType,
+            );
+            return ApiResult(
+                data: response.responseCode == 200 ? response.data : null);
+          });
 }

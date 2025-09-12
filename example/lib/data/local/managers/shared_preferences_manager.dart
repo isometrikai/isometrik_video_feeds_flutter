@@ -26,7 +26,8 @@ class SharedPreferencesManager {
   }
 
   /// store the value with type
-  Future<void> saveValue(String key, dynamic value, SavedValueDataType saveValueDataType) async {
+  Future<void> saveValue(
+      String key, dynamic value, SavedValueDataType saveValueDataType) async {
     if (!isInitialized) {
       await init();
     }
@@ -45,7 +46,8 @@ class SharedPreferencesManager {
         await _sharedPreferences?.setBool(key, value as bool? ?? false);
         break;
       case SavedValueDataType.stringList:
-        await _sharedPreferences?.setStringList(key, value as List<String>? ?? []);
+        await _sharedPreferences?.setStringList(
+            key, value as List<String>? ?? []);
         break;
     }
   }
@@ -58,11 +60,13 @@ class SharedPreferencesManager {
 
     switch (getValueDataType) {
       case SavedValueDataType.string:
-        return _sharedPreferences?.getString(key) ?? _getDefaultStringValue(key);
+        return _sharedPreferences?.getString(key) ??
+            _getDefaultStringValue(key);
       case SavedValueDataType.int:
         return _sharedPreferences?.getInt(key) ?? 0;
       case SavedValueDataType.double:
-        return _sharedPreferences?.getDouble(key) ?? _getDefaultDoubleValue(key);
+        return _sharedPreferences?.getDouble(key) ??
+            _getDefaultDoubleValue(key);
       case SavedValueDataType.bool:
         return _sharedPreferences?.getBool(key) ?? _getDefaultBoolValue(key);
       case SavedValueDataType.stringList:
@@ -100,5 +104,6 @@ class SharedPreferencesManager {
     }
   }
 
-  bool _getDefaultBoolValue(String key) => key == LocalStorageKeys.isFirstTimeVisit;
+  bool _getDefaultBoolValue(String key) =>
+      key == LocalStorageKeys.isFirstTimeVisit;
 }

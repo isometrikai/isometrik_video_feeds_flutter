@@ -33,7 +33,8 @@ class _LoginScreenState extends State<LoginScreen> {
   void _validateMobile() {
     final mobileNumber = mobileController.text;
     // Simple validation for mobile number (10 digits)
-    if (mobileNumber.isEmpty || !RegExp(r'^[0-9]{10}$').hasMatch(mobileNumber)) {
+    if (mobileNumber.isEmpty ||
+        !RegExp(r'^[0-9]{10}$').hasMatch(mobileNumber)) {
       setState(() {
         errorMessage = 'Please enter a valid mobile number (10 digits)';
         isMobileValid = false;
@@ -58,7 +59,8 @@ class _LoginScreenState extends State<LoginScreen> {
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthError) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message)));
+            ScaffoldMessenger.of(context)
+                .showSnackBar(SnackBar(content: Text(state.message)));
           }
         },
         child: Padding(
@@ -87,14 +89,17 @@ class _LoginScreenState extends State<LoginScreen> {
                           controller: mobileController,
                           decoration: InputDecoration(
                             labelText: 'Mobile Number',
-                            labelStyle: const TextStyle(color: Colors.blueAccent),
+                            labelStyle:
+                                const TextStyle(color: Colors.blueAccent),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(color: Colors.blueAccent),
+                              borderSide:
+                                  const BorderSide(color: Colors.blueAccent),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(color: Colors.blueAccent, width: 2),
+                              borderSide: const BorderSide(
+                                  color: Colors.blueAccent, width: 2),
                             ),
                             errorBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
@@ -102,7 +107,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             errorText: errorMessage, // Show error message
                           ),
-                          initialCountryCode: DefaultValues.defaultCountryIsoCode, // Set default country code
+                          initialCountryCode: DefaultValues
+                              .defaultCountryIsoCode, // Set default country code
                           onChanged: (phone) {
                             // Handle phone number change
                             countryCode = phone.countryCode;
@@ -116,12 +122,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: isMobileValid
                         ? () {
                             context.read<AuthBloc>().add(LoginEvent(
-                                isLoading: true, mobileNumber: mobileController.text, countryCode: countryCode));
+                                isLoading: true,
+                                mobileNumber: mobileController.text,
+                                countryCode: countryCode));
                           }
                         : null, // Disable button if mobile is not valid
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blueAccent,
-                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 40, vertical: 15),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),

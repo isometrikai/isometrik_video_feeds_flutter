@@ -7,7 +7,8 @@ class IsrLocalStorageRepositoryImpl implements IsrLocalStorageRepository {
 
   final IsrLocalStorageManager _localStorageManager;
 
-  Future<dynamic> getValue(String key, SavedValueDataType saveValueDataType) async {
+  Future<dynamic> getValue(
+      String key, SavedValueDataType saveValueDataType) async {
     final value = await _localStorageManager.getValue(key, saveValueDataType);
     return value == null
         ? null
@@ -22,9 +23,11 @@ class IsrLocalStorageRepositoryImpl implements IsrLocalStorageRepository {
                         : value as bool;
   }
 
-  Future<String> getSecuredValue(String key) async => await _localStorageManager.getSecuredValue(key);
+  Future<String> getSecuredValue(String key) async =>
+      await _localStorageManager.getSecuredValue(key);
 
-  void saveValue(String key, dynamic value, SavedValueDataType savedValueDataType) {
+  void saveValue(
+      String key, dynamic value, SavedValueDataType savedValueDataType) {
     _localStorageManager.saveValue(key, value, savedValueDataType);
   }
 
@@ -56,77 +59,95 @@ class IsrLocalStorageRepositoryImpl implements IsrLocalStorageRepository {
   void clearSession() {}
 
   @override
-  Future<String> getUserId() async => await _localStorageManager.getSecuredValue(IsrLocalStorageKeys.userId);
+  Future<String> getUserId() async =>
+      await _localStorageManager.getSecuredValue(IsrLocalStorageKeys.userId);
 
   @override
-  Future<String> getEmail() async => await _localStorageManager.getSecuredValue(IsrLocalStorageKeys.email);
+  Future<String> getEmail() async =>
+      await _localStorageManager.getSecuredValue(IsrLocalStorageKeys.email);
 
   @override
-  Future<bool> isLoggedIn() async =>
-      await _localStorageManager.getValue(IsrLocalStorageKeys.isLoggedIn, SavedValueDataType.bool) as bool;
+  Future<bool> isLoggedIn() async => await _localStorageManager.getValue(
+      IsrLocalStorageKeys.isLoggedIn, SavedValueDataType.bool) as bool;
 
   @override
-  Future<String> getCurrencyCode() async =>
-      await _localStorageManager.getSecuredValue(IsrLocalStorageKeys.currencyCode);
+  Future<String> getCurrencyCode() async => await _localStorageManager
+      .getSecuredValue(IsrLocalStorageKeys.currencyCode);
 
   @override
-  Future<String> getCurrencySymbol() async =>
-      await _localStorageManager.getSecuredValue(IsrLocalStorageKeys.currencySymbol);
+  Future<String> getCurrencySymbol() async => await _localStorageManager
+      .getSecuredValue(IsrLocalStorageKeys.currencySymbol);
 
   // Implementations for all keys
   @override
   Future<String> getLanguage() async =>
-      await getValue(IsrLocalStorageKeys.language, SavedValueDataType.string) as String;
+      await getValue(IsrLocalStorageKeys.language, SavedValueDataType.string)
+          as String;
 
   @override
-  Future<String> getAccessToken() async => await getSecuredValue(IsrLocalStorageKeys.accessToken);
+  Future<String> getAccessToken() async =>
+      await getSecuredValue(IsrLocalStorageKeys.accessToken);
 
   @override
-  Future<String> getRefreshToken() async => await getSecuredValue(IsrLocalStorageKeys.refreshToken);
+  Future<String> getRefreshToken() async =>
+      await getSecuredValue(IsrLocalStorageKeys.refreshToken);
 
   @override
-  Future<String> getPhoneNumber() async => await getSecuredValue(IsrLocalStorageKeys.phoneNumber);
+  Future<String> getPhoneNumber() async =>
+      await getSecuredValue(IsrLocalStorageKeys.phoneNumber);
 
   @override
   Future<String> getFirstName() async =>
-      await getValue(IsrLocalStorageKeys.firstName, SavedValueDataType.string) as String;
+      await getValue(IsrLocalStorageKeys.firstName, SavedValueDataType.string)
+          as String;
 
   @override
   Future<String> getLastName() async =>
-      await getValue(IsrLocalStorageKeys.lastName, SavedValueDataType.string) as String;
+      await getValue(IsrLocalStorageKeys.lastName, SavedValueDataType.string)
+          as String;
 
   @override
   Future<String> getProfilePic() async =>
-      await getValue(IsrLocalStorageKeys.profilePic, SavedValueDataType.string) as String;
+      await getValue(IsrLocalStorageKeys.profilePic, SavedValueDataType.string)
+          as String;
 
   @override
   Future<String> getUserInfo() async =>
-      await getValue(IsrLocalStorageKeys.userInfo, SavedValueDataType.string) as String;
+      await getValue(IsrLocalStorageKeys.userInfo, SavedValueDataType.string)
+          as String;
 
   // Implementations for setters
   @override
-  void saveLanguage(String value) => saveValue(IsrLocalStorageKeys.language, value, SavedValueDataType.string);
+  void saveLanguage(String value) =>
+      saveValue(IsrLocalStorageKeys.language, value, SavedValueDataType.string);
 
   @override
-  void saveIsLoggedIn(bool value) => saveValue(IsrLocalStorageKeys.isLoggedIn, value, SavedValueDataType.bool);
+  void saveIsLoggedIn(bool value) =>
+      saveValue(IsrLocalStorageKeys.isLoggedIn, value, SavedValueDataType.bool);
 
   @override
-  void saveAccessToken(String value) => saveSecuredValue(IsrLocalStorageKeys.accessToken, value);
+  void saveAccessToken(String value) =>
+      saveSecuredValue(IsrLocalStorageKeys.accessToken, value);
 
   @override
-  void saveRefreshToken(String value) => saveSecuredValue(IsrLocalStorageKeys.refreshToken, value);
+  void saveRefreshToken(String value) =>
+      saveSecuredValue(IsrLocalStorageKeys.refreshToken, value);
 
   @override
-  void savePhoneNumber(String value) => saveSecuredValue(IsrLocalStorageKeys.phoneNumber, value);
+  void savePhoneNumber(String value) =>
+      saveSecuredValue(IsrLocalStorageKeys.phoneNumber, value);
 
   @override
-  void saveFirstName(String value) => saveValue(IsrLocalStorageKeys.firstName, value, SavedValueDataType.string);
+  void saveFirstName(String value) => saveValue(
+      IsrLocalStorageKeys.firstName, value, SavedValueDataType.string);
 
   @override
-  void saveLastName(String value) => saveValue(IsrLocalStorageKeys.lastName, value, SavedValueDataType.string);
+  void saveLastName(String value) =>
+      saveValue(IsrLocalStorageKeys.lastName, value, SavedValueDataType.string);
 
   @override
-  void saveProfilePic(String value) => saveValue(IsrLocalStorageKeys.profilePic, value, SavedValueDataType.string);
+  void saveProfilePic(String value) => saveValue(
+      IsrLocalStorageKeys.profilePic, value, SavedValueDataType.string);
 
   @override
   void saveEmail(String value) {

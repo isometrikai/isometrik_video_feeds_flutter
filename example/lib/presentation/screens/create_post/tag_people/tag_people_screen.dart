@@ -22,10 +22,14 @@ class TagPeopleScreen extends StatefulWidget {
 class _TagPeopleScreenState extends State<TagPeopleScreen> {
   final PageController _pageController = PageController();
   int _currentIndex = 0;
-  final Map<int, List<MentionData>> _mediaMentionedMap = {}; // Mentioned for each media item
-  final Map<int, List<MentionData>> _mediaTaggedMap = {}; // Tagged for each media item
-  final Map<int, GlobalKey> _mentionedImageKeys = {}; // Unique keys for each image  // <-- HERE
-  final Map<int, GlobalKey> _taggedImageKeys = {}; // Unique keys for each image  // <-- HERE
+  final Map<int, List<MentionData>> _mediaMentionedMap =
+      {}; // Mentioned for each media item
+  final Map<int, List<MentionData>> _mediaTaggedMap =
+      {}; // Tagged for each media item
+  final Map<int, GlobalKey> _mentionedImageKeys =
+      {}; // Unique keys for each image  // <-- HERE
+  final Map<int, GlobalKey> _taggedImageKeys =
+      {}; // Unique keys for each image  // <-- HERE
   var _mediaDataList = <MediaData>[];
   var _mentionDataList = <MentionData>[];
   var _tagDataList = <MentionData>[];
@@ -58,7 +62,8 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
     }
   }
 
-  List<MentionData> get currentMentions => _mediaMentionedMap[_currentIndex] ?? [];
+  List<MentionData> get currentMentions =>
+      _mediaMentionedMap[_currentIndex] ?? [];
 
   List<MentionData> get currentTags => _mediaTaggedMap[_currentIndex] ?? [];
 
@@ -142,9 +147,11 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                           itemCount: _mediaDataList.length,
                           itemBuilder: (context, index) =>
                               _mediaDataList[index].mediaType == 'video'
-                                  ? _buildVideoPlayer(_mediaDataList[index].localPath ?? '')
+                                  ? _buildVideoPlayer(
+                                      _mediaDataList[index].localPath ?? '')
                                   : _buildTaggableImageView(
-                                      _mediaDataList[index].localPath ?? '', index),
+                                      _mediaDataList[index].localPath ?? '',
+                                      index),
                         ),
 
                         // Page Indicators (only show if multiple items)
@@ -159,7 +166,8 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                                 _mediaDataList.length,
                                 (index) => AnimatedContainer(
                                   duration: const Duration(milliseconds: 300),
-                                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                                  margin:
+                                      const EdgeInsets.symmetric(horizontal: 4),
                                   width: _currentIndex == index ? 24 : 8,
                                   height: 8,
                                   decoration: BoxDecoration(
@@ -179,7 +187,8 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                             top: 16,
                             right: 16,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
                                 color: Colors.black.applyOpacity(0.7),
                                 borderRadius: BorderRadius.circular(16),
@@ -201,7 +210,8 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                             top: 16,
                             left: 16,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
                                 color: Colors.blue.applyOpacity(0.9),
                                 borderRadius: BorderRadius.circular(16),
@@ -209,7 +219,8 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(Icons.person, color: Colors.white, size: 16),
+                                  const Icon(Icons.person,
+                                      color: Colors.white, size: 16),
                                   const SizedBox(width: 4),
                                   Text(
                                     '${currentMentions.length}',
@@ -304,8 +315,8 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                             .map((tag) => Container(
                                   margin: const EdgeInsets.only(bottom: 8),
                                   child: ListTile(
-                                    contentPadding:
-                                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 4),
                                     tileColor: Colors.blue[50],
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
@@ -319,13 +330,16 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                                     ),
                                     title: Text(
                                       tag.username!,
-                                      style: const TextStyle(fontWeight: FontWeight.w500),
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.w500),
                                     ),
                                     trailing: IconButton(
-                                      icon: const Icon(Icons.close, color: Colors.red, size: 20),
+                                      icon: const Icon(Icons.close,
+                                          color: Colors.red, size: 20),
                                       onPressed: () {
                                         setState(() {
-                                          _mediaMentionedMap[_currentIndex]?.remove(tag);
+                                          _mediaMentionedMap[_currentIndex]
+                                              ?.remove(tag);
                                         });
                                       },
                                     ),
@@ -351,8 +365,8 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                             .map((tag) => Container(
                                   margin: const EdgeInsets.only(bottom: 8),
                                   child: ListTile(
-                                    contentPadding:
-                                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 4),
                                     tileColor: Colors.blue[50],
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
@@ -366,13 +380,16 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                                     ),
                                     title: Text(
                                       tag.tag!,
-                                      style: const TextStyle(fontWeight: FontWeight.w500),
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.w500),
                                     ),
                                     trailing: IconButton(
-                                      icon: const Icon(Icons.close, color: Colors.red, size: 20),
+                                      icon: const Icon(Icons.close,
+                                          color: Colors.red, size: 20),
                                       onPressed: () {
                                         setState(() {
-                                          _mediaTaggedMap[_currentIndex]?.remove(tag);
+                                          _mediaTaggedMap[_currentIndex]
+                                              ?.remove(tag);
                                         });
                                       },
                                     ),
@@ -390,7 +407,8 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
         ),
       );
 
-  Widget _buildTaggableImageView(String imageUrl, int mediaIndex) => LayoutBuilder(
+  Widget _buildTaggableImageView(String imageUrl, int mediaIndex) =>
+      LayoutBuilder(
         builder: (context, constraints) => GestureDetector(
           onTapUp: (TapUpDetails details) {
             // if (_mediaDataList[mediaIndex].mediaType == 'image') {
@@ -406,15 +424,20 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                 child: AppImage.file(
                   imageUrl,
                   fit: BoxFit.cover,
-                  key: _mentionedImageKeys[mediaIndex], // Use unique key for each image
+                  key: _mentionedImageKeys[
+                      mediaIndex], // Use unique key for each image
                 ),
               ),
 
               // Tag Markers
               ...currentMentions
                   .map((tag) => Positioned(
-                        left: ((tag.textPosition?.start ?? 0) * constraints.maxWidth) - 12,
-                        top: ((tag.textPosition?.end ?? 0) * constraints.maxHeight) - 12,
+                        left: ((tag.textPosition?.start ?? 0) *
+                                constraints.maxWidth) -
+                            12,
+                        top: ((tag.textPosition?.end ?? 0) *
+                                constraints.maxHeight) -
+                            12,
                         child: _buildTagMarker(tag),
                       ))
                   .toList(),
@@ -494,7 +517,8 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
             Positioned(
               bottom: 40,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: Colors.orange.applyOpacity(0.9),
                   borderRadius: BorderRadius.circular(16),
@@ -513,14 +537,16 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
         ),
       );
 
-  void _handleImageTap(TapUpDetails details, BoxConstraints constraints, int mediaIndex) async {
+  void _handleImageTap(
+      TapUpDetails details, BoxConstraints constraints, int mediaIndex) async {
     // Calculate relative position (0.0 to 1.0)
     final relativePosition = Offset(
       (details.localPosition.dx / constraints.maxWidth) * 100,
       (details.localPosition.dy / constraints.maxHeight) * 100,
     );
 
-    final taggedUserList = await InjectionUtils.getRouteManagement().goToSearchUserScreen();
+    final taggedUserList =
+        await InjectionUtils.getRouteManagement().goToSearchUserScreen();
 
     if (taggedUserList.isEmptyOrNull) return;
     if (taggedUserList is List<SocialUserData>) {
@@ -553,7 +579,8 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
     setState(() {});
   }
 
-  void _setTagPosition(List<HashTagData> taggedList, int mediaIndex, Offset position) {
+  void _setTagPosition(
+      List<HashTagData> taggedList, int mediaIndex, Offset position) {
     for (var element in taggedList) {
       final mentionData = MentionData(
         mediaPosition: MediaPosition(
@@ -622,7 +649,8 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
     final finalMentionDataList = uniqueMentions.toList();
 
     _postAttributeClass.mentionedUserList = finalMentionDataList;
-    debugPrint('final mention data list....${jsonEncode(finalMentionDataList)}');
+    debugPrint(
+        'final mention data list....${jsonEncode(finalMentionDataList)}');
   }
 
   void _setTagData() {

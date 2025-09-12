@@ -5,11 +5,13 @@ class AppError implements Exception {
 }
 
 class NetworkError extends AppError {
-  NetworkError(String message, {int? statusCode}) : super(message, statusCode: statusCode);
+  NetworkError(String message, {int? statusCode})
+      : super(message, statusCode: statusCode);
 }
 
 class ApiError extends AppError {
-  ApiError(String message, {int? statusCode}) : super(message, statusCode: statusCode);
+  ApiError(String message, {int? statusCode})
+      : super(message, statusCode: statusCode);
 }
 
 class UnknownError extends AppError {

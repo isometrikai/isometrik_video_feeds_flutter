@@ -25,7 +25,8 @@ class MediaCompressor {
   static Future<File?> _compressImage(File file) async {
     try {
       final dir = await getTemporaryDirectory();
-      final targetPath = path.join(dir.path, 'img_${DateTime.now().millisecondsSinceEpoch}.jpg');
+      final targetPath = path.join(
+          dir.path, 'img_${DateTime.now().millisecondsSinceEpoch}.jpg');
 
       final result = await FlutterImageCompress.compressAndGetFile(
         file.absolute.path,
@@ -42,9 +43,11 @@ class MediaCompressor {
   }
 
   /// Compresses video using `video_compress`
-  static Future<File?> _compressVideo(File file, Function(double)? onProgress) async {
+  static Future<File?> _compressVideo(
+      File file, Function(double)? onProgress) async {
     try {
-      final subscription = VideoCompress.compressProgress$.subscribe((progress) {
+      final subscription =
+          VideoCompress.compressProgress$.subscribe((progress) {
         debugPrint('Video compression progress: $progress');
         if (onProgress != null) onProgress(progress);
       });

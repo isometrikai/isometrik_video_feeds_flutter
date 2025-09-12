@@ -679,7 +679,8 @@ import 'dart:convert';
 CreatePostResponse createPostResponseFromJson(String str) =>
     CreatePostResponse.fromJson(json.decode(str) as Map<String, dynamic>);
 
-String createPostResponseToJson(CreatePostResponse data) => json.encode(data.toJson());
+String createPostResponseToJson(CreatePostResponse data) =>
+    json.encode(data.toJson());
 
 class CreatePostResponse {
   CreatePostResponse({
@@ -690,7 +691,8 @@ class CreatePostResponse {
     this.statusCode,
   });
 
-  factory CreatePostResponse.fromJson(Map<String, dynamic> json) => CreatePostResponse(
+  factory CreatePostResponse.fromJson(Map<String, dynamic> json) =>
+      CreatePostResponse(
         code: json['code'] as String? ?? '',
         data: json['data'] == null
             ? null

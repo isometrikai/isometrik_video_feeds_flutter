@@ -53,7 +53,8 @@ class _ProfileViewState extends State<ProfileView> {
               // Logout Tile
               ListTile(
                 leading: const Icon(Icons.logout, color: Colors.red),
-                title: const Text('Logout', style: TextStyle(color: Colors.red)),
+                title:
+                    const Text('Logout', style: TextStyle(color: Colors.red)),
                 onTap: () {
                   // Handle logout action
                   _showLogoutConfirmation(context);
@@ -70,14 +71,16 @@ class _ProfileViewState extends State<ProfileView> {
         content: const Text('Are you sure you want to logout?'),
         actions: [
           TextButton(
-            style: TextButton.styleFrom(foregroundColor: Colors.blue, backgroundColor: Colors.white),
+            style: TextButton.styleFrom(
+                foregroundColor: Colors.blue, backgroundColor: Colors.white),
             onPressed: () {
               Navigator.of(context).pop(); // Close the dialog
             },
             child: const Text('Cancel'),
           ),
           TextButton(
-            style: TextButton.styleFrom(foregroundColor: Colors.red, backgroundColor: Colors.white),
+            style: TextButton.styleFrom(
+                foregroundColor: Colors.red, backgroundColor: Colors.white),
             onPressed: () {
               InjectionUtils.getBloc<ProfileBloc>().add(LogoutEvent());
               // Handle logout logic here

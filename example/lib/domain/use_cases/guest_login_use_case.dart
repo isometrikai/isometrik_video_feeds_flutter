@@ -13,6 +13,7 @@ class GuestLoginUseCase extends BaseUseCase {
         final response = await _repository.guestLogin(
           isLoading: isLoading,
         );
-        return ApiResult(data: response.data?.statusCode == 200 ? response.data : null);
+        return ApiResult(
+            data: response.data?.statusCode == 200 ? response.data : null);
       });
 }

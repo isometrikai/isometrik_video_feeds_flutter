@@ -45,7 +45,8 @@ class GoogleRepositoryImpl extends GoogleRepository {
   }
 
   @override
-  Future<CustomResponse<AddressPlacesAutocompleteResponse?>> getAddressByAutoCompleteSearch({
+  Future<CustomResponse<AddressPlacesAutocompleteResponse?>>
+      getAddressByAutoCompleteSearch({
     required String searchText,
     required String placeType,
     required List<String>? countries,
@@ -85,15 +86,16 @@ class GoogleRepositoryImpl extends GoogleRepository {
     Function(double p1)? onProgress,
     String? cloudFolderName,
   }) async {
-    final response = await GoogleCloudStorageUploader.uploadFileWithRealProgress(
-        file: file,
-        fileName: fileName,
-        fileExtension: fileExtension,
-        userId: userId,
-        onProgress: (progress) {
-          if (onProgress == null) return;
-          onProgress(progress);
-        });
+    final response =
+        await GoogleCloudStorageUploader.uploadFileWithRealProgress(
+            file: file,
+            fileName: fileName,
+            fileExtension: fileExtension,
+            userId: userId,
+            onProgress: (progress) {
+              if (onProgress == null) return;
+              onProgress(progress);
+            });
     return response ?? '';
   }
 }

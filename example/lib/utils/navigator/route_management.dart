@@ -35,7 +35,8 @@ class RouteManagement {
   }
 
   Future<String?> goToCreatePostView({TimeLineData? postData}) async {
-    final result = await _navigationService.pushNamed(RouteNames.createPostView, arguments: {
+    final result = await _navigationService
+        .pushNamed(RouteNames.createPostView, arguments: {
       'postData': postData,
     }) as String?;
     return result;
@@ -72,14 +73,17 @@ class RouteManagement {
         },
       );
 
-  Future<List<dynamic>> goToSearchUserScreen({List<SocialUserData>? socialUserList}) async {
-    final result = await _navigationService.pushNamed(RouteNames.searchUserScreen,
+  Future<List<dynamic>> goToSearchUserScreen(
+      {List<SocialUserData>? socialUserList}) async {
+    final result = await _navigationService.pushNamed(
+        RouteNames.searchUserScreen,
         arguments: {'socialUserList': socialUserList}) as List<dynamic>?;
     return result == null ? [] : result;
   }
 
   Future<List<TaggedPlace>?> goToSearchLocationScreen() async {
-    final result = await _navigationService.pushNamed(RouteNames.searchLocationScreen);
+    final result =
+        await _navigationService.pushNamed(RouteNames.searchLocationScreen);
     return result as List<TaggedPlace>?;
   }
 }

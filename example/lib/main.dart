@@ -7,6 +7,8 @@ import 'package:ism_video_reel_player_example/presentation/presentation.dart';
 import 'package:ism_video_reel_player_example/res/res.dart';
 import 'package:ism_video_reel_player_example/utils/utils.dart';
 
+export 'utils/utils.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
@@ -18,17 +20,29 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => MultiBlocProvider(
         providers: [
-          BlocProvider(create: (context) => InjectionUtils.getBloc<SplashBloc>()),
-          BlocProvider(create: (context) => InjectionUtils.getBloc<LandingBloc>()),
+          BlocProvider(
+              create: (context) => InjectionUtils.getBloc<SplashBloc>()),
+          BlocProvider(
+              create: (context) => InjectionUtils.getBloc<LandingBloc>()),
           BlocProvider(create: (context) => InjectionUtils.getBloc<AuthBloc>()),
           BlocProvider(create: (context) => InjectionUtils.getBloc<HomeBloc>()),
-          BlocProvider(create: (context) => InjectionUtils.getBloc<CreatePostBloc>()),
-          BlocProvider(create: (context) => InjectionUtils.getBloc<NavItemCubit>()),
-          BlocProvider(create: (context) => InjectionUtils.getBloc<ProfileBloc>()),
-          BlocProvider(create: (context) => InjectionUtils.getBloc<UploadProgressCubit>()),
-          BlocProvider(create: (context) => InjectionUtils.getBloc<CommentActionCubit>()),
-          BlocProvider(create: (context) => InjectionUtils.getBloc<SearchUserBloc>()),
-          BlocProvider(create: (context) => InjectionUtils.getBloc<SearchLocationBloc>()),
+          BlocProvider(
+              create: (context) => InjectionUtils.getBloc<CreatePostBloc>()),
+          BlocProvider(
+              create: (context) => InjectionUtils.getBloc<NavItemCubit>()),
+          BlocProvider(
+              create: (context) => InjectionUtils.getBloc<ProfileBloc>()),
+          BlocProvider(
+              create: (context) =>
+                  InjectionUtils.getBloc<UploadProgressCubit>()),
+          BlocProvider(
+              create: (context) =>
+                  InjectionUtils.getBloc<CommentActionCubit>()),
+          BlocProvider(
+              create: (context) => InjectionUtils.getBloc<SearchUserBloc>()),
+          BlocProvider(
+              create: (context) =>
+                  InjectionUtils.getBloc<SearchLocationBloc>()),
         ],
         child: ScreenUtilInit(
           useInheritedMediaQuery: true,

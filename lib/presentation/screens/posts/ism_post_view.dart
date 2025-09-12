@@ -57,7 +57,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       initialIndex: _currentIndex,
     );
 
-    _refreshControllers = List.generate(_tabDataModelList.length, (index) => RefreshController());
+    _refreshControllers =
+        List.generate(_tabDataModelList.length, (index) => RefreshController());
     var postBloc = IsmInjectionUtils.getBloc<PostBloc>();
     if (postBloc.isClosed) {
       isrConfigureInjection();
@@ -87,7 +88,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       final listOfUrls = <String>[];
       for (var reelsData in reelsDataList) {
         listOfUrls.add(reelsData.mediaMetaDataList.first.mediaUrl);
-        if (reelsData.mediaMetaDataList.first.thumbnailUrl.isStringEmptyOrNull == false) {
+        if (reelsData
+                .mediaMetaDataList.first.thumbnailUrl.isStringEmptyOrNull ==
+            false) {
           listOfUrls.add(reelsData.mediaMetaDataList.first.thumbnailUrl);
         }
       }
@@ -112,15 +115,19 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                 //     _tabDataModelList[_currentIndex].postList));
               }
             },
-            buildWhen: (previousState, currentState) => currentState is UserInformationLoaded,
+            buildWhen: (previousState, currentState) =>
+                currentState is UserInformationLoaded,
             builder: (context, state) {
-              _loggedInUserId = state is UserInformationLoaded ? state.userId : '';
+              _loggedInUserId =
+                  state is UserInformationLoaded ? state.userId : '';
               return state is PostInitial
                   ? state.isLoading == true
                       ? Center(child: IsrVideoReelUtility.loaderWidget())
                       : const SizedBox.shrink()
                   : DefaultTabController(
-                      length: _tabDataModelList.isListEmptyOrNull ? 0 : _tabDataModelList.length,
+                      length: _tabDataModelList.isListEmptyOrNull
+                          ? 0
+                          : _tabDataModelList.length,
                       initialIndex: _currentIndex,
                       child: Stack(
                         children: [
@@ -128,8 +135,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                             physics: const NeverScrollableScrollPhysics(),
                             controller: _postTabController,
                             children: _tabDataModelList
-                                .map((tabData) =>
-                                    _buildTabBarView(tabData, _tabDataModelList.indexOf(tabData)))
+                                .map((tabData) => _buildTabBarView(tabData,
+                                    _tabDataModelList.indexOf(tabData)))
                                 .toList(),
                           ),
                           _buildTabBar(),
@@ -161,12 +168,15 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                       ),
                       child: TabBar(
                         controller: _postTabController,
-                        labelColor: _isFollowingPostsEmpty() ? IsrColors.black : IsrColors.white,
+                        labelColor: _isFollowingPostsEmpty()
+                            ? IsrColors.black
+                            : IsrColors.white,
                         unselectedLabelColor: _isFollowingPostsEmpty()
                             ? IsrColors.black
                             : IsrColors.white.changeOpacity(0.6),
-                        indicatorColor:
-                            _isFollowingPostsEmpty() ? IsrColors.black : IsrColors.white,
+                        indicatorColor: _isFollowingPostsEmpty()
+                            ? IsrColors.black
+                            : IsrColors.white,
                         indicatorWeight: 2,
                         dividerColor: Colors.transparent,
                         indicatorSize: TabBarIndicatorSize.label,

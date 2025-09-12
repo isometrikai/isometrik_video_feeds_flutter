@@ -2,13 +2,13 @@ import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player_example/domain/domain.dart';
-import 'package:ism_video_reel_player_example/example_export.dart';
-import 'package:ism_video_reel_player_example/presentation/presentation.dart';
+import 'package:ism_video_reel_player_example/main.dart';
 
 part 'search_location_events.dart';
 part 'search_location_state.dart';
 
-class SearchLocationBloc extends Bloc<SearchLocationEvent, SearchLocationState> {
+class SearchLocationBloc
+    extends Bloc<SearchLocationEvent, SearchLocationState> {
   SearchLocationBloc(
     this._geocodeSearchAddressUseCase,
     this._getPlaceDetailsUseCase,
@@ -21,7 +21,8 @@ class SearchLocationBloc extends Bloc<SearchLocationEvent, SearchLocationState> 
   final GetPlaceDetailsUseCase _getPlaceDetailsUseCase;
   final DeBouncer _deBouncer = DeBouncer();
 
-  FutureOr<void> _searchAddress(SearchAddressEvent event, Emitter<SearchLocationState> emit) async {
+  FutureOr<void> _searchAddress(
+      SearchAddressEvent event, Emitter<SearchLocationState> emit) async {
     _deBouncer.run(() {
       _getAddressByAutoCompleteSearch(event, emit);
     });
@@ -29,7 +30,8 @@ class SearchLocationBloc extends Bloc<SearchLocationEvent, SearchLocationState> 
 
   FutureOr<void> _getAddressByAutoCompleteSearch(
       SearchAddressEvent event, Emitter<SearchLocationState> emit) async {
-    final apiResult = await _geocodeSearchAddressUseCase.executeGetAddressByAutoCompleteSearch(
+    final apiResult = await _geocodeSearchAddressUseCase
+        .executeGetAddressByAutoCompleteSearch(
       searchText: event.searchText,
       countries: ['us', 'in'],
       placeType: event.placeType,
@@ -42,7 +44,8 @@ class SearchLocationBloc extends Bloc<SearchLocationEvent, SearchLocationState> 
     }
   }
 
-  FutureOr<void> _getPlaceDetails(GetPlaceDetails event, Emitter<SearchLocationState> emit) async {
+  FutureOr<void> _getPlaceDetails(
+      GetPlaceDetails event, Emitter<SearchLocationState> emit) async {
     final apiResult = await _getPlaceDetailsUseCase.executeGetPlaceDetail(
       placeId: event.placeId,
     );

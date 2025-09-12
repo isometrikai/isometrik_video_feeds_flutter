@@ -3,11 +3,15 @@ import 'dart:convert';
 CloudDetailsResponse cloudinaryResponseFromJson(String str) =>
     CloudDetailsResponse.fromJson(json.decode(str) as Map<String, dynamic>);
 
-String cloudinaryResponseToJson(CloudDetailsResponse data) => json.encode(data.toJson());
+String cloudinaryResponseToJson(CloudDetailsResponse data) =>
+    json.encode(data.toJson());
 
 class CloudDetailsResponse {
-  factory CloudDetailsResponse.fromJson(Map<String, dynamic> json) => CloudDetailsResponse(
-        data: json['data'] == null ? null : CloudDetailsData.fromJson(json['data'] as Map<String, dynamic>),
+  factory CloudDetailsResponse.fromJson(Map<String, dynamic> json) =>
+      CloudDetailsResponse(
+        data: json['data'] == null
+            ? null
+            : CloudDetailsData.fromJson(json['data'] as Map<String, dynamic>),
       );
 
   CloudDetailsResponse({
@@ -32,7 +36,8 @@ class CloudDetailsData {
     this.signature,
   });
 
-  factory CloudDetailsData.fromJson(Map<String, dynamic> json) => CloudDetailsData(
+  factory CloudDetailsData.fromJson(Map<String, dynamic> json) =>
+      CloudDetailsData(
         cloudName: json['cloudName'] as String? ?? '',
         apiKey: json['apiKey'] as String? ?? '',
         apiSecretKey: json['apiSecretKey'] as String? ?? '',

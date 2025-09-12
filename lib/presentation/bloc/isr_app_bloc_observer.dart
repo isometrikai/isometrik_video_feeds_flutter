@@ -23,12 +23,14 @@ class IsrAppBlocObserver extends BlocObserver {
 
   @override
   void onChange(BlocBase<dynamic> bloc, Change<dynamic> change) {
-    AppLog('$tag: Change ${bloc.runtimeType} - ${change.currentState} -> ${change.nextState}');
+    AppLog(
+        '$tag: Change ${bloc.runtimeType} - ${change.currentState} -> ${change.nextState}');
     super.onChange(bloc, change);
   }
 
   @override
-  void onTransition(Bloc<dynamic, dynamic> bloc, Transition<dynamic, dynamic> transition) {
+  void onTransition(
+      Bloc<dynamic, dynamic> bloc, Transition<dynamic, dynamic> transition) {
     AppLog.info(
         '$tag: Transition ${bloc.runtimeType} - ${transition.currentState.runtimeType} : ${transition.event.runtimeType} -> ${transition.nextState.runtimeType}');
     super.onTransition(bloc, transition);

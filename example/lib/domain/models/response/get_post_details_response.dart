@@ -3,7 +3,8 @@ import 'dart:convert';
 PostDetailsResponse postDetailsResponseFromJson(String str) =>
     PostDetailsResponse.fromJson(json.decode(str) as Map<String, dynamic>);
 
-String postDetailsResponseToJson(PostDetailsResponse data) => json.encode(data.toJson());
+String postDetailsResponseToJson(PostDetailsResponse data) =>
+    json.encode(data.toJson());
 
 class PostDetailsResponse {
   PostDetailsResponse({
@@ -12,13 +13,14 @@ class PostDetailsResponse {
     this.data,
   });
 
-  factory PostDetailsResponse.fromJson(Map<String, dynamic> json) => PostDetailsResponse(
+  factory PostDetailsResponse.fromJson(Map<String, dynamic> json) =>
+      PostDetailsResponse(
         message: json['message'] as String? ?? '',
         count: json['count'] as num? ?? 0,
         data: json['data'] == null
             ? []
-            : List<ProductDataModel>.from((json['data'] as List)
-                .map((x) => ProductDataModel.fromJson(x as Map<String, dynamic>))),
+            : List<ProductDataModel>.from((json['data'] as List).map(
+                (x) => ProductDataModel.fromJson(x as Map<String, dynamic>))),
       );
   String? message;
   num? count;
@@ -27,7 +29,9 @@ class PostDetailsResponse {
   Map<String, dynamic> toJson() => {
         'message': message,
         'count': count,
-        'data': data == null ? [] : List<dynamic>.from(data!.map((x) => x.toJson())),
+        'data': data == null
+            ? []
+            : List<dynamic>.from(data!.map((x) => x.toJson())),
       };
 }
 
@@ -103,7 +107,8 @@ class ProductDataModel {
     this.subScriptionStatus,
   });
 
-  factory ProductDataModel.fromJson(Map<String, dynamic> json) => ProductDataModel(
+  factory ProductDataModel.fromJson(Map<String, dynamic> json) =>
+      ProductDataModel(
         id: json['_id'] as String? ?? '',
         documentId: json['id'] as String? ?? '',
         offers: (() {
@@ -115,7 +120,8 @@ class ProductDataModel {
             if (firstOffer is Map && firstOffer.isNotEmpty) {
               return Offer.fromJson(firstOffer as Map<String, dynamic>);
             }
-          } else if (offersData is Map<String, dynamic> && offersData.isNotEmpty) {
+          } else if (offersData is Map<String, dynamic> &&
+              offersData.isNotEmpty) {
             return Offer.fromJson(offersData);
           }
 
@@ -137,24 +143,28 @@ class ProductDataModel {
         //                   ]
         //             : [])),
         colourName: json['colourName'] as String? ?? '',
-        searchAbleAttributes: (json['searchAbleAttributes'] as List<dynamic>? ?? [])
+        searchAbleAttributes: (json['searchAbleAttributes'] as List<dynamic>? ??
+                [])
             .map((e) => SearchAbleAttribute.fromJson(e as Map<String, dynamic>))
             .toList(),
         popularScore: json['popularScore'] as num? ?? 0,
         categoryList: json['categoryList'] == null
             ? []
-            : List<PlpCategoryItem>.from((json['categoryList'] as List)
-                .map((dynamic x) => PlpCategoryItem.fromJson(x as Map<String, dynamic>))),
+            : List<PlpCategoryItem>.from((json['categoryList'] as List).map(
+                (dynamic x) =>
+                    PlpCategoryItem.fromJson(x as Map<String, dynamic>))),
         status: (json['status'] is num)
             ? json['status'] as num
             : (json['status'] == 'APPROVED' ? 1 as num : 0 as num),
         currency: json['currency'] as String? ?? '',
-        currencySymbol: ProductDataModel.fixEncoding(json['currencySymbol'] as String? ?? ''),
+        currencySymbol: ProductDataModel.fixEncoding(
+            json['currencySymbol'] as String? ?? ''),
         brandTitle: json['brandTitle'] == null
             ? json['brandName'] as String? ?? ''
             : json['brandTitle'] as String? ?? '',
-        brand:
-            json['brand'] == null ? json['brand'] as String? ?? '' : json['brand'] as String? ?? '',
+        brand: json['brand'] == null
+            ? json['brand'] as String? ?? ''
+            : json['brand'] as String? ?? '',
         parentProductId: json['parentProductId'] as String? ?? '',
         storeId: json['storeId'] as String? ?? '',
         supplier: json['supplier'] == null
@@ -170,11 +180,12 @@ class ProductDataModel {
             : BestOffer.fromJson(json['bestOffer'] as Map<String, dynamic>),
         finalPriceList: json['finalPriceList'] == null
             ? null
-            : FinalPriceList.fromJson(json['finalPriceList'] as Map<String, dynamic>),
+            : FinalPriceList.fromJson(
+                json['finalPriceList'] as Map<String, dynamic>),
         colourData: json['colourData'] == null
             ? []
-            : List<ColourData>.from((json['colourData'] as List)
-                .map((dynamic x) => ColourData.fromJson(x as Map<String, dynamic>))),
+            : List<ColourData>.from((json['colourData'] as List).map(
+                (dynamic x) => ColourData.fromJson(x as Map<String, dynamic>))),
         isAllVariantInStock: json['isAllVariantInStock'] as String? ?? '',
         totalReview: json['totalReview'] == null
             ? json['userCount'] as num? ?? 0
@@ -195,12 +206,14 @@ class ProductDataModel {
         brandId: json['brandId'] as String? ?? '',
         productName: json['productName'] as String? ?? '',
         availableQuantity: json['availableQuantity'] as num? ?? 0,
-        maxQuantity: json['maxQuantity'] is num ? json['maxQuantity'] as num? ?? 0 : 0,
+        maxQuantity:
+            json['maxQuantity'] is num ? json['maxQuantity'] as num? ?? 0 : 0,
         maxQuantityList: json['maxQuantity'] is List
             ? List<int>.from((json['maxQuantity'] as List).map((x) => x))
             : [],
         maxQuantityPerUser: json['maxQuantityPerUser'] as num? ?? 0,
-        isVisibleInAllVariants: json['isVisibleInAllVariants'] as bool? ?? false,
+        isVisibleInAllVariants:
+            json['isVisibleInAllVariants'] as bool? ?? false,
         images: json['images'] == null
             ? null
             : (json['images'] is String)
@@ -210,18 +223,22 @@ class ProductDataModel {
                         ? (json['modelImage'] == null
                             ? []
                             : List<ImageData>.from((json['modelImage'] as List)
-                                .map((dynamic x) => ImageData.fromJson(x as Map<String, dynamic>))))
-                        : List<ImageData>.from((json['images'] as List)
-                            .map((dynamic x) => ImageData.fromJson(x as Map<String, dynamic>)))
-                    : ImageData.fromJson(json['images'] as Map<String, dynamic>),
+                                .map((dynamic x) => ImageData.fromJson(
+                                    x as Map<String, dynamic>))))
+                        : List<ImageData>.from((json['images'] as List).map(
+                            (dynamic x) =>
+                                ImageData.fromJson(x as Map<String, dynamic>)))
+                    : ImageData.fromJson(
+                        json['images'] as Map<String, dynamic>),
         modelImage: json['modelImage'] == null
             ? []
-            : List<ImageData>.from((json['modelImage'] as List)
-                .map((dynamic x) => ImageData.fromJson(x as Map<String, dynamic>))),
+            : List<ImageData>.from((json['modelImage'] as List).map(
+                (dynamic x) => ImageData.fromJson(x as Map<String, dynamic>))),
         resellerCommission: json['resellerCommission'] as num? ?? 0,
         resellerCommissionType: json['resellerCommissionType'] as num? ?? 0,
         resellerFixedCommission: json['resellerFixedCommission'] as num? ?? 0,
-        resellerPercentageCommission: json['resellerPercentageCommission'] as num? ?? 0,
+        resellerPercentageCommission:
+            json['resellerPercentageCommission'] as num? ?? 0,
         productCondition: json['productCondition'] as num? ?? 0,
         userStoreProduct: json['userStoreProduct'] as bool? ?? false,
         productConditionText: json['productConditionText'] as String? ?? '',
@@ -245,11 +262,13 @@ class ProductDataModel {
         storeCategoryId: json['storeCategoryId'] as String? ?? '',
         sellerPlanDetails: json['sellerPlanDetails'] == null
             ? null
-            : SellerPlanDetails.fromJson(json['sellerPlanDetails'] as Map<String, dynamic>),
+            : SellerPlanDetails.fromJson(
+                json['sellerPlanDetails'] as Map<String, dynamic>),
         productType: json['productType'] as num? ?? 1,
         productSeo: json['productSeo'] == null
             ? null
-            : PdpProductSeo.fromJson(json['productSeo'] as Map<String, dynamic>),
+            : PdpProductSeo.fromJson(
+                json['productSeo'] as Map<String, dynamic>),
         subScriptionStatus: json['subScriptionStatus'] as num? ?? null,
       );
   String? id;
@@ -333,8 +352,9 @@ class ProductDataModel {
         //     ? []
         //     : List<dynamic>.from(offersList!.map((x) => x.toJson())),
         'popularScore': popularScore,
-        'categoryList':
-            categoryList == null ? [] : List<dynamic>.from(categoryList!.map((x) => x.toJson())),
+        'categoryList': categoryList == null
+            ? []
+            : List<dynamic>.from(categoryList!.map((x) => x.toJson())),
         'status': status,
         'currency': currency,
         'currencySymbol': currencySymbol,
@@ -346,8 +366,9 @@ class ProductDataModel {
         'unitId': unitId,
         'bestOffer': bestOffer?.toJson(),
         'finalPriceList': finalPriceList?.toJson(),
-        'colourData':
-            colourData == null ? [] : List<dynamic>.from(colourData!.map((x) => x.toJson())),
+        'colourData': colourData == null
+            ? []
+            : List<dynamic>.from(colourData!.map((x) => x.toJson())),
         'isAllVariantInStock': isAllVariantInStock,
         'totalReview': totalReview,
         'avgRating': avgRating,
@@ -373,8 +394,9 @@ class ProductDataModel {
         'images': images is List
             ? List<dynamic>.from((images as List).map((x) => x.toJson()))
             : jsonEncode(images),
-        'modelImage':
-            modelImage == null ? [] : List<dynamic>.from(modelImage!.map((x) => x.toJson())),
+        'modelImage': modelImage == null
+            ? []
+            : List<dynamic>.from(modelImage!.map((x) => x.toJson())),
         'resellerCommission': resellerCommission,
         'resellerCommissionType': resellerCommissionType,
         'resellerFixedCommission': resellerFixedCommission,
@@ -401,7 +423,8 @@ class ProductDataModel {
 
   static String fixEncoding(String input) {
     try {
-      return utf8.decode(input.codeUnits); // Converts the string to bytes and decodes it.
+      return utf8.decode(
+          input.codeUnits); // Converts the string to bytes and decodes it.
     } catch (e) {
       return input;
     }
@@ -436,7 +459,8 @@ class Offer {
             : (json['images'] is List &&
                     (json['images'] as List).isNotEmpty &&
                     (json['images'] as List)[0] is Map<String, dynamic>)
-                ? Images.fromJson((json['images'] as List)[0] as Map<String, dynamic>)
+                ? Images.fromJson(
+                    (json['images'] as List)[0] as Map<String, dynamic>)
                 : null,
         offerName: json['offerName'] == null
             ? null
@@ -446,7 +470,8 @@ class Offer {
         discountType: json['discountType'] as num? ?? 0,
         listComboProducts: json['listComboProducts'] == null
             ? []
-            : List<dynamic>.from((json['listComboProducts'] as List).map((x) => x)),
+            : List<dynamic>.from(
+                (json['listComboProducts'] as List).map((x) => x)),
         offerFor: json['offerFor'] as num? ?? 0,
         discountValue: json['discountValue'] as num? ?? 0,
         globalClaimCount: json['globalClaimCount'] as num? ?? 0,
@@ -455,7 +480,8 @@ class Offer {
             : (json['webimages'] is List &&
                     (json['webimages'] as List).isNotEmpty &&
                     (json['webimages'] as List)[0] is Map<String, dynamic>)
-                ? Images.fromJson((json['webimages'] as List)[0] as Map<String, dynamic>)
+                ? Images.fromJson(
+                    (json['webimages'] as List)[0] as Map<String, dynamic>)
                 : null,
         status: json['status'] as num? ?? 0,
         termscond: json['termscond'] as String? ?? '',
@@ -494,8 +520,9 @@ class Offer {
         'statusString': statusString,
         'offerId': offerId,
         'discountType': discountType,
-        'listComboProducts':
-            listComboProducts == null ? [] : List<dynamic>.from(listComboProducts!.map((x) => x)),
+        'listComboProducts': listComboProducts == null
+            ? []
+            : List<dynamic>.from(listComboProducts!.map((x) => x)),
         'offerFor': offerFor,
         'discountValue': discountValue,
         'globalClaimCount': globalClaimCount,
@@ -535,12 +562,14 @@ class SearchAbleAttribute {
     this.value,
   });
 
-  factory SearchAbleAttribute.fromJson(Map<String, dynamic> json) => SearchAbleAttribute(
+  factory SearchAbleAttribute.fromJson(Map<String, dynamic> json) =>
+      SearchAbleAttribute(
         attrname: json['attrname'] == null
             ? null
             : Attrname.fromJson(json['attrname'] as Map<String, dynamic>),
-        value:
-            json['value'] == null ? null : Attrname.fromJson(json['value'] as Map<String, dynamic>),
+        value: json['value'] == null
+            ? null
+            : Attrname.fromJson(json['value'] as Map<String, dynamic>),
       );
   final Attrname? attrname;
   final Attrname? value;
@@ -574,7 +603,8 @@ class PlpCategoryItem {
     this.slug,
   });
 
-  factory PlpCategoryItem.fromJson(Map<String, dynamic> json) => PlpCategoryItem(
+  factory PlpCategoryItem.fromJson(Map<String, dynamic> json) =>
+      PlpCategoryItem(
         categoryId: json['categoryId'] as String? ?? '',
         categoryName: json['categoryName'] as String? ?? '',
         parent: json['parent'] as bool? ?? false,
@@ -648,7 +678,8 @@ class Supplier {
             : LogoImages.fromJson(json['logoImages'] as Map<String, dynamic>),
         bannerImages: json['bannerImages'] == null
             ? null
-            : UndefinedValueClass.fromJson(json['bannerImages'] as Map<String, dynamic>),
+            : UndefinedValueClass.fromJson(
+                json['bannerImages'] as Map<String, dynamic>),
         userId: json['userId'] as String? ?? '',
         userType: json['userType'] as num? ?? 0,
         userTypeText: json['userTypeText'] as String? ?? '',
@@ -660,7 +691,8 @@ class Supplier {
         userCount: json['userCount'] as num? ?? 0,
         reviewParameter: json['reviewParameter'] == null
             ? []
-            : List<dynamic>.from((json['reviewParameter'] as List).map((x) => x)),
+            : List<dynamic>.from(
+                (json['reviewParameter'] as List).map((x) => x)),
         sellerSince: json['sellerSince'] as String? ?? '',
         storeAliasName: json['storeAliasName'] as String? ?? '',
         storeFrontTypeId: json['storeFrontTypeId'],
@@ -737,8 +769,9 @@ class Supplier {
         'rating': rating,
         'totalRating': totalRating,
         'userCount': userCount,
-        'reviewParameter':
-            reviewParameter == null ? [] : List<dynamic>.from(reviewParameter!.map((x) => x)),
+        'reviewParameter': reviewParameter == null
+            ? []
+            : List<dynamic>.from(reviewParameter!.map((x) => x)),
         'sellerSince': sellerSince,
         'storeAliasName': storeAliasName,
         'storeFrontTypeId': storeFrontTypeId,
@@ -811,7 +844,8 @@ class UndefinedValueClass {
   UndefinedValueClass();
 
   // ignore: avoid_unused_constructor_parameters
-  factory UndefinedValueClass.fromJson(Map<String, dynamic> json) => UndefinedValueClass();
+  factory UndefinedValueClass.fromJson(Map<String, dynamic> json) =>
+      UndefinedValueClass();
 
   Map<String, dynamic> toJson() => {};
 }
@@ -842,20 +876,23 @@ class BestOffer {
             : (json['images'] is List &&
                     (json['images'] as List).isNotEmpty &&
                     (json['images'] as List)[0] is Map<String, dynamic>)
-                ? Images.fromJson((json['images'] as List)[0] as Map<String, dynamic>)
+                ? Images.fromJson(
+                    (json['images'] as List)[0] as Map<String, dynamic>)
                 : null,
         webimages: json['webimages'] is Map<String, dynamic>
             ? Images.fromJson(json['webimages'] as Map<String, dynamic>)
             : (json['webimages'] is List &&
                     (json['webimages'] as List).isNotEmpty &&
                     (json['webimages'] as List)[0] is Map<String, dynamic>)
-                ? Images.fromJson((json['webimages'] as List)[0] as Map<String, dynamic>)
+                ? Images.fromJson(
+                    (json['webimages'] as List)[0] as Map<String, dynamic>)
                 : null,
         discountType: json['discountType'] as num? ?? 0,
         discountValue: json['discountValue'] as num? ?? 0,
         listComboProducts: json['listComboProducts'] == null
             ? []
-            : List<dynamic>.from((json['listComboProducts'] as List).map((x) => x)),
+            : List<dynamic>.from(
+                (json['listComboProducts'] as List).map((x) => x)),
         status: json['status'] as num? ?? 0,
         statusString: json['statusString'] as String? ?? '',
         globalClaimCount: json['globalClaimCount'] as num? ?? 0,
@@ -880,8 +917,9 @@ class BestOffer {
         'webimages': webimages?.toJson(),
         'discountType': discountType,
         'discountValue': discountValue,
-        'listComboProducts':
-            listComboProducts == null ? [] : List<dynamic>.from(listComboProducts!.map((x) => x)),
+        'listComboProducts': listComboProducts == null
+            ? []
+            : List<dynamic>.from(listComboProducts!.map((x) => x)),
         'status': status,
         'statusString': statusString,
         'globalClaimCount': globalClaimCount,
@@ -947,9 +985,12 @@ class FinalPriceList {
             ? parsePrice(json['msrpPrice'])
             : parsePrice(json['otoPrice']),
         rewardFinalPrice: json['rewardFinalPrice'] as num? ?? 0,
-        rewardRange: (json['rewardRange'] as List<dynamic>?)?.map((e) => e as num).toList(),
-        sherpaCommissionRange:
-            (json['sherpaCommissionRange'] as List<dynamic>?)?.map((e) => e as num).toList(),
+        rewardRange: (json['rewardRange'] as List<dynamic>?)
+            ?.map((e) => e as num)
+            .toList(),
+        sherpaCommissionRange: (json['sherpaCommissionRange'] as List<dynamic>?)
+            ?.map((e) => e as num)
+            .toList(),
         sherpaCommissionRangeObj: json['sherpaCommissionRangeObj'] == null
             ? null
             : SherpaCommissionRangeObj.fromJson(
@@ -1002,9 +1043,11 @@ class FinalPriceList {
         otoPrice: otoPrice ?? this.otoPrice,
         rewardFinalPrice: rewardFinalPrice ?? this.rewardFinalPrice,
         rewardRange: rewardRange ?? this.rewardRange,
-        sherpaCommissionRange: sherpaCommissionRange ?? this.sherpaCommissionRange,
+        sherpaCommissionRange:
+            sherpaCommissionRange ?? this.sherpaCommissionRange,
         bestPrice: bestPrice,
-        sherpaCommissionRangeObj: sherpaCommissionRangeObj ?? this.sherpaCommissionRangeObj,
+        sherpaCommissionRangeObj:
+            sherpaCommissionRangeObj ?? this.sherpaCommissionRangeObj,
       );
 
   num? basePrice;
@@ -1042,7 +1085,8 @@ class FinalPriceList {
 }
 
 class SherpaCommissionRangeObj {
-  factory SherpaCommissionRangeObj.fromJson(Map<String, dynamic> json) => SherpaCommissionRangeObj(
+  factory SherpaCommissionRangeObj.fromJson(Map<String, dynamic> json) =>
+      SherpaCommissionRangeObj(
         onMsrp: json['onMsrp'] as num? ?? 0,
         onTfm: json['onTfm'] as num? ?? 0,
         onOto: json['onOto'] as num? ?? 0,
@@ -1142,16 +1186,19 @@ class SellerPlanDetails {
     this.minimumSubscriptionPrice,
   });
 
-  factory SellerPlanDetails.fromJson(Map<String, dynamic> json) => SellerPlanDetails(
+  factory SellerPlanDetails.fromJson(Map<String, dynamic> json) =>
+      SellerPlanDetails(
         sellerPlanName: json['sellerPlanName'] as String? ?? '',
         planSelectorTitle: json['planSelectorTitle'] as String? ?? '',
         planDescription: json['planDescription'] as String? ?? '',
         sellerPlanId: json['sellerPlanId'] as String? ?? '',
         frequencies: (json['frequencies'] as List<dynamic>?)
-                ?.map((e) => SellerPlanDetailsFrequency.fromJson(e as Map<String, dynamic>))
+                ?.map((e) => SellerPlanDetailsFrequency.fromJson(
+                    e as Map<String, dynamic>))
                 .toList() ??
             [],
-        minimumSubscriptionPrice: json['minimumSubscriptionPrice'] as num? ?? 0.0,
+        minimumSubscriptionPrice:
+            json['minimumSubscriptionPrice'] as num? ?? 0.0,
       );
 
   SellerPlanDetails copyWith({
@@ -1168,7 +1215,8 @@ class SellerPlanDetails {
         planDescription: planDescription ?? this.planDescription,
         sellerPlanId: sellerPlanId ?? this.sellerPlanId,
         frequencies: frequencies ?? this.frequencies,
-        minimumSubscriptionPrice: minimumSubscriptionPrice ?? this.minimumSubscriptionPrice,
+        minimumSubscriptionPrice:
+            minimumSubscriptionPrice ?? this.minimumSubscriptionPrice,
       );
 
   String? sellerPlanName;
@@ -1209,8 +1257,10 @@ class SellerPlanDetailsFrequency {
         planDropdownLabel: json['planDropdownLabel'] as String? ?? '',
         discountType: json['discountType'] as String? ?? '',
         discountValue: json['discountValue'] as num? ?? 0.0,
-        discountPercentageOnTFMPrice: json['discountPercentageOnTFMPrice'] as num? ?? 0.0,
-        discountPercentageOnMSRP: json['discountPercentageOnMSRP'] as num? ?? 0.0,
+        discountPercentageOnTFMPrice:
+            json['discountPercentageOnTFMPrice'] as num? ?? 0.0,
+        discountPercentageOnMSRP:
+            json['discountPercentageOnMSRP'] as num? ?? 0.0,
         subscriptionPrice: json['subscriptionPrice'] as num? ?? 0.0,
       );
   String? frequencyId;
@@ -1292,8 +1342,9 @@ class ChildOffer {
         offerDiscount: json['offerDiscount'] as num? ?? 0,
         shippingFee: json['shippingFee'] as num? ?? 0,
         highlight: json['highlight'] as bool? ?? false,
-        image:
-            json['image'] == null ? null : Images.fromJson(json['image'] as Map<String, dynamic>),
+        image: json['image'] == null
+            ? null
+            : Images.fromJson(json['image'] as Map<String, dynamic>),
         createdAt: json['createdAt'] as num? ?? 0,
         tagline: json['tagline'] as String? ?? '',
         seqId: json['seqId'] as int? ?? 0,
@@ -1446,10 +1497,12 @@ class ProductDataItem {
     this.storeName,
   });
 
-  factory ProductDataItem.fromJson(Map<String, dynamic> json) => ProductDataItem(
+  factory ProductDataItem.fromJson(Map<String, dynamic> json) =>
+      ProductDataItem(
         storeDetails: json['storeDetail'] == null
             ? null
-            : StoreDetails.fromJson(json['storeDetail'] as Map<String, dynamic>),
+            : StoreDetails.fromJson(
+                json['storeDetail'] as Map<String, dynamic>),
         brandId: json['brand'] as String? ?? json['brandId'] as String? ?? '',
         sku: json['sku'] as String? ?? '',
         parsedDescription: json['parsedDescription'] as String? ?? '',
@@ -1458,25 +1511,30 @@ class ProductDataItem {
         isomatricChatUserId: json['isomatricChatUserId'] as String? ?? '',
         productPickUpAddress: json['productPickUpAddress'] == null
             ? null
-            : ProductPickUpAddress.fromJson(json['productPickUpAddress'] as Map<String, dynamic>),
+            : ProductPickUpAddress.fromJson(
+                json['productPickUpAddress'] as Map<String, dynamic>),
         userStoreProduct: json['userStoreProduct'] as bool? ?? false,
         productConditionText: json['productConditionText'] as String? ?? '',
         isproductCondition: json['isproductCondition'] as num? ?? 0,
         parentProductId: json['parentProductId'] as String? ?? '',
-        childProductId: json['id'] as String? ?? json['childProductId'] as String? ?? '',
+        childProductId:
+            json['id'] as String? ?? json['childProductId'] as String? ?? '',
         comboProducts: json['comboProducts'] == null
             ? []
-            : List<dynamic>.from((json['comboProducts'] as List).map((dynamic x) => x)),
+            : List<dynamic>.from(
+                (json['comboProducts'] as List).map((dynamic x) => x)),
         productType: json['productType'] as num? ?? 0,
         offerProductDetails: json['offerProductDetails'] == null
             ? []
-            : List<dynamic>.from((json['offerProductDetails'] as List).map((x) => x)),
+            : List<dynamic>.from(
+                (json['offerProductDetails'] as List).map((x) => x)),
         storeCategoryId: json['storeCategoryId'] as String? ?? '',
         cashOnDelivery: json['cashOnDelivery'] as bool? ?? false,
         shareLink: json['shareLink'] as String? ?? '',
         replacementPolicy: json['replacementPolicy'] == null
             ? null
-            : ReplacementPolicy.fromJson(json['replacementPolicy'] as Map<String, dynamic>),
+            : ReplacementPolicy.fromJson(
+                json['replacementPolicy'] as Map<String, dynamic>),
         maxQuantity: json['maxQuantity'] is List
             ? List<int>.from(json['maxQuantity'] as List)
             : json['maxQuantityList'] is List
@@ -1485,21 +1543,26 @@ class ProductDataItem {
         maxQuantityPerUser: json['maxQuantityPerUser'] as num? ?? 10,
         resellerCommission: json['resellerCommission'] as num? ?? 0,
         resellerCommissionType: json['resellerCommissionType'] as num? ?? 0,
-        resellerPercentageCommission: json['resellerPercentageCommission'] as num? ?? 0,
+        resellerPercentageCommission:
+            json['resellerPercentageCommission'] as num? ?? 0,
         resellerFixedCommission: json['resellerFixedCommission'] as num? ?? 0,
         termCondition: json['term&condition'] == null
             ? null
-            : UndefinedValueClass.fromJson(json['term&condition'] as Map<String, dynamic>),
+            : UndefinedValueClass.fromJson(
+                json['term&condition'] as Map<String, dynamic>),
         sizeChartDescription: json['sizeChartDescription'] as String? ?? '',
         exchangePolicy: json['exchangePolicy'] == null
             ? null
-            : ExchangePolicy.fromJson(json['exchangePolicy'] as Map<String, dynamic>),
+            : ExchangePolicy.fromJson(
+                json['exchangePolicy'] as Map<String, dynamic>),
         returnPolicy: json['returnPolicy'] == null
             ? null
-            : ReturnPolicy.fromJson(json['returnPolicy'] as Map<String, dynamic>),
+            : ReturnPolicy.fromJson(
+                json['returnPolicy'] as Map<String, dynamic>),
         productName: json['productName'] as String? ?? '',
         unitName: json['unitName'] as String? ?? '',
-        brandName: json['brand'] as String? ?? json['brandName'] as String? ?? '',
+        brandName:
+            json['brand'] as String? ?? json['brandName'] as String? ?? '',
         categoryPath: json['categoryPath'] == null
             ? []
             : List<CategoryPath>.from((json['categoryPath'] as List)
@@ -1516,11 +1579,13 @@ class ProductDataItem {
             : List<dynamic>.from((json['allOffers'] as List).map((x) => x)),
         attributes: json['attributes'] == null
             ? []
-            : List<AttributesData>.from((json['attributes'] as List)
-                .map((dynamic x) => AttributesData.fromJson(x as Map<String, dynamic>))),
+            : List<AttributesData>.from((json['attributes'] as List).map(
+                (dynamic x) =>
+                    AttributesData.fromJson(x as Map<String, dynamic>))),
         htmlAttributes: json['htmlAttributes'] == null
             ? []
-            : List<dynamic>.from((json['htmlAttributes'] as List).map((x) => x)),
+            : List<dynamic>.from(
+                (json['htmlAttributes'] as List).map((x) => x)),
         highlight: json['highlight'] == null
             ? (json['highlights'] == null
                 ? []
@@ -1538,8 +1603,9 @@ class ProductDataItem {
                 ? [
                     ImageData(large: json['productImage'] as String? ?? ''),
                   ]
-                : List<ImageData>.from((json['images'] as List)
-                    .map((dynamic x) => ImageData.fromJson(x as Map<String, dynamic>))),
+                : List<ImageData>.from((json['images'] as List).map(
+                    (dynamic x) =>
+                        ImageData.fromJson(x as Map<String, dynamic>))),
         mobileImage: json['mobileImage'] == null
             ? []
             : List<ImageData>.from((json['mobileImage'] as List)
@@ -1558,13 +1624,14 @@ class ProductDataItem {
             : null),
         linkedVariant: json['linkedVariant'] == null
             ? []
-            : List<LinkedVariant>.from((json['linkedVariant'] as List)
-                .map((dynamic x) => LinkedVariant.fromJson(x as Map<String, dynamic>))),
+            : List<LinkedVariant>.from((json['linkedVariant'] as List).map(
+                (dynamic x) =>
+                    LinkedVariant.fromJson(x as Map<String, dynamic>))),
         isFavourite: json['isFavourite'] as bool? ?? false,
         variants: json['variants'] == null
             ? []
-            : List<Variant>.from((json['variants'] as List)
-                .map((dynamic x) => Variant.fromJson(x as Map<String, dynamic>))),
+            : List<Variant>.from((json['variants'] as List).map(
+                (dynamic x) => Variant.fromJson(x as Map<String, dynamic>))),
         sellerCount: json['sellerCount'] as num? ?? 0,
         moqData: json['MOQData'] == null
             ? null
@@ -1572,7 +1639,8 @@ class ProductDataItem {
         allowOrderOutOfStock: json['allowOrderOutOfStock'] as bool? ?? false,
         finalPriceList: json['finalPriceList'] == null
             ? null
-            : FinalPriceList.fromJson(json['finalPriceList'] as Map<String, dynamic>),
+            : FinalPriceList.fromJson(
+                json['finalPriceList'] as Map<String, dynamic>),
         availableQuantity: json['availableQuantity'] as num? ?? 0,
         supplier: json['supplier'] == null
             ? null
@@ -1582,14 +1650,17 @@ class ProductDataItem {
             : ProductSeo.fromJson(json['productSeo'] as Map<String, dynamic>),
         sizeChart: json['sizeChart'] == null
             ? []
-            : List<SizeChartData>.from((json['sizeChart'] as List)
-                .map((dynamic x) => SizeChartData.fromJson(x as Map<String, dynamic>))),
+            : List<SizeChartData>.from((json['sizeChart'] as List).map(
+                (dynamic x) =>
+                    SizeChartData.fromJson(x as Map<String, dynamic>))),
         isSizeChart: json['isSizeChart'] as bool? ?? false,
         detailDesc: json['detailedDesc'] is List
             ? (json['detailedDesc'] as List).isNotEmpty
                 ? json['detailedDesc'][0] as String?
                 : ''
-            : json['detailedDesc'] as String? ?? json['detailDesc'] as String? ?? '',
+            : json['detailedDesc'] as String? ??
+                json['detailDesc'] as String? ??
+                '',
         outOfStock: json['outOfStock'] as bool? ?? false,
         prescriptionRequired: json['prescriptionRequired'] as bool? ?? false,
         needsIdProof: json['needsIdProof'] as bool? ?? false,
@@ -1598,31 +1669,37 @@ class ProductDataItem {
         isB2CMultiPrice: json['isB2cMultiPrice'] as bool? ?? false,
         b2CPriceRange: json['b2cPriceRange'] == null
             ? []
-            : List<B2CPriceRange>.from((json['b2cPriceRange'] as List)
-                .map((dynamic x) => B2CPriceRange.fromJson(x as Map<String, dynamic>))),
+            : List<B2CPriceRange>.from((json['b2cPriceRange'] as List).map(
+                (dynamic x) =>
+                    B2CPriceRange.fromJson(x as Map<String, dynamic>))),
         subScriptionStatus: json['subScriptionStatus'] as num? ?? 0,
         sellerPlanDetails: json['sellerPlanDetails'] == null
             ? null
-            : SellerPlanDetails.fromJson(json['sellerPlanDetails'] as Map<String, dynamic>),
+            : SellerPlanDetails.fromJson(
+                json['sellerPlanDetails'] as Map<String, dynamic>),
         liveStreamfinalPriceList: json['liveStreamfinalPriceList'] == null
             ? null
-            : FinalPriceList.fromJson(json['liveStreamfinalPriceList'] as Map<String, dynamic>),
+            : FinalPriceList.fromJson(
+                json['liveStreamfinalPriceList'] as Map<String, dynamic>),
         status: json['status'] as num? ?? 0,
         categoryList: json['categoryList'] == null
             ? []
-            : List<CategoryItem>.from((json['categoryList'] as List)
-                .map((dynamic x) => CategoryItem.fromJson(x as Map<String, dynamic>))),
+            : List<CategoryItem>.from((json['categoryList'] as List).map(
+                (dynamic x) =>
+                    CategoryItem.fromJson(x as Map<String, dynamic>))),
         rating: json['rating'] as num? ?? 0,
         totalRating: json['totalRating'] as num? ?? 0,
         slug: json['slug'] as String? ?? '',
-        variantCount: json['variantCount'] is num ? json['variantCount'] as num : 0,
+        variantCount:
+            json['variantCount'] is num ? json['variantCount'] as num : 0,
         productHigestPromoDetails: json['productHigestPromoDetails'] == null
             ? null
             : ProductHigestPromoDetails.fromJson(
                 json['productHigestPromoDetails'] as Map<String, dynamic>),
         appShareLink: json['appShareLink'] as String? ?? '',
         rewardFinalPrice: json['rewardFinalPrice'] as num? ?? 0,
-        partnerRevsharePercentage: json['partnerRevsharePercentage'] as num? ?? 0,
+        partnerRevsharePercentage:
+            json['partnerRevsharePercentage'] as num? ?? 0,
         addToCartOnId: json['addToCartOnId'] as num? ?? 0,
         centralProductId: json['centralProductId'] as String? ?? '',
         followStatus: json['followStatus'] as num? ?? 0,
@@ -1735,8 +1812,9 @@ class ProductDataItem {
         'isproductCondition': isproductCondition,
         'parentProductId': parentProductId,
         'childProductId': childProductId,
-        'comboProducts':
-            comboProducts == null ? [] : List<dynamic>.from(comboProducts!.map((x) => x)),
+        'comboProducts': comboProducts == null
+            ? []
+            : List<dynamic>.from(comboProducts!.map((x) => x)),
         'productType': productType,
         'offerProductDetails': offerProductDetails == null
             ? []
@@ -1745,7 +1823,9 @@ class ProductDataItem {
         'cashOnDelivery': cashOnDelivery,
         'shareLink': shareLink,
         'replacementPolicy': replacementPolicy?.toJson(),
-        'maxQuantity': maxQuantity == null ? [] : List<dynamic>.from(maxQuantity!.map((x) => x)),
+        'maxQuantity': maxQuantity == null
+            ? []
+            : List<dynamic>.from(maxQuantity!.map((x) => x)),
         'maxQuantityPerUser': maxQuantityPerUser,
         'resellerCommission': resellerCommission,
         'resellerCommissionType': resellerCommissionType,
@@ -1758,8 +1838,9 @@ class ProductDataItem {
         'productName': productName,
         'unitName': unitName,
         'brandName': brandName,
-        'categoryPath':
-            categoryPath == null ? [] : List<dynamic>.from(categoryPath!.map((x) => x.toJson())),
+        'categoryPath': categoryPath == null
+            ? []
+            : List<dynamic>.from(categoryPath!.map((x) => x.toJson())),
         'shoppingListId': shoppingListId,
         'catName': catName,
         'subCatName': subCatName,
@@ -1767,23 +1848,39 @@ class ProductDataItem {
         'isStoreClose': isStoreClose,
         'currency': currency,
         'currencySymbol': currencySymbol,
-        'allOffers': allOffers == null ? [] : List<dynamic>.from(allOffers!.map((x) => x)),
-        'attributes':
-            attributes == null ? [] : List<dynamic>.from(attributes!.map((x) => x.toJson())),
-        'htmlAttributes':
-            htmlAttributes == null ? [] : List<dynamic>.from(htmlAttributes!.map((x) => x)),
-        'highlight': highlight == null ? [] : List<dynamic>.from(highlight!.map((x) => x)),
-        'images': images == null ? [] : List<dynamic>.from(images!.map((x) => x.toJson())),
-        'mobileImage':
-            mobileImage == null ? [] : List<dynamic>.from(mobileImage!.map((x) => x.toJson())),
-        'modelImage': modelImage == null ? [] : List<dynamic>.from(modelImage!.map((x) => x)),
-        'overviewData': overviewData == null ? [] : List<dynamic>.from(overviewData!.map((x) => x)),
+        'allOffers': allOffers == null
+            ? []
+            : List<dynamic>.from(allOffers!.map((x) => x)),
+        'attributes': attributes == null
+            ? []
+            : List<dynamic>.from(attributes!.map((x) => x.toJson())),
+        'htmlAttributes': htmlAttributes == null
+            ? []
+            : List<dynamic>.from(htmlAttributes!.map((x) => x)),
+        'highlight': highlight == null
+            ? []
+            : List<dynamic>.from(highlight!.map((x) => x)),
+        'images': images == null
+            ? []
+            : List<dynamic>.from(images!.map((x) => x.toJson())),
+        'mobileImage': mobileImage == null
+            ? []
+            : List<dynamic>.from(mobileImage!.map((x) => x.toJson())),
+        'modelImage': modelImage == null
+            ? []
+            : List<dynamic>.from(modelImage!.map((x) => x)),
+        'overviewData': overviewData == null
+            ? []
+            : List<dynamic>.from(overviewData!.map((x) => x)),
         'offers': offers?.toJson(),
         'offer': offer?.toJson(),
-        'linkedVariant':
-            linkedVariant == null ? [] : List<dynamic>.from(linkedVariant!.map((x) => x.toJson())),
+        'linkedVariant': linkedVariant == null
+            ? []
+            : List<dynamic>.from(linkedVariant!.map((x) => x.toJson())),
         'isFavourite': isFavourite,
-        'variants': variants == null ? [] : List<dynamic>.from(variants!.map((x) => x.toJson())),
+        'variants': variants == null
+            ? []
+            : List<dynamic>.from(variants!.map((x) => x.toJson())),
         'sellerCount': sellerCount,
         'MOQData': moqData?.toJson(),
         'allowOrderOutOfStock': allowOrderOutOfStock,
@@ -1791,7 +1888,9 @@ class ProductDataItem {
         'availableQuantity': availableQuantity,
         'supplier': supplier?.toJson(),
         'productSeo': productSeo?.toJson(),
-        'sizeChart': sizeChart == null ? [] : List<dynamic>.from(sizeChart!.map((x) => x.toJson())),
+        'sizeChart': sizeChart == null
+            ? []
+            : List<dynamic>.from(sizeChart!.map((x) => x.toJson())),
         'isSizeChart': isSizeChart,
         'detailDesc': detailDesc,
         'outOfStock': outOfStock,
@@ -1800,14 +1899,16 @@ class ProductDataItem {
         'saleOnline': saleOnline,
         'nextSlotTime': nextSlotTime,
         'isB2cMultiPrice': isB2CMultiPrice,
-        'b2cPriceRange':
-            b2CPriceRange == null ? [] : List<dynamic>.from(b2CPriceRange!.map((x) => x.toJson())),
+        'b2cPriceRange': b2CPriceRange == null
+            ? []
+            : List<dynamic>.from(b2CPriceRange!.map((x) => x.toJson())),
         'subScriptionStatus': subScriptionStatus,
         'sellerPlanDetails': sellerPlanDetails?.toJson(),
         'liveStreamfinalPriceList': liveStreamfinalPriceList?.toJson(),
         'status': status,
-        'categoryList':
-            categoryList == null ? [] : List<dynamic>.from(categoryList!.map((x) => x.toJson())),
+        'categoryList': categoryList == null
+            ? []
+            : List<dynamic>.from(categoryList!.map((x) => x.toJson())),
         'rating': rating,
         'totalRating': totalRating,
         'slug': slug,
@@ -1944,7 +2045,8 @@ class AttributeRating {
     this.totalStarRating,
   });
 
-  factory AttributeRating.fromJson(Map<String, dynamic> json) => AttributeRating(
+  factory AttributeRating.fromJson(Map<String, dynamic> json) =>
+      AttributeRating(
         attributeId: json['attributeId'] as String? ?? '',
         attributeName: json['attributeName'] as String? ?? '',
         rating: json['rating'] as num? ?? 0,
@@ -1964,11 +2066,13 @@ class AttributeRating {
 }
 
 class VariantPriceDetails {
-  factory VariantPriceDetails.fromJson(Map<String, dynamic> json) => VariantPriceDetails(
+  factory VariantPriceDetails.fromJson(Map<String, dynamic> json) =>
+      VariantPriceDetails(
         message: json['message'] as String? ?? '',
         data: json['data'] == null
             ? null
-            : VariantPriceDetailsData.fromJson(json['data'] as Map<String, dynamic>),
+            : VariantPriceDetailsData.fromJson(
+                json['data'] as Map<String, dynamic>),
       );
 
   VariantPriceDetails({
@@ -1989,17 +2093,21 @@ class VariantPriceDetailsData {
     this.priceDetails,
   });
 
-  factory VariantPriceDetailsData.fromJson(Map<String, dynamic> json) => VariantPriceDetailsData(
+  factory VariantPriceDetailsData.fromJson(Map<String, dynamic> json) =>
+      VariantPriceDetailsData(
         variantId: json['variantId'] as String? ?? '',
         subScriptionStatus: json['subScriptionStatus'] as num? ?? 0,
         sellerPlanDetails: json['sellerPlanDetails'] != null
-            ? SellerPlanDetails.fromJson(json['sellerPlanDetails'] as Map<String, dynamic>)
+            ? SellerPlanDetails.fromJson(
+                json['sellerPlanDetails'] as Map<String, dynamic>)
             : null,
         finalPriceDetails: json['finalPriceDetails'] != null
-            ? FinalPriceList.fromJson(json['finalPriceDetails'] as Map<String, dynamic>)
+            ? FinalPriceList.fromJson(
+                json['finalPriceDetails'] as Map<String, dynamic>)
             : null,
         priceDetails: json['priceDetails'] != null
-            ? PriceDetails.fromJson(json['priceDetails'] as Map<String, dynamic>)
+            ? PriceDetails.fromJson(
+                json['priceDetails'] as Map<String, dynamic>)
             : null,
       );
   String? variantId;
@@ -2032,10 +2140,13 @@ class PriceDetails {
             : null,
         creationSource: json['creationSource'] as String? ?? '',
         priceCondition: json['priceCondition'] != null
-            ? PriceCondition.fromJson(json['priceCondition'] as Map<String, dynamic>)
+            ? PriceCondition.fromJson(
+                json['priceCondition'] as Map<String, dynamic>)
             : null,
-        linkProduct:
-            (json['linkProduct'] as List<dynamic>?)?.map((e) => e as String).toList() ?? [],
+        linkProduct: (json['linkProduct'] as List<dynamic>?)
+                ?.map((e) => e as String)
+                .toList() ??
+            [],
         creationDate: json['creationDate'] as String? ?? '',
         updateDate: json['updateDate'] as String? ?? '',
         status: json['status'] as int? ?? 0,
@@ -2080,13 +2191,15 @@ class PriceData {
   });
 
   factory PriceData.fromJson(Map<String, dynamic> json) => PriceData(
-        msrp:
-            json['msrp'] != null ? PriceItem.fromJson(json['msrp'] as Map<String, dynamic>) : null,
+        msrp: json['msrp'] != null
+            ? PriceItem.fromJson(json['msrp'] as Map<String, dynamic>)
+            : null,
         tfmPrice: json['tfm_price'] != null
             ? PriceItem.fromJson(json['tfm_price'] as Map<String, dynamic>)
             : null,
         autoShipPrice: json['auto_ship_price'] != null
-            ? PriceItem.fromJson(json['auto_ship_price'] as Map<String, dynamic>)
+            ? PriceItem.fromJson(
+                json['auto_ship_price'] as Map<String, dynamic>)
             : null,
         oneTimeOffer: json['one_time_offer'] != null
             ? PriceItem.fromJson(json['one_time_offer'] as Map<String, dynamic>)
@@ -2161,11 +2274,13 @@ class PriceCondition {
 
 //// Product variant response
 class ProductVariantReponse {
-  factory ProductVariantReponse.fromJson(Map<String, dynamic> json) => ProductVariantReponse(
+  factory ProductVariantReponse.fromJson(Map<String, dynamic> json) =>
+      ProductVariantReponse(
         message: json['message'] as String? ?? '',
         data: json['variant'] == null
             ? null
-            : ProductVariantDetailData.fromJson(json['variant'] as Map<String, dynamic>),
+            : ProductVariantDetailData.fromJson(
+                json['variant'] as Map<String, dynamic>),
       );
 
   ProductVariantReponse({
@@ -2178,7 +2293,8 @@ class ProductVariantReponse {
 }
 
 class ProductVariantDetailData {
-  factory ProductVariantDetailData.fromJson(Map<String, dynamic> json) => ProductVariantDetailData(
+  factory ProductVariantDetailData.fromJson(Map<String, dynamic> json) =>
+      ProductVariantDetailData(
         variantId: json['variantId'] as String? ?? '',
         slug: json['slug'] as String? ?? '',
         productName: json['productName'] as String? ?? '',
@@ -2189,7 +2305,8 @@ class ProductVariantDetailData {
         sku: json['sku'] as String? ?? '',
         finalPriceList: json['finalPriceList'] == null
             ? null
-            : VariantFinalPriceList.fromJson(json['finalPriceList'] as Map<String, dynamic>),
+            : VariantFinalPriceList.fromJson(
+                json['finalPriceList'] as Map<String, dynamic>),
         inStock: json['inStock'] as bool? ?? false,
         availableQuantity: json['availableQuantity'] as int? ?? 0,
         images: (json['images'] as List<dynamic>?)
@@ -2202,7 +2319,8 @@ class ProductVariantDetailData {
         storeName: json['storeName'] as String? ?? '',
         status: json['status'] as int? ?? 0,
         linkedtounits: (json['linkedtounits'] as List<dynamic>?)
-                ?.map((e) => VariantLinkedUnit.fromJson(e as Map<String, dynamic>))
+                ?.map((e) =>
+                    VariantLinkedUnit.fromJson(e as Map<String, dynamic>))
                 .toList() ??
             [],
         minimumOrderQty: json['minimumOrderQty'] as int? ?? 0,
@@ -2251,11 +2369,13 @@ class ProductVariantDetailData {
 }
 
 class VariantFinalPriceList {
-  factory VariantFinalPriceList.fromJson(Map<String, dynamic> json) => VariantFinalPriceList(
+  factory VariantFinalPriceList.fromJson(Map<String, dynamic> json) =>
+      VariantFinalPriceList(
         basePrice: (json['basePrice'] as num?)?.toDouble() ?? 0.0,
         finalPrice: (json['finalPrice'] as num?)?.toDouble() ?? 0.0,
         discountPrice: (json['discountPrice'] as num?)?.toDouble() ?? 0.0,
-        discountPercentage: (json['discountPercentage'] as num?)?.toDouble() ?? 0.0,
+        discountPercentage:
+            (json['discountPercentage'] as num?)?.toDouble() ?? 0.0,
         discountType: json['discountType'] as int? ?? 0,
         taxRate: json['taxRate'] as int? ?? 0,
         msrpPrice: (json['msrpPrice'] as num?)?.toDouble() ?? 0.0,
@@ -2297,10 +2417,12 @@ class VariantImage {
 }
 
 class VariantLinkedUnit {
-  factory VariantLinkedUnit.fromJson(Map<String, dynamic> json) => VariantLinkedUnit(
+  factory VariantLinkedUnit.fromJson(Map<String, dynamic> json) =>
+      VariantLinkedUnit(
         attrname: json['attrname'] == null
             ? null
-            : VariantAttribute.fromJson(json['attrname'] as Map<String, dynamic>),
+            : VariantAttribute.fromJson(
+                json['attrname'] as Map<String, dynamic>),
         value: json['value'] == null
             ? null
             : VariantAttribute.fromJson(json['value'] as Map<String, dynamic>),
@@ -2315,7 +2437,8 @@ class VariantLinkedUnit {
 }
 
 class VariantAttribute {
-  factory VariantAttribute.fromJson(Map<String, dynamic> json) => VariantAttribute(
+  factory VariantAttribute.fromJson(Map<String, dynamic> json) =>
+      VariantAttribute(
         en: json['en'] as String? ?? '',
       );
   VariantAttribute({
@@ -2340,7 +2463,8 @@ class BitMapFilterVariantsResponse {
             ? DynamicBitmap.fromJson(json['bitmap'] as Map<String, dynamic>)
             : null,
         selectedFilters: json['selectedFilters'] != null
-            ? SelectedFilters.fromJson(json['selectedFilters'] as Map<String, dynamic>)
+            ? SelectedFilters.fromJson(
+                json['selectedFilters'] as Map<String, dynamic>)
             : null,
       );
 
@@ -2376,15 +2500,16 @@ class DynamicBitmap {
               (indexKey, indexValue) => MapEntry(
                 indexKey,
                 (indexValue as Map<String, dynamic>).map(
-                  (fieldKey, valueList) =>
-                      MapEntry(fieldKey, List<dynamic>.from(valueList as Iterable<dynamic>)),
+                  (fieldKey, valueList) => MapEntry(fieldKey,
+                      List<dynamic>.from(valueList as Iterable<dynamic>)),
                 ),
               ),
             ),
           ),
         ),
         variantMap: (json['variantMap'] as Map<String, dynamic>?)?.map(
-          (key, value) => MapEntry(key, ProductVariant.fromJson(value as Map<String, dynamic>)),
+          (key, value) => MapEntry(
+              key, ProductVariant.fromJson(value as Map<String, dynamic>)),
         ),
       );
 
@@ -2439,7 +2564,8 @@ class SelectedFilters {
     this.sizeIndex,
   });
 
-  factory SelectedFilters.fromJson(Map<String, dynamic> json) => SelectedFilters(
+  factory SelectedFilters.fromJson(Map<String, dynamic> json) =>
+      SelectedFilters(
         colorIndex: json['colorIndex'] as int?,
         sizeIndex: json['sizeIndex'] as int?,
       );
@@ -2472,7 +2598,8 @@ class ProductPickUpAddress {
     this.addressArea,
   });
 
-  factory ProductPickUpAddress.fromJson(Map<String, dynamic> json) => ProductPickUpAddress(
+  factory ProductPickUpAddress.fromJson(Map<String, dynamic> json) =>
+      ProductPickUpAddress(
         addressLine2: json['addressLine2'] as String? ?? '',
         state: json['state'] as String? ?? '',
         mobileNumberCode: json['mobileNumberCode'] as String? ?? '',
@@ -2485,9 +2612,12 @@ class ProductPickUpAddress {
         googlePlaceName: json['googlePlaceName'] as String? ?? '',
         addressLine1: json['addressLine1'] as String? ?? '',
         address: json['address'] as String? ?? '',
-        long:
-            json['long'] is String ? json['long'] as String? ?? '0' : json['long'] as double? ?? 0,
-        lat: json['lat'] is String ? json['lat'] as String? ?? '0' : json['lat'] as double? ?? 0,
+        long: json['long'] is String
+            ? json['long'] as String? ?? '0'
+            : json['long'] as double? ?? 0,
+        lat: json['lat'] is String
+            ? json['lat'] as String? ?? '0'
+            : json['lat'] as double? ?? 0,
         addressArea: json['addressArea'] as String? ?? '',
       );
   String? addressLine2;
@@ -2531,7 +2661,8 @@ class ReplacementPolicy {
     this.noofdays,
   });
 
-  factory ReplacementPolicy.fromJson(Map<String, dynamic> json) => ReplacementPolicy(
+  factory ReplacementPolicy.fromJson(Map<String, dynamic> json) =>
+      ReplacementPolicy(
         isReplacement: json['isReplacement'] as bool? ?? false,
         noofdays: json['noofdays'] as num? ?? 0,
       );
@@ -2609,7 +2740,9 @@ class Variant {
         'rgb': rgb,
         'unitData': unitData,
         'childProductId': childProductId,
-        'sizeData': sizeData == null ? [] : List<dynamic>.from(sizeData!.map((x) => x.toJson())),
+        'sizeData': sizeData == null
+            ? []
+            : List<dynamic>.from(sizeData!.map((x) => x.toJson())),
         'image': image,
         'unitId': unitId,
         'extraLarge': extraLarge,
@@ -2647,7 +2780,8 @@ class VariantItem {
         isPrimary: json['isPrimary'] as bool? ?? false,
         finalPriceList: json['finalPriceList'] == null
             ? null
-            : FinalPriceList.fromJson(json['finalPriceList'] as Map<String, dynamic>),
+            : FinalPriceList.fromJson(
+                json['finalPriceList'] as Map<String, dynamic>),
         unitId: json['unitId'] as String? ?? '',
         name: json['name'] as String? ?? '',
         visible: json['visible'] as bool? ?? false,
@@ -2656,7 +2790,9 @@ class VariantItem {
         extraLarge: json['extraLarge'] as String? ?? '',
         outOfStock: json['outOfStock'] as bool? ?? false,
         availableStock: json['availableStock'] as num? ?? 0,
-        slug: json['slug'] == null ? null : Slug.fromJson(json['slug'] as Map<String, dynamic>),
+        slug: json['slug'] == null
+            ? null
+            : Slug.fromJson(json['slug'] as Map<String, dynamic>),
         sku: json['sku'] as String? ?? '',
       );
   String? childProductId;
@@ -2710,29 +2846,34 @@ class Slug {
         title: json['title'] == null
             ? null
             : (json['title'] is List)
-                ? List<SlugClass>.from((json['title'] as List)
-                    .map((dynamic x) => SlugClass.fromJson(x as Map<String, dynamic>)))
+                ? List<SlugClass>.from((json['title'] as List).map(
+                    (dynamic x) =>
+                        SlugClass.fromJson(x as Map<String, dynamic>)))
                 : SlugClass.fromJson(json['title'] as Map<String, dynamic>),
         slug: json['slug'] == null
             ? null
             : (json['slug'] is String)
                 ? json['slug'] as String? ?? ''
                 : (json['slug'] is List)
-                    ? List<SlugClass>.from((json['slug'] as List)
-                        .map((dynamic x) => SlugClass.fromJson(x as Map<String, dynamic>)))
+                    ? List<SlugClass>.from((json['slug'] as List).map(
+                        (dynamic x) =>
+                            SlugClass.fromJson(x as Map<String, dynamic>)))
                     : SlugClass.fromJson(json['slug'] as Map<String, dynamic>),
         metatags: json['metatags'] == null
             ? null
             : (json['metatags'] is List)
-                ? List<SlugClass>.from((json['metatags'] as List)
-                    .map((dynamic x) => SlugClass.fromJson(x as Map<String, dynamic>)))
+                ? List<SlugClass>.from((json['metatags'] as List).map(
+                    (dynamic x) =>
+                        SlugClass.fromJson(x as Map<String, dynamic>)))
                 : SlugClass.fromJson(json['metatags'] as Map<String, dynamic>),
         description: json['description'] == null
             ? null
             : (json['description'] is List)
-                ? List<SlugClass>.from((json['description'] as List)
-                    .map((dynamic x) => SlugClass.fromJson(x as Map<String, dynamic>)))
-                : SlugClass.fromJson(json['description'] as Map<String, dynamic>),
+                ? List<SlugClass>.from((json['description'] as List).map(
+                    (dynamic x) =>
+                        SlugClass.fromJson(x as Map<String, dynamic>)))
+                : SlugClass.fromJson(
+                    json['description'] as Map<String, dynamic>),
       );
   dynamic title;
   dynamic slug;
@@ -2764,10 +2905,12 @@ class Slug {
 }
 
 class ProductReviewsResponse {
-  factory ProductReviewsResponse.fromJson(Map<String, dynamic> json) => ProductReviewsResponse(
+  factory ProductReviewsResponse.fromJson(Map<String, dynamic> json) =>
+      ProductReviewsResponse(
         data: json['data'] == null
             ? null
-            : ProductReviewsResponseDataReview.fromJson(json['data'] as Map<String, dynamic>),
+            : ProductReviewsResponseDataReview.fromJson(
+                json['data'] as Map<String, dynamic>),
       );
 
   ProductReviewsResponse({
@@ -2782,11 +2925,13 @@ class ProductReviewsResponse {
 }
 
 class ProductReviewsResponseDataReview {
-  factory ProductReviewsResponseDataReview.fromJson(Map<String, dynamic> json) =>
+  factory ProductReviewsResponseDataReview.fromJson(
+          Map<String, dynamic> json) =>
       ProductReviewsResponseDataReview(
         review: json['review'] == null
             ? null
-            : ProductReviewData.fromJson(json['review'] as Map<String, dynamic>),
+            : ProductReviewData.fromJson(
+                json['review'] as Map<String, dynamic>),
       );
 
   ProductReviewsResponseDataReview({
@@ -2816,11 +2961,12 @@ class ProductReviewData {
     this.images,
   });
 
-  factory ProductReviewData.fromJson(Map<String, dynamic> json) => ProductReviewData(
+  factory ProductReviewData.fromJson(Map<String, dynamic> json) =>
+      ProductReviewData(
         userReviews: json['userReviews'] == null
             ? []
-            : List<UserReview>.from((json['userReviews'] as List)
-                .map((dynamic x) => UserReview.fromJson(x as Map<String, dynamic>))),
+            : List<UserReview>.from((json['userReviews'] as List).map(
+                (dynamic x) => UserReview.fromJson(x as Map<String, dynamic>))),
         fiveStarRating: json['FiveStarRating'] as num? ?? 0,
         fourStartRating: json['FourStartRating'] as num? ?? 0,
         threeStarRating: json['ThreeStarRating'] as num? ?? 0,
@@ -2832,10 +2978,12 @@ class ProductReviewData {
         totalStarRating: json['TotalStarRating'] as num? ?? 0,
         attributeRating: json['attributeRating'] == null
             ? []
-            : List<AttributeRating>.from((json['attributeRating'] as List)
-                .map((dynamic x) => AttributeRating.fromJson(x as Map<String, dynamic>))),
-        images:
-            json['images'] == null ? [] : List<String>.from((json['images'] as List).map((x) => x)),
+            : List<AttributeRating>.from((json['attributeRating'] as List).map(
+                (dynamic x) =>
+                    AttributeRating.fromJson(x as Map<String, dynamic>))),
+        images: json['images'] == null
+            ? []
+            : List<String>.from((json['images'] as List).map((x) => x)),
       );
   List<UserReview>? userReviews;
   num? fiveStarRating;
@@ -2851,8 +2999,9 @@ class ProductReviewData {
   List<String>? images;
 
   Map<String, dynamic> toJson() => {
-        'userReviews':
-            userReviews == null ? [] : List<dynamic>.from(userReviews!.map((x) => x.toJson())),
+        'userReviews': userReviews == null
+            ? []
+            : List<dynamic>.from(userReviews!.map((x) => x.toJson())),
         'FiveStarRating': fiveStarRating,
         'FourStartRating': fourStartRating,
         'ThreeStarRating': threeStarRating,
@@ -2865,7 +3014,8 @@ class ProductReviewData {
         'attributeRating': attributeRating == null
             ? []
             : List<dynamic>.from(attributeRating!.map((x) => x.toJson())),
-        'images': images == null ? [] : List<dynamic>.from(images!.map((x) => x)),
+        'images':
+            images == null ? [] : List<dynamic>.from(images!.map((x) => x)),
       };
 }
 
@@ -2899,15 +3049,17 @@ class UserReview {
         timestamp: json['timestamp'] as String? ?? '',
         createdTimestamp: json['createdTimestamp'] as num? ?? 0,
         likes: (json['likes'] ?? json['likesCount']) as num? ?? 0,
-        images:
-            json['images'] == null ? [] : List<String>.from((json['images'] as List).map((x) => x)),
+        images: json['images'] == null
+            ? []
+            : List<String>.from((json['images'] as List).map((x) => x)),
         replies: json['replies'] == null
             ? []
             : List<dynamic>.from((json['replies'] as List).map((x) => x)),
         disLikes: json['disLikes'] as num? ?? 0,
         rating: num.tryParse(json['rating']?.toString() ?? '') ?? 0,
         reviewTitle: json['reviewTitle'] as String? ?? '',
-        reviewDesc: (json['reviewDesc'] ?? json['reviewDescription']) as String? ?? '',
+        reviewDesc:
+            (json['reviewDesc'] ?? json['reviewDescription']) as String? ?? '',
         sellerName: json['sellerName'] as String? ?? '',
       );
   String? reviewId;
@@ -2937,8 +3089,10 @@ class UserReview {
         'timestamp': timestamp,
         'createdTimestamp': createdTimestamp,
         'likes': likes,
-        'images': images == null ? [] : List<dynamic>.from(images!.map((x) => x)),
-        'replies': replies == null ? [] : List<dynamic>.from(replies!.map((x) => x)),
+        'images':
+            images == null ? [] : List<dynamic>.from(images!.map((x) => x)),
+        'replies':
+            replies == null ? [] : List<dynamic>.from(replies!.map((x) => x)),
         'disLikes': disLikes,
         'rating': rating,
         'reviewTitle': reviewTitle,
@@ -2952,7 +3106,8 @@ class DescriptionElement {
     this.contain,
   });
 
-  factory DescriptionElement.fromJson(Map<String, dynamic> json) => DescriptionElement(
+  factory DescriptionElement.fromJson(Map<String, dynamic> json) =>
+      DescriptionElement(
         langCode: json['langCode'] as String? ?? '',
         contain: json['contain'] as String? ?? '',
       );
@@ -3056,8 +3211,8 @@ class AttributesData {
   factory AttributesData.fromJson(Map<String, dynamic> json) => AttributesData(
         innerAttributes: json['innerAttributes'] == null
             ? []
-            : List<InnerAttribute>.from((json['innerAttributes'] as List)
-                .map((x) => InnerAttribute.fromJson(x as Map<String, dynamic>))),
+            : List<InnerAttribute>.from((json['innerAttributes'] as List).map(
+                (x) => InnerAttribute.fromJson(x as Map<String, dynamic>))),
         seqId: json['seqId'] as int? ?? 0,
         name: json['name'] as String? ?? '',
       );
@@ -3193,7 +3348,9 @@ class SizeChartData {
 
   factory SizeChartData.fromJson(Map<String, dynamic> json) => SizeChartData(
         name: json['name'] as String? ?? '',
-        size: json['size'] == null ? [] : List<String>.from((json['size'] as List).map((x) => x)),
+        size: json['size'] == null
+            ? []
+            : List<String>.from((json['size'] as List).map((x) => x)),
       );
   String? name;
   List<String>? size;
@@ -3221,7 +3378,8 @@ class CategoryItem {
             : json['categoryName'] is String
                 ? json['categoryName'] as String? ?? ''
                 : null,
-        parentCategory: json['parent'] as bool? ?? json['parentCategory'] as bool? ?? false,
+        parentCategory:
+            json['parent'] as bool? ?? json['parentCategory'] as bool? ?? false,
         slug: json['slug'] is Map<String, dynamic>
             ? OfferName.fromJson(json['slug'] as Map<String, dynamic>)
             : json['slug'] is String
@@ -3259,12 +3417,12 @@ class ProductHigestPromoDetails {
         title: json['title'] as String? ?? '',
         description: json['description'] == null
             ? []
-            : List<DescriptionElement>.from((json['description'] as List)
-                .map((x) => DescriptionElement.fromJson(x as Map<String, dynamic>))),
+            : List<DescriptionElement>.from((json['description'] as List).map(
+                (x) => DescriptionElement.fromJson(x as Map<String, dynamic>))),
         howItWorks: json['howItWorks'] == null
             ? []
-            : List<DescriptionElement>.from((json['howItWorks'] as List)
-                .map((x) => DescriptionElement.fromJson(x as Map<String, dynamic>))),
+            : List<DescriptionElement>.from((json['howItWorks'] as List).map(
+                (x) => DescriptionElement.fromJson(x as Map<String, dynamic>))),
         promoCode: json['promoCode'] as String? ?? '',
         promoDiscountType: json['promo_discount_type'] as String? ?? '',
         promoDiscountValue: json['promo_discount_value'] as num? ?? 0,
@@ -3282,10 +3440,12 @@ class ProductHigestPromoDetails {
   Map<String, dynamic> toJson() => {
         'promo_id': promoId,
         'title': title,
-        'description':
-            description == null ? [] : List<dynamic>.from(description!.map((x) => x.toJson())),
-        'howItWorks':
-            howItWorks == null ? [] : List<dynamic>.from(howItWorks!.map((x) => x.toJson())),
+        'description': description == null
+            ? []
+            : List<dynamic>.from(description!.map((x) => x.toJson())),
+        'howItWorks': howItWorks == null
+            ? []
+            : List<dynamic>.from(howItWorks!.map((x) => x.toJson())),
         'promoCode': promoCode,
         'promo_discount_type': promoDiscountType,
         'promo_discount_value': promoDiscountValue,

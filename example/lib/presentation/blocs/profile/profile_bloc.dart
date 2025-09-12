@@ -22,7 +22,8 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     emit(ProfileLoaded());
   }
 
-  FutureOr<void> _onLogout(LogoutEvent event, Emitter<ProfileState> emit) async {
+  FutureOr<void> _onLogout(
+      LogoutEvent event, Emitter<ProfileState> emit) async {
     await _localDataUseCase.clearLocalData().then((_) => {
           InjectionUtils.getRouteManagement().goToLoginScreen(),
         });

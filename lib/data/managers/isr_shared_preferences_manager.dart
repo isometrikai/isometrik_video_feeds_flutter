@@ -21,17 +21,22 @@ class IsrSharedPreferencesManager {
   }
 
   /// store the value with type
-  Future<void> saveValue(String key, dynamic value, SavedValueDataType saveValueDataType) async {
+  Future<void> saveValue(
+      String key, dynamic value, SavedValueDataType saveValueDataType) async {
     if (saveValueDataType == SavedValueDataType.string) {
-      await sharedPreferences?.setString(key, value == null ? '' : value as String);
+      await sharedPreferences?.setString(
+          key, value == null ? '' : value as String);
     } else if (saveValueDataType == SavedValueDataType.int) {
       await sharedPreferences?.setInt(key, value == null ? 0 : value as int);
     } else if (saveValueDataType == SavedValueDataType.double) {
-      await sharedPreferences?.setDouble(key, value == null ? 0.0 : value as double);
+      await sharedPreferences?.setDouble(
+          key, value == null ? 0.0 : value as double);
     } else if (saveValueDataType == SavedValueDataType.bool) {
-      await sharedPreferences?.setBool(key, value == null ? false : value as bool);
+      await sharedPreferences?.setBool(
+          key, value == null ? false : value as bool);
     } else if (saveValueDataType == SavedValueDataType.stringList) {
-      await sharedPreferences?.setStringList(key, value == null ? [] : value as List<String>);
+      await sharedPreferences?.setStringList(
+          key, value == null ? [] : value as List<String>);
     }
   }
 
@@ -42,7 +47,8 @@ class IsrSharedPreferencesManager {
           (key == IsrLocalStorageKeys.language
               ? DefaultValues.defaultLanguage
               : key == IsrLocalStorageKeys.currencySymbol
-                  ? IsrVideoReelUtility.encodeChar(DefaultValues.defaultCurrencySymbol)
+                  ? IsrVideoReelUtility.encodeChar(
+                      DefaultValues.defaultCurrencySymbol)
                   : key == IsrLocalStorageKeys.currencyCode
                       ? DefaultValues.defaultCurrencyCode
                       : key == IsrLocalStorageKeys.latitude

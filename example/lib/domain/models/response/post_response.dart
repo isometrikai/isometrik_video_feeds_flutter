@@ -6,7 +6,8 @@ import 'dart:convert';
 
 import 'package:ism_video_reel_player_example/domain/domain.dart';
 
-PostResponse postResponseFromJson(String str) => PostResponse.fromJson(json.decode(str) as Map<String, dynamic>);
+PostResponse postResponseFromJson(String str) =>
+    PostResponse.fromJson(json.decode(str) as Map<String, dynamic>);
 
 String postResponseToJson(PostResponse data) => json.encode(data.toJson());
 
@@ -22,7 +23,8 @@ class PostResponse {
         totalPosts: json['totalPosts'] as num? ?? 0,
         data: json['data'] == null
             ? []
-            : List<PostData>.from((json['data'] as List).map((x) => PostData.fromJson(x as Map<String, dynamic>))),
+            : List<PostData>.from((json['data'] as List)
+                .map((x) => PostData.fromJson(x as Map<String, dynamic>))),
       );
   String? message;
   num? totalPosts;
@@ -31,7 +33,9 @@ class PostResponse {
   Map<String, dynamic> toJson() => {
         'message': message,
         'totalPosts': totalPosts,
-        'data': data == null ? [] : List<dynamic>.from(data!.map((x) => x.toJson())),
+        'data': data == null
+            ? []
+            : List<dynamic>.from(data!.map((x) => x.toJson())),
       };
 }
 
@@ -100,7 +104,9 @@ class PostData {
         commentCount: json['commentCount'] as num? ?? 0,
         firstName: json['firstName'] as String? ?? '',
         fullName: json['fullName'] as String? ?? '',
-        hashTags: json['hashTags'] == null ? [] : List<String>.from((json['hashTags'] as List).map((x) => x)),
+        hashTags: json['hashTags'] == null
+            ? []
+            : List<String>.from((json['hashTags'] as List).map((x) => x)),
         imageUrl1: json['imageUrl1'] as String? ?? '',
         imageUrl1Height: json['imageUrl1Height'] as String? ?? '',
         imageUrl1Width: json['imageUrl1Width'] as String? ?? '',
@@ -108,13 +114,17 @@ class PostData {
         isStar: json['isStar'] as bool? ?? false,
         lastName: json['lastName'] as String? ?? '',
         likesCount: json['likesCount'] as num? ?? 0,
-        location: json['location'] == null ? null : PostLocation.fromJson(json['location'] as Map<String, dynamic>),
+        location: json['location'] == null
+            ? null
+            : PostLocation.fromJson(json['location'] as Map<String, dynamic>),
         mediaType1: json['mediaType1'] as num? ?? 0,
         mentionedUsers: json['mentionedUsers'] == null
             ? []
-            : List<MentionedUser>.from(
-                (json['mentionedUsers'] as List).map((x) => MentionedUser.fromJson(x as Map<String, dynamic>))),
-        musicData: json['musicData'] == null ? null : MusicData.fromJson(json['musicData'] as Map<String, dynamic>),
+            : List<MentionedUser>.from((json['mentionedUsers'] as List)
+                .map((x) => MentionedUser.fromJson(x as Map<String, dynamic>))),
+        musicData: json['musicData'] == null
+            ? null
+            : MusicData.fromJson(json['musicData'] as Map<String, dynamic>),
         musicId: json['musicId'] as String? ?? '',
         place: json['place'] as String? ?? '',
         placeId: json['placeId'] as String? ?? '',
@@ -122,9 +132,12 @@ class PostData {
         postViewsCount: json['postViewsCount'] as num? ?? 0,
         productData: json['productData'] == null
             ? []
-            : List<FeaturedProductDataItem>.from(
-                (json['productData'] as List).map((x) => FeaturedProductDataItem.fromJson(x as Map<String, dynamic>))),
-        productIds: json['productIds'] == null ? [] : List<dynamic>.from((json['productIds'] as List).map((x) => x)),
+            : List<FeaturedProductDataItem>.from((json['productData'] as List)
+                .map((x) => FeaturedProductDataItem.fromJson(
+                    x as Map<String, dynamic>))),
+        productIds: json['productIds'] == null
+            ? []
+            : List<dynamic>.from((json['productIds'] as List).map((x) => x)),
         shareCount: json['shareCount'] as num? ?? 0,
         thumbnailUrl1: json['thumbnailUrl1'] as String? ?? '',
         timeStamp: json['timeStamp'] as num? ?? 0,
@@ -207,7 +220,8 @@ class PostData {
         'commentCount': commentCount,
         'firstName': firstName,
         'fullName': fullName,
-        'hashTags': hashTags == null ? [] : List<dynamic>.from(hashTags!.map((x) => x)),
+        'hashTags':
+            hashTags == null ? [] : List<dynamic>.from(hashTags!.map((x) => x)),
         'imageUrl1': imageUrl1,
         'imageUrl1Height': imageUrl1Height,
         'imageUrl1Width': imageUrl1Width,
@@ -217,15 +231,21 @@ class PostData {
         'likesCount': likesCount,
         'location': location?.toJson(),
         'mediaType1': mediaType1,
-        'mentionedUsers': mentionedUsers == null ? [] : List<dynamic>.from(mentionedUsers!.map((x) => x.toJson())),
+        'mentionedUsers': mentionedUsers == null
+            ? []
+            : List<dynamic>.from(mentionedUsers!.map((x) => x.toJson())),
         'musicData': musicData?.toJson(),
         'musicId': musicId,
         'place': place,
         'placeId': placeId,
         'postStatus': postStatus,
         'postViewsCount': postViewsCount,
-        'productData': productData == null ? [] : List<dynamic>.from(productData!.map((x) => x.toJson())),
-        'productIds': productIds == null ? [] : List<dynamic>.from(productIds!.map((x) => x)),
+        'productData': productData == null
+            ? []
+            : List<dynamic>.from(productData!.map((x) => x.toJson())),
+        'productIds': productIds == null
+            ? []
+            : List<dynamic>.from(productIds!.map((x) => x)),
         'shareCount': shareCount,
         'thumbnailUrl1': thumbnailUrl1,
         'timeStamp': timeStamp,
@@ -392,6 +412,7 @@ class MentionedUser {
 class MusicData {
   MusicData();
 
+  // ignore: avoid_unused_constructor_parameters
   factory MusicData.fromJson(Map<String, dynamic> json) => MusicData();
 
   Map<String, dynamic> toJson() => {};
@@ -435,10 +456,13 @@ class FeaturedProductDataItem {
     this.avgRating,
   });
 
-  factory FeaturedProductDataItem.fromJson(Map<String, dynamic> json) => FeaturedProductDataItem(
+  factory FeaturedProductDataItem.fromJson(Map<String, dynamic> json) =>
+      FeaturedProductDataItem(
         availableQuantity: json['availableQuantity'] as num? ?? 0,
         avgRatings: json['avgRatings'] as num? ?? 0,
-        bestOffer: json['bestOffer'] == null ? null : BestOffer.fromJson(json['bestOffer'] as Map<String, dynamic>),
+        bestOffer: json['bestOffer'] == null
+            ? null
+            : BestOffer.fromJson(json['bestOffer'] as Map<String, dynamic>),
         brand: json['brand'] as String? ?? '',
         brandTitle: json['brandTitle'] as String? ?? '',
         childProductId: json['childProductId'] as String? ?? '',
@@ -447,10 +471,12 @@ class FeaturedProductDataItem {
         imageUrl: json['imageUrl'] as String? ?? '',
         finalPriceList: json['finalPriceList'] == null
             ? null
-            : FinalPriceList.fromJson(json['finalPriceList'] as Map<String, dynamic>),
+            : FinalPriceList.fromJson(
+                json['finalPriceList'] as Map<String, dynamic>),
         images: json['images'] == null
             ? []
-            : List<ImageData>.from((json['images'] as List).map((x) => ImageData.fromJson(x as Map<String, dynamic>))),
+            : List<ImageData>.from((json['images'] as List)
+                .map((x) => ImageData.fromJson(x as Map<String, dynamic>))),
         inStock: json['inStock'] as bool? ?? false,
         isAllVariantInStock: json['isAllVariantInStock'] as String? ?? '',
         isproductCondition: json['isproductCondition'] as num? ?? 0,
@@ -461,7 +487,8 @@ class FeaturedProductDataItem {
         resellerCommission: json['resellerCommission'] as num? ?? 0,
         resellerCommissionType: json['resellerCommissionType'] as num? ?? 0,
         resellerFixedCommission: json['resellerFixedCommission'] as num? ?? 0,
-        resellerPercentageCommission: json['resellerPercentageCommission'] as num? ?? 0,
+        resellerPercentageCommission:
+            json['resellerPercentageCommission'] as num? ?? 0,
         slug: json['slug'] as String? ?? '',
         status: json['status'] as num? ?? 0,
         statusText: json['statusText'] as String? ?? '',
@@ -472,7 +499,9 @@ class FeaturedProductDataItem {
         brandId: json['brandId'] as String? ?? '',
         moderationStatus: json['moderationStatus'] as String? ?? '',
         outOfStock: json['outOfStock'] as bool? ?? false,
-        variants: json['variants'] == null ? [] : List<dynamic>.from((json['variants'] as List).map((x) => x)),
+        variants: json['variants'] == null
+            ? []
+            : List<dynamic>.from((json['variants'] as List).map((x) => x)),
         avgRating: json['avgRating'] as num? ?? 0,
       );
   num? availableQuantity;
@@ -521,7 +550,9 @@ class FeaturedProductDataItem {
         'currencySymbol': currencySymbol,
         'imageUrl': imageUrl,
         'finalPriceList': finalPriceList?.toJson(),
-        'images': images == null ? [] : List<dynamic>.from(images!.map((x) => x.toJson())),
+        'images': images == null
+            ? []
+            : List<dynamic>.from(images!.map((x) => x.toJson())),
         'inStock': inStock,
         'isAllVariantInStock': isAllVariantInStock,
         'isproductCondition': isproductCondition,
@@ -543,7 +574,8 @@ class FeaturedProductDataItem {
         'brandId': brandId,
         'moderationStatus': moderationStatus,
         'outOfStock': outOfStock,
-        'variants': variants == null ? [] : List<dynamic>.from(variants!.map((x) => x)),
+        'variants':
+            variants == null ? [] : List<dynamic>.from(variants!.map((x) => x)),
         'avgRating': avgRating,
       };
 }
