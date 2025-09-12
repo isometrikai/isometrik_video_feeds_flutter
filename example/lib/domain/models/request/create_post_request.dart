@@ -5,7 +5,8 @@ import 'package:ism_video_reel_player_example/domain/domain.dart';
 CreatePostRequest createPostRequestFromJson(String str) =>
     CreatePostRequest.fromJson(json.decode(str) as Map<String, dynamic>);
 
-String createPostRequestToJson(CreatePostRequest data) => json.encode(data.toJson());
+String createPostRequestToJson(CreatePostRequest data) =>
+    json.encode(data.toJson());
 
 class CreatePostRequest {
   CreatePostRequest({
@@ -22,14 +23,17 @@ class CreatePostRequest {
     this.mentions,
   });
 
-  factory CreatePostRequest.fromJson(Map<String, dynamic> json) => CreatePostRequest(
+  factory CreatePostRequest.fromJson(Map<String, dynamic> json) =>
+      CreatePostRequest(
         postId: json['id'] as String? ?? '',
         caption: json['caption'] as String? ?? '',
         media: json['media'] == null
             ? []
-            : List<MediaData>.from(
-                (json['media'] as List).map((x) => MediaData.fromMap(x as Map<String, dynamic>))),
-        tags: json['tags'] == null ? null : Tags.fromMap(json['tags'] as Map<String, dynamic>),
+            : List<MediaData>.from((json['media'] as List)
+                .map((x) => MediaData.fromMap(x as Map<String, dynamic>))),
+        tags: json['tags'] == null
+            ? null
+            : Tags.fromMap(json['tags'] as Map<String, dynamic>),
         previews: json['previews'] == null
             ? []
             : List<PreviewMedia>.from((json['previews'] as List)
@@ -61,15 +65,21 @@ class CreatePostRequest {
   Map<String, dynamic> toJson() => {
         'id': postId,
         'caption': caption,
-        'media': media == null ? [] : List<dynamic>.from(media!.map((x) => x.toMap())),
-        'previews': previews == null ? [] : List<dynamic>.from(previews!.map((x) => x.toMap())),
+        'media': media == null
+            ? []
+            : List<dynamic>.from(media!.map((x) => x.toMap())),
+        'previews': previews == null
+            ? []
+            : List<dynamic>.from(previews!.map((x) => x.toMap())),
         'status': status,
         'type': type,
         'visibility': visibility,
         'scheduled_at': scheduleTime,
         'tags': tags?.toMap(),
         'settings': settings?.toJson(),
-        'mentions': mentions == null ? [] : List<dynamic>.from(mentions!.map((x) => x.toJson())),
+        'mentions': mentions == null
+            ? []
+            : List<dynamic>.from(mentions!.map((x) => x.toJson())),
       };
 }
 

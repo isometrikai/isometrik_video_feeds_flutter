@@ -25,7 +25,8 @@ class TapHandler extends StatelessWidget {
   Widget build(BuildContext context) => Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: IsrDimens.borderRadiusAll(borderRadius ?? IsrDimens.zero),
+          borderRadius:
+              IsrDimens.borderRadiusAll(borderRadius ?? IsrDimens.zero),
           splashColor: Theme.of(context).splashColor,
           onTap: onTap,
           onDoubleTap: onDoubleTap,

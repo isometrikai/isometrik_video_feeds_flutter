@@ -58,24 +58,21 @@ class AuthRepositoryImpl extends AuthRepository {
 
   ///save all required data in local storage
   Future<void> saveRequiredDataInLocalStorage(LoginSignupData? data) async {
-    await dataSource.getStorageManager().saveValue(LocalStorageKeys.isFirstTimeVisit, false, SavedValueDataType.bool);
+    await dataSource.getStorageManager().saveValue(
+        LocalStorageKeys.isFirstTimeVisit, false, SavedValueDataType.bool);
     await _sessionManager.createNewUserSession(data);
-    await dataSource
-        .getStorageManager()
-        .saveValue(LocalStorageKeys.longitude, data?.location?.long?.toDouble(), SavedValueDataType.double);
-    await dataSource
-        .getStorageManager()
-        .saveValue(LocalStorageKeys.latitude, data?.location?.lat?.toDouble(), SavedValueDataType.double);
+    await dataSource.getStorageManager().saveValue(LocalStorageKeys.longitude,
+        data?.location?.long?.toDouble(), SavedValueDataType.double);
+    await dataSource.getStorageManager().saveValue(LocalStorageKeys.latitude,
+        data?.location?.lat?.toDouble(), SavedValueDataType.double);
   }
 
   @override
   Future<CustomResponse<LoginSignupData?>> sendOtp({
     required bool isLoading,
     required String mobileNumber,
-  }) {
-    // TODO: implement sendOtp
-    throw UnimplementedError();
-  }
+  }) =>
+      throw UnimplementedError();
 
   @override
   Future<CustomResponse<ResponseClass?>> guestLogin({

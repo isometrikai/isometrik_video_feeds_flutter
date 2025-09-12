@@ -24,7 +24,8 @@ class _SplashScreenState extends State<SplashScreen> {
         listener: (context, state) {
           if (state is SplashCompleted) {
             if (state.isLoggedIn) {
-              InjectionUtils.getCubit<NavItemCubit>().onTap(NavbarType.home, isFirstTime: true);
+              InjectionUtils.getCubit<NavItemCubit>()
+                  .onTap(NavbarType.home, isFirstTime: true);
             } else {
               InjectionUtils.getRouteManagement().goToLoginScreen();
             }

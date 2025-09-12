@@ -45,7 +45,8 @@ class _LandingViewState extends State<LandingView> {
     if (currentTab == NavbarType.home) {
       final now = DateTime.now();
       // If this is the first back press or more than 2 seconds have passed
-      if (currentBackPressTime == null || now.difference(currentBackPressTime!) > const Duration(seconds: 2)) {
+      if (currentBackPressTime == null ||
+          now.difference(currentBackPressTime!) > const Duration(seconds: 2)) {
         currentBackPressTime = now;
         Utility.showToastMessage('Press back again to exit');
         return false;
@@ -61,9 +62,12 @@ class _LandingViewState extends State<LandingView> {
 
   @override
   Widget build(BuildContext context) => BlocBuilder<LandingBloc, LandingState>(
-        buildWhen: (previousState, currentState) => currentState is LandingInitialState,
+        buildWhen: (previousState, currentState) =>
+            currentState is LandingInitialState,
         builder: (context, landingState) {
-          _isLoggedIn = landingState is LandingInitialState ? landingState.isLoggedIn == true : _isLoggedIn;
+          _isLoggedIn = landingState is LandingInitialState
+              ? landingState.isLoggedIn == true
+              : _isLoggedIn;
           return BlocBuilder<NavItemCubit, NavbarType>(
             builder: (context, state) => PopScope(
               canPop: false,
@@ -73,16 +77,26 @@ class _LandingViewState extends State<LandingView> {
                 }
               },
               child: Scaffold(
-                backgroundColor: state == NavbarType.home ? AppColors.white : Theme.of(context).scaffoldBackgroundColor,
+                backgroundColor: state == NavbarType.home
+                    ? AppColors.white
+                    : Theme.of(context).scaffoldBackgroundColor,
                 resizeToAvoidBottomInset: false,
                 appBar: state == NavbarType.home
                     ? null
                     : CustomAppBar(
                         showTitleWidget: false,
-                        backgroundColor: state == NavbarType.home ? AppColors.white : AppColors.appBarColor,
-                        height: state == NavbarType.home ? Dimens.zero : Dimens.fifty,
-                        leadingWidth: state == NavbarType.account ? Dimens.fourteen : Dimens.eighty,
-                        titleText: state == NavbarType.account ? TranslationFile.myAccount : null,
+                        backgroundColor: state == NavbarType.home
+                            ? AppColors.white
+                            : AppColors.appBarColor,
+                        height: state == NavbarType.home
+                            ? Dimens.zero
+                            : Dimens.fifty,
+                        leadingWidth: state == NavbarType.account
+                            ? Dimens.fourteen
+                            : Dimens.eighty,
+                        titleText: state == NavbarType.account
+                            ? TranslationFile.myAccount
+                            : null,
                         titleSpacing: Dimens.ten,
                         leading: state == NavbarType.account
                             ? Dimens.boxHeight(Dimens.zero)
@@ -94,7 +108,9 @@ class _LandingViewState extends State<LandingView> {
                               ),
                         onTap: state == NavbarType.account
                             ? () {
-                                context.read<NavItemCubit>().onTap(NavbarType.home);
+                                context
+                                    .read<NavItemCubit>()
+                                    .onTap(NavbarType.home);
                               }
                             : null,
                         showActions: state != NavbarType.account,
@@ -118,15 +134,26 @@ class _LandingViewState extends State<LandingView> {
                     Visibility(
                       visible: true,
                       child: BottomNavigationBar(
-                        backgroundColor: state == NavbarType.home ? AppColors.grey : AppColors.white,
+                        backgroundColor: state == NavbarType.home
+                            ? AppColors.grey
+                            : AppColors.white,
                         currentIndex: NavbarType.visibleItems.indexOf(state),
-                        selectedItemColor: state == NavbarType.home ? AppColors.white : AppColors.black,
-                        unselectedItemColor: state == NavbarType.home ? AppColors.primaryTextColor : AppColors.black,
-                        selectedLabelStyle: state == NavbarType.home ? Styles.white12 : Styles.primaryText12,
-                        unselectedLabelStyle: state == NavbarType.home ? Styles.white12 : Styles.primaryText12,
+                        selectedItemColor: state == NavbarType.home
+                            ? AppColors.white
+                            : AppColors.black,
+                        unselectedItemColor: state == NavbarType.home
+                            ? AppColors.primaryTextColor
+                            : AppColors.black,
+                        selectedLabelStyle: state == NavbarType.home
+                            ? Styles.white12
+                            : Styles.primaryText12,
+                        unselectedLabelStyle: state == NavbarType.home
+                            ? Styles.white12
+                            : Styles.primaryText12,
                         onTap: (index) async {
-                          InjectionUtils.getBloc<LandingBloc>()
-                              .add(LandingNavigationEvent(navbarType: NavbarType.visibleItems[index]));
+                          InjectionUtils.getBloc<LandingBloc>().add(
+                              LandingNavigationEvent(
+                                  navbarType: NavbarType.visibleItems[index]));
                         },
                         items: NavbarType.visibleItems
                             .map(
@@ -135,7 +162,9 @@ class _LandingViewState extends State<LandingView> {
                                   state == e ? e.outlineIcon : e.filledIcon,
                                   height: Dimens.twentyFour,
                                   width: Dimens.twentyFour,
-                                  color: state == NavbarType.home ? AppColors.white : null,
+                                  color: state == NavbarType.home
+                                      ? AppColors.white
+                                      : null,
                                 ),
                                 label: e.label,
                               ),

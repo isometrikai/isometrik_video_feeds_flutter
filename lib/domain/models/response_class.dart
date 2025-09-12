@@ -69,15 +69,20 @@ class ResponseClass {
   String toJson() => json.encode(toMap());
 
   @override
-  String toString() => 'ResponseClass(title: $title, data: $data, hasError: $hasError, statusCode: $statusCode)';
+  String toString() =>
+      'ResponseClass(title: $title, data: $data, hasError: $hasError, statusCode: $statusCode)';
 
   @override
   bool operator ==(covariant ResponseClass other) {
     if (identical(this, other)) return true;
 
-    return other.title == title && other.data == data && other.hasError == hasError && other.statusCode == statusCode;
+    return other.title == title &&
+        other.data == data &&
+        other.hasError == hasError &&
+        other.statusCode == statusCode;
   }
 
   @override
-  int get hashCode => title.hashCode ^ data.hashCode ^ hasError.hashCode ^ statusCode.hashCode;
+  int get hashCode =>
+      title.hashCode ^ data.hashCode ^ hasError.hashCode ^ statusCode.hashCode;
 }

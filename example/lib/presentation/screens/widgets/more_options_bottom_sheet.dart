@@ -32,19 +32,12 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
   bool isLoadingDelete = false;
   List<String> reportReasons = [];
 
-  Widget _buildReportOption(
-    String title,
-    String? selectedReason,
-    void Function(String?) onChanged,
-  ) =>
-      RadioListTile<String>(
+  Widget _buildReportOption(String title) => RadioListTile<String>(
         title: Text(
           title,
           style: Styles.primaryText14,
         ),
         value: title,
-        groupValue: selectedReason,
-        onChanged: onChanged,
         activeColor: Theme.of(context).primaryColor,
         contentPadding: Dimens.edgeInsetsSymmetric(
           horizontal: Dimens.sixteen,
@@ -65,8 +58,9 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
             duration: const Duration(milliseconds: 300),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment:
-                  !showReportReasons ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+              crossAxisAlignment: !showReportReasons
+                  ? CrossAxisAlignment.center
+                  : CrossAxisAlignment.start,
               children: [
                 if (widget.isSelfProfile) ...[
                   const Divider(height: 1),
@@ -75,8 +69,8 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
                     title: Text(
                       TranslationFile.edit,
                       textAlign: TextAlign.center,
-                      style: Styles.primaryText16
-                          .copyWith(fontWeight: FontWeight.w500, color: AppColors.black),
+                      style: Styles.primaryText16.copyWith(
+                          fontWeight: FontWeight.w500, color: AppColors.black),
                     ),
                     onTap: () {
                       Navigator.pop(context);
@@ -88,13 +82,15 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
                   const Divider(height: 1),
                   isLoadingDelete
                       ? Container(
-                          padding: Dimens.edgeInsetsSymmetric(vertical: 10.scaledValue),
+                          padding: Dimens.edgeInsetsSymmetric(
+                              vertical: 10.scaledValue),
                           child: SizedBox(
                             width: Dimens.twenty,
                             height: Dimens.twenty,
                             child: const CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.blue),
                             ),
                           ),
                         )
@@ -103,8 +99,9 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
                           title: Text(
                             TranslationFile.delete,
                             textAlign: TextAlign.center,
-                            style: Styles.primaryText16
-                                .copyWith(fontWeight: FontWeight.w500, color: AppColors.black),
+                            style: Styles.primaryText16.copyWith(
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.black),
                           ),
                           onTap: () {
                             Navigator.pop(context);
@@ -130,8 +127,8 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
                     title: Text(
                       TranslationFile.cancel,
                       textAlign: TextAlign.center,
-                      style: Styles.primaryText16
-                          .copyWith(fontWeight: FontWeight.w500, color: AppColors.black),
+                      style: Styles.primaryText16.copyWith(
+                          fontWeight: FontWeight.w500, color: AppColors.black),
                     ),
                     onTap: () => Navigator.pop(context),
                   ),
@@ -153,8 +150,8 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
               title: Text(
                 TranslationFile.report,
                 textAlign: TextAlign.center,
-                style: Styles.primaryText16
-                    .copyWith(fontWeight: FontWeight.w500, color: AppColors.black),
+                style: Styles.primaryText16.copyWith(
+                    fontWeight: FontWeight.w500, color: AppColors.black),
               ),
               onTap: () async {
                 setState(() {
@@ -237,18 +234,14 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
               ),
             ] else ...[
               SingleChildScrollView(
-                child: Column(
-                  children: reportReasons
-                      .map(
-                        (reason) => _buildReportOption(
-                          reason,
-                          selectedReason,
-                          (value) {
-                            setState(() => selectedReason = value);
-                          },
-                        ),
-                      )
-                      .toList(),
+                child: RadioGroup(
+                  groupValue: selectedReason,
+                  onChanged: (value) {
+                    setState(() => selectedReason = value);
+                  },
+                  child: Column(
+                    children: reportReasons.map(_buildReportOption).toList(),
+                  ),
                 ),
               ),
               const Divider(height: 1),
@@ -261,7 +254,8 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
                           height: Dimens.twenty,
                           child: const CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.blue),
                           ),
                         ),
                       )
@@ -280,7 +274,8 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
 
                                   try {
                                     await widget.onPressReport!(
-                                        message: '', reason: selectedReason ?? '');
+                                        message: '',
+                                        reason: selectedReason ?? '');
                                     if (context.mounted) {
                                       Navigator.pop(context);
                                     }

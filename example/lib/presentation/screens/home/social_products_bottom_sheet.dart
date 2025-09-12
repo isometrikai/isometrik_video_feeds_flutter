@@ -18,7 +18,8 @@ class SocialProductsBottomSheet extends StatefulWidget {
   final List<String>? productIds;
 
   @override
-  State<SocialProductsBottomSheet> createState() => _SocialProductsBottomSheetState();
+  State<SocialProductsBottomSheet> createState() =>
+      _SocialProductsBottomSheetState();
 }
 
 class _SocialProductsBottomSheetState extends State<SocialProductsBottomSheet> {
@@ -50,7 +51,8 @@ class _SocialProductsBottomSheetState extends State<SocialProductsBottomSheet> {
   void _scrollListener() {
     if (!_isLoadingMore &&
         _hasMoreData &&
-        _scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.65) {
+        _scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent * 0.65) {
       _hasMoreData = false;
       _isLoadingMore = true;
     }
@@ -66,11 +68,13 @@ class _SocialProductsBottomSheetState extends State<SocialProductsBottomSheet> {
         },
         child: BlocBuilder<HomeBloc, HomeState>(
           buildWhen: (previousState, currentState) =>
-              currentState is PostDetailsLoading || currentState is PostDetailsLoaded,
+              currentState is PostDetailsLoading ||
+              currentState is PostDetailsLoaded,
           builder: (context, state) {
             if (state is PostDetailsLoaded) {
               _productsList.clear();
-              _productsList.addAll(state.productList as Iterable<ProductDataModel>);
+              _productsList
+                  .addAll(state.productList as Iterable<ProductDataModel>);
               _totalProductsCount = state.totalProductCount;
               _hasMoreData = _productsList.length < _totalProductsCount;
               _isLoadingMore = false;
@@ -127,11 +131,14 @@ class _SocialProductsBottomSheetState extends State<SocialProductsBottomSheet> {
                                 controller: _scrollController,
                                 padding: Dimens.edgeInsetsAll(Dimens.sixteen),
                                 itemCount: _productsList.length,
-                                separatorBuilder: (_, __) => const SizedBox(height: 16),
-                                itemBuilder: (context, index) => _buildProductItem(
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(height: 16),
+                                itemBuilder: (context, index) =>
+                                    _buildProductItem(
                                   context,
                                   _productsList[index],
-                                  isSelected: index == 1, // Example selection, adjust as needed
+                                  isSelected: index ==
+                                      1, // Example selection, adjust as needed
                                 ),
                               ),
                   ),
@@ -152,7 +159,8 @@ class _SocialProductsBottomSheetState extends State<SocialProductsBottomSheet> {
 
     var imageUrl = productImages == null
         ? ''
-        : (productImages is List<ImageData> && (productImages).isEmptyOrNull == false)
+        : (productImages is List<ImageData> &&
+                (productImages).isEmptyOrNull == false)
             ? (productImages[0].small?.isEmpty == true
                 ? productImages[0].medium ?? ''
                 : productImages[0].small ?? '')
@@ -235,8 +243,12 @@ class _SocialProductsBottomSheetState extends State<SocialProductsBottomSheet> {
                         children: [
                           Text(
                             Utility.getFormattedPrice(
-                                (productDataModel?.finalPriceList?.basePrice?.toDouble() ?? 0) -
-                                    (productDataModel?.rewardFinalPrice?.toDouble() ?? 0),
+                                (productDataModel?.finalPriceList?.basePrice
+                                            ?.toDouble() ??
+                                        0) -
+                                    (productDataModel?.rewardFinalPrice
+                                            ?.toDouble() ??
+                                        0),
                                 productDataModel?.currencySymbol),
                             style: Styles.primaryText12.copyWith(
                               color: '868686'.toHexColor,
@@ -250,7 +262,9 @@ class _SocialProductsBottomSheetState extends State<SocialProductsBottomSheet> {
                         children: [
                           Text(
                             Utility.getFormattedPrice(
-                                productDataModel?.finalPriceList?.msrpPrice?.toDouble() ?? 0,
+                                productDataModel?.finalPriceList?.msrpPrice
+                                        ?.toDouble() ??
+                                    0,
                                 productDataModel?.currencySymbol),
                             style: Styles.primaryText14.copyWith(
                               color: '333333'.toHexColor,

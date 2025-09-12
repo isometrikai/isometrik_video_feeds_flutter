@@ -29,7 +29,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final LocalDataUseCase _localDataUseCase;
 
   FutureOr<void> _onLogin(LoginEvent event, Emitter<AuthState> emit) async {
-    final loginMap = {'verifyType': 2, 'loginType': 1, 'countryCode': event.countryCode, 'mobile': event.mobileNumber};
+    final loginMap = {
+      'verifyType': 2,
+      'loginType': 1,
+      'countryCode': event.countryCode,
+      'mobile': event.mobileNumber
+    };
     final apiResult = await loginUseCase.executeLogin(
       isLoading: event.isLoading,
       loginMap: loginMap,
@@ -44,11 +49,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         'loginType': '1',
       });
     } else {
-      ErrorHandler.showAppError(appError: apiResult.error, isNeedToShowError: true);
+      ErrorHandler.showAppError(
+          appError: apiResult.error, isNeedToShowError: true);
     }
   }
 
-  FutureOr<void> _onVerifyOtp(VerifyOtpEvent event, Emitter<AuthState> emit) async {
+  FutureOr<void> _onVerifyOtp(
+      VerifyOtpEvent event, Emitter<AuthState> emit) async {
     final apiResult = await verifyOtpUseCase.executeVerifyOtp(
       isLoading: event.isLoading,
       otpId: event.otpId,
@@ -58,13 +65,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     if (apiResult.isSuccess) {
       InjectionUtils.getRouteManagement().goToHomeScreen();
     } else {
-      ErrorHandler.showAppError(appError: apiResult.error, isNeedToShowError: true);
+      ErrorHandler.showAppError(
+          appError: apiResult.error, isNeedToShowError: true);
     }
   }
 
   FutureOr<void> _sendOtp(SendOtpEvent event, Emitter<AuthState> emit) async {}
 
-  FutureOr<void> _onStartLogin(StartLoginEvent event, Emitter<AuthState> emit) async {
+  FutureOr<void> _onStartLogin(
+      StartLoginEvent event, Emitter<AuthState> emit) async {
     final accessToken = await _localDataUseCase.getAccessToken();
     if (accessToken.isEmptyOrNull) {
       await _guestLoginUseCase.executeGuestLogin(

@@ -17,7 +17,9 @@ extension ContextExtension on BuildContext {
 extension emptyExtension on String? {
   bool get isEmptyOrNull {
     final finalString = this?.trim();
-    return finalString == null || finalString == ' ' || finalString.isEmpty == true;
+    return finalString == null ||
+        finalString == ' ' ||
+        finalString.isEmpty == true;
   }
 }
 
@@ -30,8 +32,9 @@ extension zeroOrNullExtension on double? {
 }
 
 extension StringExtension on String {
-  String capitalize() =>
-      length > 1 ? '${this[0].toUpperCase()}${substring(1).toLowerCase()}' : toUpperCase();
+  String capitalize() => length > 1
+      ? '${this[0].toUpperCase()}${substring(1).toLowerCase()}'
+      : toUpperCase();
 }
 
 extension removeEmptyElementExtension on Map<String, dynamic> {
@@ -89,8 +92,9 @@ extension DimensionExtension on num {
 }
 
 extension HeightExtension on num {
-  SizedBox get verticalSpace =>
-      this == 0 ? const SizedBox.shrink() : SizedBox(height: toDouble().scaledValue);
+  SizedBox get verticalSpace => this == 0
+      ? const SizedBox.shrink()
+      : SizedBox(height: toDouble().scaledValue);
 }
 
 extension WidthExtension on num {

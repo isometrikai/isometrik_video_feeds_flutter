@@ -3,7 +3,8 @@ import 'dart:convert';
 HashTagResponse hashTagResponseFromJson(String str) =>
     HashTagResponse.fromJson(json.decode(str) as Map<String, dynamic>);
 
-String hashTagResponseToJson(HashTagResponse data) => json.encode(data.toJson());
+String hashTagResponseToJson(HashTagResponse data) =>
+    json.encode(data.toJson());
 
 class HashTagResponse {
   HashTagResponse({
@@ -18,12 +19,13 @@ class HashTagResponse {
     this.totalPages,
   });
 
-  factory HashTagResponse.fromJson(Map<String, dynamic> json) => HashTagResponse(
+  factory HashTagResponse.fromJson(Map<String, dynamic> json) =>
+      HashTagResponse(
         code: json['code'] as String? ?? '',
         data: json['data'] == null
             ? []
-            : List<HashTagData>.from(
-                (json['data'] as List).map((x) => HashTagData.fromJson(x as Map<String, dynamic>))),
+            : List<HashTagData>.from((json['data'] as List)
+                .map((x) => HashTagData.fromJson(x as Map<String, dynamic>))),
         message: json['message'] as String? ?? '',
         page: json['page'] as num? ?? 0,
         pageSize: json['page_size'] as num? ?? 0,
@@ -44,7 +46,9 @@ class HashTagResponse {
 
   Map<String, dynamic> toJson() => {
         'code': code,
-        'data': data == null ? [] : List<dynamic>.from(data!.map((x) => x.toJson())),
+        'data': data == null
+            ? []
+            : List<dynamic>.from(data!.map((x) => x.toJson())),
         'message': message,
         'page': page,
         'page_size': pageSize,

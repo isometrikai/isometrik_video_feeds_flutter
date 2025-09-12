@@ -23,7 +23,7 @@ class PostAttributeView extends StatefulWidget {
 
 class _PostAttributeViewState extends State<PostAttributeView> {
   VideoPlayerController? _videoPlayerController;
-  var _isVideoInitializing = false;
+  var isVideoInitializing = false;
   var _mediaDataList = <MediaData>[];
   var _taggedPlaces = <TaggedPlace>[];
   PostAttributeClass? _postAttributeClass;
@@ -49,13 +49,14 @@ class _PostAttributeViewState extends State<PostAttributeView> {
     MediaData mediaData,
   ) async {
     if (mediaData.mediaType?.mediaType == MediaType.video) {
-      _isVideoInitializing = true;
+      isVideoInitializing = true;
       setState(() {});
-      _videoPlayerController = VideoPlayerController.file(File(mediaData.localPath ?? ''));
+      _videoPlayerController =
+          VideoPlayerController.file(File(mediaData.localPath ?? ''));
       await _videoPlayerController?.initialize();
       await _videoPlayerController?.setLooping(true);
       await _videoPlayerController?.setVolume(1.0);
-      _isVideoInitializing = false;
+      isVideoInitializing = false;
       setState(() {});
     }
   }
@@ -78,7 +79,8 @@ class _PostAttributeViewState extends State<PostAttributeView> {
         ),
         bottomNavigationBar: SafeArea(
           child: AppButton(
-            margin: Dimens.edgeInsetsSymmetric(horizontal: Dimens.fifteen, vertical: Dimens.ten),
+            margin: Dimens.edgeInsetsSymmetric(
+                horizontal: Dimens.fifteen, vertical: Dimens.ten),
             title: TranslationFile.post,
             onPress: _createPost,
           ),
@@ -90,8 +92,8 @@ class _PostAttributeViewState extends State<PostAttributeView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding:
-                      Dimens.edgeInsetsSymmetric(horizontal: Dimens.twenty, vertical: Dimens.ten),
+                  padding: Dimens.edgeInsetsSymmetric(
+                      horizontal: Dimens.twenty, vertical: Dimens.ten),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -106,7 +108,8 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                               final media = _mediaDataList[index];
                               return Container(
                                 alignment: Alignment.center,
-                                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 8.0),
                                 child: MediaPreviewWidget(
                                   mediaData: media,
                                   height: 140.scaledValue,
@@ -191,7 +194,8 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                 ListTile(
                   onTap: () {
                     setState(() {
-                      _postAttributeClass?.allowSave = _postAttributeClass?.allowSave == false;
+                      _postAttributeClass?.allowSave =
+                          _postAttributeClass?.allowSave == false;
                     });
                   },
                   title: Text(
@@ -218,7 +222,8 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                     // _socialUserDataList = result;
 
                     final result = await InjectionUtils.getRouteManagement()
-                        .goToTagPeopleScreen(postAttributeClass: _postAttributeClass);
+                        .goToTagPeopleScreen(
+                            postAttributeClass: _postAttributeClass);
                     if (result != null) {
                       _postAttributeClass = result;
                     }
@@ -243,7 +248,8 @@ class _PostAttributeViewState extends State<PostAttributeView> {
                       ? null
                       : () async {
                           final result =
-                              await InjectionUtils.getRouteManagement().goToSearchLocationScreen();
+                              await InjectionUtils.getRouteManagement()
+                                  .goToSearchLocationScreen();
                           if (result != null) {
                             _taggedPlaces = result;
                             setState(() {});
@@ -271,7 +277,7 @@ class _PostAttributeViewState extends State<PostAttributeView> {
         ),
       );
 
-  void _playPause() async {
+  void playPause() async {
     if (_videoPlayerController?.value.isPlaying == true) {
       await _videoPlayerController?.pause();
     } else {
@@ -347,8 +353,8 @@ class _PostAttributeViewState extends State<PostAttributeView> {
 
   void _createPost() {
     _setPostRequest();
-    InjectionUtils.getBloc<CreatePostBloc>()
-        .add(PostCreateEvent(createPostRequest: _postAttributeClass?.createPostRequest));
+    InjectionUtils.getBloc<CreatePostBloc>().add(PostCreateEvent(
+        createPostRequest: _postAttributeClass?.createPostRequest));
   }
 
   void _setPostRequest() {
@@ -372,16 +378,20 @@ class _PostAttributeViewState extends State<PostAttributeView> {
 
       createPostRequest.tags = tags;
 
-      debugPrint('createPostRequest.....${jsonEncode(createPostRequest.toJson())}');
-      debugPrint('createPostRequest.....${jsonEncode(createPostRequest.tags?.mentions)}');
-      debugPrint('createPostRequest.....${jsonEncode(createPostRequest.tags?.hashtags)}');
-      debugPrint('createPostRequest.....${jsonEncode(createPostRequest.tags?.places)}');
+      debugPrint(
+          'createPostRequest.....${jsonEncode(createPostRequest.toJson())}');
+      debugPrint(
+          'createPostRequest.....${jsonEncode(createPostRequest.tags?.mentions)}');
+      debugPrint(
+          'createPostRequest.....${jsonEncode(createPostRequest.tags?.hashtags)}');
+      debugPrint(
+          'createPostRequest.....${jsonEncode(createPostRequest.tags?.places)}');
     }
     _postAttributeClass?.createPostRequest = createPostRequest;
   }
 
-  Widget _buildTaggedPlaces() =>
-      Row(children: List.generate(_taggedPlaces.length, _buildSelectedPlaceWidget));
+  Widget _buildTaggedPlaces() => Row(
+      children: List.generate(_taggedPlaces.length, _buildSelectedPlaceWidget));
 
   Widget _buildSelectedPlaceWidget(int index) => Container(
         margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),

@@ -28,7 +28,8 @@ class VideoCacheManager {
 
   /// Precache video controllers for given URLs
   Future<void> precacheVideos(List<String> videoUrls) async {
-    debugPrint('🎬 VideoCacheManager: Starting precache for ${videoUrls.length} videos');
+    debugPrint(
+        '🎬 VideoCacheManager: Starting precache for ${videoUrls.length} videos');
 
     var alreadyCached = 0;
     var initializing = 0;
@@ -43,19 +44,22 @@ class VideoCacheManager {
       // Don't cache if already cached
       if (_videoControllerCache.containsKey(url)) {
         alreadyCached++;
-        debugPrint('✅ VideoCacheManager: Already cached - ${_extractVideoId(url)}');
+        debugPrint(
+            '✅ VideoCacheManager: Already cached - ${_extractVideoId(url)}');
         continue;
       }
 
       // Don't cache if currently being initialized
       if (_initializationCache.containsKey(url)) {
         initializing++;
-        debugPrint('⏳ VideoCacheManager: Already initializing - ${_extractVideoId(url)}');
+        debugPrint(
+            '⏳ VideoCacheManager: Already initializing - ${_extractVideoId(url)}');
         continue;
       }
 
       newCaching++;
-      debugPrint('🚀 VideoCacheManager: Starting precache for - ${_extractVideoId(url)}');
+      debugPrint(
+          '🚀 VideoCacheManager: Starting precache for - ${_extractVideoId(url)}');
 
       // Start initialization without waiting
       unawaited(_initializeVideoController(url));
@@ -68,10 +72,12 @@ class VideoCacheManager {
   /// Initialize a single video controller
   Future<VideoPlayerController?> _initializeVideoController(String url) async {
     final videoId = _extractVideoId(url);
-    debugPrint('🎯 VideoCacheManager: Initializing video controller for $videoId');
+    debugPrint(
+        '🎯 VideoCacheManager: Initializing video controller for $videoId');
 
     if (_initializationCache.containsKey(url)) {
-      debugPrint('⚠️ VideoCacheManager: Video $videoId already in initialization cache');
+      debugPrint(
+          '⚠️ VideoCacheManager: Video $videoId already in initialization cache');
       return _initializationCache[url];
     }
 
@@ -86,9 +92,11 @@ class VideoCacheManager {
 
       if (controller != null) {
         _addToCache(url, controller);
-        debugPrint('✅ VideoCacheManager: Successfully initialized $videoId in ${duration}ms');
+        debugPrint(
+            '✅ VideoCacheManager: Successfully initialized $videoId in ${duration}ms');
       } else {
-        debugPrint('❌ VideoCacheManager: Failed to initialize $videoId after ${duration}ms');
+        debugPrint(
+            '❌ VideoCacheManager: Failed to initialize $videoId after ${duration}ms');
       }
       return controller;
     } catch (e) {
@@ -96,12 +104,14 @@ class VideoCacheManager {
       return null;
     } finally {
       await _initializationCache.remove(url);
-      debugPrint('🗑️ VideoCacheManager: Removed $videoId from initialization cache');
+      debugPrint(
+          '🗑️ VideoCacheManager: Removed $videoId from initialization cache');
     }
   }
 
   /// Create and initialize video controller
-  Future<VideoPlayerController?> _createAndInitializeController(String url) async {
+  Future<VideoPlayerController?> _createAndInitializeController(
+      String url) async {
     final videoId = _extractVideoId(url);
     debugPrint('🔧 VideoCacheManager: Creating controller for $videoId');
 
@@ -113,7 +123,8 @@ class VideoCacheManager {
         debugPrint('🔒 VideoCacheManager: Converted to HTTPS for $videoId');
       }
 
-      debugPrint('🌐 VideoCacheManager: Creating NetworkUrl controller for $videoId');
+      debugPrint(
+          '🌐 VideoCacheManager: Creating NetworkUrl controller for $videoId');
       final controller = IsrVideoReelUtility.isLocalUrl(mediaUrl)
           ? VideoPlayerController.file(File(mediaUrl))
           : VideoPlayerController.networkUrl(Uri.parse(mediaUrl));
@@ -131,7 +142,8 @@ class VideoCacheManager {
           '🎉 VideoCacheManager: Controller ready for $videoId (${controller.value.size.width}x${controller.value.size.height})');
       return controller;
     } catch (e) {
-      debugPrint('💥 VideoCacheManager: Error creating controller for $videoId - $e');
+      debugPrint(
+          '💥 VideoCacheManager: Error creating controller for $videoId - $e');
       return null;
     }
   }
@@ -161,11 +173,13 @@ class VideoCacheManager {
   /// Evict least recently used items if cache exceeds max size
   void _evictIfNeeded() {
     if (_lruQueue.length <= _maxCacheSize) {
-      debugPrint('✅ VideoCacheManager: Cache within limits (${_lruQueue.length}/$_maxCacheSize)');
+      debugPrint(
+          '✅ VideoCacheManager: Cache within limits (${_lruQueue.length}/$_maxCacheSize)');
       return;
     }
 
-    debugPrint('🚨 VideoCacheManager: Cache exceeded limit, starting eviction process');
+    debugPrint(
+        '🚨 VideoCacheManager: Cache exceeded limit, starting eviction process');
     var evicted = 0;
     var protected = 0;
 
@@ -176,7 +190,8 @@ class VideoCacheManager {
       // Don't evict if video is currently visible
       if (_visibleVideos.contains(oldestUrl)) {
         protected++;
-        debugPrint('🛡️ VideoCacheManager: Protected visible video $videoId from eviction');
+        debugPrint(
+            '🛡️ VideoCacheManager: Protected visible video $videoId from eviction');
         continue;
       }
 
@@ -204,7 +219,8 @@ class VideoCacheManager {
       debugPrint(
           '🎯 VideoCacheManager: Retrieved cached controller for $videoId (moved to front of LRU)');
     } else {
-      debugPrint('❌ VideoCacheManager: No cached controller found for $videoId');
+      debugPrint(
+          '❌ VideoCacheManager: No cached controller found for $videoId');
     }
 
     return controller;

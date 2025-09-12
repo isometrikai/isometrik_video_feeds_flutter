@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:ism_video_reel_player_example/di/di.dart';
 import 'package:ism_video_reel_player_example/domain/domain.dart';
-import 'package:ism_video_reel_player_example/example_export.dart';
+import 'package:ism_video_reel_player_example/main.dart';
 import 'package:ism_video_reel_player_example/presentation/presentation.dart';
 
 // Full screen location picker
@@ -23,7 +23,7 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   List<Prediction> _searchResults = [];
-  List<TaggedPlace> _taggedPlaces = [];
+  final List<TaggedPlace> _taggedPlaces = [];
   TaggedPlace? _taggedPlace;
   bool _isSearching = false;
   final _searchLocationBloc = InjectionUtils.getBloc<SearchLocationBloc>();
@@ -367,7 +367,8 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
                               ),
                               itemBuilder: (context, index) {
                                 final location = _searchResults[index];
-                                final isSelected = _taggedPlace?.placeId == location.placeId;
+                                final isSelected =
+                                    _taggedPlace?.placeId == location.placeId;
 
                                 return ListTile(
                                   contentPadding: const EdgeInsets.symmetric(
@@ -392,14 +393,18 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
                                         location.description ??
                                         '',
                                     style: TextStyle(
-                                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w600
+                                          : FontWeight.w500,
                                       fontSize: 16,
                                     ),
                                   ),
                                   subtitle: Padding(
                                     padding: const EdgeInsets.only(top: 2),
                                     child: Text(
-                                      location.structuredFormatting?.secondaryText ?? '',
+                                      location.structuredFormatting
+                                              ?.secondaryText ??
+                                          '',
                                       style: TextStyle(
                                         color: Colors.grey[600],
                                         fontSize: 14,

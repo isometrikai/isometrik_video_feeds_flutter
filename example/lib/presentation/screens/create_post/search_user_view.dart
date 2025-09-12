@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player_example/di/di.dart';
 import 'package:ism_video_reel_player_example/domain/domain.dart';
-import 'package:ism_video_reel_player_example/example_export.dart';
+import 'package:ism_video_reel_player_example/main.dart';
 import 'package:ism_video_reel_player_example/presentation/presentation.dart';
 
 class SearchUserView extends StatefulWidget {
@@ -15,7 +15,8 @@ class SearchUserView extends StatefulWidget {
   _SearchUserViewState createState() => _SearchUserViewState();
 }
 
-class _SearchUserViewState extends State<SearchUserView> with TickerProviderStateMixin {
+class _SearchUserViewState extends State<SearchUserView>
+    with TickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   bool _isSearching = false;
   final _searchUserBloc = InjectionUtils.getBloc<SearchUserBloc>();
@@ -192,7 +193,8 @@ class _SearchUserViewState extends State<SearchUserView> with TickerProviderStat
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.grey[400]!),
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(Colors.grey[400]!),
                   ),
                 ),
               ),

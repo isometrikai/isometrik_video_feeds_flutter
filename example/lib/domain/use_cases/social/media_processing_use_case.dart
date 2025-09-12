@@ -15,6 +15,7 @@ class MediaProcessingUseCase extends BaseUseCase {
           isLoading: isLoading,
           postId: postId,
         );
-        return ApiResult(data: response.responseCode == 200 ? response.data : null);
+        return ApiResult(
+            data: response.responseCode == 200 ? response.data : null);
       });
 }

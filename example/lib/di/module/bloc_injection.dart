@@ -17,9 +17,12 @@ class BlocInjection {
           _localDataUseCase,
         ));
 
-    InjectionUtils.registerBloc<SplashBloc>(() => SplashBloc(_localDataUseCase));
-    InjectionUtils.registerBloc<LandingBloc>(() => LandingBloc(_localDataUseCase));
-    InjectionUtils.registerBloc<ProfileBloc>(() => ProfileBloc(_localDataUseCase));
+    InjectionUtils.registerBloc<SplashBloc>(
+        () => SplashBloc(_localDataUseCase));
+    InjectionUtils.registerBloc<LandingBloc>(
+        () => LandingBloc(_localDataUseCase));
+    InjectionUtils.registerBloc<ProfileBloc>(
+        () => ProfileBloc(_localDataUseCase));
     InjectionUtils.registerBloc<NavItemCubit>(NavItemCubit.new);
 
     InjectionUtils.registerBloc<HomeBloc>(() => HomeBloc(

@@ -119,7 +119,8 @@ class CustomButton extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        if (isButtonWithCenterIcon != null && isButtonWithCenterIcon!) ...[
+                        if (isButtonWithCenterIcon != null &&
+                            isButtonWithCenterIcon!) ...[
                           centerIcon!,
                           IsrDimens.boxWidth(IsrDimens.twelve),
                         ],
@@ -128,8 +129,10 @@ class CustomButton extends StatelessWidget {
                           style: textStyle != null
                               ? textStyle
                               : textColor != null
-                                  ? IsrStyles.secondaryText14.copyWith(fontWeight: FontWeight.w700)
-                                  : IsrStyles.white14.copyWith(fontWeight: FontWeight.w700),
+                                  ? IsrStyles.secondaryText14
+                                      .copyWith(fontWeight: FontWeight.w700)
+                                  : IsrStyles.white14
+                                      .copyWith(fontWeight: FontWeight.w700),
                           textAlign: textAlign,
                         ),
                       ],

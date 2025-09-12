@@ -187,7 +187,9 @@ class PostApiServiceProvider extends PostApiService {
     required Header header,
   }) async =>
       await networkClient.makeRequest(
-        likeAction == LikeAction.like ? PostApiEndPoints.postLike : PostApiEndPoints.postUnLike,
+        likeAction == LikeAction.like
+            ? PostApiEndPoints.postLike
+            : PostApiEndPoints.postUnLike,
         NetworkRequestType.post,
         {
           'postId': postId,

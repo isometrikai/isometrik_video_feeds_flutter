@@ -29,7 +29,9 @@ class IsmErrorHandler {
     bool isNeedToShowError = false,
   }) {
     if (isNeedToShowError || appError is NetworkError) {
-      IsrVideoReelUtility.showAppError(message: message ?? appError?.message ?? '', errorViewType: errorViewType);
+      IsrVideoReelUtility.showAppError(
+          message: message ?? appError?.message ?? '',
+          errorViewType: errorViewType);
     }
   }
 }

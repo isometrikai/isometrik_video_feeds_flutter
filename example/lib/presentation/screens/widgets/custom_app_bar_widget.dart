@@ -68,7 +68,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool? showTitleWidget;
 
   @override
-  Size get preferredSize => Size(Dimens.percentWidth(1), height ?? Dimens.appBarHeight);
+  Size get preferredSize =>
+      Size(Dimens.percentWidth(1), height ?? Dimens.appBarHeight);
 
   @override
   Widget build(BuildContext context) => AppBar(
@@ -84,7 +85,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           systemNavigationBarColor: navigationBarColor,
           systemNavigationBarIconBrightness: navigationBarIconBrightness,
         ),
-        leadingWidth: isBackButtonVisible == false ? Dimens.twenty : leadingWidth,
+        leadingWidth:
+            isBackButtonVisible == false ? Dimens.twenty : leadingWidth,
         titleSpacing: titleSpacing ?? Dimens.zero,
         toolbarHeight: height,
         leading: isBackButtonVisible
@@ -94,7 +96,9 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                         onTap: onTap ?? context.pop,
                         child: UnconstrainedBox(
                           child: AppImage.svg(
-                            isCrossIcon ? AssetConstants.icCrossIcon : AssetConstants.icBackIcon,
+                            isCrossIcon
+                                ? AssetConstants.icCrossIcon
+                                : AssetConstants.icBackIcon,
                             color: iconColor ?? titleColor ?? AppColors.black,
                           ),
                         ),
@@ -103,7 +107,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             : Dimens.boxHeight(Dimens.zero),
         automaticallyImplyLeading: false,
         centerTitle: centerTitle,
-        titleTextStyle: titleStyle ?? Theme.of(context).appBarTheme.titleTextStyle,
+        titleTextStyle:
+            titleStyle ?? Theme.of(context).appBarTheme.titleTextStyle,
         toolbarTextStyle: Theme.of(context).appBarTheme.toolbarTextStyle,
         title: titleText == null
             ? showTitleWidget ?? false

@@ -47,14 +47,14 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   var descriptionText = '';
   DateTime? selectedDate = DateTime.now().add(const Duration(hours: 1));
   var isScheduledPost = false;
-  var _pageCount = 0;
+  var pageCount = 0;
   final List<ProductDataModel> _listOfProducts = [];
   List<ProductDataModel> linkedProducts = [];
   final List<ProductDataModel> _linkedSocialProducts = [];
 
   var _isDataLoading = false;
-  var _searchQuery = '';
-  final DeBouncer _deBouncer = DeBouncer();
+  var searchQuery = '';
+  final DeBouncer deBouncer = DeBouncer();
   var _isCompressionRunning = false;
 
   CloudDetailsData? cloudDetailsData;
@@ -69,7 +69,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   final List<MentionData> mentionedUserData = [];
   final List<MentionData> hashTagDataList = [];
 
-  FutureOr<void> _initState(CreatePostInitialEvent event, Emitter<CreatePostState> emit) {
+  FutureOr<void> _initState(
+      CreatePostInitialEvent event, Emitter<CreatePostState> emit) {
     _resetData();
     selectedDate = getBufferedDate();
     emit(CreatePostInitialState());
@@ -78,9 +79,9 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   void resetApiCall() {
     isScheduledPost = false;
     _listOfProducts.clear();
-    _pageCount = 0;
+    pageCount = 0;
     _isDataLoading = false;
-    _searchQuery = '';
+    searchQuery = '';
   }
 
   // Reset all variables after successful post creation
@@ -112,15 +113,17 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     String fileExtension,
   ) async {
     final myUserId = await _localDataUseCase.getUserId();
-    final response = await googleCloudStorageUploaderUseCase.executeGoogleCloudStorageUploader(
-        file: file!,
-        fileName: fileName,
-        fileExtension: fileExtension,
-        userId: myUserId,
-        onProgress: (progress) {
-          debugPrint('_uploadMediaToGoogleCloud......progress: ${progress * 100}');
-          progressCallBackFunction.call(progress * 100);
-        });
+    final response = await googleCloudStorageUploaderUseCase
+        .executeGoogleCloudStorageUploader(
+            file: file!,
+            fileName: fileName,
+            fileExtension: fileExtension,
+            userId: myUserId,
+            onProgress: (progress) {
+              debugPrint(
+                  '_uploadMediaToGoogleCloud......progress: ${progress * 100}');
+              progressCallBackFunction.call(progress * 100);
+            });
     debugPrint('_uploadMediaToGoogleCloud: $response');
     return response ?? '';
   }
@@ -143,12 +146,13 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     return extension;
   }
 
-  FutureOr<void> _openMediaSource(MediaSourceEvent event, Emitter<CreatePostState> emit) async {
+  FutureOr<void> _openMediaSource(
+      MediaSourceEvent event, Emitter<CreatePostState> emit) async {
     var mediaInfoClass = <MediaInfoClass>[];
 
     if (event.mediaSource == MediaSource.camera) {
-      final mediaInfo =
-          await _pickFromFromCamera(event.context, event.mediaType, event.mediaSource);
+      final mediaInfo = await _pickFromFromCamera(
+          event.context, event.mediaType, event.mediaSource);
       if (mediaInfo != null) {
         mediaInfoClass.add(mediaInfo);
       }
@@ -156,10 +160,12 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
     if (event.mediaSource == MediaSource.gallery && event.context.mounted) {
       if (AppConstants.isMultipleMediaSelectionEnabled) {
-        final mediaList = await _pickMultipleMedia(event.context, event.mediaSource);
+        final mediaList =
+            await _pickMultipleMedia(event.context, event.mediaSource);
         mediaInfoClass = mediaList;
       } else {
-        final mediaInfo = await _pickFromGallery(event.context, event.mediaType, event.mediaSource);
+        final mediaInfo = await _pickFromGallery(
+            event.context, event.mediaType, event.mediaSource);
         if (mediaInfo != null) {
           mediaInfoClass.add(mediaInfo);
         }
@@ -170,12 +176,12 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       for (var i = 0; i < mediaInfoClass.length; i++) {
         // var mediaData = _mediaDataList.isEmptyOrNull == false ? _mediaDataList[i] : null;
 
-        final mediaData =
-            await _processMediaInfo(event.context, mediaInfoClass[i], emit, event.isCoverImage, i)
-                as MediaData;
+        final mediaData = await _processMediaInfo(
+                event.context, mediaInfoClass[i], emit, event.isCoverImage, i)
+            as MediaData;
 
-        final index =
-            _mediaDataList.indexWhere((element) => event.mediaData?.localPath == element.localPath);
+        final index = _mediaDataList.indexWhere(
+            (element) => event.mediaData?.localPath == element.localPath);
         if (index == -1) {
           _mediaDataList.add(mediaData);
         } else {
@@ -237,7 +243,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
     // Check if at least one media has valid localPath & previewUrl
     for (final media in mediaList!) {
-      if (media.localPath.isEmptyOrNull == false && media.previewUrl.isEmptyOrNull == false) {
+      if (media.localPath.isEmptyOrNull == false &&
+          media.previewUrl.isEmptyOrNull == false) {
         isPostButtonEnable = true;
         break;
       }
@@ -281,8 +288,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   }
 
   // Add this method in _CameraViewState
-  Future<MediaInfoClass?> _pickFromFromCamera(
-      BuildContext context, MediaType mediaType, MediaSource mediaSource) async {
+  Future<MediaInfoClass?> _pickFromFromCamera(BuildContext context,
+      MediaType mediaType, MediaSource mediaSource) async {
     final picker = ImagePicker();
     try {
       XFile? file;
@@ -290,7 +297,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
       if (mediaType == MediaType.video) {
         file = await picker.pickVideo(
-            source: ImageSource.camera, maxDuration: const Duration(seconds: 30));
+            source: ImageSource.camera,
+            maxDuration: const Duration(seconds: 30));
         if (file != null) {
           final mediaInfo = await VideoCompress.getMediaInfo(file.path);
           duration = (mediaInfo.duration ?? 0).toInt();
@@ -317,8 +325,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   }
 
   // Add this method in _CameraViewState
-  Future<MediaInfoClass?> _pickFromGallery(
-      BuildContext context, MediaType mediaType, MediaSource mediaSource) async {
+  Future<MediaInfoClass?> _pickFromGallery(BuildContext context,
+      MediaType mediaType, MediaSource mediaSource) async {
     final picker = ImagePicker();
     try {
       XFile? file;
@@ -326,7 +334,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
       if (mediaType == MediaType.video) {
         file = await picker.pickVideo(
-            source: ImageSource.gallery, maxDuration: const Duration(seconds: 30));
+            source: ImageSource.gallery,
+            maxDuration: const Duration(seconds: 30));
         if (file != null) {
           final mediaInfo = await VideoCompress.getMediaInfo(file.path);
           duration = (mediaInfo.duration ?? 0).toInt();
@@ -345,7 +354,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
         return mediaInfoClass;
       }
     } catch (e, stackTrace) {
-      AppLog.error('Error picking video from gallery...${e.toString()}', stackTrace);
+      AppLog.error(
+          'Error picking video from gallery...${e.toString()}', stackTrace);
       if (context.mounted) {
         Utility.showInSnackBar('Error picking video from gallery', context);
       }
@@ -372,37 +382,44 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
         newMediaData.size = mediaFile.lengthSync();
         newMediaData.localPath = mediaFile.path;
         newMediaData.duration = mediaInfoClass.duration;
-        newMediaData.mediaType = mediaType == MediaType.video ? 'video' : 'image';
+        newMediaData.mediaType =
+            mediaType == MediaType.video ? 'video' : 'image';
         if (mediaType == MediaType.video) {
           final videoThumbnailFile = await VideoThumbnail.thumbnailFile(
             video: mediaFile.path,
             quality: 50,
             thumbnailPath: (await getTemporaryDirectory()).path,
           );
-          newMediaData.previewUrl =
-              videoThumbnailFile.path.isEmptyOrNull ? '' : videoThumbnailFile.path;
+          newMediaData.previewUrl = videoThumbnailFile.path.isEmptyOrNull
+              ? ''
+              : videoThumbnailFile.path;
         }
 
-        final videoThumbnailFileBytes = await File(newMediaData.previewUrl ?? '').readAsBytes();
+        final videoThumbnailFileBytes =
+            await File(newMediaData.previewUrl ?? '').readAsBytes();
         newMediaData.videoThumbnailFileBytes = videoThumbnailFileBytes;
         newMediaData.fileName = _getFileName(
           mediaFile.path,
           mediaType == MediaType.video ? 'video' : 'image',
         );
         newMediaData.fileExtension = _getFileExtension(mediaFile.path);
-        newMediaData.coverFileName = _getFileName(newMediaData.previewUrl, 'thumbnail');
-        newMediaData.coverFileExtension = _getFileExtension(newMediaData.previewUrl ?? '');
+        newMediaData.coverFileName =
+            _getFileName(newMediaData.previewUrl, 'thumbnail');
+        newMediaData.coverFileExtension =
+            _getFileExtension(newMediaData.previewUrl ?? '');
       } else {
         final coverFileName = _getFileName(mediaFile.path, 'thumbnail');
         newMediaData.coverFileName = coverFileName;
-        newMediaData.coverFileExtension = _getFileExtension(newMediaData.previewUrl ?? '');
+        newMediaData.coverFileExtension =
+            _getFileExtension(newMediaData.previewUrl ?? '');
       }
     }
     newMediaData.position = position + 1;
     return newMediaData;
   }
 
-  FutureOr<void> _createPost(PostCreateEvent event, Emitter<CreatePostState> emit) async {
+  FutureOr<void> _createPost(
+      PostCreateEvent event, Emitter<CreatePostState> emit) async {
     if (event.createPostRequest == null) {
       _setPostRequest();
     }
@@ -430,9 +447,11 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
         _updatePostData();
       }
       final createPostData = apiResult.data?.data;
-      add(MediaUploadEvent(mediaDataList: _mediaDataList, postId: createPostData?.id ?? ''));
+      add(MediaUploadEvent(
+          mediaDataList: _mediaDataList, postId: createPostData?.id ?? ''));
     } else {
-      ErrorHandler.showAppError(appError: apiResult.error, isNeedToShowError: true);
+      ErrorHandler.showAppError(
+          appError: apiResult.error, isNeedToShowError: true);
     }
   }
 
@@ -442,14 +461,16 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     _postData?.media = _createPostRequest.media;
   }
 
-  List<SocialProductData> _getSocialProductList(List<ProductDataModel> linkedProducts) {
+  List<SocialProductData> _getSocialProductList(
+      List<ProductDataModel> linkedProducts) {
     if (linkedProducts.isEmptyOrNull == true) return [];
     return linkedProducts.map((item) {
       final index = linkedProducts.indexOf(item);
       final dynamic productImages = item.images ?? item.modelImage;
       var imageUrl = productImages == null
           ? ''
-          : (productImages is List<ImageData> && (productImages).isEmptyOrNull == false)
+          : (productImages is List<ImageData> &&
+                  (productImages).isEmptyOrNull == false)
               ? (productImages[0].small?.isEmpty == true
                   ? productImages[0].medium ?? ''
                   : productImages[0].small ?? '')
@@ -479,7 +500,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     }).toList();
   }
 
-  List<ProductDataModel> _getProductDataModel(List<SocialProductData> linkedProducts) {
+  List<ProductDataModel> _getProductDataModel(
+      List<SocialProductData> linkedProducts) {
     if (linkedProducts.isEmptyOrNull == true) return [];
     return linkedProducts
         .map((item) => ProductDataModel(
@@ -512,7 +534,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     if (apiResult.isSuccess) {
       totalProductsCount = apiResult.data?.count?.toInt() ?? 0;
       _linkedSocialProducts.clear();
-      _linkedSocialProducts.addAll(apiResult.data?.data as Iterable<ProductDataModel>);
+      _linkedSocialProducts
+          .addAll(apiResult.data?.data as Iterable<ProductDataModel>);
       _tags.products = _getSocialProductList(_linkedSocialProducts);
     } else {
       ErrorHandler.showAppError(appError: apiResult.error);
@@ -527,7 +550,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   }
 
   /// load post data to edit post
-  FutureOr<void> _editPost(EditPostEvent event, Emitter<CreatePostState> emit) async {
+  FutureOr<void> _editPost(
+      EditPostEvent event, Emitter<CreatePostState> emit) async {
     emit(CreatePostInitialState(isLoading: true));
     _postData = event.postData;
     _mediaDataList.clear();
@@ -551,7 +575,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     }
     _isForEdit = true;
     _makePostRequest();
-    emit(MediaSelectedState(mediaDataList: _mediaDataList, isPostButtonEnable: false));
+    emit(MediaSelectedState(
+        mediaDataList: _mediaDataList, isPostButtonEnable: false));
   }
 
   String _extractFileName(String url) {
@@ -567,8 +592,9 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
   bool checkForChangesInLinkedProducts(List<ProductDataModel> linkedProducts) {
     final hasChanges = linkedProducts.length != _linkedSocialProducts.length ||
-        linkedProducts.any((product) => !_linkedSocialProducts
-            .any((existingProduct) => existingProduct.childProductId == product.childProductId));
+        linkedProducts.any((product) => !_linkedSocialProducts.any(
+            (existingProduct) =>
+                existingProduct.childProductId == product.childProductId));
     _tags.products = _getSocialProductList(linkedProducts);
     debugPrint('hasChanges: $hasChanges');
     return hasChanges;
@@ -579,7 +605,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     final fileLength = await file?.length();
     final fileSizeBeforeCompression = fileLength ?? 0 / (1024 * 1024);
     _isCompressionRunning = true;
-    debugPrint('_compressFile......File size before compression: $fileSizeBeforeCompression mb');
+    debugPrint(
+        '_compressFile......File size before compression: $fileSizeBeforeCompression mb');
 
     final compressedFile = await MediaCompressor.compressMedia(
       file!,
@@ -587,15 +614,18 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       onProgress: (progress) {
         debugPrint('Compression progress: $progress');
         if (_isCompressionRunning) {
-          emit(CompressionProgressState(mediaKey: file.path, progress: progress));
+          emit(CompressionProgressState(
+              mediaKey: file.path, progress: progress));
         }
       },
     );
     if (compressedFile == null) {
       return file;
     }
-    final fileSizeAfterCompression = (await compressedFile.length()) / (1024 * 1024);
-    debugPrint('_compressFile......File size after compression: $fileSizeAfterCompression mb');
+    final fileSizeAfterCompression =
+        (await compressedFile.length()) / (1024 * 1024);
+    debugPrint(
+        '_compressFile......File size after compression: $fileSizeAfterCompression mb');
     return compressedFile;
   }
 
@@ -609,7 +639,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     return bufferedDate;
   }
 
-  FutureOr<void> _uploadMedia(MediaUploadEvent event, Emitter<CreatePostState> emit) async {
+  FutureOr<void> _uploadMedia(
+      MediaUploadEvent event, Emitter<CreatePostState> emit) async {
     if (_mediaDataList.isEmptyOrNull == false) {
       for (var index = 0; index < _mediaDataList.length; index++) {
         final mediaData = _mediaDataList[index];
@@ -628,7 +659,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
                 subTitle: 'Uploading media...',
               ));
             },
-            _mediaDataList[_selectedMediaIndex].mediaType?.mediaType == MediaType.photo
+            _mediaDataList[_selectedMediaIndex].mediaType?.mediaType ==
+                    MediaType.photo
                 ? AppConstants.cloudinaryImageFolder
                 : AppConstants.cloudinaryVideoFolder,
             mediaData.fileExtension ?? '',
@@ -664,9 +696,11 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   }
 
   bool _isMediaChanged() => _mediaDataList.any((mediaData) =>
-      mediaData.localPath.isEmptyOrNull == false && Utility.isLocalUrl(mediaData.localPath ?? ''));
+      mediaData.localPath.isEmptyOrNull == false &&
+      Utility.isLocalUrl(mediaData.localPath ?? ''));
 
-  FutureOr<void> _processMedia(MediaProcessingEvent event, Emitter<CreatePostState> emit) async {
+  FutureOr<void> _processMedia(
+      MediaProcessingEvent event, Emitter<CreatePostState> emit) async {
     final apiResult = await mediaProcessingUseCase.executeMediaProcessing(
       isLoading: true,
       postId: event.postId,
@@ -693,7 +727,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       ));
       _resetData();
     } else {
-      ErrorHandler.showAppError(appError: apiResult.error, isNeedToShowError: true);
+      ErrorHandler.showAppError(
+          appError: apiResult.error, isNeedToShowError: true);
     }
   }
 
@@ -771,15 +806,18 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     return await originalFile.copy(newPath);
   }
 
-  FutureOr<void> _removeSelectedMedia(RemoveMediaEvent event, Emitter<CreatePostState> emit) {
+  FutureOr<void> _removeSelectedMedia(
+      RemoveMediaEvent event, Emitter<CreatePostState> emit) {
     _mediaDataList.remove(event.mediaData);
     CoverImageSelected(
-      coverImage:
-          _mediaDataList.isEmptyOrNull ? '' : _mediaDataList[_selectedMediaIndex].previewUrl,
+      coverImage: _mediaDataList.isEmptyOrNull
+          ? ''
+          : _mediaDataList[_selectedMediaIndex].previewUrl,
       isPostButtonEnable: _isPostButtonEnabled(_mediaDataList),
     );
     emit(MediaSelectedState(
-        mediaDataList: _mediaDataList, isPostButtonEnable: _isPostButtonEnabled(_mediaDataList)));
+        mediaDataList: _mediaDataList,
+        isPostButtonEnable: _isPostButtonEnabled(_mediaDataList)));
   }
 
   FutureOr<void> _goToPostAttributeView(
@@ -806,7 +844,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
     _createPostRequest.type = _mediaDataList.length > 1
         ? SocialPostType.carousel
-        : _mediaDataList[_selectedMediaIndex].mediaType?.mediaType == MediaType.video
+        : _mediaDataList[_selectedMediaIndex].mediaType?.mediaType ==
+                MediaType.video
             ? SocialPostType.video
             : SocialPostType.image;
     _createPostRequest.visibility = SocialPostVisibility.public;

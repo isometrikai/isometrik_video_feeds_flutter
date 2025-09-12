@@ -3,10 +3,13 @@ import 'dart:convert';
 GoogleAddressResponse googleAddressResponseFromJson(String str) =>
     GoogleAddressResponse.fromJson(json.decode(str) as Map<String, dynamic>);
 
-String googleAddressResponseToJson(GoogleAddressResponse data) => json.encode(data.toJson());
+String googleAddressResponseToJson(GoogleAddressResponse data) =>
+    json.encode(data.toJson());
 
-AddressPlacesAutocompleteResponse addressPlacesAutocompleteResponseFromJson(String str) =>
-    AddressPlacesAutocompleteResponse.fromJson(json.decode(str) as Map<String, dynamic>);
+AddressPlacesAutocompleteResponse addressPlacesAutocompleteResponseFromJson(
+        String str) =>
+    AddressPlacesAutocompleteResponse.fromJson(
+        json.decode(str) as Map<String, dynamic>);
 
 PlaceDetails placeDetailsFromJson(String str) =>
     PlaceDetails.fromJson(json.decode(str) as Map<String, dynamic>);
@@ -17,7 +20,8 @@ class GoogleAddressResponse {
     this.status,
   });
 
-  factory GoogleAddressResponse.fromJson(Map<String, dynamic> json) => GoogleAddressResponse(
+  factory GoogleAddressResponse.fromJson(Map<String, dynamic> json) =>
+      GoogleAddressResponse(
         results: json['results'] == null
             ? []
             : List<Result>.from((json['results'] as List<dynamic>)
@@ -29,7 +33,9 @@ class GoogleAddressResponse {
   String? status;
 
   Map<String, dynamic> toJson() => {
-        'results': results == null ? [] : List<dynamic>.from(results!.map((x) => x.toJson())),
+        'results': results == null
+            ? []
+            : List<dynamic>.from(results!.map((x) => x.toJson())),
         'status': status,
       };
 }
@@ -48,8 +54,9 @@ class Result {
   factory Result.fromJson(Map<String, dynamic> json) => Result(
         addressComponents: json['address_components'] == null
             ? []
-            : List<AddressComponent>.from((json['address_components'] as List<dynamic>)
-                .map((x) => AddressComponent.fromJson(x as Map<String, dynamic>))),
+            : List<AddressComponent>.from(
+                (json['address_components'] as List<dynamic>).map((x) =>
+                    AddressComponent.fromJson(x as Map<String, dynamic>))),
         formattedAddress: json['formatted_address'] as String? ?? '',
         geometry: json['geometry'] == null
             ? null
@@ -58,11 +65,12 @@ class Result {
         name: json['name'] as String? ?? '',
         postcodeLocalities: json['postcode_localities'] == null
             ? []
-            : List<String>.from(
-                (json['postcode_localities'] as List<dynamic>).map((x) => x as String)),
+            : List<String>.from((json['postcode_localities'] as List<dynamic>)
+                .map((x) => x as String)),
         types: json['types'] == null
             ? []
-            : List<String>.from((json['types'] as List<dynamic>).map((x) => x as String)),
+            : List<String>.from(
+                (json['types'] as List<dynamic>).map((x) => x as String)),
       );
 
   List<AddressComponent>? addressComponents;
@@ -81,8 +89,9 @@ class Result {
         'geometry': geometry?.toJson(),
         'place_id': placeId,
         'name': name,
-        'postcode_localities':
-            postcodeLocalities == null ? [] : List<dynamic>.from(postcodeLocalities!.map((x) => x)),
+        'postcode_localities': postcodeLocalities == null
+            ? []
+            : List<dynamic>.from(postcodeLocalities!.map((x) => x)),
         'types': types == null ? [] : List<dynamic>.from(types!.map((x) => x)),
       };
 }
@@ -94,12 +103,14 @@ class AddressComponent {
     this.types,
   });
 
-  factory AddressComponent.fromJson(Map<String, dynamic> json) => AddressComponent(
+  factory AddressComponent.fromJson(Map<String, dynamic> json) =>
+      AddressComponent(
         longName: json['long_name'] as String? ?? '',
         shortName: json['short_name'] as String? ?? '',
         types: json['types'] == null
             ? []
-            : List<String>.from((json['types'] as List<dynamic>).map((x) => x as String)),
+            : List<String>.from(
+                (json['types'] as List<dynamic>).map((x) => x as String)),
       );
 
   String? longName;
@@ -122,8 +133,9 @@ class Geometry {
   });
 
   factory Geometry.fromJson(Map<String, dynamic> json) => Geometry(
-        bounds:
-            json['bounds'] == null ? null : Bounds.fromJson(json['bounds'] as Map<String, dynamic>),
+        bounds: json['bounds'] == null
+            ? null
+            : Bounds.fromJson(json['bounds'] as Map<String, dynamic>),
         location: json['location'] == null
             ? null
             : LocationClass.fromJson(json['location'] as Map<String, dynamic>),
@@ -235,20 +247,23 @@ class Prediction {
         id: json['id'] as String?,
         matchedSubstrings: json['matched_substrings'] == null
             ? []
-            : List<MatchedSubstrings>.from((json['matched_substrings'] as List<dynamic>)
-                .map((v) => MatchedSubstrings.fromJson(v as Map<String, dynamic>))),
+            : List<MatchedSubstrings>.from(
+                (json['matched_substrings'] as List<dynamic>).map((v) =>
+                    MatchedSubstrings.fromJson(v as Map<String, dynamic>))),
         placeId: json['place_id'] as String?,
         reference: json['reference'] as String?,
         structuredFormatting: json['structured_formatting'] == null
             ? null
-            : StructuredFormatting.fromJson(json['structured_formatting'] as Map<String, dynamic>),
+            : StructuredFormatting.fromJson(
+                json['structured_formatting'] as Map<String, dynamic>),
         terms: json['terms'] == null
             ? []
             : List<Terms>.from((json['terms'] as List<dynamic>)
                 .map((v) => Terms.fromJson(v as Map<String, dynamic>))),
         types: json['types'] == null
             ? []
-            : List<String>.from((json['types'] as List<dynamic>).map((x) => x as String)),
+            : List<String>.from(
+                (json['types'] as List<dynamic>).map((x) => x as String)),
         lat: json['lat'] as String?,
         lng: json['lng'] as String?,
       );
@@ -269,7 +284,8 @@ class Prediction {
     data['description'] = description;
     data['id'] = id;
     if (matchedSubstrings != null) {
-      data['matched_substrings'] = matchedSubstrings!.map((v) => v.toJson()).toList();
+      data['matched_substrings'] =
+          matchedSubstrings!.map((v) => v.toJson()).toList();
     }
     data['place_id'] = placeId;
     data['reference'] = reference;
@@ -290,7 +306,8 @@ class Prediction {
 class MatchedSubstrings {
   MatchedSubstrings({this.length, this.offset});
 
-  factory MatchedSubstrings.fromJson(Map<String, dynamic> json) => MatchedSubstrings(
+  factory MatchedSubstrings.fromJson(Map<String, dynamic> json) =>
+      MatchedSubstrings(
         length: json['length'] as int?,
         offset: json['offset'] as int?,
       );
@@ -307,7 +324,8 @@ class MatchedSubstrings {
 class StructuredFormatting {
   StructuredFormatting({this.mainText, this.secondaryText});
 
-  factory StructuredFormatting.fromJson(Map<String, dynamic> json) => StructuredFormatting(
+  factory StructuredFormatting.fromJson(Map<String, dynamic> json) =>
+      StructuredFormatting(
         mainText: json['main_text'] as String?,
         secondaryText: json['secondary_text'] as String?,
       );
@@ -343,8 +361,9 @@ class PlaceDetails {
   PlaceDetails({this.result, this.status});
 
   PlaceDetails.fromJson(Map<String, dynamic> json) {
-    result =
-        json['result'] != null ? Result.fromJson(json['result'] as Map<String, dynamic>) : null;
+    result = json['result'] != null
+        ? Result.fromJson(json['result'] as Map<String, dynamic>)
+        : null;
     status = json['status'] as String? ?? '';
   }
 
@@ -384,7 +403,8 @@ class PlaceDetailResult {
     if (json['address_components'] != null) {
       addressComponents = [];
       json['address_components'].forEach((v) {
-        addressComponents!.add(AddressComponents.fromJson(v as Map<String, dynamic>));
+        addressComponents!
+            .add(AddressComponents.fromJson(v as Map<String, dynamic>));
       });
     }
     adrAddress = json['adr_address'] as String?;
@@ -398,7 +418,9 @@ class PlaceDetailResult {
     placeId = json['place_id'] as String?;
     reference = json['reference'] as String?;
     scope = json['scope'] as String?;
-    types = json['types'] == null ? null : List<String>.from(json['types'] as List<dynamic>);
+    types = json['types'] == null
+        ? null
+        : List<String>.from(json['types'] as List<dynamic>);
     url = json['url'] as String?;
     utcOffset = json['utc_offset'] as int?;
     vicinity = json['vicinity'] as String?;
@@ -423,7 +445,8 @@ class PlaceDetailResult {
   Map<String, dynamic> toJson() {
     final data = <String, dynamic>{};
     if (addressComponents != null) {
-      data['address_components'] = addressComponents!.map((v) => v.toJson()).toList();
+      data['address_components'] =
+          addressComponents!.map((v) => v.toJson()).toList();
     }
     data['adr_address'] = adrAddress;
     data['formatted_address'] = formattedAddress;
@@ -450,7 +473,9 @@ class AddressComponents {
   AddressComponents.fromJson(Map<String, dynamic> json) {
     longName = json['long_name'] as String?;
     shortName = json['short_name'] as String?;
-    types = json['types'] == null ? null : List<String>.from(json['types'] as List<dynamic>);
+    types = json['types'] == null
+        ? null
+        : List<String>.from(json['types'] as List<dynamic>);
   }
 
   String? longName;

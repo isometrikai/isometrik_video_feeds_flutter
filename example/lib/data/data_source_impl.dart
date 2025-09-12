@@ -15,20 +15,21 @@ class DataSourceImpl extends DataSource {
   LocalStorageManager getStorageManager() => _localStorageManager;
 
   Future<Header> initializeHeader() async {
-    final language =
-        await _localStorageManager.getValue(LocalStorageKeys.language, SavedValueDataType.string) as String;
+    final language = await _localStorageManager.getValue(
+        LocalStorageKeys.language, SavedValueDataType.string) as String;
 
     final accessToken = await _sessionManager.getUserToken();
 
     final refreshToken = await _sessionManager.getRefreshToken();
 
-    final latitude =
-        await _localStorageManager.getValue(LocalStorageKeys.latitude, SavedValueDataType.double) as double;
+    final latitude = await _localStorageManager.getValue(
+        LocalStorageKeys.latitude, SavedValueDataType.double) as double;
 
-    final longitude =
-        await _localStorageManager.getValue(LocalStorageKeys.longitude, SavedValueDataType.double) as double;
+    final longitude = await _localStorageManager.getValue(
+        LocalStorageKeys.longitude, SavedValueDataType.double) as double;
 
-    final ipAddress = await _localStorageManager.getValue(LocalStorageKeys.userIP, SavedValueDataType.string) as String;
+    final ipAddress = await _localStorageManager.getValue(
+        LocalStorageKeys.userIP, SavedValueDataType.string) as String;
 
     final city = '';
 
@@ -46,11 +47,11 @@ class DataSourceImpl extends DataSource {
 
     final timeZone = '';
 
-    final currencySymbol =
-        await _localStorageManager.getValue(LocalStorageKeys.currencySymbol, SavedValueDataType.string) as String;
+    final currencySymbol = await _localStorageManager.getValue(
+        LocalStorageKeys.currencySymbol, SavedValueDataType.string) as String;
 
-    final currencyCode =
-        await _localStorageManager.getValue(LocalStorageKeys.currencyCode, SavedValueDataType.string) as String;
+    final currencyCode = await _localStorageManager.getValue(
+        LocalStorageKeys.currencyCode, SavedValueDataType.string) as String;
 
     return Header(
       accessToken: accessToken,

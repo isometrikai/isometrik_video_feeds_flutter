@@ -16,6 +16,7 @@ class LoginUseCase extends BaseUseCase {
           loginMap: loginMap,
         );
         return ApiResult(
-            data: response.data?.statusCode == 200 ? response.data : null, statusCode: response.responseCode);
+            data: response.data?.statusCode == 200 ? response.data : null,
+            statusCode: response.responseCode);
       });
 }

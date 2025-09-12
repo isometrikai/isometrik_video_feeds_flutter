@@ -8,7 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:ism_video_reel_player_example/di/di.dart';
 import 'package:ism_video_reel_player_example/domain/domain.dart';
-import 'package:ism_video_reel_player_example/example_export.dart';
+import 'package:ism_video_reel_player_example/main.dart';
 import 'package:ism_video_reel_player_example/presentation/presentation.dart';
 import 'package:ism_video_reel_player_example/res/res.dart';
 import 'package:lottie/lottie.dart';
@@ -35,7 +35,7 @@ class _CreatePostViewState extends State<CreatePostView> {
   final _descriptionController = TextEditingController();
   var _isCreateButtonDisable = true;
   final _linkedProducts = <ProductDataModel>[];
-  var _mediaLength = 0;
+  var mediaLength = 0;
   var _isForEdit = false;
   bool _isDialogOpen = false;
   final _progressCubit = InjectionUtils.getBloc<UploadProgressCubit>();
@@ -65,7 +65,8 @@ class _CreatePostViewState extends State<CreatePostView> {
   }
 
   @override
-  Widget build(BuildContext context) => BlocConsumer<CreatePostBloc, CreatePostState>(
+  Widget build(BuildContext context) =>
+      BlocConsumer<CreatePostBloc, CreatePostState>(
         listener: (context, state) {
           if (state is PostCreatedState) {
             Utility.showBottomSheet(
@@ -89,7 +90,8 @@ class _CreatePostViewState extends State<CreatePostView> {
           }
           if (state is LoadLinkedProductsState) {
             _linkedProducts.clear();
-            _linkedProducts.addAll(state.productList as Iterable<ProductDataModel>);
+            _linkedProducts
+                .addAll(state.productList as Iterable<ProductDataModel>);
             setState(() {});
           }
           if (state is ShowProgressDialogState) {
@@ -130,22 +132,28 @@ class _CreatePostViewState extends State<CreatePostView> {
             _isCompressing = state.progress > 0 && state.progress < 100;
           }
         },
-        buildWhen: (previous, current) => previous != current && current is! UploadingMediaState,
+        buildWhen: (previous, current) =>
+            previous != current && current is! UploadingMediaState,
         builder: (context, state) => Scaffold(
           appBar: CustomAppBar(
             isBackButtonVisible: true,
-            titleText: _isForEdit ? TranslationFile.editPost : TranslationFile.createPost,
+            titleText: _isForEdit
+                ? TranslationFile.editPost
+                : TranslationFile.createPost,
             centerTitle: true,
             isCrossIcon: true,
           ),
           bottomNavigationBar: SafeArea(
             child: Padding(
-              padding: Dimens.edgeInsetsSymmetric(vertical: Dimens.ten, horizontal: Dimens.twenty),
+              padding: Dimens.edgeInsetsSymmetric(
+                  vertical: Dimens.ten, horizontal: Dimens.twenty),
               child: AppButton(
                 width: Dimens.oneHundredForty,
                 onPress: _onPressCreateButton,
                 isDisable: _isCreateButtonDisable || _isCompressing,
-                title: _isForEdit ? TranslationFile.updatePost : TranslationFile.create,
+                title: _isForEdit
+                    ? TranslationFile.updatePost
+                    : TranslationFile.create,
               ),
             ),
           ),
@@ -159,18 +167,20 @@ class _CreatePostViewState extends State<CreatePostView> {
                   TapHandler(
                     onTap: _isForEdit ||
                             (_mediaDataList.isEmptyOrNull == false &&
-                                AppConstants.isMultipleMediaSelectionEnabled == false)
+                                AppConstants.isMultipleMediaSelectionEnabled ==
+                                    false)
                         ? null
                         : () {
                             _showUploadOptionsDialog(context, false, null);
                           },
                     child: DottedBorder(
-                      borderType: BorderType.RRect,
-                      radius: Radius.circular(12.scaledValue),
-                      padding: Dimens.edgeInsetsAll(Dimens.sixteen),
-                      color: AppColors.colorDBDBDB,
-                      strokeWidth: 1,
-                      dashPattern: const [6, 3],
+                      options: RoundedRectDottedBorderOptions(
+                        radius: Radius.circular(12.scaledValue),
+                        padding: Dimens.edgeInsetsAll(Dimens.sixteen),
+                        color: AppColors.colorDBDBDB,
+                        strokeWidth: 1,
+                        dashPattern: const [6, 3],
+                      ),
                       child: _mediaDataList.isEmptyOrNull == false
                           ? Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -181,9 +191,12 @@ class _CreatePostViewState extends State<CreatePostView> {
                                   return Column(
                                     children: [
                                       _buildSelectedMediaSection(media),
-                                      if (index < _mediaDataList.length - 1) ...[
+                                      if (index <
+                                          _mediaDataList.length - 1) ...[
                                         SizedBox(height: 8.scaledValue),
-                                        const Divider(color: AppColors.colorDBDBDB, thickness: 1),
+                                        const Divider(
+                                            color: AppColors.colorDBDBDB,
+                                            thickness: 1),
                                         SizedBox(height: 8.scaledValue),
                                       ],
                                     ],
@@ -241,26 +254,33 @@ class _CreatePostViewState extends State<CreatePostView> {
                     hintText: TranslationFile.writeDescription,
                     maxLength: _maxLength,
                     style: Styles.primaryText14,
-                    hintStyle: Styles.secondaryText14.copyWith(color: AppColors.colorBBBBBB),
+                    hintStyle: Styles.secondaryText14
+                        .copyWith(color: AppColors.colorBBBBBB),
                     onChanged: (value) {
-                      _createPostBloc.descriptionText = _descriptionController.text;
+                      _createPostBloc.descriptionText =
+                          _descriptionController.text;
                       setState(() {
                         if (_isForEdit) {
                           _isCreateButtonDisable =
-                              _descriptionController.text == widget.postData?.caption;
+                              _descriptionController.text ==
+                                  widget.postData?.caption;
                         }
                         _descriptionLength = value.length;
                       });
                     },
                     onAddMentionData: (mentionData) {
-                      if (!_mentionedUsers.any((u) => u.userId == mentionData.userId)) {
+                      if (!_mentionedUsers
+                          .any((u) => u.userId == mentionData.userId)) {
                         _mentionedUsers.add(mentionData);
                       }
-                      debugPrint('_mentionedUsers: ${jsonEncode(_mentionedUsers)}');
+                      debugPrint(
+                          '_mentionedUsers: ${jsonEncode(_mentionedUsers)}');
                     },
                     onRemoveMentionData: (mentionData) {
-                      _mentionedUsers.removeWhere((u) => u.userId == mentionData.userId);
-                      debugPrint('_mentionedUsers: ${jsonEncode(_mentionedUsers)}');
+                      _mentionedUsers
+                          .removeWhere((u) => u.userId == mentionData.userId);
+                      debugPrint(
+                          '_mentionedUsers: ${jsonEncode(_mentionedUsers)}');
                     },
                     onAddHashTagData: (hashTagData) {
                       if (!_hashTags.any((u) => u.tag == hashTagData.tag)) {
@@ -297,46 +317,50 @@ class _CreatePostViewState extends State<CreatePostView> {
                       style: Styles.primaryText12,
                     ),
                     8.verticalSpace,
-                    Row(
-                      children: [
-                        Radio(
-                          value: false,
-                          groupValue: _createPostBloc.isScheduledPost,
-                          onChanged: (value) {
-                            setState(() {
-                              _createPostBloc.isScheduledPost = value!;
-                              _createPostBloc.selectedDate =
-                                  DateTime.now().add(const Duration(hours: 1));
-                            });
-                          },
-                          activeColor: Theme.of(context).primaryColor,
-                        ),
-                        Text(
-                          TranslationFile.now,
-                          style: Styles.primaryText14,
-                        ),
-                        24.horizontalSpace,
-                        Radio(
-                          value: true,
-                          groupValue: _createPostBloc.isScheduledPost,
-                          onChanged: (value) {
-                            setState(() {
-                              _createPostBloc.isScheduledPost = value!;
-                            });
-                          },
-                          activeColor: Theme.of(context).primaryColor,
-                        ),
-                        Text(
-                          TranslationFile.schedule,
-                          style: Styles.primaryText14,
-                        ),
-                      ],
+                    RadioGroup(
+                      groupValue: _createPostBloc.isScheduledPost,
+                      onChanged: (value) {
+                        if (value == null) return;
+                        switch (value) {
+                          case true:
+                            _createPostBloc.isScheduledPost = value;
+                            break;
+                          case false:
+                            _createPostBloc.isScheduledPost = value;
+                            _createPostBloc.selectedDate =
+                                DateTime.now().add(const Duration(hours: 1));
+                            break;
+                        }
+                        setState(() {});
+                      },
+                      child: Row(
+                        children: [
+                          Radio(
+                            value: false,
+                            activeColor: Theme.of(context).primaryColor,
+                          ),
+                          Text(
+                            TranslationFile.now,
+                            style: Styles.primaryText14,
+                          ),
+                          24.horizontalSpace,
+                          Radio(
+                            value: true,
+                            activeColor: Theme.of(context).primaryColor,
+                          ),
+                          Text(
+                            TranslationFile.schedule,
+                            style: Styles.primaryText14,
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                   if (_createPostBloc.isScheduledPost) ...[
                     24.verticalSpace,
                     GestureDetector(
-                      onTap: () => _selectDate(context), // Show date picker on tap
+                      onTap: () =>
+                          _selectDate(context), // Show date picker on tap
                       child: Container(
                         width: double.infinity, // Make the container full width
                         padding: Dimens.edgeInsetsSymmetric(
@@ -401,23 +425,26 @@ class _CreatePostViewState extends State<CreatePostView> {
                   8.verticalSpace,
                   if (_linkedProducts.isEmptyOrNull)
                     DottedBorder(
-                      borderType: BorderType.RRect,
-                      radius: Radius.circular(Dimens.twelve),
-                      padding: Dimens.edgeInsetsAll(Dimens.sixteen),
-                      color: AppColors.colorDBDBDB,
-                      strokeWidth: 1,
-                      dashPattern: const [6, 3],
+                      options: RoundedRectDottedBorderOptions(
+                        radius: Radius.circular(Dimens.twelve),
+                        padding: Dimens.edgeInsetsAll(Dimens.sixteen),
+                        color: AppColors.colorDBDBDB,
+                        strokeWidth: 1,
+                        dashPattern: const [6, 3],
+                      ),
                       child: Column(
                         children: [
                           Text(
                             TranslationFile.noProductsLinkedYet,
-                            style: Styles.primaryText14.copyWith(fontWeight: FontWeight.w600),
+                            style: Styles.primaryText14
+                                .copyWith(fontWeight: FontWeight.w600),
                           ),
                           4.verticalSpace,
                           Text(
                             TranslationFile.connectProductsToPost,
                             textAlign: TextAlign.center,
-                            style: Styles.secondaryText12.copyWith(color: AppColors.color909090),
+                            style: Styles.secondaryText12
+                                .copyWith(color: AppColors.color909090),
                           ),
                           16.verticalSpace,
                           AppButton(
@@ -466,7 +493,8 @@ class _CreatePostViewState extends State<CreatePostView> {
     final dynamic productImages = productDataModel.images;
     var imageUrl = productImages == null
         ? ''
-        : (productImages is List<ImageData> && (productImages).isEmptyOrNull == false)
+        : (productImages is List<ImageData> &&
+                (productImages).isEmptyOrNull == false)
             ? (productImages[0].small?.isEmpty == true
                 ? productImages[0].medium ?? ''
                 : productImages[0].small ?? '')
@@ -506,9 +534,11 @@ class _CreatePostViewState extends State<CreatePostView> {
                 ),
                 if (isAutoShipProduct)
                   _buildTag(
-                      productDataModel.sellerPlanDetails?.sellerPlanName ?? '', '00000'.toHexColor),
+                      productDataModel.sellerPlanDetails?.sellerPlanName ?? '',
+                      '00000'.toHexColor),
                 if ((productDataModel.rewardFinalPrice?.toDouble() ?? 0) > 0)
-                  _buildEarnTalentTag(productDataModel.rewardFinalPrice?.toDouble() ?? 0),
+                  _buildEarnTalentTag(
+                      productDataModel.rewardFinalPrice?.toDouble() ?? 0),
               ],
             ),
           ),
@@ -549,7 +579,9 @@ class _CreatePostViewState extends State<CreatePostView> {
                       ),
                       Text(
                         Utility.getFormattedPrice(
-                          productDataModel.finalPriceList?.msrpPrice?.toDouble() ?? 0,
+                          productDataModel.finalPriceList?.msrpPrice
+                                  ?.toDouble() ??
+                              0,
                           productDataModel.currencySymbol,
                         ),
                         style: Styles.primaryText12.copyWith(
@@ -570,7 +602,9 @@ class _CreatePostViewState extends State<CreatePostView> {
                       ),
                       Text(
                         Utility.getFormattedPrice(
-                          productDataModel.finalPriceList?.basePrice?.toDouble() ?? 0,
+                          productDataModel.finalPriceList?.basePrice
+                                  ?.toDouble() ??
+                              0,
                           productDataModel.currencySymbol,
                         ),
                         style: Styles.primaryText12.copyWith(
@@ -585,7 +619,8 @@ class _CreatePostViewState extends State<CreatePostView> {
           ),
           // Remove Button
           AppButton(
-            margin: Dimens.edgeInsetsSymmetric(horizontal: 12.scaledValue, vertical: 8.scaledValue),
+            margin: Dimens.edgeInsetsSymmetric(
+                horizontal: 12.scaledValue, vertical: 8.scaledValue),
             title: TranslationFile.remove,
             onPress: () {
               setState(() {
@@ -602,7 +637,8 @@ class _CreatePostViewState extends State<CreatePostView> {
     );
   }
 
-  void _showUploadOptionsDialog(BuildContext context, bool isCoverImage, MediaData? mediaData) {
+  void _showUploadOptionsDialog(
+      BuildContext context, bool isCoverImage, MediaData? mediaData) {
     showDialog(
       context: context,
       builder: (BuildContext context) => UploadMediaDialog(
@@ -649,18 +685,19 @@ class _CreatePostViewState extends State<CreatePostView> {
 
   Widget _buildSelectedMediaSection(MediaData mediaData) {
     if (_isForEdit) {
-      _mediaLength = mediaData.size?.toInt() ?? 0;
+      mediaLength = mediaData.size?.toInt() ?? 0;
     } else {
       if (mediaData.localPath.isEmptyOrNull == false &&
           Utility.isLocalUrl(mediaData.localPath ?? '') == true) {
         final localFile = File(mediaData.localPath ?? '');
-        _mediaLength = localFile.lengthSync();
+        mediaLength = localFile.lengthSync();
       }
     }
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        MediaPreviewWidget(key: Key(mediaData.localPath ?? ''), mediaData: mediaData),
+        MediaPreviewWidget(
+            key: Key(mediaData.localPath ?? ''), mediaData: mediaData),
         12.horizontalSpace,
         Expanded(
           child: Column(
@@ -685,7 +722,8 @@ class _CreatePostViewState extends State<CreatePostView> {
               if (!_isForEdit) ...[
                 8.verticalSpace,
                 _isCompressing
-                    ? Text('${TranslationFile.optimizingMedia}...', style: Styles.primaryText10)
+                    ? Text('${TranslationFile.optimizingMedia}...',
+                        style: Styles.primaryText10)
                     : AppButton(
                         width: 83.scaledValue,
                         size: ButtonSize.small,
@@ -781,7 +819,8 @@ class _CreatePostViewState extends State<CreatePostView> {
                           },
                           child: Text(
                             TranslationFile.editCover,
-                            style: Styles.secondaryText12.copyWith(color: AppColors.white),
+                            style: Styles.secondaryText12
+                                .copyWith(color: AppColors.white),
                           ),
                         ),
                       ),
@@ -817,13 +856,16 @@ class _CreatePostViewState extends State<CreatePostView> {
     final pickedDate = await showDialog(
       context: context,
       builder: (BuildContext context) {
-        var selectedDate = _createPostBloc.selectedDate ?? _createPostBloc.getBufferedDate();
+        var selectedDate =
+            _createPostBloc.selectedDate ?? _createPostBloc.getBufferedDate();
         var selectedTime = TimeOfDay.fromDateTime(selectedDate);
 
         return AlertDialog(
-          title: Text(TranslationFile.schedulePost, style: Styles.primaryText14),
+          title:
+              Text(TranslationFile.schedulePost, style: Styles.primaryText14),
           backgroundColor: AppColors.white,
-          buttonPadding: Dimens.edgeInsetsSymmetric(horizontal: Dimens.five, vertical: Dimens.ten),
+          buttonPadding: Dimens.edgeInsetsSymmetric(
+              horizontal: Dimens.five, vertical: Dimens.ten),
           content: StatefulBuilder(
             builder: (context, setState) => Column(
               mainAxisSize: MainAxisSize.min,
@@ -844,7 +886,8 @@ class _CreatePostViewState extends State<CreatePostView> {
                       builder: (context, child) => Theme(
                         data: ThemeData.light().copyWith(
                           primaryColor: Theme.of(context).primaryColor,
-                          colorScheme: ColorScheme.light(primary: Theme.of(context).primaryColor),
+                          colorScheme: ColorScheme.light(
+                              primary: Theme.of(context).primaryColor),
                         ),
                         child: child!,
                       ),
@@ -880,7 +923,8 @@ class _CreatePostViewState extends State<CreatePostView> {
                       builder: (context, child) => Theme(
                         data: ThemeData.light().copyWith(
                           primaryColor: Theme.of(context).primaryColor,
-                          colorScheme: ColorScheme.light(primary: Theme.of(context).primaryColor),
+                          colorScheme: ColorScheme.light(
+                              primary: Theme.of(context).primaryColor),
                         ),
                         child: child!,
                       ),
@@ -896,7 +940,8 @@ class _CreatePostViewState extends State<CreatePostView> {
                       );
                       if (pickedDT.isBefore(nowDT)) {
                         Navigator.pop(context, selectedDate);
-                        Utility.showAppDialog(message: TranslationFile.pleaseSelectAFutureTime);
+                        Utility.showAppDialog(
+                            message: TranslationFile.pleaseSelectAFutureTime);
                       } else {
                         setState(() {
                           selectedTime = picked;
@@ -969,8 +1014,8 @@ class _CreatePostViewState extends State<CreatePostView> {
             child: Text(
               tagName,
               textAlign: TextAlign.center,
-              style:
-                  Styles.white10.copyWith(fontWeight: FontWeight.w500, color: '001E57'.toHexColor),
+              style: Styles.white10.copyWith(
+                  fontWeight: FontWeight.w500, color: '001E57'.toHexColor),
             ),
           ),
         ),
@@ -989,15 +1034,17 @@ class _CreatePostViewState extends State<CreatePostView> {
             decoration: BoxDecoration(
               color: AppColors.white,
               borderRadius: Dimens.borderRadiusAll(25.scaledValue),
-              border: Border.all(color: AppColors.black.applyOpacity(0.3), width: 0.5.scaledValue),
+              border: Border.all(
+                  color: AppColors.black.applyOpacity(0.3),
+                  width: 0.5.scaledValue),
             ),
             child: Row(
               children: [
                 Text(
                   'Earn ',
                   textAlign: TextAlign.center,
-                  style: Styles.white10
-                      .copyWith(fontWeight: FontWeight.w500, color: '333333'.toHexColor),
+                  style: Styles.white10.copyWith(
+                      fontWeight: FontWeight.w500, color: '333333'.toHexColor),
                 ),
                 3.horizontalSpace,
                 // AppImage.asset(
@@ -1009,15 +1056,15 @@ class _CreatePostViewState extends State<CreatePostView> {
                 Text(
                   talentValue.toString(),
                   textAlign: TextAlign.center,
-                  style: Styles.white10
-                      .copyWith(fontWeight: FontWeight.w500, color: '333333'.toHexColor),
+                  style: Styles.white10.copyWith(
+                      fontWeight: FontWeight.w500, color: '333333'.toHexColor),
                 ),
                 3.horizontalSpace,
                 Text(
                   'Talents',
                   textAlign: TextAlign.center,
-                  style: Styles.white10
-                      .copyWith(fontWeight: FontWeight.w500, color: '333333'.toHexColor),
+                  style: Styles.white10.copyWith(
+                      fontWeight: FontWeight.w500, color: '333333'.toHexColor),
                 ),
               ],
             ),
@@ -1037,7 +1084,8 @@ class _CreatePostViewState extends State<CreatePostView> {
   }
 
   void _checkForChangesInLinkedProducts() {
-    final hasAnyChanges = _createPostBloc.checkForChangesInLinkedProducts(_linkedProducts);
+    final hasAnyChanges =
+        _createPostBloc.checkForChangesInLinkedProducts(_linkedProducts);
     final mediaData = _mediaDataList.isEmptyOrNull == false
         ? null
         : _mediaDataList.firstWhere((element) =>
@@ -1050,7 +1098,8 @@ class _CreatePostViewState extends State<CreatePostView> {
 
   void _showProgressDialog(String title, String message) async {
     await Utility.showBottomSheet(
-        child: UploadProgressBottomSheet(message: message), isDismissible: false);
+        child: UploadProgressBottomSheet(message: message),
+        isDismissible: false);
     _isDialogOpen = false;
   }
 

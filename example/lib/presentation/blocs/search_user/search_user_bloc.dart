@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player_example/domain/domain.dart';
-import 'package:ism_video_reel_player_example/example_export.dart';
+import 'package:ism_video_reel_player_example/main.dart';
 
 part 'search_events.dart';
 part 'search_states.dart';
@@ -24,7 +24,8 @@ class SearchUserBloc extends Bloc<SearchEvents, SearchStates> {
   final List<HashTagData> _searchTagList = [];
   final DeBouncer _deBouncer = DeBouncer();
 
-  FutureOr<void> _searchUser(SearchUserEvent event, Emitter<SearchStates> emit) async {
+  FutureOr<void> _searchUser(
+      SearchUserEvent event, Emitter<SearchStates> emit) async {
     _deBouncer.run(() {
       _getUsers(event, emit);
     });
@@ -46,7 +47,8 @@ class SearchUserBloc extends Bloc<SearchEvents, SearchStates> {
     }
   }
 
-  FutureOr<void> _searchTag(SearchTagEvent event, Emitter<SearchStates> emit) async {
+  FutureOr<void> _searchTag(
+      SearchTagEvent event, Emitter<SearchStates> emit) async {
     _deBouncer.run(() {
       _getTags(event, emit);
     });

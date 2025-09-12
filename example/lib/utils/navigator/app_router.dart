@@ -1,6 +1,6 @@
 import 'package:go_router/go_router.dart';
 import 'package:ism_video_reel_player_example/domain/domain.dart';
-import 'package:ism_video_reel_player_example/example_export.dart';
+import 'package:ism_video_reel_player_example/main.dart';
 import 'package:ism_video_reel_player_example/presentation/presentation.dart';
 import 'package:ism_video_reel_player_example/utils/utils.dart';
 
@@ -32,7 +32,10 @@ class AppRouter {
           final countryCode = extras['countryCode'] as String;
           final loginType = extras['loginType'] as String;
           return OtpScreen(
-              mobile: mobileNumber, countryCode: countryCode, loginType: loginType, otpId: otpId);
+              mobile: mobileNumber,
+              countryCode: countryCode,
+              loginType: loginType,
+              otpId: otpId);
         },
       ),
       // GoRoute(
@@ -57,7 +60,8 @@ class AppRouter {
         name: RouteNames.cameraView,
         builder: (_, state) {
           final extras = state.extra as Map<String, dynamic>;
-          final mediaType = extras['mediaType'] as MediaType? ?? MediaType.photo;
+          final mediaType =
+              extras['mediaType'] as MediaType? ?? MediaType.photo;
           return CameraView(mediaType: mediaType);
         },
       ),
@@ -67,7 +71,8 @@ class AppRouter {
         builder: (_, state) {
           final extraMap = state.extra as Map;
           return PostAttributeView(
-            postAttributeClass: extraMap['postAttributeClass'] as PostAttributeClass?,
+            postAttributeClass:
+                extraMap['postAttributeClass'] as PostAttributeClass?,
           );
         },
       ),
@@ -76,7 +81,8 @@ class AppRouter {
         name: RouteNames.searchUserScreen,
         pageBuilder: (context, state) {
           final extraMap = state.extra as Map;
-          final socialUserList = extraMap['socialUserList'] as List<SocialUserData>? ?? [];
+          final socialUserList =
+              extraMap['socialUserList'] as List<SocialUserData>? ?? [];
           return PageTransition(
             child: SearchUserView(socialUserList: socialUserList),
             transitionType: TransitionType.rightToLeft,
@@ -88,7 +94,8 @@ class AppRouter {
         name: RouteNames.tagPeopleScreen,
         pageBuilder: (context, state) {
           final extraMap = state.extra as Map;
-          final postAttributeClass = extraMap['postAttributeClass'] as PostAttributeClass;
+          final postAttributeClass =
+              extraMap['postAttributeClass'] as PostAttributeClass;
           return PageTransition(
             child: TagPeopleScreen(postAttributeClass: postAttributeClass),
             transitionType: TransitionType.rightToLeft,

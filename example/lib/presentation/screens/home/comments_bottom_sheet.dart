@@ -53,14 +53,16 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
         },
         child: BlocConsumer<HomeBloc, HomeState>(
           listenWhen: (previousState, currentState) =>
-              currentState is LoadPostCommentState || currentState is LoadingPostComment,
+              currentState is LoadPostCommentState ||
+              currentState is LoadingPostComment,
           listener: (context, state) {
             if (state is LoadPostCommentState) {
               _isCommentsLoaded = true;
               _myUserId = state.myUserId ?? '';
               _postCommentList.clear();
               if (state.postCommentsList.isEmptyOrNull == false) {
-                _postCommentList.addAll(state.postCommentsList as Iterable<CommentDataItem>);
+                _postCommentList.addAll(
+                    state.postCommentsList as Iterable<CommentDataItem>);
               } else {
                 _setReplyComment(null);
               }
@@ -68,7 +70,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
             }
           },
           buildWhen: (previousState, currentState) =>
-              currentState is LoadPostCommentState || currentState is LoadingPostComment,
+              currentState is LoadPostCommentState ||
+              currentState is LoadingPostComment,
           builder: (context, state) => SafeArea(
             child: Container(
               padding: EdgeInsets.only(
@@ -153,7 +156,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                             recognizer: TapGestureRecognizer()
                               ..onTap = () {
                                 if (widget.onTapProfile != null) {
-                                  widget.onTapProfile!(comment.commentedByUserId ?? '');
+                                  widget.onTapProfile!(
+                                      comment.commentedByUserId ?? '');
                                 }
                               },
                             style: Styles.primaryText14.copyWith(
@@ -172,7 +176,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                       spacing: 12.scaledValue,
                       children: [
                         Text(
-                          DateTimeUtil.getTimeAgoFromDateTime(comment.commentedOn),
+                          DateTimeUtil.getTimeAgoFromDateTime(
+                              comment.commentedOn),
                           style: Styles.primaryText12.copyWith(
                             color: '828282'.toHexColor,
                           ),
@@ -228,7 +233,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                         builder: (context) => _buildMoreOptionUI(comment),
                       );
                     },
-                    child: const AppImage.svg(AssetConstants.icVerticalMoreMenu),
+                    child:
+                        const AppImage.svg(AssetConstants.icVerticalMoreMenu),
                   ),
                 ],
               ),
@@ -239,8 +245,10 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
             ...List.generate(
               comment.childComments?.length ?? 0,
               (index) => Padding(
-                padding: Dimens.edgeInsets(left: 32.scaledValue, top: 16.scaledValue),
-                child: _buildChildCommentItem(comment.childComments![index], false),
+                padding: Dimens.edgeInsets(
+                    left: 32.scaledValue, top: 16.scaledValue),
+                child: _buildChildCommentItem(
+                    comment.childComments![index], false),
               ),
             ),
           ],
@@ -268,7 +276,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                         recognizer: TapGestureRecognizer()
                           ..onTap = () {
                             if (widget.onTapProfile != null) {
-                              widget.onTapProfile!(comment.commentedByUserId ?? '');
+                              widget.onTapProfile!(
+                                  comment.commentedByUserId ?? '');
                             }
                           },
                         style: Styles.primaryText14.copyWith(
@@ -388,7 +397,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                             commentAction: CommentAction.delete,
                             onComplete: (commentId, isSuccess) {
                               if (isSuccess) {
-                                _homeBloc.add(GetPostCommentsEvent(postId: widget.postId));
+                                _homeBloc.add(GetPostCommentsEvent(
+                                    postId: widget.postId));
                               }
                             },
                           ),
@@ -509,7 +519,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                             ),
                             TextSpan(
                               text: commentDataItem?.commentedBy ?? '',
-                              style: Styles.white14.copyWith(fontWeight: FontWeight.w600),
+                              style: Styles.white14
+                                  .copyWith(fontWeight: FontWeight.w600),
                             ),
                           ],
                         ),

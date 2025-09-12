@@ -117,7 +117,8 @@ class CameraViewState extends State<CameraView> {
                   // Floating action button for taking picture or recording
                   Positioned(
                     bottom: 50, // Adjust as needed
-                    left: MediaQuery.of(context).size.width / 2 - 28, // Center the button
+                    left: MediaQuery.of(context).size.width / 2 -
+                        28, // Center the button
                     child: FloatingActionButton(
                       onPressed: widget.mediaType == MediaType.photo
                           ? _takePicture

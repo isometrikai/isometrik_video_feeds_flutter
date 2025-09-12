@@ -15,7 +15,8 @@ class AppRoutes {
   static const String createPostView = '/${RouteNames.createPostView}';
   static const String tagPeopleScreen = '/${RouteNames.tagPeopleScreen}';
   static const String searchUserScreen = '/${RouteNames.searchUserScreen}';
-  static const String searchLocationScreen = '/${RouteNames.searchLocationScreen}';
+  static const String searchLocationScreen =
+      '/${RouteNames.searchLocationScreen}';
 }
 
 class RouteNames {

@@ -9,7 +9,8 @@ class UseCaseInjection {
   static void inject() {
     // Register use cases with their respective repositories
 
-    IsmInjectionUtils.registerUseCase<IsmLocalDataUseCase>(
-        () => IsmLocalDataUseCase(IsmInjectionUtils.getRepo<IsrLocalStorageRepository>()));
+    IsmInjectionUtils.registerUseCase<IsmLocalDataUseCase>(() =>
+        IsmLocalDataUseCase(
+            IsmInjectionUtils.getRepo<IsrLocalStorageRepository>()));
   }
 }

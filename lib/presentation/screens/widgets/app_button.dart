@@ -138,8 +138,10 @@ class AppButton extends StatelessWidget {
 
     return switch (type) {
       ButtonType.primary => baseStyle.copyWith(color: IsrColors.white),
-      ButtonType.secondary => baseStyle.copyWith(color: IsrColors.primaryTextColor),
-      ButtonType.tertiary => baseStyle.copyWith(color: IsrColors.primaryTextColor),
+      ButtonType.secondary =>
+        baseStyle.copyWith(color: IsrColors.primaryTextColor),
+      ButtonType.tertiary =>
+        baseStyle.copyWith(color: IsrColors.primaryTextColor),
       ButtonType.danger => baseStyle.copyWith(color: IsrColors.white),
       ButtonType.success => baseStyle.copyWith(color: IsrColors.white),
       ButtonType.disabled => baseStyle.copyWith(color: IsrColors.grey),
@@ -168,7 +170,8 @@ class AppButton extends StatelessWidget {
         ),
       );
 
-  ButtonStyle _getSecondaryStyle(BuildContext context) => OutlinedButton.styleFrom(
+  ButtonStyle _getSecondaryStyle(BuildContext context) =>
+      OutlinedButton.styleFrom(
         backgroundColor: Colors.transparent,
         foregroundColor: isDisable
             ? const Color(0xFF999999) // Grey text for disabled

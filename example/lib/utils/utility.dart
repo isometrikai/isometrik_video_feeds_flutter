@@ -6,7 +6,8 @@ import 'dart:math' show Random;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:country_phone_validator/country_phone_validator.dart' as validator;
+import 'package:country_phone_validator/country_phone_validator.dart'
+    as validator;
 import 'package:country_picker/country_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -29,7 +30,8 @@ class Utility {
   static bool isLoading = false;
   static final Connectivity _connectivity = Connectivity();
 
-  static void hideKeyboard() => SystemChannels.textInput.invokeMethod('TextInput.hide');
+  static void hideKeyboard() =>
+      SystemChannels.textInput.invokeMethod('TextInput.hide');
 
   static bool isLocalUrl(String url) =>
       url.startsWith('http://') == false && url.startsWith('https://') == false;
@@ -39,13 +41,15 @@ class Utility {
     bool addDelay = true,
   ]) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(addDelay ? const Duration(milliseconds: 10) : Duration.zero, () {
+      Future.delayed(
+          addDelay ? const Duration(milliseconds: 10) : Duration.zero, () {
         callback();
       });
     });
   }
 
-  static String jsonEncodePretty(Object? object) => JsonEncoder.withIndent(' ' * 4).convert(object);
+  static String jsonEncodePretty(Object? object) =>
+      JsonEncoder.withIndent(' ' * 4).convert(object);
 
   static Future<bool> get isNetworkAvailable async {
     final result = await _connectivity.checkConnectivity();
@@ -72,7 +76,8 @@ class Utility {
   }) async {
     isLoading = true;
     await showDialog(
-      barrierColor: loaderType == LoaderType.withBackGround ? null : Colors.transparent,
+      barrierColor:
+          loaderType == LoaderType.withBackGround ? null : Colors.transparent,
       context: exNavigatorKey.currentContext!,
       builder: (_) => AppLoader(
         message: message,
@@ -157,7 +162,8 @@ class Utility {
               if (isToShowTitle == true)
                 Text(
                   titleText ?? TranslationFile.alert,
-                  style: Styles.secondaryText14.copyWith(fontWeight: FontWeight.w700),
+                  style: Styles.secondaryText14
+                      .copyWith(fontWeight: FontWeight.w700),
                 ),
               if (message.isEmptyOrNull == false) ...[
                 Dimens.boxHeight(Dimens.eight),
@@ -178,12 +184,18 @@ class Utility {
                       radius: Dimens.four,
                       borderWidth: Dimens.one,
                       borderColor: AppColors.appColor,
-                      color: isTwoButtons == true ? AppColors.white : AppColors.appColor,
+                      color: isTwoButtons == true
+                          ? AppColors.white
+                          : AppColors.appColor,
                       textStyle: Styles.primaryText14.copyWith(
                           fontWeight: FontWeight.w700,
-                          color: isTwoButtons == true ? AppColors.appColor : AppColors.white),
+                          color: isTwoButtons == true
+                              ? AppColors.appColor
+                              : AppColors.white),
                       title: positiveButtonText ??
-                          (isTwoButtons == true ? TranslationFile.yes : TranslationFile.ok),
+                          (isTwoButtons == true
+                              ? TranslationFile.yes
+                              : TranslationFile.ok),
                       onPress: () {
                         closeOpenDialog();
                         if (onPressPositiveButton != null) {
@@ -242,7 +254,9 @@ class Utility {
         isDismissible: isDismissible,
         isScrollControlled: isScrollControlled,
         backgroundColor: backgroundColor ??
-            (isDarkBG ? Theme.of(exNavigatorKey.currentContext!).primaryColor : AppColors.white),
+            (isDarkBG
+                ? Theme.of(exNavigatorKey.currentContext!).primaryColor
+                : AppColors.white),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(
             top: Radius.circular(Dimens.bottomSheetBorderRadius),
@@ -252,7 +266,8 @@ class Utility {
 
   static int lengthFromCountry([Country? country]) =>
       validator.CountryUtils.getCountryByDialCode(
-        (country ?? Country.parse(DefaultValues.defaultCountryIsoCode)).phoneCode,
+        (country ?? Country.parse(DefaultValues.defaultCountryIsoCode))
+            .phoneCode,
       )?.phoneMinLength ??
       10;
 
@@ -306,8 +321,10 @@ class Utility {
     return await showDatePicker(
       context: context,
       initialDate: initialDate,
-      firstDate: firstDate ?? (isDisabledPastDate ? DateTime.now() : DateTime(1900)),
-      lastDate: lastDate ?? (isDisabledFutureDate ? DateTime.now() : DateTime(4000)),
+      firstDate:
+          firstDate ?? (isDisabledPastDate ? DateTime.now() : DateTime(1900)),
+      lastDate:
+          lastDate ?? (isDisabledFutureDate ? DateTime.now() : DateTime(4000)),
       selectableDayPredicate: selectableDayPredicate,
       builder: (context, child) => Theme(
         data: context.theme.copyWith(
@@ -320,12 +337,15 @@ class Utility {
             headerBackgroundColor: context.theme.primaryColor,
             headerForegroundColor: AppColors.white,
             backgroundColor: AppColors.white,
-            dayStyle: context.textTheme.bodyMedium?.copyWith(color: AppColors.black),
-            yearStyle: context.textTheme.bodyMedium?.copyWith(color: AppColors.black),
+            dayStyle:
+                context.textTheme.bodyMedium?.copyWith(color: AppColors.black),
+            yearStyle:
+                context.textTheme.bodyMedium?.copyWith(color: AppColors.black),
           ),
           textButtonTheme: TextButtonThemeData(
             style: TextButton.styleFrom(
-              textStyle: Styles.primaryText14.copyWith(color: Theme.of(context).primaryColor),
+              textStyle: Styles.primaryText14
+                  .copyWith(color: Theme.of(context).primaryColor),
               backgroundBuilder: (context, states, child) => child!,
               backgroundColor: AppColors.white, // Button background color
             ),
@@ -372,7 +392,9 @@ class Utility {
       return TranslationFile.required;
     }
     final regex = RegExp(AppConstants.passwordPattern);
-    return regex.hasMatch(value) == true ? null : TranslationFile.passwordValidationString;
+    return regex.hasMatch(value) == true
+        ? null
+        : TranslationFile.passwordValidationString;
   }
 
   /// email validator to verify email is valid or not
@@ -391,7 +413,8 @@ class Utility {
   }
 
   /// converts a double number into decimal number till 2 decimal point
-  static String? convertToDecimalValue(double originalValue, {bool isRemoveTrailingZero = false}) =>
+  static String? convertToDecimalValue(double originalValue,
+          {bool isRemoveTrailingZero = false}) =>
       NumberFormat(originalValue % 1 == 0 ? '#' : '#.##').format(originalValue);
 
   // returns app version
@@ -436,7 +459,8 @@ class Utility {
             Flexible(
               child: Text(
                 message,
-                style: Styles.primaryText14.copyWith(color: foregroundColor ?? AppColors.white),
+                style: Styles.primaryText14
+                    .copyWith(color: foregroundColor ?? AppColors.white),
               ),
             ),
           ],
@@ -463,7 +487,8 @@ class Utility {
   /// get formated date
   static String getFormattedDateWithNumberOfDays(int? numberOfDays,
           {String? dataFormat = 'EEEE, dd MMM'}) =>
-      DateFormat(dataFormat).format(DateTime.now().add(Duration(days: numberOfDays ?? 0)));
+      DateFormat(dataFormat)
+          .format(DateTime.now().add(Duration(days: numberOfDays ?? 0)));
 
   static Color rgbStringToColor(String rgbString) {
     final rgbRegex = RegExp(r'rgb\((\d+),(\d+),(\d+)\)');
@@ -480,11 +505,13 @@ class Utility {
     return AppColors.transparent;
   }
 
-  static String getFormattedPrice(double price, String? currencySymbol) => NumberFormat.currency(
-          decimalDigits: price % 1 == 0 ? 0 : 2,
-          symbol:
-              currencySymbol.isEmptyOrNull ? DefaultValues.defaultCurrencySymbol : currencySymbol)
-      .format(price);
+  static String getFormattedPrice(double price, String? currencySymbol) =>
+      NumberFormat.currency(
+              decimalDigits: price % 1 == 0 ? 0 : 2,
+              symbol: currencySymbol.isEmptyOrNull
+                  ? DefaultValues.defaultCurrencySymbol
+                  : currencySymbol)
+          .format(price);
 
   static Future<void> showCustomModalBottomSheet({
     required BuildContext context,
@@ -503,7 +530,8 @@ class Utility {
         ),
         isScrollControlled: isScrollControl,
         builder: (context) => Padding(
-          padding: Dimens.edgeInsetsSymmetric(vertical: Dimens.sixteen, horizontal: Dimens.eighteen)
+          padding: Dimens.edgeInsetsSymmetric(
+                  vertical: Dimens.sixteen, horizontal: Dimens.eighteen)
               .copyWith(top: Dimens.twentyFour),
           child: Stack(
             clipBehavior: Clip.none,
@@ -536,7 +564,8 @@ class Utility {
         ),
       );
 
-  static bool _isErrorShowing = false; // Flag to track if an error is currently displayed
+  static bool _isErrorShowing =
+      false; // Flag to track if an error is currently displayed
 
   static void showAppError({
     BuildContext? context,
@@ -563,7 +592,8 @@ class Utility {
   }
 
   //capitalize the first letter of each word
-  static String capitalizeString(String text, {bool? isName}) => text.split(' ').map((word) {
+  static String capitalizeString(String text, {bool? isName}) =>
+      text.split(' ').map((word) {
         if (word.isNotEmpty) {
           return word[0].toUpperCase() + word.substring(1);
         } else {
@@ -598,7 +628,8 @@ class Utility {
 
   //Function for converting timestamp to formatted data
   static String convertTimestamp(int timestamp, String format) =>
-      DateFormat(format).format(DateTime.fromMillisecondsSinceEpoch(timestamp * 1000));
+      DateFormat(format)
+          .format(DateTime.fromMillisecondsSinceEpoch(timestamp * 1000));
 
   /// converts epoch date time into current date time
   static String getEpochConvertedTime(String timeStamp, String format) {
@@ -607,7 +638,8 @@ class Utility {
   }
 
   /// returns gumlet image url
-  static String buildGumletImageUrl({required String imageUrl, double? width, double? height}) {
+  static String buildGumletImageUrl(
+      {required String imageUrl, double? width, double? height}) {
     final finalImageUrl = removeSourceUrl(imageUrl);
     return '${AppUrl.gumletUrl}/$finalImageUrl?w=${width ?? 0}&h=${height ?? 0}';
   }
@@ -619,7 +651,8 @@ class Utility {
     final netIndex = url.indexOf('.net');
 
     // Determine the starting point for searching the slash
-    final startIndex = comIndex != -1 ? comIndex + 4 : (netIndex != -1 ? netIndex + 4 : -1);
+    final startIndex =
+        comIndex != -1 ? comIndex + 4 : (netIndex != -1 ? netIndex + 4 : -1);
     // If neither '.com' nor '.net' is found, return -1
     if (startIndex == -1) {
       return url.substring(url.lastIndexOf('/') + 1);
@@ -635,16 +668,17 @@ class Utility {
     final document = html_parser.parse(htmlContent);
 
     // Extract the text content (ignores the HTML tags)
-    return Utility.cleanText(
-        document.body?.text ?? ''); // Use null-aware operator in case of no body.
+    return Utility.cleanText(document.body?.text ??
+        ''); // Use null-aware operator in case of no body.
   }
 
   /// remove escape sequences
-  static String cleanText(String inputText) =>
-      inputText.replaceAll(RegExp(r'[\n\t\r]'), ''); // Removes newline, tab, and carriage return
+  static String cleanText(String inputText) => inputText.replaceAll(
+      RegExp(r'[\n\t\r]'), ''); // Removes newline, tab, and carriage return
 
   ///show custom widget dialog
-  static Future<void> showCustomDialog({required BuildContext context, required Widget child}) =>
+  static Future<void> showCustomDialog(
+          {required BuildContext context, required Widget child}) =>
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -688,15 +722,18 @@ class Utility {
   }
 
   static String generateRandomId(int length) {
-    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const chars =
+        'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     final rand = Random.secure();
-    return List.generate(length, (index) => chars[rand.nextInt(chars.length)]).join();
+    return List.generate(length, (index) => chars[rand.nextInt(chars.length)])
+        .join();
   }
 }
 
 class NoFirstSpaceFormatter extends TextInputFormatter {
   @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
     if (newValue.text.startsWith(' ')) {
       return oldValue;
     }

@@ -124,7 +124,8 @@ class _CameraViewState extends State<NewCameraView> {
                       color: Colors.black12,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.refresh_rounded, color: AppColors.white),
+                    child: const Icon(Icons.refresh_rounded,
+                        color: AppColors.white),
                   ),
                 ),
                 Dimens.boxHeight(Dimens.twenty),
@@ -159,7 +160,8 @@ class _CameraViewState extends State<NewCameraView> {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.photo_library, color: AppColors.white),
+                        icon: const Icon(Icons.photo_library,
+                            color: AppColors.white),
                         onPressed: _pickFromGallery,
                       ),
                       GestureDetector(
@@ -170,7 +172,8 @@ class _CameraViewState extends State<NewCameraView> {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(color: Colors.red, width: 4),
-                            color: _isRecording ? Colors.red : Colors.transparent,
+                            color:
+                                _isRecording ? Colors.red : Colors.transparent,
                           ),
                         ),
                       ),
@@ -183,8 +186,9 @@ class _CameraViewState extends State<NewCameraView> {
                     spacing: Dimens.twenty,
                     children: List.generate(
                       _durationList.length,
-                      (index) =>
-                          _buildDurationOption('${_durationList[index]}s', _selectedDuration == _durationList[index]),
+                      (index) => _buildDurationOption(
+                          '${_durationList[index]}s',
+                          _selectedDuration == _durationList[index]),
                     ),
                   ),
                   Dimens.boxHeight(Dimens.fifteen),
@@ -207,7 +211,8 @@ class _CameraViewState extends State<NewCameraView> {
           });
         },
         child: Container(
-          padding: EdgeInsets.symmetric(horizontal: Dimens.twenty, vertical: Dimens.eight),
+          padding: EdgeInsets.symmetric(
+              horizontal: Dimens.twenty, vertical: Dimens.eight),
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
@@ -218,7 +223,8 @@ class _CameraViewState extends State<NewCameraView> {
           ),
           child: Text(
             text,
-            style: Styles.white16.copyWith(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal),
+            style: Styles.white16.copyWith(
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal),
           ),
         ),
       );

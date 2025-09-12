@@ -7,7 +7,8 @@ class PostInfoClass {
         accessToken: json['accessToken'] as String?,
         userInformation: json['userInformation'] == null
             ? null
-            : UserInfoClass.fromJson(json['userInformation'] as Map<String, dynamic>),
+            : UserInfoClass.fromJson(
+                json['userInformation'] as Map<String, dynamic>),
       );
 
   PostInfoClass({

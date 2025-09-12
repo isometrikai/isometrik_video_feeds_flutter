@@ -12,17 +12,20 @@ class RepositoryInjection {
     // Retrieve the data source instance from the service locator
     final dataSource = InjectionUtils.getOtherClass<DataSource>();
     final sessionManager = InjectionUtils.getOtherClass<SessionManager>();
-    final _localStorageManager = InjectionUtils.getOtherClass<LocalStorageManager>();
+    final _localStorageManager =
+        InjectionUtils.getOtherClass<LocalStorageManager>();
 
     InjectionUtils.registerRepo<LocalStorageRepository>(
         () => LocalStorageRepositoryImpl(_localStorageManager));
     InjectionUtils.registerRepo<AuthRepository>(() => AuthRepositoryImpl(
-        InjectionUtils.getApiService<AuthApiService>(), dataSource, sessionManager));
-    InjectionUtils.registerRepo<PostRepository>(
-        () => PostRepositoryImpl(InjectionUtils.getApiService<PostApiService>(), dataSource));
-    InjectionUtils.registerRepo<SocialRepository>(
-        () => SocialRepositoryImpl(InjectionUtils.getApiService<SocialApiService>(), dataSource));
-    InjectionUtils.registerRepo<GoogleRepository>(
-        () => GoogleRepositoryImpl(InjectionUtils.getApiService<GoogleApiService>()));
+        InjectionUtils.getApiService<AuthApiService>(),
+        dataSource,
+        sessionManager));
+    InjectionUtils.registerRepo<PostRepository>(() => PostRepositoryImpl(
+        InjectionUtils.getApiService<PostApiService>(), dataSource));
+    InjectionUtils.registerRepo<SocialRepository>(() => SocialRepositoryImpl(
+        InjectionUtils.getApiService<SocialApiService>(), dataSource));
+    InjectionUtils.registerRepo<GoogleRepository>(() =>
+        GoogleRepositoryImpl(InjectionUtils.getApiService<GoogleApiService>()));
   }
 }

@@ -67,20 +67,24 @@ class LocalStorageManager {
   }
 
   /// Delete all data from secure storage
-  Future<void> deleteAllSecuredValues() async => _flutterSecureStorage.deleteAll();
+  Future<void> deleteAllSecuredValues() async =>
+      _flutterSecureStorage.deleteAll();
 
   //clear data
   Future<void> clearData() async {
     await deleteAllSecuredValues();
     await _sharedPreferencesManager.clearData();
     // Set first launch flag to false
-    await saveValue(LocalStorageKeys.isFirstTimeVisit, false, SavedValueDataType.bool);
+    await saveValue(
+        LocalStorageKeys.isFirstTimeVisit, false, SavedValueDataType.bool);
   }
 
-  Future<T?> getValue<T>(String key, SavedValueDataType saveValueDataType) async =>
+  Future<T?> getValue<T>(
+          String key, SavedValueDataType saveValueDataType) async =>
       await _sharedPreferencesManager.getValue(key, saveValueDataType) as T?;
 
-  Future<void> saveValue(String key, dynamic value, SavedValueDataType saveValueDataType) async {
+  Future<void> saveValue(
+      String key, dynamic value, SavedValueDataType saveValueDataType) async {
     await _sharedPreferencesManager.saveValue(key, value, saveValueDataType);
   }
 
@@ -90,7 +94,8 @@ class LocalStorageManager {
 
   /// store the data
   void saveBooleanValue(String key, bool value) async {
-    await _sharedPreferencesManager.saveValue(key, value, SavedValueDataType.bool);
+    await _sharedPreferencesManager.saveValue(
+        key, value, SavedValueDataType.bool);
   }
 
   /// Method For Delete & Override from Secure Storage

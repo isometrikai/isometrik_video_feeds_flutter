@@ -26,7 +26,8 @@ extension DateExtension on DateTime {
 
   bool isSameDay(DateTime other) => isSameMonth(other) && day == other.day;
 
-  bool isSameMonth(DateTime other) => year == other.year && month == other.month;
+  bool isSameMonth(DateTime other) =>
+      year == other.year && month == other.month;
 
   String messageDate() {
     var now = DateTime.now();
@@ -83,8 +84,9 @@ extension ZeroOrNullExtension on double? {
 }
 
 extension StringExtension on String {
-  String capitalize() =>
-      length > 1 ? '${this[0].toUpperCase()}${substring(1).toLowerCase()}' : toUpperCase();
+  String capitalize() => length > 1
+      ? '${this[0].toUpperCase()}${substring(1).toLowerCase()}'
+      : toUpperCase();
 }
 
 extension DurationExtension on Duration {

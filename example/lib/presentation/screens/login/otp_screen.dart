@@ -52,7 +52,8 @@ class _OtpScreenState extends State<OtpScreen> {
   void _validateOtp() {
     final otp = otpController.text;
     setState(() {
-      isOtpValid = otp.length == 4 && RegExp(r'^\d{4}$').hasMatch(otp); // Enable button if OTP is 4 digits
+      isOtpValid = otp.length == 4 &&
+          RegExp(r'^\d{4}$').hasMatch(otp); // Enable button if OTP is 4 digits
     });
   }
 
@@ -93,7 +94,8 @@ class _OtpScreenState extends State<OtpScreen> {
                 const SizedBox(height: 20),
                 Text(
                   widget.mobile,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 40),
                 TextField(
@@ -107,7 +109,8 @@ class _OtpScreenState extends State<OtpScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Colors.blueAccent, width: 2),
+                      borderSide:
+                          const BorderSide(color: Colors.blueAccent, width: 2),
                     ),
                     errorBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -133,7 +136,8 @@ class _OtpScreenState extends State<OtpScreen> {
                       : null, // Disable button if OTP is not valid
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blueAccent,
-                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 40, vertical: 15),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -148,13 +152,15 @@ class _OtpScreenState extends State<OtpScreen> {
                 if (_start == 0)
                   TextButton(
                     onPressed: () {
-                      context.read<AuthBloc>().add(SendOtpEvent(isLoading: true, mobileNumber: widget.mobile));
+                      context.read<AuthBloc>().add(SendOtpEvent(
+                          isLoading: true, mobileNumber: widget.mobile));
                       setState(() {
                         _start = 60; // Reset timer
                         _startTimer(); // Restart timer
                       });
                     },
-                    child: const Text('Resend OTP', style: TextStyle(color: Colors.blueAccent)),
+                    child: const Text('Resend OTP',
+                        style: TextStyle(color: Colors.blueAccent)),
                   ),
               ],
             ),

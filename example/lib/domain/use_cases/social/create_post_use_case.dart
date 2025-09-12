@@ -15,7 +15,8 @@ class CreatePostUseCase extends BaseUseCase {
           isLoading: isLoading,
           createPostRequest: createPostRequest,
         );
-        return ApiResult(data: response.responseCode == 201 ? response.data : null);
+        return ApiResult(
+            data: response.responseCode == 201 ? response.data : null);
       });
 
   Future<ApiResult<CreatePostResponse?>> executeEditPost({
@@ -29,7 +30,8 @@ class CreatePostUseCase extends BaseUseCase {
           postId: postId,
           editPostRequest: editPostRequest,
         );
-        return ApiResult(data: response.responseCode == 200 ? response.data : null);
+        return ApiResult(
+            data: response.responseCode == 200 ? response.data : null);
       });
 }
 

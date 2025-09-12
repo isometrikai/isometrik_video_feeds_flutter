@@ -19,6 +19,7 @@ class ReportPostUseCase extends BaseUseCase {
           message: message,
           reason: reason,
         );
-        return ApiResult(data: response.responseCode == 200 ? response.data : null);
+        return ApiResult(
+            data: response.responseCode == 200 ? response.data : null);
       });
 }

@@ -103,7 +103,8 @@ class Dimens {
 
   static final double appButtonHeight = 50.sp;
 
-  static BorderRadius borderRadiusAll(double radius) => BorderRadius.circular(radius);
+  static BorderRadius borderRadiusAll(double radius) =>
+      BorderRadius.circular(radius);
 
   static BorderRadius borderRadius({
     double? topLeftRadius,
@@ -119,7 +120,8 @@ class Dimens {
       );
 
   /// Returns Box with requested height value
-  static SizedBox boxHeight(double height) => height == 0 ? const SizedBox.shrink() : SizedBox(height: height);
+  static SizedBox boxHeight(double height) =>
+      height == 0 ? const SizedBox.shrink() : SizedBox(height: height);
 
   /// Returns Box with requested width value
   static SizedBox boxWidth(double width) => SizedBox(width: width);
@@ -148,11 +150,14 @@ class Dimens {
         horizontal: horizontal ?? 0,
       );
 
-  static double getScreenHeight(BuildContext context) => MediaQuery.of(context).size.height;
+  static double getScreenHeight(BuildContext context) =>
+      MediaQuery.of(context).size.height;
 
-  static double getScreenWidth(BuildContext context) => MediaQuery.of(context).size.width;
+  static double getScreenWidth(BuildContext context) =>
+      MediaQuery.of(context).size.width;
 
   static double getDimensValue(double? value) => (value ?? 0).sp;
 
-  static EdgeInsets getSafeAreaPadding(BuildContext context) => MediaQuery.of(context).padding;
+  static EdgeInsets getSafeAreaPadding(BuildContext context) =>
+      MediaQuery.of(context).padding;
 }
