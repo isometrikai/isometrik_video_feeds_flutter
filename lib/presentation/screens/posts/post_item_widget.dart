@@ -38,8 +38,7 @@ class PostItemWidget extends StatefulWidget {
   State<PostItemWidget> createState() => _PostItemWidgetState();
 }
 
-class _PostItemWidgetState extends State<PostItemWidget>
-    with AutomaticKeepAliveClientMixin {
+class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAliveClientMixin {
   late PageController _pageController;
   final Set<String> _cachedImages = {};
   final VideoCacheManager _videoCacheManager = VideoCacheManager();
@@ -53,8 +52,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
 
   void _onStartInit() async {
     _reelsDataList = widget.reelsDataList;
-    _pageController =
-        PageController(initialPage: widget.startingPostIndex ?? 0);
+    _pageController = PageController(initialPage: widget.startingPostIndex ?? 0);
 
     if (_reelsDataList.isListEmptyOrNull == false) {
       await _doMediaCaching(0);
@@ -144,9 +142,8 @@ class _PostItemWidgetState extends State<PostItemWidget>
                   if (value.isListEmptyOrNull) return;
                   if (mounted) {
                     setState(() {
-                      final newReels = value.where((newReel) =>
-                          !_reelsDataList.any((existingReel) =>
-                              existingReel.postId == newReel.postId));
+                      final newReels = value.where((newReel) => !_reelsDataList
+                          .any((existingReel) => existingReel.postId == newReel.postId));
                       _reelsDataList.addAll(newReels);
                       if (_reelsDataList.isNotEmpty) {
                         _doMediaCaching(0);
@@ -177,22 +174,16 @@ class _PostItemWidgetState extends State<PostItemWidget>
                 if (result is bool) {
                   final isSuccess = result;
                   if (isSuccess) {
-                    final postIndex = _reelsDataList.indexWhere(
-                        (element) => element.postId == reelsData.postId);
+                    final postIndex =
+                        _reelsDataList.indexWhere((element) => element.postId == reelsData.postId);
                     if (postIndex != -1) {
                       setState(() {
                         _reelsDataList.removeAt(postIndex);
                       });
-                      final imageUrl = _reelsDataList[postIndex]
-                          .mediaMetaDataList[0]
-                          .mediaUrl;
-                      final thumbnailUrl = _reelsDataList[postIndex]
-                          .mediaMetaDataList[0]
-                          .thumbnailUrl;
-                      if (_reelsDataList[postIndex]
-                              .mediaMetaDataList[0]
-                              .mediaType ==
-                          0) {
+                      final imageUrl = _reelsDataList[postIndex].mediaMetaDataList[0].mediaUrl;
+                      final thumbnailUrl =
+                          _reelsDataList[postIndex].mediaMetaDataList[0].thumbnailUrl;
+                      if (_reelsDataList[postIndex].mediaMetaDataList[0].mediaType == 0) {
                         await _evictDeletedPostImage(imageUrl);
                       } else {
                         await _evictDeletedPostImage(thumbnailUrl);
@@ -201,8 +192,8 @@ class _PostItemWidgetState extends State<PostItemWidget>
                   }
                 }
                 if (result is ReelsData) {
-                  final index = _reelsDataList
-                      .indexWhere((element) => element.postId == result.postId);
+                  final index =
+                      _reelsDataList.indexWhere((element) => element.postId == result.postId);
                   if (index != -1) {
                     setState(() {
                       _reelsDataList[index] = result;
@@ -226,16 +217,30 @@ class _PostItemWidgetState extends State<PostItemWidget>
                       reelsData.userId ?? '', reelsData.isFollow ?? false);
                   if (result == true) {
                     setState(() {
-                      reelsData.isFollow =
-                          reelsData.isFollow == true ? false : true;
+                      reelsData.isFollow = reelsData.isFollow == true ? false : true;
                     });
                   }
                 }
               },
               onPressLikeButton: () async {
                 if (reelsData.onPressLike != null) {
-                  final result =
-                      await reelsData.onPressLike!(reelsData.isLiked ?? false);
+                  final result = await reelsData.onPressLike!(reelsData.isLiked ?? false);
+                  if (result == true) {
+                    reelsData.isLiked = reelsData.isLiked == false;
+                    if (reelsData.isLiked == true) {
+                      reelsData.likesCount = (reelsData.likesCount ?? 0) + 1;
+                    } else {
+                      if ((reelsData.likesCount ?? 0) > 0) {
+                        reelsData.likesCount = (reelsData.likesCount ?? 0) - 1;
+                      }
+                    }
+                    setState(() {});
+                  }
+                }
+              },
+              onDoubleTap: () async {
+                if (reelsData.onDoubleTap != null) {
+                  final result = await reelsData.onDoubleTap!(reelsData.isLiked ?? false);
                   if (result == true) {
                     reelsData.isLiked = reelsData.isLiked == false;
                     if (reelsData.isLiked == true) {
@@ -251,8 +256,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
               },
               onPressSaveButton: () async {
                 if (reelsData.onPressSave != null) {
-                  final result = await reelsData
-                      .onPressSave!(reelsData.isSavedPost ?? false);
+                  final result = await reelsData.onPressSave!(reelsData.isSavedPost ?? false);
                   if (result == true) {
                     reelsData.isSavedPost = reelsData.isSavedPost == false;
                     setState(() {});
@@ -284,8 +288,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
     final username = reelsData.userName;
     final mediaType = reelsData.mediaMetaDataList[0].mediaType;
 
-    debugPrint(
-        '🎯 MainWidget: Page changed to index $index (@$username - $mediaType)');
+    debugPrint('🎯 MainWidget: Page changed to index $index (@$username - $mediaType)');
 
     // Precache images around current position
     await _precacheNearbyImages(index);
@@ -304,8 +307,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
 
     // Cache more aggressively ahead since users typically scroll forward
     final startIndex = math.max(0, currentIndex - 1); // 1 behind
-    final endIndex =
-        math.min(_reelsDataList.length - 1, currentIndex + 4); // 4 ahead
+    final endIndex = math.min(_reelsDataList.length - 1, currentIndex + 4); // 4 ahead
 
     final imagesToCache = <String>[];
 
@@ -313,36 +315,29 @@ class _PostItemWidgetState extends State<PostItemWidget>
       final reelData = _reelsDataList[i];
 
       // Loop through ALL media items, not just the first one
-      for (var mediaIndex = 0;
-          mediaIndex < reelData.mediaMetaDataList.length;
-          mediaIndex++) {
+      for (var mediaIndex = 0; mediaIndex < reelData.mediaMetaDataList.length; mediaIndex++) {
         final mediaItem = reelData.mediaMetaDataList[mediaIndex];
 
-        final imageUrl = mediaItem.mediaType == 0
-            ? mediaItem.mediaUrl
-            : mediaItem.thumbnailUrl;
+        final imageUrl = mediaItem.mediaType == 0 ? mediaItem.mediaUrl : mediaItem.thumbnailUrl;
 
         // Only cache if not already cached and URL is valid
         if (imageUrl.isNotEmpty && !_cachedImages.contains(imageUrl)) {
           imagesToCache.add(imageUrl);
           _cachedImages.add(imageUrl);
-          debugPrint(
-              '➕ MainWidget: Added image to cache queue - Index $i, Media $mediaIndex');
+          debugPrint('➕ MainWidget: Added image to cache queue - Index $i, Media $mediaIndex');
         }
       }
     }
 
     if (imagesToCache.isNotEmpty) {
       // Priority: cache next post first, then others
-      final prioritizedImages =
-          _prioritizeNextPostAllMedia(imagesToCache, currentIndex);
+      final prioritizedImages = _prioritizeNextPostAllMedia(imagesToCache, currentIndex);
       await _cacheImagesInBackground(prioritizedImages);
     }
   }
 
 // Updated _prioritizeNextPost method to handle all media items
-  List<String> _prioritizeNextPostAllMedia(
-      List<String> images, int currentIndex) {
+  List<String> _prioritizeNextPostAllMedia(List<String> images, int currentIndex) {
     // Put next post images first in the caching queue
     final nextPostIndex = currentIndex + 1;
     if (nextPostIndex < _reelsDataList.length) {
@@ -350,13 +345,9 @@ class _PostItemWidgetState extends State<PostItemWidget>
       final nextPostImages = <String>[];
 
       // Collect all images from the next post
-      for (var mediaIndex = 0;
-          mediaIndex < reelsData.mediaMetaDataList.length;
-          mediaIndex++) {
+      for (var mediaIndex = 0; mediaIndex < reelsData.mediaMetaDataList.length; mediaIndex++) {
         final mediaItem = reelsData.mediaMetaDataList[mediaIndex];
-        final imageUrl = mediaItem.mediaType == 0
-            ? mediaItem.mediaUrl
-            : mediaItem.thumbnailUrl;
+        final imageUrl = mediaItem.mediaType == 0 ? mediaItem.mediaUrl : mediaItem.thumbnailUrl;
 
         if (imageUrl.isNotEmpty && images.contains(imageUrl)) {
           nextPostImages.add(imageUrl);
@@ -374,13 +365,11 @@ class _PostItemWidgetState extends State<PostItemWidget>
   Future<void> _precacheNearbyVideos(int currentIndex) async {
     if (_reelsDataList.isEmpty) return;
 
-    debugPrint(
-        '🎬 MainWidget: Starting video precaching for index $currentIndex');
+    debugPrint('🎬 MainWidget: Starting video precaching for index $currentIndex');
 
     // Cache more aggressively ahead since users typically scroll forward
     final startIndex = math.max(0, currentIndex - 1); // 1 behind
-    final endIndex =
-        math.min(_reelsDataList.length - 1, currentIndex + 2); // 2 ahead
+    final endIndex = math.min(_reelsDataList.length - 1, currentIndex + 2); // 2 ahead
 
     debugPrint(
         '📍 MainWidget: Precaching range: $startIndex to $endIndex (current: $currentIndex)');
@@ -398,9 +387,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
               : 'AHEAD';
 
       // Loop through ALL media items, not just the first one
-      for (var mediaIndex = 0;
-          mediaIndex < reelsData.mediaMetaDataList.length;
-          mediaIndex++) {
+      for (var mediaIndex = 0; mediaIndex < reelsData.mediaMetaDataList.length; mediaIndex++) {
         final mediaItem = reelsData.mediaMetaDataList[mediaIndex];
 
         // Only cache videos, not images
@@ -410,21 +397,17 @@ class _PostItemWidgetState extends State<PostItemWidget>
           videoInfo.add('[$position] Index $i, Media $mediaIndex: @$username');
 
           // Only cache if not already cached and URL is valid
-          if (videoUrl.isNotEmpty &&
-              !_videoCacheManager.isVideoCached(videoUrl)) {
+          if (videoUrl.isNotEmpty && !_videoCacheManager.isVideoCached(videoUrl)) {
             videosToCache.add(videoUrl);
             debugPrint(
                 '➕ MainWidget: Added to cache queue - Index $i, Media $mediaIndex (@$username)');
           } else if (videoUrl.isNotEmpty) {
-            debugPrint(
-                '✅ MainWidget: Already cached - Index $i, Media $mediaIndex (@$username)');
+            debugPrint('✅ MainWidget: Already cached - Index $i, Media $mediaIndex (@$username)');
           } else {
-            debugPrint(
-                '⚠️ MainWidget: Empty video URL - Index $i, Media $mediaIndex (@$username)');
+            debugPrint('⚠️ MainWidget: Empty video URL - Index $i, Media $mediaIndex (@$username)');
           }
         } else {
-          debugPrint(
-              '📷 MainWidget: Skipping image - Index $i, Media $mediaIndex (@$username)');
+          debugPrint('📷 MainWidget: Skipping image - Index $i, Media $mediaIndex (@$username)');
         }
       }
     }
@@ -436,23 +419,18 @@ class _PostItemWidgetState extends State<PostItemWidget>
 
     if (videosToCache.isNotEmpty) {
       // Priority: cache next post first, then others
-      final prioritizedVideos =
-          _prioritizeNextVideoAllMedia(videosToCache, currentIndex);
-      debugPrint(
-          '🚀 MainWidget: Starting precache for ${prioritizedVideos.length} videos');
+      final prioritizedVideos = _prioritizeNextVideoAllMedia(videosToCache, currentIndex);
+      debugPrint('🚀 MainWidget: Starting precache for ${prioritizedVideos.length} videos');
 
       await _videoCacheManager.precacheVideos(prioritizedVideos);
     } else {
-      debugPrint(
-          '✅ MainWidget: No new videos to cache around index $currentIndex');
+      debugPrint('✅ MainWidget: No new videos to cache around index $currentIndex');
     }
   }
 
 // Updated _prioritizeNextVideo method to handle all media items
-  List<String> _prioritizeNextVideoAllMedia(
-      List<String> videos, int currentIndex) {
-    debugPrint(
-        '🎯 MainWidget: Prioritizing videos for current index $currentIndex');
+  List<String> _prioritizeNextVideoAllMedia(List<String> videos, int currentIndex) {
+    debugPrint('🎯 MainWidget: Prioritizing videos for current index $currentIndex');
 
     // Put next post videos first in the caching queue
     final nextPostIndex = currentIndex + 1;
@@ -462,9 +440,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
       final nextPostVideos = <String>[];
 
       // Collect all videos from the next post
-      for (var mediaIndex = 0;
-          mediaIndex < reelsData.mediaMetaDataList.length;
-          mediaIndex++) {
+      for (var mediaIndex = 0; mediaIndex < reelsData.mediaMetaDataList.length; mediaIndex++) {
         final mediaItem = reelsData.mediaMetaDataList[mediaIndex];
 
         if (mediaItem.mediaType == 1) {
@@ -482,8 +458,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
       if (nextPostVideos.isNotEmpty) {
         final prioritized = [...nextPostVideos, ...videos];
 
-        debugPrint(
-            '📋 MainWidget: Final priority order with ${prioritized.length} videos:');
+        debugPrint('📋 MainWidget: Final priority order with ${prioritized.length} videos:');
         var orderIndex = 1;
         for (final url in prioritized) {
           // Find which post and media index this URL belongs to
@@ -505,23 +480,18 @@ class _PostItemWidgetState extends State<PostItemWidget>
       }
     }
 
-    debugPrint(
-        '📋 MainWidget: No next videos to prioritize, using original order');
+    debugPrint('📋 MainWidget: No next videos to prioritize, using original order');
     return videos;
   }
 
 // Updated _evictDeletedPostImage method to handle all media items
   Future<void> evictDeletedPostMedia(ReelsData deletedPost) async {
     // Loop through all media items in the deleted post
-    for (var mediaIndex = 0;
-        mediaIndex < deletedPost.mediaMetaDataList.length;
-        mediaIndex++) {
+    for (var mediaIndex = 0; mediaIndex < deletedPost.mediaMetaDataList.length; mediaIndex++) {
       final mediaItem = deletedPost.mediaMetaDataList[mediaIndex];
 
       // Evict image or thumbnail
-      final imageUrl = mediaItem.mediaType == 0
-          ? mediaItem.mediaUrl
-          : mediaItem.thumbnailUrl;
+      final imageUrl = mediaItem.mediaType == 0 ? mediaItem.mediaUrl : mediaItem.thumbnailUrl;
 
       if (imageUrl.isNotEmpty) {
         // Evict from Flutter's memory cache
@@ -547,8 +517,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
 
   Future<void> clearAllCache() async {
     PaintingBinding.instance.imageCache.clear(); // removes decoded images
-    PaintingBinding.instance.imageCache
-        .clearLiveImages(); // removes "live" references
+    PaintingBinding.instance.imageCache.clearLiveImages(); // removes "live" references
 
     // Clear disk cache from CachedNetworkImage
     await DefaultCacheManager().emptyCache();
@@ -563,8 +532,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
     // Also evict from disk cache if using CachedNetworkImage
     try {
       await DefaultCacheManager().removeFile(imageUrl);
-      debugPrint(
-          '🗑️ MainWidget: Evicted deleted post image from cache - $imageUrl');
+      debugPrint('🗑️ MainWidget: Evicted deleted post image from cache - $imageUrl');
     } catch (_) {}
   }
 }
