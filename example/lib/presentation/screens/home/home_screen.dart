@@ -57,14 +57,12 @@ class _HomeScreenState extends State<HomeScreen> {
             if (state is HomeLoaded) {
               _myUserId = state.userId;
               return isr.IsmPostView(
-                key: ValueKey(
-                    state.timeLinePosts), // will rebuild if list changes
+                key: ValueKey(state.timeLinePosts), // will rebuild if list changes
                 tabDataModelList: [
                   isr.TabDataModel(
                     title: 'Following',
                     onRefresh: _handleFollowingRefresh,
-                    reelsDataList:
-                        state.timeLinePosts?.map(_getReelData).toList() ?? [],
+                    reelsDataList: state.timeLinePosts?.map(_getReelData).toList() ?? [],
                   ),
                 ],
               );
@@ -102,23 +100,19 @@ class _HomeScreenState extends State<HomeScreen> {
           isFollowButtonVisible: true,
           isUnFollowButtonVisible: true,
         ),
-        mentions: postData.tags != null &&
-                postData.tags?.mentions.isEmptyOrNull == false
+        mentions: postData.tags != null && postData.tags?.mentions.isEmptyOrNull == false
             ? postData.tags?.mentions?.map(_getMentionMetaData).toList()
             : null,
-        tagDataList: postData.tags != null &&
-                postData.tags?.hashtags.isEmptyOrNull == false
+        tagDataList: postData.tags != null && postData.tags?.hashtags.isEmptyOrNull == false
             ? postData.tags?.hashtags?.map(_getMentionMetaData).toList()
             : null,
-        placeDataList: postData.tags != null &&
-                postData.tags?.places.isEmptyOrNull == false
+        placeDataList: postData.tags != null && postData.tags?.places.isEmptyOrNull == false
             ? postData.tags?.places?.map(_getPlaceMetaData).toList()
             : null,
         onTapMentionTag: (mention) {},
         postId: postData.id,
         onCreatePost: () async => await _handleCreatePost(),
-        mediaMetaDataList:
-            postData.media?.map(_getMediaMetaData).toList() ?? [],
+        mediaMetaDataList: postData.media?.map(_getMediaMetaData).toList() ?? [],
         // actionWidget: _buildActionButtons(postData),
         // footerWidget: _buildFooter(postData),
         userId: postData.user?.id ?? '',
@@ -135,35 +129,18 @@ class _HomeScreenState extends State<HomeScreen> {
         productCount: postData.tags?.products?.length ?? 0,
         description: postData.caption ?? '',
         onTapComment: (totalCommentsCount) async {
-          final result =
-              await _handleCommentAction(postData.id ?? '', totalCommentsCount);
+          final result = await _handleCommentAction(postData.id ?? '', totalCommentsCount);
           return result;
         },
         onPressMoreButton: () async {
           final result = await _handleMoreOptions(postData);
           return result;
         },
-        onPressLike: (isLiked) async {
-          try {
-            final completer = Completer<bool>();
-
-            _homeBloc.add(LikePostEvent(
-              postId: postData.id ?? '',
-              userId: postData.user?.id ?? '',
-              likeAction: isLiked ? LikeAction.unlike : LikeAction.like,
-              onComplete: (success) {
-                completer.complete(success);
-              },
-            ));
-            return await completer.future;
-          } catch (e) {
-            return false;
-          }
-        },
+        onPressLike: (isLiked) async => _handleLikeAction(isLiked, postData),
+        onDoubleTap: (isLiked) async => _handleLikeAction(isLiked, postData),
         onPressSave: (isSavedPost) async {
           try {
             final completer = Completer<bool>();
-
             _homeBloc.add(SavePostEvent(
               postId: postData.id ?? '',
               isSaved: isSavedPost,
@@ -179,16 +156,13 @@ class _HomeScreenState extends State<HomeScreen> {
         onPressFollow: (userId, isFollow) async {
           try {
             final completer = Completer<bool>();
-
             _homeBloc.add(FollowUserEvent(
               followingId: userId,
               onComplete: (success) {
                 completer.complete(success);
               },
-              followAction:
-                  isFollow ? FollowAction.unfollow : FollowAction.follow,
+              followAction: isFollow ? FollowAction.unfollow : FollowAction.follow,
             ));
-
             return await completer.future;
           } catch (e) {
             return false;
@@ -212,8 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
               reason: reason,
               onComplete: (success) {
                 if (success) {
-                  Utility.showToastMessage(
-                      TranslationFile.postReportedSuccessfully);
+                  Utility.showToastMessage(TranslationFile.postReportedSuccessfully);
                 }
                 completer.complete(success);
               },
@@ -230,8 +203,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 postId: postDataModel.id ?? '',
                 onComplete: (success) {
                   if (success) {
-                    Utility.showToastMessage(
-                        TranslationFile.postDeletedSuccessfully);
+                    Utility.showToastMessage(TranslationFile.postDeletedSuccessfully);
                   }
                   completer.complete(success);
                 },
@@ -243,8 +215,7 @@ class _HomeScreenState extends State<HomeScreen> {
         },
         isSelfProfile: postDataModel.user?.id == _myUserId,
         onEditPost: () async {
-          final postDataString =
-              await _showEditPostDialog(context, postDataModel);
+          final postDataString = await _showEditPostDialog(context, postDataModel);
           return postDataString ?? '';
         },
       );
@@ -267,8 +238,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onPressReport: ({String message = '', String reason = ''}) async {
           try {
             if (onPressReport != null) {
-              final isReported =
-                  await onPressReport(message: message, reason: reason);
+              final isReported = await onPressReport(message: message, reason: reason);
               completer.complete(isReported);
               return isReported;
             }
@@ -290,8 +260,8 @@ class _HomeScreenState extends State<HomeScreen> {
           if (onEditPost != null) {
             final postDataString = await onEditPost();
             if (postDataString.isEmptyOrNull == false) {
-              final postData = TimeLineData.fromMap(
-                  jsonDecode(postDataString) as Map<String, dynamic>);
+              final postData =
+                  TimeLineData.fromMap(jsonDecode(postDataString) as Map<String, dynamic>);
               final reelData = _getReelData(postData);
               completer.complete(reelData);
             }
@@ -308,8 +278,7 @@ class _HomeScreenState extends State<HomeScreen> {
         context: context,
         barrierDismissible: false,
         builder: (context) => Dialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           backgroundColor: Colors.white,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
@@ -319,8 +288,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Text(
                   TranslationFile.deletePost,
-                  style: Styles.primaryText18
-                      .copyWith(fontWeight: FontWeight.w700),
+                  style: Styles.primaryText18.copyWith(fontWeight: FontWeight.w700),
                 ),
                 16.verticalSpace,
                 Text(
@@ -354,14 +322,12 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
 
-  Future<String?> _showEditPostDialog(
-          BuildContext context, TimeLineData postDataModel) =>
+  Future<String?> _showEditPostDialog(BuildContext context, TimeLineData postDataModel) =>
       showDialog<String>(
         context: context,
         barrierDismissible: false,
         builder: (context) => Dialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           backgroundColor: Colors.white,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
@@ -371,8 +337,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Text(
                   TranslationFile.editPost,
-                  style: Styles.primaryText18
-                      .copyWith(fontWeight: FontWeight.w700),
+                  style: Styles.primaryText18.copyWith(fontWeight: FontWeight.w700),
                 ),
                 16.verticalSpace,
                 Text(
@@ -389,8 +354,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       title: TranslationFile.yes,
                       width: 102.scaledValue,
                       onPress: () async {
-                        final postDataString =
-                            await _handleEditPost(postDataModel);
+                        final postDataString = await _handleEditPost(postDataModel);
                         Navigator.of(context).pop(postDataString ?? '');
                       },
                       backgroundColor: '006CD8'.toHexColor,
@@ -411,18 +375,16 @@ class _HomeScreenState extends State<HomeScreen> {
       );
 
   Future<String?> _handleEditPost(TimeLineData postDataModel) async {
-    final postDataString = await InjectionUtils.getRouteManagement()
-        .goToCreatePostView(postData: postDataModel);
+    final postDataString =
+        await InjectionUtils.getRouteManagement().goToCreatePostView(postData: postDataModel);
     return postDataString;
   }
 
-  Future<List<ProductDataModel>> _handleCartAction(
-      TimeLineData postData) async {
+  Future<List<ProductDataModel>> _handleCartAction(TimeLineData postData) async {
     var featuredProductList = <ProductDataModel>[];
     try {
       final productIds = <String>[];
-      final socialProductList =
-          postData.tags?.products ?? <SocialProductData>[];
+      final socialProductList = postData.tags?.products ?? <SocialProductData>[];
       for (final productItem in socialProductList) {
         productIds.add(productItem.id ?? '');
       }
@@ -446,8 +408,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return featuredProductList;
   }
 
-  isr.ReelsWidgetBuilder buildFooter(TimeLineData postData) =>
-      isr.ReelsWidgetBuilder(
+  isr.ReelsWidgetBuilder buildFooter(TimeLineData postData) => isr.ReelsWidgetBuilder(
         alignment: Alignment.bottomLeft,
         child: Padding(
           padding: const EdgeInsets.all(8.0),
@@ -470,8 +431,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   decoration: BoxDecoration(
                     color: Colors.white, // Set to white for the background
-                    borderRadius:
-                        BorderRadius.circular(Dimens.ten), // Rounded corners
+                    borderRadius: BorderRadius.circular(Dimens.ten), // Rounded corners
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.changeOpacity(0.1), // Light shadow
@@ -491,14 +451,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           Text(
                             'Shop',
-                            style: Styles.primaryText12
-                                .copyWith(fontWeight: FontWeight.w700),
+                            style: Styles.primaryText12.copyWith(fontWeight: FontWeight.w700),
                           ),
                           Dimens.boxHeight(Dimens.four),
                           Text(
                             '3 products',
-                            style: Styles.primaryText10
-                                .copyWith(fontWeight: FontWeight.w500),
+                            style: Styles.primaryText10.copyWith(fontWeight: FontWeight.w500),
                           ),
                         ],
                       ),
@@ -664,8 +622,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
 
-  isr.ReelsWidgetBuilder buildActionButtons(TimeLineData postData) =>
-      isr.ReelsWidgetBuilder(
+  isr.ReelsWidgetBuilder buildActionButtons(TimeLineData postData) => isr.ReelsWidgetBuilder(
         alignment: Alignment.bottomRight,
         child: Padding(
           padding: Dimens.edgeInsetsAll(8),
@@ -815,8 +772,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     height: Dimens.twentyFour,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                          Theme.of(context).primaryColor),
+                      valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
                     ),
                   )
                 : AppImage.svg(icon),
@@ -833,8 +789,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       );
 
-  Future<void> _callLikeFunction(
-      TimeLineData postData, StateSetter setState) async {
+  Future<void> _callLikeFunction(TimeLineData postData, StateSetter setState) async {
     _isLikeLoading = true;
     setState.call(() {});
     var success = false;
@@ -845,8 +800,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _homeBloc.add(LikePostEvent(
             postId: postData.id ?? '',
             userId: postData.user?.id ?? '',
-            likeAction:
-                postData.isLiked == true ? LikeAction.unlike : LikeAction.like,
+            likeAction: postData.isLiked == true ? LikeAction.unlike : LikeAction.like,
             onComplete: (success) {
               completer.complete(success);
             }));
@@ -864,8 +818,7 @@ class _HomeScreenState extends State<HomeScreen> {
         if (postData.isLiked == true) {
           postData.engagementMetrics?.likeTypes?.like = currentCount + 1;
         } else {
-          postData.engagementMetrics?.likeTypes?.like =
-              (currentCount > 0) ? currentCount - 1 : 0;
+          postData.engagementMetrics?.likeTypes?.like = (currentCount > 0) ? currentCount - 1 : 0;
         }
       }
       setState.call(() {});
@@ -878,11 +831,10 @@ class _HomeScreenState extends State<HomeScreen> {
   // Interaction handlers
   Future<isr.ReelsData?> _handleCreatePost() async {
     final completer = Completer<isr.ReelsData>();
-    final postDataModelString =
-        await InjectionUtils.getRouteManagement().goToCreatePostView();
+    final postDataModelString = await InjectionUtils.getRouteManagement().goToCreatePostView();
     if (postDataModelString.isStringEmptyOrNull == false) {
-      final postDataModel = TimeLineData.fromMap(
-          jsonDecode(postDataModelString!) as Map<String, dynamic>);
+      final postDataModel =
+          TimeLineData.fromMap(jsonDecode(postDataModelString!) as Map<String, dynamic>);
       final reelsData = _getReelData(postDataModel);
       completer.complete(reelsData);
     }
@@ -890,8 +842,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   /// Handles comment action
-  Future<int> _handleCommentAction(
-      String postId, int totalCommentsCount) async {
+  Future<int> _handleCommentAction(String postId, int totalCommentsCount) async {
     final completer = Completer<int>();
 
     final result = await Utility.showBottomSheet<int>(
@@ -916,8 +867,7 @@ class _HomeScreenState extends State<HomeScreen> {
         thumbnailUrl: mediaData.previewUrl ?? '',
       );
 
-  isr.MentionMetaData _getMentionMetaData(MentionData mentionData) =>
-      isr.MentionMetaData(
+  isr.MentionMetaData _getMentionMetaData(MentionData mentionData) => isr.MentionMetaData(
         userId: mentionData.userId,
         username: mentionData.username,
         name: mentionData.name,
@@ -938,8 +888,7 @@ class _HomeScreenState extends State<HomeScreen> {
             : null,
       );
 
-  isr.PlaceMetaData _getPlaceMetaData(TaggedPlace placeData) =>
-      isr.PlaceMetaData(
+  isr.PlaceMetaData _getPlaceMetaData(TaggedPlace placeData) => isr.PlaceMetaData(
         address: placeData.address,
         city: placeData.city,
         coordinates: placeData.coordinates,
@@ -951,4 +900,22 @@ class _HomeScreenState extends State<HomeScreen> {
         postalCode: placeData.postalCode,
         state: placeData.state,
       );
+
+  Future<bool> _handleLikeAction(bool isLiked, TimeLineData postData) async {
+    try {
+      final completer = Completer<bool>();
+
+      _homeBloc.add(LikePostEvent(
+        postId: postData.id ?? '',
+        userId: postData.user?.id ?? '',
+        likeAction: isLiked ? LikeAction.unlike : LikeAction.like,
+        onComplete: (success) {
+          completer.complete(success);
+        },
+      ));
+      return await completer.future;
+    } catch (e) {
+      return false;
+    }
+  }
 }
