@@ -808,12 +808,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         children: [
           // Only the main GestureDetector as child of the outer Stack
           GestureDetector(
-            onTap: () {
-              _toggleMuteAndUnMute();
-            },
-            onDoubleTap: () {
-              _triggerLikeAnimation();
-              if (widget.onDoubleTap != null) widget.onDoubleTap!();
+            onTap: _toggleMuteAndUnMute,
+            onDoubleTap: () async {
+              _triggerLikeAnimation(); // Always show animation
+              if (_reelData.isLiked != true && widget.onDoubleTap != null) {
+                await widget.onDoubleTap!();
+              }
             },
             onLongPress: _togglePlayPause,
             onLongPressEnd: (_) => _togglePlayPause(),
@@ -902,24 +902,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            // Mute/Unmute button overlay
-            // if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kVideoType)
-            //   GestureDetector(
-            //     behavior: HitTestBehavior.opaque, // Prevent tap bubbling
-            //     onTap: _toggleMuteAndUnMute,
-            //     child: Container(
-            //       padding: const EdgeInsets.all(8),
-            //       decoration: BoxDecoration(
-            //         color: Colors.black.changeOpacity(0.4),
-            //         borderRadius: BorderRadius.circular(24),
-            //       ),
-            //       child: AppImage.svg(
-            //         _isMuted ? AssetConstants.muteRoundedSvg : AssetConstants.unMuteRoundedSvg,
-            //         width: 35,
-            //         height: 35,
-            //       ),
-            //     ),
-            //   ),
             if (_reelData.postSetting?.isProfilePicVisible == true)
               TapHandler(
                 borderRadius: IsrDimens.thirty,
@@ -1375,10 +1357,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   Future<void> _callLikeFunction() async {
     if (widget.onPressLikeButton == null || _isLikeLoading.value) return;
     _isLikeLoading.value = true;
-
     try {
+      final wasLiked = _reelData.isLiked == true;
       await widget.onPressLikeButton!();
-      _triggerLikeAnimation();
+      // Only show animation if it was not liked before and is now liked
+      if (!wasLiked && _reelData.isLiked == true) {
+        _triggerLikeAnimation();
+      }
+      // If already liked, just do dislike (no animation)
     } finally {
       _isLikeLoading.value = false;
     }
