@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ism_video_reel_player_example/domain/domain.dart';
 import 'package:ism_video_reel_player_example/main.dart';
@@ -108,6 +109,30 @@ class AppRouter {
         pageBuilder: (context, state) => PageTransition(
           child: const SearchLocationScreen(),
           transitionType: TransitionType.rightToLeft,
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.imageEditorView,
+        name: RouteNames.imageEditorView,
+        pageBuilder: (context, state) => PageTransition(
+          child: ImageEditorView(imagePath: state.extra as String),
+          transitionType: TransitionType.rightToLeft,
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.videoEditorView,
+        name: RouteNames.videoEditorView,
+        pageBuilder: (context, state) => PageTransition(
+          child: VideoEditorView(videoPath: state.extra as String),
+          transitionType: TransitionType.rightToLeft,
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.cameraPickerView,
+        name: RouteNames.cameraPickerView,
+        pageBuilder: (context, state) => PageTransition(
+          transitionType: TransitionType.rightToLeft,
+          child: const SizedBox(),
         ),
       ),
       ..._landingRoutes,

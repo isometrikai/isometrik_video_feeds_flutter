@@ -1,3 +1,4 @@
+import 'package:camera/camera.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:ism_video_reel_player_example/domain/domain.dart';
 import 'package:ism_video_reel_player_example/utils/utils.dart';
@@ -86,4 +87,19 @@ class RouteManagement {
         await _navigationService.pushNamed(RouteNames.searchLocationScreen);
     return result as List<TaggedPlace>?;
   }
+
+  Future<XFile?> goToImageEditorView({required String filePath}) async =>
+      await _navigationService.pushNamed(
+        RouteNames.imageEditorView,
+        arguments: filePath,
+      );
+
+  Future<String?> goToVideoEditorView({required String filePath}) async =>
+      await _navigationService.pushNamed(
+        RouteNames.videoEditorView,
+        arguments: filePath,
+      );
+
+  Future<(bool, String)?> goToCameraPickerView() =>
+      _navigationService.pushNamed(RouteNames.cameraPickerView);
 }

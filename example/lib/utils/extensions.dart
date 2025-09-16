@@ -24,7 +24,7 @@ extension emptyExtension on String? {
 }
 
 extension emptyListExtension on List<dynamic>? {
-  bool get isEmptyOrNull => this == null || this?.isEmpty == true;
+  bool get isEmptyOrNull => this == null || this!.isEmpty;
 }
 
 extension zeroOrNullExtension on double? {

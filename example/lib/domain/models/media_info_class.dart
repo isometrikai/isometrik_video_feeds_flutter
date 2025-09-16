@@ -9,7 +9,7 @@ class MediaInfoClass {
     this.mediaSource,
   });
 
-  final XFile? mediaFile;
+  XFile? mediaFile;
   final int? duration;
   final MediaType? mediaType;
   final MediaSource? mediaSource;

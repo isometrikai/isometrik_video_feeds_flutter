@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_thumbnail_video/video_thumbnail.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ism_video_reel_player_example/core/core.dart';
+import 'package:ism_video_reel_player_example/di/di.dart';
 import 'package:ism_video_reel_player_example/di/injection_utils.dart';
 import 'package:ism_video_reel_player_example/domain/domain.dart';
 import 'package:ism_video_reel_player_example/res/res.dart';
@@ -146,50 +147,108 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     return extension;
   }
 
-  FutureOr<void> _openMediaSource(
-      MediaSourceEvent event, Emitter<CreatePostState> emit) async {
-    var mediaInfoClass = <MediaInfoClass>[];
-
+  void _openMediaSource(
+    MediaSourceEvent event,
+    Emitter<CreatePostState> emit,
+  ) async {
+    final mediaInfoClasses = <MediaInfoClass>[];
     if (event.mediaSource == MediaSource.camera) {
-      final mediaInfo = await _pickFromFromCamera(
-          event.context, event.mediaType, event.mediaSource);
-      if (mediaInfo != null) {
-        mediaInfoClass.add(mediaInfo);
-      }
+      final mediaInfo = await _pickFromCamera(
+        event.context,
+        event.mediaType,
+        event.mediaSource,
+      );
+      if (mediaInfo != null) mediaInfoClasses.add(mediaInfo);
     }
 
     if (event.mediaSource == MediaSource.gallery && event.context.mounted) {
       if (AppConstants.isMultipleMediaSelectionEnabled) {
-        final mediaList =
-            await _pickMultipleMedia(event.context, event.mediaSource);
-        mediaInfoClass = mediaList;
+        final mediaList = await _pickMultipleMedia(
+          event.context,
+          event.mediaSource,
+        );
+        mediaInfoClasses.clear();
+        mediaInfoClasses.addAll([...mediaList]);
       } else {
         final mediaInfo = await _pickFromGallery(
-            event.context, event.mediaType, event.mediaSource);
-        if (mediaInfo != null) {
-          mediaInfoClass.add(mediaInfo);
+          event.context,
+          event.mediaType,
+          event.mediaSource,
+        );
+        if (mediaInfo != null) mediaInfoClasses.add(mediaInfo);
+      }
+    }
+    if (mediaInfoClasses.isEmptyOrNull) return;
+    for (final mediaInfoClass in mediaInfoClasses) {
+      if (mediaInfoClass.mediaFile != null &&
+          mediaInfoClass.mediaFile!.path.isNotEmpty &&
+          mediaInfoClass.mediaType != null) {
+        if (mediaInfoClass.mediaType == MediaType.photo) {
+          final editedImage =
+              await InjectionUtils.getRouteManagement().goToImageEditorView(
+            filePath: mediaInfoClass.mediaFile!.path,
+          );
+          if (editedImage != null && editedImage.path.isNotEmpty) {
+            mediaInfoClass.mediaFile = editedImage;
+          }
+        } else if (mediaInfoClass.mediaType == MediaType.video) {
+          final editedVideoPath =
+              await InjectionUtils.getRouteManagement().goToVideoEditorView(
+            filePath: mediaInfoClass.mediaFile!.path,
+          );
+          if (editedVideoPath != null && editedVideoPath.isNotEmpty) {
+            mediaInfoClass.mediaFile = XFile(editedVideoPath);
+          }
         }
       }
     }
+    for (var i = 0; i < mediaInfoClasses.length; i++) {
+      final mediaData = await _processMediaInfo(
+        event.context,
+        mediaInfoClasses[i],
+        emit,
+        event.isCoverImage,
+        i,
+      ) as MediaData;
+      final index = _mediaDataList.indexWhere(
+        (element) => event.mediaData?.localPath == element.localPath,
+      );
+      if (index == -1) {
+        _mediaDataList.add(mediaData);
+      } else {
+        _mediaDataList[i] = mediaData;
+      }
+    }
 
-    if (mediaInfoClass.isEmptyOrNull == false) {
-      for (var i = 0; i < mediaInfoClass.length; i++) {
-        // var mediaData = _mediaDataList.isEmptyOrNull == false ? _mediaDataList[i] : null;
+    // Emit initial state before compression
+    emit(
+      event.isCoverImage
+          ? CoverImageSelected(
+              coverImage: _mediaDataList[_selectedMediaIndex].previewUrl,
+              isPostButtonEnable: _isPostButtonEnabled(_mediaDataList),
+            )
+          : MediaSelectedState(
+              mediaDataList: _mediaDataList,
+              isPostButtonEnable: _isPostButtonEnabled(_mediaDataList),
+            ),
+    );
 
-        final mediaData = await _processMediaInfo(
-                event.context, mediaInfoClass[i], emit, event.isCoverImage, i)
-            as MediaData;
+    if (AppConstants.isCompressionEnable) {
+      for (var i = 0; i < _mediaDataList.length; i++) {
+        final mediaData = _mediaDataList[i];
+        if (mediaData.localPath.isEmptyOrNull == false) {
+          final compressedFile = await _compressFile(
+            File(mediaData.localPath ?? ''),
+            event.mediaType,
+            emit,
+          );
 
-        final index = _mediaDataList.indexWhere(
-            (element) => event.mediaData?.localPath == element.localPath);
-        if (index == -1) {
-          _mediaDataList.add(mediaData);
-        } else {
-          _mediaDataList[i] = mediaData;
+          if (compressedFile != null) {
+            _mediaDataList[i].localPath = compressedFile.path;
+          }
         }
       }
-
-      // Emit initial state before compression
+      // Emit state after each compression so UI updates progressively
       emit(
         event.isCoverImage
             ? CoverImageSelected(
@@ -201,40 +260,11 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
                 isPostButtonEnable: _isPostButtonEnabled(_mediaDataList),
               ),
       );
-
-      // 🔥 Compress media files one by one
-      if (AppConstants.isCompressionEnable) {
-        for (var i = 0; i < _mediaDataList.length; i++) {
-          final mediaData = _mediaDataList[i];
-          if (mediaData.localPath.isEmptyOrNull == false) {
-            final compressedFile = await _compressFile(
-              File(mediaData.localPath ?? ''),
-              event.mediaType,
-              emit,
-            );
-
-            if (compressedFile != null) {
-              _mediaDataList[i].localPath = compressedFile.path;
-            }
-          }
-        }
-        // Emit state after each compression so UI updates progressively
-        emit(
-          event.isCoverImage
-              ? CoverImageSelected(
-                  coverImage: _mediaDataList[_selectedMediaIndex].previewUrl,
-                  isPostButtonEnable: _isPostButtonEnabled(_mediaDataList),
-                )
-              : MediaSelectedState(
-                  mediaDataList: _mediaDataList,
-                  isPostButtonEnable: _isPostButtonEnabled(_mediaDataList),
-                ),
-        );
-      }
-
-      debugPrint(
-          'postAttribute list: ${jsonEncode(_mediaDataList.map((e) => e.toMap()).toList())}');
     }
+
+    debugPrint(
+      'postAttribute list: ${jsonEncode(_mediaDataList.map((e) => e.toMap()).toList())}',
+    );
   }
 
   bool _isPostButtonEnabled(List<MediaData>? mediaList) {
@@ -253,7 +283,9 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   }
 
   Future<List<MediaInfoClass>> _pickMultipleMedia(
-      BuildContext context, MediaSource mediaSource) async {
+    BuildContext context,
+    MediaSource mediaSource,
+  ) async {
     final pickedMedia = <MediaInfoClass>[];
 
     try {
@@ -288,8 +320,11 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   }
 
   // Add this method in _CameraViewState
-  Future<MediaInfoClass?> _pickFromFromCamera(BuildContext context,
-      MediaType mediaType, MediaSource mediaSource) async {
+  Future<MediaInfoClass?> _pickFromCamera(
+    BuildContext context,
+    MediaType mediaType,
+    MediaSource mediaSource,
+  ) async {
     final picker = ImagePicker();
     try {
       XFile? file;
@@ -297,8 +332,9 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
       if (mediaType == MediaType.video) {
         file = await picker.pickVideo(
-            source: ImageSource.camera,
-            maxDuration: const Duration(seconds: 30));
+          source: ImageSource.camera,
+          maxDuration: const Duration(seconds: 30),
+        );
         if (file != null) {
           final mediaInfo = await VideoCompress.getMediaInfo(file.path);
           duration = (mediaInfo.duration ?? 0).toInt();
@@ -325,8 +361,11 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   }
 
   // Add this method in _CameraViewState
-  Future<MediaInfoClass?> _pickFromGallery(BuildContext context,
-      MediaType mediaType, MediaSource mediaSource) async {
+  Future<MediaInfoClass?> _pickFromGallery(
+    BuildContext context,
+    MediaType mediaType,
+    MediaSource mediaSource,
+  ) async {
     final picker = ImagePicker();
     try {
       XFile? file;
@@ -334,8 +373,9 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
       if (mediaType == MediaType.video) {
         file = await picker.pickVideo(
-            source: ImageSource.gallery,
-            maxDuration: const Duration(seconds: 30));
+          source: ImageSource.gallery,
+          maxDuration: const Duration(seconds: 30),
+        );
         if (file != null) {
           final mediaInfo = await VideoCompress.getMediaInfo(file.path);
           duration = (mediaInfo.duration ?? 0).toInt();

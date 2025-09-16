@@ -1,8 +1,10 @@
 export 'camera/camera.dart';
 export 'create_post/create_post.dart';
 export 'home/home.dart';
+export 'image_editor/image_editor.dart';
 export 'landing/landing.dart';
 export 'login/login.dart';
 export 'profile/profile.dart';
 export 'splash/splash.dart';
+export 'video_editor/video_editor.dart';
 export 'widgets/widgets.dart';

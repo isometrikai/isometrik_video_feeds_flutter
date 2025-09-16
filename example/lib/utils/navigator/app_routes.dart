@@ -34,4 +34,7 @@ class RouteNames {
   static const String tagPeopleScreen = 'tagPeopleScreen';
   static const String searchUserScreen = 'searchUserScreen';
   static const String searchLocationScreen = 'searchLocationScreen';
+  static const imageEditorView = '/image-editor-view';
+  static const videoEditorView = '/video-editor-view';
+  static const cameraPickerView = '/camera-picker-view';
 }

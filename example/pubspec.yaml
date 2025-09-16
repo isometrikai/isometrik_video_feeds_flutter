@@ -13,7 +13,7 @@ dependencies:
   country_phone_validator: ^1.0.1
   country_picker: ^2.0.27
   cupertino_icons: ^1.0.8
-  device_info_plus: ^12.0.0
+  device_info_plus: ^12.1.0
   flutter:
     sdk: flutter
   flutter_bloc: ^9.1.1
@@ -33,10 +33,16 @@ dependencies:
   ism_video_reel_player:
     path: ../
   lottie: ^3.3.2
+  media_kit: ^1.2.0
+  media_kit_libs_video: ^1.0.6
+  media_kit_video: ^1.3.0
   path: ^1.9.1
   path_provider: ^2.1.5
+  pro_image_editor: ^11.5.6
+  pro_video_editor: ^0.2.3
   timeago: ^3.7.1
   video_compress: ^3.1.4
+  video_player: ^2.10.0
 
 dev_dependencies:
   flutter_test:

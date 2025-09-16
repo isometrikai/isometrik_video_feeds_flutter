@@ -6,11 +6,13 @@ import 'package:ism_video_reel_player_example/di/di.dart';
 import 'package:ism_video_reel_player_example/presentation/presentation.dart';
 import 'package:ism_video_reel_player_example/res/res.dart';
 import 'package:ism_video_reel_player_example/utils/utils.dart';
+import 'package:media_kit/media_kit.dart';
 
 export 'utils/utils.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  MediaKit.ensureInitialized();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   configureInjection();
   runApp(MyApp());
