@@ -239,7 +239,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                 }
               },
               onDoubleTap: () async {
-                if (reelsData.onDoubleTap != null) {
+                if (reelsData.onDoubleTap != null && reelsData.isLiked == false) {
                   final result = await reelsData.onDoubleTap!(reelsData.isLiked ?? false);
                   if (result == true) {
                     reelsData.isLiked = reelsData.isLiked == false;

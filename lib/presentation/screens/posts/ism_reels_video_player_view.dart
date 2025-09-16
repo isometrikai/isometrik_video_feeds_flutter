@@ -7,6 +7,7 @@ import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/isr_utils.dart';
+import 'package:lottie/lottie.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -63,7 +64,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   final ValueNotifier<bool> _isSaveLoading = ValueNotifier(false);
   final ValueNotifier<bool> _isLikeLoading = ValueNotifier(false);
 
-  var _isMuted = false;
+  // Change _isMuted to static
+  static bool _isMuted = false;
   final _maxLengthToShow = 50;
   late ReelsData _reelData;
 
@@ -73,6 +75,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   List<MentionMetaData> _pageMentionMetaDataList = [];
   List<MentionMetaData> _mentionedDataList = [];
   List<MentionMetaData> _taggedDataList = [];
+
+  bool _showLikeAnimation = false;
+  Timer? _likeAnimationTimer;
+  bool _showMuteAnimation = false;
+  Timer? _muteAnimationTimer;
+  double _muteIconScale = 1.0;
 
   @override
   void initState() {
@@ -99,7 +107,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         _reelData.tagDataList?.where((mentionData) => mentionData.textPosition != null).toList() ??
             [];
     _postDescription = _reelData.description ?? '';
-    _isMuted = false;
     _tapGestureRecognizer = TapGestureRecognizer();
 
     // Initialize PageController for carousel
@@ -233,7 +240,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     debugPrint('_setupVideoController....setup video controller');
     if (_isDisposed) return;
     _videoPlayerController?.play();
-    _videoPlayerController?.setVolume(1.0);
+    _videoPlayerController?.setVolume(_isMuted ? 0.0 : 1.0); // Use static mute state
     _videoPlayerController?.setLooping(true);
   }
 
@@ -242,6 +249,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _isDisposed = true;
     _tapGestureRecognizer?.dispose();
     _pageController?.dispose();
+    _likeAnimationTimer?.cancel();
+    _muteAnimationTimer?.cancel();
 
     if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl.isStringEmptyOrNull ==
         false) {
@@ -320,20 +329,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       ),
     );
   }
-
-  Widget _buildPlayButton() => AnimatedOpacity(
-        opacity: _isPlayPauseActioned ? 1.0 : 1.0,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-        child: Center(
-          child: InkWell(
-            onTap: _togglePlayPause,
-            child: AppImage.svg(
-              _isPlayPauseActioned ? AssetConstants.reelsPlaySvg : AssetConstants.pausedRoundedSvg,
-            ),
-          ),
-        ),
-      );
 
   Widget _buildMediaCarousel() => Stack(
         children: [
@@ -625,7 +620,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         _autoHideMentions();
       }
     } else {
-      _togglePlayPause();
+      _toggleMuteAndUnMute();
+      // _togglePlayPause();
     }
   }
 
@@ -810,10 +806,17 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   Widget build(BuildContext context) => Stack(
         fit: StackFit.expand,
         children: [
-          // Media content with gesture detection
+          // Only the main GestureDetector as child of the outer Stack
           GestureDetector(
-            onDoubleTap: widget.onDoubleTap,
-            onTap: _togglePlayPause,
+            onTap: () {
+              _toggleMuteAndUnMute();
+            },
+            onDoubleTap: () {
+              _triggerLikeAnimation();
+              if (widget.onDoubleTap != null) widget.onDoubleTap!();
+            },
+            onLongPress: _togglePlayPause,
+            onLongPressEnd: (_) => _togglePlayPause(),
             child: VisibilityDetector(
               key: Key(_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl),
               onVisibilityChanged: (info) {
@@ -822,18 +825,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                     _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType ==
                         kPictureType) {
                   return;
-                }
-
-                if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl
-                        .isStringEmptyOrNull ==
-                    false) {
-                  if (info.visibleFraction > 0.7) {
-                    _videoCacheManager.markAsVisible(
-                        _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl);
-                  } else {
-                    _videoCacheManager.markAsNotVisible(
-                        _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl);
-                  }
                 }
 
                 if (info.visibleFraction > 0.7) {
@@ -857,37 +848,50 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 alignment: Alignment.center,
                 children: [
                   _buildMediaContent(),
+                  if (_showLikeAnimation)
+                    Center(
+                      child: Lottie.asset(
+                        AssetConstants.heartAnimation,
+                        width: 250,
+                        height: 250,
+                        repeat: false,
+                      ),
+                    ),
+                  if (_showMuteAnimation)
+                    Center(
+                      child: AnimatedScale(
+                        scale: _muteIconScale,
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.elasticOut,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.3),
+                            shape: BoxShape.circle,
+                          ),
+                          padding: const EdgeInsets.all(24),
+                          child: AppImage.svg(
+                            _isMuted
+                                ? AssetConstants.muteRoundedSvg
+                                : AssetConstants.unMuteRoundedSvg,
+                            width: 70,
+                            height: 70,
+                          ),
+                        ),
+                      ),
+                    ),
+                  // Move overlays here so they don't block taps
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(child: _reelData.footerWidget?.child ?? _buildBottomSection()),
+                      _reelData.actionWidget?.child ?? _buildRightSideActions(),
+                    ],
+                  ),
+                  // (If you have any other overlays, move them here as well)
                 ],
               ),
             ),
           ),
-
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(child: _reelData.footerWidget?.child ?? _buildBottomSection()),
-              _reelData.actionWidget?.child ?? _buildRightSideActions(),
-            ],
-          ),
-
-          // Video controls
-          if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kVideoType &&
-              _videoPlayerController?.value.isInitialized == true)
-            AnimatedOpacity(
-              opacity: _isPlayPauseActioned ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              child: Center(
-                child: InkWell(
-                  onTap: _togglePlayPause,
-                  child: AppImage.svg(
-                    _isPlayPauseActioned
-                        ? AssetConstants.reelsPlaySvg
-                        : AssetConstants.pausedRoundedSvg,
-                  ),
-                ),
-              ),
-            ),
         ],
       );
 
@@ -898,6 +902,24 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
+            // Mute/Unmute button overlay
+            // if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kVideoType)
+            //   GestureDetector(
+            //     behavior: HitTestBehavior.opaque, // Prevent tap bubbling
+            //     onTap: _toggleMuteAndUnMute,
+            //     child: Container(
+            //       padding: const EdgeInsets.all(8),
+            //       decoration: BoxDecoration(
+            //         color: Colors.black.changeOpacity(0.4),
+            //         borderRadius: BorderRadius.circular(24),
+            //       ),
+            //       child: AppImage.svg(
+            //         _isMuted ? AssetConstants.muteRoundedSvg : AssetConstants.unMuteRoundedSvg,
+            //         width: 35,
+            //         height: 35,
+            //       ),
+            //     ),
+            //   ),
             if (_reelData.postSetting?.isProfilePicVisible == true)
               TapHandler(
                 borderRadius: IsrDimens.thirty,
@@ -1356,19 +1378,46 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     try {
       await widget.onPressLikeButton!();
+      _triggerLikeAnimation();
     } finally {
       _isLikeLoading.value = false;
     }
   }
 
-  void toggleSound() {
-    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType != kVideoType) {
-      return;
-    }
-
+  void _triggerLikeAnimation() {
+    _likeAnimationTimer?.cancel();
     setState(() {
-      _isMuted = !_isMuted;
-      _videoPlayerController?.setVolume(_isMuted ? 0.0 : 1.0);
+      _showLikeAnimation = true;
+    });
+    _likeAnimationTimer = Timer(const Duration(milliseconds: 900), () {
+      if (mounted) {
+        setState(() {
+          _showLikeAnimation = false;
+        });
+      }
+    });
+  }
+
+  void _triggerMuteAnimation() {
+    _muteAnimationTimer?.cancel();
+    setState(() {
+      _showMuteAnimation = true;
+      _muteIconScale = 1.3;
+    });
+    // Animate scale down after a short delay
+    Future.delayed(const Duration(milliseconds: 120), () {
+      if (mounted && _showMuteAnimation) {
+        setState(() {
+          _muteIconScale = 1.0;
+        });
+      }
+    });
+    _muteAnimationTimer = Timer(const Duration(milliseconds: 700), () {
+      if (mounted) {
+        setState(() {
+          _showMuteAnimation = false;
+        });
+      }
     });
   }
 
@@ -1430,7 +1479,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           if (matchedText.isNotEmpty) {
             spans.add(TextSpan(
               text: matchedText,
-              style: defaultStyle.copyWith(fontWeight: FontWeight.w800),
+              style: defaultStyle,
             ));
           }
         }
@@ -1534,6 +1583,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         );
       }
     }
+  }
+
+  void _toggleMuteAndUnMute() {
+    setState(() {
+      _isMuted = !_isMuted;
+      _videoPlayerController?.setVolume(_isMuted ? 0.0 : 1.0);
+      // Do NOT play or pause here, only change volume
+    });
+    _triggerMuteAnimation();
   }
 }
 
