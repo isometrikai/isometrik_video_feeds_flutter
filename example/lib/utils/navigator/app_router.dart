@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ism_video_reel_player_example/domain/domain.dart';
 import 'package:ism_video_reel_player_example/main.dart';
@@ -128,11 +127,11 @@ class AppRouter {
         ),
       ),
       GoRoute(
-        path: RouteNames.cameraPickerView,
-        name: RouteNames.cameraPickerView,
+        path: RouteNames.cameraRecordingScreen,
+        name: RouteNames.cameraRecordingScreen,
         pageBuilder: (context, state) => PageTransition(
           transitionType: TransitionType.rightToLeft,
-          child: const SizedBox(),
+          child: const CameraRecordingScreen(),
         ),
       ),
       ..._landingRoutes,

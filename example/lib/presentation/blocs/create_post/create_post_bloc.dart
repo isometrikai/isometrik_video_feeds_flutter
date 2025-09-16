@@ -151,72 +151,71 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     MediaSourceEvent event,
     Emitter<CreatePostState> emit,
   ) async {
-    final mediaInfoClasses = <MediaInfoClass>[];
+    XFile? xFile;
     if (event.mediaSource == MediaSource.camera) {
-      final mediaInfo = await _pickFromCamera(
-        event.context,
-        event.mediaType,
-        event.mediaSource,
-      );
-      if (mediaInfo != null) mediaInfoClasses.add(mediaInfo);
+      if (event.mediaType == MediaType.photo) {
+        xFile = await ImagePicker().pickImage(source: ImageSource.camera);
+      } else if (event.mediaType == MediaType.video) {
+        xFile = await InjectionUtils.getRouteManagement()
+            .goToCameraRecordingScreen();
+      }
+    } else if (event.mediaSource == MediaSource.gallery) {
+      if (event.mediaType == MediaType.photo) {
+        xFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+      } else if (event.mediaType == MediaType.video) {
+        xFile = await ImagePicker().pickVideo(source: ImageSource.gallery);
+      }
     }
 
-    if (event.mediaSource == MediaSource.gallery && event.context.mounted) {
-      if (AppConstants.isMultipleMediaSelectionEnabled) {
-        final mediaList = await _pickMultipleMedia(
-          event.context,
-          event.mediaSource,
-        );
-        mediaInfoClasses.clear();
-        mediaInfoClasses.addAll([...mediaList]);
-      } else {
-        final mediaInfo = await _pickFromGallery(
-          event.context,
-          event.mediaType,
-          event.mediaSource,
-        );
-        if (mediaInfo != null) mediaInfoClasses.add(mediaInfo);
-      }
-    }
-    if (mediaInfoClasses.isEmptyOrNull) return;
-    for (final mediaInfoClass in mediaInfoClasses) {
-      if (mediaInfoClass.mediaFile != null &&
-          mediaInfoClass.mediaFile!.path.isNotEmpty &&
-          mediaInfoClass.mediaType != null) {
-        if (mediaInfoClass.mediaType == MediaType.photo) {
-          final editedImage =
-              await InjectionUtils.getRouteManagement().goToImageEditorView(
-            filePath: mediaInfoClass.mediaFile!.path,
-          );
-          if (editedImage != null && editedImage.path.isNotEmpty) {
-            mediaInfoClass.mediaFile = editedImage;
-          }
-        } else if (mediaInfoClass.mediaType == MediaType.video) {
-          final editedVideoPath =
-              await InjectionUtils.getRouteManagement().goToVideoEditorView(
-            filePath: mediaInfoClass.mediaFile!.path,
-          );
-          if (editedVideoPath != null && editedVideoPath.isNotEmpty) {
-            mediaInfoClass.mediaFile = XFile(editedVideoPath);
-          }
-        }
-      }
-    }
-    for (var i = 0; i < mediaInfoClasses.length; i++) {
-      final mediaData = await _processMediaInfo(
-        event.context,
-        mediaInfoClasses[i],
-        emit,
-        event.isCoverImage,
-        i,
-      ) as MediaData;
-      final index = _mediaDataList.indexWhere(
-        (element) => event.mediaData?.localPath == element.localPath,
+    if (xFile == null || xFile.path.isEmpty) return;
+    XFile? editedXFile;
+    if (event.mediaType == MediaType.photo) {
+      final editedImage =
+          await InjectionUtils.getRouteManagement().goToImageEditorView(
+        filePath: xFile.path,
       );
+      if (editedImage != null && editedImage.path.isNotEmpty) {
+        editedXFile = editedImage;
+      }
+    } else if (event.mediaType == MediaType.video) {
+      final editedVideoPath =
+          await InjectionUtils.getRouteManagement().goToVideoEditorView(
+        filePath: xFile.path,
+      );
+      if (editedVideoPath != null && editedVideoPath.isNotEmpty) {
+        editedXFile = XFile(editedVideoPath);
+      }
+    }
+
+    if (editedXFile == null || editedXFile.path.isEmpty) return;
+    var duration = 0;
+    if (event.mediaType == MediaType.video) {
+      final mediaInfo = await VideoCompress.getMediaInfo(editedXFile.path);
+      duration = (mediaInfo.duration ?? 0).toInt();
+    }
+    final mediaInfoClass = MediaInfoClass(
+      mediaFile: editedXFile,
+      mediaSource: event.mediaSource,
+      duration:
+          event.mediaType == MediaType.video ? (duration / 1000).toInt() : null,
+      mediaType: event.mediaType,
+    );
+
+    final mediaData = await _processMediaInfo(
+      event.context,
+      mediaInfoClass,
+      emit,
+      event.isCoverImage,
+      0,
+    );
+    final index = _mediaDataList.indexWhere(
+      (element) => event.mediaData?.localPath == element.localPath,
+    );
+    if (mediaData != null) {
       if (index == -1) {
         _mediaDataList.add(mediaData);
       } else {
-        _mediaDataList[i] = mediaData;
+        _mediaDataList.first = mediaData;
       }
     }
 
@@ -261,10 +260,6 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
               ),
       );
     }
-
-    debugPrint(
-      'postAttribute list: ${jsonEncode(_mediaDataList.map((e) => e.toMap()).toList())}',
-    );
   }
 
   bool _isPostButtonEnabled(List<MediaData>? mediaList) {
@@ -280,127 +275,6 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       }
     }
     return isPostButtonEnable;
-  }
-
-  Future<List<MediaInfoClass>> _pickMultipleMedia(
-    BuildContext context,
-    MediaSource mediaSource,
-  ) async {
-    final pickedMedia = <MediaInfoClass>[];
-
-    try {
-      final result = await ImagePicker().pickMultipleMedia();
-
-      if (result.isNotEmpty) {
-        for (final file in result) {
-          final path = file.path;
-
-          final isVideo = path.endsWith('.mp4') || path.endsWith('.mov');
-          var duration = 0;
-
-          if (isVideo) {
-            final mediaInfo = await VideoCompress.getMediaInfo(path);
-            duration = (mediaInfo.duration ?? 0).toInt();
-          }
-
-          pickedMedia.add(MediaInfoClass(
-            duration: (duration / 1000).toInt(),
-            mediaType: isVideo ? MediaType.video : MediaType.photo,
-            mediaSource: mediaSource,
-            mediaFile: XFile(path),
-          ));
-        }
-      }
-    } catch (e) {
-      if (context.mounted) {
-        Utility.showInSnackBar('Error picking media', context);
-      }
-    }
-    return pickedMedia;
-  }
-
-  // Add this method in _CameraViewState
-  Future<MediaInfoClass?> _pickFromCamera(
-    BuildContext context,
-    MediaType mediaType,
-    MediaSource mediaSource,
-  ) async {
-    final picker = ImagePicker();
-    try {
-      XFile? file;
-      var duration = 0;
-
-      if (mediaType == MediaType.video) {
-        file = await picker.pickVideo(
-          source: ImageSource.camera,
-          maxDuration: const Duration(seconds: 30),
-        );
-        if (file != null) {
-          final mediaInfo = await VideoCompress.getMediaInfo(file.path);
-          duration = (mediaInfo.duration ?? 0).toInt();
-        }
-      } else if (mediaType == MediaType.photo) {
-        file = await picker.pickImage(source: ImageSource.camera);
-      }
-
-      if (file != null && file.path.isEmptyOrNull == false) {
-        final mediaInfoClass = MediaInfoClass(
-          duration: (duration / 1000).toInt(),
-          mediaType: mediaType,
-          mediaSource: mediaSource,
-          mediaFile: file,
-        );
-        return mediaInfoClass;
-      }
-    } catch (e) {
-      if (context.mounted) {
-        Utility.showInSnackBar('Error picking video from gallery', context);
-      }
-    }
-    return null;
-  }
-
-  // Add this method in _CameraViewState
-  Future<MediaInfoClass?> _pickFromGallery(
-    BuildContext context,
-    MediaType mediaType,
-    MediaSource mediaSource,
-  ) async {
-    final picker = ImagePicker();
-    try {
-      XFile? file;
-      var duration = 0;
-
-      if (mediaType == MediaType.video) {
-        file = await picker.pickVideo(
-          source: ImageSource.gallery,
-          maxDuration: const Duration(seconds: 30),
-        );
-        if (file != null) {
-          final mediaInfo = await VideoCompress.getMediaInfo(file.path);
-          duration = (mediaInfo.duration ?? 0).toInt();
-        }
-      } else if (mediaType == MediaType.photo) {
-        file = await picker.pickImage(source: ImageSource.gallery);
-      }
-
-      if (file != null && file.path.isEmptyOrNull == false) {
-        final mediaInfoClass = MediaInfoClass(
-          duration: (duration / 1000).toInt(),
-          mediaType: mediaType,
-          mediaSource: mediaSource,
-          mediaFile: file,
-        );
-        return mediaInfoClass;
-      }
-    } catch (e, stackTrace) {
-      AppLog.error(
-          'Error picking video from gallery...${e.toString()}', stackTrace);
-      if (context.mounted) {
-        Utility.showInSnackBar('Error picking video from gallery', context);
-      }
-    }
-    return null;
   }
 
   Future<MediaData?> _processMediaInfo(

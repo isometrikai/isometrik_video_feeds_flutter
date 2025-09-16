@@ -100,6 +100,6 @@ class RouteManagement {
         arguments: filePath,
       );
 
-  Future<(bool, String)?> goToCameraPickerView() =>
-      _navigationService.pushNamed(RouteNames.cameraPickerView);
+  Future<XFile?> goToCameraRecordingScreen() =>
+      _navigationService.pushNamed(RouteNames.cameraRecordingScreen);
 }

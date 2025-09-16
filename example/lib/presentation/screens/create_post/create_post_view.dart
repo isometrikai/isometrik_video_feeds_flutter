@@ -638,25 +638,27 @@ class _CreatePostViewState extends State<CreatePostView> {
   }
 
   void _showUploadOptionsDialog(
-      BuildContext context, bool isCoverImage, MediaData? mediaData) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) => UploadMediaDialog(
-        mediaType: isCoverImage ? MediaType.photo : MediaType.both,
-        onMediaSelected: (result) {
-          _createPostBloc.add(
-            MediaSourceEvent(
-              context: context,
-              mediaType: result.mediaType,
-              mediaSource: result.source,
-              isCoverImage: isCoverImage,
-              mediaData: mediaData,
-            ),
-          );
-        },
-      ),
-    );
-  }
+    BuildContext context,
+    bool isCoverImage,
+    MediaData? mediaData,
+  ) =>
+      showDialog(
+        context: context,
+        builder: (BuildContext context) => UploadMediaDialog(
+          mediaType: isCoverImage ? MediaType.photo : MediaType.both,
+          onMediaSelected: (result) {
+            _createPostBloc.add(
+              MediaSourceEvent(
+                context: context,
+                mediaType: result.mediaType,
+                mediaSource: result.source,
+                isCoverImage: isCoverImage,
+                mediaData: mediaData,
+              ),
+            );
+          },
+        ),
+      );
 
   Widget _buildUploadSection() => Row(
         children: [

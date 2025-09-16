@@ -7,4 +7,5 @@ export 'login/login.dart';
 export 'profile/profile.dart';
 export 'splash/splash.dart';
 export 'video_editor/video_editor.dart';
+export 'video_music_recorder/video_music_recorder.dart';
 export 'widgets/widgets.dart';
