@@ -53,6 +53,7 @@ class TabDataModel {
     this.onLoadMore,
     this.onRefresh,
     this.startingPostIndex = 0,
+    this.postSectionType = PostSectionType.following,
   });
 
   final String title;
@@ -60,4 +61,5 @@ class TabDataModel {
   final Future<List<ReelsData>> Function()? onLoadMore;
   final Future<bool> Function()? onRefresh;
   final int? startingPostIndex;
+  final PostSectionType? postSectionType;
 }

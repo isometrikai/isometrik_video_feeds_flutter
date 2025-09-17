@@ -57,7 +57,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   var _isPlaying = true;
   var _isPlayPauseActioned = false;
   var _isDisposed = false;
-  int _controllerGeneration = 0;
 
   final ValueNotifier<bool> _isFollowLoading = ValueNotifier(false);
   final ValueNotifier<bool> _isExpandedDescription = ValueNotifier(false);
@@ -88,9 +87,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     super.initState();
   }
 
+  /// Returns true if the video controller is ready for playback.
   bool get _controllerReady =>
       _videoPlayerController != null && !_isDisposed && _videoPlayerController!.value.isInitialized;
 
+  /// Returns true if the current post has multiple media items (carousel).
   bool get _hasMultipleMedia => _reelData.mediaMetaDataList.length > 1;
 
   void _onStartInit() async {
@@ -170,7 +171,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _videoPlayerController = null;
   }
 
-  //initialize video player controller and initialization to use cache
+  /// Initializes the video player controller for the current video.
+  /// - Uses the cached controller if available and initialized.
+  /// - If pre-caching is in progress, waits for the same initialization future.
+  /// - Only creates a new controller if not cached or initializing.
   Future<void> _initializeVideoPlayer() async {
     if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl.isStringEmptyOrNull !=
         false) {
@@ -181,9 +185,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     debugPrint('IsmReelsVideoPlayerView....initializeVideoPlayer video url $videoUrl');
 
     try {
-      _controllerGeneration++;
-      final currentGen = _controllerGeneration;
-
       _videoPlayerController = _videoCacheManager.getCachedController(videoUrl);
 
       if (_videoPlayerController != null) {
@@ -197,7 +198,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         debugPrint('IsmReelsVideoPlayerView....Video is being initialized, waiting...');
         // Wait a bit and try again
         await Future.delayed(const Duration(milliseconds: 500));
-        if (!mounted || _isDisposed || currentGen != _controllerGeneration) {
+        if (!mounted || _isDisposed) {
           return;
         }
         _videoPlayerController = _videoCacheManager.getCachedController(videoUrl);
@@ -210,7 +211,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       }
 
       // If still not available, initialize normally (fallback)
-      await _initializeVideoControllerNormally(videoUrl, expectedGen: currentGen);
+      await _initializeVideoControllerNormally(videoUrl);
     } catch (e) {
       debugPrint(
           'IsmReelsVideoPlayerView...catch video url ${_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl}');
@@ -218,8 +219,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
   }
 
-  // Fallback initialization method
-  Future<void> _initializeVideoControllerNormally(String videoUrl, {int? expectedGen}) async {
+  /// Fallback initialization method for video controller.
+  /// Only used if not cached or pre-caching is not in progress.
+  Future<void> _initializeVideoControllerNormally(String videoUrl) async {
     debugPrint('IsmReelsVideoPlayerView....Initializing video controller normally $videoUrl');
     var mediaUrl = videoUrl;
     if (mediaUrl.startsWith('http:')) {
@@ -236,6 +238,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _setupVideoController();
   }
 
+  /// Sets up the video controller for playback, looping, and volume.
   void _setupVideoController() {
     debugPrint('_setupVideoController....setup video controller');
     if (_isDisposed) return;
@@ -244,6 +247,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _videoPlayerController?.setLooping(true);
   }
 
+  /// Disposes the current video controller if not cached, and cleans up state.
   @override
   void dispose() {
     _isDisposed = true;
@@ -251,13 +255,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _pageController?.dispose();
     _likeAnimationTimer?.cancel();
     _muteAnimationTimer?.cancel();
-
+    // Mark video as not visible for cache manager
     if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl.isStringEmptyOrNull ==
         false) {
       _videoCacheManager
           .markAsNotVisible(_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl);
     }
-
+    // Dispose controller if not cached
     if (_videoPlayerController != null &&
         _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl.isStringEmptyOrNull ==
             false &&
@@ -344,17 +348,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               itemBuilder: (context, index) => _buildPageView(index),
             ),
           ),
-
-          // IsolatedPageView(
-          //   key: ValueKey('iso_lated_page_view'),
-          //   controller: _pageController!,
-          //   currentPageIndex: _mediaPageIndex,
-          //   itemCount: _reelData.mediaMetaDataList.length,
-          //   onPageChanged: _onPageChanged,
-          //   widgetFunction: _buildPageView,
-          //   onTap: _toggleMentions,
-          // ),
-          // Media indicators (dots)
           Positioned(
             bottom: IsrDimens.eighty,
             left: 0,
@@ -395,6 +388,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         alignment: Alignment.center,
         children: [
           if (_controllerReady) ...[
+            // Video is ready, show the player
             RepaintBoundary(
               child: FittedBox(
                 fit: BoxFit.cover,
@@ -421,12 +415,26 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               ),
             ),
           ] else ...[
-            _getImageWidget(
-              imageUrl: _reelData.mediaMetaDataList[_currentPageNotifier.value].thumbnailUrl,
-              width: IsrDimens.getScreenWidth(context),
-              height: IsrDimens.getScreenHeight(context),
-              fit: BoxFit.contain,
-              filterQuality: FilterQuality.low,
+            // Video is not ready, show a loading spinner and the thumbnail
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                _getImageWidget(
+                  imageUrl: _reelData.mediaMetaDataList[_currentPageNotifier.value].thumbnailUrl,
+                  width: IsrDimens.getScreenWidth(context),
+                  height: IsrDimens.getScreenHeight(context),
+                  fit: BoxFit.contain,
+                  filterQuality: FilterQuality.low,
+                ),
+                // Loading spinner overlay
+                const Center(
+                  child: SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: CircularProgressIndicator(strokeWidth: 3),
+                  ),
+                ),
+              ],
             ),
           ]
         ],
@@ -857,7 +865,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                         repeat: false,
                       ),
                     ),
-                  if (_showMuteAnimation)
+                  if (_showMuteAnimation &&
+                      _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType ==
+                          kVideoType)
                     Center(
                       child: AnimatedScale(
                         scale: _muteIconScale,
@@ -865,7 +875,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                         curve: Curves.elasticOut,
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.3),
+                            color: Colors.black.changeOpacity(0.3),
                             shape: BoxShape.circle,
                           ),
                           padding: const EdgeInsets.all(24),
@@ -1571,11 +1581,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
   }
 
+  /// Handles mute/unmute toggle for videos only, with animation.
   void _toggleMuteAndUnMute() {
+    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType != kVideoType) {
+      // Only allow mute/unmute for videos
+      return;
+    }
     setState(() {
       _isMuted = !_isMuted;
       _videoPlayerController?.setVolume(_isMuted ? 0.0 : 1.0);
-      // Do NOT play or pause here, only change volume
     });
     _triggerMuteAnimation();
   }

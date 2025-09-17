@@ -158,29 +158,11 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
         backgroundColor: Colors.white,
-        appBar: AppBar(
+        appBar: CustomAppBar(
           backgroundColor: Colors.white,
-          elevation: 0,
-          leading: GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              child: const Icon(
-                Icons.arrow_back,
-                color: Colors.black,
-                size: 24,
-              ),
-            ),
-          ),
-          title: const Text(
-            'Locations',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Colors.black,
-            ),
-          ),
+          titleText: 'Tag Location',
           centerTitle: true,
+          showActions: true,
           actions: [
             Padding(
               padding: const EdgeInsets.only(right: 10.0),
@@ -367,8 +349,7 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
                               ),
                               itemBuilder: (context, index) {
                                 final location = _searchResults[index];
-                                final isSelected =
-                                    _taggedPlace?.placeId == location.placeId;
+                                final isSelected = _taggedPlace?.placeId == location.placeId;
 
                                 return ListTile(
                                   contentPadding: const EdgeInsets.symmetric(
@@ -393,18 +374,14 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
                                         location.description ??
                                         '',
                                     style: TextStyle(
-                                      fontWeight: isSelected
-                                          ? FontWeight.w600
-                                          : FontWeight.w500,
+                                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                                       fontSize: 16,
                                     ),
                                   ),
                                   subtitle: Padding(
                                     padding: const EdgeInsets.only(top: 2),
                                     child: Text(
-                                      location.structuredFormatting
-                                              ?.secondaryText ??
-                                          '',
+                                      location.structuredFormatting?.secondaryText ?? '',
                                       style: TextStyle(
                                         color: Colors.grey[600],
                                         fontSize: 14,
