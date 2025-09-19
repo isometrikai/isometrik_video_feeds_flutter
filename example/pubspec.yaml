@@ -23,7 +23,7 @@ dependencies:
   flutter_screenutil: ^5.9.3
   flutter_secure_storage: ^9.2.4
   flutter_svg: ^2.2.1
-  fluttertoast: ^8.2.12
+  fluttertoast: ^8.2.14
   get_it: ^8.2.0
   get_thumbnail_video: ^0.7.3
   go_router: ^16.2.1
@@ -41,7 +41,7 @@ dependencies:
   path: ^1.9.1
   path_provider: ^2.1.5
   permission_handler: ^12.0.1
-  pro_image_editor: ^11.5.6
+  pro_image_editor: ^11.5.7
   pro_video_editor: ^0.2.3
   timeago: ^3.7.1
   video_compress: ^3.1.4
