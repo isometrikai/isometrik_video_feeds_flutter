@@ -225,6 +225,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         onLoadMore: _tabDataModelList[index].onLoadMore,
         onRefresh: _tabDataModelList[index].onRefresh,
         startingPostIndex: _tabDataModelList[index].startingPostIndex,
+        postSectionType: _tabDataModelList[index].postSectionType,
       );
 
   bool _isFollowingPostsEmpty() =>

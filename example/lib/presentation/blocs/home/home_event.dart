@@ -11,9 +11,11 @@ class LoadHomeData extends HomeEvent {
 class LoadPostsEvent extends HomeEvent {
   LoadPostsEvent({
     required this.timeLinePostList,
+    required this.trendingPosts,
   });
 
   final List<TimeLineData> timeLinePostList;
+  final List<TimeLineData> trendingPosts;
 }
 
 class GetTimeLinePostEvent extends HomeEvent {
@@ -41,7 +43,7 @@ class GetTrendingPostEvent extends HomeEvent {
   final bool isLoading;
   final bool isPagination;
   final bool isRefresh;
-  final Function(List<PostData>)? onComplete;
+  final Function(List<TimeLineData>)? onComplete;
 }
 
 class GetCloudDetailsEvent extends HomeEvent {

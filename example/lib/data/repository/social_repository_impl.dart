@@ -72,7 +72,7 @@ class SocialRepositoryImpl implements SocialRepository {
   }
 
   @override
-  Future<CustomResponse<PostResponse?>> getTrendingPost({
+  Future<CustomResponse<TimelineResponse?>> getTrendingPost({
     required bool isLoading,
     required int page,
     required int pageLimit,
@@ -85,7 +85,7 @@ class SocialRepositoryImpl implements SocialRepository {
         page: page,
         pageLimit: pageLimit,
       );
-      return _socialMapper.mapPostResponseData(response);
+      return _socialMapper.mapTimelineResponse(response);
     } catch (e) {
       rethrow;
     }
@@ -314,16 +314,15 @@ class SocialRepositoryImpl implements SocialRepository {
     Function(double p1)? onProgress,
     String? cloudFolderName,
   }) async {
-    final response =
-        await GoogleCloudStorageUploader.uploadFileWithRealProgress(
-            file: file,
-            fileName: fileName,
-            fileExtension: fileExtension,
-            userId: userId,
-            onProgress: (progress) {
-              if (onProgress == null) return;
-              onProgress(progress);
-            });
+    final response = await GoogleCloudStorageUploader.uploadFileWithRealProgress(
+        file: file,
+        fileName: fileName,
+        fileExtension: fileExtension,
+        userId: userId,
+        onProgress: (progress) {
+          if (onProgress == null) return;
+          onProgress(progress);
+        });
     return response ?? '';
   }
 

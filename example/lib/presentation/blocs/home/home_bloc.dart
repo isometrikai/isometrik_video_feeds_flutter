@@ -50,9 +50,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   final GetPostCommentUseCase _getPostCommentUseCase;
   final CommentActionUseCase _commentUseCase;
 
-  final List<PostData> _followingPostList = [];
-  final List<PostData> _trendingPostList = [];
-
+  final List<TimeLineData> _trendingPostList = [];
   final List<TimeLineData> _timeLinePostList = [];
 
   int currentPage = 0;
@@ -85,7 +83,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         _callGetFollowingPost(true, false, false, null),
         _callGetTimeLinePost(true, false, false, null)
       ]);
-      add(LoadPostsEvent(timeLinePostList: _timeLinePostList));
+      add(LoadPostsEvent(timeLinePostList: _timeLinePostList, trendingPosts: _trendingPostList));
     } catch (error) {
       emit(HomeError(error.toString()));
     }
@@ -107,27 +105,25 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     );
   }
 
-  FutureOr<void> _getTimeLinePost(
-      GetTimeLinePostEvent event, Emitter<HomeState> emit) async {
+  FutureOr<void> _getTimeLinePost(GetTimeLinePostEvent event, Emitter<HomeState> emit) async {
     await _callGetTimeLinePost(
         event.isRefresh, event.isPagination, event.isLoading, event.onComplete);
   }
 
-  FutureOr<void> _getTrendingPost(
-      GetTrendingPostEvent event, Emitter<HomeState> emit) async {
+  FutureOr<void> _getTrendingPost(GetTrendingPostEvent event, Emitter<HomeState> emit) async {
     await _callGetTrendingPost(
         event.isRefresh, event.isPagination, event.isLoading, event.onComplete);
   }
 
-  Future<void> _callGetFollowingPost(bool isFromRefresh, bool isFromPagination,
-      bool isLoading, Function(List<PostData>)? onComplete) async {
+  Future<void> _callGetFollowingPost(bool isFromRefresh, bool isFromPagination, bool isLoading,
+      Function(List<PostData>)? onComplete) async {
     // For refresh, clear cache and start from page 0
     if (isFromRefresh) {
-      _followingPostList.clear();
+      _timeLinePostList.clear();
       currentPage = 0;
       _hasMoreData = true;
       _isLoadingMore = false;
-    } else if (!isFromPagination && _followingPostList.isNotEmpty) {
+    } else if (!isFromPagination && _timeLinePostList.isNotEmpty) {
       // If we have cached posts and it's not a refresh, emit them immediately
       // emit(HomeLoaded(followingPosts: _followingPostList, trendingPosts: _trendingPostList));
     }
@@ -176,8 +172,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     _isLoadingMore = false;
   }
 
-  Future<void> _callGetTrendingPost(bool isFromRefresh, bool isFromPagination,
-      bool isLoading, Function(List<PostData>)? onComplete) async {
+  Future<void> _callGetTrendingPost(bool isFromRefresh, bool isFromPagination, bool isLoading,
+      Function(List<TimeLineData>)? onComplete) async {
     // For refresh, clear cache and start from page 0
     if (isFromRefresh) {
       _trendingPostList.clear();
@@ -205,8 +201,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     );
 
     if (apiResult.isSuccess) {
-      final postDataList = apiResult.data?.data as List<PostData>;
-      if (postDataList.isEmpty) {
+      final postDataList = apiResult.data?.data as List<TimeLineData>;
+      if (postDataList.isEmptyOrNull) {
         _hasTrendingMoreData = false;
       } else {
         if (isFromPagination) {
@@ -233,8 +229,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     final apiResult = await _savePostUseCase.executeSavePost(
       isLoading: false,
       postId: event.postId,
-      socialPostAction:
-          event.isSaved ? SocialPostAction.unSave : SocialPostAction.save,
+      socialPostAction: event.isSaved ? SocialPostAction.unSave : SocialPostAction.save,
     );
 
     if (apiResult.isSuccess) {
@@ -245,8 +240,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     }
   }
 
-  FutureOr<void> _getReason(
-      GetReasonEvent event, Emitter<HomeState> emit) async {
+  FutureOr<void> _getReason(GetReasonEvent event, Emitter<HomeState> emit) async {
     final apiResult = await _getReportReasonsUseCase.executeGetReportReasons(
       isLoading: false,
     );
@@ -259,8 +253,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     }
   }
 
-  FutureOr<void> _reportPost(
-      ReportPostEvent event, Emitter<HomeState> emit) async {
+  FutureOr<void> _reportPost(ReportPostEvent event, Emitter<HomeState> emit) async {
     final apiResult = await _reportPostUseCase.executeReportPost(
       isLoading: false,
       postId: event.postId,
@@ -292,8 +285,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     }
   }
 
-  FutureOr<void> _followUser(
-      FollowUserEvent event, Emitter<HomeState> emit) async {
+  FutureOr<void> _followUser(FollowUserEvent event, Emitter<HomeState> emit) async {
     // final myUserId = await _localDataUseCase.getUserId();
     final apiResult = await _followPostUseCase.executeFollowPost(
       isLoading: false,
@@ -312,7 +304,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         isPagination: false,
         isRefresh: true,
         onComplete: (postList) {
-          add(LoadPostsEvent(timeLinePostList: _timeLinePostList));
+          add(LoadPostsEvent(
+              timeLinePostList: _timeLinePostList, trendingPosts: _timeLinePostList));
         }));
   }
 
@@ -328,7 +321,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       _timeLineCurrentPage = 1;
       _hasMoreTimeLineData = true;
       _isTimeLineLoadingMore = false;
-    } else if (!isFromPagination && _followingPostList.isNotEmpty) {
+    } else if (!isFromPagination && _timeLinePostList.isNotEmpty) {
       // If we have cached posts and it's not a refresh, emit them immediately
       // emit(HomeLoaded(followingPosts: _followingPostList, trendingPosts: _trendingPostList));
     }
@@ -381,8 +374,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     _isTimeLineLoadingMore = false;
   }
 
-  FutureOr<void> _getPostDetails(
-      GetPostDetailsEvent event, Emitter<HomeState> emit) async {
+  FutureOr<void> _getPostDetails(GetPostDetailsEvent event, Emitter<HomeState> emit) async {
     var totalProductCount = 0;
     if (_isDataLoading) return;
     _isDataLoading = true;
@@ -401,19 +393,15 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     );
     if (apiResult.isSuccess) {
       totalProductCount = apiResult.data?.count?.toInt() ?? 0;
-      _detailsProductList
-          .addAll(apiResult.data?.data as Iterable<ProductDataModel>);
+      _detailsProductList.addAll(apiResult.data?.data as Iterable<ProductDataModel>);
     } else {
       ErrorHandler.showAppError(appError: apiResult.error);
     }
-    emit(PostDetailsLoaded(
-        productList: _detailsProductList,
-        totalProductCount: totalProductCount));
+    emit(PostDetailsLoaded(productList: _detailsProductList, totalProductCount: totalProductCount));
     _isDataLoading = false;
   }
 
-  FutureOr<void> _getPostComments(
-      GetPostCommentsEvent event, Emitter<HomeState> emit) async {
+  FutureOr<void> _getPostComments(GetPostCommentsEvent event, Emitter<HomeState> emit) async {
     if (event.isLoading == true) {
       emit(LoadingPostComment());
     }
@@ -429,8 +417,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     ));
   }
 
-  Future<void> _doActionOnComment(
-      CommentActionEvent event, Emitter<HomeState> emit) async {
+  Future<void> _doActionOnComment(CommentActionEvent event, Emitter<HomeState> emit) async {
     final commentRequest = CommentRequest(
       commentId: event.commentId,
       commentAction: event.commentAction,
@@ -475,9 +462,11 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     }
   }
 
-  FutureOr<void> _loadPosts(
-      LoadPostsEvent event, Emitter<HomeState> emit) async {
+  FutureOr<void> _loadPosts(LoadPostsEvent event, Emitter<HomeState> emit) async {
     final myUserId = await _localDataUseCase.getUserId();
-    emit(HomeLoaded(timeLinePosts: event.timeLinePostList, userId: myUserId));
+    emit(HomeLoaded(
+        timeLinePosts: event.timeLinePostList,
+        trendingPosts: event.trendingPosts,
+        userId: myUserId));
   }
 }

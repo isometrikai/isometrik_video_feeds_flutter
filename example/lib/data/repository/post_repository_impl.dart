@@ -70,7 +70,7 @@ class PostRepositoryImpl implements PostRepository {
   }
 
   @override
-  Future<CustomResponse<PostResponse?>> getTrendingPost({
+  Future<CustomResponse<TimelineResponse?>> getTrendingPost({
     required bool isLoading,
     required int page,
     required int pageLimit,
@@ -83,7 +83,7 @@ class PostRepositoryImpl implements PostRepository {
         page: page,
         pageLimit: pageLimit,
       );
-      return _postMapper.mapPostResponseData(response);
+      return _postMapper.mapTimelineResponse(response);
     } catch (e) {
       rethrow;
     }

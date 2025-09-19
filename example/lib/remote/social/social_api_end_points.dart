@@ -1,7 +1,7 @@
 class SocialApiEndPoints {
   static const getFollowingPosts = '/social/v1/home';
   static const getTimeLinePosts = '/api/v1/posts/timeline';
-  static const getTrendingPosts = '/v2/trendingPosts/';
+  static const getTrendingPosts = '/api/v1/posts/trending';
   static const postCreatePost = '/api/v1/posts';
   static const postFollowPost = '/api/v1/follows';
   static const postSavePost = '/api/v1/posts/save';
@@ -22,8 +22,7 @@ class SocialApiEndPoints {
   static const String deletePost = '/api/v1/posts';
   static const String getPost = '/social/v1/post';
 
-  static String postMediaProcess(String postId) =>
-      '/api/v1/posts/$postId/start-processing';
+  static String postMediaProcess(String postId) => '/api/v1/posts/$postId/start-processing';
   static const String getSearchUsers = '/api/v1/users/search';
   static const String getSearchTags = '/api/v1/tags/hashtags/search';
 }

@@ -21,7 +21,7 @@ abstract class SocialRepository extends BaseRepository {
     required int pageLimit,
   });
 
-  Future<CustomResponse<PostResponse?>> getTrendingPost({
+  Future<CustomResponse<TimelineResponse?>> getTrendingPost({
     required bool isLoading,
     required int page,
     required int pageLimit,

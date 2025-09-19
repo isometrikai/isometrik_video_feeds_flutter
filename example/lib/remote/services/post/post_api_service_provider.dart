@@ -120,6 +120,8 @@ class PostApiServiceProvider extends PostApiService {
           'platform': header.platForm.toString(),
           'latitude': header.latitude.toString(),
           'longitude': header.longitude.toString(),
+          'x-tenant-id': AppConstants.tenantId,
+          'x-project-id': AppConstants.projectId,
         },
         isLoading,
       );
@@ -187,9 +189,7 @@ class PostApiServiceProvider extends PostApiService {
     required Header header,
   }) async =>
       await networkClient.makeRequest(
-        likeAction == LikeAction.like
-            ? PostApiEndPoints.postLike
-            : PostApiEndPoints.postUnLike,
+        likeAction == LikeAction.like ? PostApiEndPoints.postLike : PostApiEndPoints.postUnLike,
         NetworkRequestType.post,
         {
           'postId': postId,

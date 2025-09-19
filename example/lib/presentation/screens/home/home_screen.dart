@@ -60,9 +60,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 key: ValueKey(state.timeLinePosts), // will rebuild if list changes
                 tabDataModelList: [
                   isr.TabDataModel(
-                    title: 'Following',
+                    title: TranslationFile.following,
                     onRefresh: _handleFollowingRefresh,
+                    postSectionType: isr.PostSectionType.following,
                     reelsDataList: state.timeLinePosts?.map(_getReelData).toList() ?? [],
+                  ),
+                  isr.TabDataModel(
+                    title: TranslationFile.trending,
+                    onRefresh: _handleFollowingRefresh,
+                    postSectionType: isr.PostSectionType.trending,
+                    reelsDataList: state.trendingPosts?.map(_getReelData).toList() ?? [],
                   ),
                 ],
               );
