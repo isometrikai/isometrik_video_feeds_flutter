@@ -15,10 +15,12 @@ class HomeLoading extends HomeState {
 class HomeLoaded extends HomeState {
   HomeLoaded({
     required this.timeLinePosts,
+    required this.trendingPosts,
     required this.userId,
   });
 
   final List<TimeLineData>? timeLinePosts;
+  final List<TimeLineData>? trendingPosts;
   final String userId;
 }
 

@@ -87,17 +87,17 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return _reelsDataList.isListEmptyOrNull == true
-        ? _buildPlaceHolder(context)
-        : RefreshIndicator(
-            onRefresh: () async {
-              if (widget.loggedInUserId.isStringEmptyOrNull == true) return;
-              if (widget.onRefresh != null) {
-                await widget.onRefresh?.call();
-              }
-            },
-            child: _buildContent(context),
-          );
+    return RefreshIndicator(
+      onRefresh: () async {
+        if (widget.loggedInUserId.isStringEmptyOrNull == true) return;
+        if (widget.onRefresh != null) {
+          await widget.onRefresh?.call();
+        }
+      },
+      child: _reelsDataList.isListEmptyOrNull == true
+          ? _buildPlaceHolder(context)
+          : _buildContent(context),
+    );
   }
 
   Widget _buildPlaceHolder(BuildContext context) => CustomScrollView(

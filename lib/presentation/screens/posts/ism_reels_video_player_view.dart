@@ -415,26 +415,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               ),
             ),
           ] else ...[
-            // Video is not ready, show a loading spinner and the thumbnail
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                _getImageWidget(
-                  imageUrl: _reelData.mediaMetaDataList[_currentPageNotifier.value].thumbnailUrl,
-                  width: IsrDimens.getScreenWidth(context),
-                  height: IsrDimens.getScreenHeight(context),
-                  fit: BoxFit.contain,
-                  filterQuality: FilterQuality.low,
-                ),
-                // Loading spinner overlay
-                const Center(
-                  child: SizedBox(
-                    width: 48,
-                    height: 48,
-                    child: CircularProgressIndicator(strokeWidth: 3),
-                  ),
-                ),
-              ],
+            // Video is not ready, show a thumbnail
+            _getImageWidget(
+              imageUrl: _reelData.mediaMetaDataList[_currentPageNotifier.value].thumbnailUrl,
+              width: IsrDimens.getScreenWidth(context),
+              height: IsrDimens.getScreenHeight(context),
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.low,
             ),
           ]
         ],
