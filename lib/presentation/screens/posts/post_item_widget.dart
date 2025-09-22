@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
@@ -22,6 +21,7 @@ class PostItemWidget extends StatefulWidget {
     this.allowImplicitScrolling = true,
     this.onPageChanged,
     required this.reelsDataList,
+    this.videoCacheManager,
   });
 
   final Future<List<ReelsData>> Function()? onLoadMore;
@@ -34,6 +34,7 @@ class PostItemWidget extends StatefulWidget {
   final bool? allowImplicitScrolling;
   final Function(int, String)? onPageChanged;
   final List<ReelsData> reelsDataList;
+  final VideoCacheManager? videoCacheManager;
 
   @override
   State<PostItemWidget> createState() => _PostItemWidgetState();
@@ -42,43 +43,56 @@ class PostItemWidget extends StatefulWidget {
 class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAliveClientMixin {
   late PageController _pageController;
   final Set<String> _cachedImages = {};
-  final VideoCacheManager _videoCacheManager = VideoCacheManager();
+  late final VideoCacheManager _videoCacheManager;
   List<ReelsData> _reelsDataList = [];
+
+  bool _isInitialized = false;
+  bool _isRefreshing = false;
+
+  // Track refresh count for each index to force rebuild
+  final Map<int, int> _refreshCounts = {};
 
   @override
   void initState() {
-    _onStartInit();
     super.initState();
-  }
-
-  void _onStartInit() async {
+    _videoCacheManager = widget.videoCacheManager ?? VideoCacheManager();
     _reelsDataList = widget.reelsDataList;
     _pageController = PageController(initialPage: widget.startingPostIndex ?? 0);
+  }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isInitialized) {
+      _isInitialized = true;
+      _initializeContent();
+    }
+  }
+
+  void _initializeContent() async {
     if (_reelsDataList.isListEmptyOrNull == false) {
       await _doMediaCaching(0);
     }
 
-    // Check current state
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final targetPage = _pageController.initialPage >= _reelsDataList.length
-          ? _reelsDataList.length - 1
-          : _pageController.initialPage;
-      if (targetPage > 0) {
-        _pageController.animateToPage(
-          targetPage,
-          duration: const Duration(milliseconds: 1),
-          curve: Curves.easeIn,
-        );
-      }
-    });
+    if (!mounted) return;
+
+    final targetPage = _pageController.initialPage >= _reelsDataList.length
+        ? _reelsDataList.length - 1
+        : _pageController.initialPage;
+    if (targetPage > 0) {
+      _pageController.animateToPage(
+        targetPage,
+        duration: const Duration(milliseconds: 1),
+        curve: Curves.easeIn,
+      );
+    }
   }
 
   @override
   void dispose() {
     _pageController.dispose();
     // Don't clear all cache on dispose, only clear controllers
-    _videoCacheManager.clearControllers();
+    // _videoCacheManager.clearControllers();
     super.dispose();
   }
 
@@ -92,21 +106,31 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
       onRefresh: () async {
         if (widget.loggedInUserId.isStringEmptyOrNull == true) return;
         try {
-          // Clear video controllers before refresh to prevent disposed controller issues
-          _videoCacheManager.clearControllers();
-
+          _isRefreshing = true;
           if (widget.onRefresh != null) {
             final result = await widget.onRefresh?.call();
             if (result == true) {
+              // Get current index before refresh
+              final currentIndex = _pageController.page?.toInt() ?? 0;
+              debugPrint('🔄 MainWidget: Starting refresh at index $currentIndex');
+
+              // Increment refresh count to force rebuild
+              setState(() {
+                _refreshCounts[currentIndex] = (_refreshCounts[currentIndex] ?? 0) + 1;
+              });
+
               // Re-initialize caching for current index after successful refresh
-              await _doMediaCaching(_pageController.page?.toInt() ?? 0);
-              debugPrint('✅ MainWidget: Posts refreshed successfully');
+              await _doMediaCaching(currentIndex);
+              debugPrint(
+                  '✅ MainWidget: Posts refreshed successfully with count: ${_refreshCounts[currentIndex]}');
             } else {
               debugPrint('⚠️ MainWidget: Refresh returned false');
             }
           }
         } catch (e) {
           debugPrint('❌ MainWidget: Error during refresh - $e');
+        } finally {
+          _isRefreshing = false;
         }
         return;
       },
@@ -182,7 +206,8 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
             child: IsmReelsVideoPlayerView(
               reelsData: reelsData,
               videoCacheManager: _videoCacheManager,
-              key: ValueKey(reelsData),
+              // Add refresh count to force rebuild
+              key: ValueKey('${reelsData.postId}_${_refreshCounts[index] ?? 0}'),
               onPressMoreButton: () async {
                 if (reelsData.onPressMoreButton == null) return;
                 final result = await reelsData.onPressMoreButton!.call();
@@ -200,9 +225,13 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                       final thumbnailUrl =
                           _reelsDataList[postIndex].mediaMetaDataList[0].thumbnailUrl;
                       if (_reelsDataList[postIndex].mediaMetaDataList[0].mediaType == 0) {
+                        // For image post
                         await _evictDeletedPostImage(imageUrl);
                       } else {
+                        // For video post
                         await _evictDeletedPostImage(thumbnailUrl);
+                        // Clear video controller
+                        _videoCacheManager.clearVideo(imageUrl);
                       }
                     }
                   }
@@ -307,17 +336,6 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
 
     debugPrint('🎯 MainWidget: Page changed to index $index (@$username)');
 
-    // Check connectivity
-    try {
-      final result = await InternetAddress.lookup('google.com');
-      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
-        _videoCacheManager.setOfflineMode(false);
-      }
-    } catch (_) {
-      debugPrint('📡 MainWidget: No internet connection, enabling offline mode');
-      _videoCacheManager.setOfflineMode(true);
-    }
-
     // Immediately cache current post's thumbnails
     for (var mediaItem in reelsData.mediaMetaDataList) {
       if (mediaItem.thumbnailUrl.isNotEmpty) {
@@ -326,7 +344,6 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
         await precacheImage(provider, context);
         await DefaultCacheManager().downloadFile(mediaItem.thumbnailUrl);
         _cachedImages.add(mediaItem.thumbnailUrl);
-        debugPrint('✨ MainWidget: Cached current thumbnail - @$username');
       }
     }
 
@@ -335,15 +352,6 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
       _precacheNearbyImages(index),
       _precacheNearbyVideos(index),
     ]));
-
-    // Save videos for offline playback if online
-    if (!_videoCacheManager.isOfflineMode && index < 6) {
-      for (var mediaItem in reelsData.mediaMetaDataList) {
-        if (mediaItem.mediaType == 1 && mediaItem.mediaUrl.isNotEmpty) {
-          await _videoCacheManager.saveForOffline(mediaItem.mediaUrl);
-        }
-      }
-    }
 
     // Print cache stats every few scrolls
     if (index % 3 == 0) {
@@ -356,7 +364,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
     if (_reelsDataList.isEmpty) return;
 
     // Cache more aggressively ahead since users typically scroll forward
-    final startIndex = math.max(0, currentIndex - 1); // 1 behind
+    final startIndex = math.max(0, currentIndex - 4); // 1 behind
     final endIndex = math.min(_reelsDataList.length - 1, currentIndex + 4); // 4 ahead
 
     final imagesToCache = <String>[];
@@ -463,7 +471,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
     }
 
     // Cache more aggressively ahead since users typically scroll forward
-    final startIndex = math.max(0, currentIndex - 1); // 1 behind
+    final startIndex = math.max(0, currentIndex - 4); // 1 behind
     final endIndex = math.min(_reelsDataList.length - 1, currentIndex + 4); // 4 ahead like images
 
     debugPrint(
