@@ -185,29 +185,37 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     debugPrint('IsmReelsVideoPlayerView....initializeVideoPlayer video url $videoUrl');
 
     try {
+      // First try to get cached controller
       _videoPlayerController = _videoCacheManager.getCachedController(videoUrl);
 
       if (_videoPlayerController != null) {
         debugPrint('IsmReelsVideoPlayerView....Using cached video controller for $videoUrl');
-        _setupVideoController();
-        return;
+        if (_videoPlayerController!.value.isInitialized) {
+          await _setupVideoController();
+          return;
+        } else {
+          // If controller exists but not initialized, dispose and recreate
+          await _videoPlayerController!.dispose();
+          _videoPlayerController = null;
+        }
       }
 
-      // If not cached, check if it's being initialized
+      // If not cached or needs reinitializing, check if initialization is in progress
       if (_videoCacheManager.isVideoInitializing(videoUrl)) {
         debugPrint('IsmReelsVideoPlayerView....Video is being initialized, waiting...');
-        // Wait a bit and try again
-        await Future.delayed(const Duration(milliseconds: 500));
-        if (!mounted || _isDisposed) {
-          return;
+        // Wait for initialization with timeout
+        for (var i = 0; i < 5; i++) {
+          // Try up to 5 times
+          await Future.delayed(const Duration(milliseconds: 200));
+          if (!mounted || _isDisposed) return;
+
+          _videoPlayerController = _videoCacheManager.getCachedController(videoUrl);
+          if (_videoPlayerController != null && _videoPlayerController!.value.isInitialized) {
+            debugPrint('IsmReelsVideoPlayerView....Found initialized controller after waiting');
+            await _setupVideoController();
+            return;
+          }
         }
-        _videoPlayerController = _videoCacheManager.getCachedController(videoUrl);
-        if (_videoPlayerController != null) {
-          _setupVideoController();
-          return;
-        }
-      } else {
-        debugPrint('IsmReelsVideoPlayerView....Video is not being initialized, waiting...');
       }
 
       // If still not available, initialize normally (fallback)
@@ -235,16 +243,43 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (_videoPlayerController == null) return;
 
     await _videoPlayerController?.initialize();
-    _setupVideoController();
+    await _setupVideoController();
   }
 
   /// Sets up the video controller for playback, looping, and volume.
-  void _setupVideoController() {
+  Future<void> _setupVideoController() async {
     debugPrint('_setupVideoController....setup video controller');
     if (_isDisposed) return;
-    _videoPlayerController?.play();
-    _videoPlayerController?.setVolume(_isMuted ? 0.0 : 1.0); // Use static mute state
-    _videoPlayerController?.setLooping(true);
+
+    try {
+      if (_videoPlayerController == null) {
+        debugPrint('⚠️ VideoController is null in setup');
+        return;
+      }
+
+      // Make sure controller is initialized
+      if (!_videoPlayerController!.value.isInitialized) {
+        debugPrint('🔄 Initializing video controller in setup');
+        await _videoPlayerController!.initialize();
+      }
+
+      // Reset to beginning
+      await _videoPlayerController!.seekTo(Duration.zero);
+
+      // Set up basic properties
+      await _videoPlayerController!.setLooping(true);
+      await _videoPlayerController!.setVolume(_isMuted ? 0.0 : 1.0);
+
+      // Start playback
+      if (!_videoPlayerController!.value.isPlaying) {
+        debugPrint('▶️ Starting video playback in setup');
+        await _videoPlayerController!.play();
+      }
+
+      debugPrint('✅ Video controller setup complete');
+    } catch (e) {
+      debugPrint('❌ Error in setupVideoController: $e');
+    }
   }
 
   /// Disposes the current video controller if not cached, and cleans up state.

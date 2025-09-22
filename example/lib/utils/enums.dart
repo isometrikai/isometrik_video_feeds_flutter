@@ -156,3 +156,13 @@ class PlaceType {
   static const region = PlaceType('(region)');
   static const cities = PlaceType('(cities)');
 }
+
+enum PostTabType {
+  following,
+  trending,
+  myPost,
+  otherUserPost,
+  memberUserPost,
+  savedPost,
+  mentionedPost,
+}

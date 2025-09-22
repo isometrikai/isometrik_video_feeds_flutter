@@ -32,8 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
         resizeToAvoidBottomInset: false,
-        backgroundColor: Colors.black.applyOpacity(0.50),
-        extendBodyBehindAppBar: true,
+        backgroundColor: AppColors.grey.shade100,
         body: BlocBuilder<HomeBloc, HomeState>(
           buildWhen: _filterBuildStates,
           builder: (context, state) {
@@ -59,18 +58,8 @@ class _HomeScreenState extends State<HomeScreen> {
               return isr.IsmPostView(
                 key: ValueKey(state.timeLinePosts), // will rebuild if list changes
                 tabDataModelList: [
-                  isr.TabDataModel(
-                    title: TranslationFile.following,
-                    onRefresh: _handleFollowingRefresh,
-                    postSectionType: isr.PostSectionType.following,
-                    reelsDataList: state.timeLinePosts?.map(_getReelData).toList() ?? [],
-                  ),
-                  isr.TabDataModel(
-                    title: TranslationFile.trending,
-                    onRefresh: _handleFollowingRefresh,
-                    postSectionType: isr.PostSectionType.trending,
-                    reelsDataList: state.trendingPosts?.map(_getReelData).toList() ?? [],
-                  ),
+                  _buildFollowingTab(state),
+                  _buildTrendingTab(state),
                 ],
               );
             }
@@ -79,6 +68,84 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         ),
       );
+
+  /// Creates a tab for trending posts with interaction handlers
+  isr.TabDataModel _buildTrendingTab(HomeLoaded state) => _createTabModel(
+        postTabType: PostTabType.trending,
+        title: TranslationFile.trending,
+        isCreatePostButtonVisible: false,
+        startPostIndex: 0,
+        timeLinePosts: state.trendingPosts ?? [],
+      );
+
+  /// Creates a tab for timeline posts when navigating from other screens
+  isr.TabDataModel _buildFollowingTab(
+    HomeLoaded state,
+  ) =>
+      _createTabModel(
+        postTabType: PostTabType.following,
+        title: TranslationFile.following,
+        isCreatePostButtonVisible: false,
+        startPostIndex: 0,
+        timeLinePosts: state.timeLinePosts ?? [],
+      );
+
+  /// Base method to create a tab model with common functionality
+  isr.TabDataModel _createTabModel({
+    required PostTabType postTabType,
+    required String title,
+    required List<TimeLineData> timeLinePosts,
+    bool isCreatePostButtonVisible = false,
+    int startPostIndex = 0,
+  }) =>
+      isr.TabDataModel(
+        postSectionType: postTabType.toPostSectionType(),
+        title: title,
+        reelsDataList: timeLinePosts.map(_getReelData).toList(),
+        onLoadMore: () async => await _handleLoadMore(postTabType),
+        startingPostIndex: startPostIndex,
+        onRefresh: () async {
+          final result = await _handlePostRefresh(postTabType);
+          return result;
+        },
+      );
+
+  /// Handles refresh for user posts
+  Future<bool> _handlePostRefresh(PostTabType postTabType) async {
+    final completer = Completer<bool>();
+    _homeBloc.add(GetMorePostEvent(
+        isLoading: false,
+        isPagination: false,
+        isRefresh: true,
+        postTabType: postTabType,
+        memberUserId: '',
+        onComplete: (postDataList) async {
+          completer.complete(true);
+        }));
+    return await completer.future;
+  }
+
+  /// Handles loading more posts for infinite scrolling
+  Future<List<isr.ReelsData>> _handleLoadMore(PostTabType postTabType) async {
+    try {
+      final completer = Completer<List<TimeLineData>>();
+      _homeBloc.add(GetMorePostEvent(
+        isLoading: false,
+        isPagination: true,
+        isRefresh: false,
+        postTabType: postTabType,
+        memberUserId: '',
+        onComplete: completer.complete,
+      ));
+      final timeLinePostList = await completer.future;
+      if (timeLinePostList.isEmpty) return [];
+      final timeLineReelDataList = timeLinePostList.map(_getReelData).toList();
+      return timeLineReelDataList;
+    } catch (e) {
+      debugPrint('Error handling load more: $e');
+      return [];
+    }
+  }
 
   Future<bool> _handleFollowingRefresh() async {
     _homeBloc.add(GetTimeLinePostEvent(
@@ -923,6 +990,17 @@ class _HomeScreenState extends State<HomeScreen> {
       return await completer.future;
     } catch (e) {
       return false;
+    }
+  }
+}
+
+extension on PostTabType {
+  isr.PostSectionType? toPostSectionType() {
+    switch (this) {
+      case PostTabType.following:
+        return isr.PostSectionType.following;
+      default:
+        return isr.PostSectionType.trending;
     }
   }
 }

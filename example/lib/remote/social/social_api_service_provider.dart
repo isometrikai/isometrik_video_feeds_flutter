@@ -162,6 +162,8 @@ class SocialApiServiceProvider extends SocialApiService {
           'platform': header.platForm.toString(),
           'latitude': header.latitude.toString(),
           'longitude': header.longitude.toString(),
+          'x-tenant-id': AppConstants.tenantId,
+          'x-project-id': AppConstants.projectId,
         },
         isLoading,
       );

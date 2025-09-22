@@ -177,3 +177,21 @@ class CommentActionEvent extends HomeEvent {
   final String? reportReason;
   final String? commentMessage;
 }
+
+class GetMorePostEvent extends HomeEvent {
+  GetMorePostEvent({
+    required this.isLoading,
+    this.isPagination = false,
+    this.isRefresh = false,
+    this.onComplete,
+    required this.postTabType,
+    this.memberUserId,
+  });
+
+  final bool isLoading;
+  final bool isPagination;
+  final bool isRefresh;
+  final Function(List<TimeLineData>)? onComplete;
+  final PostTabType postTabType;
+  final String? memberUserId;
+}
