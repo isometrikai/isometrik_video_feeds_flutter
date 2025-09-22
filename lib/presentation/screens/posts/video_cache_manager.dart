@@ -150,8 +150,20 @@ class VideoCacheManager {
 
       debugPrint('🌐 VideoCacheManager: Creating NetworkUrl controller for $videoId');
       controller = IsrVideoReelUtility.isLocalUrl(mediaUrl)
-          ? VideoPlayerController.file(File(mediaUrl))
-          : VideoPlayerController.networkUrl(Uri.parse(mediaUrl));
+          ? VideoPlayerController.file(
+              File(mediaUrl),
+              videoPlayerOptions: VideoPlayerOptions(
+                mixWithOthers: true,
+                allowBackgroundPlayback: true,
+              ),
+            )
+          : VideoPlayerController.networkUrl(
+              Uri.parse(mediaUrl),
+              videoPlayerOptions: VideoPlayerOptions(
+                mixWithOthers: true,
+                allowBackgroundPlayback: true,
+              ),
+            );
 
       debugPrint('⏳ VideoCacheManager: Initializing controller for $videoId');
       await controller.initialize();
