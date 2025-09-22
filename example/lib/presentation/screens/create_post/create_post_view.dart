@@ -494,7 +494,7 @@ class _CreatePostViewState extends State<CreatePostView> {
     var imageUrl = productImages == null
         ? ''
         : (productImages is List<ImageData> &&
-                (productImages).isEmptyOrNull == false)
+                productImages.isEmptyOrNull == false)
             ? (productImages[0].small?.isEmpty == true
                 ? productImages[0].medium ?? ''
                 : productImages[0].small ?? '')

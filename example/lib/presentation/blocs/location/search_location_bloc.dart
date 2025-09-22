@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player_example/domain/domain.dart';
-import 'package:ism_video_reel_player_example/main.dart';
+import 'package:ism_video_reel_player_example/utils/debouncer.dart';
 
 part 'search_location_events.dart';
 part 'search_location_state.dart';
