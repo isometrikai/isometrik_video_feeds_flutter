@@ -77,8 +77,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         return;
       }
       _currentIndex = newIndex;
-      // postBloc.add(PostsLoadedEvent([],
-      //     _tabDataModelList[_currentIndex].postList));
+      setState(() {});
     });
 
     if (_tabDataModelList.isListEmptyOrNull == false) {
@@ -209,8 +208,16 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  // Track refresh count for each tab to force rebuild on refresh
+  final Map<int, int> _refreshCounts = {};
+
+  String _getUniqueKey(TabDataModel tabData, int index) {
+    _refreshCounts[index] ??= 0;
+    return '${tabData.reelsDataList.length}_${_refreshCounts[index]}';
+  }
+
   Widget _buildTabBarView(TabDataModel tabData, int index) => PostItemWidget(
-        key: ValueKey(tabData.reelsDataList.length),
+        key: ValueKey(_getUniqueKey(tabData, index)),
         onTapPlaceHolder: () {
           if ((_postTabController?.length ?? 0) > 1) {
             _tabsVisibilityNotifier.value = true;
@@ -223,13 +230,26 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         onPageChanged: widget.onPageChanged,
         reelsDataList: _tabDataModelList[index].reelsDataList,
         onLoadMore: _tabDataModelList[index].onLoadMore,
-        onRefresh: _tabDataModelList[index].onRefresh,
+        onRefresh: () async {
+          var result = false;
+          result = await _tabDataModelList[index].onRefresh?.call() ?? false;
+          // Increment refresh count to force rebuild
+          if (result) {
+            setState(() {
+              _refreshCounts[index] = (_refreshCounts[index] ?? 0) + 1;
+            });
+          }
+          return result;
+        },
         startingPostIndex: _tabDataModelList[index].startingPostIndex,
         postSectionType: _tabDataModelList[index].postSectionType,
       );
 
-  bool _isFollowingPostsEmpty() =>
-      _currentIndex == 0 &&
-      widget.tabDataModelList[_currentIndex].postSectionType == PostSectionType.following &&
-      widget.tabDataModelList[_currentIndex].reelsDataList.isListEmptyOrNull;
+  bool _isFollowingPostsEmpty() {
+    final isFollowingPostEmpty = _currentIndex == 0 &&
+        widget.tabDataModelList[_currentIndex].postSectionType == PostSectionType.following &&
+        widget.tabDataModelList[_currentIndex].reelsDataList.isListEmptyOrNull;
+    debugPrint('isFollowingPostEmpty: $isFollowingPostEmpty');
+    return isFollowingPostEmpty;
+  }
 }

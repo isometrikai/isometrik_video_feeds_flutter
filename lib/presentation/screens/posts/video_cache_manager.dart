@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:ism_video_reel_player/utils/isr_utils.dart';
 import 'package:video_player/video_player.dart';
 
@@ -23,17 +24,29 @@ class VideoCacheManager {
   // Maximum number of videos to keep in cache
   static const int _maxCacheSize = 8;
 
+  // Maximum number of videos to keep for offline playback
+  static const int _maxOfflineVideos = 6;
+
   // Set to track currently visible videos (should not be disposed)
   final Set<String> _visibleVideos = <String>{};
 
+  // Set to track videos saved for offline playback
+  final Set<String> _offlineVideos = <String>{};
+
+  // Flag to track if we're in offline mode
+  bool _isOfflineMode = false;
+
   /// Precache video controllers for given URLs
-  Future<void> precacheVideos(List<String> videoUrls) async {
+  /// If [highPriority] is true, waits for initialization to complete
+  Future<void> precacheVideos(List<String> videoUrls,
+      {bool highPriority = false}) async {
     debugPrint(
-        '🎬 VideoCacheManager: Starting precache for ${videoUrls.length} videos');
+        '🎬 VideoCacheManager: Starting precache for ${videoUrls.length} videos (highPriority: $highPriority)');
 
     var alreadyCached = 0;
     var initializing = 0;
     var newCaching = 0;
+    final futures = <Future<void>>[];
 
     for (final url in videoUrls) {
       if (url.isEmpty) {
@@ -49,11 +62,19 @@ class VideoCacheManager {
         continue;
       }
 
-      // Don't cache if currently being initialized
+      // For high priority, wait for any ongoing initialization
       if (_initializationCache.containsKey(url)) {
         initializing++;
         debugPrint(
             '⏳ VideoCacheManager: Already initializing - ${_extractVideoId(url)}');
+        if (highPriority) {
+          futures.add(_initializationCache[url]!.then((controller) {
+            if (controller != null) {
+              debugPrint(
+                  '✨ VideoCacheManager: High priority wait complete - ${_extractVideoId(url)}');
+            }
+          }));
+        }
         continue;
       }
 
@@ -61,8 +82,27 @@ class VideoCacheManager {
       debugPrint(
           '🚀 VideoCacheManager: Starting precache for - ${_extractVideoId(url)}');
 
-      // Start initialization without waiting
-      unawaited(_initializeVideoController(url));
+      // Initialize and optionally wait
+      final future = _initializeVideoController(url);
+      if (highPriority) {
+        futures.add(future.then((controller) {
+          if (controller != null) {
+            debugPrint(
+                '✨ VideoCacheManager: High priority initialization complete - ${_extractVideoId(url)}');
+          }
+        }));
+      } else {
+        unawaited(future);
+      }
+    }
+
+    // For high priority, wait for all initializations to complete
+    if (highPriority && futures.isNotEmpty) {
+      debugPrint(
+          '⏳ VideoCacheManager: Waiting for ${futures.length} high priority initializations...');
+      await Future.wait(futures);
+      debugPrint(
+          '✨ VideoCacheManager: All high priority initializations complete');
     }
 
     debugPrint(
@@ -116,18 +156,42 @@ class VideoCacheManager {
     debugPrint('🔧 VideoCacheManager: Creating controller for $videoId');
 
     try {
-      // Convert http to https if needed
-      var mediaUrl = url;
-      if (mediaUrl.startsWith('http:')) {
-        mediaUrl = mediaUrl.replaceFirst('http:', 'https:');
-        debugPrint('🔒 VideoCacheManager: Converted to HTTPS for $videoId');
-      }
+      VideoPlayerController? controller;
 
-      debugPrint(
-          '🌐 VideoCacheManager: Creating NetworkUrl controller for $videoId');
-      final controller = IsrVideoReelUtility.isLocalUrl(mediaUrl)
-          ? VideoPlayerController.file(File(mediaUrl))
-          : VideoPlayerController.networkUrl(Uri.parse(mediaUrl));
+      // Check if we're in offline mode and have the video cached
+      if (_isOfflineMode) {
+        if (_offlineVideos.contains(url)) {
+          // Try to get the cached file
+          final cacheManager = DefaultCacheManager();
+          final fileInfo = await cacheManager.getFileFromCache(url);
+
+          if (fileInfo != null && fileInfo.file.existsSync()) {
+            debugPrint('📱 VideoCacheManager: Using offline file for $videoId');
+            controller = VideoPlayerController.file(fileInfo.file);
+          } else {
+            debugPrint(
+                '⚠️ VideoCacheManager: Offline file not found for $videoId');
+            return null;
+          }
+        } else {
+          debugPrint(
+              '⚠️ VideoCacheManager: Video not available offline - $videoId');
+          return null;
+        }
+      } else {
+        // Online mode - use network URL
+        var mediaUrl = url;
+        if (mediaUrl.startsWith('http:')) {
+          mediaUrl = mediaUrl.replaceFirst('http:', 'https:');
+          debugPrint('🔒 VideoCacheManager: Converted to HTTPS for $videoId');
+        }
+
+        debugPrint(
+            '🌐 VideoCacheManager: Creating NetworkUrl controller for $videoId');
+        controller = IsrVideoReelUtility.isLocalUrl(mediaUrl)
+            ? VideoPlayerController.file(File(mediaUrl))
+            : VideoPlayerController.networkUrl(Uri.parse(mediaUrl));
+      }
 
       debugPrint('⏳ VideoCacheManager: Initializing controller for $videoId');
       await controller.initialize();
@@ -282,29 +346,37 @@ class VideoCacheManager {
     _visibleVideos.remove(url);
     _lruQueue.remove(url);
     final controller = _videoControllerCache.remove(url);
-    controller?.dispose();
+    if (controller != null) {
+      controller.dispose();
+      debugPrint('🗑️ VideoCacheManager: Disposed controller for $videoId');
+    }
     _initializationCache.remove(url);
-
-    debugPrint('✅ VideoCacheManager: Cleared $videoId successfully');
   }
 
-  /// Clear all cache
-  void clearAll() {
-    debugPrint(
-        '🧹 VideoCacheManager: Clearing ALL cached videos (${_videoControllerCache.length} videos)');
+  /// Clear all video controllers but keep the cache structure
+  void clearControllers() {
+    debugPrint('🧹 VideoCacheManager: Clearing all video controllers');
 
-    for (final entry in _videoControllerCache.entries) {
-      final videoId = _extractVideoId(entry.key);
-      debugPrint('🗑️ VideoCacheManager: Disposing controller for $videoId');
-      // entry.value.dispose();
+    // Dispose all controllers
+    for (final controller in _videoControllerCache.values) {
+      controller.dispose();
     }
 
+    // Clear all caches but keep the structures
     _videoControllerCache.clear();
     _initializationCache.clear();
     _lruQueue.clear();
     _visibleVideos.clear();
 
-    debugPrint('✅ VideoCacheManager: All cache cleared successfully');
+    debugPrint('✨ VideoCacheManager: All controllers cleared');
+  }
+
+  /// Clear everything from cache (use with caution)
+  void clearAll() {
+    debugPrint(
+        '💣 VideoCacheManager: Clearing entire cache (${_videoControllerCache.length} videos)');
+    clearControllers(); // Reuse controller clearing logic
+    debugPrint('🧨 VideoCacheManager: Cache completely cleared');
   }
 
   /// Extract video ID from URL for logging
@@ -330,11 +402,52 @@ class VideoCacheManager {
     return url.length > 20 ? '...${url.substring(url.length - 20)}' : url;
   }
 
+  /// Save video for offline playback
+  Future<bool> saveForOffline(String url) async {
+    if (_offlineVideos.length >= _maxOfflineVideos) {
+      debugPrint('⚠️ VideoCacheManager: Maximum offline videos limit reached');
+      return false;
+    }
+
+    try {
+      final videoId = _extractVideoId(url);
+      debugPrint('💾 VideoCacheManager: Saving video for offline - $videoId');
+
+      // Download the video file
+      final cacheManager = DefaultCacheManager();
+      final file = await cacheManager.downloadFile(url);
+
+      if (file.file.existsSync()) {
+        _offlineVideos.add(url);
+        debugPrint('✅ VideoCacheManager: Video saved for offline - $videoId');
+        return true;
+      }
+    } catch (e) {
+      debugPrint('❌ VideoCacheManager: Failed to save video for offline - $e');
+    }
+    return false;
+  }
+
+  /// Check if video is available for offline playback
+  bool isAvailableOffline(String url) => _offlineVideos.contains(url);
+
+  /// Set offline mode status
+  void setOfflineMode(bool isOffline) {
+    _isOfflineMode = isOffline;
+    debugPrint(
+        '🌐 VideoCacheManager: Offline mode ${isOffline ? 'enabled' : 'disabled'}');
+  }
+
+  /// Get offline mode status
+  bool get isOfflineMode => _isOfflineMode;
+
   /// Get cache statistics for debugging
   Map<String, dynamic> getCacheStats() => {
         'cached_videos': _videoControllerCache.length,
         'initializing_videos': _initializationCache.length,
         'visible_videos': _visibleVideos.length,
         'lru_queue_size': _lruQueue.length,
+        'offline_videos': _offlineVideos.length,
+        'offline_mode': _isOfflineMode,
       };
 }

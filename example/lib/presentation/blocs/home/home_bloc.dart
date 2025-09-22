@@ -36,6 +36,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<GetPostCommentsEvent>(_getPostComments);
     on<CommentActionEvent>(_doActionOnComment);
     on<LoadPostsEvent>(_loadPosts);
+    on<GetMorePostEvent>(_getMorePost);
   }
 
   final LocalDataUseCase _localDataUseCase;
@@ -57,7 +58,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   final followingPageSize = 20;
   bool _hasMoreData = true;
   bool _isLoadingMore = false;
-  int _trendingCurrentPage = 0;
+  int _trendingCurrentPage = 1;
   bool _hasTrendingMoreData = true;
   bool _isTrendingLoadingMore = false;
   final _trendingPageSize = 20;
@@ -80,7 +81,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       emit(HomeLoading(isLoading: true));
       await _initializeReelsSdk();
       await Future.wait([
-        _callGetFollowingPost(true, false, false, null),
+        _callGetTrendingPost(true, false, false, null),
         _callGetTimeLinePost(true, false, false, null)
       ]);
       add(LoadPostsEvent(timeLinePostList: _timeLinePostList, trendingPosts: _trendingPostList));
@@ -103,6 +104,24 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         ),
       ),
     );
+  }
+
+  FutureOr<void> _getMorePost(GetMorePostEvent event, Emitter<HomeState> emit) async {
+    if (event.postTabType == PostTabType.following) {
+      await _callGetTimeLinePost(
+        event.isRefresh,
+        event.isPagination,
+        event.isLoading,
+        event.onComplete,
+      );
+    } else {
+      await _callGetTrendingPost(
+        event.isRefresh,
+        event.isPagination,
+        event.isLoading,
+        event.onComplete,
+      );
+    }
   }
 
   FutureOr<void> _getTimeLinePost(GetTimeLinePostEvent event, Emitter<HomeState> emit) async {
@@ -172,12 +191,16 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     _isLoadingMore = false;
   }
 
-  Future<void> _callGetTrendingPost(bool isFromRefresh, bool isFromPagination, bool isLoading,
-      Function(List<TimeLineData>)? onComplete) async {
+  Future<void> _callGetTrendingPost(
+    bool isFromRefresh,
+    bool isFromPagination,
+    bool isLoading,
+    Function(List<TimeLineData>)? onComplete,
+  ) async {
     // For refresh, clear cache and start from page 0
     if (isFromRefresh) {
       _trendingPostList.clear();
-      _trendingCurrentPage = 0;
+      _trendingCurrentPage = 1;
       _hasTrendingMoreData = true;
       _isTrendingLoadingMore = false;
     } else if (!isFromPagination && _trendingPostList.isNotEmpty) {
@@ -186,7 +209,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     }
 
     if (!isFromPagination) {
-      _trendingCurrentPage = isFromRefresh ? 0 : 1;
+      _trendingCurrentPage = 1;
       _hasTrendingMoreData = true;
     } else if (_isTrendingLoadingMore || !_hasTrendingMoreData) {
       return;
@@ -207,13 +230,13 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       } else {
         if (isFromPagination) {
           _trendingPostList.addAll(postDataList);
-          if (onComplete != null) {
-            onComplete(postDataList);
-          }
         } else {
           _trendingPostList
             ..clear()
             ..addAll(postDataList);
+        }
+        if (onComplete != null) {
+          onComplete(postDataList);
         }
         _trendingCurrentPage++;
         // emit(HomeLoaded(followingPosts: _followingPostList, trendingPosts: _trendingPostList));
