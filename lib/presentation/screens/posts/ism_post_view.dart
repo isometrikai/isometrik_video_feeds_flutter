@@ -34,6 +34,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   var _loggedInUserId = '';
   final ValueNotifier<bool> _tabsVisibilityNotifier = ValueNotifier<bool>(true);
   List<TabDataModel> _tabDataModelList = [];
+
   @override
   void initState() {
     _onStartInit();
@@ -71,12 +72,13 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     }
     _postTabController?.addListener(() {
       final newIndex = _postTabController?.index ?? 0;
-      if (_isFollowingPostsEmpty()) {
-        // _tabsVisibilityNotifier.value = false;
-        _postTabController?.animateTo(0);
-        return;
-      }
+      // if (_isFollowingPostsEmpty()) {
+      //   // _tabsVisibilityNotifier.value = false;
+      //   _postTabController?.animateTo(0);
+      //   return;
+      // }
       _currentIndex = newIndex;
+      _postTabController?.animateTo(_currentIndex);
       setState(() {});
     });
 
@@ -160,12 +162,17 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                       ),
                       child: TabBar(
                         controller: _postTabController,
-                        labelColor: _isFollowingPostsEmpty() ? IsrColors.black : IsrColors.white,
-                        unselectedLabelColor: _isFollowingPostsEmpty()
+                        labelColor: _tabDataModelList[_currentIndex].reelsDataList.isListEmptyOrNull
                             ? IsrColors.black
-                            : IsrColors.white.changeOpacity(0.6),
+                            : IsrColors.white,
+                        unselectedLabelColor:
+                            _tabDataModelList[_currentIndex].reelsDataList.isListEmptyOrNull
+                                ? IsrColors.black
+                                : IsrColors.white.changeOpacity(0.6),
                         indicatorColor:
-                            _isFollowingPostsEmpty() ? IsrColors.black : IsrColors.white,
+                            _tabDataModelList[_currentIndex].reelsDataList.isListEmptyOrNull
+                                ? IsrColors.black
+                                : IsrColors.white,
                         indicatorWeight: 2,
                         dividerColor: Colors.transparent,
                         indicatorSize: TabBarIndicatorSize.label,
@@ -246,10 +253,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       );
 
   bool _isFollowingPostsEmpty() {
-    final isFollowingPostEmpty = _currentIndex == 0 &&
-        widget.tabDataModelList[_currentIndex].postSectionType == PostSectionType.following &&
-        widget.tabDataModelList[_currentIndex].reelsDataList.isListEmptyOrNull;
-    debugPrint('isFollowingPostEmpty: $isFollowingPostEmpty');
+    final isFollowingPostEmpty = widget.tabDataModelList.length > 1 &&
+        widget.tabDataModelList[0].postSectionType == PostSectionType.following &&
+        widget.tabDataModelList[0].reelsDataList.isListEmptyOrNull;
     return isFollowingPostEmpty;
   }
 }
