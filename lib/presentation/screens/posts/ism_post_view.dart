@@ -78,8 +78,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         // Handle tab change if we have a user
         if (_loggedInUserId.isNotEmpty) {
           try {
-            // Create a new cache manager for the new tab
-            final oldCacheManager = _videoCacheManager;
             _videoCacheManager = VideoCacheManager();
           } catch (e) {
             debugPrint('Error during tab change: $e');
