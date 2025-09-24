@@ -145,6 +145,7 @@ class StandardVideoCacheManager implements IVideoCacheManager {
   }
 
   Future<StandardVideoPlayerController?> _createAndInitializeController(String url) async {
+    debugPrint('StandardVideoCacheManager: _createAndInitializeController: $url');
     try {
       final controller = _createVideoPlayerController(url);
       await controller.initialize();
