@@ -59,8 +59,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       initialIndex: _currentIndex,
     );
 
-    _refreshControllers =
-        List.generate(_tabDataModelList.length, (index) => RefreshController());
+    _refreshControllers = List.generate(_tabDataModelList.length, (index) => RefreshController());
     var postBloc = IsmInjectionUtils.getBloc<PostBloc>();
     if (postBloc.isClosed) {
       isrConfigureInjection();
@@ -79,8 +78,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         // Handle tab change if we have a user
         if (_loggedInUserId.isNotEmpty) {
           try {
-            // Create a new cache manager for the new tab
-            final oldCacheManager = _videoCacheManager;
             _videoCacheManager = VideoCacheManager();
           } catch (e) {
             debugPrint('Error during tab change: $e');
@@ -98,9 +95,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       final listOfUrls = <String>[];
       for (var reelsData in reelsDataList) {
         listOfUrls.add(reelsData.mediaMetaDataList.first.mediaUrl);
-        if (reelsData
-                .mediaMetaDataList.first.thumbnailUrl.isStringEmptyOrNull ==
-            false) {
+        if (reelsData.mediaMetaDataList.first.thumbnailUrl.isStringEmptyOrNull == false) {
           listOfUrls.add(reelsData.mediaMetaDataList.first.thumbnailUrl);
         }
       }
@@ -125,11 +120,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                 //     _tabDataModelList[_currentIndex].postList));
               }
             },
-            buildWhen: (previousState, currentState) =>
-                currentState is UserInformationLoaded,
+            buildWhen: (previousState, currentState) => currentState is UserInformationLoaded,
             builder: (context, state) {
-              final newUserId =
-                  state is UserInformationLoaded ? state.userId : '';
+              final newUserId = state is UserInformationLoaded ? state.userId : '';
               if (newUserId.isNotEmpty && _loggedInUserId.isEmpty) {
                 // Initialize video cache manager when user logs in
                 _videoCacheManager = VideoCacheManager();
@@ -144,9 +137,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                       ? Center(child: IsrVideoReelUtility.loaderWidget())
                       : const SizedBox.shrink()
                   : DefaultTabController(
-                      length: _tabDataModelList.isListEmptyOrNull
-                          ? 0
-                          : _tabDataModelList.length,
+                      length: _tabDataModelList.isListEmptyOrNull ? 0 : _tabDataModelList.length,
                       initialIndex: _currentIndex,
                       child: Stack(
                         children: [
@@ -154,8 +145,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                             physics: const NeverScrollableScrollPhysics(),
                             controller: _postTabController,
                             children: _tabDataModelList
-                                .map((tabData) => _buildTabBarView(tabData,
-                                    _tabDataModelList.indexOf(tabData)))
+                                .map((tabData) =>
+                                    _buildTabBarView(tabData, _tabDataModelList.indexOf(tabData)))
                                 .toList(),
                           ),
                           _buildTabBar(),
@@ -187,21 +178,17 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                       ),
                       child: TabBar(
                         controller: _postTabController,
-                        labelColor: _tabDataModelList[_currentIndex]
-                                .reelsDataList
-                                .isListEmptyOrNull
+                        labelColor: _tabDataModelList[_currentIndex].reelsDataList.isListEmptyOrNull
                             ? IsrColors.black
                             : IsrColors.white,
-                        unselectedLabelColor: _tabDataModelList[_currentIndex]
-                                .reelsDataList
-                                .isListEmptyOrNull
-                            ? IsrColors.black
-                            : IsrColors.white.changeOpacity(0.6),
-                        indicatorColor: _tabDataModelList[_currentIndex]
-                                .reelsDataList
-                                .isListEmptyOrNull
-                            ? IsrColors.black
-                            : IsrColors.white,
+                        unselectedLabelColor:
+                            _tabDataModelList[_currentIndex].reelsDataList.isListEmptyOrNull
+                                ? IsrColors.black
+                                : IsrColors.white.changeOpacity(0.6),
+                        indicatorColor:
+                            _tabDataModelList[_currentIndex].reelsDataList.isListEmptyOrNull
+                                ? IsrColors.black
+                                : IsrColors.white,
                         indicatorWeight: 2,
                         dividerColor: Colors.transparent,
                         indicatorSize: TabBarIndicatorSize.label,
@@ -236,41 +223,41 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    // Clean up video cache manager first if we have a user
-    if (_loggedInUserId.isNotEmpty && _videoCacheManager != null) {
-      try {
-        // Create a local reference to the cache manager and clear the field
-        final cacheManager = _videoCacheManager;
-        _videoCacheManager = null;
-
-        // Clean up in the background to avoid blocking
-        Future.microtask(() async {
-          try {
-            // First pause any playing videos
-            if (_currentIndex < _tabDataModelList.length) {
-              final currentTabData = _tabDataModelList[_currentIndex];
-              for (var post in currentTabData.reelsDataList) {
-                for (var media in post.mediaMetaDataList) {
-                  if (media.mediaType == 1 && media.mediaUrl.isNotEmpty) {
-                    final controller =
-                        cacheManager?.getCachedController(media.mediaUrl);
-                    if (controller?.value.isPlaying == true) {
-                      await controller?.pause();
-                    }
-                  }
-                }
-              }
-            }
-            // Then clear all controllers
-            cacheManager?.clearControllers();
-          } catch (e) {
-            debugPrint('Error during video cleanup: $e');
-          }
-        });
-      } catch (e) {
-        debugPrint('Error during cleanup setup: $e');
-      }
-    }
+    // // Clean up video cache manager first if we have a user
+    // if (_loggedInUserId.isNotEmpty && _videoCacheManager != null) {
+    //   try {
+    //     // Create a local reference to the cache manager and clear the field
+    //     final cacheManager = _videoCacheManager;
+    //     _videoCacheManager = null;
+    //
+    //     // Clean up in the background to avoid blocking
+    //     Future.microtask(() async {
+    //       try {
+    //         // First pause any playing videos
+    //         if (_currentIndex < _tabDataModelList.length) {
+    //           final currentTabData = _tabDataModelList[_currentIndex];
+    //           for (var post in currentTabData.reelsDataList) {
+    //             for (var media in post.mediaMetaDataList) {
+    //               if (media.mediaType == 1 && media.mediaUrl.isNotEmpty) {
+    //                 final controller =
+    //                     cacheManager?.getCachedController(media.mediaUrl);
+    //                 if (controller?.value.isPlaying == true) {
+    //                   await controller?.pause();
+    //                 }
+    //               }
+    //             }
+    //           }
+    //         }
+    //         // Then clear all controllers
+    //         // cacheManager?.clearControllers();
+    //       } catch (e) {
+    //         debugPrint('Error during video cleanup: $e');
+    //       }
+    //     });
+    //   } catch (e) {
+    //     debugPrint('Error during cleanup setup: $e');
+    //   }
+    // }
 
     // Then dispose other controllers
     _postTabController?.dispose();
@@ -291,8 +278,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   Widget _buildTabBarView(TabDataModel tabData, int index) => PostItemWidget(
         key: ValueKey(_getUniqueKey(tabData, index)),
-        videoCacheManager:
-            _loggedInUserId.isNotEmpty ? _videoCacheManager : null,
+        videoCacheManager: _loggedInUserId.isNotEmpty ? _videoCacheManager : null,
         onTapPlaceHolder: () {
           if ((_postTabController?.length ?? 0) > 1) {
             _tabsVisibilityNotifier.value = true;
@@ -322,8 +308,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   bool _isFollowingPostsEmpty() {
     final isFollowingPostEmpty = widget.tabDataModelList.length > 1 &&
-        widget.tabDataModelList[0].postSectionType ==
-            PostSectionType.following &&
+        widget.tabDataModelList[0].postSectionType == PostSectionType.following &&
         widget.tabDataModelList[0].reelsDataList.isListEmptyOrNull;
     return isFollowingPostEmpty;
   }
