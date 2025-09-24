@@ -25,7 +25,7 @@ dependencies:
   go_router: ^14.8.0
   image_picker: ^1.1.2
   injectable: ^2.5.0
-  intl: ^0.18.1
+  intl: ^0.20.2
   intl_phone_field: ^3.2.0
   ism_video_reel_player:
     path: ../
@@ -44,7 +44,6 @@ dev_dependencies:
     sdk: flutter
   pubspec_dependency_sorter: ^1.0.5
 dependency_overrides:
-  intl: '^0.20.0'
   path: '^1.9.1'
 flutter:
   uses-material-design: true
