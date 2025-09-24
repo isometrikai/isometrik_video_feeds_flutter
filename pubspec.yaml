@@ -26,6 +26,7 @@ dependencies:
   image: ^4.5.4
   injectable: ^2.5.1
   intl: ^0.20.2
+  lottie: ^3.1.0
   package_info_plus: ^9.0.0
   plugin_platform_interface: ^2.1.8
   pull_to_refresh: ^2.0.0
@@ -33,7 +34,6 @@ dependencies:
   url_launcher: ^6.3.2
   video_player: ^2.10.0
   visibility_detector: ^0.4.0+2
-  lottie: ^3.1.0
 
 dev_dependencies:
   flutter_test:

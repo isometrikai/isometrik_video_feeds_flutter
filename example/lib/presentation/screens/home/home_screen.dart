@@ -147,15 +147,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<bool> _handleFollowingRefresh() async {
-    _homeBloc.add(GetTimeLinePostEvent(
-      isLoading: false,
-      isPagination: false,
-      isRefresh: true,
-    ));
-    return false;
-  }
-
   bool _filterBuildStates(HomeState previous, HomeState current) =>
       current is! LoadPostCommentState &&
       current is! LoadingPostComment &&
