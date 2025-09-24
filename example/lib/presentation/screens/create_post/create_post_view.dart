@@ -48,7 +48,8 @@ class _CreatePostViewState extends State<CreatePostView> {
         ),
         bottomNavigationBar: SafeArea(
           child: Padding(
-            padding: Dimens.edgeInsetsSymmetric(vertical: Dimens.ten, horizontal: Dimens.twenty),
+            padding: Dimens.edgeInsetsSymmetric(
+                vertical: Dimens.ten, horizontal: Dimens.twenty),
             child: AppButton(
               width: Dimens.oneHundredForty,
               onPress: () {
@@ -74,12 +75,16 @@ class _CreatePostViewState extends State<CreatePostView> {
               }
               if (state is UploadingCoverImageState) {
                 setState(() {
-                  state.progress >= 99 ? _isCreateButtonDisable = false : _isCreateButtonDisable = true;
+                  state.progress >= 99
+                      ? _isCreateButtonDisable = false
+                      : _isCreateButtonDisable = true;
                 });
               }
               if (state is UploadingMediaState) {
                 setState(() {
-                  state.progress >= 99 ? _isCreateButtonDisable = false : _isCreateButtonDisable = true;
+                  state.progress >= 99
+                      ? _isCreateButtonDisable = false
+                      : _isCreateButtonDisable = true;
                 });
               }
             },
@@ -103,13 +108,16 @@ class _CreatePostViewState extends State<CreatePostView> {
                       TapHandler(
                         onTap: () => _showUploadOptionsDialog(context, false),
                         child: DottedBorder(
-                          borderType: BorderType.RRect,
-                          radius: const Radius.circular(12),
-                          padding: Dimens.edgeInsetsAll(Dimens.sixteen),
-                          color: AppColors.colorDBDBDB,
-                          strokeWidth: 1,
-                          dashPattern: const [6, 3],
-                          child: postAttributeClass != null ? _buildSelectedMediaSection() : _buildUploadSection(),
+                          options: RoundedRectDottedBorderOptions(
+                            radius: const Radius.circular(12),
+                            padding: Dimens.edgeInsetsAll(Dimens.sixteen),
+                            color: AppColors.colorDBDBDB,
+                            strokeWidth: 1,
+                            dashPattern: const [6, 3],
+                          ),
+                          child: postAttributeClass != null
+                              ? _buildSelectedMediaSection()
+                              : _buildUploadSection(),
                         ),
                       ),
 
@@ -128,20 +136,27 @@ class _CreatePostViewState extends State<CreatePostView> {
                         style: Styles.primaryText14,
                         decoration: InputDecoration(
                           hintText: TranslationFile.writeDescription,
-                          hintStyle: Styles.secondaryText14.copyWith(color: AppColors.colorBBBBBB),
+                          hintStyle: Styles.secondaryText14
+                              .copyWith(color: AppColors.colorBBBBBB),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppColors.colorDBDBDB), // Added border color
+                            borderSide: const BorderSide(
+                                color: AppColors
+                                    .colorDBDBDB), // Added border color
                           ),
                           enabledBorder: OutlineInputBorder(
                             // Added to ensure the color shows in normal state
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppColors.colorDBDBDB), // Added border color
+                            borderSide: const BorderSide(
+                                color: AppColors
+                                    .colorDBDBDB), // Added border color
                           ),
                           focusedBorder: OutlineInputBorder(
                             // Added to maintain color when focused
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppColors.colorDBDBDB), // Added border color
+                            borderSide: const BorderSide(
+                                color: AppColors
+                                    .colorDBDBDB), // Added border color
                           ),
                           counterText: '',
                         ),
@@ -182,7 +197,8 @@ class _CreatePostViewState extends State<CreatePostView> {
                             onChanged: (value) {
                               setState(() {
                                 _createPostBloc.isScheduledPost = value!;
-                                _createPostBloc.selectedDate = DateTime.now().add(const Duration(days: 1));
+                                _createPostBloc.selectedDate =
+                                    DateTime.now().add(const Duration(days: 1));
                               });
                             },
                             activeColor: Theme.of(context).primaryColor,
@@ -211,13 +227,18 @@ class _CreatePostViewState extends State<CreatePostView> {
                       if (_createPostBloc.isScheduledPost) ...[
                         Dimens.boxHeight(Dimens.twentyFour),
                         GestureDetector(
-                          onTap: () => _selectDate(context), // Show date picker on tap
+                          onTap: () =>
+                              _selectDate(context), // Show date picker on tap
                           child: Container(
-                            width: double.infinity, // Make the container full width
-                            padding: Dimens.edgeInsetsSymmetric(horizontal: Dimens.sixteen, vertical: Dimens.eight),
+                            width: double
+                                .infinity, // Make the container full width
+                            padding: Dimens.edgeInsetsSymmetric(
+                                horizontal: Dimens.sixteen,
+                                vertical: Dimens.eight),
                             decoration: BoxDecoration(
                               border: Border.all(color: AppColors.colorDBDBDB),
-                              borderRadius: Dimens.borderRadiusAll(Dimens.twelve),
+                              borderRadius:
+                                  Dimens.borderRadiusAll(Dimens.twelve),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -225,10 +246,12 @@ class _CreatePostViewState extends State<CreatePostView> {
                                 Text(
                                   _createPostBloc.selectedDate == null
                                       ? TranslationFile.selectDate
-                                      : DateFormat('dd MMM yyyy HH:mm').format(_createPostBloc.selectedDate!),
+                                      : DateFormat('dd MMM yyyy HH:mm').format(
+                                          _createPostBloc.selectedDate!),
                                   style: Styles.primaryText14,
                                 ),
-                                const AppImage.svg(AssetConstants.icCalendarIcon),
+                                const AppImage.svg(
+                                    AssetConstants.icCalendarIcon),
                               ],
                             ),
                           ),
@@ -244,23 +267,26 @@ class _CreatePostViewState extends State<CreatePostView> {
                       ),
                       Dimens.boxHeight(Dimens.eight),
                       DottedBorder(
-                        borderType: BorderType.RRect,
-                        radius: Radius.circular(Dimens.twelve),
-                        padding: Dimens.edgeInsetsAll(Dimens.sixteen),
-                        color: AppColors.colorDBDBDB,
-                        strokeWidth: 1,
-                        dashPattern: const [6, 3],
+                        options: RoundedRectDottedBorderOptions(
+                          radius: Radius.circular(Dimens.twelve),
+                          padding: Dimens.edgeInsetsAll(Dimens.sixteen),
+                          color: AppColors.colorDBDBDB,
+                          strokeWidth: 1,
+                          dashPattern: const [6, 3],
+                        ),
                         child: Column(
                           children: [
                             Text(
                               TranslationFile.noProductsLinkedYet,
-                              style: Styles.primaryText14.copyWith(fontWeight: FontWeight.w600),
+                              style: Styles.primaryText14
+                                  .copyWith(fontWeight: FontWeight.w600),
                             ),
                             Dimens.boxHeight(Dimens.four),
                             Text(
                               TranslationFile.connectProductsToPost,
                               textAlign: TextAlign.center,
-                              style: Styles.secondaryText12.copyWith(color: AppColors.color909090),
+                              style: Styles.secondaryText12
+                                  .copyWith(color: AppColors.color909090),
                             ),
                             Dimens.boxHeight(Dimens.sixteen),
                             AppButton(
@@ -433,7 +459,8 @@ class _CreatePostViewState extends State<CreatePostView> {
                           },
                           child: Text(
                             TranslationFile.editCover,
-                            style: Styles.secondaryText12.copyWith(color: AppColors.white),
+                            style: Styles.secondaryText12
+                                .copyWith(color: AppColors.white),
                           ),
                         ),
                       ),
@@ -441,7 +468,9 @@ class _CreatePostViewState extends State<CreatePostView> {
                   ),
                   // state is UploadingCoverImageState && state.progress > 0 && state.progress < 99
                   // Progress Bar
-                  if (state is UploadingCoverImageState && state.progress > 0 && state.progress < 99) ...[
+                  if (state is UploadingCoverImageState &&
+                      state.progress > 0 &&
+                      state.progress < 99) ...[
                     Positioned.fill(
                       child: Align(
                         alignment: Alignment.center,
@@ -468,13 +497,16 @@ class _CreatePostViewState extends State<CreatePostView> {
     final pickedDate = await showDialog(
       context: context,
       builder: (BuildContext context) {
-        var selectedDate = _createPostBloc.selectedDate ?? DateTime.now().add(const Duration(days: 1));
+        var selectedDate = _createPostBloc.selectedDate ??
+            DateTime.now().add(const Duration(days: 1));
         var selectedTime = TimeOfDay.fromDateTime(selectedDate);
 
         return AlertDialog(
-          title: Text(TranslationFile.schedulePost, style: Styles.primaryText14),
+          title:
+              Text(TranslationFile.schedulePost, style: Styles.primaryText14),
           backgroundColor: AppColors.white,
-          buttonPadding: Dimens.edgeInsetsSymmetric(horizontal: Dimens.five, vertical: Dimens.ten),
+          buttonPadding: Dimens.edgeInsetsSymmetric(
+              horizontal: Dimens.five, vertical: Dimens.ten),
           content: StatefulBuilder(
             builder: (context, setState) => Column(
               mainAxisSize: MainAxisSize.min,
@@ -495,7 +527,8 @@ class _CreatePostViewState extends State<CreatePostView> {
                       builder: (context, child) => Theme(
                         data: ThemeData.light().copyWith(
                           primaryColor: Theme.of(context).primaryColor,
-                          colorScheme: ColorScheme.light(primary: Theme.of(context).primaryColor),
+                          colorScheme: ColorScheme.light(
+                              primary: Theme.of(context).primaryColor),
                         ),
                         child: child!,
                       ),
@@ -525,7 +558,8 @@ class _CreatePostViewState extends State<CreatePostView> {
                       builder: (context, child) => Theme(
                         data: ThemeData.light().copyWith(
                           primaryColor: Theme.of(context).primaryColor,
-                          colorScheme: ColorScheme.light(primary: Theme.of(context).primaryColor),
+                          colorScheme: ColorScheme.light(
+                              primary: Theme.of(context).primaryColor),
                         ),
                         child: child!,
                       ),
