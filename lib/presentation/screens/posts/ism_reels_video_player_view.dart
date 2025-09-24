@@ -598,7 +598,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       );
 
   Widget _buildMentionsToggleButton() => GestureDetector(
-        onTap: _toggleMentions,
+        onTap: () {
+          setState(() {
+            _mentionsVisible = !_mentionsVisible;
+          });
+        },
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
@@ -648,12 +652,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   void _toggleMentions() {
     if (_pageMentionMetaDataList.isListEmptyOrNull == false) {
-      setState(() {
-        _mentionsVisible = !_mentionsVisible;
-      });
-
       if (_mentionsVisible) {
         _autoHideMentions();
+      } else {
+        _toggleMuteAndUnMute();
       }
     } else {
       _toggleMuteAndUnMute();
@@ -662,13 +664,19 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   void _autoHideMentions() {
-    Future.delayed(const Duration(seconds: 4), () {
-      if (mounted && _mentionsVisible) {
-        setState(() {
-          _mentionsVisible = false;
-        });
-      }
-    });
+    if (_mentionsVisible) {
+      setState(() {
+        _mentionsVisible = false;
+      });
+    } else {
+      Future.delayed(const Duration(seconds: 4), () {
+        if (mounted && _mentionsVisible) {
+          setState(() {
+            _mentionsVisible = false;
+          });
+        }
+      });
+    }
   }
 
   void _showMentionDetails(MentionMetaData mention) {
