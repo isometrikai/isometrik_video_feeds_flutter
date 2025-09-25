@@ -38,6 +38,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
 
 class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     with SingleTickerProviderStateMixin {
+  // Use MediaCacheFactory instead of direct VideoCacheManager
   VideoCacheManager get _videoCacheManager => widget.videoCacheManager ?? VideoCacheManager();
 
   // Add constants for media types
@@ -152,12 +153,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     // Initialize new video if needed
     if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kVideoType) {
-      // Start precaching next video if available
-      final nextIndex = _currentPageNotifier.value + 1;
-      if (nextIndex < _reelData.mediaMetaDataList.length &&
-          _reelData.mediaMetaDataList[nextIndex].mediaType == kVideoType) {
-        await _videoCacheManager.precacheVideos([_reelData.mediaMetaDataList[nextIndex].mediaUrl]);
-      }
+      // Parent widget (PostItemWidget) handles caching
 
       await _initializeVideoPlayer();
       mountUpdate();
@@ -170,7 +166,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         _reelData.mediaMetaDataList.isNotEmpty &&
         _currentPageNotifier.value < _reelData.mediaMetaDataList.length &&
         !_videoCacheManager
-            .isVideoCached(_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl)) {
+            .isMediaCached(_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl)) {
       _videoPlayerController?.dispose();
     }
     _videoPlayerController = null;
@@ -191,7 +187,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     try {
       // First try to get cached controller
-      _videoPlayerController = _videoCacheManager.getCachedController(videoUrl);
+      _videoPlayerController =
+          _videoCacheManager.getCachedMedia(videoUrl) as IVideoPlayerController?;
 
       if (_videoPlayerController != null) {
         debugPrint('IsmReelsVideoPlayerView....Using cached video controller for $videoUrl');
@@ -206,7 +203,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       }
 
       // If not cached or needs reinitializing, check if initialization is in progress
-      if (_videoCacheManager.isVideoInitializing(videoUrl)) {
+      if (_videoCacheManager.isMediaInitializing(videoUrl)) {
         debugPrint('IsmReelsVideoPlayerView....Video is being initialized, waiting...');
         // Wait for initialization with timeout
         for (var i = 0; i < 5; i++) {
@@ -214,7 +211,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           await Future.delayed(const Duration(milliseconds: 200));
           if (!mounted || _isDisposed) return;
 
-          _videoPlayerController = _videoCacheManager.getCachedController(videoUrl);
+          _videoPlayerController =
+              _videoCacheManager.getCachedMedia(videoUrl) as IVideoPlayerController?;
           if (_videoPlayerController != null && _videoPlayerController!.isInitialized) {
             debugPrint('IsmReelsVideoPlayerView....Found initialized controller after waiting');
             await _setupVideoController();
@@ -242,12 +240,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
 
     // Try to get from cache first
-    _videoPlayerController = _videoCacheManager.getCachedController(mediaUrl);
+    _videoPlayerController = _videoCacheManager.getCachedMedia(mediaUrl) as IVideoPlayerController?;
 
     if (_videoPlayerController == null) {
       // If not in cache, trigger precaching which will create a new controller
-      await _videoCacheManager.precacheVideos([mediaUrl], highPriority: true);
-      _videoPlayerController = _videoCacheManager.getCachedController(mediaUrl);
+      await MediaCacheFactory.precacheMedia([mediaUrl], highPriority: true);
+      _videoPlayerController =
+          _videoCacheManager.getCachedMedia(mediaUrl) as IVideoPlayerController?;
 
       if (_videoPlayerController == null) return;
     }
@@ -310,7 +309,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl.isStringEmptyOrNull ==
             false &&
         !_videoCacheManager
-            .isVideoCached(_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl)) {
+            .isMediaCached(_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl)) {
       _videoPlayerController?.pause();
       _videoPlayerController?.dispose();
     } else {

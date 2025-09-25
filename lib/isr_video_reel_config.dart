@@ -43,10 +43,9 @@ class IsrVideoReelConfig {
         IsrLocalStorageKeys.userId, postInfo?.userInformation?.userId, SavedValueDataType.string);
   }
 
-  static void precacheVideos(List<String> videoUrls) {
-    debugPrint('IsrVideoReelConfig: precacheVideos: $videoUrls');
-    if (videoUrls.isEmpty) return;
-    final videoCacheManager = VideoCacheManager();
-    videoCacheManager.precacheVideos(videoUrls);
+  static void precacheVideos(List<String> mediaUrls) async {
+    debugPrint('IsrVideoReelConfig: precacheVideos: $mediaUrls');
+    if (mediaUrls.isEmpty) return;
+    await MediaCacheFactory.precacheMedia(mediaUrls, highPriority: true);
   }
 }

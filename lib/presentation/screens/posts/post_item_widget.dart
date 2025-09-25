@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/media_cache_factory.dart';
 import 'package:ism_video_reel_player/utils/isr_utils.dart';
 
 class PostItemWidget extends StatefulWidget {
@@ -227,7 +227,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                         // For video post
                         await _evictDeletedPostImage(thumbnailUrl);
                         // Clear video controller
-                        _videoCacheManager.clearVideo(imageUrl);
+                        _videoCacheManager.clearMedia(imageUrl);
                       }
                     }
                   }
@@ -309,21 +309,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
         },
       );
 
-  /// Background version of image caching using compute
-  /// Then caches images on main thread
-  /// Returns early if widget is unmounted
-  Future<void> _cacheImagesInBackground(List<String> urls) async {
-    debugPrint('cacheImagesInBackground:.... $urls');
-    if (!mounted) return;
-
-    // Use compute for background processing if needed
-    await compute((List<String> urls) => urls, urls).then((processedUrls) {
-      if (!mounted) return;
-      IsrVideoReelUtility.preCacheImages(urls, context);
-    });
-  }
-
-  // Update your _doImageCaching method to handle both images and videos
+  // Handle media caching for both images and videos
   Future<void> _doMediaCaching(int index) async {
     if (_reelsDataList.isEmpty || index >= _reelsDataList.length) return;
 
@@ -332,85 +318,58 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
 
     debugPrint('🎯 MainWidget: Page changed to index $index (@$username)');
 
-    // Immediately cache current post's thumbnails
+    // Collect all media URLs from current post
+    final currentMediaUrls = <String>[];
     for (var mediaItem in reelsData.mediaMetaDataList) {
       if (mediaItem.thumbnailUrl.isNotEmpty) {
-        // Cache in memory and disk
-        final provider = NetworkImage(mediaItem.thumbnailUrl);
-        await precacheImage(provider, context);
-        await DefaultCacheManager().downloadFile(mediaItem.thumbnailUrl);
-        _cachedImages.add(mediaItem.thumbnailUrl);
+        currentMediaUrls.add(mediaItem.thumbnailUrl);
+      }
+      if (mediaItem.mediaUrl.isNotEmpty) {
+        currentMediaUrls.add(mediaItem.mediaUrl);
       }
     }
 
+    // Immediately cache current post's media with high priority
+    await MediaCacheFactory.precacheMedia(currentMediaUrls, highPriority: true);
+
     // Start precaching nearby content in parallel
-    unawaited(Future.wait([
-      _precacheNearbyImages(index),
-      _precacheNearbyVideos(index),
-    ]));
+    unawaited(_precacheNearbyMedia(index));
 
     // Print cache stats every few scrolls
     if (index % 3 == 0) {
-      final stats = _videoCacheManager.getCacheStats();
+      final stats = MediaCacheFactory.getCombinedStats();
       debugPrint('📊 MainWidget: Cache Stats - ${stats.toString()}');
     }
   }
 
-  Future<void> _precacheNearbyImages(int currentIndex) async {
+  Future<void> _precacheNearbyMedia(int currentIndex) async {
     if (_reelsDataList.isEmpty) return;
 
     // Cache more aggressively ahead since users typically scroll forward
-    final startIndex = math.max(0, currentIndex - 4); // 1 behind
+    final startIndex = math.max(0, currentIndex - 4); // 4 behind
     final endIndex = math.min(_reelsDataList.length - 1, currentIndex + 4); // 4 ahead
 
-    final imagesToCache = <String>[];
-    final thumbnailsToPrecache = <String>[];
+    final mediaUrls = <String>[];
 
     for (var i = startIndex; i <= endIndex; i++) {
+      if (i == currentIndex) {
+        continue; // Skip current index as it's already cached
+      }
+
       final reelData = _reelsDataList[i];
-
-      // Loop through ALL media items
-      for (var mediaIndex = 0; mediaIndex < reelData.mediaMetaDataList.length; mediaIndex++) {
-        final mediaItem = reelData.mediaMetaDataList[mediaIndex];
-
-        // Handle thumbnails with higher priority
-        if (mediaItem.thumbnailUrl.isNotEmpty && !_cachedImages.contains(mediaItem.thumbnailUrl)) {
-          thumbnailsToPrecache.add(mediaItem.thumbnailUrl);
-          _cachedImages.add(mediaItem.thumbnailUrl);
-          debugPrint('➕ MainWidget: Added thumbnail to priority queue - Index $i');
+      for (var mediaItem in reelData.mediaMetaDataList) {
+        if (mediaItem.thumbnailUrl.isNotEmpty) {
+          mediaUrls.add(mediaItem.thumbnailUrl);
         }
-
-        // Handle main images
-        if (mediaItem.mediaType == 0 &&
-            mediaItem.mediaUrl.isNotEmpty &&
-            !_cachedImages.contains(mediaItem.mediaUrl)) {
-          imagesToCache.add(mediaItem.mediaUrl);
-          _cachedImages.add(mediaItem.mediaUrl);
-          debugPrint('➕ MainWidget: Added image to cache queue - Index $i');
+        if (mediaItem.mediaUrl.isNotEmpty) {
+          mediaUrls.add(mediaItem.mediaUrl);
         }
       }
     }
 
-    // Cache thumbnails first (they're smaller and more critical)
-    if (thumbnailsToPrecache.isNotEmpty) {
-      final prioritizedThumbnails = _prioritizeNextPostAllMedia(thumbnailsToPrecache, currentIndex);
-      for (final url in prioritizedThumbnails) {
-        try {
-          // Cache both in memory and on disk
-          final provider = NetworkImage(url);
-          await precacheImage(provider, context);
-          await DefaultCacheManager().downloadFile(url);
-          debugPrint('✨ MainWidget: Cached thumbnail - $url');
-        } catch (e) {
-          debugPrint('⚠️ MainWidget: Failed to cache thumbnail - $url: $e');
-        }
-      }
-    }
-
-    // Then cache main images
-    if (imagesToCache.isNotEmpty) {
-      final prioritizedImages = _prioritizeNextPostAllMedia(imagesToCache, currentIndex);
-      await _cacheImagesInBackground(prioritizedImages);
+    if (mediaUrls.isNotEmpty) {
+      final prioritizedUrls = _prioritizeNextPostAllMedia(mediaUrls, currentIndex);
+      await MediaCacheFactory.precacheMedia(prioritizedUrls);
     }
   }
 
@@ -437,167 +396,6 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
       return [...nextPostImages, ...images];
     }
     return images;
-  }
-
-// Updated _precacheNearbyVideos method to handle all media items
-  Future<void> _precacheNearbyVideos(int currentIndex) async {
-    if (_reelsDataList.isEmpty) return;
-
-    debugPrint('🎬 MainWidget: Starting video precaching for index $currentIndex');
-
-    // First, immediately cache the current video if it exists
-    final currentReelsData = _reelsDataList[currentIndex];
-    final currentVideos = <String>[];
-
-    // Get all videos from current post
-    for (var mediaItem in currentReelsData.mediaMetaDataList) {
-      if (mediaItem.mediaType == 1 && mediaItem.mediaUrl.isNotEmpty) {
-        currentVideos.add(mediaItem.mediaUrl);
-      }
-    }
-
-    // Immediately start caching current videos
-    if (currentVideos.isNotEmpty) {
-      try {
-        debugPrint('🎯 MainWidget: Immediately caching current videos');
-        await _videoCacheManager.precacheVideos(currentVideos, highPriority: true);
-      } catch (e) {
-        debugPrint('⚠️ MainWidget: Failed to cache current videos: $e');
-      }
-    }
-
-    // Cache more aggressively ahead since users typically scroll forward
-    final startIndex = math.max(0, currentIndex - 4); // 1 behind
-    final endIndex = math.min(_reelsDataList.length - 1, currentIndex + 4); // 4 ahead like images
-
-    debugPrint(
-        '📍 MainWidget: Precaching range: $startIndex to $endIndex (current: $currentIndex)');
-
-    final videosToCache = <String>[];
-    final videoInfo = <String>[];
-    final futures = <Future<void>>[];
-
-    // Collect videos to cache
-    for (var i = startIndex; i <= endIndex; i++) {
-      if (i == currentIndex) {
-        continue; // Skip current index as it's already being cached
-      }
-
-      final reelsData = _reelsDataList[i];
-      final username = reelsData.userName;
-      final position = i < currentIndex ? 'BEHIND' : 'AHEAD';
-
-      // Loop through ALL media items
-      for (var mediaIndex = 0; mediaIndex < reelsData.mediaMetaDataList.length; mediaIndex++) {
-        final mediaItem = reelsData.mediaMetaDataList[mediaIndex];
-
-        // Only cache videos, not images
-        if (mediaItem.mediaType == 1) {
-          final videoUrl = mediaItem.mediaUrl;
-
-          videoInfo.add('[$position] Index $i, Media $mediaIndex: @$username');
-
-          // Only cache if not already cached and URL is valid
-          if (videoUrl.isNotEmpty && !_videoCacheManager.isVideoCached(videoUrl)) {
-            videosToCache.add(videoUrl);
-            debugPrint(
-                '➕ MainWidget: Added to cache queue - Index $i, Media $mediaIndex (@$username)');
-          } else if (videoUrl.isNotEmpty) {
-            debugPrint('✅ MainWidget: Already cached - Index $i, Media $mediaIndex (@$username)');
-          }
-        }
-      }
-    }
-
-    debugPrint('📊 MainWidget: Video analysis complete:');
-    for (final info in videoInfo) {
-      debugPrint('   $info');
-    }
-
-    if (videosToCache.isNotEmpty) {
-      // Priority: cache next post first, then others
-      final prioritizedVideos = _prioritizeNextVideoAllMedia(videosToCache, currentIndex);
-      debugPrint('🚀 MainWidget: Starting precache for ${prioritizedVideos.length} videos');
-
-      // Split videos into chunks for parallel processing
-      final chunkSize = 2;
-      for (var i = 0; i < prioritizedVideos.length; i += chunkSize) {
-        final end = math.min(i + chunkSize, prioritizedVideos.length);
-        final chunk = prioritizedVideos.sublist(i, end);
-
-        // Add each chunk to parallel processing queue
-        futures.add(_videoCacheManager.precacheVideos(chunk).catchError((e) {
-          debugPrint('⚠️ MainWidget: Failed to cache video chunk: $e');
-          return null;
-        }));
-      }
-
-      // Wait for all chunks to complete
-      try {
-        await Future.wait(futures);
-        debugPrint('✅ MainWidget: All video chunks cached successfully');
-      } catch (e) {
-        debugPrint('⚠️ MainWidget: Some video chunks failed to cache: $e');
-      }
-    } else {
-      debugPrint('✅ MainWidget: No new videos to cache around index $currentIndex');
-    }
-  }
-
-// Updated _prioritizeNextVideo method to handle all media items
-  List<String> _prioritizeNextVideoAllMedia(List<String> videos, int currentIndex) {
-    debugPrint('🎯 MainWidget: Prioritizing videos for current index $currentIndex');
-
-    // Put next post videos first in the caching queue
-    final nextPostIndex = currentIndex + 1;
-    if (nextPostIndex < _reelsDataList.length) {
-      final reelsData = _reelsDataList[nextPostIndex];
-      final nextUsername = reelsData.userName;
-      final nextPostVideos = <String>[];
-
-      // Collect all videos from the next post
-      for (var mediaIndex = 0; mediaIndex < reelsData.mediaMetaDataList.length; mediaIndex++) {
-        final mediaItem = reelsData.mediaMetaDataList[mediaIndex];
-
-        if (mediaItem.mediaType == 1) {
-          final videoUrl = mediaItem.mediaUrl;
-
-          if (videoUrl.isNotEmpty && videos.contains(videoUrl)) {
-            nextPostVideos.add(videoUrl);
-            videos.remove(videoUrl);
-            debugPrint(
-                '🥇 MainWidget: Prioritized next video - Index $nextPostIndex, Media $mediaIndex (@$nextUsername)');
-          }
-        }
-      }
-
-      if (nextPostVideos.isNotEmpty) {
-        final prioritized = [...nextPostVideos, ...videos];
-
-        debugPrint('📋 MainWidget: Final priority order with ${prioritized.length} videos:');
-        var orderIndex = 1;
-        for (final url in prioritized) {
-          // Find which post and media index this URL belongs to
-          for (var i = 0; i < _reelsDataList.length; i++) {
-            final post = _reelsDataList[i];
-            for (var j = 0; j < post.mediaMetaDataList.length; j++) {
-              final mediaItem = post.mediaMetaDataList[j];
-              if (mediaItem.mediaUrl == url) {
-                final username = post.userName;
-                debugPrint('   $orderIndex. Index $i, Media $j (@$username)');
-                orderIndex++;
-                break;
-              }
-            }
-          }
-        }
-
-        return prioritized;
-      }
-    }
-
-    debugPrint('📋 MainWidget: No next videos to prioritize, using original order');
-    return videos;
   }
 
 // Updated _evictDeletedPostImage method to handle all media items
