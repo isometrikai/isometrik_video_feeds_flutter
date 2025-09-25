@@ -1,8 +1,9 @@
 import 'dart:async';
 
 import 'package:ism_video_reel_player/presentation/presentation.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/media_cache_interface.dart';
 
-class VideoCacheManager {
+class VideoCacheManager implements IMediaCacheManager {
   VideoCacheManager._internal() {
     // Initialize with cached video player by default
     _cacheManager = VideoPlayerFactory.create(_currentType);
@@ -27,35 +28,37 @@ class VideoCacheManager {
   /// Get current video player type
   VideoPlayerType get currentPlayerType => _currentType;
 
-  /// Precache video controllers for given URLs
-  Future<void> precacheVideos(List<String> videoUrls, {bool highPriority = false}) =>
-      _cacheManager.precacheVideos(videoUrls, highPriority: highPriority);
+  @override
+  Future<void> precacheMedia(List<String> mediaUrls,
+          {bool highPriority = false}) =>
+      _cacheManager.precacheVideos(mediaUrls, highPriority: highPriority);
 
-  /// Get cached video controller
-  IVideoPlayerController? getCachedController(String url) => _cacheManager.getCachedController(url);
+  @override
+  dynamic getCachedMedia(String url) => _cacheManager.getCachedController(url);
 
-  /// Mark video as visible (prevents disposal)
+  @override
   void markAsVisible(String url) => _cacheManager.markAsVisible(url);
 
-  /// Mark video as not visible (allows disposal)
+  @override
   void markAsNotVisible(String url) => _cacheManager.markAsNotVisible(url);
 
-  /// Check if video is cached and ready
-  bool isVideoCached(String url) => _cacheManager.isVideoCached(url);
+  @override
+  bool isMediaCached(String url) => _cacheManager.isVideoCached(url);
 
-  /// Check if video is initializing
-  bool isVideoInitializing(String url) => _cacheManager.isVideoInitializing(url);
+  @override
+  bool isMediaInitializing(String url) =>
+      _cacheManager.isVideoInitializing(url);
 
-  /// Clear specific video from cache
-  void clearVideo(String url) => _cacheManager.clearVideo(url);
+  @override
+  void clearMedia(String url) => _cacheManager.clearVideo(url);
 
-  /// Clear all video controllers
-  void clearControllers() => _cacheManager.clearControllers();
+  @override
+  void clearCache() => _cacheManager.clearControllers();
 
-  /// Clear controllers for videos that are outside the given range of URLs
-  void clearControllersOutsideRange(List<String> activeUrls) =>
+  @override
+  void clearOutsideRange(List<String> activeUrls) =>
       _cacheManager.clearControllersOutsideRange(activeUrls);
 
-  /// Get cache statistics for debugging
+  @override
   Map<String, dynamic> getCacheStats() => _cacheManager.getCacheStats();
 }

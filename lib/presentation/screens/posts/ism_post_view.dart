@@ -128,7 +128,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                 _videoCacheManager = VideoCacheManager();
               } else if (newUserId.isEmpty && _loggedInUserId.isNotEmpty) {
                 // Clean up video cache manager when user logs out
-                _videoCacheManager?.clearControllers();
+                _videoCacheManager?.clearCache();
                 _videoCacheManager = null;
               }
               _loggedInUserId = newUserId;
@@ -156,6 +156,36 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
             },
           ),
         ),
+      );
+
+  Widget _buildTabBarView(TabDataModel tabData, int index) => PostItemWidget(
+        key: ValueKey(_getUniqueKey(tabData, index)),
+        videoCacheManager: _loggedInUserId.isNotEmpty ? _videoCacheManager : null,
+        onTapPlaceHolder: () {
+          if ((_postTabController?.length ?? 0) > 1) {
+            _tabsVisibilityNotifier.value = true;
+            // _currentIndex++;
+            _postTabController?.animateTo(1);
+          }
+        },
+        loggedInUserId: _loggedInUserId,
+        allowImplicitScrolling: widget.allowImplicitScrolling,
+        onPageChanged: widget.onPageChanged,
+        reelsDataList: _tabDataModelList[index].reelsDataList,
+        onLoadMore: _tabDataModelList[index].onLoadMore,
+        onRefresh: () async {
+          var result = false;
+          result = await _tabDataModelList[index].onRefresh?.call() ?? false;
+          // Increment refresh count to force rebuild
+          if (result) {
+            setState(() {
+              _refreshCounts[index] = (_refreshCounts[index] ?? 0) + 1;
+            });
+          }
+          return result;
+        },
+        startingPostIndex: _tabDataModelList[index].startingPostIndex,
+        postSectionType: _tabDataModelList[index].postSectionType,
       );
 
   Widget _buildTabBar() => ValueListenableBuilder<bool>(
@@ -223,42 +253,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    // // Clean up video cache manager first if we have a user
-    // if (_loggedInUserId.isNotEmpty && _videoCacheManager != null) {
-    //   try {
-    //     // Create a local reference to the cache manager and clear the field
-    //     final cacheManager = _videoCacheManager;
-    //     _videoCacheManager = null;
-    //
-    //     // Clean up in the background to avoid blocking
-    //     Future.microtask(() async {
-    //       try {
-    //         // First pause any playing videos
-    //         if (_currentIndex < _tabDataModelList.length) {
-    //           final currentTabData = _tabDataModelList[_currentIndex];
-    //           for (var post in currentTabData.reelsDataList) {
-    //             for (var media in post.mediaMetaDataList) {
-    //               if (media.mediaType == 1 && media.mediaUrl.isNotEmpty) {
-    //                 final controller =
-    //                     cacheManager?.getCachedController(media.mediaUrl);
-    //                 if (controller?.value.isPlaying == true) {
-    //                   await controller?.pause();
-    //                 }
-    //               }
-    //             }
-    //           }
-    //         }
-    //         // Then clear all controllers
-    //         // cacheManager?.clearControllers();
-    //       } catch (e) {
-    //         debugPrint('Error during video cleanup: $e');
-    //       }
-    //     });
-    //   } catch (e) {
-    //     debugPrint('Error during cleanup setup: $e');
-    //   }
-    // }
-
     // Then dispose other controllers
     _postTabController?.dispose();
     for (var controller in _refreshControllers) {
@@ -275,36 +269,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     _refreshCounts[index] ??= 0;
     return '${tabData.reelsDataList.length}_${_refreshCounts[index]}';
   }
-
-  Widget _buildTabBarView(TabDataModel tabData, int index) => PostItemWidget(
-        key: ValueKey(_getUniqueKey(tabData, index)),
-        videoCacheManager: _loggedInUserId.isNotEmpty ? _videoCacheManager : null,
-        onTapPlaceHolder: () {
-          if ((_postTabController?.length ?? 0) > 1) {
-            _tabsVisibilityNotifier.value = true;
-            _currentIndex++;
-            _postTabController?.animateTo(1);
-          }
-        },
-        loggedInUserId: _loggedInUserId,
-        allowImplicitScrolling: widget.allowImplicitScrolling,
-        onPageChanged: widget.onPageChanged,
-        reelsDataList: _tabDataModelList[index].reelsDataList,
-        onLoadMore: _tabDataModelList[index].onLoadMore,
-        onRefresh: () async {
-          var result = false;
-          result = await _tabDataModelList[index].onRefresh?.call() ?? false;
-          // Increment refresh count to force rebuild
-          if (result) {
-            setState(() {
-              _refreshCounts[index] = (_refreshCounts[index] ?? 0) + 1;
-            });
-          }
-          return result;
-        },
-        startingPostIndex: _tabDataModelList[index].startingPostIndex,
-        postSectionType: _tabDataModelList[index].postSectionType,
-      );
 
   bool _isFollowingPostsEmpty() {
     final isFollowingPostEmpty = widget.tabDataModelList.length > 1 &&
