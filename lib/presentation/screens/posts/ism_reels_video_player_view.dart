@@ -378,6 +378,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   Widget _buildMediaCarousel() => Stack(
+        fit: StackFit.expand,
         children: [
           GestureDetector(
             onTap: _toggleMentions,
@@ -1567,7 +1568,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           imageUrl: media.mediaUrl,
           width: IsrDimens.getScreenWidth(context),
           height: IsrDimens.getScreenHeight(context),
-          fit: BoxFit.contain,
+          fit: BoxFit.cover,
         ),
       );
     } else {
