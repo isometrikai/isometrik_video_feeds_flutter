@@ -48,13 +48,18 @@ abstract class IVideoPlayerController {
 
   /// Dispose the controller
   Future<void> dispose();
+
+  /// Add listener
+  void addListener(VoidCallback listener);
+
+  /// Remove listener
+  void removeListener(VoidCallback listener);
 }
 
 /// Abstract interface for video player cache management
 abstract class IVideoCacheManager {
   /// Precache videos for given URLs
-  Future<void> precacheVideos(List<String> videoUrls,
-      {bool highPriority = false});
+  Future<void> precacheVideos(List<String> videoUrls, {bool highPriority = false});
 
   /// Get cached video controller
   IVideoPlayerController? getCachedController(String url);

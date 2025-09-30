@@ -69,6 +69,16 @@ class StandardVideoPlayerController implements IVideoPlayerController {
     _playingStateNotifier.dispose();
     await _controller.dispose();
   }
+
+  @override
+  void addListener(VoidCallback listener) {
+    _controller.addListener(listener);
+  }
+
+  @override
+  void removeListener(VoidCallback listener) {
+    _controller.removeListener(listener);
+  }
 }
 
 /// Cache manager implementation for standard VideoPlayer
