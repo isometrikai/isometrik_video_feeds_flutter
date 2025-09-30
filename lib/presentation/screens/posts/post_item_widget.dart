@@ -69,38 +69,36 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
 
   void _initializeContent() async {
     if (_reelsDataList.isListEmptyOrNull == false) {
-      // Immediately initialize first post's media with highest priority
+      // Immediately initialize ALL media from first post with highest priority
       final firstPost = _reelsDataList[0];
-      final firstMedia = firstPost.mediaMetaDataList.firstWhere(
-        (media) => media.mediaUrl.isNotEmpty,
-        orElse: () => MediaMetaData(
-          mediaUrl: '',
-          thumbnailUrl: '',
-          mediaType: 0,
-        ),
-      );
+      final urlsToCache = <String>[];
 
-      if (firstMedia.mediaUrl.isNotEmpty) {
-        final urlsToCache = <String>[];
+      // Process ALL media items in the first post
+      for (var mediaItem in firstPost.mediaMetaDataList) {
+        if (mediaItem.mediaUrl.isEmpty) continue;
 
-        if (firstMedia.mediaType == 1) {
+        if (mediaItem.mediaType == 1) {
           // Video
           // For video, cache both video and thumbnail
-          urlsToCache.add(firstMedia.mediaUrl);
-          if (firstMedia.thumbnailUrl.isNotEmpty) {
-            urlsToCache.add(firstMedia.thumbnailUrl);
+          urlsToCache.add(mediaItem.mediaUrl);
+          if (mediaItem.thumbnailUrl.isNotEmpty) {
+            urlsToCache.add(mediaItem.thumbnailUrl);
             debugPrint(
-                '🚀 MainWidget: Pre-initializing first video and thumbnail: ${firstMedia.mediaUrl}');
+                '🚀 MainWidget: Pre-initializing video and thumbnail: ${mediaItem.mediaUrl}');
           }
         } else {
           // Image
           // For image, just cache the image
-          urlsToCache.add(firstMedia.mediaUrl);
-          debugPrint('🚀 MainWidget: Pre-initializing first image: ${firstMedia.mediaUrl}');
+          urlsToCache.add(mediaItem.mediaUrl);
+          debugPrint('🚀 MainWidget: Pre-initializing image: ${mediaItem.mediaUrl}');
         }
+      }
 
-        // Initialize first media with maximum priority
+      // Initialize all first post media with maximum priority
+      if (urlsToCache.isNotEmpty) {
         await _videoCacheManager.precacheMedia(urlsToCache, highPriority: true);
+        debugPrint(
+            '🚀 MainWidget: Pre-initialized ${urlsToCache.length} media items for first post');
       }
 
       // Then start caching other media in parallel
@@ -343,120 +341,65 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
 
     debugPrint('🎯 MainWidget: Page changed to index $index (@$username)');
 
-    // Collect all media URLs from current post with proper ordering
-    final currentMediaUrls = <String>[];
+    // Collect media URLs for current and nearby posts
+    final mediaUrls = <String>[];
+    final startIndex = math.max(0, index - 4); // 4 behind
+    final endIndex = math.min(_reelsDataList.length - 1, index + 4); // 4 ahead
 
-    // Process each media item in order
+    // First process current post with high priority
     for (var mediaItem in reelsData.mediaMetaDataList) {
       if (mediaItem.mediaUrl.isEmpty) continue;
 
       if (mediaItem.mediaType == 1) {
         // Video
-        // For videos, cache both video and thumbnail
-        currentMediaUrls.add(mediaItem.mediaUrl);
+        // For videos, cache both video and thumbnail with high priority
+        mediaUrls.insert(0, mediaItem.mediaUrl); // Add to start for high priority
         if (mediaItem.thumbnailUrl.isNotEmpty) {
-          currentMediaUrls.add(mediaItem.thumbnailUrl);
-          debugPrint('➕ Adding video and thumbnail: ${mediaItem.mediaUrl}');
+          mediaUrls.insert(1, mediaItem.thumbnailUrl);
+          debugPrint('🚀 Adding current video and thumbnail: ${mediaItem.mediaUrl}');
         }
       } else {
         // Image
-        // For images, just cache the image
-        currentMediaUrls.add(mediaItem.mediaUrl);
-        debugPrint('➕ Adding image: ${mediaItem.mediaUrl}');
+        // For images, just cache the image with high priority
+        mediaUrls.insert(0, mediaItem.mediaUrl); // Add to start for high priority
+        debugPrint('🚀 Adding current image: ${mediaItem.mediaUrl}');
       }
     }
 
-    // Immediately cache current post's media with high priority
-    if (currentMediaUrls.isNotEmpty) {
-      debugPrint('🚀 MainWidget: Caching current post media: ${currentMediaUrls.length} items');
-      await _videoCacheManager.precacheMedia(currentMediaUrls, highPriority: true);
+    // Then process nearby posts
+    for (var i = startIndex; i <= endIndex; i++) {
+      if (i == index) continue; // Skip current post as it's already added
+
+      final nearbyPost = _reelsDataList[i];
+      for (var mediaItem in nearbyPost.mediaMetaDataList) {
+        if (mediaItem.mediaUrl.isEmpty) continue;
+
+        if (mediaItem.mediaType == 1) {
+          // Video
+          mediaUrls.add(mediaItem.mediaUrl);
+          if (mediaItem.thumbnailUrl.isNotEmpty) {
+            mediaUrls.add(mediaItem.thumbnailUrl);
+            debugPrint('➕ Adding nearby video and thumbnail for post $i');
+          }
+        } else {
+          // Image
+          mediaUrls.add(mediaItem.mediaUrl);
+          debugPrint('➕ Adding nearby image for post $i');
+        }
+      }
     }
 
-    // Start precaching nearby content in parallel
-    unawaited(_precacheNearbyMedia(index));
+    // Cache all media with current post's media having priority
+    if (mediaUrls.isNotEmpty) {
+      debugPrint('🚀 MainWidget: Caching media: ${mediaUrls.length} items');
+      await _videoCacheManager.precacheMedia(mediaUrls, highPriority: true);
+    }
 
     // Print cache stats every few scrolls
     if (index % 3 == 0) {
       final stats = _videoCacheManager.getCacheStats();
       debugPrint('📊 MainWidget: Cache Stats - ${stats.toString()}');
     }
-  }
-
-  Future<void> _precacheNearbyMedia(int currentIndex) async {
-    if (_reelsDataList.isEmpty) return;
-
-    // Cache more aggressively ahead since users typically scroll forward
-    final startIndex = math.max(0, currentIndex - 4); // 4 behind
-    final endIndex = math.min(_reelsDataList.length - 1, currentIndex + 4); // 4 ahead
-
-    final mediaUrls = <String>[];
-
-    for (var i = startIndex; i <= endIndex; i++) {
-      if (i == currentIndex) {
-        continue; // Skip current index as it's already cached
-      }
-
-      final reelData = _reelsDataList[i];
-      // Handle all media items in the carousel
-      for (var mediaIndex = 0; mediaIndex < reelData.mediaMetaDataList.length; mediaIndex++) {
-        final mediaItem = reelData.mediaMetaDataList[mediaIndex];
-        if (mediaItem.mediaUrl.isEmpty) continue;
-
-        if (mediaItem.mediaType == 1) {
-          // Video
-          // For videos, cache both video and thumbnail
-          mediaUrls.add(mediaItem.mediaUrl);
-          if (mediaItem.thumbnailUrl.isNotEmpty) {
-            mediaUrls.add(mediaItem.thumbnailUrl);
-            debugPrint('➕ Adding video and thumbnail for post $i, media $mediaIndex');
-          }
-        } else {
-          // Image
-          // For images, just cache the image
-          mediaUrls.add(mediaItem.mediaUrl);
-          debugPrint('➕ Adding image for post $i, media $mediaIndex');
-        }
-      }
-    }
-
-    if (mediaUrls.isNotEmpty) {
-      final prioritizedUrls = _prioritizeNextPostAllMedia(mediaUrls, currentIndex);
-      await MediaCacheFactory.precacheMedia(prioritizedUrls);
-    }
-  }
-
-// Updated _prioritizeNextPost method to handle all media items
-  List<String> _prioritizeNextPostAllMedia(List<String> images, int currentIndex) {
-    // Put next post images first in the caching queue
-    final nextPostIndex = currentIndex + 1;
-    if (nextPostIndex < _reelsDataList.length) {
-      final reelsData = _reelsDataList[nextPostIndex];
-      final nextPostImages = <String>[];
-
-      // Collect all media from the next post with proper ordering
-      for (var mediaIndex = 0; mediaIndex < reelsData.mediaMetaDataList.length; mediaIndex++) {
-        final mediaItem = reelsData.mediaMetaDataList[mediaIndex];
-
-        // First add thumbnail (always needed quickly)
-        if (mediaItem.thumbnailUrl.isNotEmpty && images.contains(mediaItem.thumbnailUrl)) {
-          nextPostImages.add(mediaItem.thumbnailUrl);
-          images.remove(mediaItem.thumbnailUrl);
-          debugPrint('🥇 Prioritized thumbnail for next post media $mediaIndex');
-        }
-
-        // Then add main media
-        if (mediaItem.mediaUrl.isNotEmpty && images.contains(mediaItem.mediaUrl)) {
-          nextPostImages.add(mediaItem.mediaUrl);
-          images.remove(mediaItem.mediaUrl);
-          debugPrint(
-              '🥇 Prioritized ${mediaItem.mediaType == 0 ? "image" : "video"} for next post media $mediaIndex');
-        }
-      }
-
-      // Put next post images at the front
-      return [...nextPostImages, ...images];
-    }
-    return images;
   }
 
 // Updated _evictDeletedPostImage method to handle all media items

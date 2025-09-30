@@ -101,7 +101,7 @@ class MediaMetaData {
 
   final String mediaUrl;
   final String thumbnailUrl;
-  final int mediaType;
+  final int mediaType; // 0 for image, 1 for video
 }
 
 class MentionMetaData {
