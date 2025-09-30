@@ -39,8 +39,7 @@ class PostItemWidget extends StatefulWidget {
   State<PostItemWidget> createState() => _PostItemWidgetState();
 }
 
-class _PostItemWidgetState extends State<PostItemWidget>
-    with AutomaticKeepAliveClientMixin {
+class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAliveClientMixin {
   late PageController _pageController;
   final Set<String> _cachedImages = {};
   late final VideoCacheManager _videoCacheManager;
@@ -56,8 +55,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
     super.initState();
     _videoCacheManager = widget.videoCacheManager ?? VideoCacheManager();
     _reelsDataList = widget.reelsDataList;
-    _pageController =
-        PageController(initialPage: widget.startingPostIndex ?? 0);
+    _pageController = PageController(initialPage: widget.startingPostIndex ?? 0);
   }
 
   @override
@@ -98,8 +96,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
           // Image
           // For image, just cache the image
           urlsToCache.add(firstMedia.mediaUrl);
-          debugPrint(
-              '🚀 MainWidget: Pre-initializing first image: ${firstMedia.mediaUrl}');
+          debugPrint('🚀 MainWidget: Pre-initializing first image: ${firstMedia.mediaUrl}');
         }
 
         // Initialize first media with maximum priority
@@ -138,227 +135,203 @@ class _PostItemWidgetState extends State<PostItemWidget>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return RefreshIndicator(
-      onRefresh: () async {
-        if (widget.loggedInUserId.isStringEmptyOrNull == true) return;
-        try {
-          if (widget.onRefresh != null) {
-            final result = await widget.onRefresh?.call();
-            if (result == true) {
-              // Get current index before refresh
-              final currentIndex = _pageController.page?.toInt() ?? 0;
-              debugPrint(
-                  '🔄 MainWidget: Starting refresh at index $currentIndex');
-
-              // Increment refresh count to force rebuild
-              setState(() {
-                _refreshCounts[currentIndex] =
-                    (_refreshCounts[currentIndex] ?? 0) + 1;
-              });
-
-              // Re-initialize caching for current index after successful refresh
-              await _doMediaCaching(currentIndex);
-              debugPrint(
-                  '✅ MainWidget: Posts refreshed successfully with count: ${_refreshCounts[currentIndex]}');
-            } else {
-              debugPrint('⚠️ MainWidget: Refresh returned false');
-            }
-          }
-        } catch (e) {
-          debugPrint('❌ MainWidget: Error during refresh - $e');
-        }
-        return;
-      },
-      child: _reelsDataList.isListEmptyOrNull == true
-          ? _buildPlaceHolder(context)
-          : _buildContent(context),
-    );
+    return _reelsDataList.isListEmptyOrNull == true
+        ? _buildPlaceHolder(context)
+        : _buildContent(context);
   }
 
-  Widget _buildPlaceHolder(BuildContext context) => CustomScrollView(
-        physics: const ClampingScrollPhysics(),
-        slivers: [
-          SliverFillRemaining(
-            fillOverscroll: true,
-            hasScrollBody: false,
-            child: Center(
-              child: widget.postSectionType == PostSectionType.trending
-                  ? const SizedBox.shrink()
-                  : widget.placeHolderWidget ??
-                      PostPlaceHolderView(
-                        postSectionType: widget.postSectionType,
-                        onTap: () {
-                          if (widget.onTapPlaceHolder != null) {
-                            widget.onTapPlaceHolder!();
-                          }
-                        },
-                      ),
+  Widget _buildPlaceHolder(BuildContext context) => Column(
+        children: [
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () async {
+                await _refreshPost();
+              },
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: ClampingScrollPhysics(),
+                ),
+                child: SizedBox(
+                  height: MediaQuery.of(context).size.height,
+                  child: Center(
+                    child: widget.postSectionType == PostSectionType.trending
+                        ? const Text('No Data')
+                        : widget.placeHolderWidget ??
+                            PostPlaceHolderView(
+                              postSectionType: widget.postSectionType,
+                              onTap: () {
+                                if (widget.onTapPlaceHolder != null) {
+                                  widget.onTapPlaceHolder!();
+                                }
+                              },
+                            ),
+                  ),
+                ),
+              ),
             ),
           ),
         ],
       );
 
-  Widget _buildContent(BuildContext context) => PageView.builder(
-        // key: _pageStorageKey,
-        allowImplicitScrolling: widget.allowImplicitScrolling ?? true,
-        controller: _pageController,
-        clipBehavior: Clip.none,
-        padEnds: false,
-        physics: const ClampingScrollPhysics(),
-        onPageChanged: (index) {
-          _doMediaCaching(index);
-          debugPrint('page index: $index');
-          // Check if we're at 65% of the list
-          final threshold = (_reelsDataList.length * 0.65).floor();
-          if (index >= threshold || index == _reelsDataList.length - 1) {
-            if (widget.onLoadMore != null) {
-              widget.onLoadMore!().then(
-                (value) {
-                  if (value.isListEmptyOrNull) return;
-                  if (mounted) {
-                    setState(() {
-                      final newReels = value.where((newReel) =>
-                          !_reelsDataList.any((existingReel) =>
-                              existingReel.postId == newReel.postId));
-                      _reelsDataList.addAll(newReels);
-                      if (_reelsDataList.isNotEmpty) {
-                        _doMediaCaching(0);
-                      }
-                    });
+  Widget _buildContent(BuildContext context) => Column(
+        children: [
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () async {
+                await _refreshPost();
+              },
+              child: PageView.builder(
+                // key: _pageStorageKey,
+                allowImplicitScrolling: widget.allowImplicitScrolling ?? true,
+                controller: _pageController,
+                physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
+                onPageChanged: (index) {
+                  _doMediaCaching(index);
+                  debugPrint('page index: $index');
+                  // Check if we're at 65% of the list
+                  final threshold = (_reelsDataList.length * 0.65).floor();
+                  if (index >= threshold || index == _reelsDataList.length - 1) {
+                    if (widget.onLoadMore != null) {
+                      widget.onLoadMore!().then(
+                        (value) {
+                          if (value.isListEmptyOrNull) return;
+                          if (mounted) {
+                            setState(() {
+                              final newReels = value.where((newReel) => !_reelsDataList
+                                  .any((existingReel) => existingReel.postId == newReel.postId));
+                              _reelsDataList.addAll(newReels);
+                              if (_reelsDataList.isNotEmpty) {
+                                _doMediaCaching(0);
+                              }
+                            });
+                          }
+                        },
+                      );
+                    }
+                  }
+                  if (widget.onPageChanged != null) {
+                    widget.onPageChanged!(index, _reelsDataList[index].postId ?? '');
                   }
                 },
-              );
-            }
-          }
-          if (widget.onPageChanged != null) {
-            widget.onPageChanged!(index, _reelsDataList[index].postId ?? '');
-          }
-        },
-        itemCount: _reelsDataList.length,
-        scrollDirection: Axis.vertical,
-        itemBuilder: (context, index) {
-          final reelsData = _reelsDataList[index];
-          return RepaintBoundary(
-            child: IsmReelsVideoPlayerView(
-              reelsData: reelsData,
-              videoCacheManager: _videoCacheManager,
-              // Add refresh count to force rebuild
-              key:
-                  ValueKey('${reelsData.postId}_${_refreshCounts[index] ?? 0}'),
-              onPressMoreButton: () async {
-                if (reelsData.onPressMoreButton == null) return;
-                final result = await reelsData.onPressMoreButton!.call();
-                if (result == null) return;
-                if (result is bool) {
-                  final isSuccess = result;
-                  if (isSuccess) {
-                    final postIndex = _reelsDataList.indexWhere(
-                        (element) => element.postId == reelsData.postId);
-                    if (postIndex != -1) {
-                      setState(() {
-                        _reelsDataList.removeAt(postIndex);
-                      });
-                      final imageUrl = _reelsDataList[postIndex]
-                          .mediaMetaDataList[0]
-                          .mediaUrl;
-                      final thumbnailUrl = _reelsDataList[postIndex]
-                          .mediaMetaDataList[0]
-                          .thumbnailUrl;
-                      if (_reelsDataList[postIndex]
-                              .mediaMetaDataList[0]
-                              .mediaType ==
-                          0) {
-                        // For image post
-                        await _evictDeletedPostImage(imageUrl);
-                      } else {
-                        // For video post
-                        await _evictDeletedPostImage(thumbnailUrl);
-                        // Clear video controller
-                        _videoCacheManager.clearMedia(imageUrl);
-                      }
-                    }
-                  }
-                }
-                if (result is ReelsData) {
-                  final index = _reelsDataList
-                      .indexWhere((element) => element.postId == result.postId);
-                  if (index != -1) {
-                    setState(() {
-                      _reelsDataList[index] = result;
-                    });
-                  }
-                }
-              },
-              onCreatePost: () async {
-                if (reelsData.onCreatePost != null) {
-                  final result = await reelsData.onCreatePost!();
-                  if (result != null) {
-                    setState(() {
-                      _reelsDataList.insert(index, result);
-                    });
-                  }
-                }
-              },
-              onPressFollowButton: () async {
-                if (reelsData.onPressFollow != null) {
-                  final result = await reelsData.onPressFollow!(
-                      reelsData.userId ?? '', reelsData.isFollow ?? false);
-                  if (result == true) {
-                    setState(() {
-                      reelsData.isFollow =
-                          reelsData.isFollow == true ? false : true;
-                    });
-                  }
-                }
-              },
-              onPressLikeButton: () async {
-                if (reelsData.onPressLike != null) {
-                  final result =
-                      await reelsData.onPressLike!(reelsData.isLiked ?? false);
-                  if (result == true) {
-                    reelsData.isLiked = reelsData.isLiked == false;
-                    if (reelsData.isLiked == true) {
-                      reelsData.likesCount = (reelsData.likesCount ?? 0) + 1;
-                    } else {
-                      if ((reelsData.likesCount ?? 0) > 0) {
-                        reelsData.likesCount = (reelsData.likesCount ?? 0) - 1;
-                      }
-                    }
-                    setState(() {});
-                  }
-                }
-              },
-              onDoubleTap: () async {
-                if (reelsData.onDoubleTap != null &&
-                    reelsData.isLiked == false) {
-                  final result =
-                      await reelsData.onDoubleTap!(reelsData.isLiked ?? false);
-                  if (result == true) {
-                    reelsData.isLiked = reelsData.isLiked == false;
-                    if (reelsData.isLiked == true) {
-                      reelsData.likesCount = (reelsData.likesCount ?? 0) + 1;
-                    } else {
-                      if ((reelsData.likesCount ?? 0) > 0) {
-                        reelsData.likesCount = (reelsData.likesCount ?? 0) - 1;
-                      }
-                    }
-                    setState(() {});
-                  }
-                }
-              },
-              onPressSaveButton: () async {
-                if (reelsData.onPressSave != null) {
-                  final result = await reelsData
-                      .onPressSave!(reelsData.isSavedPost ?? false);
-                  if (result == true) {
-                    reelsData.isSavedPost = reelsData.isSavedPost == false;
-                    setState(() {});
-                  }
-                }
-              },
+                itemCount: _reelsDataList.length,
+                scrollDirection: Axis.vertical,
+                itemBuilder: (context, index) {
+                  final reelsData = _reelsDataList[index];
+                  return RepaintBoundary(
+                    child: IsmReelsVideoPlayerView(
+                      reelsData: reelsData,
+                      videoCacheManager: _videoCacheManager,
+                      // Add refresh count to force rebuild
+                      key: ValueKey('${reelsData.postId}_${_refreshCounts[index] ?? 0}'),
+                      onPressMoreButton: () async {
+                        if (reelsData.onPressMoreButton == null) return;
+                        final result = await reelsData.onPressMoreButton!.call();
+                        if (result == null) return;
+                        if (result is bool) {
+                          final isSuccess = result;
+                          if (isSuccess) {
+                            final postIndex = _reelsDataList
+                                .indexWhere((element) => element.postId == reelsData.postId);
+                            if (postIndex != -1) {
+                              setState(() {
+                                _reelsDataList.removeAt(postIndex);
+                              });
+                              final imageUrl =
+                                  _reelsDataList[postIndex].mediaMetaDataList[0].mediaUrl;
+                              final thumbnailUrl =
+                                  _reelsDataList[postIndex].mediaMetaDataList[0].thumbnailUrl;
+                              if (_reelsDataList[postIndex].mediaMetaDataList[0].mediaType == 0) {
+                                // For image post
+                                await _evictDeletedPostImage(imageUrl);
+                              } else {
+                                // For video post
+                                await _evictDeletedPostImage(thumbnailUrl);
+                                // Clear video controller
+                                _videoCacheManager.clearMedia(imageUrl);
+                              }
+                            }
+                          }
+                        }
+                        if (result is ReelsData) {
+                          final index = _reelsDataList
+                              .indexWhere((element) => element.postId == result.postId);
+                          if (index != -1) {
+                            setState(() {
+                              _reelsDataList[index] = result;
+                            });
+                          }
+                        }
+                      },
+                      onCreatePost: () async {
+                        if (reelsData.onCreatePost != null) {
+                          final result = await reelsData.onCreatePost!();
+                          if (result != null) {
+                            setState(() {
+                              _reelsDataList.insert(index, result);
+                            });
+                          }
+                        }
+                      },
+                      onPressFollowButton: () async {
+                        if (reelsData.onPressFollow != null) {
+                          final result = await reelsData.onPressFollow!(
+                              reelsData.userId ?? '', reelsData.isFollow ?? false);
+                          if (result == true) {
+                            setState(() {
+                              reelsData.isFollow = reelsData.isFollow == true ? false : true;
+                            });
+                          }
+                        }
+                      },
+                      onPressLikeButton: () async {
+                        if (reelsData.onPressLike != null) {
+                          final result = await reelsData.onPressLike!(reelsData.isLiked ?? false);
+                          if (result == true) {
+                            reelsData.isLiked = reelsData.isLiked == false;
+                            if (reelsData.isLiked == true) {
+                              reelsData.likesCount = (reelsData.likesCount ?? 0) + 1;
+                            } else {
+                              if ((reelsData.likesCount ?? 0) > 0) {
+                                reelsData.likesCount = (reelsData.likesCount ?? 0) - 1;
+                              }
+                            }
+                            setState(() {});
+                          }
+                        }
+                      },
+                      onDoubleTap: () async {
+                        if (reelsData.onDoubleTap != null && reelsData.isLiked == false) {
+                          final result = await reelsData.onDoubleTap!(reelsData.isLiked ?? false);
+                          if (result == true) {
+                            reelsData.isLiked = reelsData.isLiked == false;
+                            if (reelsData.isLiked == true) {
+                              reelsData.likesCount = (reelsData.likesCount ?? 0) + 1;
+                            } else {
+                              if ((reelsData.likesCount ?? 0) > 0) {
+                                reelsData.likesCount = (reelsData.likesCount ?? 0) - 1;
+                              }
+                            }
+                            setState(() {});
+                          }
+                        }
+                      },
+                      onPressSaveButton: () async {
+                        if (reelsData.onPressSave != null) {
+                          final result =
+                              await reelsData.onPressSave!(reelsData.isSavedPost ?? false);
+                          if (result == true) {
+                            reelsData.isSavedPost = reelsData.isSavedPost == false;
+                            setState(() {});
+                          }
+                        }
+                      },
+                    ),
+                  );
+                },
+              ),
             ),
-          );
-        },
+          ),
+        ],
       );
 
   // Handle media caching for both images and videos
@@ -395,10 +368,8 @@ class _PostItemWidgetState extends State<PostItemWidget>
 
     // Immediately cache current post's media with high priority
     if (currentMediaUrls.isNotEmpty) {
-      debugPrint(
-          '🚀 MainWidget: Caching current post media: ${currentMediaUrls.length} items');
-      await _videoCacheManager.precacheMedia(currentMediaUrls,
-          highPriority: true);
+      debugPrint('🚀 MainWidget: Caching current post media: ${currentMediaUrls.length} items');
+      await _videoCacheManager.precacheMedia(currentMediaUrls, highPriority: true);
     }
 
     // Start precaching nearby content in parallel
@@ -416,8 +387,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
 
     // Cache more aggressively ahead since users typically scroll forward
     final startIndex = math.max(0, currentIndex - 4); // 4 behind
-    final endIndex =
-        math.min(_reelsDataList.length - 1, currentIndex + 4); // 4 ahead
+    final endIndex = math.min(_reelsDataList.length - 1, currentIndex + 4); // 4 ahead
 
     final mediaUrls = <String>[];
 
@@ -428,9 +398,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
 
       final reelData = _reelsDataList[i];
       // Handle all media items in the carousel
-      for (var mediaIndex = 0;
-          mediaIndex < reelData.mediaMetaDataList.length;
-          mediaIndex++) {
+      for (var mediaIndex = 0; mediaIndex < reelData.mediaMetaDataList.length; mediaIndex++) {
         final mediaItem = reelData.mediaMetaDataList[mediaIndex];
         if (mediaItem.mediaUrl.isEmpty) continue;
 
@@ -440,8 +408,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
           mediaUrls.add(mediaItem.mediaUrl);
           if (mediaItem.thumbnailUrl.isNotEmpty) {
             mediaUrls.add(mediaItem.thumbnailUrl);
-            debugPrint(
-                '➕ Adding video and thumbnail for post $i, media $mediaIndex');
+            debugPrint('➕ Adding video and thumbnail for post $i, media $mediaIndex');
           }
         } else {
           // Image
@@ -453,15 +420,13 @@ class _PostItemWidgetState extends State<PostItemWidget>
     }
 
     if (mediaUrls.isNotEmpty) {
-      final prioritizedUrls =
-          _prioritizeNextPostAllMedia(mediaUrls, currentIndex);
+      final prioritizedUrls = _prioritizeNextPostAllMedia(mediaUrls, currentIndex);
       await MediaCacheFactory.precacheMedia(prioritizedUrls);
     }
   }
 
 // Updated _prioritizeNextPost method to handle all media items
-  List<String> _prioritizeNextPostAllMedia(
-      List<String> images, int currentIndex) {
+  List<String> _prioritizeNextPostAllMedia(List<String> images, int currentIndex) {
     // Put next post images first in the caching queue
     final nextPostIndex = currentIndex + 1;
     if (nextPostIndex < _reelsDataList.length) {
@@ -469,23 +434,18 @@ class _PostItemWidgetState extends State<PostItemWidget>
       final nextPostImages = <String>[];
 
       // Collect all media from the next post with proper ordering
-      for (var mediaIndex = 0;
-          mediaIndex < reelsData.mediaMetaDataList.length;
-          mediaIndex++) {
+      for (var mediaIndex = 0; mediaIndex < reelsData.mediaMetaDataList.length; mediaIndex++) {
         final mediaItem = reelsData.mediaMetaDataList[mediaIndex];
 
         // First add thumbnail (always needed quickly)
-        if (mediaItem.thumbnailUrl.isNotEmpty &&
-            images.contains(mediaItem.thumbnailUrl)) {
+        if (mediaItem.thumbnailUrl.isNotEmpty && images.contains(mediaItem.thumbnailUrl)) {
           nextPostImages.add(mediaItem.thumbnailUrl);
           images.remove(mediaItem.thumbnailUrl);
-          debugPrint(
-              '🥇 Prioritized thumbnail for next post media $mediaIndex');
+          debugPrint('🥇 Prioritized thumbnail for next post media $mediaIndex');
         }
 
         // Then add main media
-        if (mediaItem.mediaUrl.isNotEmpty &&
-            images.contains(mediaItem.mediaUrl)) {
+        if (mediaItem.mediaUrl.isNotEmpty && images.contains(mediaItem.mediaUrl)) {
           nextPostImages.add(mediaItem.mediaUrl);
           images.remove(mediaItem.mediaUrl);
           debugPrint(
@@ -502,15 +462,11 @@ class _PostItemWidgetState extends State<PostItemWidget>
 // Updated _evictDeletedPostImage method to handle all media items
   Future<void> evictDeletedPostMedia(ReelsData deletedPost) async {
     // Loop through all media items in the deleted post
-    for (var mediaIndex = 0;
-        mediaIndex < deletedPost.mediaMetaDataList.length;
-        mediaIndex++) {
+    for (var mediaIndex = 0; mediaIndex < deletedPost.mediaMetaDataList.length; mediaIndex++) {
       final mediaItem = deletedPost.mediaMetaDataList[mediaIndex];
 
       // Evict image or thumbnail
-      final imageUrl = mediaItem.mediaType == 0
-          ? mediaItem.mediaUrl
-          : mediaItem.thumbnailUrl;
+      final imageUrl = mediaItem.mediaType == 0 ? mediaItem.mediaUrl : mediaItem.thumbnailUrl;
 
       if (imageUrl.isNotEmpty) {
         // Evict from Flutter's memory cache
@@ -536,8 +492,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
 
   Future<void> clearAllCache() async {
     PaintingBinding.instance.imageCache.clear(); // removes decoded images
-    PaintingBinding.instance.imageCache
-        .clearLiveImages(); // removes "live" references
+    PaintingBinding.instance.imageCache.clearLiveImages(); // removes "live" references
 
     // Clear disk cache from CachedNetworkImage
     await DefaultCacheManager().emptyCache();
@@ -552,8 +507,36 @@ class _PostItemWidgetState extends State<PostItemWidget>
     // Also evict from disk cache if using CachedNetworkImage
     try {
       await DefaultCacheManager().removeFile(imageUrl);
-      debugPrint(
-          '🗑️ MainWidget: Evicted deleted post image from cache - $imageUrl');
+      debugPrint('🗑️ MainWidget: Evicted deleted post image from cache - $imageUrl');
     } catch (_) {}
+  }
+
+  Future<void> _refreshPost() async {
+    if (widget.loggedInUserId.isStringEmptyOrNull == true) return;
+    try {
+      if (widget.onRefresh != null) {
+        final result = await widget.onRefresh?.call();
+        if (result == true) {
+          // Get current index before refresh
+          final currentIndex = _pageController.page?.toInt() ?? 0;
+          debugPrint('🔄 MainWidget: Starting refresh at index $currentIndex');
+
+          // Increment refresh count to force rebuild
+          setState(() {
+            _refreshCounts[currentIndex] = (_refreshCounts[currentIndex] ?? 0) + 1;
+          });
+
+          // Re-initialize caching for current index after successful refresh
+          await _doMediaCaching(currentIndex);
+          debugPrint(
+              '✅ MainWidget: Posts refreshed successfully with count: ${_refreshCounts[currentIndex]}');
+        } else {
+          debugPrint('⚠️ MainWidget: Refresh returned false');
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ MainWidget: Error during refresh - $e');
+    }
+    return;
   }
 }
