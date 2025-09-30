@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/utils/isr_utils.dart';
@@ -185,6 +186,14 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                 physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
                 onPageChanged: (index) {
                   _doMediaCaching(index);
+                  final post = _reelsDataList[index];
+
+                  EventQueueProvider.instance.addEvent({
+                    'type': EventType.view.value,
+                    'postId': post.postId,
+                    'userId': widget.loggedInUserId,
+                    'timestamp': DateTime.now().toUtc().toIso8601String(),
+                  });
                   debugPrint('page index: $index');
                   // Check if we're at 65% of the list
                   final threshold = (_reelsDataList.length * 0.65).floor();
@@ -208,7 +217,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                     }
                   }
                   if (widget.onPageChanged != null) {
-                    widget.onPageChanged!(index, _reelsDataList[index].postId ?? '');
+                    widget.onPageChanged!(index, post.postId ?? '');
                   }
                 },
                 itemCount: _reelsDataList.length,
@@ -218,6 +227,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                   return RepaintBoundary(
                     child: IsmReelsVideoPlayerView(
                       reelsData: reelsData,
+                      loggedInUserId: widget.loggedInUserId,
                       videoCacheManager: _videoCacheManager,
                       // Add refresh count to force rebuild
                       key: ValueKey('${reelsData.postId}_${_refreshCounts[index] ?? 0}'),
@@ -279,6 +289,14 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                               reelsData.isFollow = reelsData.isFollow == true ? false : true;
                             });
                           }
+                          // ✅ Log event locally
+                          unawaited(EventQueueProvider.instance.addEvent({
+                            'type': EventType.follow.value,
+                            'postId': reelsData.postId,
+                            'userId': widget.loggedInUserId,
+                            'isFollow': reelsData.isFollow,
+                            'timestamp': DateTime.now().toUtc().toIso8601String(),
+                          }));
                         }
                       },
                       onPressLikeButton: () async {
@@ -295,6 +313,14 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                             }
                             setState(() {});
                           }
+                          // ✅ Log event locally
+                          unawaited(EventQueueProvider.instance.addEvent({
+                            'type': EventType.like.value,
+                            'postId': reelsData.postId,
+                            'userId': widget.loggedInUserId,
+                            'isLiked': reelsData.isLiked,
+                            'timestamp': DateTime.now().toUtc().toIso8601String(),
+                          }));
                         }
                       },
                       onDoubleTap: () async {
@@ -311,6 +337,14 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                             }
                             setState(() {});
                           }
+                          // ✅ Log event locally
+                          unawaited(EventQueueProvider.instance.addEvent({
+                            'type': EventType.like.value,
+                            'postId': reelsData.postId,
+                            'userId': widget.loggedInUserId,
+                            'isLiked': reelsData.isLiked,
+                            'timestamp': DateTime.now().toUtc().toIso8601String(),
+                          }));
                         }
                       },
                       onPressSaveButton: () async {
@@ -321,6 +355,13 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                             reelsData.isSavedPost = reelsData.isSavedPost == false;
                             setState(() {});
                           }
+                          unawaited(EventQueueProvider.instance.addEvent({
+                            'type': EventType.save.value,
+                            'postId': reelsData.postId,
+                            'isSaved': reelsData.isSavedPost,
+                            'userId': widget.loggedInUserId,
+                            'timestamp': DateTime.now().toUtc().toIso8601String(),
+                          }));
                         }
                       },
                     ),

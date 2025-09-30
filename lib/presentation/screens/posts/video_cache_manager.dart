@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:ism_video_reel_player/presentation/presentation.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/media_cache_interface.dart';
 
 class VideoCacheManager implements IMediaCacheManager {
   VideoCacheManager._internal() {
@@ -29,8 +28,7 @@ class VideoCacheManager implements IMediaCacheManager {
   VideoPlayerType get currentPlayerType => _currentType;
 
   @override
-  Future<void> precacheMedia(List<String> mediaUrls,
-          {bool highPriority = false}) =>
+  Future<void> precacheMedia(List<String> mediaUrls, {bool highPriority = false}) =>
       _cacheManager.precacheVideos(mediaUrls, highPriority: highPriority);
 
   @override
@@ -46,8 +44,7 @@ class VideoCacheManager implements IMediaCacheManager {
   bool isMediaCached(String url) => _cacheManager.isVideoCached(url);
 
   @override
-  bool isMediaInitializing(String url) =>
-      _cacheManager.isVideoInitializing(url);
+  bool isMediaInitializing(String url) => _cacheManager.isVideoInitializing(url);
 
   @override
   void clearMedia(String url) => _cacheManager.clearVideo(url);

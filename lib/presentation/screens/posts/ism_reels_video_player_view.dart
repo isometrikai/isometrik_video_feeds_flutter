@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -21,6 +22,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
     this.onPressLikeButton,
     this.onPressSaveButton,
     this.onDoubleTap,
+    this.loggedInUserId,
   });
 
   final VideoCacheManager? videoCacheManager;
@@ -31,6 +33,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
   final Future<void> Function()? onPressLikeButton;
   final Future<void> Function()? onPressSaveButton;
   final Future<void> Function()? onDoubleTap;
+  final String? loggedInUserId;
 
   @override
   State<IsmReelsVideoPlayerView> createState() => _IsmReelsVideoPlayerViewState();
@@ -52,6 +55,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   TapGestureRecognizer? _tapGestureRecognizer;
 
   IVideoPlayerController? _videoPlayerController;
+  final Set<String> _loggedMilestones = {}; // prevent duplicates
 
   var _isPlaying = true;
   var _isPlayPauseActioned = false;
@@ -284,6 +288,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         await _videoPlayerController!.play();
       }
 
+      _videoPlayerController!.addListener(_handlePlaybackProgress);
       debugPrint('✅ Video controller setup complete');
     } catch (e) {
       debugPrint('❌ Error in setupVideoController: $e');
@@ -310,6 +315,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             false &&
         !_videoCacheManager
             .isMediaCached(_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl)) {
+      _videoPlayerController?.removeListener(_handlePlaybackProgress);
       _videoPlayerController?.pause();
       _videoPlayerController?.dispose();
     } else {
@@ -1607,6 +1613,68 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     });
     _triggerMuteAnimation();
   }
+
+  /// Helper method to build the video player widget
+  Widget _buildVideoPlayerWidget(IVideoPlayerController controller) => Container(
+        color: Colors.black,
+        child: Center(
+          child: controller.buildVideoPlayerWidget(),
+        ),
+      );
+
+  void _handlePlaybackProgress() {
+    if (!mounted || _videoPlayerController == null || !_videoPlayerController!.isInitialized) {
+      return;
+    }
+
+    final position = _videoPlayerController!.position;
+    final total = _videoPlayerController!.duration.inSeconds ?? 1;
+    final progress = position.inSeconds;
+    final percent = (progress / total * 100).floor();
+
+    // fire at specific milestones
+    if (progress >= 3 && !_loggedMilestones.contains('3s')) {
+      _loggedMilestones.add('3s');
+      _logWatchEvent('progress', position: position, note: '3s');
+    }
+
+    if (progress >= 10 && !_loggedMilestones.contains('10s')) {
+      _loggedMilestones.add('10s');
+      _logWatchEvent('progress', position: position, note: '10s');
+    }
+
+    if (percent >= 25 && !_loggedMilestones.contains('25%')) {
+      _loggedMilestones.add('25%');
+      _logWatchEvent('progress', position: position, note: '25%');
+    }
+    if (percent >= 50 && !_loggedMilestones.contains('50%')) {
+      _loggedMilestones.add('50%');
+      _logWatchEvent('progress', position: position, note: '50%');
+    }
+    if (percent >= 75 && !_loggedMilestones.contains('75%')) {
+      _loggedMilestones.add('75%');
+      _logWatchEvent('progress', position: position, note: '75%');
+    }
+
+    // when video ends
+    if (_videoPlayerController!.position >= _videoPlayerController!.duration &&
+        !_loggedMilestones.contains('complete')) {
+      _loggedMilestones.add('complete');
+      _logWatchEvent('complete', position: position);
+    }
+  }
+
+  void _logWatchEvent(String type, {required Duration position, String? note}) {
+    EventQueueProvider.instance.addEvent({
+      'type': EventType.watch.value,
+      'postId': widget.reelsData?.postId,
+      'userId': widget.loggedInUserId,
+      'status': type, // start, progress, complete
+      'position': position.inSeconds,
+      'note': note, // optional (3s, 10s, 25%, etc.)
+      'timestamp': DateTime.now().toUtc().toIso8601String(),
+    });
+  }
 }
 
 class TrianglePainter extends CustomPainter {
@@ -1640,11 +1708,3 @@ class TrianglePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-
-/// Helper method to build the video player widget
-Widget _buildVideoPlayerWidget(IVideoPlayerController controller) => Container(
-      color: Colors.black,
-      child: Center(
-        child: controller.buildVideoPlayerWidget(),
-      ),
-    );

@@ -50,3 +50,4 @@ app.*.map.json
 /linux/flutter/generated_plugin_registrant.cc
 /example/android/app/.cxx/Debug
 example/assets/json/google_service_json.json
+/lib/data/managers/local_event.g.dart

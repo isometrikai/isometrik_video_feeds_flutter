@@ -87,18 +87,26 @@ class CachedVideoPlayerWrapper implements IVideoPlayerController {
     _playingStateNotifier.dispose();
     await _player.dispose();
   }
+
+  @override
+  void addListener(VoidCallback listener) {
+    _controller.addListener(listener);
+  }
+
+  @override
+  void removeListener(VoidCallback listener) {
+    _controller.removeListener(listener);
+  }
 }
 
 /// Cache manager implementation for CachedVideoPlayerPlus
 class CachedVideoCacheManager implements IVideoCacheManager {
   factory CachedVideoCacheManager() => _instance;
   CachedVideoCacheManager._internal();
-  static final CachedVideoCacheManager _instance =
-      CachedVideoCacheManager._internal();
+  static final CachedVideoCacheManager _instance = CachedVideoCacheManager._internal();
 
   final Map<String, CachedVideoPlayerWrapper> _videoControllerCache = {};
-  final Map<String, Future<CachedVideoPlayerWrapper?>> _initializationCache =
-      {};
+  final Map<String, Future<CachedVideoPlayerWrapper?>> _initializationCache = {};
   final Queue<String> _lruQueue = Queue<String>();
   final Set<String> _visibleVideos = <String>{};
   static const int _maxCacheSize = 10;
@@ -118,14 +126,11 @@ class CachedVideoCacheManager implements IVideoCacheManager {
     // For HLS streams, add specific headers and format hint
     final isHls = url.toLowerCase().endsWith('.m3u8');
     final headers = {
-      'User-Agent':
-          'AppleCoreMedia/1.0.0.19G82 (iPhone; U; CPU OS 15_6_1 like Mac OS X; en_us)',
+      'User-Agent': 'AppleCoreMedia/1.0.0.19G82 (iPhone; U; CPU OS 15_6_1 like Mac OS X; en_us)',
       'Accept': '*/*',
       'Accept-Language': 'en-US,en;q=0.9',
       'Accept-Encoding': 'gzip, deflate, br',
-      if (isHls)
-        'X-Playback-Session-Id':
-            DateTime.now().millisecondsSinceEpoch.toString(),
+      if (isHls) 'X-Playback-Session-Id': DateTime.now().millisecondsSinceEpoch.toString(),
     };
 
     return CachedVideoPlayerPlus.networkUrl(
@@ -135,8 +140,7 @@ class CachedVideoCacheManager implements IVideoCacheManager {
     );
   }
 
-  Future<CachedVideoPlayerWrapper?> _initializeVideoController(
-      String url) async {
+  Future<CachedVideoPlayerWrapper?> _initializeVideoController(String url) async {
     if (_initializationCache.containsKey(url)) {
       return _initializationCache[url];
     }
@@ -158,8 +162,7 @@ class CachedVideoCacheManager implements IVideoCacheManager {
     }
   }
 
-  Future<CachedVideoPlayerWrapper?> _createAndInitializeController(
-      String url) async {
+  Future<CachedVideoPlayerWrapper?> _createAndInitializeController(String url) async {
     try {
       final controller = _createVideoPlayerController(url);
       await controller.initialize();
@@ -193,8 +196,7 @@ class CachedVideoCacheManager implements IVideoCacheManager {
   }
 
   @override
-  Future<void> precacheVideos(List<String> videoUrls,
-      {bool highPriority = false}) async {
+  Future<void> precacheVideos(List<String> videoUrls, {bool highPriority = false}) async {
     final futures = <Future<void>>[];
 
     for (final url in videoUrls) {
@@ -262,9 +264,8 @@ class CachedVideoCacheManager implements IVideoCacheManager {
   @override
   void clearControllersOutsideRange(List<String> activeUrls) {
     final urlsToKeep = Set<String>.from(activeUrls);
-    final urlsToRemove = _videoControllerCache.keys
-        .where((url) => !urlsToKeep.contains(url))
-        .toList();
+    final urlsToRemove =
+        _videoControllerCache.keys.where((url) => !urlsToKeep.contains(url)).toList();
 
     for (final url in urlsToRemove) {
       clearVideo(url);

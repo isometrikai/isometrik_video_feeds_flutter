@@ -2,6 +2,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
@@ -25,6 +26,7 @@ class IsrVideoReelConfig {
     WidgetsFlutterBinding.ensureInitialized();
     await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     isrConfigureInjection();
+    _initializeHive();
     Bloc.observer = IsrAppBlocObserver();
     await _saveUserInformation(postInfo: postInfo);
     isSdkInitialize = true;
@@ -47,5 +49,11 @@ class IsrVideoReelConfig {
     debugPrint('IsrVideoReelConfig: precacheVideos: $mediaUrls');
     if (mediaUrls.isEmpty) return;
     await MediaCacheFactory.precacheMedia(mediaUrls, highPriority: true);
+  }
+
+  static void _initializeHive() async {
+    await Hive.initFlutter();
+    Hive.registerAdapter(LocalEventAdapter());
+    await EventQueueProvider.instance.init();
   }
 }
