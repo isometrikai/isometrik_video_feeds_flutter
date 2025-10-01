@@ -549,23 +549,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        width: 22,
-                        height: 22,
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                          child: Text(
-                            (mention.name ?? '').toUpperCase(),
-                            style: const TextStyle(
-                              color: Color(0xFF667eea),
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
+                      AppImage.network(
+                        height: 30.responsiveDimension,
+                        width: 30.responsiveDimension,
+                        mention.avatarUrl ?? '',
+                        isProfileImage: true,
+                        name: mention.username ?? '',
                       ),
                       const SizedBox(width: 6),
                       Flexible(
