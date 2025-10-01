@@ -56,8 +56,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
   int currentPage = 0;
   final followingPageSize = 20;
-  bool _hasMoreData = true;
-  bool _isLoadingMore = false;
   int _trendingCurrentPage = 1;
   bool _hasTrendingMoreData = true;
   bool _isTrendingLoadingMore = false;
@@ -132,63 +130,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   FutureOr<void> _getTrendingPost(GetTrendingPostEvent event, Emitter<HomeState> emit) async {
     await _callGetTrendingPost(
         event.isRefresh, event.isPagination, event.isLoading, event.onComplete);
-  }
-
-  Future<void> _callGetFollowingPost(bool isFromRefresh, bool isFromPagination, bool isLoading,
-      Function(List<PostData>)? onComplete) async {
-    // For refresh, clear cache and start from page 0
-    if (isFromRefresh) {
-      _timeLinePostList.clear();
-      currentPage = 0;
-      _hasMoreData = true;
-      _isLoadingMore = false;
-    } else if (!isFromPagination && _timeLinePostList.isNotEmpty) {
-      // If we have cached posts and it's not a refresh, emit them immediately
-      // emit(HomeLoaded(followingPosts: _followingPostList, trendingPosts: _trendingPostList));
-    }
-
-    if (!isFromPagination) {
-      currentPage = isFromRefresh ? 0 : 1;
-      _hasMoreData = true;
-    } else if (_isLoadingMore || !_hasMoreData) {
-      return;
-    }
-
-    _isLoadingMore = true;
-
-    // final apiResult = await _getFollowingPostUseCase.executeGetFollowingPost(
-    //   isLoading: isLoading,
-    //   page: _currentPage,
-    //   pageLimit: _followingPageSize,
-    // );
-    //
-    // if (apiResult.isSuccess) {
-    //   final postDataList = apiResult.data?.data as List<PostData>;
-    //   final newPosts = postDataList
-    //       .map((postData) => isr.PostDataModel.fromJson(postData.toJson()))
-    //       .toList(); // Updated line
-    //   if (newPosts.length < _followingPageSize) {
-    //     _hasMoreData = false;
-    //   }
-    //
-    //   if (isFromPagination) {
-    //     _followingPostList.addAll(newPosts);
-    //     if (onComplete != null) {
-    //       onComplete(newPosts);
-    //     }
-    //   } else {
-    //     _followingPostList
-    //       ..clear()
-    //       ..addAll(newPosts);
-    //   }
-    //
-    //   _currentPage++;
-    //   // emit(HomeLoaded(followingPosts: _followingPostList, trendingPosts: _trendingPostList));
-    // } else {
-    //   ErrorHandler.showAppError(appError: apiResult.error);
-    // }
-
-    _isLoadingMore = false;
   }
 
   Future<void> _callGetTrendingPost(

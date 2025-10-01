@@ -1617,7 +1617,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
 
     final position = _videoPlayerController!.position;
-    final total = _videoPlayerController!.duration.inSeconds ?? 1;
+    final total = _videoPlayerController!.duration.inSeconds;
     final progress = position.inSeconds;
     final percent = (progress / total * 100).floor();
 
