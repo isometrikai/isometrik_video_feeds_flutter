@@ -40,7 +40,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
 }
 
 class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   // Use MediaCacheFactory instead of direct VideoCacheManager
   VideoCacheManager get _videoCacheManager => widget.videoCacheManager ?? VideoCacheManager();
 
@@ -88,6 +88,20 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   void initState() {
     _onStartInit();
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
+      if (_isPlaying) {
+        _togglePlayPause();
+      }
+    } else if (state == AppLifecycleState.resumed) {
+      if (!_isPlaying) {
+        _togglePlayPause();
+      }
+    }
   }
 
   /// Returns true if the video controller is ready for playback.
@@ -298,6 +312,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   /// Disposes the current video controller if not cached, and cleans up state.
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _isDisposed = true;
     _tapGestureRecognizer?.dispose();
     _pageController?.dispose();

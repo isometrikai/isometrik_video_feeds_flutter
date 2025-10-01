@@ -53,7 +53,12 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
 
   @override
   void initState() {
+    _onStartInit();
     super.initState();
+  }
+
+  /// Initialize the widget
+  void _onStartInit() {
     _videoCacheManager = widget.videoCacheManager ?? VideoCacheManager();
     _reelsDataList = widget.reelsDataList;
     _pageController = PageController(initialPage: widget.startingPostIndex ?? 0);
