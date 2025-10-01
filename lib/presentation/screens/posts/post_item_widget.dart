@@ -240,7 +240,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                           if (isSuccess) {
                             final postIndex = _reelsDataList
                                 .indexWhere((element) => element.postId == reelsData.postId);
-                            if (postIndex != -1) {
+                            if (postIndex != -1 && mounted) {
                               setState(() {
                                 _reelsDataList.removeAt(postIndex);
                               });
@@ -263,7 +263,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                         if (result is ReelsData) {
                           final index = _reelsDataList
                               .indexWhere((element) => element.postId == result.postId);
-                          if (index != -1) {
+                          if (index != -1 && mounted) {
                             setState(() {
                               _reelsDataList[index] = result;
                             });
@@ -273,7 +273,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                       onCreatePost: () async {
                         if (reelsData.onCreatePost != null) {
                           final result = await reelsData.onCreatePost!();
-                          if (result != null) {
+                          if (result != null && mounted) {
                             setState(() {
                               _reelsDataList.insert(index, result);
                             });
@@ -284,7 +284,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                         if (reelsData.onPressFollow != null) {
                           final result = await reelsData.onPressFollow!(
                               reelsData.userId ?? '', reelsData.isFollow ?? false);
-                          if (result == true) {
+                          if (result == true && mounted) {
                             setState(() {
                               reelsData.isFollow = reelsData.isFollow == true ? false : true;
                             });
@@ -311,7 +311,9 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                                 reelsData.likesCount = (reelsData.likesCount ?? 0) - 1;
                               }
                             }
-                            setState(() {});
+                            if (mounted) {
+                              setState(() {});
+                            }
                           }
                           // ✅ Log event locally
                           unawaited(EventQueueProvider.instance.addEvent({
@@ -335,7 +337,9 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                                 reelsData.likesCount = (reelsData.likesCount ?? 0) - 1;
                               }
                             }
-                            setState(() {});
+                            if (mounted) {
+                              setState(() {});
+                            }
                           }
                           // ✅ Log event locally
                           unawaited(EventQueueProvider.instance.addEvent({
@@ -351,7 +355,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                         if (reelsData.onPressSave != null) {
                           final result =
                               await reelsData.onPressSave!(reelsData.isSavedPost ?? false);
-                          if (result == true) {
+                          if (result == true && mounted) {
                             reelsData.isSavedPost = reelsData.isSavedPost == false;
                             setState(() {});
                           }
@@ -520,9 +524,11 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
           debugPrint('🔄 MainWidget: Starting refresh at index $currentIndex');
 
           // Increment refresh count to force rebuild
-          setState(() {
-            _refreshCounts[currentIndex] = (_refreshCounts[currentIndex] ?? 0) + 1;
-          });
+          if (mounted) {
+            setState(() {
+              _refreshCounts[currentIndex] = (_refreshCounts[currentIndex] ?? 0) + 1;
+            });
+          }
 
           // Re-initialize caching for current index after successful refresh
           await _doMediaCaching(currentIndex);
