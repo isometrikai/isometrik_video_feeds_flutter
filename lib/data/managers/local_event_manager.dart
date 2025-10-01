@@ -109,9 +109,8 @@ class LocalEventQueue with WidgetsBindingObserver {
   }
 
   Future<void> _retryFlush(List<LocalEvent> events) async {
-    final box = Hive.box<LocalEvent>(_boxName);
-
     /// remove these 3 lines later
+    final box = Hive.box<LocalEvent>(_boxName);
     await box.clear();
     return;
 

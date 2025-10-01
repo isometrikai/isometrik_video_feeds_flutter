@@ -97,7 +97,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
 
       // Initialize all first post media with maximum priority
       if (urlsToCache.isNotEmpty) {
-        await _videoCacheManager.precacheMedia(urlsToCache, highPriority: true);
+        await MediaCacheFactory.precacheMedia(urlsToCache, highPriority: true);
         debugPrint(
             '🚀 MainWidget: Pre-initialized ${urlsToCache.length} media items for first post');
       }
@@ -433,12 +433,12 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
     // Cache all media with current post's media having priority
     if (mediaUrls.isNotEmpty) {
       debugPrint('🚀 MainWidget: Caching media: ${mediaUrls.length} items');
-      await _videoCacheManager.precacheMedia(mediaUrls, highPriority: true);
+      await MediaCacheFactory.precacheMedia(mediaUrls, highPriority: true);
     }
 
     // Print cache stats every few scrolls
     if (index % 3 == 0) {
-      final stats = _videoCacheManager.getCacheStats();
+      final stats = MediaCacheFactory.getCombinedStats();
       debugPrint('📊 MainWidget: Cache Stats - ${stats.toString()}');
     }
   }
@@ -467,7 +467,13 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
 
       // For videos, also evict from video cache
       if (mediaItem.mediaType == 1 && mediaItem.mediaUrl.isNotEmpty) {
-        // await _videoCacheManager.evictVideo(mediaItem.mediaUrl);
+        // Clear from appropriate cache manager based on media type
+        final imageCacheManager = MediaCacheFactory.getCacheManager(MediaType.image);
+        final videoCacheManager = MediaCacheFactory.getCacheManager(MediaType.video);
+
+        imageCacheManager.clearMedia(mediaItem.mediaUrl);
+        videoCacheManager.clearMedia(mediaItem.mediaUrl);
+
         debugPrint(
             '🗑️ MainWidget: Evicted deleted post video from cache - Media $mediaIndex: ${mediaItem.mediaUrl}');
       }
@@ -478,6 +484,9 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
     PaintingBinding.instance.imageCache.clear(); // removes decoded images
     PaintingBinding.instance.imageCache.clearLiveImages(); // removes "live" references
 
+    // Clear all media caches using MediaCacheFactory
+    MediaCacheFactory.clearAllCaches();
+
     // Clear disk cache from CachedNetworkImage
     await DefaultCacheManager().emptyCache();
   }
@@ -487,6 +496,11 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
 
     // Evict from Flutter's memory cache
     await NetworkImage(imageUrl).evict();
+
+    // Clear from appropriate cache manager based on media type
+    final mediaType = MediaTypeUtil.getMediaType(imageUrl);
+    final cacheManager = MediaCacheFactory.getCacheManager(mediaType);
+    cacheManager.clearMedia(imageUrl);
 
     // Also evict from disk cache if using CachedNetworkImage
     try {
