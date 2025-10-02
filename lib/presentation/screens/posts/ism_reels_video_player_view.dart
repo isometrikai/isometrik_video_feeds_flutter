@@ -1577,10 +1577,16 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       final end = match.end;
       final matchedText = match.group(0)!;
 
-      // Add text before the match
+      // Add normal text before the match (only if not empty/whitespace)
       if (lastIndex < start) {
         final textBefore = description.substring(lastIndex, start);
-        if (textBefore.isNotEmpty) {
+        if (textBefore.trim().isNotEmpty) {
+          spans.add(TextSpan(
+            text: textBefore,
+            style: defaultStyle,
+          ));
+        } else if (textBefore.isNotEmpty) {
+          // Add whitespace as-is for proper spacing
           spans.add(TextSpan(
             text: textBefore,
             style: defaultStyle,
@@ -1588,52 +1594,74 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         }
       }
 
-      // Process mentions (@username)
-      if (matchedText.startsWith('@')) {
-        final username = matchedText.substring(1); // Remove @ symbol
-        final mention = mentions.firstWhere(
-          (m) => m.username == username,
-          orElse: MentionMetaData.new,
+      if (matchedText.startsWith('@') && mentions.isNotEmpty) {
+        // Find the mention by username using where
+        final matchingMentions = mentions.where(
+          (m) => '@${m.username}' == matchedText,
         );
 
-        spans.add(TextSpan(
-          text: matchedText,
-          style: defaultStyle.copyWith(
-            fontWeight: mention.username != null ? FontWeight.w800 : FontWeight.w400,
-            color: mention.username != null ? Colors.white : Colors.white.changeOpacity(0.9),
-          ),
-          recognizer: mention.username != null
-              ? (TapGestureRecognizer()..onTap = () => onMentionTap(mention))
-              : null,
-        ));
-      }
-      // Process hashtags (#tag)
-      else if (matchedText.startsWith('#')) {
-        final tag = matchedText.substring(1); // Remove # symbol
-        final hashtag = hashtags.firstWhere(
-          (h) => h.tag == tag,
-          orElse: MentionMetaData.new,
+        if (matchingMentions.isNotEmpty && matchedText.isNotEmpty) {
+          final mention = matchingMentions.first;
+          spans.add(TextSpan(
+            text: matchedText,
+            style: defaultStyle.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () {
+                onMentionTap(mention);
+              },
+          ));
+        } else {
+          if (matchedText.isNotEmpty) {
+            spans.add(TextSpan(
+              text: matchedText,
+              style: defaultStyle,
+            ));
+          }
+        }
+      } else if (matchedText.startsWith('#') && hashtags.isNotEmpty) {
+        // Find the hashtag by tag using where
+        final matchingHashtags = hashtags.where(
+          (m) => '#${m.tag}' == matchedText,
         );
 
-        spans.add(TextSpan(
-          text: matchedText,
-          style: defaultStyle.copyWith(
-            fontWeight: hashtag.tag != null ? FontWeight.w800 : FontWeight.w400,
-            color: hashtag.tag != null ? Colors.white : Colors.white.changeOpacity(0.9),
-          ),
-          recognizer: hashtag.tag != null
-              ? (TapGestureRecognizer()..onTap = () => onMentionTap(hashtag))
-              : null,
-        ));
+        if (matchingHashtags.isNotEmpty && matchedText.isNotEmpty) {
+          final hashTag = matchingHashtags.first;
+          spans.add(TextSpan(
+            text: matchedText,
+            style: defaultStyle.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () {
+                onMentionTap(hashTag);
+              },
+          ));
+        } else {
+          if (matchedText.isNotEmpty) {
+            spans.add(TextSpan(
+              text: matchedText,
+              style: defaultStyle.copyWith(fontWeight: FontWeight.w800),
+            ));
+          }
+        }
+      } else {
+        if (matchedText.isNotEmpty) {
+          spans.add(TextSpan(
+            text: matchedText,
+            style: defaultStyle.copyWith(fontWeight: FontWeight.w400),
+          ));
+        }
       }
 
       lastIndex = end;
     }
 
-    // Add remaining text after the last match
+    // Add remaining text after last match
     if (lastIndex < description.length) {
       final remainingText = description.substring(lastIndex);
-      if (remainingText.isNotEmpty) {
+      if (remainingText.trim().isNotEmpty) {
         spans.add(TextSpan(
           text: remainingText,
           style: defaultStyle,
@@ -1641,7 +1669,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       }
     }
 
-    return TextSpan(children: spans);
+    final textSpan = TextSpan(children: spans, style: defaultStyle);
+
+    return textSpan;
   }
 
   void _handleCommentClick(StateSetter setBuilderState) async {
