@@ -112,18 +112,14 @@ class AppImage extends StatelessWidget {
         width: width ?? dimensions,
         padding: padding,
         decoration: BoxDecoration(
-          borderRadius: isProfileImage
-              ? null
-              : borderRadius ?? BorderRadius.circular(radius ?? 0),
+          borderRadius: isProfileImage ? null : borderRadius ?? BorderRadius.circular(radius ?? 0),
           shape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
           border: border,
         ),
         clipBehavior: Clip.antiAlias,
         child: switch (_imageType) {
-          ImageType.asset =>
-            _Asset(path, fit: fit, height: height, width: width),
-          ImageType.svg =>
-            _Svg(path, fit: fit, color: color, height: height, width: width),
+          ImageType.asset => _Asset(path, fit: fit, height: height, width: width),
+          ImageType.svg => _Svg(path, fit: fit, color: color, height: height, width: width),
           ImageType.file => _File(
               path,
               fit: fit,
@@ -222,18 +218,15 @@ class _Network extends StatelessWidget {
   Widget build(BuildContext context) {
     final fullName = name.isStringEmptyOrNull == false ? name : '';
     final words = fullName.split(' ');
-    final initials =
-        words.map((word) => word.isNotEmpty ? word[0] : '').join('');
-    final isOptimizationEnable =
-        imageUrl.contains('https://cdn.trulyfreehome.dev');
+    final initials = words.map((word) => word.isNotEmpty ? word[0] : '').join('');
+    final isOptimizationEnable = imageUrl.contains('https://cdn.trulyfreehome.dev');
 
-    final optimizedImageUrl =
-        AppConstants.isGumletEnable && isOptimizationEnable
-            ? IsrVideoReelUtility.buildGumletImageUrl(
-                imageUrl: imageUrl.trim().replaceAll(RegExp(r'[",]+$'), ''),
-                width: width,
-                height: height)
-            : imageUrl.trim().replaceAll(RegExp(r'[",]+$'), '');
+    final optimizedImageUrl = IsmAppConstants.isGumletEnable && isOptimizationEnable
+        ? IsrVideoReelUtility.buildGumletImageUrl(
+            imageUrl: imageUrl.trim().replaceAll(RegExp(r'[",]+$'), ''),
+            width: width,
+            height: height)
+        : imageUrl.trim().replaceAll(RegExp(r'[",]+$'), '');
     // debugPrint('optimizedImageUrl: $optimizedImageUrl');
     return CachedNetworkImage(
       width: width,
@@ -242,12 +235,10 @@ class _Network extends StatelessWidget {
       fit: fit ?? BoxFit.cover,
       alignment: Alignment.center,
       cacheKey: optimizedImageUrl,
-      fadeInDuration: fadeAnimationEnable ?? false
-          ? const Duration(milliseconds: 300)
-          : Duration.zero,
-      fadeOutDuration: fadeAnimationEnable ?? false
-          ? const Duration(milliseconds: 300)
-          : Duration.zero,
+      fadeInDuration:
+          fadeAnimationEnable ?? false ? const Duration(milliseconds: 300) : Duration.zero,
+      fadeOutDuration:
+          fadeAnimationEnable ?? false ? const Duration(milliseconds: 300) : Duration.zero,
       placeholderFadeInDuration: Duration.zero,
       imageBuilder: (_, image) => ClipRRect(
         borderRadius: borderRadius ?? BorderRadius.zero,
@@ -271,8 +262,8 @@ class _Network extends StatelessWidget {
         child: name.isStringEmptyOrNull == false && isProfileImage
             ? Text(
                 initials,
-                style: IsrStyles.secondaryText14.copyWith(
-                    fontWeight: FontWeight.w500, color: IsrColors.white),
+                style: IsrStyles.secondaryText14
+                    .copyWith(fontWeight: FontWeight.w500, color: IsrColors.white),
                 textAlign: TextAlign.center,
               )
             : null,
@@ -288,8 +279,8 @@ class _Network extends StatelessWidget {
         child: name.isStringEmptyOrNull == false && isProfileImage
             ? Text(
                 initials,
-                style: IsrStyles.secondaryText14.copyWith(
-                    fontWeight: FontWeight.w500, color: IsrColors.white),
+                style: IsrStyles.secondaryText14
+                    .copyWith(fontWeight: FontWeight.w500, color: IsrColors.white),
                 textAlign: TextAlign.center,
               )
             : null,

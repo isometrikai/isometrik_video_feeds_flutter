@@ -41,7 +41,7 @@ class TranslationFile {
 
   static const uploadPhotoOrVideo = 'Upload a photo or a video';
   static const uploadPhotoOrVideoToInspire =
-      'Upload a photo or a video to inspire and connect with our ${AppConstants.appName} community.';
+      'Upload a photo or a video to inspire and connect with our ${IsmAppConstants.appName} community.';
   static const description = 'Description';
   static const writeDescription = 'Write a description';
   static const cover = 'Cover';
@@ -56,8 +56,7 @@ class TranslationFile {
       'Connect products to posts for better visibility and engagement';
   static const addProducts = 'Add Products';
   static const String choosePhotoOrVideo = 'Choose photo or video';
-  static const String noNakedPicture =
-      'No naked picture. No soliciting. No escort services';
+  static const String noNakedPicture = 'No naked picture. No soliciting. No escort services';
   static const String takePhoto = 'Take photo';
   static const String selectImageFromGallery = 'Select image from gallery';
   static const String takeVideo = 'Take video';
@@ -65,8 +64,7 @@ class TranslationFile {
   static const String change = 'Change';
   static const String size = 'Size';
   static const String duration = 'Duration';
-  static const String socialPostCreatedSuccessfully =
-      'Social post created successfully';
+  static const String socialPostCreatedSuccessfully = 'Social post created successfully';
   static const String postUpdatedSuccessfully = 'Post updated successfully';
   static const String postScheduledSuccessfully = 'Post scheduled successfully';
   static const String successfullyPosted = 'Successfully Posted';
@@ -89,17 +87,14 @@ class TranslationFile {
   static const String optimizingMedia = 'Optimizing media';
   static const String time = 'Time';
   static const String pleaseSelectAFutureTime = 'Please select a future time.';
-  static const String yourPostHasBeenSuccessfullyPosted =
-      'Your post has been successfully posted.';
+  static const String yourPostHasBeenSuccessfullyPosted = 'Your post has been successfully posted.';
   static const String date = 'Date';
   static const String postingPost = 'Posting Post';
   static const String edit = 'Edit';
   static const String delete = 'Delete';
   static const String deletePost = 'Delete Post';
-  static const String deletePostConfirmation =
-      'Are you sure you want to delete this post?';
-  static const String editPostConfirmation =
-      'Are you sure you want to edit the post?';
+  static const String deletePostConfirmation = 'Are you sure you want to delete this post?';
+  static const String editPostConfirmation = 'Are you sure you want to edit the post?';
   static const postDeletedSuccessfully = 'Post deleted successfully';
   static const String allComments = 'All Comments';
   static const String reply = 'Reply';
@@ -108,10 +103,7 @@ class TranslationFile {
   static const String addAComment = 'Add a comment';
   static const String replyingTo = 'Replying to';
   static const String noCommentsYet = 'No Comments Yet';
-  static const String beTheFirstOneToPostAComment =
-      'Be the first one to post a comment';
-  static const String commentReportedSuccessfully =
-      'Comment reported successfully';
-  static const String failedToUpdateWishlistStatus =
-      'Failed to update wishlist status';
+  static const String beTheFirstOneToPostAComment = 'Be the first one to post a comment';
+  static const String commentReportedSuccessfully = 'Comment reported successfully';
+  static const String failedToUpdateWishlistStatus = 'Failed to update wishlist status';
 }

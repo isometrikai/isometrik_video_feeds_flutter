@@ -29,10 +29,10 @@ packages:
     dependency: transitive
     description:
       name: bloc
-      sha256: "52c10575f4445c61dd9e0cafcc6356fdd827c4c64dd7945ef3c4105f6b6ac189"
+      sha256: e18b8e7825e9921d67a6d256dba0b6015ece8a577eb0a411845c46a352994d78
       url: "https://pub.dev"
     source: hosted
-    version: "9.0.0"
+    version: "9.0.1"
   boolean_selector:
     dependency: transitive
     description:
@@ -85,18 +85,18 @@ packages:
     dependency: transitive
     description:
       name: camera_android_camerax
-      sha256: "0db8e7b161ec6cdb2219540eaa4cf599dc963929e5f8ded3b20b3acb52712fa4"
+      sha256: d04649fab70a5d586a7b26d5ac26f700656b6aab26a16bfd5a29302589b7a973
       url: "https://pub.dev"
     source: hosted
-    version: "0.6.21+1"
+    version: "0.6.23"
   camera_avfoundation:
     dependency: transitive
     description:
       name: camera_avfoundation
-      sha256: a5a90297520e3b9841331161a7511626681153849c690c138e04a2b6d0af3026
+      sha256: "98bc06fccfaa8aef0af354f33e314de9c59eedf62bfe10935521607e768d8fef"
       url: "https://pub.dev"
     source: hosted
-    version: "0.9.21+3"
+    version: "0.9.21+4"
   camera_platform_interface:
     dependency: transitive
     description:
@@ -652,10 +652,10 @@ packages:
     dependency: "direct main"
     description:
       name: injectable
-      sha256: "1b86fab6a98c11a97e5c718afb00e628d47d183c2a2256392e995a4c561141c1"
+      sha256: f71ef28f5ed30603ab9be004425fd5cd4a473806f5de269d35deb33b61917534
       url: "https://pub.dev"
     source: hosted
-    version: "2.5.1"
+    version: "2.5.2"
   intl:
     dependency: "direct main"
     description:
@@ -1240,10 +1240,10 @@ packages:
     dependency: transitive
     description:
       name: video_player_android
-      sha256: "59e5a457ddcc1688f39e9aef0efb62aa845cf0cbbac47e44ac9730dc079a2385"
+      sha256: "6cfe0b1e102522eda1e139b82bf00602181c5844fd2885340f595fb213d74842"
       url: "https://pub.dev"
     source: hosted
-    version: "2.8.13"
+    version: "2.8.14"
   video_player_avfoundation:
     dependency: transitive
     description:

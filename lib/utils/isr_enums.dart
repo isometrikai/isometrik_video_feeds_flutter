@@ -60,3 +60,6 @@ enum ButtonSize {
   medium, // Height: 40
   large // Height: 48
 }
+
+/// Enum to specify media type
+enum MediaType { image, video, unknown }

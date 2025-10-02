@@ -1,8 +1,9 @@
+import 'package:ism_video_reel_player/ism_video_reel_player.dart';
+
 /// Abstract interface for media (video/image) cache management
 abstract class IMediaCacheManager {
   /// Precache media items for given URLs
-  Future<void> precacheMedia(List<String> mediaUrls,
-      {bool highPriority = false});
+  Future<void> precacheMedia(List<String> mediaUrls, {bool highPriority = false});
 
   /// Get cached media item (could be controller for video or image provider for images)
   dynamic getCachedMedia(String url);
@@ -31,9 +32,6 @@ abstract class IMediaCacheManager {
   /// Get cache statistics
   Map<String, dynamic> getCacheStats();
 }
-
-/// Enum to specify media type
-enum MediaType { image, video, unknown }
 
 /// Configuration for media caching
 class MediaCacheConfig {

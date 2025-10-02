@@ -1,7 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/image_cache_manager.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/media_cache_interface.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/video_cache_manager.dart';
+import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 
 /// Factory class to create and manage media cache instances
 class MediaCacheFactory {
@@ -15,8 +13,7 @@ class MediaCacheFactory {
       _cacheManagers[type] ?? _cacheManagers[MediaType.unknown]!;
 
   /// Precache multiple media items, automatically determining their type
-  static Future<void> precacheMedia(List<String> mediaUrls,
-      {bool highPriority = false}) async {
+  static Future<void> precacheMedia(List<String> mediaUrls, {bool highPriority = false}) async {
     final mediaByType = <MediaType, List<String>>{};
 
     // Group URLs by media type
@@ -30,8 +27,7 @@ class MediaCacheFactory {
       final type = entry.key;
       final urls = entry.value;
       debugPrint('Precaching ${urls.length} ${type.toString()} items');
-      return getCacheManager(type)
-          .precacheMedia(urls, highPriority: highPriority);
+      return getCacheManager(type).precacheMedia(urls, highPriority: highPriority);
     });
 
     await Future.wait(futures);

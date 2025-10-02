@@ -83,7 +83,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
       for (var mediaItem in firstPost.mediaMetaDataList) {
         if (mediaItem.mediaUrl.isEmpty) continue;
 
-        if (mediaItem.mediaType == 1) {
+        if (mediaItem.mediaType == MediaType.video.value) {
           // Video
           // For video, cache both video and thumbnail
           urlsToCache.add(mediaItem.mediaUrl);
@@ -236,6 +236,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                       videoCacheManager: _videoCacheManager,
                       // Add refresh count to force rebuild
                       key: ValueKey('${reelsData.postId}_${_refreshCounts[index] ?? 0}'),
+                      onVideoCompleted: () => _handleVideoCompletion(index),
                       onPressMoreButton: () async {
                         if (reelsData.onPressMoreButton == null) return;
                         final result = await reelsData.onPressMoreButton!.call();
@@ -253,7 +254,8 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                                   _reelsDataList[postIndex].mediaMetaDataList[0].mediaUrl;
                               final thumbnailUrl =
                                   _reelsDataList[postIndex].mediaMetaDataList[0].thumbnailUrl;
-                              if (_reelsDataList[postIndex].mediaMetaDataList[0].mediaType == 0) {
+                              if (_reelsDataList[postIndex].mediaMetaDataList[0].mediaType ==
+                                  MediaType.image.value) {
                                 // For image post
                                 await _evictDeletedPostImage(imageUrl);
                               } else {
@@ -270,6 +272,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                               .indexWhere((element) => element.postId == result.postId);
                           if (index != -1 && mounted) {
                             setState(() {
+                              _refreshCounts[index] = (_refreshCounts[index] ?? 0) + 1;
                               _reelsDataList[index] = result;
                             });
                           }
@@ -400,7 +403,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
     for (var mediaItem in reelsData.mediaMetaDataList) {
       if (mediaItem.mediaUrl.isEmpty) continue;
 
-      if (mediaItem.mediaType == 1) {
+      if (mediaItem.mediaType == MediaType.video.value) {
         // Video
         // For videos, cache both video and thumbnail with high priority
         mediaUrls.insert(0, mediaItem.mediaUrl); // Add to start for high priority
@@ -424,7 +427,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
       for (var mediaItem in nearbyPost.mediaMetaDataList) {
         if (mediaItem.mediaUrl.isEmpty) continue;
 
-        if (mediaItem.mediaType == 1) {
+        if (mediaItem.mediaType == MediaType.video.value) {
           // Video
           mediaUrls.add(mediaItem.mediaUrl);
           if (mediaItem.thumbnailUrl.isNotEmpty) {
@@ -459,7 +462,9 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
       final mediaItem = deletedPost.mediaMetaDataList[mediaIndex];
 
       // Evict image or thumbnail
-      final imageUrl = mediaItem.mediaType == 0 ? mediaItem.mediaUrl : mediaItem.thumbnailUrl;
+      final imageUrl = mediaItem.mediaType == MediaType.image.value
+          ? mediaItem.mediaUrl
+          : mediaItem.thumbnailUrl;
 
       if (imageUrl.isNotEmpty) {
         // Evict from Flutter's memory cache
@@ -475,7 +480,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
       }
 
       // For videos, also evict from video cache
-      if (mediaItem.mediaType == 1 && mediaItem.mediaUrl.isNotEmpty) {
+      if (mediaItem.mediaType == MediaType.video.value && mediaItem.mediaUrl.isNotEmpty) {
         // Clear from appropriate cache manager based on media type
         final imageCacheManager = MediaCacheFactory.getCacheManager(MediaType.image);
         final videoCacheManager = MediaCacheFactory.getCacheManager(MediaType.video);
@@ -516,6 +521,50 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
       await DefaultCacheManager().removeFile(imageUrl);
       debugPrint('🗑️ MainWidget: Evicted deleted post image from cache - $imageUrl');
     } catch (_) {}
+  }
+
+  /// Handles video completion - navigates to next post if available
+  void _handleVideoCompletion(int currentIndex) {
+    debugPrint('🎬 PostItemWidget: _handleVideoCompletion called with index $currentIndex');
+    debugPrint(
+        '🎬 PostItemWidget: mounted: $mounted, reelsDataList length: ${_reelsDataList.length}');
+
+    if (!mounted || _reelsDataList.isEmpty) {
+      debugPrint('🎬 PostItemWidget: Early return - not mounted or empty list');
+      return;
+    }
+
+    // Check if there's a next post available
+    if (currentIndex < _reelsDataList.length - 1) {
+      final nextIndex = currentIndex + 1;
+      debugPrint('🎬 PostItemWidget: Video completed, moving to next post at index $nextIndex');
+
+      // Animate to next page
+      _pageController.animateToPage(
+        nextIndex,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    } else {
+      debugPrint('🎬 PostItemWidget: Video completed, but no more posts available');
+      // Optionally trigger load more if we're at the end
+      if (widget.onLoadMore != null) {
+        debugPrint('🎬 PostItemWidget: Triggering load more...');
+        widget.onLoadMore!().then((value) {
+          if (value.isListEmptyOrNull) return;
+          if (mounted) {
+            setState(() {
+              final newReels = value.where((newReel) =>
+                  !_reelsDataList.any((existingReel) => existingReel.postId == newReel.postId));
+              _reelsDataList.addAll(newReels);
+              if (_reelsDataList.isNotEmpty) {
+                _doMediaCaching(0);
+              }
+            });
+          }
+        });
+      }
+    }
   }
 
   Future<void> _refreshPost() async {
