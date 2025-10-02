@@ -145,3 +145,11 @@ extension HeightExtension on num {
 extension WidthExtension on num {
   SizedBox get responsiveHorizontalSpace => SizedBox(width: toDouble().responsiveDimension);
 }
+
+extension MediaTypeValue on MediaType {
+  int get value => switch (this) {
+        MediaType.image => 0,
+        MediaType.video => 1,
+        MediaType.unknown => 0,
+      };
+}

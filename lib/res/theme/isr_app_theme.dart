@@ -16,37 +16,24 @@ ThemeData isrTheme = ThemeData(
   primaryColor: IsrColors.appColor,
   iconTheme: const IconThemeData(color: IsrColors.white),
   scaffoldBackgroundColor: IsrColors.scaffoldColor,
-  fontFamily: AppConstants.primaryFontFamily,
+  fontFamily: IsmAppConstants.primaryFontFamily,
   splashColor: IsrColors.appColor.changeOpacity(0.5),
   textTheme: TextTheme(
-    displayLarge:
-        IsrStyles.secondaryText18.copyWith(fontWeight: FontWeight.w600),
-    displayMedium:
-        IsrStyles.secondaryText16.copyWith(fontWeight: FontWeight.w600),
-    displaySmall:
-        IsrStyles.secondaryText12.copyWith(fontWeight: FontWeight.w600),
-    headlineLarge:
-        IsrStyles.secondaryText20.copyWith(fontWeight: FontWeight.w600),
-    headlineMedium:
-        IsrStyles.secondaryText16.copyWith(fontWeight: FontWeight.w600),
-    headlineSmall:
-        IsrStyles.secondaryText14.copyWith(fontWeight: FontWeight.w600),
+    displayLarge: IsrStyles.secondaryText18.copyWith(fontWeight: FontWeight.w600),
+    displayMedium: IsrStyles.secondaryText16.copyWith(fontWeight: FontWeight.w600),
+    displaySmall: IsrStyles.secondaryText12.copyWith(fontWeight: FontWeight.w600),
+    headlineLarge: IsrStyles.secondaryText20.copyWith(fontWeight: FontWeight.w600),
+    headlineMedium: IsrStyles.secondaryText16.copyWith(fontWeight: FontWeight.w600),
+    headlineSmall: IsrStyles.secondaryText14.copyWith(fontWeight: FontWeight.w600),
     titleLarge: IsrStyles.secondaryText16.copyWith(fontWeight: FontWeight.w600),
-    titleMedium:
-        IsrStyles.secondaryText14.copyWith(fontWeight: FontWeight.w600),
+    titleMedium: IsrStyles.secondaryText14.copyWith(fontWeight: FontWeight.w600),
     titleSmall: IsrStyles.secondaryText12.copyWith(fontWeight: FontWeight.w600),
-    bodyLarge: IsrStyles.secondaryText16
-        .copyWith(fontFamily: AppConstants.primaryFontFamily),
-    bodyMedium: IsrStyles.secondaryText14
-        .copyWith(fontFamily: AppConstants.primaryFontFamily),
-    bodySmall: IsrStyles.secondaryText12
-        .copyWith(fontFamily: AppConstants.primaryFontFamily),
-    labelLarge: IsrStyles.secondaryText12
-        .copyWith(fontFamily: AppConstants.primaryFontFamily),
-    labelMedium: IsrStyles.secondaryText10
-        .copyWith(fontFamily: AppConstants.primaryFontFamily),
-    labelSmall: IsrStyles.secondaryText8
-        .copyWith(fontFamily: AppConstants.primaryFontFamily),
+    bodyLarge: IsrStyles.secondaryText16.copyWith(fontFamily: IsmAppConstants.primaryFontFamily),
+    bodyMedium: IsrStyles.secondaryText14.copyWith(fontFamily: IsmAppConstants.primaryFontFamily),
+    bodySmall: IsrStyles.secondaryText12.copyWith(fontFamily: IsmAppConstants.primaryFontFamily),
+    labelLarge: IsrStyles.secondaryText12.copyWith(fontFamily: IsmAppConstants.primaryFontFamily),
+    labelMedium: IsrStyles.secondaryText10.copyWith(fontFamily: IsmAppConstants.primaryFontFamily),
+    labelSmall: IsrStyles.secondaryText8.copyWith(fontFamily: IsmAppConstants.primaryFontFamily),
   ),
   datePickerTheme: DatePickerThemeData(
     backgroundColor: IsrColors.appColor,
@@ -54,14 +41,11 @@ ThemeData isrTheme = ThemeData(
     rangeSelectionBackgroundColor: IsrColors.white,
     rangeSelectionOverlayColor: const WidgetStatePropertyAll(IsrColors.white),
     dayBackgroundColor: WidgetStateProperty.resolveWith<Color?>(
-      (states) =>
-          states.contains(WidgetState.selected) ? IsrColors.white : null,
+      (states) => states.contains(WidgetState.selected) ? IsrColors.white : null,
     ),
     dividerColor: IsrColors.white,
     dayForegroundColor: WidgetStateProperty.resolveWith<Color?>(
-      (states) => states.contains(WidgetState.selected)
-          ? IsrColors.black
-          : IsrColors.white,
+      (states) => states.contains(WidgetState.selected) ? IsrColors.black : IsrColors.white,
     ),
   ),
   elevatedButtonTheme: ElevatedButtonThemeData(
@@ -78,8 +62,7 @@ ThemeData isrTheme = ThemeData(
       disabledBackgroundColor: IsrColors.buttonDisabledBackgroundColor,
       disabledIconColor: IsrColors.buttonDisabledBackgroundColor,
       shape: RoundedRectangleBorder(
-        borderRadius:
-            IsrDimens.appButtonBorderRadius(), // Adjust the radius as needed
+        borderRadius: IsrDimens.appButtonBorderRadius(), // Adjust the radius as needed
       ),
     ),
   ),
@@ -94,8 +77,7 @@ ThemeData isrTheme = ThemeData(
     backgroundColor: IsrColors.appBarColor,
     iconTheme: const IconThemeData(color: IsrColors.black),
     actionsIconTheme: const IconThemeData(color: IsrColors.black),
-    titleTextStyle:
-        IsrStyles.secondaryText16.copyWith(fontWeight: FontWeight.w500),
+    titleTextStyle: IsrStyles.secondaryText16.copyWith(fontWeight: FontWeight.w500),
     toolbarTextStyle: IsrStyles.secondaryText12,
   ),
   bottomSheetTheme: BottomSheetThemeData(

@@ -1,5 +1,5 @@
-class AppConstants {
-  AppConstants._();
+class IsmAppConstants {
+  IsmAppConstants._();
 
   static const String appName = 'Reels Player';
 
@@ -14,8 +14,7 @@ class AppConstants {
   static const String primaryFontFamily = 'Inter';
   static const String secondaryFontFamily = 'Inter';
 
-  static const String emailPattern =
-      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
+  static const String emailPattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
 
   static const String passwordPattern =
       r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[!@#\$&*~]).{8,}$';
@@ -29,8 +28,7 @@ class AppConstants {
 
 abstract class AppUrl {
   static String appBaseUrl = '';
-  static const String gumletUrl =
-      'https://cdn.trulyfreehome.dev/tenant_001/project_001/user_007';
+  static const String gumletUrl = 'https://cdn.trulyfreehome.dev/tenant_001/project_001/user_007';
   static const String imageBaseUrl =
       'https://cdn.trulyfreehome.dev/tenant_001/project_001/user_007/';
 }

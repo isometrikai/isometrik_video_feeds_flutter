@@ -114,8 +114,7 @@ class NetworkClient with IsrAppMixin {
     }
   }
 
-  ResponseModel _proceedWithErrorResponse(
-      ResponseModel res, http.Response response) {
+  ResponseModel _proceedWithErrorResponse(ResponseModel res, http.Response response) {
     final message = IsrVideoReelUtility.getErrorMessage(res);
     if (res.statusCode == 401) {
       return res;
@@ -128,8 +127,8 @@ class NetworkClient with IsrAppMixin {
     }
   }
 
-  void _logRequest(http.Response response, dynamic data, Uri finalUrl,
-      Map<String, String>? headers, ResponseModel res) {
+  void _logRequest(http.Response response, dynamic data, Uri finalUrl, Map<String, String>? headers,
+      ResponseModel res) {
     printLog(
       this,
       '\nMethod: ${response.request?.method}\nURL: ${response.request?.url}\nBody: ${jsonEncode(data)}\nQuery Params: ${finalUrl.queryParameters}\nHeaders: $headers\nResponse:\nStatus Code: ${res.statusCode}\nResponse Data: ${res.data}',
@@ -249,10 +248,7 @@ class NetworkClient with IsrAppMixin {
   }
 
   Future<http.Response> getFinalResponse(
-      Uri finalUrl,
-      Map<String, String>? headers,
-      data,
-      NetworkRequestType requestType) async {
+      Uri finalUrl, Map<String, String>? headers, data, NetworkRequestType requestType) async {
     switch (requestType) {
       case NetworkRequestType.get:
         return await http.Client()
@@ -260,7 +256,7 @@ class NetworkClient with IsrAppMixin {
               finalUrl,
               headers: headers,
             )
-            .timeout(AppConstants.timeOutDuration);
+            .timeout(IsmAppConstants.timeOutDuration);
       case NetworkRequestType.post:
         return await http.Client()
             .post(
@@ -268,7 +264,7 @@ class NetworkClient with IsrAppMixin {
               body: jsonEncode(data),
               headers: headers,
             )
-            .timeout(AppConstants.timeOutDuration);
+            .timeout(IsmAppConstants.timeOutDuration);
       case NetworkRequestType.put:
         return await http.Client()
             .put(
@@ -276,7 +272,7 @@ class NetworkClient with IsrAppMixin {
               body: jsonEncode(data),
               headers: headers,
             )
-            .timeout(AppConstants.timeOutDuration);
+            .timeout(IsmAppConstants.timeOutDuration);
       case NetworkRequestType.patch:
         return await http.Client()
             .patch(
@@ -284,7 +280,7 @@ class NetworkClient with IsrAppMixin {
               body: jsonEncode(data),
               headers: headers,
             )
-            .timeout(AppConstants.timeOutDuration);
+            .timeout(IsmAppConstants.timeOutDuration);
       case NetworkRequestType.delete:
         return await http.Client()
             .delete(
@@ -292,7 +288,7 @@ class NetworkClient with IsrAppMixin {
               body: jsonEncode(data),
               headers: headers,
             )
-            .timeout(AppConstants.timeOutDuration);
+            .timeout(IsmAppConstants.timeOutDuration);
     }
   }
 }

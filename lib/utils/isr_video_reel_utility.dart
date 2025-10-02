@@ -25,23 +25,20 @@ class IsrVideoReelUtility {
   static bool isLoading = false;
   static final Connectivity _connectivity = Connectivity();
 
-  static void hideKeyboard() =>
-      SystemChannels.textInput.invokeMethod('TextInput.hide');
+  static void hideKeyboard() => SystemChannels.textInput.invokeMethod('TextInput.hide');
 
   static void updateLater(
     VoidCallback callback, [
     bool addDelay = true,
   ]) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(
-          addDelay ? const Duration(milliseconds: 10) : Duration.zero, () {
+      Future.delayed(addDelay ? const Duration(milliseconds: 10) : Duration.zero, () {
         callback();
       });
     });
   }
 
-  static String jsonEncodePretty(Object? object) =>
-      JsonEncoder.withIndent(' ' * 4).convert(object);
+  static String jsonEncodePretty(Object? object) => JsonEncoder.withIndent(' ' * 4).convert(object);
 
   static Future<bool> get isNetworkAvailable async {
     final result = await _connectivity.checkConnectivity();
@@ -59,8 +56,7 @@ class IsrVideoReelUtility {
   }) async {
     isLoading = true;
     await showDialog(
-      barrierColor:
-          loaderType == LoaderType.withBackGround ? null : Colors.transparent,
+      barrierColor: loaderType == LoaderType.withBackGround ? null : Colors.transparent,
       context: context!,
       builder: (_) => AppLoader(
         message: message,
@@ -143,8 +139,7 @@ class IsrVideoReelUtility {
               if (isToShowTitle == true)
                 Text(
                   titleText ?? IsrTranslationFile.alert,
-                  style: IsrStyles.secondaryText14
-                      .copyWith(fontWeight: FontWeight.w700),
+                  style: IsrStyles.secondaryText14.copyWith(fontWeight: FontWeight.w700),
                 ),
               if (message.isStringEmptyOrNull == false) ...[
                 IsrDimens.boxHeight(IsrDimens.eight),
@@ -257,10 +252,8 @@ class IsrVideoReelUtility {
     if (value == null || value.isEmpty) {
       return IsrTranslationFile.required;
     }
-    final regex = RegExp(AppConstants.passwordPattern);
-    return regex.hasMatch(value) == true
-        ? null
-        : IsrTranslationFile.passwordValidationString;
+    final regex = RegExp(IsmAppConstants.passwordPattern);
+    return regex.hasMatch(value) == true ? null : IsrTranslationFile.passwordValidationString;
   }
 
   /// email validator to verify email is valid or not
@@ -268,21 +261,18 @@ class IsrVideoReelUtility {
     if (value == null || value.isEmpty) {
       return IsrTranslationFile.required;
     }
-    final regex = RegExp(AppConstants.emailPattern);
-    return regex.hasMatch(value) == true
-        ? null
-        : IsrTranslationFile.invalidEmail;
+    final regex = RegExp(IsmAppConstants.emailPattern);
+    return regex.hasMatch(value) == true ? null : IsrTranslationFile.invalidEmail;
   }
 
   /// email validator to verify email is valid or not
   static bool isValidEmail(String? value) {
-    final regex = RegExp(AppConstants.emailPattern);
+    final regex = RegExp(IsmAppConstants.emailPattern);
     return regex.hasMatch(value!) == true;
   }
 
   /// converts a double number into decimal number till 2 decimal point
-  static String? convertToDecimalValue(double originalValue,
-          {bool isRemoveTrailingZero = false}) =>
+  static String? convertToDecimalValue(double originalValue, {bool isRemoveTrailingZero = false}) =>
       NumberFormat(originalValue % 1 == 0 ? '#' : '#.##').format(originalValue);
 
   // returns app version
@@ -327,8 +317,7 @@ class IsrVideoReelUtility {
             Flexible(
               child: Text(
                 message,
-                style: IsrStyles.primaryText14
-                    .copyWith(color: foregroundColor ?? IsrColors.white),
+                style: IsrStyles.primaryText14.copyWith(color: foregroundColor ?? IsrColors.white),
               ),
             ),
           ],
@@ -349,16 +338,14 @@ class IsrVideoReelUtility {
 
   static Widget loaderWidget({bool? isAdaptive = true}) => Center(
         child: isAdaptive == true
-            ? const CircularProgressIndicator.adaptive(
-                backgroundColor: Colors.white)
+            ? const CircularProgressIndicator.adaptive(backgroundColor: Colors.white)
             : const CircularProgressIndicator(color: Colors.white),
       );
 
   /// get formated date
   static String getFormattedDateWithNumberOfDays(int? numberOfDays,
           {String? dataFormat = 'EEEE, dd MMM'}) =>
-      DateFormat(dataFormat)
-          .format(DateTime.now().add(Duration(days: numberOfDays ?? 0)));
+      DateFormat(dataFormat).format(DateTime.now().add(Duration(days: numberOfDays ?? 0)));
 
   static Color rgbStringToColor(String rgbString) {
     final rgbRegex = RegExp(r'rgb\((\d+),(\d+),(\d+)\)');
@@ -375,13 +362,12 @@ class IsrVideoReelUtility {
     return IsrColors.transparent;
   }
 
-  static String getFormattedPrice(double price, String? currencySymbol) =>
-      NumberFormat.currency(
-              decimalDigits: price % 1 == 0 ? 0 : 2,
-              symbol: currencySymbol.isStringEmptyOrNull
-                  ? DefaultValues.defaultCurrencySymbol
-                  : currencySymbol)
-          .format(price);
+  static String getFormattedPrice(double price, String? currencySymbol) => NumberFormat.currency(
+          decimalDigits: price % 1 == 0 ? 0 : 2,
+          symbol: currencySymbol.isStringEmptyOrNull
+              ? DefaultValues.defaultCurrencySymbol
+              : currencySymbol)
+      .format(price);
 
   static Future<void> showCustomModalBottomSheet({
     required BuildContext context,
@@ -433,8 +419,7 @@ class IsrVideoReelUtility {
       );
 
   //capitalize the first letter of each word
-  static String capitalizeString(String text, {bool? isName}) =>
-      text.split(' ').map((word) {
+  static String capitalizeString(String text, {bool? isName}) => text.split(' ').map((word) {
         if (word.isNotEmpty) {
           return word[0].toUpperCase() + word.substring(1);
         } else {
@@ -463,8 +448,7 @@ class IsrVideoReelUtility {
 
   //Function for converting timestamp to formatted data
   static String convertTimestamp(int timestamp, String format) =>
-      DateFormat(format)
-          .format(DateTime.fromMillisecondsSinceEpoch(timestamp * 1000));
+      DateFormat(format).format(DateTime.fromMillisecondsSinceEpoch(timestamp * 1000));
 
   /// converts epoch date time into current date time
   static String getEpochConvertedTime(String timeStamp, String format) {
@@ -479,10 +463,8 @@ class IsrVideoReelUtility {
   // }
 
   /// returns gumlet image url
-  static String buildGumletImageUrl(
-      {required String imageUrl, double? width, double? height}) {
-    final finalImageUrl =
-        removeSourceUrl(imageUrl).replaceAll('trulyfree-staging/', '');
+  static String buildGumletImageUrl({required String imageUrl, double? width, double? height}) {
+    final finalImageUrl = removeSourceUrl(imageUrl).replaceAll('trulyfree-staging/', '');
     final queryParameter = StringBuffer();
     if (width != null && width != 0) {
       queryParameter.write('w=$width');
@@ -507,8 +489,7 @@ class IsrVideoReelUtility {
     final netIndex = url.indexOf('.net');
 
     // Determine the starting point for searching the slash
-    var startIndex =
-        comIndex != -1 ? comIndex + 4 : (netIndex != -1 ? netIndex + 4 : -1);
+    var startIndex = comIndex != -1 ? comIndex + 4 : (netIndex != -1 ? netIndex + 4 : -1);
     // If neither '.com' nor '.net' is found, return -1
     if (startIndex == -1) {
       return url.substring(url.lastIndexOf('/') + 1);
@@ -519,12 +500,11 @@ class IsrVideoReelUtility {
   }
 
   /// remove escape sequences
-  static String cleanText(String inputText) => inputText.replaceAll(
-      RegExp(r'[\n\t\r]'), ''); // Removes newline, tab, and carriage return
+  static String cleanText(String inputText) =>
+      inputText.replaceAll(RegExp(r'[\n\t\r]'), ''); // Removes newline, tab, and carriage return
 
   ///show custom widget dialog
-  static Future<void> showCustomDialog(
-          {required BuildContext context, required Widget child}) =>
+  static Future<void> showCustomDialog({required BuildContext context, required Widget child}) =>
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -554,8 +534,7 @@ class IsrVideoReelUtility {
         ),
       );
 
-  static bool _isErrorShowing =
-      false; // Flag to track if an error is currently displayed
+  static bool _isErrorShowing = false; // Flag to track if an error is currently displayed
 
   static void showAppError({
     BuildContext? context,

@@ -19,7 +19,7 @@ class AppLog {
   ///- `AppLog.error()` - for error log
   AppLog(this.message, [this.stackTrace]) {
     log(
-      '\x1B[37m[${AppConstants.appName}] - $message\x1B[0m',
+      '\x1B[37m[${IsmAppConstants.appName}] - $message\x1B[0m',
       stackTrace: stackTrace,
       level: 700,
     );
@@ -41,7 +41,7 @@ class AppLog {
   ///- `AppLog.success()` - for success log
   AppLog.error(this.message, [this.stackTrace]) {
     log(
-      '\x1B[31m[${AppConstants.appName}] - $message\x1B[0m',
+      '\x1B[31m[${IsmAppConstants.appName}] - $message\x1B[0m',
       stackTrace: stackTrace,
       name: 'Error',
       level: 1200,
@@ -64,7 +64,7 @@ class AppLog {
   ///- `AppLog.error()` - for error log
   AppLog.success(this.message, [this.stackTrace]) {
     log(
-      '\x1B[32m[${AppConstants.appName}] - $message\x1B[0m',
+      '\x1B[32m[${IsmAppConstants.appName}] - $message\x1B[0m',
       stackTrace: stackTrace,
       name: 'Success',
       level: 500,
@@ -87,7 +87,7 @@ class AppLog {
   ///- `AppLog.error()` - for error log
   AppLog.info(this.message, [this.stackTrace]) {
     log(
-      '\x1B[33m[${AppConstants.appName}] - $message\x1B[0m',
+      '\x1B[33m[${IsmAppConstants.appName}] - $message\x1B[0m',
       stackTrace: stackTrace,
       name: 'Info',
       level: 800,
@@ -110,7 +110,7 @@ class AppLog {
   ///- `AppLog.error()` - for error log
   AppLog.highlight(this.message, [this.stackTrace]) {
     log(
-      '\x1B[36m[${AppConstants.appName}] - $message\x1B[0m',
+      '\x1B[36m[${IsmAppConstants.appName}] - $message\x1B[0m',
       stackTrace: stackTrace,
       name: 'Highlight',
       level: 400,

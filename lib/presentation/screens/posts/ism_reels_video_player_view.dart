@@ -23,6 +23,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
     this.onPressSaveButton,
     this.onDoubleTap,
     this.loggedInUserId,
+    this.onVideoCompleted,
   });
 
   final VideoCacheManager? videoCacheManager;
@@ -34,13 +35,14 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
   final Future<void> Function()? onPressSaveButton;
   final Future<void> Function()? onDoubleTap;
   final String? loggedInUserId;
+  final VoidCallback? onVideoCompleted;
 
   @override
   State<IsmReelsVideoPlayerView> createState() => _IsmReelsVideoPlayerViewState();
 }
 
 class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   // Use MediaCacheFactory instead of direct VideoCacheManager
   VideoCacheManager get _videoCacheManager => widget.videoCacheManager ?? VideoCacheManager();
 
@@ -84,10 +86,27 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   Timer? _muteAnimationTimer;
   double _muteIconScale = 1.0;
 
+  // Track if video has completed one full cycle for auto-advance
+  bool _hasCompletedOneCycle = false;
+
   @override
   void initState() {
     _onStartInit();
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
+      if (_isPlaying) {
+        _togglePlayPause();
+      }
+    } else if (state == AppLifecycleState.resumed) {
+      if (!_isPlaying) {
+        _togglePlayPause();
+      }
+    }
   }
 
   /// Returns true if the video controller is ready for playback.
@@ -153,6 +172,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         .toList();
     _isPlaying = true;
     _isPlayPauseActioned = false;
+
+    // Reset completion flag when changing pages
+    _hasCompletedOneCycle = false;
     // mountUpdate();
 
     // Initialize new video if needed
@@ -282,6 +304,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       await _videoPlayerController!.setLooping(true);
       await _videoPlayerController!.setVolume(_isMuted ? 0.0 : 1.0);
 
+      // Reset completion flag for new video
+      _hasCompletedOneCycle = false;
+
       // Start playback
       if (!_videoPlayerController!.isPlaying) {
         debugPrint('▶️ Starting video playback in setup');
@@ -298,6 +323,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   /// Disposes the current video controller if not cached, and cleans up state.
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _isDisposed = true;
     _tapGestureRecognizer?.dispose();
     _pageController?.dispose();
@@ -369,17 +395,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
 
     // Wrap media content with mentions overlay
-    return GestureDetector(
-      onTap: _toggleMentions,
-      child: Stack(
-        children: [
-          mediaWidget,
+    return Stack(
+      children: [
+        mediaWidget,
 
-          // Mentions overlay
-          if (_mentionsVisible && _pageMentionMetaDataList.isListEmptyOrNull == false)
-            ..._buildMentionsOverlay(),
-        ],
-      ),
+        // Mentions overlay with center area for tap-through
+        if (_mentionsVisible && _pageMentionMetaDataList.isListEmptyOrNull == false)
+          _buildMentionsOverlayWithCenterArea(),
+      ],
     );
   }
 
@@ -516,6 +539,83 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             child: _buildMentionTag(mention),
           ))
       .toList();
+
+  Widget _buildMentionsOverlayWithCenterArea() {
+    final screenWidth = IsrDimens.getScreenWidth(context);
+    final screenHeight = IsrDimens.getScreenHeight(context);
+
+    // Define center area dimensions (adjust as needed)
+    final centerAreaWidth = screenWidth * 0.6; // 60% of screen width
+    final centerAreaHeight = screenHeight * 0.6; // 60% of screen height
+    final centerAreaLeft = (screenWidth - centerAreaWidth) / 2;
+    final centerAreaTop = (screenHeight - centerAreaHeight) / 2;
+
+    return Stack(
+      children: [
+        // Top area - captures taps
+        Positioned(
+          left: 0,
+          top: 0,
+          right: 0,
+          height: centerAreaTop,
+          child: GestureDetector(
+            onTap: _toggleMentions,
+            child: Container(color: Colors.transparent),
+          ),
+        ),
+
+        // Bottom area - captures taps
+        Positioned(
+          left: 0,
+          top: centerAreaTop + centerAreaHeight,
+          right: 0,
+          bottom: 0,
+          child: GestureDetector(
+            onTap: _toggleMentions,
+            child: Container(color: Colors.transparent),
+          ),
+        ),
+
+        // Left area - captures taps
+        Positioned(
+          left: 0,
+          top: centerAreaTop,
+          width: centerAreaLeft,
+          height: centerAreaHeight,
+          child: GestureDetector(
+            onTap: _toggleMentions,
+            child: Container(color: Colors.transparent),
+          ),
+        ),
+
+        // Right area - captures taps
+        Positioned(
+          left: centerAreaLeft + centerAreaWidth,
+          top: centerAreaTop,
+          right: 0,
+          height: centerAreaHeight,
+          child: GestureDetector(
+            onTap: _toggleMentions,
+            child: Container(color: Colors.transparent),
+          ),
+        ),
+
+        // Center area - allows tap-through to mention tags
+        Positioned(
+          left: centerAreaLeft,
+          top: centerAreaTop,
+          width: centerAreaWidth,
+          height: centerAreaHeight,
+          child: IgnorePointer(
+            child: Container(color: Colors.transparent),
+          ),
+        ),
+
+        // Mention tags overlay
+        ..._buildMentionsOverlay(),
+      ],
+    );
+  }
 
   Widget _buildMentionTag(MentionMetaData mention) => AnimatedContainer(
         duration: const Duration(milliseconds: 300),
@@ -1223,13 +1323,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                               text: TextSpan(
                                 children: [
                                   _buildDescriptionTextSpan(
-                                    displayText,
+                                    displayText.trim(),
                                     _mentionedDataList,
                                     _taggedDataList,
                                     IsrStyles.white14
                                         .copyWith(color: IsrColors.white.changeOpacity(0.9)),
                                     (mention) {
-                                      _reelData.onTapMentionTag?.call(mention);
+                                      if (_reelData.onTapMentionTag != null) {
+                                        _reelData.onTapMentionTag?.call(mention);
+                                      }
                                     },
                                   ),
                                   if (shouldTruncate)
@@ -1475,10 +1577,16 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       final end = match.end;
       final matchedText = match.group(0)!;
 
-      // Add text before the match
+      // Add normal text before the match (only if not empty/whitespace)
       if (lastIndex < start) {
         final textBefore = description.substring(lastIndex, start);
-        if (textBefore.isNotEmpty) {
+        if (textBefore.trim().isNotEmpty) {
+          spans.add(TextSpan(
+            text: textBefore,
+            style: defaultStyle,
+          ));
+        } else if (textBefore.isNotEmpty) {
+          // Add whitespace as-is for proper spacing
           spans.add(TextSpan(
             text: textBefore,
             style: defaultStyle,
@@ -1486,52 +1594,74 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         }
       }
 
-      // Process mentions (@username)
-      if (matchedText.startsWith('@')) {
-        final username = matchedText.substring(1); // Remove @ symbol
-        final mention = mentions.firstWhere(
-          (m) => m.username == username,
-          orElse: MentionMetaData.new,
+      if (matchedText.startsWith('@') && mentions.isNotEmpty) {
+        // Find the mention by username using where
+        final matchingMentions = mentions.where(
+          (m) => '@${m.username}' == matchedText,
         );
 
-        spans.add(TextSpan(
-          text: matchedText,
-          style: defaultStyle.copyWith(
-            fontWeight: FontWeight.w800,
-            color: mention.username != null ? Colors.white : Colors.white.changeOpacity(0.9),
-          ),
-          recognizer: mention.username != null
-              ? (TapGestureRecognizer()..onTap = () => onMentionTap(mention))
-              : null,
-        ));
-      }
-      // Process hashtags (#tag)
-      else if (matchedText.startsWith('#')) {
-        final tag = matchedText.substring(1); // Remove # symbol
-        final hashtag = hashtags.firstWhere(
-          (h) => h.tag == tag,
-          orElse: MentionMetaData.new,
+        if (matchingMentions.isNotEmpty && matchedText.isNotEmpty) {
+          final mention = matchingMentions.first;
+          spans.add(TextSpan(
+            text: matchedText,
+            style: defaultStyle.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () {
+                onMentionTap(mention);
+              },
+          ));
+        } else {
+          if (matchedText.isNotEmpty) {
+            spans.add(TextSpan(
+              text: matchedText,
+              style: defaultStyle,
+            ));
+          }
+        }
+      } else if (matchedText.startsWith('#') && hashtags.isNotEmpty) {
+        // Find the hashtag by tag using where
+        final matchingHashtags = hashtags.where(
+          (m) => '#${m.tag}' == matchedText,
         );
 
-        spans.add(TextSpan(
-          text: matchedText,
-          style: defaultStyle.copyWith(
-            fontWeight: FontWeight.w800,
-            color: hashtag.tag != null ? Colors.white : Colors.white.changeOpacity(0.9),
-          ),
-          recognizer: hashtag.tag != null
-              ? (TapGestureRecognizer()..onTap = () => onMentionTap(hashtag))
-              : null,
-        ));
+        if (matchingHashtags.isNotEmpty && matchedText.isNotEmpty) {
+          final hashTag = matchingHashtags.first;
+          spans.add(TextSpan(
+            text: matchedText,
+            style: defaultStyle.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () {
+                onMentionTap(hashTag);
+              },
+          ));
+        } else {
+          if (matchedText.isNotEmpty) {
+            spans.add(TextSpan(
+              text: matchedText,
+              style: defaultStyle.copyWith(fontWeight: FontWeight.w800),
+            ));
+          }
+        }
+      } else {
+        if (matchedText.isNotEmpty) {
+          spans.add(TextSpan(
+            text: matchedText,
+            style: defaultStyle.copyWith(fontWeight: FontWeight.w400),
+          ));
+        }
       }
 
       lastIndex = end;
     }
 
-    // Add remaining text after the last match
+    // Add remaining text after last match
     if (lastIndex < description.length) {
       final remainingText = description.substring(lastIndex);
-      if (remainingText.isNotEmpty) {
+      if (remainingText.trim().isNotEmpty) {
         spans.add(TextSpan(
           text: remainingText,
           style: defaultStyle,
@@ -1539,7 +1669,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       }
     }
 
-    return TextSpan(children: spans);
+    final textSpan = TextSpan(children: spans, style: defaultStyle);
+
+    return textSpan;
   }
 
   void _handleCommentClick(StateSetter setBuilderState) async {
@@ -1617,9 +1749,17 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
 
     final position = _videoPlayerController!.position;
-    final total = _videoPlayerController!.duration.inSeconds;
+    final duration = _videoPlayerController!.duration;
+    final total = duration.inSeconds;
     final progress = position.inSeconds;
     final percent = (progress / total * 100).floor();
+
+    // // Debug logging for video progress
+    // if (progress % 5 == 0) {
+    //   // Log every 5 seconds
+    //   debugPrint(
+    //       '🎬 Video progress: ${position.inSeconds}s / ${duration.inSeconds}s ($percent%)');
+    // }
 
     // fire at specific milestones
     if (progress >= 3 && !_loggedMilestones.contains('3s')) {
@@ -1645,12 +1785,57 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       _logWatchEvent('progress', position: position, note: '75%');
     }
 
-    // when video ends
-    if (_videoPlayerController!.position >= _videoPlayerController!.duration &&
-        !_loggedMilestones.contains('complete')) {
+    // Check if video is near the end (within 1 second) or has reached the end
+    final timeRemaining = duration - position;
+    final isNearEnd = timeRemaining.inMilliseconds <= 1000; // Within 1 second
+    final hasReachedEnd = position >= duration;
+
+    // For looping videos, we need to detect when they complete one full cycle
+    if ((isNearEnd || hasReachedEnd) && !_hasCompletedOneCycle) {
+      _hasCompletedOneCycle = true;
       _loggedMilestones.add('complete');
       _logWatchEvent('complete', position: position);
+      debugPrint(
+          '🎬 Video completed one cycle! Position: ${position.inSeconds}s, Duration: ${duration.inSeconds}s, Time remaining: ${timeRemaining.inMilliseconds}ms');
+
+      // Handle video completion - check if we should move to next video or next post
+      _handleVideoCompletion();
     }
+  }
+
+  /// Handles video completion logic - either move to next video in carousel or next post
+  void _handleVideoCompletion() {
+    debugPrint('🎬 _handleVideoCompletion called - disposed: $_isDisposed, mounted: $mounted');
+
+    if (_isDisposed || !mounted) {
+      debugPrint('🎬 _handleVideoCompletion: Early return due to disposed or not mounted');
+      return;
+    }
+
+    debugPrint(
+        '🎬 _handleVideoCompletion: Has multiple media: $_hasMultipleMedia, current page: ${_currentPageNotifier.value}, total media: ${_reelData.mediaMetaDataList.length}');
+
+    // Check if we have multiple media items (carousel)
+    if (_hasMultipleMedia) {
+      // If there's a next media item in the carousel, move to it
+      if (_currentPageNotifier.value < _reelData.mediaMetaDataList.length - 1) {
+        final nextIndex = _currentPageNotifier.value + 1;
+        debugPrint('🎬 Video completed, moving to next media in carousel: $nextIndex');
+        _pageController?.animateToPage(
+          nextIndex,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+        return;
+      } else {
+        debugPrint('🎬 Video completed, no more media in carousel');
+      }
+    }
+
+    // If no next media in carousel or single video, notify parent to move to next post
+    debugPrint(
+        '🎬 Video completed, notifying parent to move to next post. Callback available: ${widget.onVideoCompleted != null}');
+    widget.onVideoCompleted?.call();
   }
 
   void _logWatchEvent(String type, {required Duration position, String? note}) {

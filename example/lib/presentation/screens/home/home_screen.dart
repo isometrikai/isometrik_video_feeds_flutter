@@ -175,7 +175,9 @@ class _HomeScreenState extends State<HomeScreen> {
         placeDataList: postData.tags != null && postData.tags?.places.isEmptyOrNull == false
             ? postData.tags?.places?.map(_getPlaceMetaData).toList()
             : null,
-        onTapMentionTag: (mention) {},
+        onTapMentionTag: (mention) {
+          debugPrint('onTapMentionTag: ${jsonEncode(mention.toJson())}');
+        },
         postId: postData.id,
         onCreatePost: () async => await _handleCreatePost(),
         mediaMetaDataList: postData.media?.map(_getMediaMetaData).toList() ?? [],
@@ -194,6 +196,9 @@ class _HomeScreenState extends State<HomeScreen> {
         isVerifiedUser: false,
         productCount: postData.tags?.products?.length ?? 0,
         description: postData.caption ?? '',
+        onTapUserProfile: (isSelfProfile) {
+          debugPrint('onTapUserProfile: $isSelfProfile');
+        },
         onTapComment: (totalCommentsCount) async {
           final result = await _handleCommentAction(postData.id ?? '', totalCommentsCount);
           return result;
