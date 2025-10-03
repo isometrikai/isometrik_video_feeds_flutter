@@ -15,69 +15,118 @@ class StandardVideoPlayerController implements IVideoPlayerController {
 
   final VideoPlayerController _controller;
   final ValueNotifier<bool> _playingStateNotifier = ValueNotifier<bool>(false);
+  bool _isDisposed = false;
 
   void _setupListeners() {
     _controller.addListener(() {
-      _playingStateNotifier.value = _controller.value.isPlaying;
+      if (!_isDisposed) {
+        _playingStateNotifier.value = _controller.value.isPlaying;
+      }
     });
   }
 
   @override
-  Future<void> initialize() => _controller.initialize();
+  Future<void> initialize() {
+    if (_isDisposed) return Future.value();
+    return _controller.initialize();
+  }
 
   @override
-  Future<void> setLooping(bool looping) => _controller.setLooping(looping);
+  Future<void> setLooping(bool looping) {
+    if (_isDisposed) return Future.value();
+    return _controller.setLooping(looping);
+  }
 
   @override
-  Future<void> setVolume(double volume) => _controller.setVolume(volume);
+  Future<void> setVolume(double volume) {
+    if (_isDisposed) return Future.value();
+    return _controller.setVolume(volume);
+  }
 
   @override
-  Future<void> play() => _controller.play();
+  Future<void> play() {
+    if (_isDisposed) return Future.value();
+    return _controller.play();
+  }
 
   @override
-  Future<void> pause() => _controller.pause();
+  Future<void> pause() {
+    if (_isDisposed) return Future.value();
+    return _controller.pause();
+  }
 
   @override
-  Future<void> seekTo(Duration position) => _controller.seekTo(position);
+  Future<void> seekTo(Duration position) {
+    if (_isDisposed) return Future.value();
+    return _controller.seekTo(position);
+  }
 
   @override
-  Duration get position => _controller.value.position;
+  Duration get position {
+    if (_isDisposed) return Duration.zero;
+    return _controller.value.position;
+  }
 
   @override
-  Duration get duration => _controller.value.duration;
+  Duration get duration {
+    if (_isDisposed) return Duration.zero;
+    return _controller.value.duration;
+  }
 
   @override
-  bool get isPlaying => _controller.value.isPlaying;
+  bool get isPlaying {
+    if (_isDisposed) return false;
+    return _controller.value.isPlaying;
+  }
 
   @override
-  bool get isInitialized => _controller.value.isInitialized;
+  bool get isInitialized {
+    if (_isDisposed) return false;
+    return _controller.value.isInitialized;
+  }
 
   @override
   ValueNotifier<bool> get playingStateNotifier => _playingStateNotifier;
 
   @override
-  Size get videoSize => _controller.value.size;
+  Size get videoSize {
+    if (_isDisposed) return Size.zero;
+    return _controller.value.size;
+  }
 
   @override
-  double get aspectRatio => _controller.value.aspectRatio;
+  double get aspectRatio {
+    if (_isDisposed) return 1.0;
+    return _controller.value.aspectRatio;
+  }
 
   @override
   Widget buildVideoPlayerWidget() => VideoPlayer(_controller);
 
   @override
   Future<void> dispose() async {
+    if (_isDisposed) return;
+    _isDisposed = true;
+
+    // Dispose the ValueNotifier first to prevent further updates
     _playingStateNotifier.dispose();
+
+    // Then dispose the controller
     await _controller.dispose();
   }
 
   @override
   void addListener(VoidCallback listener) {
-    _controller.addListener(listener);
+    if (!_isDisposed) {
+      _controller.addListener(listener);
+    }
   }
 
   @override
   void removeListener(VoidCallback listener) {
-    _controller.removeListener(listener);
+    if (!_isDisposed) {
+      _controller.removeListener(listener);
+    }
   }
 }
 
