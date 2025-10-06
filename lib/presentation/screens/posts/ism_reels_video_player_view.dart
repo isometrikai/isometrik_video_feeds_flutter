@@ -925,6 +925,80 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     );
   }
 
+  Widget _buildLocationWithDots() {
+    final placeList = _reelData.placeDataList ?? [];
+    if (placeList.isEmpty) return const SizedBox.shrink();
+
+    return StatefulBuilder(
+      builder: (context, setState) {
+        final scrollController = ScrollController();
+        var showDots = true;
+
+        void _onScroll() {
+          if (scrollController.hasClients) {
+            final maxScroll = scrollController.position.maxScrollExtent;
+            final currentScroll = scrollController.position.pixels;
+            final isAtEnd = currentScroll >= maxScroll - 5; // 5px tolerance
+
+            if (isAtEnd != !showDots) {
+              setState(() {
+                showDots = !isAtEnd;
+              });
+            }
+          }
+        }
+
+        scrollController.addListener(_onScroll);
+
+        return Row(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                controller: scrollController,
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: List.generate(
+                    placeList.length,
+                    (index) => Padding(
+                      padding: EdgeInsets.only(
+                        right: index < placeList.length - 1 ? 8.0 : 0,
+                      ),
+                      child: Text(
+                        placeList[index].placeName ?? '',
+                        style: IsrStyles.white14.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            if (placeList.length > 1 && showDots) ...[
+              IsrDimens.boxWidth(IsrDimens.four),
+              Row(
+                children: List.generate(
+                  placeList.length > 3 ? 3 : placeList.length,
+                  (index) => Container(
+                    margin: EdgeInsets.only(right: index < 2 ? 2.0 : 0),
+                    width: 4.0,
+                    height: 4.0,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withOpacity(0.7),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
   void _togglePlayPause() {
     if (_reelData.showBlur == true ||
         _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kPictureType) {
@@ -1360,17 +1434,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                             Icon(Icons.location_on, size: IsrDimens.fifteen),
                             IsrDimens.boxWidth(IsrDimens.five),
                             Expanded(
-                              child: Row(
-                                children: List.generate(
-                                  _reelData.placeDataList?.length ?? 0,
-                                  (index) => Text(
-                                    _reelData.placeDataList?.first.placeName ?? '',
-                                    style: IsrStyles.white14.copyWith(fontWeight: FontWeight.w800),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ),
+                              child: _buildLocationWithDots(),
                             ),
                           ],
                         ),
