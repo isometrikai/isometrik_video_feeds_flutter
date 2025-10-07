@@ -3,12 +3,14 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/media_cache_interface.dart';
+import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 
 /// Cache manager implementation for images
 class ImageCacheManager implements IMediaCacheManager {
   factory ImageCacheManager() => _instance;
+
   ImageCacheManager._internal();
+
   static final ImageCacheManager _instance = ImageCacheManager._internal();
 
   final Map<String, ImageProvider> _imageCache = {};
@@ -26,6 +28,13 @@ class ImageCacheManager implements IMediaCacheManager {
       if (url.isEmpty) continue;
       if (isMediaCached(url)) continue;
 
+      // Only process actual image URLs, skip video URLs
+      final mediaType = MediaTypeUtil.getMediaType(url);
+      if (mediaType != MediaType.image) {
+        debugPrint('⚠️ Skipping non-image URL in precacheMedia: $url (type: $mediaType)');
+        continue;
+      }
+
       futures.add(_cacheImage(url, highPriority: highPriority));
     }
 
@@ -33,20 +42,29 @@ class ImageCacheManager implements IMediaCacheManager {
   }
 
   Future<void> _cacheImage(String url, {bool highPriority = false}) async {
-    if (_initializationCache.containsKey(url)) {
-      await _initializationCache[url];
+    final cleanUrl = url.split('?').first.split('#').first;
+
+    // Validate that this is actually an image URL
+    final mediaType = MediaTypeUtil.getMediaType(cleanUrl);
+    if (mediaType != MediaType.image) {
+      debugPrint('⚠️ Attempted to cache non-image URL: $cleanUrl (type: $mediaType)');
       return;
     }
 
-    final initFuture = _initializeImage(url, highPriority: highPriority);
-    _initializationCache[url] = initFuture;
+    if (_initializationCache.containsKey(cleanUrl)) {
+      await _initializationCache[cleanUrl];
+      return;
+    }
+
+    final initFuture = _initializeImage(cleanUrl, highPriority: highPriority);
+    _initializationCache[cleanUrl] = initFuture;
 
     try {
       await initFuture;
     } catch (e) {
       debugPrint('Error caching image: $e');
     } finally {
-      await _initializationCache.remove(url);
+      await _initializationCache.remove(cleanUrl);
     }
   }
 

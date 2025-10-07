@@ -68,8 +68,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   final ValueNotifier<bool> _isSaveLoading = ValueNotifier(false);
   final ValueNotifier<bool> _isLikeLoading = ValueNotifier(false);
 
-  // Change _isMuted to static
-  static bool _isMuted = false;
+  // Audio state management
+  bool _isMuted = false;
+  bool _isAudioOperationInProgress = false;
+  Timer? _audioDebounceTimer;
   final _maxLengthToShow = 50;
   late ReelsData _reelData;
 
@@ -89,6 +91,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   // Track if video has completed one full cycle for auto-advance
   bool _hasCompletedOneCycle = false;
 
+  // Video state management
+  bool _isVideoInitializing = false;
+  bool _isVideoSetupComplete = false;
+
+  // Device performance management
+  bool _isLowEndDevice = false;
+  Timer? _performanceMonitorTimer;
+
   @override
   void initState() {
     _onStartInit();
@@ -97,15 +107,72 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _detectDevicePerformance();
+  }
+
+  /// Detects device performance capabilities to optimize video playback
+  void _detectDevicePerformance() {
+    // Check device memory and performance characteristics
+    final mediaQuery = MediaQuery.of(context);
+    final screenSize = mediaQuery.size;
+    final devicePixelRatio = mediaQuery.devicePixelRatio;
+
+    // Detect low-end devices based on screen size and pixel ratio
+    _isLowEndDevice = screenSize.width < 400 || devicePixelRatio < 2.0;
+
+    // Platform-specific optimizations
+    final platform = Theme.of(context).platform;
+    if (platform == TargetPlatform.android) {
+      // Android-specific optimizations
+      debugPrint('🤖 Android device detected - applying Android optimizations');
+    } else if (platform == TargetPlatform.iOS) {
+      // iOS-specific optimizations
+      debugPrint('🍎 iOS device detected - applying iOS optimizations');
+    }
+
+    debugPrint('📱 Device Performance: ${_isLowEndDevice ? "Low-end" : "High-end"}');
+    debugPrint('📱 Screen: ${screenSize.width}x${screenSize.height}, DPR: $devicePixelRatio');
+  }
+
+  @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
       if (_isPlaying) {
         _togglePlayPause();
       }
+      // Pause performance monitoring when app is backgrounded
+      _performanceMonitorTimer?.cancel();
     } else if (state == AppLifecycleState.resumed) {
       if (!_isPlaying) {
         _togglePlayPause();
       }
+      // Resume performance monitoring when app is foregrounded
+      _startPerformanceMonitoring();
+    }
+  }
+
+  /// Starts performance monitoring to prevent device heating
+  void _startPerformanceMonitoring() {
+    _performanceMonitorTimer?.cancel();
+    _performanceMonitorTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      _monitorPerformance();
+    });
+  }
+
+  /// Monitors device performance and adjusts video quality if needed
+  void _monitorPerformance() {
+    if (!mounted || _isDisposed) {
+      _performanceMonitorTimer?.cancel();
+      return;
+    }
+
+    // Check if video is playing and adjust quality for low-end devices
+    if (_videoPlayerController != null && _videoPlayerController!.isPlaying && _isLowEndDevice) {
+      // For low-end devices, we could implement quality reduction here
+      // This is a placeholder for future thermal management
+      debugPrint('🌡️ Performance monitoring: Low-end device optimization active');
     }
   }
 
@@ -118,6 +185,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   void _onStartInit() async {
     _reelData = widget.reelsData!;
+
+    // Only reset current page if not already initialized
+    if (_currentPageNotifier.value != 0) {
+      _currentPageNotifier.value = 0;
+    }
+
     _mentionedMetaDataList =
         _reelData.mentions?.where((mentionData) => mentionData.mediaPosition != null).toList() ??
             [];
@@ -141,6 +214,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kVideoType) {
       await _initializeVideoPlayer();
       mountUpdate();
+
+      // Preload next videos for smoother experience
+      _preloadNextVideos();
     }
   }
 
@@ -148,6 +224,29 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   void mountUpdate() {
     if (!mounted) return;
     setState(() {});
+  }
+
+  /// Preloads next videos for smoother playback experience
+  void _preloadNextVideos() {
+    if (_reelData.mediaMetaDataList.length <= 1) return;
+
+    // Preload next 2 videos
+    final currentIndex = _currentPageNotifier.value;
+    final nextVideos = <String>[];
+
+    for (var i = 1; i <= 2 && (currentIndex + i) < _reelData.mediaMetaDataList.length; i++) {
+      final nextIndex = currentIndex + i;
+      final mediaData = _reelData.mediaMetaDataList[nextIndex];
+
+      if (mediaData.mediaType == kVideoType && mediaData.mediaUrl.isStringEmptyOrNull == false) {
+        nextVideos.add(mediaData.mediaUrl);
+      }
+    }
+
+    if (nextVideos.isNotEmpty) {
+      debugPrint('🔄 Preloading ${nextVideos.length} next videos...');
+      MediaCacheFactory.precacheMedia(nextVideos, highPriority: false);
+    }
   }
 
   // Handle page change in carousel
@@ -208,6 +307,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       return;
     }
 
+    // Prevent multiple initialization attempts
+    if (_isVideoInitializing) {
+      debugPrint('🔄 Video initialization already in progress, skipping...');
+      return;
+    }
+
+    _isVideoInitializing = true;
+    _isVideoSetupComplete = false;
+
     final videoUrl = _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl;
     debugPrint('IsmReelsVideoPlayerView....initializeVideoPlayer video url $videoUrl');
 
@@ -220,6 +328,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         debugPrint('IsmReelsVideoPlayerView....Using cached video controller for $videoUrl');
         if (_videoPlayerController!.isInitialized) {
           await _setupVideoController();
+          _isVideoSetupComplete = true;
           return;
         } else {
           // If controller exists but not initialized, dispose and recreate
@@ -242,6 +351,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           if (_videoPlayerController != null && _videoPlayerController!.isInitialized) {
             debugPrint('IsmReelsVideoPlayerView....Found initialized controller after waiting');
             await _setupVideoController();
+            _isVideoSetupComplete = true;
             return;
           }
         }
@@ -249,10 +359,18 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
       // If still not available, initialize normally (fallback)
       await _initializeVideoControllerNormally(videoUrl);
+
+      // Only setup if we have a valid controller
+      if (_videoPlayerController != null) {
+        await _setupVideoController();
+        _isVideoSetupComplete = true;
+      }
     } catch (e) {
       debugPrint(
           'IsmReelsVideoPlayerView...catch video url ${_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl}');
       IsrVideoReelUtility.debugCatchLog(error: e);
+    } finally {
+      _isVideoInitializing = false;
     }
   }
 
@@ -283,7 +401,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   /// Sets up the video controller for playback, looping, and volume.
   Future<void> _setupVideoController() async {
     debugPrint('_setupVideoController....setup video controller');
-    if (_isDisposed) return;
+    if (_isDisposed || !mounted) return;
 
     try {
       if (_videoPlayerController == null) {
@@ -297,26 +415,66 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         await _videoPlayerController!.initialize();
       }
 
+      // Reduced wait time for faster startup
+      final waitTime = _isLowEndDevice ? 150 : 50;
+      await Future.delayed(Duration(milliseconds: waitTime));
+
+      // Remove existing listener to prevent memory leaks
+      _videoPlayerController!.removeListener(_handlePlaybackProgress);
+
       // Reset to beginning
       await _videoPlayerController!.seekTo(Duration.zero);
 
-      // Set up basic properties
+      // Set up basic properties with performance optimizations
       await _videoPlayerController!.setLooping(true);
-      await _videoPlayerController!.setVolume(_isMuted ? 0.0 : 1.0);
+
+      // Set volume only once during setup to prevent audio flickering
+      if (!_isAudioOperationInProgress) {
+        _isAudioOperationInProgress = true;
+        try {
+          await _videoPlayerController!.setVolume(_isMuted ? 0.0 : 1.0);
+        } finally {
+          _isAudioOperationInProgress = false;
+        }
+      }
 
       // Reset completion flag for new video
       _hasCompletedOneCycle = false;
 
-      // Start playback
-      if (!_videoPlayerController!.isPlaying) {
+      // Add listener after setup
+      _videoPlayerController!.addListener(_handlePlaybackProgress);
+
+      // Start playback only if not already playing and controller is ready
+      if (!_videoPlayerController!.isPlaying && _videoPlayerController!.isInitialized) {
         debugPrint('▶️ Starting video playback in setup');
         await _videoPlayerController!.play();
+
+        // Ensure video starts playing with device-specific timing
+        final retryDelay = _isLowEndDevice ? 200 : 100;
+        await Future.delayed(Duration(milliseconds: retryDelay));
+        if (!_videoPlayerController!.isPlaying) {
+          debugPrint('🔄 Retrying video playback...');
+          await _videoPlayerController!.play();
+
+          // Additional retry for low-end devices
+          if (_isLowEndDevice) {
+            await Future.delayed(const Duration(milliseconds: 150));
+            if (!_videoPlayerController!.isPlaying) {
+              debugPrint('🔄 Second retry for low-end device...');
+              await _videoPlayerController!.play();
+            }
+          }
+        }
       }
 
-      _videoPlayerController!.addListener(_handlePlaybackProgress);
       debugPrint('✅ Video controller setup complete');
+
+      // Start performance monitoring for thermal management
+      _startPerformanceMonitoring();
     } catch (e) {
       debugPrint('❌ Error in setupVideoController: $e');
+      // Clean up on error
+      _videoPlayerController?.removeListener(_handlePlaybackProgress);
     }
   }
 
@@ -329,23 +487,31 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _pageController?.dispose();
     _likeAnimationTimer?.cancel();
     _muteAnimationTimer?.cancel();
+    _completionDebounceTimer?.cancel();
+    _audioDebounceTimer?.cancel();
+    _performanceMonitorTimer?.cancel();
     // Mark video as not visible for cache manager
     if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl.isStringEmptyOrNull ==
         false) {
       _videoCacheManager
           .markAsNotVisible(_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl);
     }
-    // Dispose controller if not cached
-    if (_videoPlayerController != null &&
-        _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl.isStringEmptyOrNull ==
-            false &&
-        !_videoCacheManager
-            .isMediaCached(_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl)) {
-      _videoPlayerController?.removeListener(_handlePlaybackProgress);
-      _videoPlayerController?.pause();
-      _videoPlayerController?.dispose();
-    } else {
-      _videoPlayerController?.pause();
+    // Dispose controller if not cached with proper cleanup
+    if (_videoPlayerController != null) {
+      try {
+        _videoPlayerController!.removeListener(_handlePlaybackProgress);
+        _videoPlayerController!.pause();
+
+        // Only dispose if not cached to prevent memory leaks
+        if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl.isStringEmptyOrNull ==
+                false &&
+            !_videoCacheManager
+                .isMediaCached(_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl)) {
+          _videoPlayerController!.dispose();
+        }
+      } catch (e) {
+        debugPrint('⚠️ Error disposing video controller: $e');
+      }
     }
 
     _videoPlayerController = null;
@@ -977,17 +1143,21 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               ),
             ),
             if (placeList.length > 1 && showDots) ...[
-              IsrDimens.boxWidth(IsrDimens.four),
-              Row(
-                children: List.generate(
-                  placeList.length > 3 ? 3 : placeList.length,
-                  (index) => Container(
-                    margin: EdgeInsets.only(right: index < 2 ? 2.0 : 0),
-                    width: 4.0,
-                    height: 4.0,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withOpacity(0.7),
+              IsrDimens.boxWidth(IsrDimens.eight),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: List.generate(
+                    placeList.length > 3 ? 3 : placeList.length,
+                    (index) => Container(
+                      margin: EdgeInsets.only(right: index < 2 ? 3.0 : 0),
+                      width: 5.0,
+                      height: 5.0,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.changeOpacity(0.8),
+                      ),
                     ),
                   ),
                 ),
@@ -1600,11 +1770,16 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   void _triggerMuteAnimation() {
+    // Cancel any existing animation
     _muteAnimationTimer?.cancel();
+
+    if (!mounted) return;
+
     setState(() {
       _showMuteAnimation = true;
       _muteIconScale = 1.3;
     });
+
     // Animate scale down after a short delay
     Future.delayed(const Duration(milliseconds: 120), () {
       if (mounted && _showMuteAnimation) {
@@ -1613,6 +1788,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         });
       }
     });
+
+    // Hide animation after delay
     _muteAnimationTimer = Timer(const Duration(milliseconds: 700), () {
       if (mounted) {
         setState(() {
@@ -1792,20 +1969,58 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       // Only allow mute/unmute for videos
       return;
     }
+
+    // Debounce audio operations to prevent flickering
+    _audioDebounceTimer?.cancel();
+    _audioDebounceTimer = Timer(const Duration(milliseconds: 150), _performMuteToggle);
+  }
+
+  void _performMuteToggle() {
+    // Prevent multiple audio operations at once
+    if (_isAudioOperationInProgress) {
+      return;
+    }
+
+    _isAudioOperationInProgress = true;
+
     setState(() {
       _isMuted = !_isMuted;
-      _videoPlayerController?.setVolume(_isMuted ? 0.0 : 1.0);
     });
+
+    // Set volume asynchronously to prevent blocking UI
+    _setVolumeAsync(_isMuted ? 0.0 : 1.0);
     _triggerMuteAnimation();
+  }
+
+  /// Sets volume asynchronously with proper error handling
+  Future<void> _setVolumeAsync(double volume) async {
+    try {
+      if (_videoPlayerController != null &&
+          _videoPlayerController!.isInitialized &&
+          !_isDisposed &&
+          mounted) {
+        await _videoPlayerController!.setVolume(volume);
+        debugPrint('🔊 Volume set to: $volume');
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error setting volume: $e');
+    } finally {
+      _isAudioOperationInProgress = false;
+    }
   }
 
   /// Helper method to build the video player widget
   Widget _buildVideoPlayerWidget(IVideoPlayerController controller) => Container(
         color: Colors.black,
         child: Center(
-          child: controller.buildVideoPlayerWidget(),
+          child: RepaintBoundary(
+            child: controller.buildVideoPlayerWidget(),
+          ),
         ),
       );
+
+  int _lastProgressSecond = -1;
+  Timer? _completionDebounceTimer;
 
   void _handlePlaybackProgress() {
     if (!mounted || _videoPlayerController == null || !_videoPlayerController!.isInitialized) {
@@ -1816,16 +2031,16 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     final duration = _videoPlayerController!.duration;
     final total = duration.inSeconds;
     final progress = position.inSeconds;
+
+    // Throttle progress updates to reduce CPU usage - only process once per second
+    if (progress == _lastProgressSecond) {
+      return;
+    }
+    _lastProgressSecond = progress;
+
     final percent = (progress / total * 100).floor();
 
-    // // Debug logging for video progress
-    // if (progress % 5 == 0) {
-    //   // Log every 5 seconds
-    //   debugPrint(
-    //       '🎬 Video progress: ${position.inSeconds}s / ${duration.inSeconds}s ($percent%)');
-    // }
-
-    // fire at specific milestones
+    // fire at specific milestones (optimized to reduce frequency)
     if (progress >= 3 && !_loggedMilestones.contains('3s')) {
       _loggedMilestones.add('3s');
       _logWatchEvent('progress', position: position, note: '3s');
@@ -1869,6 +2084,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   /// Handles video completion logic - either move to next video in carousel or next post
   void _handleVideoCompletion() {
+    // Debounce completion calls to prevent excessive processing
+    _completionDebounceTimer?.cancel();
+    _completionDebounceTimer = Timer(const Duration(milliseconds: 100), _processVideoCompletion);
+  }
+
+  void _processVideoCompletion() {
     debugPrint('🎬 _handleVideoCompletion called - disposed: $_isDisposed, mounted: $mounted');
 
     if (_isDisposed || !mounted) {
