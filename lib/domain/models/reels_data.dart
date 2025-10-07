@@ -43,6 +43,7 @@ class ReelsData {
     this.mentions,
     this.tagDataList,
     this.onTapMentionTag,
+    this.onTapPlace,
     this.placeDataList,
   });
 
@@ -89,7 +90,8 @@ class ReelsData {
   final List<MentionMetaData>? mentions;
   final List<MentionMetaData>? tagDataList;
   final List<PlaceMetaData>? placeDataList;
-  final Function(MentionMetaData)? onTapMentionTag;
+  final Function(List<MentionMetaData>)? onTapMentionTag;
+  final Function(List<PlaceMetaData>)? onTapPlace;
 }
 
 class MediaMetaData {

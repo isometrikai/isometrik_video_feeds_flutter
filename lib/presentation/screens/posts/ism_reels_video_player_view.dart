@@ -69,6 +69,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   final ValueNotifier<bool> _isLikeLoading = ValueNotifier(false);
 
   // Audio state management
+  static bool _globalMuteState = false; // Global mute state that persists across all videos
   bool _isMuted = false;
   bool _isAudioOperationInProgress = false;
   Timer? _audioDebounceTimer;
@@ -204,6 +205,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             [];
     _postDescription = _reelData.description ?? '';
     _tapGestureRecognizer = TapGestureRecognizer();
+
+    // Initialize local mute state with global state
+    _isMuted = _globalMuteState;
 
     // Initialize PageController for carousel
     _pageController = PageController(initialPage: 0);
@@ -429,6 +433,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       await _videoPlayerController!.setLooping(true);
 
       // Set volume only once during setup to prevent audio flickering
+      // Apply global mute state to new videos
+      _isMuted = _globalMuteState;
       if (!_isAudioOperationInProgress) {
         _isAudioOperationInProgress = true;
         try {
@@ -1017,7 +1023,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.pop(context);
-                      _reelData.onTapMentionTag?.call(mention);
+                      _reelData.onTapMentionTag?.call([mention]);
                       // Add your profile navigation logic here
                       // Navigator.pushNamed(context, '/profile', arguments: mention.userId);
                     },
@@ -1170,32 +1176,40 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   Widget _buildMentionedUsersSection() {
-    if (_pageMentionMetaDataList.isListEmptyOrNull) return const SizedBox.shrink();
+    if (_pageMentionMetaDataList.isListEmptyOrNull) {
+      return const SizedBox.shrink();
+    }
 
     return Expanded(
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.people,
-            size: IsrDimens.fifteen,
-            color: IsrColors.white,
-          ),
-          IsrDimens.boxWidth(IsrDimens.five),
-          Expanded(
-            child: Text(
-              _pageMentionMetaDataList.length == 1
-                  ? _pageMentionMetaDataList.first.username ?? ''
-                  : '${_pageMentionMetaDataList.length} people',
-              style: IsrStyles.white14.copyWith(
-                fontWeight: FontWeight.w600,
-                color: IsrColors.white,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+      child: TapHandler(
+        onTap: () {
+          _reelData.onTapMentionTag?.call(_pageMentionMetaDataList);
+          debugPrint('_pageMentionMetaDataList....$_pageMentionMetaDataList');
+        },
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.people,
+              size: IsrDimens.fifteen,
+              color: IsrColors.white,
             ),
-          ),
-        ],
+            IsrDimens.boxWidth(IsrDimens.five),
+            Expanded(
+              child: Text(
+                _pageMentionMetaDataList.length == 1
+                    ? _pageMentionMetaDataList.first.username ?? ''
+                    : '${_pageMentionMetaDataList.length} people',
+                style: IsrStyles.white14.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: IsrColors.white,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1344,30 +1358,43 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       ),
                     ),
                   // Move overlays here so they don't block taps
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.bottomCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withValues(alpha: 0.3),
-                          Colors.black.withValues(alpha: 0.6),
-                        ],
-                        stops: const [0.0, 0.5, 1.0],
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.center,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.3),
+                            Colors.black.withValues(alpha: 0.6),
+                          ],
+                          stops: const [0.0, 0.5, 1.0],
+                        ),
                       ),
                     ),
+                  ),
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisSize: MainAxisSize.max,
                       children: [
                         Expanded(
+                          child: SingleChildScrollView(
                             child: _reelData.footerWidget?.child ??
-                                _buildBottomSectionWithoutOverlay()),
+                                _buildBottomSectionWithoutOverlay(),
+                          ),
+                        ),
                         _reelData.actionWidget?.child ?? _buildRightSideActions(),
                       ],
                     ),
                   ),
-                  // (If you have any other overlays, move them here as well)
                 ],
               ),
             ),
@@ -1536,203 +1563,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         ],
       );
 
-  Widget _buildBottomSection() => Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.transparent,
-              Colors.black.withValues(alpha: 0.3),
-              Colors.black.withValues(alpha: 0.6),
-            ],
-            stops: const [0.0, 0.5, 1.0],
-          ),
-        ),
-        child: Padding(
-          padding: IsrDimens.edgeInsets(
-              left: IsrDimens.sixteen, right: IsrDimens.sixteen, bottom: IsrDimens.fifteen),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if ((_reelData.productCount ?? 0) > 0) ...[
-                TapHandler(
-                  onTap: () {
-                    if (_reelData.onTapCartIcon != null) {
-                      _reelData.onTapCartIcon!();
-                    }
-                  },
-                  child: Container(
-                    padding: IsrDimens.edgeInsetsSymmetric(
-                      horizontal: IsrDimens.twelve,
-                      vertical: IsrDimens.eight,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(IsrDimens.ten),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.changeOpacity(0.1),
-                          spreadRadius: 1,
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const AppImage.svg(AssetConstants.icCartIcon),
-                        IsrDimens.boxWidth(IsrDimens.eight),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              IsrTranslationFile.shop,
-                              style: IsrStyles.primaryText12.copyWith(
-                                  color: IsrColors.color0F1E91, fontWeight: FontWeight.w700),
-                            ),
-                            IsrDimens.boxHeight(IsrDimens.four),
-                            Text(
-                              '${_reelData.productCount} ${_reelData.productCount == 1 ? IsrTranslationFile.product : IsrTranslationFile.products}',
-                              style: IsrStyles.primaryText10.copyWith(
-                                  color: IsrColors.color0F1E91, fontWeight: FontWeight.w500),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                IsrDimens.boxHeight(IsrDimens.sixteen),
-              ],
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Mentions toggle button (top-right)
-                        // if (_pageMentionMetaDataList.isListEmptyOrNull == false) ...[
-                        //   _buildMentionsToggleButton(),
-                        //   IsrDimens.boxHeight(IsrDimens.fifteen),
-                        // ],
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              child: Row(
-                                children: [
-                                  Flexible(
-                                    child: TapHandler(
-                                      onTap: () {
-                                        if (_reelData.onTapUserProfile != null) {
-                                          _reelData.onTapUserProfile!(false);
-                                        }
-                                      },
-                                      child: Text(
-                                        _reelData.userName ?? '',
-                                        style: IsrStyles.white14.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ),
-                                  IsrDimens.boxWidth(IsrDimens.eight),
-                                  _buildFollowButton(),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (_postDescription.isStringEmptyOrNull == false) ...[
-                          IsrDimens.boxHeight(IsrDimens.eight),
-                          ValueListenableBuilder<bool>(
-                            valueListenable: _isExpandedDescription,
-                            builder: (context, value, child) {
-                              final fullDescription = _reelData.description ?? '';
-                              final shouldTruncate = fullDescription.length > _maxLengthToShow;
-
-                              // Show truncated version when collapsed, full version when expanded
-                              final displayText = shouldTruncate && !value
-                                  ? fullDescription.substring(0, _maxLengthToShow)
-                                  : fullDescription;
-
-                              return RichText(
-                                text: TextSpan(
-                                  children: [
-                                    _buildDescriptionTextSpan(
-                                      displayText.trim(),
-                                      _mentionedDataList,
-                                      _taggedDataList,
-                                      IsrStyles.white14
-                                          .copyWith(color: IsrColors.white.changeOpacity(0.9)),
-                                      (mention) {
-                                        if (_reelData.onTapMentionTag != null) {
-                                          _reelData.onTapMentionTag?.call(mention);
-                                        }
-                                      },
-                                    ),
-                                    if (shouldTruncate)
-                                      TextSpan(
-                                        text: value
-                                            ? ' ${IsrTranslationFile.viewLess}'
-                                            : '... ${IsrTranslationFile.viewMore}',
-                                        style:
-                                            IsrStyles.white14.copyWith(fontWeight: FontWeight.w700),
-                                        recognizer: _tapGestureRecognizer
-                                          ?..onTap = () {
-                                            _isExpandedDescription.value =
-                                                !_isExpandedDescription.value;
-                                          },
-                                      ),
-                                  ],
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: value ? null : 3,
-                              );
-                            },
-                          ),
-                        ],
-                        // Mentioned Users and Location in same row
-                        if (_pageMentionMetaDataList.isListEmptyOrNull == false ||
-                            _reelData.placeDataList?.isListEmptyOrNull == false) ...[
-                          IsrDimens.boxHeight(IsrDimens.eight),
-                          Row(
-                            children: [
-                              // Mentioned Users Section
-                              if (_pageMentionMetaDataList.isListEmptyOrNull == false) ...[
-                                _buildMentionedUsersSection(),
-                                if (_reelData.placeDataList?.isListEmptyOrNull == false) ...[
-                                  IsrDimens.boxWidth(IsrDimens.sixteen),
-                                ],
-                              ],
-                              // Location Section
-                              if (_reelData.placeDataList?.isListEmptyOrNull == false) ...[
-                                _buildLocationSection(),
-                              ],
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              if ((_reelData.productCount ?? 0) > 0) ...[
-                IsrDimens.boxHeight(IsrDimens.eight),
-                _buildCommissionTag(),
-              ],
-            ],
-          ),
-        ),
-      );
-
   Widget _buildBottomSectionWithoutOverlay() => Padding(
         padding: IsrDimens.edgeInsets(
             left: IsrDimens.sixteen, right: IsrDimens.sixteen, bottom: IsrDimens.fifteen),
@@ -1853,7 +1683,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                         .copyWith(color: IsrColors.white.changeOpacity(0.9)),
                                     (mention) {
                                       if (_reelData.onTapMentionTag != null) {
-                                        _reelData.onTapMentionTag?.call(mention);
+                                        _reelData.onTapMentionTag?.call([mention]);
                                       }
                                     },
                                   ),
@@ -1864,8 +1694,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                           : '... ${IsrTranslationFile.viewMore}',
                                       style:
                                           IsrStyles.white14.copyWith(fontWeight: FontWeight.w700),
-                                      recognizer: _tapGestureRecognizer
-                                        ?..onTap = () {
+                                      recognizer: TapGestureRecognizer()
+                                        ..onTap = () {
                                           _isExpandedDescription.value =
                                               !_isExpandedDescription.value;
                                         },
@@ -2274,6 +2104,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     setState(() {
       _isMuted = !_isMuted;
+      _globalMuteState = _isMuted; // Update global mute state
     });
 
     // Set volume asynchronously to prevent blocking UI

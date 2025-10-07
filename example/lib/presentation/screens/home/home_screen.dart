@@ -175,8 +175,8 @@ class _HomeScreenState extends State<HomeScreen> {
         placeDataList: postData.tags != null && postData.tags?.places.isEmptyOrNull == false
             ? postData.tags?.places?.map(_getPlaceMetaData).toList()
             : null,
-        onTapMentionTag: (mention) {
-          debugPrint('onTapMentionTag: ${jsonEncode(mention.toJson())}');
+        onTapMentionTag: (mentionList) {
+          debugPrint('onTapMentionTag: ${jsonEncode(mentionList)}');
         },
         postId: postData.id,
         onCreatePost: () async => await _handleCreatePost(),
