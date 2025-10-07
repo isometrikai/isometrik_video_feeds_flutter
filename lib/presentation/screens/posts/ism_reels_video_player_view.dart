@@ -569,7 +569,16 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     // Wrap media content with mentions overlay
     return Stack(
       children: [
-        mediaWidget,
+        GestureDetector(
+          onTap: _toggleMuteAndUnMute,
+          onDoubleTap: () async {
+            _triggerLikeAnimation(); // Always show animation
+            if (_reelData.isLiked != true && widget.onDoubleTap != null) {
+              await widget.onDoubleTap!();
+            }
+          },
+          child: mediaWidget,
+        ),
 
         // // Mentions overlay with center area for tap-through
         // if (_mentionsVisible && _pageMentionMetaDataList.isListEmptyOrNull == false)
@@ -1097,84 +1106,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     );
   }
 
-  Widget _buildLocationWithDots() {
-    final placeList = _reelData.placeDataList ?? [];
-    if (placeList.isEmpty) return const SizedBox.shrink();
-
-    return StatefulBuilder(
-      builder: (context, setState) {
-        final scrollController = ScrollController();
-        var showDots = true;
-
-        void _onScroll() {
-          if (scrollController.hasClients) {
-            final maxScroll = scrollController.position.maxScrollExtent;
-            final currentScroll = scrollController.position.pixels;
-            final isAtEnd = currentScroll >= maxScroll - 5; // 5px tolerance
-
-            if (isAtEnd != !showDots) {
-              setState(() {
-                showDots = !isAtEnd;
-              });
-            }
-          }
-        }
-
-        scrollController.addListener(_onScroll);
-
-        return Row(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                controller: scrollController,
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: List.generate(
-                    placeList.length,
-                    (index) => Padding(
-                      padding: EdgeInsets.only(
-                        right: index < placeList.length - 1 ? 8.0 : 0,
-                      ),
-                      child: Text(
-                        placeList[index].placeName ?? '',
-                        style: IsrStyles.white14.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            if (placeList.length > 1 && showDots) ...[
-              IsrDimens.boxWidth(IsrDimens.eight),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: List.generate(
-                    placeList.length > 3 ? 3 : placeList.length,
-                    (index) => Container(
-                      margin: EdgeInsets.only(right: index < 2 ? 3.0 : 0),
-                      width: 5.0,
-                      height: 5.0,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.changeOpacity(0.8),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ],
-        );
-      },
-    );
-  }
-
   Widget _buildMentionedUsersSection() {
     if (_pageMentionMetaDataList.isListEmptyOrNull) {
       return const SizedBox.shrink();
@@ -1219,17 +1150,22 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (placeList.isListEmptyOrNull) return const SizedBox.shrink();
 
     return Expanded(
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.location_on,
-            size: IsrDimens.fifteen,
-            color: IsrColors.white,
-          ),
-          IsrDimens.boxWidth(IsrDimens.three),
-          Expanded(child: _buildSimpleLocationText(placeList)),
-        ],
+      child: TapHandler(
+        onTap: () {
+          _reelData.onTapPlace?.call(placeList);
+        },
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.location_on,
+              size: IsrDimens.fifteen,
+              color: IsrColors.white,
+            ),
+            IsrDimens.boxWidth(IsrDimens.three),
+            Expanded(child: _buildSimpleLocationText(placeList)),
+          ],
+        ),
       ),
     );
   }
@@ -1276,13 +1212,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         children: [
           // Only the main GestureDetector as child of the outer Stack
           GestureDetector(
-            onTap: _toggleMuteAndUnMute,
-            onDoubleTap: () async {
-              _triggerLikeAnimation(); // Always show animation
-              if (_reelData.isLiked != true && widget.onDoubleTap != null) {
-                await widget.onDoubleTap!();
-              }
-            },
             onLongPress: _togglePlayPause,
             onLongPressEnd: (_) => _togglePlayPause(),
             child: VisibilityDetector(
