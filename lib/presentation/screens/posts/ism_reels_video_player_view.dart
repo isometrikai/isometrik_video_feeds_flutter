@@ -1107,15 +1107,16 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   Widget _buildMentionedUsersSection() {
-    if (_pageMentionMetaDataList.isListEmptyOrNull) {
+    if (_reelData.mentions.isListEmptyOrNull) {
       return const SizedBox.shrink();
     }
 
+    final mentionList = [..._pageMentionMetaDataList, ..._mentionedDataList];
     return Expanded(
       child: TapHandler(
         onTap: () {
-          _reelData.onTapMentionTag?.call(_pageMentionMetaDataList);
-          debugPrint('_pageMentionMetaDataList....$_pageMentionMetaDataList');
+          _reelData.onTapMentionTag?.call(_reelData.mentions ?? []);
+          debugPrint('_pageMentionMetaDataList....${_reelData.mentions}');
         },
         child: Row(
           mainAxisSize: MainAxisSize.min,
