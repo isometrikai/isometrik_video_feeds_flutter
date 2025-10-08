@@ -1107,16 +1107,17 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   Widget _buildMentionedUsersSection() {
-    if (_reelData.mentions.isListEmptyOrNull) {
+    final mentionList = _reelData.mentions ?? [];
+
+    if (mentionList.isListEmptyOrNull) {
       return const SizedBox.shrink();
     }
 
-    final mentionList = [..._pageMentionMetaDataList, ..._mentionedDataList];
     return Expanded(
       child: TapHandler(
         onTap: () {
-          _reelData.onTapMentionTag?.call(_reelData.mentions ?? []);
-          debugPrint('_pageMentionMetaDataList....${_reelData.mentions}');
+          _reelData.onTapMentionTag?.call(mentionList);
+          debugPrint('mentionList....$mentionList');
         },
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -1129,9 +1130,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             IsrDimens.boxWidth(IsrDimens.five),
             Expanded(
               child: Text(
-                _pageMentionMetaDataList.length == 1
-                    ? _pageMentionMetaDataList.first.username ?? ''
-                    : '${_pageMentionMetaDataList.length} people',
+                mentionList.length == 1
+                    ? mentionList.first.username ?? ''
+                    : '${mentionList.length} people',
                 style: IsrStyles.white14.copyWith(
                   fontWeight: FontWeight.w600,
                   color: IsrColors.white,
@@ -1639,20 +1640,18 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                         ),
                       ],
                       // Mentioned Users and Location in same row
-                      if (_pageMentionMetaDataList.isListEmptyOrNull == false ||
+                      if (_reelData.mentions.isListEmptyOrNull == false ||
                           _reelData.placeDataList?.isListEmptyOrNull == false) ...[
                         IsrDimens.boxHeight(IsrDimens.eight),
                         Row(
                           children: [
                             // Mentioned Users Section
-                            if (_pageMentionMetaDataList.isListEmptyOrNull == false) ...[
+                            if (_reelData.mentions.isListEmptyOrNull == false) ...[
                               _buildMentionedUsersSection(),
-                              if (_reelData.placeDataList?.isListEmptyOrNull == false) ...[
-                                IsrDimens.boxWidth(IsrDimens.sixteen),
-                              ],
                             ],
                             // Location Section
                             if (_reelData.placeDataList?.isListEmptyOrNull == false) ...[
+                              IsrDimens.boxWidth(IsrDimens.ten),
                               _buildLocationSection(),
                             ],
                           ],

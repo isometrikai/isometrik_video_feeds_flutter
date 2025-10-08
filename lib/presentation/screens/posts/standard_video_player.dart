@@ -172,10 +172,10 @@ class StandardVideoCacheManager implements IVideoCacheManager {
 
       // Initialize with timeout to prevent hanging
       await controller.initialize().timeout(
-        const Duration(seconds: 10),
+        const Duration(seconds: 20),
         onTimeout: () {
           debugPrint('⚠️ Video initialization timeout for: $url');
-          throw TimeoutException('Video initialization timeout', const Duration(seconds: 10));
+          throw TimeoutException('Video initialization timeout', const Duration(seconds: 20));
         },
       );
 
