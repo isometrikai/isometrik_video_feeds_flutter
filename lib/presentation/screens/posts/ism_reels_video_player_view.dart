@@ -1113,11 +1113,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       return const SizedBox.shrink();
     }
 
-    return Expanded(
+    return Flexible(
       child: TapHandler(
         onTap: () {
           _reelData.onTapMentionTag?.call(mentionList);
-          debugPrint('mentionList....$mentionList');
         },
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -1128,18 +1127,16 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               color: IsrColors.white,
             ),
             IsrDimens.boxWidth(IsrDimens.five),
-            Expanded(
-              child: Text(
-                mentionList.length == 1
-                    ? mentionList.first.username ?? ''
-                    : '${mentionList.length} people',
-                style: IsrStyles.white14.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: IsrColors.white,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+            Text(
+              mentionList.length == 1
+                  ? mentionList.first.username ?? ''
+                  : '${mentionList.length} people',
+              style: IsrStyles.white14.copyWith(
+                fontWeight: FontWeight.w600,
+                color: IsrColors.white,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
