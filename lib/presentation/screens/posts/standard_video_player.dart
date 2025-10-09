@@ -184,7 +184,7 @@ class StandardVideoCacheManager implements IVideoCacheManager {
 
       // Set properties in parallel for faster setup
       await Future.wait([
-        controller.setLooping(true),
+        controller.setLooping(false),
         controller.setVolume(1.0),
       ]);
 

@@ -94,6 +94,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   // Track if video has completed one full cycle for auto-advance
   bool _hasCompletedOneCycle = false;
 
+  // Fallback completion detection timer
+  Timer? _completionFallbackTimer;
+
   // Video state management
   bool _isVideoInitializing = false;
   bool _isVideoSetupComplete = false;
@@ -431,7 +434,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       await _videoPlayerController!.seekTo(Duration.zero);
 
       // Set up basic properties with performance optimizations
-      await _videoPlayerController!.setLooping(true);
+      await _videoPlayerController!.setLooping(false);
 
       // Set volume only once during setup to prevent audio flickering
       // Apply global mute state to new videos
@@ -450,6 +453,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
       // Add listener after setup
       _videoPlayerController!.addListener(_handlePlaybackProgress);
+
+      // Start fallback completion detection timer
+      _startCompletionFallbackTimer();
 
       // Start playback only if not already playing and controller is ready
       if (!_videoPlayerController!.isPlaying && _videoPlayerController!.isInitialized) {
@@ -495,6 +501,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _likeAnimationTimer?.cancel();
     _muteAnimationTimer?.cancel();
     _completionDebounceTimer?.cancel();
+    _completionFallbackTimer?.cancel();
     _audioDebounceTimer?.cancel();
     _performanceMonitorTimer?.cancel();
     // Mark video as not visible for cache manager
@@ -2115,18 +2122,45 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       _logWatchEvent('progress', position: position, note: '75%');
     }
 
-    // Check if video is near the end (within 1 second) or has reached the end
+    // Check if video is near the end (within 500ms) or has reached the end
     final timeRemaining = duration - position;
-    final isNearEnd = timeRemaining.inMilliseconds <= 1000; // Within 1 second
+    final isNearEnd = timeRemaining.inMilliseconds <= 500; // Within 500ms
     final hasReachedEnd = position >= duration;
 
+    // Additional completion detection for edge cases
+    final isAtEnd =
+        position.inMilliseconds >= (duration.inMilliseconds - 200); // Within 200ms of end
+    final isDurationValid = duration.inMilliseconds > 0;
+
+    // Debug logging for completion detection
+    if (isNearEnd || hasReachedEnd || isAtEnd) {
+      debugPrint(
+          '🎬 Video completion check - Position: ${position.inSeconds}s, Duration: ${duration.inSeconds}s, '
+          'Time remaining: ${timeRemaining.inMilliseconds}ms, isNearEnd: $isNearEnd, '
+          'hasReachedEnd: $hasReachedEnd, isAtEnd: $isAtEnd, hasCompleted: $_hasCompletedOneCycle');
+    }
+    debugPrint(
+        '🎬 Video completion check - Position: ${position.inSeconds}s, Duration: ${duration.inSeconds}s, '
+        'Time remaining: ${timeRemaining.inMilliseconds}ms, isNearEnd: $isNearEnd, '
+        'hasReachedEnd: $hasReachedEnd, isAtEnd: $isAtEnd, hasCompleted: $_hasCompletedOneCycle');
+
     // For looping videos, we need to detect when they complete one full cycle
-    if ((isNearEnd || hasReachedEnd) && !_hasCompletedOneCycle) {
+    // Use multiple conditions to catch different completion scenarios
+    final shouldTriggerCompletion =
+        (isNearEnd || hasReachedEnd || isAtEnd) && isDurationValid && !_hasCompletedOneCycle;
+
+    debugPrint(
+        'shouldTriggerCompletion: $shouldTriggerCompletion (isNearEnd: $isNearEnd, hasReachedEnd: $hasReachedEnd, isAtEnd: $isAtEnd, isDurationValid: $isDurationValid, hasCompleted: $_hasCompletedOneCycle)');
+    if (shouldTriggerCompletion) {
       _hasCompletedOneCycle = true;
+      _completionFallbackTimer
+          ?.cancel(); // Cancel fallback timer since we detected completion normally
       _loggedMilestones.add('complete');
       _logWatchEvent('complete', position: position);
       debugPrint(
-          '🎬 Video completed one cycle! Position: ${position.inSeconds}s, Duration: ${duration.inSeconds}s, Time remaining: ${timeRemaining.inMilliseconds}ms');
+          '🎬 Video completed one cycle! Position: ${position.inSeconds}s, Duration: ${duration.inSeconds}s, '
+          'Time remaining: ${timeRemaining.inMilliseconds}ms, Completion triggered by: '
+          '${isNearEnd ? "isNearEnd" : ""} ${hasReachedEnd ? "hasReachedEnd" : ""} ${isAtEnd ? "isAtEnd" : ""}');
 
       // Handle video completion - check if we should move to next video or next post
       _handleVideoCompletion();
@@ -2138,6 +2172,36 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     // Debounce completion calls to prevent excessive processing
     _completionDebounceTimer?.cancel();
     _completionDebounceTimer = Timer(const Duration(milliseconds: 100), _processVideoCompletion);
+  }
+
+  /// Starts a fallback timer to detect video completion if normal detection fails
+  void _startCompletionFallbackTimer() {
+    _completionFallbackTimer?.cancel();
+    _completionFallbackTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_isDisposed || !mounted || _hasCompletedOneCycle) {
+        timer.cancel();
+        return;
+      }
+
+      if (_videoPlayerController?.isInitialized == true) {
+        final position = _videoPlayerController!.position;
+        final duration = _videoPlayerController!.duration;
+
+        if (duration.inMilliseconds > 0) {
+          final timeRemaining = duration - position;
+          // If we're very close to the end (within 500ms) and haven't detected completion yet
+          if (timeRemaining.inMilliseconds <= 500 && !_hasCompletedOneCycle) {
+            debugPrint(
+                '🎬 Fallback completion detection triggered! Position: ${position.inSeconds}s, Duration: ${duration.inSeconds}s');
+            _hasCompletedOneCycle = true;
+            _loggedMilestones.add('complete');
+            _logWatchEvent('complete', position: position);
+            _handleVideoCompletion();
+            timer.cancel();
+          }
+        }
+      }
+    });
   }
 
   void _processVideoCompletion() {
