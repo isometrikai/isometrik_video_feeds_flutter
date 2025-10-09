@@ -177,7 +177,10 @@ class StandardVideoCacheManager implements IVideoCacheManager {
           debugPrint('⚠️ Video initialization timeout for: $url');
           throw TimeoutException('Video initialization timeout', const Duration(seconds: 20));
         },
-      );
+      ).then((value) {
+        debugPrint(
+            'StandardVideoCacheManager: _createAndInitializeController controller created: $url');
+      });
 
       // Set properties in parallel for faster setup
       await Future.wait([

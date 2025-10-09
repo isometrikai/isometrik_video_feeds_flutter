@@ -1645,10 +1645,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                             // Mentioned Users Section
                             if (_reelData.mentions.isListEmptyOrNull == false) ...[
                               _buildMentionedUsersSection(),
+                              if (_reelData.placeDataList?.isListEmptyOrNull == false) ...[
+                                IsrDimens.boxWidth(IsrDimens.sixteen),
+                              ],
                             ],
                             // Location Section
                             if (_reelData.placeDataList?.isListEmptyOrNull == false) ...[
-                              IsrDimens.boxWidth(IsrDimens.ten),
                               _buildLocationSection(),
                             ],
                           ],
