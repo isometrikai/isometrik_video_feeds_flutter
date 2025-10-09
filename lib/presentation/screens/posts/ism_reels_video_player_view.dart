@@ -24,6 +24,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
     this.onDoubleTap,
     this.loggedInUserId,
     this.onVideoCompleted,
+    this.onTapMentionTag,
   });
 
   final VideoCacheManager? videoCacheManager;
@@ -36,6 +37,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
   final Future<void> Function()? onDoubleTap;
   final String? loggedInUserId;
   final VoidCallback? onVideoCompleted;
+  final Function(List<MentionMetaData>)? onTapMentionTag;
 
   @override
   State<IsmReelsVideoPlayerView> createState() => _IsmReelsVideoPlayerViewState();
@@ -193,13 +195,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
 
     _mentionedMetaDataList =
-        _reelData.mentions?.where((mentionData) => mentionData.mediaPosition != null).toList() ??
-            [];
+        _reelData.mentions.where((mentionData) => mentionData.mediaPosition != null).toList();
     _pageMentionMetaDataList = _mentionedMetaDataList
         .where((mention) => mention.mediaPosition?.position == _currentPageNotifier.value + 1)
         .toList();
     _mentionedDataList =
-        _reelData.mentions?.where((mentionData) => mentionData.textPosition != null).toList() ?? [];
+        _reelData.mentions.where((mentionData) => mentionData.textPosition != null).toList();
     _taggedDataList =
         _reelData.tagDataList?.where((mentionData) => mentionData.textPosition != null).toList() ??
             [];
@@ -1030,11 +1031,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               children: [
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
                       Navigator.pop(context);
-                      _reelData.onTapMentionTag?.call([mention]);
-                      // Add your profile navigation logic here
-                      // Navigator.pushNamed(context, '/profile', arguments: mention.userId);
+                      _callOnTapMentionData([mention]);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF667eea),
@@ -1085,6 +1084,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     );
   }
 
+  void _callOnTapMentionData(List<MentionMetaData> mentionDataList) {
+    if (widget.onTapMentionTag != null) {
+      widget.onTapMentionTag?.call(mentionDataList);
+    }
+  }
+
   Widget _buildMediaCounter(int currentPage) {
     if (!_hasMultipleMedia) return const SizedBox.shrink();
 
@@ -1107,7 +1112,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   Widget _buildMentionedUsersSection() {
-    final mentionList = _reelData.mentions ?? [];
+    final mentionList = _reelData.mentions;
 
     if (mentionList.isListEmptyOrNull) {
       return const SizedBox.shrink();
@@ -1116,7 +1121,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     return Flexible(
       child: TapHandler(
         onTap: () {
-          _reelData.onTapMentionTag?.call(mentionList);
+          _callOnTapMentionData(mentionList);
         },
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -1610,9 +1615,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                     IsrStyles.white14
                                         .copyWith(color: IsrColors.white.changeOpacity(0.9)),
                                     (mention) {
-                                      if (_reelData.onTapMentionTag != null) {
-                                        _reelData.onTapMentionTag?.call([mention]);
-                                      }
+                                      _callOnTapMentionData([mention]);
                                     },
                                   ),
                                   if (shouldTruncate)

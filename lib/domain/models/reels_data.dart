@@ -40,7 +40,7 @@ class ReelsData {
     this.postSetting,
     this.onCreatePost,
     required this.mediaMetaDataList,
-    this.mentions,
+    this.mentions = const [],
     this.tagDataList,
     this.onTapMentionTag,
     this.onTapPlace,
@@ -87,10 +87,10 @@ class ReelsData {
   final bool? isScheduledPost;
   bool? isSavedPost;
   final PostSetting? postSetting;
-  final List<MentionMetaData>? mentions;
+  final List<MentionMetaData> mentions;
   final List<MentionMetaData>? tagDataList;
   final List<PlaceMetaData>? placeDataList;
-  final Function(List<MentionMetaData>)? onTapMentionTag;
+  final Future<List<MentionMetaData>?> Function(List<MentionMetaData>)? onTapMentionTag;
   final Function(List<PlaceMetaData>)? onTapPlace;
 }
 

@@ -167,16 +167,17 @@ class _HomeScreenState extends State<HomeScreen> {
           isUnFollowButtonVisible: true,
         ),
         mentions: postData.tags != null && postData.tags?.mentions.isEmptyOrNull == false
-            ? postData.tags?.mentions?.map(_getMentionMetaData).toList()
-            : null,
+            ? (postData.tags?.mentions?.map(_getMentionMetaData).toList() ?? [])
+            : [],
         tagDataList: postData.tags != null && postData.tags?.hashtags.isEmptyOrNull == false
             ? postData.tags?.hashtags?.map(_getMentionMetaData).toList()
             : null,
         placeDataList: postData.tags != null && postData.tags?.places.isEmptyOrNull == false
             ? postData.tags?.places?.map(_getPlaceMetaData).toList()
             : null,
-        onTapMentionTag: (mentionList) {
+        onTapMentionTag: (mentionList) async {
           debugPrint('onTapMentionTag: ${jsonEncode(mentionList)}');
+          return mentionList;
         },
         postId: postData.id,
         onCreatePost: () async => await _handleCreatePost(),

@@ -376,6 +376,18 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                           }));
                         }
                       },
+                      onTapMentionTag: (mentionedList) async {
+                        if (reelsData.onTapMentionTag != null) {
+                          final result = await reelsData.onTapMentionTag!(mentionedList);
+                          if (result.isListEmptyOrNull == false) {
+                            setState(() {
+                              reelsData.mentions.clear();
+                              reelsData.mentions.addAll(result as Iterable<MentionMetaData>);
+                              _refreshCounts[index] = (_refreshCounts[index] ?? 0) + 1;
+                            });
+                          }
+                        }
+                      },
                     ),
                   );
                 },
