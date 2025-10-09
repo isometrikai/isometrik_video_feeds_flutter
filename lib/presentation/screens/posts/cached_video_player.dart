@@ -167,13 +167,13 @@ class CachedVideoCacheManager implements IVideoCacheManager {
       final controller = _createVideoPlayerController(url);
       await controller.initialize();
       final wrapper = CachedVideoPlayerWrapper(controller);
-      await wrapper.setLooping(true);
+      await wrapper.setLooping(false);
       await wrapper.setVolume(1.0);
       return wrapper;
     } catch (e, stackTrace) {
-      debugPrint('Error creating video controller for URL: $url');
-      debugPrint('Error details: $e');
-      debugPrint('Stack trace: $stackTrace');
+      debugPrint('CachedVideoPlayer Error creating video controller for URL: $url');
+      debugPrint('CachedVideoPlayer Error details: $e');
+      debugPrint('CachedVideoPlayer Stack trace: $stackTrace');
       return null;
     }
   }

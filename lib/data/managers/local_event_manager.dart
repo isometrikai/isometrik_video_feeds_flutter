@@ -100,11 +100,11 @@ class LocalEventQueue with WidgetsBindingObserver {
         debugPrint('${runtimeType.toString()} Events flushed successfully!');
       } else {
         debugPrint('${runtimeType.toString()} Server error: ${response.statusCode}');
-        await _retryFlush(events);
+        // await _retryFlush(events);
       }
     } catch (e) {
       debugPrint('${runtimeType.toString()} Error sending events: $e');
-      await _retryFlush(events);
+      // await _retryFlush(events);
     }
   }
 
@@ -112,7 +112,6 @@ class LocalEventQueue with WidgetsBindingObserver {
     /// remove these 3 lines later
     final box = Hive.box<LocalEvent>(_boxName);
     await box.clear();
-    return;
 
     var delay = 2;
     for (var attempt = 1; attempt <= 3; attempt++) {

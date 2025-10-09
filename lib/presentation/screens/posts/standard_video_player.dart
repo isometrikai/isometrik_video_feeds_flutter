@@ -189,8 +189,9 @@ class StandardVideoCacheManager implements IVideoCacheManager {
       ]);
 
       return StandardVideoPlayerController(controller);
-    } catch (e) {
-      debugPrint('Error creating video controller: $e');
+    } catch (e, stackTrace) {
+      debugPrintStack(label: 'StandardVideoCacheManager cached error $e', stackTrace: stackTrace);
+      debugPrint('StandardVideoCacheManager Error creating video controller for URL: $url');
       return null;
     }
   }
