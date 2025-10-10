@@ -50,7 +50,9 @@ class MediaCacheConfig {
 /// Utility class to determine media type
 class MediaTypeUtil {
   static MediaType getMediaType(String url) {
-    final extension = url.split('.').last.toLowerCase();
+    // Remove query parameters and fragments before extracting extension
+    final cleanUrl = url.split('?').first.split('#').first;
+    final extension = cleanUrl.split('.').last.toLowerCase();
 
     // Video extensions
     if (['mp4', 'mov', 'avi', 'mkv', 'm3u8', 'webm'].contains(extension)) {
@@ -59,14 +61,6 @@ class MediaTypeUtil {
 
     // Image extensions
     if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].contains(extension)) {
-      return MediaType.image;
-    }
-
-    // Try to determine type from URL patterns
-    if (url.contains('video') || url.contains('stream')) {
-      return MediaType.video;
-    }
-    if (url.contains('image') || url.contains('photo')) {
       return MediaType.image;
     }
 

@@ -48,7 +48,7 @@ class IsrVideoReelConfig {
   static void precacheVideos(List<String> mediaUrls) async {
     debugPrint('IsrVideoReelConfig: precacheVideos: $mediaUrls');
     if (mediaUrls.isEmpty) return;
-    await MediaCacheFactory.precacheMedia(mediaUrls, highPriority: true);
+    await MediaCacheFactory.precacheMedia(mediaUrls, highPriority: false);
   }
 
   static void _initializeHive() async {

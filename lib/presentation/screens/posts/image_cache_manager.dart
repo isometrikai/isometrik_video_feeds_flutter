@@ -3,12 +3,14 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/media_cache_interface.dart';
+import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 
 /// Cache manager implementation for images
 class ImageCacheManager implements IMediaCacheManager {
   factory ImageCacheManager() => _instance;
+
   ImageCacheManager._internal();
+
   static final ImageCacheManager _instance = ImageCacheManager._internal();
 
   final Map<String, ImageProvider> _imageCache = {};
@@ -21,32 +23,74 @@ class ImageCacheManager implements IMediaCacheManager {
   @override
   Future<void> precacheMedia(List<String> mediaUrls, {bool highPriority = false}) async {
     final futures = <Future<void>>[];
+    final validUrls = <String>[];
 
+    // Filter valid URLs first
     for (final url in mediaUrls) {
       if (url.isEmpty) continue;
       if (isMediaCached(url)) continue;
 
-      futures.add(_cacheImage(url, highPriority: highPriority));
+      // Only process actual image URLs, skip video URLs
+      final mediaType = MediaTypeUtil.getMediaType(url);
+      if (mediaType != MediaType.image) {
+        debugPrint('⚠️ Skipping non-image URL in precacheMedia: $url (type: $mediaType)');
+        continue;
+      }
+
+      validUrls.add(url);
     }
 
-    await Future.wait(futures);
+    if (validUrls.isEmpty) return;
+
+    // Process images in batches for better performance and memory management
+    const batchSize = 5; // Process 5 images at a time
+    for (var i = 0; i < validUrls.length; i += batchSize) {
+      final batch = validUrls.skip(i).take(batchSize);
+      final batchFutures =
+          batch.map((url) => _cacheImage(url, highPriority: highPriority)).toList();
+
+      if (highPriority) {
+        // For high priority, wait for each batch to complete
+        await Future.wait(batchFutures);
+      } else {
+        // For normal priority, start caching in background without blocking
+        unawaited(Future.wait(batchFutures));
+      }
+    }
+
+    // If high priority, ensure all futures are tracked
+    if (highPriority) {
+      for (final url in validUrls) {
+        futures.add(_cacheImage(url, highPriority: highPriority));
+      }
+      await Future.wait(futures);
+    }
   }
 
   Future<void> _cacheImage(String url, {bool highPriority = false}) async {
-    if (_initializationCache.containsKey(url)) {
-      await _initializationCache[url];
+    final cleanUrl = url.split('?').first.split('#').first;
+
+    // Validate that this is actually an image URL
+    final mediaType = MediaTypeUtil.getMediaType(cleanUrl);
+    if (mediaType != MediaType.image) {
+      debugPrint('⚠️ Attempted to cache non-image URL: $cleanUrl (type: $mediaType)');
       return;
     }
 
-    final initFuture = _initializeImage(url, highPriority: highPriority);
-    _initializationCache[url] = initFuture;
+    if (_initializationCache.containsKey(cleanUrl)) {
+      await _initializationCache[cleanUrl];
+      return;
+    }
+
+    final initFuture = _initializeImage(cleanUrl, highPriority: highPriority);
+    _initializationCache[cleanUrl] = initFuture;
 
     try {
       await initFuture;
     } catch (e) {
       debugPrint('Error caching image: $e');
     } finally {
-      await _initializationCache.remove(url);
+      await _initializationCache.remove(cleanUrl);
     }
   }
 

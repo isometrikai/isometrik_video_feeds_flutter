@@ -10,7 +10,7 @@ class MediaCacheFactory {
 
   /// Get cache manager for specific media type
   static IMediaCacheManager getCacheManager(MediaType type) =>
-      _cacheManagers[type] ?? _cacheManagers[MediaType.unknown]!;
+      _cacheManagers[type] ?? VideoCacheManager();
 
   /// Precache multiple media items, automatically determining their type
   static Future<void> precacheMedia(List<String> mediaUrls, {bool highPriority = false}) async {

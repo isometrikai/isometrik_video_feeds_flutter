@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/media_cache_interface.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/video_player_interface.dart';
 import 'package:ism_video_reel_player/utils/isr_utils.dart';
 import 'package:video_player/video_player.dart';
@@ -118,6 +119,8 @@ class StandardVideoCacheManager implements IVideoCacheManager {
       'Accept': '*/*',
       'Accept-Language': 'en-US,en;q=0.9',
       'Accept-Encoding': 'gzip, deflate, br',
+      'Connection': 'keep-alive',
+      'Cache-Control': 'no-cache',
       if (isHls) 'X-Playback-Session-Id': DateTime.now().millisecondsSinceEpoch.toString(),
     };
 
@@ -133,6 +136,14 @@ class StandardVideoCacheManager implements IVideoCacheManager {
   }
 
   Future<StandardVideoPlayerController?> _initializeVideoController(String url) async {
+    // Validate that this is actually a video URL
+    final mediaType = MediaTypeUtil.getMediaType(url);
+    if (mediaType != MediaType.video) {
+      debugPrint(
+          '⚠️ Attempted to initialize video controller for non-video URL: $url (type: $mediaType)');
+      return null;
+    }
+
     if (_initializationCache.containsKey(url)) {
       return _initializationCache[url];
     }
@@ -158,12 +169,29 @@ class StandardVideoCacheManager implements IVideoCacheManager {
     debugPrint('StandardVideoCacheManager: _createAndInitializeController: $url');
     try {
       final controller = _createVideoPlayerController(url);
-      await controller.initialize();
-      await controller.setLooping(true);
-      await controller.setVolume(1.0);
+
+      // Initialize with timeout to prevent hanging
+      await controller.initialize().timeout(
+        const Duration(seconds: 20),
+        onTimeout: () {
+          debugPrint('⚠️ Video initialization timeout for: $url');
+          throw TimeoutException('Video initialization timeout', const Duration(seconds: 20));
+        },
+      ).then((value) {
+        debugPrint(
+            'StandardVideoCacheManager: _createAndInitializeController controller created: $url');
+      });
+
+      // Set properties in parallel for faster setup
+      await Future.wait([
+        controller.setLooping(false),
+        controller.setVolume(1.0),
+      ]);
+
       return StandardVideoPlayerController(controller);
-    } catch (e) {
-      debugPrint('Error creating video controller: $e');
+    } catch (e, stackTrace) {
+      debugPrintStack(label: 'StandardVideoCacheManager cached error $e', stackTrace: stackTrace);
+      debugPrint('StandardVideoCacheManager Error creating video controller for URL: $url');
       return null;
     }
   }
@@ -188,16 +216,34 @@ class StandardVideoCacheManager implements IVideoCacheManager {
   @override
   Future<void> precacheVideos(List<String> videoUrls, {bool highPriority = false}) async {
     final futures = <Future<void>>[];
+    final validUrls = <String>[];
 
+    // Filter valid video URLs first
     for (final url in videoUrls) {
       if (url.isEmpty) continue;
       if (_videoControllerCache.containsKey(url)) continue;
 
-      final future = _initializeVideoController(url);
+      // Only process actual video URLs, skip image URLs
+      final mediaType = MediaTypeUtil.getMediaType(url);
+      if (mediaType != MediaType.video) {
+        debugPrint('⚠️ Skipping non-video URL in precacheVideos: $url (type: $mediaType)');
+        continue;
+      }
+
+      validUrls.add(url);
+    }
+
+    // Process videos in batches for better performance
+    const batchSize = 3;
+    for (var i = 0; i < validUrls.length; i += batchSize) {
+      final batch = validUrls.skip(i).take(batchSize);
+      final batchFutures = batch.map(_initializeVideoController).toList();
+
       if (highPriority) {
-        futures.add(future);
+        futures.addAll(batchFutures);
       } else {
-        unawaited(future);
+        // Process non-priority videos in background
+        unawaited(Future.wait(batchFutures));
       }
     }
 
