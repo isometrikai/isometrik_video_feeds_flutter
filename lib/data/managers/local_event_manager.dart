@@ -5,7 +5,6 @@ import 'package:flutter/widgets.dart';
 import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
 import 'package:ism_video_reel_player/data/data.dart';
-import 'package:uuid/uuid.dart';
 
 class EventQueueProvider {
   static final LocalEventQueue instance = LocalEventQueue(
@@ -49,63 +48,63 @@ class LocalEventQueue with WidgetsBindingObserver {
   }
 
   Future<void> addEvent(Map<String, dynamic> payload) async {
-    final box = Hive.box<LocalEvent>(_boxName);
-
-    final event = LocalEvent(
-      id: const Uuid().v4(),
-      payload: payload,
-      timestamp: DateTime.now().toUtc(),
-    );
-
-    await box.add(event);
-
-    debugPrint('${runtimeType.toString()} Box payload: ${event.payload}');
-    debugPrint('${runtimeType.toString()} Event added: ${event.id}');
-    debugPrint('${runtimeType.toString()} Box length: ${box.length}');
-
-    if (box.length >= _batchSize) {
-      await flush();
-    }
+    // final box = Hive.box<LocalEvent>(_boxName);
+    //
+    // final event = LocalEvent(
+    //   id: const Uuid().v4(),
+    //   payload: payload,
+    //   timestamp: DateTime.now().toUtc(),
+    // );
+    //
+    // await box.add(event);
+    //
+    // debugPrint('${runtimeType.toString()} Box payload: ${event.payload}');
+    // debugPrint('${runtimeType.toString()} Event added: ${event.id}');
+    // debugPrint('${runtimeType.toString()} Box length: ${box.length}');
+    //
+    // if (box.length >= _batchSize) {
+    //   await flush();
+    // }
   }
 
   Future<void> flush() async {
-    final box = Hive.box<LocalEvent>(_boxName);
-    final events = box.values.toList();
-
-    if (events.isEmpty) return;
-
-    final connectivity = await Connectivity().checkConnectivity();
-    if (connectivity.contains(ConnectivityResult.none)) {
-      debugPrint('${runtimeType.toString()} No internet, flush postponed.');
-      return;
-    }
-
-    final body = events
-        .map((e) => {
-              'id': e.id,
-              'payload': e.payload,
-              'timestamp': e.timestamp.toIso8601String(),
-            })
-        .toList();
-
-    try {
-      final response = await httpClient.post(
-        Uri.parse(apiUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(body),
-      );
-
-      if (response.statusCode == 200) {
-        await box.clear();
-        debugPrint('${runtimeType.toString()} Events flushed successfully!');
-      } else {
-        debugPrint('${runtimeType.toString()} Server error: ${response.statusCode}');
-        // await _retryFlush(events);
-      }
-    } catch (e) {
-      debugPrint('${runtimeType.toString()} Error sending events: $e');
-      // await _retryFlush(events);
-    }
+    // final box = Hive.box<LocalEvent>(_boxName);
+    // final events = box.values.toList();
+    //
+    // if (events.isEmpty) return;
+    //
+    // final connectivity = await Connectivity().checkConnectivity();
+    // if (connectivity.contains(ConnectivityResult.none)) {
+    //   debugPrint('${runtimeType.toString()} No internet, flush postponed.');
+    //   return;
+    // }
+    //
+    // final body = events
+    //     .map((e) => {
+    //           'id': e.id,
+    //           'payload': e.payload,
+    //           'timestamp': e.timestamp.toIso8601String(),
+    //         })
+    //     .toList();
+    //
+    // try {
+    //   final response = await httpClient.post(
+    //     Uri.parse(apiUrl),
+    //     headers: {'Content-Type': 'application/json'},
+    //     body: jsonEncode(body),
+    //   );
+    //
+    //   if (response.statusCode == 200) {
+    //     await box.clear();
+    //     debugPrint('${runtimeType.toString()} Events flushed successfully!');
+    //   } else {
+    //     debugPrint('${runtimeType.toString()} Server error: ${response.statusCode}');
+    //     // await _retryFlush(events);
+    //   }
+    // } catch (e) {
+    //   debugPrint('${runtimeType.toString()} Error sending events: $e');
+    //   // await _retryFlush(events);
+    // }
   }
 
   Future<void> _retryFlush(List<LocalEvent> events) async {
