@@ -1752,8 +1752,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                     ),
                                 ],
                               ),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: value ? null : 3,
                             );
                           },
                         ),
