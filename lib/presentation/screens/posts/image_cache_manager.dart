@@ -23,7 +23,9 @@ class ImageCacheManager implements IMediaCacheManager {
   @override
   Future<void> precacheMedia(List<String> mediaUrls, {bool highPriority = false}) async {
     final futures = <Future<void>>[];
+    final validUrls = <String>[];
 
+    // Filter valid URLs first
     for (final url in mediaUrls) {
       if (url.isEmpty) continue;
       if (isMediaCached(url)) continue;
@@ -35,10 +37,34 @@ class ImageCacheManager implements IMediaCacheManager {
         continue;
       }
 
-      futures.add(_cacheImage(url, highPriority: highPriority));
+      validUrls.add(url);
     }
 
-    await Future.wait(futures);
+    if (validUrls.isEmpty) return;
+
+    // Process images in batches for better performance and memory management
+    const batchSize = 5; // Process 5 images at a time
+    for (var i = 0; i < validUrls.length; i += batchSize) {
+      final batch = validUrls.skip(i).take(batchSize);
+      final batchFutures =
+          batch.map((url) => _cacheImage(url, highPriority: highPriority)).toList();
+
+      if (highPriority) {
+        // For high priority, wait for each batch to complete
+        await Future.wait(batchFutures);
+      } else {
+        // For normal priority, start caching in background without blocking
+        unawaited(Future.wait(batchFutures));
+      }
+    }
+
+    // If high priority, ensure all futures are tracked
+    if (highPriority) {
+      for (final url in validUrls) {
+        futures.add(_cacheImage(url, highPriority: highPriority));
+      }
+      await Future.wait(futures);
+    }
   }
 
   Future<void> _cacheImage(String url, {bool highPriority = false}) async {

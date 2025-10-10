@@ -109,6 +109,9 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
 
       // Then start caching other media in parallel
       unawaited(_doMediaCaching(0));
+
+      // Start background preloading of remaining posts (low priority)
+      unawaited(_backgroundPreloadPosts());
     }
 
     if (!mounted) return;
@@ -380,11 +383,13 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                         if (reelsData.onTapMentionTag != null) {
                           final result = await reelsData.onTapMentionTag!(mentionedList);
                           if (result.isListEmptyOrNull == false) {
-                            setState(() {
-                              reelsData.mentions.clear();
-                              reelsData.mentions.addAll(result as Iterable<MentionMetaData>);
+                            final index = _reelsDataList
+                                .indexWhere((element) => element.postId == reelsData.postId);
+                            if (index != -1) {
+                              _reelsDataList[index].mentions = result ?? [];
                               _refreshCounts[index] = (_refreshCounts[index] ?? 0) + 1;
-                            });
+                              setState(() {});
+                            }
                           }
                         }
                       },
@@ -396,6 +401,38 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
           ),
         ],
       );
+
+  /// Background preloading of posts that are not immediately visible
+  Future<void> _backgroundPreloadPosts() async {
+    if (_reelsDataList.length <= 5) return; // Skip if not enough posts
+
+    final backgroundUrls = <String>[];
+
+    // Preload posts 5-10 positions away (low priority)
+    final startIndex = 5;
+    final endIndex = math.min(_reelsDataList.length - 1, 10);
+
+    for (var i = startIndex; i <= endIndex; i++) {
+      final post = _reelsDataList[i];
+      for (var mediaItem in post.mediaMetaDataList) {
+        if (mediaItem.mediaUrl.isEmpty) continue;
+
+        if (mediaItem.mediaType == MediaType.video.value) {
+          backgroundUrls.add(mediaItem.mediaUrl);
+          if (mediaItem.thumbnailUrl.isNotEmpty) {
+            backgroundUrls.add(mediaItem.thumbnailUrl);
+          }
+        } else {
+          backgroundUrls.add(mediaItem.mediaUrl);
+        }
+      }
+    }
+
+    if (backgroundUrls.isNotEmpty) {
+      debugPrint('🔄 Background preloading ${backgroundUrls.length} media items');
+      MediaCacheFactory.precacheMedia(backgroundUrls, highPriority: false);
+    }
+  }
 
   // Handle media caching for both images and videos
   Future<void> _doMediaCaching(int index) async {
@@ -457,7 +494,31 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
     // Cache all media with current post's media having priority
     if (mediaUrls.isNotEmpty) {
       debugPrint('🚀 MainWidget: Caching media: ${mediaUrls.length} items');
-      await MediaCacheFactory.precacheMedia(mediaUrls, highPriority: true);
+
+      // Split current post media (high priority) from nearby posts (low priority)
+      final currentPostMedia = <String>[];
+      final nearbyPostsMedia = <String>[];
+
+      // Current post media (first few items) - HIGH PRIORITY
+      final currentPostItemCount = reelsData.mediaMetaDataList.length * 2; // video + thumbnail
+      for (var i = 0; i < currentPostItemCount && i < mediaUrls.length; i++) {
+        currentPostMedia.add(mediaUrls[i]);
+      }
+
+      // Nearby posts media - LOW PRIORITY
+      for (var i = currentPostItemCount; i < mediaUrls.length; i++) {
+        nearbyPostsMedia.add(mediaUrls[i]);
+      }
+
+      // Cache current post with high priority (blocking)
+      if (currentPostMedia.isNotEmpty) {
+        await MediaCacheFactory.precacheMedia(currentPostMedia, highPriority: true);
+      }
+
+      // Cache nearby posts with low priority (non-blocking)
+      if (nearbyPostsMedia.isNotEmpty) {
+        MediaCacheFactory.precacheMedia(nearbyPostsMedia, highPriority: false);
+      }
     }
 
     // Print cache stats every few scrolls

@@ -87,7 +87,7 @@ class ReelsData {
   final bool? isScheduledPost;
   bool? isSavedPost;
   final PostSetting? postSetting;
-  final List<MentionMetaData> mentions;
+  List<MentionMetaData> mentions;
   final List<MentionMetaData>? tagDataList;
   final List<PlaceMetaData>? placeDataList;
   final Future<List<MentionMetaData>?> Function(List<MentionMetaData>)? onTapMentionTag;
