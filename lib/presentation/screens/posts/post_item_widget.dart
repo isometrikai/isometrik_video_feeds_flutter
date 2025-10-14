@@ -296,9 +296,14 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                           final result = await reelsData.onPressFollow!(
                               reelsData.userId ?? '', reelsData.isFollow ?? false);
                           if (result == true && mounted) {
-                            setState(() {
-                              reelsData.isFollow = reelsData.isFollow == true ? false : true;
-                            });
+                            final index = _reelsDataList
+                                .indexWhere((element) => element.postId == reelsData.postId);
+                            if (index != -1) {
+                              _reelsDataList[index].isFollow =
+                                  reelsData.isFollow == true ? false : true;
+                              _refreshCounts[index] = (_refreshCounts[index] ?? 0) + 1;
+                              setState(() {});
+                            }
                           }
                           // ✅ Log event locally
                           unawaited(EventQueueProvider.instance.addEvent({

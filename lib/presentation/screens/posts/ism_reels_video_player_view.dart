@@ -1724,33 +1724,41 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                 ? fullDescription.substring(0, _maxLengthToShow)
                                 : fullDescription;
 
-                            return RichText(
-                              text: TextSpan(
-                                children: [
-                                  _buildDescriptionTextSpan(
-                                    displayText.trim(),
-                                    _mentionedDataList,
-                                    _taggedDataList,
-                                    IsrStyles.white14
-                                        .copyWith(color: IsrColors.white.changeOpacity(0.9)),
-                                    (mention) {
-                                      _callOnTapMentionData([mention]);
-                                    },
-                                  ),
-                                  if (shouldTruncate)
-                                    TextSpan(
-                                      text: value
-                                          ? ' ${IsrTranslationFile.viewLess}'
-                                          : '... ${IsrTranslationFile.viewMore}',
-                                      style:
-                                          IsrStyles.white14.copyWith(fontWeight: FontWeight.w700),
-                                      recognizer: TapGestureRecognizer()
-                                        ..onTap = () {
-                                          _isExpandedDescription.value =
-                                              !_isExpandedDescription.value;
-                                        },
+                            return GestureDetector(
+                              onTap: () {
+                                if (shouldTruncate) {
+                                  _isExpandedDescription.value =
+                                      !_isExpandedDescription.value;
+                                }
+                              },
+                              child: RichText(
+                                text: TextSpan(
+                                  children: [
+                                    _buildDescriptionTextSpan(
+                                      displayText.trim(),
+                                      _mentionedDataList,
+                                      _taggedDataList,
+                                      IsrStyles.white14
+                                          .copyWith(color: IsrColors.white.changeOpacity(0.9)),
+                                      (mention) {
+                                        _callOnTapMentionData([mention]);
+                                      },
                                     ),
-                                ],
+                                    if (shouldTruncate)
+                                      TextSpan(
+                                        text: value
+                                            ? ' '
+                                            : '... ',
+                                        style:
+                                            IsrStyles.white14.copyWith(fontWeight: FontWeight.w700),
+                                        recognizer: TapGestureRecognizer()
+                                          ..onTap = () {
+                                            // _isExpandedDescription.value =
+                                            //     !_isExpandedDescription.value;
+                                          },
+                                      ),
+                                  ],
+                                ),
                               ),
                             );
                           },
