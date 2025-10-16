@@ -210,16 +210,13 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                       widget.onLoadMore!().then(
                         (value) {
                           if (value.isListEmptyOrNull) return;
-                          if (mounted) {
-                            setState(() {
-                              final newReels = value.where((newReel) => !_reelsDataList
-                                  .any((existingReel) => existingReel.postId == newReel.postId));
-                              _reelsDataList.addAll(newReels);
-                              if (_reelsDataList.isNotEmpty) {
-                                _doMediaCaching(0);
-                              }
-                            });
+                          final newReels = value.where((newReel) => !_reelsDataList
+                              .any((existingReel) => existingReel.postId == newReel.postId));
+                          _reelsDataList.addAll(newReels);
+                          if (_reelsDataList.isNotEmpty) {
+                            _doMediaCaching(0);
                           }
+                          _updateState();
                         },
                       );
                     }
@@ -249,10 +246,8 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                           if (isSuccess) {
                             final postIndex = _reelsDataList
                                 .indexWhere((element) => element.postId == reelsData.postId);
-                            if (postIndex != -1 && mounted) {
-                              setState(() {
-                                _reelsDataList.removeAt(postIndex);
-                              });
+                            if (postIndex != -1) {
+                              _reelsDataList.removeAt(postIndex);
                               final imageUrl =
                                   _reelsDataList[postIndex].mediaMetaDataList[0].mediaUrl;
                               final thumbnailUrl =
@@ -268,26 +263,25 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                                 _videoCacheManager.clearMedia(imageUrl);
                               }
                             }
+                            _updateState();
                           }
                         }
                         if (result is ReelsData) {
                           final index = _reelsDataList
                               .indexWhere((element) => element.postId == result.postId);
-                          if (index != -1 && mounted) {
-                            setState(() {
-                              _refreshCounts[index] = (_refreshCounts[index] ?? 0) + 1;
-                              _reelsDataList[index] = result;
-                            });
+                          if (index != -1) {
+                            _refreshCounts[index] = (_refreshCounts[index] ?? 0) + 1;
+                            _reelsDataList[index] = result;
+                            _updateState();
                           }
                         }
                       },
                       onCreatePost: () async {
                         if (reelsData.onCreatePost != null) {
                           final result = await reelsData.onCreatePost!();
-                          if (result != null && mounted) {
-                            setState(() {
-                              _reelsDataList.insert(index, result);
-                            });
+                          if (result != null) {
+                            _reelsDataList.insert(index, result);
+                            _updateState();
                           }
                         }
                       },
@@ -302,7 +296,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                               _reelsDataList[index].isFollow =
                                   reelsData.isFollow == true ? false : true;
                               _refreshCounts[index] = (_refreshCounts[index] ?? 0) + 1;
-                              setState(() {});
+                              _updateState();
                             }
                           }
                           // ✅ Log event locally
@@ -327,9 +321,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                                 reelsData.likesCount = (reelsData.likesCount ?? 0) - 1;
                               }
                             }
-                            if (mounted) {
-                              setState(() {});
-                            }
+                            _updateState();
                           }
                           // ✅ Log event locally
                           unawaited(EventQueueProvider.instance.addEvent({
@@ -353,9 +345,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                                 reelsData.likesCount = (reelsData.likesCount ?? 0) - 1;
                               }
                             }
-                            if (mounted) {
-                              setState(() {});
-                            }
+                            _updateState();
                           }
                           // ✅ Log event locally
                           unawaited(EventQueueProvider.instance.addEvent({
@@ -371,9 +361,9 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                         if (reelsData.onPressSave != null) {
                           final result =
                               await reelsData.onPressSave!(reelsData.isSavedPost ?? false);
-                          if (result == true && mounted) {
+                          if (result == true) {
                             reelsData.isSavedPost = reelsData.isSavedPost == false;
-                            setState(() {});
+                            _updateState();
                           }
                           unawaited(EventQueueProvider.instance.addEvent({
                             'type': EventType.save.value,
@@ -393,7 +383,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                             if (index != -1) {
                               _reelsDataList[index].mentions = result ?? [];
                               _refreshCounts[index] = (_refreshCounts[index] ?? 0) + 1;
-                              setState(() {});
+                              _updateState();
                             }
                           }
                         }
@@ -435,7 +425,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
 
     if (backgroundUrls.isNotEmpty) {
       debugPrint('🔄 Background preloading ${backgroundUrls.length} media items');
-      MediaCacheFactory.precacheMedia(backgroundUrls, highPriority: false);
+      unawaited(MediaCacheFactory.precacheMedia(backgroundUrls, highPriority: false));
     }
   }
 
@@ -522,7 +512,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
 
       // Cache nearby posts with low priority (non-blocking)
       if (nearbyPostsMedia.isNotEmpty) {
-        MediaCacheFactory.precacheMedia(nearbyPostsMedia, highPriority: false);
+        unawaited(MediaCacheFactory.precacheMedia(nearbyPostsMedia, highPriority: false));
       }
     }
 
@@ -630,16 +620,13 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
         debugPrint('🎬 PostItemWidget: Triggering load more...');
         widget.onLoadMore!().then((value) {
           if (value.isListEmptyOrNull) return;
-          if (mounted) {
-            setState(() {
-              final newReels = value.where((newReel) =>
-                  !_reelsDataList.any((existingReel) => existingReel.postId == newReel.postId));
-              _reelsDataList.addAll(newReels);
-              if (_reelsDataList.isNotEmpty) {
-                _doMediaCaching(0);
-              }
-            });
+          final newReels = value.where((newReel) =>
+              !_reelsDataList.any((existingReel) => existingReel.postId == newReel.postId));
+          _reelsDataList.addAll(newReels);
+          if (_reelsDataList.isNotEmpty) {
+            _doMediaCaching(0);
           }
+          _updateState();
         });
       }
     }
@@ -656,12 +643,8 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
           debugPrint('🔄 MainWidget: Starting refresh at index $currentIndex');
 
           // Increment refresh count to force rebuild
-          if (mounted) {
-            setState(() {
-              _refreshCounts[currentIndex] = (_refreshCounts[currentIndex] ?? 0) + 1;
-            });
-          }
-
+          _refreshCounts[currentIndex] = (_refreshCounts[currentIndex] ?? 0) + 1;
+          _updateState();
           // Re-initialize caching for current index after successful refresh
           await _doMediaCaching(currentIndex);
           debugPrint(
@@ -674,5 +657,11 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
       debugPrint('❌ MainWidget: Error during refresh - $e');
     }
     return;
+  }
+
+  void _updateState() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 }
