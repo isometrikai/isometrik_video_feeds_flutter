@@ -50,7 +50,6 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
 
   // Track refresh count for each index to force rebuild
   final Map<int, int> _refreshCounts = {};
-  final Map<int, int> _reelRefreshCounts = {};
 
   @override
   void initState() {
@@ -236,7 +235,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                       loggedInUserId: widget.loggedInUserId,
                       videoCacheManager: _videoCacheManager,
                       // Add refresh count to force rebuild
-                      key: ValueKey('${reelsData.postId}_${_reelRefreshCounts[index] ?? 0}'),
+                      key: ValueKey('${reelsData.postId}_${_refreshCounts[index] ?? 0}'),
                       onVideoCompleted: () => _handleVideoCompletion(index),
                       onPressMoreButton: () async {
                         if (reelsData.onPressMoreButton == null) return;
@@ -271,8 +270,8 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                           final index = _reelsDataList
                               .indexWhere((element) => element.postId == result.postId);
                           if (index != -1) {
+                            _refreshCounts[index] = (_refreshCounts[index] ?? 0) + 1;
                             _reelsDataList[index] = result;
-                            _reelRefreshCounts[index] = (_reelRefreshCounts[index] ?? 0) + 1;
                             _updateState();
                           }
                         }
@@ -296,7 +295,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                             if (index != -1) {
                               _reelsDataList[index].isFollow =
                                   reelsData.isFollow == true ? false : true;
-                              // _reelRefreshCounts[index] = (_reelRefreshCounts[index] ?? 0) + 1;
+                              _refreshCounts[index] = (_refreshCounts[index] ?? 0) + 1;
                               _updateState();
                             }
                           }
@@ -383,7 +382,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                                 .indexWhere((element) => element.postId == reelsData.postId);
                             if (index != -1) {
                               _reelsDataList[index].mentions = result ?? [];
-                              _reelRefreshCounts[index] = (_reelRefreshCounts[index] ?? 0) + 1;
+                              _refreshCounts[index] = (_refreshCounts[index] ?? 0) + 1;
                               _updateState();
                             }
                           }
