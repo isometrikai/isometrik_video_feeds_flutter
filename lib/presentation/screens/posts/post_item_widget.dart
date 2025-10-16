@@ -296,7 +296,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                             if (index != -1) {
                               _reelsDataList[index].isFollow =
                                   reelsData.isFollow == true ? false : true;
-                              _reelRefreshCounts[index] = (_reelRefreshCounts[index] ?? 0) + 1;
+                              // _reelRefreshCounts[index] = (_reelRefreshCounts[index] ?? 0) + 1;
                               _updateState();
                             }
                           }
