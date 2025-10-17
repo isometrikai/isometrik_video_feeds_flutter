@@ -727,7 +727,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             ),
           ),
           Positioned(
-            bottom: IsrDimens.eighty,
+            bottom: IsrDimens.hundred,
             left: 0,
             right: 0,
             child: ValueListenableBuilder<int>(
