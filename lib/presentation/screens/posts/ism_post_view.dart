@@ -16,12 +16,14 @@ class IsmPostView extends StatefulWidget {
     this.currentIndex = 0,
     this.allowImplicitScrolling = false,
     this.onPageChanged,
+    this.onTabChanged
   });
 
   final List<TabDataModel> tabDataModelList;
   final num? currentIndex;
   final bool? allowImplicitScrolling;
   final Function(int, String)? onPageChanged;
+  final Function(int)? onTabChanged;
 
   @override
   State<IsmPostView> createState() => _PostViewState();
@@ -75,6 +77,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       if (!mounted) return;
       final newIndex = _postTabController?.index ?? 0;
       if (_currentIndex != newIndex) {
+        widget.onTabChanged?.call(newIndex);
         // Handle tab change if we have a user
         if (_loggedInUserId.isNotEmpty) {
           try {
