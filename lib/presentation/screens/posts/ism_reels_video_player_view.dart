@@ -152,7 +152,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     final devicePixelRatio = mediaQuery.devicePixelRatio;
 
     // Detect low-end devices based on screen size and pixel ratio
-    _isLowEndDevice = screenSize.width < 400 || devicePixelRatio < 2.0;
+    // _isLowEndDevice = screenSize.width < 400 || devicePixelRatio < 2.0;
+    _isLowEndDevice = false;
 
     // Platform-specific optimizations
     final platform = Theme.of(context).platform;
@@ -1727,8 +1728,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                             return GestureDetector(
                               onTap: () {
                                 if (shouldTruncate) {
-                                  _isExpandedDescription.value =
-                                      !_isExpandedDescription.value;
+                                  _isExpandedDescription.value = !_isExpandedDescription.value;
                                 }
                               },
                               child: RichText(
@@ -1746,9 +1746,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                     ),
                                     if (shouldTruncate)
                                       TextSpan(
-                                        text: value
-                                            ? ' '
-                                            : '... ',
+                                        text: value ? ' ' : '... ',
                                         style:
                                             IsrStyles.white14.copyWith(fontWeight: FontWeight.w700),
                                         recognizer: TapGestureRecognizer()
