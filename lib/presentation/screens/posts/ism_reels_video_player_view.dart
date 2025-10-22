@@ -152,8 +152,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     final devicePixelRatio = mediaQuery.devicePixelRatio;
 
     // Detect low-end devices based on screen size and pixel ratio
-    // _isLowEndDevice = screenSize.width < 400 || devicePixelRatio < 2.0;
-    _isLowEndDevice = false;
+    _isLowEndDevice = screenSize.width < 400 || devicePixelRatio < 2.0;
 
     // Platform-specific optimizations
     final platform = Theme.of(context).platform;
