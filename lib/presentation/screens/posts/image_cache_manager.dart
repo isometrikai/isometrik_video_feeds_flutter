@@ -100,14 +100,26 @@ class ImageCacheManager implements IMediaCacheManager {
       final provider = NetworkImage(url);
       _addToCache(url, provider);
 
-      // Cache on disk in parallel if high priority
+      // For high priority, also preload into Flutter's image cache
       if (highPriority) {
         unawaited(_diskCache.downloadFile(url));
       }
+      unawaited(_preloadIntoFlutterCache(url));
     } catch (e) {
       debugPrint('Error initializing image cache for URL: $url');
       debugPrint('Error details: $e');
       rethrow;
+    }
+  }
+
+  /// Preload image into Flutter's image cache for instant display
+  Future<void> _preloadIntoFlutterCache(String url) async {
+    try {
+      final provider = NetworkImage(url);
+      // Use the global image cache directly
+      provider.resolve(ImageConfiguration.empty);
+    } catch (e) {
+      debugPrint('Error preloading image into Flutter cache: $e');
     }
   }
 

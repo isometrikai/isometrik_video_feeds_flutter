@@ -105,6 +105,9 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
         await MediaCacheFactory.precacheMedia(urlsToCache, highPriority: true);
         debugPrint(
             '🚀 MainWidget: Pre-initialized ${urlsToCache.length} media items for first post');
+
+        // Additional preloading for critical images (thumbnails and profile images)
+        await _preloadCriticalImages(firstPost);
       }
 
       // Then start caching other media in parallel
@@ -508,6 +511,9 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
       // Cache current post with high priority (blocking)
       if (currentPostMedia.isNotEmpty) {
         await MediaCacheFactory.precacheMedia(currentPostMedia, highPriority: true);
+
+        // Additional preloading for current post's critical images
+        await _preloadCriticalImages(reelsData);
       }
 
       // Cache nearby posts with low priority (non-blocking)
@@ -662,6 +668,37 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
   void _updateState() {
     if (mounted) {
       setState(() {});
+    }
+  }
+
+  /// Preload critical images that need to be displayed immediately
+  Future<void> _preloadCriticalImages(ReelsData post) async {
+    final criticalUrls = <String>[];
+
+    // Add profile image
+    if (post.profilePhoto?.isNotEmpty == true) {
+      criticalUrls.add(post.profilePhoto!);
+    }
+
+    // Add thumbnails for videos
+    for (final mediaItem in post.mediaMetaDataList) {
+      if (mediaItem.mediaType == MediaType.video.value && mediaItem.thumbnailUrl.isNotEmpty) {
+        criticalUrls.add(mediaItem.thumbnailUrl);
+      }
+    }
+
+    // Preload into Flutter's image cache for instant display
+    if (criticalUrls.isNotEmpty) {
+      debugPrint('🚀 Preloading ${criticalUrls.length} critical images into Flutter cache');
+      for (final url in criticalUrls) {
+        try {
+          final provider = NetworkImage(url);
+          // Use resolve to preload into Flutter's image cache
+          provider.resolve(ImageConfiguration.empty);
+        } catch (e) {
+          debugPrint('⚠️ Error preloading critical image $url: $e');
+        }
+      }
     }
   }
 }

@@ -289,9 +289,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   void _preloadNextVideos() {
     if (_reelData.mediaMetaDataList.length <= 1) return;
 
-    // Preload next 2 videos
+    // Preload next 2 videos and their thumbnails
     final currentIndex = _currentPageNotifier.value;
     final nextVideos = <String>[];
+    final nextThumbnails = <String>[];
 
     for (var i = 1; i <= 2 && (currentIndex + i) < _reelData.mediaMetaDataList.length; i++) {
       final nextIndex = currentIndex + i;
@@ -299,12 +300,18 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
       if (mediaData.mediaType == kVideoType && mediaData.mediaUrl.isStringEmptyOrNull == false) {
         nextVideos.add(mediaData.mediaUrl);
+        if (mediaData.thumbnailUrl.isNotEmpty) {
+          nextThumbnails.add(mediaData.thumbnailUrl);
+        }
       }
     }
 
     if (nextVideos.isNotEmpty) {
-      debugPrint('🔄 Preloading ${nextVideos.length} next videos...');
-      MediaCacheFactory.precacheMedia(nextVideos, highPriority: false);
+      debugPrint(
+          '🔄 Preloading ${nextVideos.length} next videos and ${nextThumbnails.length} thumbnails...');
+      // Preload videos and thumbnails together
+      final allMedia = [...nextVideos, ...nextThumbnails];
+      MediaCacheFactory.precacheMedia(allMedia, highPriority: false);
     }
   }
 
