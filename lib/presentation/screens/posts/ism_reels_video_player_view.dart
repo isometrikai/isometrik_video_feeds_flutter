@@ -1508,19 +1508,34 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                     left: 0,
                     right: 0,
                     bottom: 0,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      mainAxisSize: MainAxisSize.max,
-                      children: [
-                        Expanded(
-                          child: SingleChildScrollView(
-                            child: _reelData.footerWidget?.child ??
-                                _buildBottomSectionWithoutOverlay(),
-                          ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.1),
+                            Colors.black.withValues(alpha: 0.3),
+                            Colors.black.withValues(alpha: 0.6),
+                          ],
+                          stops: const [0.0, 0.3, 0.7, 1.0],
                         ),
-                        _reelData.actionWidget?.child ??
-                            _buildRightSideActions(),
-                      ],
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisSize: MainAxisSize.max,
+                        children: [
+                          Expanded(
+                            child: SingleChildScrollView(
+                              child: _reelData.footerWidget?.child ??
+                                  _buildBottomSectionWithoutOverlay(),
+                            ),
+                          ),
+                          _reelData.actionWidget?.child ??
+                              _buildRightSideActions(),
+                        ],
+                      ),
                     ),
                   ),
                 ],
