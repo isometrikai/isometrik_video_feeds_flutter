@@ -99,14 +99,17 @@ class ImageCacheManager implements IMediaCacheManager {
       // Cache in memory
       final provider = NetworkImage(url);
       _addToCache(url, provider);
+      debugPrint('✅ ImageCacheManager: Successfully cached image in memory: $url');
 
       // For high priority, also preload into Flutter's image cache
       if (highPriority) {
-        unawaited(_diskCache.downloadFile(url));
+        unawaited(_diskCache.downloadFile(url).then((_) {
+          debugPrint('✅ ImageCacheManager: Successfully cached image on disk: $url');
+        }));
       }
       unawaited(_preloadIntoFlutterCache(url));
     } catch (e) {
-      debugPrint('Error initializing image cache for URL: $url');
+      debugPrint('❌ ImageCacheManager: Error initializing image cache for URL: $url');
       debugPrint('Error details: $e');
       rethrow;
     }
@@ -118,8 +121,9 @@ class ImageCacheManager implements IMediaCacheManager {
       final provider = NetworkImage(url);
       // Use the global image cache directly
       provider.resolve(ImageConfiguration.empty);
+      debugPrint('✅ ImageCacheManager: Successfully preloaded image into Flutter cache: $url');
     } catch (e) {
-      debugPrint('Error preloading image into Flutter cache: $e');
+      debugPrint('❌ ImageCacheManager: Error preloading image into Flutter cache: $e');
     }
   }
 
