@@ -96,18 +96,21 @@ class ImageCacheManager implements IMediaCacheManager {
 
   Future<void> _initializeImage(String url, {bool highPriority = false}) async {
     try {
-      // Cache in memory
-      final provider = NetworkImage(url);
-      _addToCache(url, provider);
-      debugPrint('✅ ImageCacheManager: Successfully cached image in memory: $url');
-
-      // For high priority, also preload into Flutter's image cache
+      // Since we're using CachedNetworkImage, focus on disk caching
+      // CachedNetworkImage will handle its own memory cache
       if (highPriority) {
+        // For high priority, preload into CachedNetworkImage's disk cache
+        await _diskCache.downloadFile(url);
+        debugPrint('✅ ImageCacheManager: Successfully cached image on disk: $url');
+
+        // Also preload into Flutter's memory cache for instant display
+        unawaited(_preloadIntoFlutterCache(url));
+      } else {
+        // For low priority, just trigger disk caching in background
         unawaited(_diskCache.downloadFile(url).then((_) {
           debugPrint('✅ ImageCacheManager: Successfully cached image on disk: $url');
         }));
       }
-      unawaited(_preloadIntoFlutterCache(url));
     } catch (e) {
       debugPrint('❌ ImageCacheManager: Error initializing image cache for URL: $url');
       debugPrint('Error details: $e');
@@ -128,9 +131,12 @@ class ImageCacheManager implements IMediaCacheManager {
   }
 
   void _addToCache(String url, ImageProvider provider) {
+    // Since we're using CachedNetworkImage, we don't need to maintain our own memory cache
+    // Just track URLs for statistics
     _lruQueue.remove(url);
     _lruQueue.addFirst(url);
-    _imageCache[url] = provider;
+    _imageCache[url] =
+        provider; // Keep for compatibility but CachedNetworkImage handles the real caching
     _evictIfNeeded();
   }
 
