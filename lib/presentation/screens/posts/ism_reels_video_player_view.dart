@@ -59,6 +59,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   TapGestureRecognizer? _tapGestureRecognizer;
 
   IVideoPlayerController? _videoPlayerController;
+  IVideoPlayerController?
+      _lastSetupController; // Track last setup controller to prevent duplicate setup
   final Set<String> _loggedMilestones = {}; // prevent duplicates
 
   var _isPlaying = true;
@@ -69,12 +71,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   final ValueNotifier<bool> _isExpandedDescription = ValueNotifier(false);
   final ValueNotifier<bool> _isSaveLoading = ValueNotifier(false);
   final ValueNotifier<bool> _isLikeLoading = ValueNotifier(false);
+  final ValueNotifier<bool> _isVideoPlaying = ValueNotifier(true); // For reducing rebuilds
 
   // Audio state management
   static bool _globalMuteState = false; // Global mute state that persists across all videos
   bool _isMuted = false;
   bool _isAudioOperationInProgress = false;
   Timer? _audioDebounceTimer;
+  double? _lastSetVolume; // Track last set volume to prevent redundant operations
   final _maxLengthToShow = 50;
   late ReelsData _reelData;
 
@@ -84,6 +88,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   List<MentionMetaData> _pageMentionMetaDataList = [];
   List<MentionMetaData> _mentionedDataList = [];
   List<MentionMetaData> _taggedDataList = [];
+
+  // OPTIMIZATION: Cache parsed description to avoid rebuilding text on every frame
+  TextSpan? _cachedDescriptionTextSpan;
+  String? _lastParsedDescription;
 
   bool _showLikeAnimation = false;
   Timer? _likeAnimationTimer;
@@ -96,6 +104,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   // Fallback completion detection timer
   Timer? _completionFallbackTimer;
+
+  // Throttle visibility changes to prevent rapid state changes
+  DateTime? _lastVisibilityChange;
+  static const Duration _visibilityThrottleDuration = Duration(milliseconds: 300);
 
   // Video state management
   bool _isVideoInitializing = false;
@@ -371,6 +383,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       _videoPlayerController?.dispose();
     }
     _videoPlayerController = null;
+    // Reset tracking when disposing controller
+    _lastSetupController = null;
+    _lastSetVolume = null;
   }
 
   /// Initializes the video player controller for the current video.
@@ -409,13 +424,19 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       if (_videoPlayerController != null) {
         debugPrint('IsmReelsVideoPlayerView....Using cached video controller for $videoUrl');
         if (_videoPlayerController!.isInitialized) {
+          // Check if this is the same controller we already set up
+          final isSameController = _lastSetupController == _videoPlayerController;
+          debugPrint('🎬 Cached controller ${isSameController ? "already set up" : "needs setup"}');
+
           await _setupVideoController();
           _isVideoSetupComplete = true;
           return;
         } else {
           // If controller exists but not initialized, dispose and recreate
+          debugPrint('⚠️ Cached controller not initialized, disposing and recreating');
           await _videoPlayerController!.dispose();
           _videoPlayerController = null;
+          _lastSetupController = null;
         }
       }
 
@@ -529,39 +550,45 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         return;
       }
 
+      // CRITICAL: Prevent duplicate setup on the same controller instance
+      // This is the main cause of audio flickering
+      if (_lastSetupController == _videoPlayerController) {
+        debugPrint(
+            '⚠️ Controller already set up, skipping duplicate setup to prevent audio flickering');
+        return;
+      }
+
+      debugPrint('🎬 Setting up new video controller (preventing duplicate setup)');
+
       // Make sure controller is initialized
       if (!_videoPlayerController!.isInitialized) {
         debugPrint('🔄 Initializing video controller in setup');
         await _videoPlayerController!.initialize();
       }
 
-      // Reduced wait time for faster startup
-      final waitTime = _isLowEndDevice ? 150 : 50;
-      await Future.delayed(Duration(milliseconds: waitTime));
-
       // Remove existing listener to prevent memory leaks
       _videoPlayerController!.removeListener(_handlePlaybackProgress);
 
-      // Reset to beginning - ensure video starts from the beginning
-      await _videoPlayerController!.seekTo(Duration.zero);
-
-      // Wait for seek to complete
-      await Future.delayed(const Duration(milliseconds: 100));
-
-      // Set up basic properties with performance optimizations
+      // Set up basic properties with performance optimizations FIRST
       await _videoPlayerController!.setLooping(false);
 
-      // Set volume only once during setup to prevent audio flickering
+      // CRITICAL: Set volume BEFORE any seek or play operations to prevent audio flickering
       // Apply global mute state to new videos
       _isMuted = _globalMuteState;
-      if (!_isAudioOperationInProgress) {
-        _isAudioOperationInProgress = true;
-        try {
-          await _videoPlayerController!.setVolume(_isMuted ? 0.0 : 1.0);
-        } finally {
-          _isAudioOperationInProgress = false;
-        }
+      final targetVolume = _isMuted ? 0.0 : 1.0;
+
+      // Only set volume if it's different from the last set value
+      if (_lastSetVolume != targetVolume) {
+        await _setVolumeSafely(targetVolume);
+      } else {
+        debugPrint('🔊 Volume already at $targetVolume, skipping redundant operation');
       }
+
+      // Small delay to let volume setting stabilize
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      // Reset to beginning - ensure video starts from the beginning
+      await _videoPlayerController!.seekTo(Duration.zero);
 
       // Reset completion flag for new video
       _hasCompletedOneCycle = false;
@@ -617,12 +644,17 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
       debugPrint('✅ Video controller setup complete');
 
+      // Mark this controller as set up to prevent duplicate setup calls
+      _lastSetupController = _videoPlayerController;
+
       // Start performance monitoring for thermal management
       _startPerformanceMonitoring();
     } catch (e) {
       debugPrint('❌ Error in setupVideoController: $e');
       // Clean up on error
       _videoPlayerController?.removeListener(_handlePlaybackProgress);
+      // Don't mark as setup since it failed
+      _lastSetupController = null;
     }
   }
 
@@ -640,6 +672,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _completionFallbackTimer?.cancel();
     _audioDebounceTimer?.cancel();
     _performanceMonitorTimer?.cancel();
+
+    // Reset audio and controller operation state
+    _isAudioOperationInProgress = false;
+    _lastSetVolume = null;
+    _lastSetupController = null;
+
     // Mark video as not visible for cache manager
     if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl.isStringEmptyOrNull ==
         false) {
@@ -1363,13 +1401,22 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             onLongPressEnd: (_) => _togglePlayPause(),
             child: VisibilityDetector(
               key: Key(_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl),
-              onVisibilityChanged: (info) {
+              onVisibilityChanged: (info) async {
                 if (_isDisposed) return;
                 if (_reelData.showBlur == true ||
                     _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType ==
                         kPictureType) {
                   return;
                 }
+
+                // Throttle visibility changes to prevent audio flickering from rapid state changes
+                final now = DateTime.now();
+                if (_lastVisibilityChange != null &&
+                    now.difference(_lastVisibilityChange!) < _visibilityThrottleDuration) {
+                  debugPrint('⚠️ Visibility change throttled (too frequent)');
+                  return;
+                }
+                _lastVisibilityChange = now;
 
                 // Video is visible - play it
                 if (info.visibleFraction > 0.7) {
@@ -1388,13 +1435,20 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       _hasCompletedOneCycle = false;
                       _lastProgressSecond = -1;
                       _loggedMilestones.clear();
+                      // CRITICAL: Use await for seek to prevent audio flickering
+                      await _videoPlayerController?.seekTo(Duration.zero);
                     }
-                    _videoPlayerController?.seekTo(Duration.zero);
-                    _videoPlayerController?.play();
+                    // Only play, don't seek if video hasn't completed
+                    // Seeking while video is loaded but not playing causes audio glitches
+                    await _videoPlayerController?.play();
                     _isPlaying = true;
-                    mountUpdate();
+                    _isVideoPlaying.value = true;
+                    // OPTIMIZATION: Don't rebuild entire widget for better scrolling performance
+                    // mountUpdate(); // Removed
                   } else if (_hasNavigatedAway) {
                     debugPrint('⏸️ Video not auto-playing - user navigated away');
+                  } else if (_controllerReady && _videoPlayerController!.isPlaying) {
+                    debugPrint('▶️ Video already playing, no action needed');
                   }
                 } else {
                   // Video is not visible - pause it
@@ -1407,7 +1461,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                     _videoPlayerController?.pause();
                     _isPlaying = false;
                     _isPlayPauseActioned = false;
-                    mountUpdate();
+                    _isVideoPlaying.value = false;
+                    // OPTIMIZATION: Don't rebuild entire widget for better scrolling performance
+                    // mountUpdate(); // Removed
                   }
                 }
               },
@@ -1450,55 +1506,61 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       ),
                     ),
                   // Move overlays here so they don't block taps
+                  // OPTIMIZATION: Wrap gradient in RepaintBoundary for better scrolling
                   Positioned(
                     left: 0,
                     right: 0,
                     bottom: 0,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.center,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Colors.black.withValues(alpha: 0.3),
-                            Colors.black.withValues(alpha: 0.6),
-                          ],
-                          stops: const [0.0, 0.5, 1.0],
+                    child: RepaintBoundary(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.center,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withValues(alpha: 0.3),
+                              Colors.black.withValues(alpha: 0.6),
+                            ],
+                            stops: const [0.0, 0.5, 1.0],
+                          ),
                         ),
                       ),
                     ),
                   ),
+                  // OPTIMIZATION: Separate RepaintBoundary for content overlay
                   Positioned(
                     left: 0,
                     right: 0,
                     bottom: 0,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Colors.black.withValues(alpha: 0.1),
-                            Colors.black.withValues(alpha: 0.3),
-                            Colors.black.withValues(alpha: 0.6),
-                          ],
-                          stops: const [0.0, 0.3, 0.7, 1.0],
-                        ),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        mainAxisSize: MainAxisSize.max,
-                        children: [
-                          Expanded(
-                            child: SingleChildScrollView(
-                              child: _reelData.footerWidget?.child ??
-                                  _buildBottomSectionWithoutOverlay(),
-                            ),
+                    child: RepaintBoundary(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withValues(alpha: 0.1),
+                              Colors.black.withValues(alpha: 0.3),
+                              Colors.black.withValues(alpha: 0.6),
+                            ],
+                            stops: const [0.0, 0.3, 0.7, 1.0],
                           ),
-                          _reelData.actionWidget?.child ?? _buildRightSideActions(),
-                        ],
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          mainAxisSize: MainAxisSize.max,
+                          children: [
+                            Expanded(
+                              child: SingleChildScrollView(
+                                child: _reelData.footerWidget?.child ??
+                                    _buildBottomSectionWithoutOverlay(),
+                              ),
+                            ),
+                            _reelData.actionWidget?.child ?? _buildRightSideActions(),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -1509,136 +1571,138 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         ],
       );
 
-  Widget _buildRightSideActions() => Padding(
-        padding: IsrDimens.edgeInsets(bottom: IsrDimens.forty, right: IsrDimens.sixteen),
-        child: Column(
-          spacing: IsrDimens.twenty,
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            if (_reelData.postSetting?.isProfilePicVisible == true)
-              TapHandler(
-                borderRadius: IsrDimens.thirty,
-                onTap: () async {
-                  if (_reelData.onTapUserProfile != null) {
-                    _pauseForNavigation();
-                    await _reelData.onTapUserProfile!(true);
-                    _resumeAfterNavigation();
-                  }
-                },
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(IsrDimens.thirty),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.changeOpacity(0.2),
-                        spreadRadius: 2,
-                        blurRadius: 5,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: AppImage.network(
-                    _reelData.profilePhoto ?? '',
-                    width: IsrDimens.thirtyFive,
-                    height: IsrDimens.thirtyFive,
-                    isProfileImage: true,
-                    name: '${_reelData.firstName ?? ''} ${_reelData.lastName ?? ''}',
+  Widget _buildRightSideActions() => RepaintBoundary(
+        child: Padding(
+          padding: IsrDimens.edgeInsets(bottom: IsrDimens.forty, right: IsrDimens.sixteen),
+          child: Column(
+            spacing: IsrDimens.twenty,
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              if (_reelData.postSetting?.isProfilePicVisible == true)
+                TapHandler(
+                  borderRadius: IsrDimens.thirty,
+                  onTap: () async {
+                    if (_reelData.onTapUserProfile != null) {
+                      _pauseForNavigation();
+                      await _reelData.onTapUserProfile!(true);
+                      _resumeAfterNavigation();
+                    }
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(IsrDimens.thirty),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.changeOpacity(0.2),
+                          spreadRadius: 2,
+                          blurRadius: 5,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: AppImage.network(
+                      _reelData.profilePhoto ?? '',
+                      width: IsrDimens.thirtyFive,
+                      height: IsrDimens.thirtyFive,
+                      isProfileImage: true,
+                      name: '${_reelData.firstName ?? ''} ${_reelData.lastName ?? ''}',
+                    ),
                   ),
                 ),
-              ),
-            if (_reelData.postSetting?.isCreatePostButtonVisible == true) ...[
-              Column(
-                children: [
-                  Container(
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Theme.of(context).primaryColor,
-                    ),
-                    child: IconButton(
-                      onPressed: () async {
-                        if (widget.onCreatePost != null) {
-                          await widget.onCreatePost!();
-                        }
-                      },
-                      icon: const Icon(
-                        Icons.add,
-                        color: IsrColors.white,
+              if (_reelData.postSetting?.isCreatePostButtonVisible == true) ...[
+                Column(
+                  children: [
+                    Container(
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Theme.of(context).primaryColor,
+                      ),
+                      child: IconButton(
+                        onPressed: () async {
+                          if (widget.onCreatePost != null) {
+                            await widget.onCreatePost!();
+                          }
+                        },
+                        icon: const Icon(
+                          Icons.add,
+                          color: IsrColors.white,
+                        ),
                       ),
                     ),
+                    IsrDimens.boxHeight(IsrDimens.ten),
+                    Text(
+                      IsrTranslationFile.create,
+                      style: IsrStyles.white12,
+                    ),
+                  ],
+                ),
+              ],
+              if (_reelData.postSetting?.isLikeButtonVisible == true)
+                ValueListenableBuilder(
+                    valueListenable: _isLikeLoading,
+                    builder: (context, value, child) => _buildActionButton(
+                          icon: _reelData.isLiked == true
+                              ? AssetConstants.icLikeSelected
+                              : AssetConstants.icLikeUnSelected,
+                          label: _reelData.likesCount.toString(),
+                          onTap: _callLikeFunction,
+                          isLoading: value,
+                        )),
+              if (_reelData.postSetting?.isCommentButtonVisible == true)
+                StatefulBuilder(
+                  builder: (context, setBuilderState) => _buildActionButton(
+                    icon: AssetConstants.icCommentIcon,
+                    label: _reelData.commentCount.toString(),
+                    onTap: () {
+                      _handleCommentClick(setBuilderState);
+                    },
                   ),
-                  IsrDimens.boxHeight(IsrDimens.ten),
-                  Text(
-                    IsrTranslationFile.create,
-                    style: IsrStyles.white12,
-                  ),
-                ],
-              ),
-            ],
-            if (_reelData.postSetting?.isLikeButtonVisible == true)
-              ValueListenableBuilder(
-                  valueListenable: _isLikeLoading,
-                  builder: (context, value, child) => _buildActionButton(
-                        icon: _reelData.isLiked == true
-                            ? AssetConstants.icLikeSelected
-                            : AssetConstants.icLikeUnSelected,
-                        label: _reelData.likesCount.toString(),
-                        onTap: _callLikeFunction,
-                        isLoading: value,
-                      )),
-            if (_reelData.postSetting?.isCommentButtonVisible == true)
-              StatefulBuilder(
-                builder: (context, setBuilderState) => _buildActionButton(
-                  icon: AssetConstants.icCommentIcon,
-                  label: _reelData.commentCount.toString(),
-                  onTap: () {
-                    _handleCommentClick(setBuilderState);
+                ),
+              if (_reelData.postSetting?.isShareButtonVisible == true)
+                _buildActionButton(
+                  icon: AssetConstants.icShareIcon,
+                  label: IsrTranslationFile.share,
+                  onTap: () async {
+                    if (_reelData.onTapShare != null) {
+                      _pauseForNavigation();
+                      _reelData.onTapShare!();
+                      _resumeAfterNavigation();
+                    }
                   },
                 ),
-              ),
-            if (_reelData.postSetting?.isShareButtonVisible == true)
-              _buildActionButton(
-                icon: AssetConstants.icShareIcon,
-                label: IsrTranslationFile.share,
-                onTap: () async {
-                  if (_reelData.onTapShare != null) {
-                    _pauseForNavigation();
-                    _reelData.onTapShare!();
-                    _resumeAfterNavigation();
-                  }
-                },
-              ),
-            if (_reelData.postStatus != 0 &&
-                _reelData.postSetting?.isSaveButtonVisible == true) ...[
-              ValueListenableBuilder<bool>(
-                valueListenable: _isSaveLoading,
-                builder: (context, value, child) => _buildActionButton(
-                  icon: _reelData.isSavedPost == true
-                      ? AssetConstants.icSaveSelected
-                      : AssetConstants.icSaveUnSelected,
-                  label: _reelData.isSavedPost == true
-                      ? IsrTranslationFile.saved
-                      : IsrTranslationFile.save,
-                  onTap: _callSaveFunction,
-                  isLoading: value,
+              if (_reelData.postStatus != 0 &&
+                  _reelData.postSetting?.isSaveButtonVisible == true) ...[
+                ValueListenableBuilder<bool>(
+                  valueListenable: _isSaveLoading,
+                  builder: (context, value, child) => _buildActionButton(
+                    icon: _reelData.isSavedPost == true
+                        ? AssetConstants.icSaveSelected
+                        : AssetConstants.icSaveUnSelected,
+                    label: _reelData.isSavedPost == true
+                        ? IsrTranslationFile.saved
+                        : IsrTranslationFile.save,
+                    onTap: _callSaveFunction,
+                    isLoading: value,
+                  ),
                 ),
-              ),
+              ],
+              if (_reelData.postSetting?.isMoreButtonVisible == true)
+                _buildActionButton(
+                  icon: AssetConstants.icMoreIcon,
+                  label: '',
+                  onTap: () async {
+                    if (widget.onPressMoreButton != null) {
+                      _pauseForNavigation();
+                      widget.onPressMoreButton!();
+                      _resumeAfterNavigation();
+                    }
+                  },
+                ),
             ],
-            if (_reelData.postSetting?.isMoreButtonVisible == true)
-              _buildActionButton(
-                icon: AssetConstants.icMoreIcon,
-                label: '',
-                onTap: () async {
-                  if (widget.onPressMoreButton != null) {
-                    _pauseForNavigation();
-                    widget.onPressMoreButton!();
-                    _resumeAfterNavigation();
-                  }
-                },
-              ),
-          ],
+          ),
         ),
       );
 
@@ -1789,6 +1853,22 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                 ? fullDescription.substring(0, _maxLengthToShow)
                                 : fullDescription;
 
+                            // OPTIMIZATION: Cache parsed description to avoid reparsing on every build
+                            if (_lastParsedDescription != displayText.trim() ||
+                                _cachedDescriptionTextSpan == null) {
+                              _lastParsedDescription = displayText.trim();
+                              _cachedDescriptionTextSpan = _buildDescriptionTextSpan(
+                                displayText.trim(),
+                                _mentionedDataList,
+                                _taggedDataList,
+                                IsrStyles.white14
+                                    .copyWith(color: IsrColors.white.changeOpacity(0.9)),
+                                (mention) {
+                                  _callOnTapMentionData([mention]);
+                                },
+                              );
+                            }
+
                             return GestureDetector(
                               onTap: () {
                                 if (shouldTruncate) {
@@ -1798,16 +1878,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                               child: RichText(
                                 text: TextSpan(
                                   children: [
-                                    _buildDescriptionTextSpan(
-                                      displayText.trim(),
-                                      _mentionedDataList,
-                                      _taggedDataList,
-                                      IsrStyles.white14
-                                          .copyWith(color: IsrColors.white.changeOpacity(0.9)),
-                                      (mention) {
-                                        _callOnTapMentionData([mention]);
-                                      },
-                                    ),
+                                    _cachedDescriptionTextSpan!,
                                     if (shouldTruncate)
                                       TextSpan(
                                         text: value ? ' ' : '... ',
@@ -2240,41 +2311,61 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       return;
     }
 
-    // Debounce audio operations to prevent flickering
+    // Debounce audio operations to prevent flickering - increased to 250ms for stability
     _audioDebounceTimer?.cancel();
-    _audioDebounceTimer = Timer(const Duration(milliseconds: 150), _performMuteToggle);
+    _audioDebounceTimer = Timer(const Duration(milliseconds: 250), _performMuteToggle);
   }
 
   void _performMuteToggle() {
     // Prevent multiple audio operations at once
     if (_isAudioOperationInProgress) {
+      debugPrint('⚠️ Audio operation already in progress, skipping toggle');
       return;
     }
-
-    _isAudioOperationInProgress = true;
 
     setState(() {
       _isMuted = !_isMuted;
       _globalMuteState = _isMuted; // Update global mute state
     });
 
-    // Set volume asynchronously to prevent blocking UI
-    _setVolumeAsync(_isMuted ? 0.0 : 1.0);
+    // Set volume with safe method to prevent flickering
+    final targetVolume = _isMuted ? 0.0 : 1.0;
+    _setVolumeSafely(targetVolume);
     _triggerMuteAnimation();
   }
 
-  /// Sets volume asynchronously with proper error handling
-  Future<void> _setVolumeAsync(double volume) async {
+  /// Sets volume safely with proper synchronization and error handling
+  Future<void> _setVolumeSafely(double volume) async {
+    // Prevent multiple simultaneous volume operations
+    if (_isAudioOperationInProgress) {
+      debugPrint('⚠️ Audio operation in progress, queuing volume change');
+      // Wait a bit and retry
+      await Future.delayed(const Duration(milliseconds: 100));
+      if (_isAudioOperationInProgress) {
+        debugPrint('⚠️ Still in progress, skipping volume change');
+        return;
+      }
+    }
+
+    _isAudioOperationInProgress = true;
+
     try {
       if (_videoPlayerController != null &&
           _videoPlayerController!.isInitialized &&
           !_isDisposed &&
           mounted) {
-        await _videoPlayerController!.setVolume(volume);
-        debugPrint('🔊 Volume set to: $volume');
+        // Only set if volume actually needs to change
+        if (_lastSetVolume != volume) {
+          await _videoPlayerController!.setVolume(volume);
+          _lastSetVolume = volume;
+          debugPrint('🔊 Volume successfully set to: $volume');
+        } else {
+          debugPrint('🔊 Volume already at: $volume, skipping');
+        }
       }
     } catch (e) {
       debugPrint('⚠️ Error setting volume: $e');
+      _lastSetVolume = null; // Reset on error to allow retry
     } finally {
       _isAudioOperationInProgress = false;
     }
