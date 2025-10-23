@@ -712,6 +712,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     double? height,
     BoxFit fit = BoxFit.contain,
     FilterQuality filterQuality = FilterQuality.high,
+    bool showError = false,
   }) {
     final isLocalUrl =
         imageUrl.isStringEmptyOrNull == false && IsrVideoReelUtility.isLocalUrl(imageUrl);
@@ -729,6 +730,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             height: height,
             fit: fit,
             filterQuality: filterQuality,
+            showError: showError,
           );
   }
 
@@ -741,6 +743,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         width: IsrDimens.getScreenWidth(context),
         height: IsrDimens.getScreenHeight(context),
         fit: BoxFit.cover,
+        showError: false,
       );
     } else if (_hasMultipleMedia) {
       mediaWidget = _buildMediaCarousel();
@@ -858,6 +861,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               height: IsrDimens.getScreenHeight(context),
               fit: BoxFit.cover,
               filterQuality: FilterQuality.low,
+              showError: false,
             ),
           ]
         ],
@@ -887,6 +891,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   height: IsrDimens.getScreenHeight(context),
                   fit: BoxFit.contain,
                   filterQuality: FilterQuality.low,
+                  showError: false,
                 ),
               ),
             ]
@@ -2291,13 +2296,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       } else {
         return SizedBox(
           key: ValueKey('media_$index'), // Consistent key
-
           child: _getImageWidget(
             imageUrl: media.thumbnailUrl,
             width: IsrDimens.getScreenWidth(context),
             height: IsrDimens.getScreenHeight(context),
             fit: BoxFit.cover,
             filterQuality: FilterQuality.low,
+            showError: false,
           ),
         );
       }

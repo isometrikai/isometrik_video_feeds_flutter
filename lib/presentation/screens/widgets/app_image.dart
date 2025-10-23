@@ -252,39 +252,59 @@ class _Network extends StatelessWidget {
           ),
         ),
       ),
-      placeholder: (context, url) => ImagePlaceHolder(
-        borderRadius: borderRadius,
-        placeHolderName: placeHolderName,
-        width: width,
-        height: height,
-        boxFit: fit ?? BoxFit.contain,
-        boxShape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
-        child: name.isStringEmptyOrNull == false && isProfileImage
-            ? Text(
-                initials,
-                style: IsrStyles.secondaryText14
-                    .copyWith(fontWeight: FontWeight.w500, color: IsrColors.white),
-                textAlign: TextAlign.center,
-              )
-            : null,
-      ),
-      errorWidget: (context, url, error) => ImagePlaceHolder(
-        width: width,
-        height: height,
-        borderRadius: borderRadius,
-        boxFit: fit ?? BoxFit.contain,
-        padding: 4,
-        placeHolderName: placeHolderName,
-        boxShape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
-        child: name.isStringEmptyOrNull == false && isProfileImage
-            ? Text(
-                initials,
-                style: IsrStyles.secondaryText14
-                    .copyWith(fontWeight: FontWeight.w500, color: IsrColors.white),
-                textAlign: TextAlign.center,
-              )
-            : null,
-      ),
+      placeholder: (context, url) => showError
+          ? ImagePlaceHolder(
+              borderRadius: borderRadius,
+              placeHolderName: placeHolderName,
+              width: width,
+              height: height,
+              boxFit: fit ?? BoxFit.contain,
+              boxShape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
+              child: name.isStringEmptyOrNull == false && isProfileImage
+                  ? Text(
+                      initials,
+                      style: IsrStyles.secondaryText14
+                          .copyWith(fontWeight: FontWeight.w500, color: IsrColors.white),
+                      textAlign: TextAlign.center,
+                    )
+                  : null,
+            )
+          : Container(
+              width: width,
+              height: height,
+              decoration: BoxDecoration(
+                color: Colors.black.changeOpacity(0.3),
+                borderRadius: borderRadius,
+                shape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
+              ),
+            ),
+      errorWidget: (context, url, error) => showError
+          ? ImagePlaceHolder(
+              width: width,
+              height: height,
+              borderRadius: borderRadius,
+              boxFit: fit ?? BoxFit.contain,
+              padding: 4,
+              placeHolderName: placeHolderName,
+              boxShape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
+              child: name.isStringEmptyOrNull == false && isProfileImage
+                  ? Text(
+                      initials,
+                      style: IsrStyles.secondaryText14
+                          .copyWith(fontWeight: FontWeight.w500, color: IsrColors.white),
+                      textAlign: TextAlign.center,
+                    )
+                  : null,
+            )
+          : Container(
+              width: width,
+              height: height,
+              decoration: BoxDecoration(
+                color: Colors.black.changeOpacity(0.3),
+                borderRadius: borderRadius,
+                shape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
+              ),
+            ),
     );
   }
 }
