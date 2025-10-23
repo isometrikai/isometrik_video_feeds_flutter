@@ -584,9 +584,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         debugPrint('🔊 Volume already at $targetVolume, skipping redundant operation');
       }
 
-      // Small delay to let volume setting stabilize
-      await Future.delayed(const Duration(milliseconds: 50));
-
       // Reset to beginning - ensure video starts from the beginning
       await _videoPlayerController!.seekTo(Duration.zero);
 
@@ -1874,29 +1871,31 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                               );
                             }
 
-                            return GestureDetector(
-                              onTap: () {
-                                if (shouldTruncate) {
-                                  _isExpandedDescription.value = !_isExpandedDescription.value;
-                                }
-                              },
-                              child: RichText(
-                                text: TextSpan(
-                                  children: [
-                                    _cachedDescriptionTextSpan!,
-                                    if (shouldTruncate)
-                                      TextSpan(
-                                        text: value ? ' ' : '... ',
-                                        style:
-                                            IsrStyles.white14.copyWith(fontWeight: FontWeight.w700),
-                                        recognizer: TapGestureRecognizer()
-                                          ..onTap = () {
-                                            // _isExpandedDescription.value =
-                                            //     !_isExpandedDescription.value;
-                                          },
+                            return RichText(
+                              text: TextSpan(
+                                children: [
+                                  _cachedDescriptionTextSpan!,
+                                  if (shouldTruncate)
+                                    TextSpan(
+                                      text: value ? ' ' : '... ',
+                                      style: IsrStyles.white14.copyWith(
+                                        color: IsrColors.white.changeOpacity(0.9),
                                       ),
-                                  ],
-                                ),
+                                    ),
+                                  if (shouldTruncate)
+                                    TextSpan(
+                                      text: value ? 'view less' : 'view more',
+                                      style: IsrStyles.white14.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                        color: IsrColors.white,
+                                      ),
+                                      recognizer: TapGestureRecognizer()
+                                        ..onTap = () {
+                                          _isExpandedDescription.value =
+                                              !_isExpandedDescription.value;
+                                        },
+                                    ),
+                                ],
                               ),
                             );
                           },
