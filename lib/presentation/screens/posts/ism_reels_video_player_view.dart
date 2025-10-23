@@ -346,8 +346,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _isPlaying = true;
     _isPlayPauseActioned = false;
 
-    // Reset completion flag when changing pages
+    // Reset completion flag and progress tracking when changing pages
     _hasCompletedOneCycle = false;
+    _lastProgressSecond = -1;
+    _loggedMilestones.clear();
     // mountUpdate();
 
     // Initialize new video if needed
@@ -540,8 +542,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       // Remove existing listener to prevent memory leaks
       _videoPlayerController!.removeListener(_handlePlaybackProgress);
 
-      // Reset to beginning
+      // Reset to beginning - ensure video starts from the beginning
       await _videoPlayerController!.seekTo(Duration.zero);
+
+      // Wait for seek to complete
+      await Future.delayed(const Duration(milliseconds: 100));
 
       // Set up basic properties with performance optimizations
       await _videoPlayerController!.setLooping(false);
@@ -1377,6 +1382,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   if (_controllerReady &&
                       !_videoPlayerController!.isPlaying &&
                       !_hasNavigatedAway) {
+                    // If video has completed, reset it to the beginning
+                    if (_hasCompletedOneCycle) {
+                      debugPrint('🔄 Video was completed, resetting to beginning');
+                      _hasCompletedOneCycle = false;
+                      _lastProgressSecond = -1;
+                      _loggedMilestones.clear();
+                    }
                     _videoPlayerController?.seekTo(Duration.zero);
                     _videoPlayerController?.play();
                     _isPlaying = true;
