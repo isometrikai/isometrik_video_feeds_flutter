@@ -170,15 +170,23 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    debugPrint('🔄🔄🔄 App lifecycle state changed: $state');
+
     if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
-      if (_isPlaying) {
-        _togglePlayPause();
+      debugPrint('⏸️ App backgrounded - pausing video');
+      if (_isPlaying && _controllerReady) {
+        _videoPlayerController?.pause();
+        _isPlaying = false;
+        mountUpdate();
       }
       // Pause performance monitoring when app is backgrounded
       _performanceMonitorTimer?.cancel();
     } else if (state == AppLifecycleState.resumed) {
-      if (!_isPlaying) {
-        _togglePlayPause();
+      debugPrint('▶️ App resumed - resuming video');
+      if (!_isPlaying && _controllerReady) {
+        _videoPlayerController?.play();
+        _isPlaying = true;
+        mountUpdate();
       }
       // Resume performance monitoring when app is foregrounded
       _startPerformanceMonitoring();
@@ -1258,7 +1266,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     return TapHandler(
       onTap: () {
+        _pauseForNavigation();
         _callOnTapMentionData(mentionList);
+        _resumeAfterNavigation();
       },
       child: Row(
         children: [
@@ -1291,8 +1301,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (placeList.isListEmptyOrNull) return const SizedBox.shrink();
 
     return TapHandler(
-      onTap: () {
-        _reelData.onTapPlace?.call(placeList);
+      onTap: () async {
+        _pauseForNavigation();
+        await _reelData.onTapPlace?.call(placeList);
+        _resumeAfterNavigation();
       },
       child: Row(
         children: [
@@ -1355,6 +1367,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             child: VisibilityDetector(
               key: Key(_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl),
               onVisibilityChanged: (info) {
+                debugPrint(
+                    '👁️ Visibility changed: ${info.visibleFraction} (hasNavigatedAway: $_hasNavigatedAway)');
+
                 if (_isDisposed) return;
                 if (_reelData.showBlur == true ||
                     _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType ==
@@ -1362,18 +1377,27 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   return;
                 }
 
+                // Video is visible - play it
                 if (info.visibleFraction > 0.7) {
+                  debugPrint('▶️ Video visible (${info.visibleFraction}) - attempting playback');
                   // Mark video as visible in cache manager
                   _videoCacheManager.markAsVisible(
                       _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl);
 
-                  if (_controllerReady && !_videoPlayerController!.isPlaying) {
+                  // Don't auto-play if user has navigated to another screen
+                  if (_controllerReady &&
+                      !_videoPlayerController!.isPlaying &&
+                      !_hasNavigatedAway) {
                     _videoPlayerController?.seekTo(Duration.zero);
                     _videoPlayerController?.play();
                     _isPlaying = true;
                     mountUpdate();
+                  } else if (_hasNavigatedAway) {
+                    debugPrint('⏸️ Video not auto-playing - user navigated away');
                   }
                 } else {
+                  // Video is not visible - pause it
+                  debugPrint('⏸️ Video not visible (${info.visibleFraction}) - pausing');
                   // Mark video as not visible in cache manager
                   _videoCacheManager.markAsNotVisible(
                       _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl);
@@ -1494,9 +1518,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             if (_reelData.postSetting?.isProfilePicVisible == true)
               TapHandler(
                 borderRadius: IsrDimens.thirty,
-                onTap: () {
+                onTap: () async {
                   if (_reelData.onTapUserProfile != null) {
-                    _reelData.onTapUserProfile!(true);
+                    _pauseForNavigation();
+                    await _reelData.onTapUserProfile!(true);
+                    _resumeAfterNavigation();
                   }
                 },
                 child: Container(
@@ -1575,9 +1601,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               _buildActionButton(
                 icon: AssetConstants.icShareIcon,
                 label: IsrTranslationFile.share,
-                onTap: () {
+                onTap: () async {
                   if (_reelData.onTapShare != null) {
+                    _pauseForNavigation();
                     _reelData.onTapShare!();
+                    _resumeAfterNavigation();
                   }
                 },
               ),
@@ -1603,7 +1631,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 label: '',
                 onTap: () async {
                   if (widget.onPressMoreButton != null) {
+                    _pauseForNavigation();
                     widget.onPressMoreButton!();
+                    _resumeAfterNavigation();
                   }
                 },
               ),
@@ -1656,7 +1686,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               TapHandler(
                 onTap: () {
                   if (_reelData.onTapCartIcon != null) {
+                    _pauseForNavigation();
                     _reelData.onTapCartIcon!();
+                    _resumeAfterNavigation();
                   }
                 },
                 child: Container(
@@ -1719,9 +1751,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                               children: [
                                 Flexible(
                                   child: TapHandler(
-                                    onTap: () {
+                                    onTap: () async {
                                       if (_reelData.onTapUserProfile != null) {
-                                        _reelData.onTapUserProfile!(false);
+                                        _pauseForNavigation();
+                                        await _reelData.onTapUserProfile!(false);
+                                        _resumeAfterNavigation();
                                       }
                                     },
                                     child: Text(
@@ -2123,11 +2157,40 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   void _handleCommentClick(StateSetter setBuilderState) async {
     if (_reelData.onTapComment != null) {
+      // Pause video before opening comments
+      _pauseForNavigation();
+
       final commentCount = await _reelData.onTapComment!(_reelData.commentCount ?? 0);
+
+      // Resume video when coming back
+      _resumeAfterNavigation();
+
       if (commentCount != null) {
         _reelData.commentCount = commentCount;
       }
       setBuilderState.call(() {});
+    }
+  }
+
+  /// Pauses video when navigating away from reel screen
+  void _pauseForNavigation() {
+    debugPrint('⏸️⏸️⏸️ Pausing video for in-app navigation');
+    if (_isPlaying && _controllerReady) {
+      _videoPlayerController?.pause();
+      _isPlaying = false;
+      _hasNavigatedAway = true;
+      mountUpdate();
+    }
+  }
+
+  /// Resumes video when returning to reel screen
+  void _resumeAfterNavigation() {
+    debugPrint('▶️▶️▶️ Resuming video after in-app navigation');
+    _hasNavigatedAway = false;
+    if (!_isPlaying && _controllerReady && mounted) {
+      _videoPlayerController?.play();
+      _isPlaying = true;
+      mountUpdate();
     }
   }
 
