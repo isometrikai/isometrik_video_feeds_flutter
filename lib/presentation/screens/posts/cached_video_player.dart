@@ -17,6 +17,7 @@ class CachedVideoPlayerWrapper implements IVideoPlayerController {
   final CachedVideoPlayerPlus _player;
   final ValueNotifier<bool> _playingStateNotifier = ValueNotifier<bool>(false);
   bool _isDisposed = false;
+  bool _hasLoggedError = false;
 
   VideoPlayerController get _controller => _player.controller;
 
@@ -24,6 +25,28 @@ class CachedVideoPlayerWrapper implements IVideoPlayerController {
     _controller.addListener(() {
       if (!_isDisposed) {
         _playingStateNotifier.value = _controller.value.isPlaying;
+
+        // Monitor for runtime errors (green blocks, decoding failures)
+        if (_controller.value.hasError && !_hasLoggedError) {
+          _hasLoggedError = true;
+          debugPrint('❌ Video playback error detected during runtime');
+          debugPrint(
+              '❌ Error description: ${_controller.value.errorDescription}');
+          debugPrint('❌ Video size: ${_controller.value.size}');
+          debugPrint('❌ Position: ${_controller.value.position}');
+          debugPrint('❌ Duration: ${_controller.value.duration}');
+          // This indicates hardware decoding failure - video should be re-encoded
+        }
+
+        // Detect potential decoding issues (size becomes zero during playback)
+        if (_controller.value.isInitialized &&
+            _controller.value.size == Size.zero &&
+            !_hasLoggedError) {
+          _hasLoggedError = true;
+          debugPrint(
+              '⚠️ Video size became zero during playback - possible decoder failure');
+          debugPrint('⚠️ This may cause green blocks or corrupted frames');
+        }
       }
     });
   }
@@ -191,16 +214,53 @@ class CachedVideoCacheManager implements IVideoCacheManager {
       String url) async {
     try {
       final controller = _createVideoPlayerController(url);
-      await controller.initialize();
+
+      // Initialize with timeout
+      await controller.initialize().timeout(
+        const Duration(seconds: 20),
+        onTimeout: () {
+          debugPrint('⚠️ CachedVideoPlayer initialization timeout for: $url');
+          throw TimeoutException(
+              'Video initialization timeout', const Duration(seconds: 20));
+        },
+      );
+
       final wrapper = CachedVideoPlayerWrapper(controller);
+
+      // Validate video initialization - check for decoding errors
+      if (!wrapper.isInitialized) {
+        debugPrint('❌ CachedVideoPlayer not initialized properly for: $url');
+        await wrapper.dispose();
+        return null;
+      }
+
+      if (controller.controller.value.hasError) {
+        debugPrint(
+            '❌ CachedVideoPlayer has error after initialization: ${controller.controller.value.errorDescription}');
+        debugPrint('❌ URL: $url');
+        await wrapper.dispose();
+        return null;
+      }
+
+      // Check for valid video dimensions (Size.zero indicates decoding failure)
+      if (controller.controller.value.size == Size.zero) {
+        debugPrint(
+            '❌ CachedVideoPlayer has invalid size (0x0) - possible decoding failure for: $url');
+        await wrapper.dispose();
+        return null;
+      }
+
+      debugPrint(
+          '✅ CachedVideoPlayer initialized successfully - Size: ${controller.controller.value.size}, Duration: ${controller.controller.value.duration}, URL: $url');
+
       await wrapper.setLooping(false);
       await wrapper.setVolume(1.0);
       return wrapper;
     } catch (e, stackTrace) {
       debugPrint(
-          'CachedVideoPlayer Error creating video controller for URL: $url');
-      debugPrint('CachedVideoPlayer Error details: $e');
-      debugPrint('CachedVideoPlayer Stack trace: $stackTrace');
+          '❌ CachedVideoPlayer Error creating video controller for URL: $url');
+      debugPrint('❌ CachedVideoPlayer Error details: $e');
+      debugPrint('❌ CachedVideoPlayer Stack trace: $stackTrace');
       return null;
     }
   }
