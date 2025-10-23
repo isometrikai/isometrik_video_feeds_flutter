@@ -170,23 +170,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    debugPrint('🔄🔄🔄 App lifecycle state changed: $state');
-
     if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
-      debugPrint('⏸️ App backgrounded - pausing video');
-      if (_isPlaying && _controllerReady) {
-        _videoPlayerController?.pause();
-        _isPlaying = false;
-        mountUpdate();
+      if (_isPlaying) {
+        _togglePlayPause();
       }
       // Pause performance monitoring when app is backgrounded
       _performanceMonitorTimer?.cancel();
     } else if (state == AppLifecycleState.resumed) {
-      debugPrint('▶️ App resumed - resuming video');
-      if (!_isPlaying && _controllerReady) {
-        _videoPlayerController?.play();
-        _isPlaying = true;
-        mountUpdate();
+      if (!_isPlaying) {
+        _togglePlayPause();
       }
       // Resume performance monitoring when app is foregrounded
       _startPerformanceMonitoring();
@@ -1367,9 +1359,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             child: VisibilityDetector(
               key: Key(_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl),
               onVisibilityChanged: (info) {
-                debugPrint(
-                    '👁️ Visibility changed: ${info.visibleFraction} (hasNavigatedAway: $_hasNavigatedAway)');
-
                 if (_isDisposed) return;
                 if (_reelData.showBlur == true ||
                     _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType ==
