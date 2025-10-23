@@ -16,10 +16,34 @@ class StandardVideoPlayerController implements IVideoPlayerController {
 
   final VideoPlayerController _controller;
   final ValueNotifier<bool> _playingStateNotifier = ValueNotifier<bool>(false);
+  bool _isDisposed = false;
+  bool _hasLoggedError = false;
 
   void _setupListeners() {
     _controller.addListener(() {
-      _playingStateNotifier.value = _controller.value.isPlaying;
+      if (!_isDisposed) {
+        _playingStateNotifier.value = _controller.value.isPlaying;
+
+        // Monitor for runtime errors (green blocks, decoding failures)
+        if (_controller.value.hasError && !_hasLoggedError) {
+          _hasLoggedError = true;
+          debugPrint('❌ Video playback error detected during runtime');
+          debugPrint('❌ Error description: ${_controller.value.errorDescription}');
+          debugPrint('❌ Video size: ${_controller.value.size}');
+          debugPrint('❌ Position: ${_controller.value.position}');
+          debugPrint('❌ Duration: ${_controller.value.duration}');
+          // This indicates hardware decoding failure - video should be re-encoded
+        }
+
+        // Detect potential decoding issues (size becomes zero during playback)
+        if (_controller.value.isInitialized &&
+            _controller.value.size == Size.zero &&
+            !_hasLoggedError) {
+          _hasLoggedError = true;
+          debugPrint('⚠️ Video size became zero during playback - possible decoder failure');
+          debugPrint('⚠️ This may cause green blocks or corrupted frames');
+        }
+      }
     });
   }
 
@@ -67,8 +91,24 @@ class StandardVideoPlayerController implements IVideoPlayerController {
 
   @override
   Future<void> dispose() async {
-    _playingStateNotifier.dispose();
-    await _controller.dispose();
+    // Check if already disposed to prevent double disposal
+    if (_isDisposed) {
+      return; // Already disposed
+    }
+
+    _isDisposed = true;
+
+    try {
+      _playingStateNotifier.dispose();
+    } catch (e) {
+      debugPrint('⚠️ Error disposing playing state notifier: $e');
+    }
+
+    try {
+      await _controller.dispose();
+    } catch (e) {
+      debugPrint('⚠️ Error disposing video controller: $e');
+    }
   }
 
   @override
@@ -102,7 +142,7 @@ class StandardVideoCacheManager implements IVideoCacheManager {
         File(mediaUrl),
         videoPlayerOptions: VideoPlayerOptions(
           mixWithOthers: true,
-          allowBackgroundPlayback: true,
+          allowBackgroundPlayback: false, // Better resource management
         ),
       );
     }
@@ -128,7 +168,7 @@ class StandardVideoCacheManager implements IVideoCacheManager {
       Uri.parse(url),
       videoPlayerOptions: VideoPlayerOptions(
         mixWithOthers: true,
-        allowBackgroundPlayback: true,
+        allowBackgroundPlayback: false, // Better resource management to prevent decoding issues
       ),
       httpHeaders: headers,
       formatHint: isHls ? VideoFormat.hls : null,
@@ -177,10 +217,37 @@ class StandardVideoCacheManager implements IVideoCacheManager {
           debugPrint('⚠️ Video initialization timeout for: $url');
           throw TimeoutException('Video initialization timeout', const Duration(seconds: 20));
         },
-      ).then((value) {
-        debugPrint(
-            'StandardVideoCacheManager: _createAndInitializeController controller created: $url');
-      });
+      );
+
+      // Validate video initialization - check for decoding errors
+      if (!controller.value.isInitialized) {
+        debugPrint('❌ Video not initialized properly for: $url');
+        await controller.dispose();
+        return null;
+      }
+
+      if (controller.value.hasError) {
+        debugPrint('❌ Video has error after initialization: ${controller.value.errorDescription}');
+        debugPrint('❌ URL: $url');
+        await controller.dispose();
+        return null;
+      }
+
+      // Check for valid video dimensions (Size.zero indicates decoding failure)
+      if (controller.value.size == Size.zero) {
+        debugPrint('❌ Video has invalid size (0x0) - possible decoding failure for: $url');
+        await controller.dispose();
+        return null;
+      }
+
+      // Check for valid duration
+      if (controller.value.duration == Duration.zero) {
+        debugPrint('⚠️ Video has zero duration - possible corrupted file: $url');
+        // Don't fail here as some videos may report duration late
+      }
+
+      debugPrint(
+          '✅ Video initialized successfully - Size: ${controller.value.size}, Duration: ${controller.value.duration}, URL: $url');
 
       // Set properties in parallel for faster setup
       await Future.wait([
@@ -191,7 +258,7 @@ class StandardVideoCacheManager implements IVideoCacheManager {
       return StandardVideoPlayerController(controller);
     } catch (e, stackTrace) {
       debugPrintStack(label: 'StandardVideoCacheManager cached error $e', stackTrace: stackTrace);
-      debugPrint('StandardVideoCacheManager Error creating video controller for URL: $url');
+      debugPrint('❌ Error creating video controller for URL: $url - Error: $e');
       return null;
     }
   }

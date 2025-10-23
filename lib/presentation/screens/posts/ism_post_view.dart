@@ -10,14 +10,13 @@ import 'package:ism_video_reel_player/utils/isr_utils.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 class IsmPostView extends StatefulWidget {
-  const IsmPostView({
-    super.key,
-    required this.tabDataModelList,
-    this.currentIndex = 0,
-    this.allowImplicitScrolling = false,
-    this.onPageChanged,
-    this.onTabChanged
-  });
+  const IsmPostView(
+      {super.key,
+      required this.tabDataModelList,
+      this.currentIndex = 0,
+      this.allowImplicitScrolling = false,
+      this.onPageChanged,
+      this.onTabChanged});
 
   final List<TabDataModel> tabDataModelList;
   final num? currentIndex;
