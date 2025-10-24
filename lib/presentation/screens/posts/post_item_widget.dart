@@ -196,7 +196,6 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                 controller: _pageController,
                 physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
                 onPageChanged: (index) {
-                  debugPrint('PostItemWidget: total reels data length: ${_reelsDataList.length}');
                   _doMediaCaching(index);
                   final post = _reelsDataList[index];
 
@@ -206,7 +205,6 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                     'userId': widget.loggedInUserId,
                     'timestamp': DateTime.now().toUtc().toIso8601String(),
                   });
-                  debugPrint('PostItemWidget: page index: $index');
                   // Check if we're at 65% of the list
                   final threshold = (_reelsDataList.length * 0.65).floor();
                   if (index >= threshold || index == _reelsDataList.length - 1) {
