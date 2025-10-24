@@ -2244,7 +2244,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       if (commentCount != null) {
         _reelData.commentCount = commentCount;
       }
-      setBuilderState.call(() {});
+      if (mounted) {
+        setBuilderState.call(() {});
+      }
     }
   }
 
