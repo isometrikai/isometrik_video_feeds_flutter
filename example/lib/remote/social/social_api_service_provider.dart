@@ -713,4 +713,35 @@ class SocialApiServiceProvider extends SocialApiService {
         },
         isLoading,
       );
+
+  @override
+  Future<ResponseModel> getForYouPosts({
+    required bool isLoading,
+    required Header header,
+    required int page,
+    required int pageLimit,
+  }) async =>
+      await networkClient.makeRequest(
+        SocialApiEndPoints.getForYouPosts,
+        NetworkRequestType.get,
+        null,
+        {
+          'page': page.toString(),
+          'page_size': pageLimit.toString(),
+        },
+        {
+          'Accept': AppConstants.headerAccept,
+          'Content-Type': AppConstants.headerContentType,
+          'authorization': header.accessToken,
+          'lan': header.language,
+          'currencySymbol': header.currencySymbol,
+          'currencyCode': header.currencyCode,
+          'platform': header.platForm.platformText.toString(),
+          'latitude': header.latitude.toString(),
+          'longitude': header.longitude.toString(),
+          'x-tenant-id': AppConstants.tenantId,
+          'x-project-id': AppConstants.projectId,
+        },
+        isLoading,
+      );
 }

@@ -21,6 +21,7 @@ class TranslationFile {
   static const String passwordValidationString =
       'You need to enter at least 8 characters , with X capital , y special characters and z small alphabets and q digits';
   static const String invalidEmail = 'Invalid Email';
+  static const String forYou = 'For You';
   static const String following = 'Following';
   static const String trending = 'Trending';
   static const String create = 'Create';

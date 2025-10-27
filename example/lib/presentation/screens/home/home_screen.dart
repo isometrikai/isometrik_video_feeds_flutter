@@ -59,6 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 key: ValueKey(state.timeLinePosts), // will rebuild if list changesc
                 currentIndex: 1,
                 tabDataModelList: [
+                  _buildForYouTab(state),
                   _buildFollowingTab(state),
                   _buildTrendingTab(state),
                 ],
@@ -68,6 +69,18 @@ class _HomeScreenState extends State<HomeScreen> {
             return const SizedBox.shrink();
           },
         ),
+      );
+
+  /// Creates a tab for timeline posts when navigating from other screens
+  isr.TabDataModel _buildForYouTab(
+    HomeLoaded state,
+  ) =>
+      _createTabModel(
+        postTabType: PostTabType.forYou,
+        title: TranslationFile.forYou,
+        isCreatePostButtonVisible: false,
+        startPostIndex: 0,
+        timeLinePosts: state.forYouPosts ?? [],
       );
 
   /// Creates a tab for trending posts with interaction handlers

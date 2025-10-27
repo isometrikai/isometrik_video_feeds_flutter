@@ -195,60 +195,53 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       builder: (context, value, child) => value == true
           ? Container(
               color: Colors.transparent,
-              padding: EdgeInsets.only(
-                top: MediaQuery.of(context).padding.top + IsrDimens.twenty,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: IsrDimens.getScreenWidth(context) * 0.7,
-                    child: Theme(
-                      data: ThemeData(
-                        splashColor: Colors.transparent,
-                        highlightColor: Colors.transparent,
-                      ),
-                      child: TabBar(
-                        controller: _postTabController,
-                        labelColor: _tabDataModelList[_currentIndex].reelsDataList.isListEmptyOrNull
-                            ? IsrColors.black
-                            : IsrColors.white,
-                        unselectedLabelColor:
-                            _tabDataModelList[_currentIndex].reelsDataList.isListEmptyOrNull
-                                ? IsrColors.black
-                                : IsrColors.white.changeOpacity(0.6),
-                        indicatorColor:
-                            _tabDataModelList[_currentIndex].reelsDataList.isListEmptyOrNull
-                                ? IsrColors.black
-                                : IsrColors.white,
-                        indicatorWeight: 2,
-                        dividerColor: Colors.transparent,
-                        indicatorSize: TabBarIndicatorSize.label,
-                        labelPadding: IsrDimens.edgeInsetsSymmetric(
-                          horizontal: IsrDimens.eight,
-                        ),
-                        labelStyle: IsrStyles.white16.copyWith(
-                          fontWeight: FontWeight.w700,
-                          height: 1.5,
-                        ),
-                        unselectedLabelStyle: IsrStyles.white16.copyWith(
-                          fontWeight: FontWeight.w400,
-                          height: 1.5,
-                        ),
-                        tabs: _tabDataModelList
-                            .map(
-                              (tab) => Tab(
-                                child: Text(
-                                  tab.title,
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            )
-                            .toList(),
-                      ),
-                    ),
+              padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + IsrDimens.twenty),
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: Theme(
+                  data: ThemeData(
+                    splashColor: Colors.transparent,
+                    highlightColor: Colors.transparent,
                   ),
-                ],
+                  child: TabBar(
+                    controller: _postTabController,
+                    isScrollable: true,
+                    tabAlignment: TabAlignment.start,
+                    labelColor: _tabDataModelList[_currentIndex].reelsDataList.isListEmptyOrNull
+                        ? IsrColors.black
+                        : IsrColors.white,
+                    unselectedLabelColor:
+                        _tabDataModelList[_currentIndex].reelsDataList.isListEmptyOrNull
+                            ? IsrColors.black
+                            : IsrColors.white.changeOpacity(0.6),
+                    indicatorColor: _tabDataModelList[_currentIndex].reelsDataList.isListEmptyOrNull
+                        ? IsrColors.black
+                        : IsrColors.white,
+                    indicatorWeight: 3,
+                    dividerColor: Colors.transparent,
+                    indicatorSize: TabBarIndicatorSize.label,
+                    padding: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.sixteen),
+                    labelPadding: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.eight),
+                    labelStyle: IsrStyles.white16.copyWith(
+                      fontWeight: FontWeight.w700,
+                      height: 1.5,
+                    ),
+                    unselectedLabelStyle: IsrStyles.white16.copyWith(
+                      fontWeight: FontWeight.w400,
+                      height: 1.5,
+                    ),
+                    tabs: _tabDataModelList
+                        .map(
+                          (tab) => Tab(
+                            child: Text(
+                              tab.title,
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
               ),
             )
           : const SizedBox.shrink());

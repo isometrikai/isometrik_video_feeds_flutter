@@ -16,11 +16,13 @@ class HomeLoaded extends HomeState {
   HomeLoaded({
     required this.timeLinePosts,
     required this.trendingPosts,
+    this.forYouPosts = const [],
     required this.userId,
   });
 
-  final List<TimeLineData>? timeLinePosts;
-  final List<TimeLineData>? trendingPosts;
+  final List<TimeLineData> timeLinePosts;
+  final List<TimeLineData> trendingPosts;
+  final List<TimeLineData> forYouPosts;
   final String userId;
 }
 

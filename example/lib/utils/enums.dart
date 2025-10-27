@@ -158,6 +158,7 @@ class PlaceType {
 }
 
 enum PostTabType {
+  forYou,
   following,
   trending,
   myPost,
