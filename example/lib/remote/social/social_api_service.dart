@@ -139,4 +139,11 @@ abstract class SocialApiService extends BaseService {
     required String searchText,
     required Header header,
   });
+
+  Future<ResponseModel> getForYouPosts({
+    required bool isLoading,
+    required Header header,
+    required int page,
+    required int pageLimit,
+  });
 }

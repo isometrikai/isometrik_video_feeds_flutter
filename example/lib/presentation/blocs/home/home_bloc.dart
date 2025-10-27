@@ -23,6 +23,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     this._getPostDetailsUseCase,
     this._getPostCommentUseCase,
     this._commentUseCase,
+    this._getForYouPostUseCase,
   ) : super(HomeInitial()) {
     on<LoadHomeData>(_onLoadHomeData);
     on<GetTimeLinePostEvent>(_getTimeLinePost);
@@ -42,6 +43,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   final LocalDataUseCase _localDataUseCase;
   final GetTimelinePostUseCase _getTimelinePostUseCase;
   final GetTrendingPostUseCase _getTrendingPostUseCase;
+  final GetForYouPostUseCase _getForYouPostUseCase;
   final FollowPostUseCase _followPostUseCase;
   final SavePostUseCase _savePostUseCase;
   final LikePostUseCase _likePostUseCase;
@@ -53,6 +55,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
   final List<TimeLineData> _trendingPostList = [];
   final List<TimeLineData> _timeLinePostList = [];
+  final List<TimeLineData> _forYouPostList = [];
 
   int currentPage = 0;
   final followingPageSize = 20;
@@ -68,6 +71,12 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
   var _isDataLoading = false;
   var _detailsCurrentPage = 1;
+
+  int _forYouCurrentPage = 1;
+  bool _hasForYouMoreData = true;
+  bool _isForYouLoadingMore = false;
+  final _forYouPageSize = 20;
+
   final List<ProductDataModel> _detailsProductList = [];
 
   Future<void> _onLoadHomeData(
@@ -79,10 +88,14 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       emit(HomeLoading(isLoading: true));
       await _initializeReelsSdk();
       await Future.wait([
+        _callGetForYouPost(true, false, false, null),
         _callGetTrendingPost(true, false, false, null),
-        _callGetTimeLinePost(true, false, false, null)
+        _callGetTimeLinePost(true, false, false, null),
       ]);
-      add(LoadPostsEvent(timeLinePostList: _timeLinePostList, trendingPosts: _trendingPostList));
+      add(LoadPostsEvent(
+          timeLinePostList: _timeLinePostList,
+          trendingPosts: _trendingPostList,
+          forYouPosts: _forYouPostList));
     } catch (error) {
       emit(HomeError(error.toString()));
     }
@@ -189,6 +202,58 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     _isTrendingLoadingMore = false;
   }
 
+  Future<void> _callGetForYouPost(
+    bool isFromRefresh,
+    bool isFromPagination,
+    bool isLoading,
+    Function(List<TimeLineData>)? onComplete,
+  ) async {
+    // For refresh, clear cache and start from page 0
+    if (isFromRefresh) {
+      _forYouPostList.clear();
+      _forYouCurrentPage = 1;
+      _hasForYouMoreData = true;
+      _isForYouLoadingMore = false;
+    }
+
+    if (!isFromPagination) {
+      _forYouCurrentPage = 1;
+      _hasForYouMoreData = true;
+    } else if (_isForYouLoadingMore || !_hasForYouMoreData) {
+      return;
+    }
+
+    _isForYouLoadingMore = true;
+
+    final apiResult = await _getTrendingPostUseCase.executeGetTrendingPost(
+      isLoading: isLoading,
+      page: _forYouCurrentPage,
+      pageLimit: _forYouPageSize,
+    );
+
+    if (apiResult.isSuccess) {
+      final postDataList = apiResult.data?.data as List<TimeLineData>;
+      if (postDataList.isEmptyOrNull) {
+        _hasForYouMoreData = false;
+      } else {
+        if (isFromPagination) {
+          _forYouPostList.addAll(postDataList);
+        } else {
+          _forYouPostList
+            ..clear()
+            ..addAll(postDataList);
+        }
+        if (onComplete != null) {
+          onComplete(postDataList);
+        }
+        _forYouCurrentPage++;
+      }
+    } else {
+      ErrorHandler.showAppError(appError: apiResult.error);
+    }
+    _isForYouLoadingMore = false;
+  }
+
   FutureOr<void> _savePost(SavePostEvent event, Emitter<HomeState> emit) async {
     final apiResult = await _savePostUseCase.executeSavePost(
       isLoading: false,
@@ -264,13 +329,17 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       event.onComplete.call(false);
     }
     add(GetTimeLinePostEvent(
-        isLoading: false,
-        isPagination: false,
-        isRefresh: true,
-        onComplete: (postList) {
-          add(LoadPostsEvent(
-              timeLinePostList: _timeLinePostList, trendingPosts: _timeLinePostList));
-        }));
+      isLoading: false,
+      isPagination: false,
+      isRefresh: true,
+      onComplete: (postList) {
+        add(LoadPostsEvent(
+          timeLinePostList: _timeLinePostList,
+          trendingPosts: _timeLinePostList,
+          forYouPosts: _forYouPostList,
+        ));
+      },
+    ));
   }
 
   Future<void> _callGetTimeLinePost(
@@ -429,8 +498,10 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   FutureOr<void> _loadPosts(LoadPostsEvent event, Emitter<HomeState> emit) async {
     final myUserId = await _localDataUseCase.getUserId();
     emit(HomeLoaded(
-        timeLinePosts: event.timeLinePostList,
-        trendingPosts: event.trendingPosts,
-        userId: myUserId));
+      timeLinePosts: event.timeLinePostList,
+      trendingPosts: event.trendingPosts,
+      forYouPosts: event.forYouPosts,
+      userId: myUserId,
+    ));
   }
 }

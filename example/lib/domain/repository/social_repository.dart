@@ -124,4 +124,10 @@ abstract class SocialRepository extends BaseRepository {
     required int page,
     required String searchText,
   });
+
+  Future<CustomResponse<TimelineResponse?>> getForYouPosts({
+    required bool isLoading,
+    required int page,
+    required int pageLimit,
+  });
 }

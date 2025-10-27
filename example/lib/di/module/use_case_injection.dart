@@ -29,6 +29,8 @@ class UseCaseInjection {
         () => GetFollowingPostUseCase(InjectionUtils.getRepo<PostRepository>()));
     InjectionUtils.registerUseCase<GetTrendingPostUseCase>(
         () => GetTrendingPostUseCase(InjectionUtils.getRepo<SocialRepository>()));
+    InjectionUtils.registerUseCase<GetForYouPostUseCase>(
+        () => GetForYouPostUseCase(InjectionUtils.getRepo<SocialRepository>()));
     InjectionUtils.registerUseCase<FollowPostUseCase>(
         () => FollowPostUseCase(InjectionUtils.getRepo<SocialRepository>()));
     InjectionUtils.registerUseCase<SavePostUseCase>(

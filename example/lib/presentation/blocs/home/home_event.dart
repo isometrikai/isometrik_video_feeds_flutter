@@ -12,10 +12,12 @@ class LoadPostsEvent extends HomeEvent {
   LoadPostsEvent({
     required this.timeLinePostList,
     required this.trendingPosts,
+    required this.forYouPosts,
   });
 
   final List<TimeLineData> timeLinePostList;
   final List<TimeLineData> trendingPosts;
+  final List<TimeLineData> forYouPosts;
 }
 
 class GetTimeLinePostEvent extends HomeEvent {
