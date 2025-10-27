@@ -57,7 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
               _myUserId = state.userId;
               return isr.IsmPostView(
                 key: ValueKey(state.timeLinePosts), // will rebuild if list changesc
-                currentIndex: 1,
+                currentIndex: 0,
                 tabDataModelList: [
                   _buildForYouTab(state),
                   _buildFollowingTab(state),
