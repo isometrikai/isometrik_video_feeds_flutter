@@ -1566,6 +1566,30 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       ),
                     ),
                   ),
+                  // Persistent mute icon indicator in top-right (placed last to be on top)
+                  if (_isMuted &&
+                      _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType ==
+                          kVideoType)
+                    Positioned(
+                      top: IsrDimens.sixty + IsrDimens.ten,
+                      right: IsrDimens.sixteen,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: _toggleMuteAndUnMute,
+                        child: Container(
+                          padding: EdgeInsets.all(IsrDimens.eight),
+                          decoration: BoxDecoration(
+                            color: Colors.black.changeOpacity(0.5),
+                            shape: BoxShape.circle,
+                          ),
+                          child: AppImage.svg(
+                            AssetConstants.muteRoundedSvg,
+                            width: IsrDimens.twenty,
+                            height: IsrDimens.twenty,
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
