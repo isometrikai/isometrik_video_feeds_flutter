@@ -17,6 +17,8 @@ class IsrVideoReelConfig {
   static Future<void> initializeSdk({
     required String baseUrl,
     PostInfoClass? postInfo,
+    String? eventQueueApiUrl,
+    OnBeforeFlushCallback? onBeforeFlushCallback,
   }) async {
     if (isSdkInitialize) {
       await _saveUserInformation(postInfo: postInfo);
@@ -26,7 +28,10 @@ class IsrVideoReelConfig {
     WidgetsFlutterBinding.ensureInitialized();
     await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     isrConfigureInjection();
-    _initializeHive();
+    await _initializeHive(
+      eventQueueApiUrl: eventQueueApiUrl,
+      onBeforeFlushCallback: onBeforeFlushCallback,
+    );
     Bloc.observer = IsrAppBlocObserver();
     await _saveUserInformation(postInfo: postInfo);
     isSdkInitialize = true;
@@ -51,9 +56,14 @@ class IsrVideoReelConfig {
     await MediaCacheFactory.precacheMedia(mediaUrls, highPriority: false);
   }
 
-  static void _initializeHive() async {
+  static Future<void> _initializeHive({
+    String? eventQueueApiUrl,
+    OnBeforeFlushCallback? onBeforeFlushCallback,
+  }) async {
     await Hive.initFlutter();
     Hive.registerAdapter(LocalEventAdapter());
-    await EventQueueProvider.instance.init();
+
+    // Initialize EventQueueProvider with callback
+    EventQueueProvider.initialize(onBeforeFlush: onBeforeFlushCallback);
   }
 }

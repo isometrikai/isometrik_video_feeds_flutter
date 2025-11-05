@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart' as isr;
 import 'package:ism_video_reel_player_example/core/core.dart';
@@ -103,18 +105,83 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
   Future<void> _initializeReelsSdk() async {
     final accessToken = await _localDataUseCase.getAccessToken();
+    final userId = await _localDataUseCase.getUserId();
+    final userName = await _localDataUseCase.getFirstName();
+    final firstName = await _localDataUseCase.getFirstName();
+    final lastName = await _localDataUseCase.getLastName();
     await isr.IsrVideoReelConfig.initializeSdk(
       baseUrl: AppUrl.appBaseUrl,
       postInfo: isr.PostInfoClass(
         accessToken: accessToken,
         userInformation: isr.UserInfoClass(
-          userId: '37483783493',
-          userName: 'asjad',
-          firstName: 'Asjad',
-          lastName: 'Ibrahim',
+          userId: userId,
+          userName: userName,
+          firstName: firstName,
+          lastName: lastName,
         ),
       ),
+      // Optional: Provide your own event queue API URL
+      eventQueueApiUrl: 'https://yourapi.com/reel-events',
+      // Optional: Provide callback to receive events before flushing
+      onBeforeFlushCallback: handleEventsBeforeFlush,
     );
+  }
+
+  /// Callback that receives events before flushing
+  /// Returns true to allow flush, false to prevent it
+  /// This is a static method so it can be passed during SDK initialization
+  Future<bool> handleEventsBeforeFlush(List<isr.LocalEvent> events) async {
+    debugPrint('📦 HomeScreen: Received ${events.length} events before flush');
+
+    try {
+      // Process each event
+      for (final event in events) {
+        debugPrint('${runtimeType.toString()}: Event ID: ${event.id}');
+        debugPrint('${runtimeType.toString()}: Event Payload: ${jsonEncode(event.payload)}');
+        debugPrint('${runtimeType.toString()}: Event Timestamp: ${event.timestamp}');
+
+        // You can update your UI or state based on the events
+        final eventType = event.payload['type'] as String?;
+
+        switch (eventType) {
+          case 'like':
+            debugPrint('❤️ Like event detected for post: ${event.payload['postId']}');
+            // Handle like event - you can update analytics, send to your backend, etc.
+            break;
+          case 'save':
+            debugPrint('💾 Save event detected for post: ${event.payload['postId']}');
+            // Handle save event
+            break;
+          case 'follow':
+            debugPrint('👤 Follow event detected for user: ${event.payload['userId']}');
+            // Handle follow event
+            break;
+          case 'view':
+            debugPrint('👁️ View event detected for post: ${event.payload['postId']}');
+            // Handle view event
+            break;
+          case 'watch':
+            debugPrint('⏱️ Watch event detected for post: ${event.payload['postId']}');
+            // Handle watch event
+            break;
+          default:
+            debugPrint('❓ Unknown event type: $eventType');
+        }
+      }
+
+      // Perform any additional async operations if needed
+      // Example: Send events to your backend
+      // await yourBackendService.sendEvents(events);
+
+      // Return true to indicate success and allow flush to proceed
+      debugPrint('✅ HomeScreen: Successfully processed all events, allowing flush');
+      return true;
+    } catch (e, stackTrace) {
+      debugPrint('❌ HomeScreen: Error handling events: $e');
+      debugPrint('Stack trace: $stackTrace');
+      // Return false to prevent flush if something goes wrong
+      return false;
+    }
   }
 
   FutureOr<void> _getMorePost(GetMorePostEvent event, Emitter<HomeState> emit) async {

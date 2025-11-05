@@ -2,6 +2,8 @@
 import 'package:ism_video_reel_player/ism_video_reel_player_platform_interface.dart';
 
 export 'core/core.dart';
+// Data exports
+export 'data/data.dart';
 // DI exports
 export 'di/di.dart';
 // Domain exports

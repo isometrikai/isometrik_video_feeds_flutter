@@ -3,25 +3,42 @@ import 'dart:convert';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:hive/hive.dart';
-import 'package:http/http.dart' as http;
 import 'package:ism_video_reel_player/data/data.dart';
+import 'package:uuid/uuid.dart';
+
+/// Callback that receives events before flushing and returns success status
+typedef OnBeforeFlushCallback = Future<bool> Function(List<LocalEvent> events);
 
 class EventQueueProvider {
-  static final LocalEventQueue instance = LocalEventQueue(
-    apiUrl: 'https://yourapi.com/reel-events',
-  );
+  static LocalEventQueue? _instance;
+
+  static LocalEventQueue get instance {
+    if (_instance == null) {
+      throw Exception(
+          'EventQueueProvider not initialized. Call EventQueueProvider.initialize() first.');
+    }
+    return _instance!;
+  }
+
+  /// Initialize the event queue with optional callback
+  static void initialize({OnBeforeFlushCallback? onBeforeFlush}) {
+    _instance = LocalEventQueue(onBeforeFlush: onBeforeFlush);
+    _instance?.init();
+  }
+
+  /// Check if the event queue is initialized
+  static bool get isInitialized => _instance != null;
 }
 
 class LocalEventQueue with WidgetsBindingObserver {
   LocalEventQueue({
-    required this.apiUrl,
-    http.Client? client,
-  }) : httpClient = client ?? http.Client();
+    this.onBeforeFlush,
+  });
+
   static const String _boxName = 'local_events';
   static const int _batchSize = 10;
 
-  final String apiUrl;
-  final http.Client httpClient;
+  final OnBeforeFlushCallback? onBeforeFlush;
 
   Future<void> init() async {
     if (!Hive.isBoxOpen(_boxName)) {
@@ -47,108 +64,61 @@ class LocalEventQueue with WidgetsBindingObserver {
     }
   }
 
+  final Uuid _uuid = const Uuid();
+
   Future<void> addEvent(Map<String, dynamic> payload) async {
-    // final box = Hive.box<LocalEvent>(_boxName);
-    //
-    // final event = LocalEvent(
-    //   id: const Uuid().v4(),
-    //   payload: payload,
-    //   timestamp: DateTime.now().toUtc(),
-    // );
-    //
-    // await box.add(event);
-    //
-    // debugPrint('${runtimeType.toString()} Box payload: ${event.payload}');
-    // debugPrint('${runtimeType.toString()} Event added: ${event.id}');
-    // debugPrint('${runtimeType.toString()} Box length: ${box.length}');
-    //
-    // if (box.length >= _batchSize) {
-    //   await flush();
-    // }
+    final box = Hive.box<LocalEvent>(_boxName);
+
+    final event = LocalEvent(
+      id: _uuid.v4(),
+      payload: payload,
+      timestamp: DateTime.now().toUtc(),
+    );
+
+    await box.add(event);
+
+    debugPrint('${runtimeType.toString()} Event payload: ${jsonEncode(event.payload)}');
+    debugPrint('${runtimeType.toString()} Event added: ${event.id}');
+    debugPrint('${runtimeType.toString()} Box length: ${box.length}');
+
+    if (box.length >= _batchSize) {
+      // Get all events before flushing
+      final events = box.values.toList();
+
+      // Call the callback if provided
+      if (onBeforeFlush != null) {
+        debugPrint(
+            '${runtimeType.toString()} Calling onBeforeFlush callback with ${events.length} events');
+        try {
+          final success = await onBeforeFlush!(events);
+          if (success) {
+            debugPrint('${runtimeType.toString()} Callback succeeded, proceeding to flush');
+            await flush();
+          } else {
+            debugPrint('${runtimeType.toString()} Callback failed, skipping flush');
+          }
+        } catch (e) {
+          debugPrint('${runtimeType.toString()} Error in callback: $e, skipping flush');
+        }
+      } else {
+        // No callback, proceed with normal flush
+        await flush();
+      }
+    }
   }
 
   Future<void> flush() async {
-    // final box = Hive.box<LocalEvent>(_boxName);
-    // final events = box.values.toList();
-    //
-    // if (events.isEmpty) return;
-    //
-    // final connectivity = await Connectivity().checkConnectivity();
-    // if (connectivity.contains(ConnectivityResult.none)) {
-    //   debugPrint('${runtimeType.toString()} No internet, flush postponed.');
-    //   return;
-    // }
-    //
-    // final body = events
-    //     .map((e) => {
-    //           'id': e.id,
-    //           'payload': e.payload,
-    //           'timestamp': e.timestamp.toIso8601String(),
-    //         })
-    //     .toList();
-    //
-    // try {
-    //   final response = await httpClient.post(
-    //     Uri.parse(apiUrl),
-    //     headers: {'Content-Type': 'application/json'},
-    //     body: jsonEncode(body),
-    //   );
-    //
-    //   if (response.statusCode == 200) {
-    //     await box.clear();
-    //     debugPrint('${runtimeType.toString()} Events flushed successfully!');
-    //   } else {
-    //     debugPrint('${runtimeType.toString()} Server error: ${response.statusCode}');
-    //     // await _retryFlush(events);
-    //   }
-    // } catch (e) {
-    //   debugPrint('${runtimeType.toString()} Error sending events: $e');
-    //   // await _retryFlush(events);
-    // }
-  }
-
-  Future<void> _retryFlush(List<LocalEvent> events) async {
-    /// remove these 3 lines later
     final box = Hive.box<LocalEvent>(_boxName);
+    final events = box.values.toList();
+
+    if (events.isEmpty) return;
+
     await box.clear();
-
-    var delay = 2;
-    for (var attempt = 1; attempt <= 3; attempt++) {
-      await Future.delayed(Duration(seconds: delay));
-      debugPrint('${runtimeType.toString()} Retry attempt $attempt...');
-
-      try {
-        final response = await httpClient.post(
-          Uri.parse(apiUrl),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode(events
-              .map((e) => {
-                    'id': e.id,
-                    'payload': e.payload,
-                    'timestamp': e.timestamp.toIso8601String(),
-                  })
-              .toList()),
-        );
-
-        if (response.statusCode == 200) {
-          final box = Hive.box<LocalEvent>(_boxName);
-          await box.clear();
-          debugPrint('Retry succeeded!');
-          return;
-        }
-      } catch (e) {
-        debugPrint('Retry failed: $e');
-      }
-
-      delay *= 2; // exponential backoff
-    }
-    debugPrint('All retries failed. Events kept in local queue.');
   }
 
   /// cleanup
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    httpClient.close();
   }
 }
 
