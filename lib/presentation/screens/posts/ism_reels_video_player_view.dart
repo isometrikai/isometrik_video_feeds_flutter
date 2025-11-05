@@ -63,6 +63,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       _lastSetupController; // Track last setup controller to prevent duplicate setup
   final Set<String> _loggedMilestones = {}; // prevent duplicates
 
+  // Watch event tracking - log only once per video
+  Duration _maxWatchPosition = Duration.zero;
+  bool _hasLoggedWatchEvent = false;
+
   var _isPlaying = true;
   var _isPlayPauseActioned = false;
   var _isDisposed = false;
@@ -362,6 +366,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _hasCompletedOneCycle = false;
     _lastProgressSecond = -1;
     _loggedMilestones.clear();
+
+    // Reset watch event tracking for the new video
+    _maxWatchPosition = Duration.zero;
+    _hasLoggedWatchEvent = false;
     // mountUpdate();
 
     // Initialize new video if needed
@@ -591,10 +599,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       _hasCompletedOneCycle = false;
 
       // Add listener after setup
-      // _videoPlayerController!.addListener(_handlePlaybackProgress);
+      _videoPlayerController!.addListener(_handlePlaybackProgress);
 
       // Start fallback completion detection timer
-      // _startCompletionFallbackTimer();
+      _startCompletionFallbackTimer();
 
       // Start playback only if not already playing and controller is ready
       if (!_videoPlayerController!.isPlaying && _videoPlayerController!.isInitialized) {
@@ -658,6 +666,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   /// Disposes the current video controller if not cached, and cleans up state.
   @override
   void dispose() {
+    // Log watch event before disposing (if not already logged)
+    _logWatchEventIfNeeded();
+
     WidgetsBinding.instance.removeObserver(this);
     _routeObserver.unsubscribe(this);
     _isDisposed = true;
@@ -2430,30 +2441,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
     _lastProgressSecond = progress;
 
-    final percent = (progress / total * 100).floor();
-
-    // fire at specific milestones (optimized to reduce frequency)
-    if (progress >= 3 && !_loggedMilestones.contains('3s')) {
-      _loggedMilestones.add('3s');
-      _logWatchEvent('progress', position: position, note: '3s');
-    }
-
-    if (progress >= 10 && !_loggedMilestones.contains('10s')) {
-      _loggedMilestones.add('10s');
-      _logWatchEvent('progress', position: position, note: '10s');
-    }
-
-    if (percent >= 25 && !_loggedMilestones.contains('25%')) {
-      _loggedMilestones.add('25%');
-      _logWatchEvent('progress', position: position, note: '25%');
-    }
-    if (percent >= 50 && !_loggedMilestones.contains('50%')) {
-      _loggedMilestones.add('50%');
-      _logWatchEvent('progress', position: position, note: '50%');
-    }
-    if (percent >= 75 && !_loggedMilestones.contains('75%')) {
-      _loggedMilestones.add('75%');
-      _logWatchEvent('progress', position: position, note: '75%');
+    // Track the maximum watch position reached (for later logging)
+    if (position > _maxWatchPosition) {
+      _maxWatchPosition = position;
     }
 
     // Check if video is near the end (within 500ms) or has reached the end
@@ -2490,7 +2480,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       _completionFallbackTimer
           ?.cancel(); // Cancel fallback timer since we detected completion normally
       _loggedMilestones.add('complete');
-      _logWatchEvent('complete', position: position);
       debugPrint(
           '🎬 Video completed one cycle! Position: ${position.inSeconds}s, Duration: ${duration.inSeconds}s, '
           'Time remaining: ${timeRemaining.inMilliseconds}ms, Completion triggered by: '
@@ -2529,7 +2518,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 '🎬 Fallback completion detection triggered! Position: ${position.inSeconds}s, Duration: ${duration.inSeconds}s');
             _hasCompletedOneCycle = true;
             _loggedMilestones.add('complete');
-            _logWatchEvent('complete', position: position);
             _handleVideoCompletion();
             timer.cancel();
           }
@@ -2569,18 +2557,47 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     // If no next media in carousel or single video, notify parent to move to next post
     debugPrint(
         '🎬 Video completed, notifying parent to move to next post. Callback available: ${widget.onVideoCompleted != null}');
-    widget.onVideoCompleted?.call();
+    // widget.onVideoCompleted?.call();
   }
 
-  void _logWatchEvent(String type, {required Duration position, String? note}) {
-    EventQueueProvider.instance.addEvent({
-      'type': EventType.watch.value,
-      'postId': widget.reelsData?.postId,
-      'userId': widget.loggedInUserId,
-      'status': type, // start, progress, complete
-      'position': position.inSeconds,
-      'note': note, // optional (3s, 10s, 25%, etc.)
-      'timestamp': DateTime.now().toUtc().toIso8601String(),
-    });
+  /// Log watch event only once per video when user leaves or video completes
+  void _logWatchEventIfNeeded() {
+    // Only log if:
+    // 1. Not already logged for this video
+    // 2. User watched for at least 1 second
+    // 3. Video controller is initialized (to get duration)
+    if (_hasLoggedWatchEvent ||
+        _maxWatchPosition.inSeconds < 1 ||
+        _videoPlayerController == null ||
+        !_videoPlayerController!.isInitialized) {
+      return;
+    }
+
+    try {
+      final duration = _videoPlayerController!.duration;
+      final watchedSeconds = _maxWatchPosition.inSeconds;
+      final totalSeconds = duration.inSeconds;
+
+      // Calculate completion rate as percentage
+      final completionRate = totalSeconds > 0 ? ((watchedSeconds / totalSeconds) * 100) : 0;
+
+      debugPrint('📊 Logging watch event - Post: ${widget.reelsData?.postId}, '
+          'Watched: ${watchedSeconds}s / ${totalSeconds}s, Completion: $completionRate%');
+
+      EventQueueProvider.instance.addEvent({
+        'type': EventType.watch.value,
+        'post_id': widget.reelsData?.postId,
+        'view_completion_rate': completionRate,
+        'view_duration': watchedSeconds,
+        'total_duration': totalSeconds,
+        'view_source': 'feed',
+        'timestamp': DateTime.now().toUtc().toIso8601String(),
+      });
+
+      // Mark as logged to prevent duplicate logging
+      _hasLoggedWatchEvent = true;
+    } catch (e) {
+      debugPrint('❌ Error logging watch event: $e');
+    }
   }
 }

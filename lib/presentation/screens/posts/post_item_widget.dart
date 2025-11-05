@@ -199,12 +199,12 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                   _doMediaCaching(index);
                   final post = _reelsDataList[index];
 
-                  EventQueueProvider.instance.addEvent({
-                    'type': EventType.view.value,
-                    'postId': post.postId,
-                    'userId': widget.loggedInUserId,
-                    'timestamp': DateTime.now().toUtc().toIso8601String(),
-                  });
+                  // EventQueueProvider.instance.addEvent({
+                  //   'type': EventType.view.value,
+                  //   'postId': post.postId,
+                  //   'userId': widget.loggedInUserId,
+                  //   'timestamp': DateTime.now().toUtc().toIso8601String(),
+                  // });
                   // Check if we're at 65% of the list
                   final threshold = (_reelsDataList.length * 0.65).floor();
                   if (index >= threshold || index == _reelsDataList.length - 1) {

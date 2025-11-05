@@ -56,7 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
             if (state is HomeLoaded) {
               _myUserId = state.userId;
               return isr.IsmPostView(
-                key: ValueKey(state.timeLinePosts), // will rebuild if list changesc
+                key: ValueKey(state.timeLinePosts), // will rebuild if list changes
                 currentIndex: 0,
                 tabDataModelList: [
                   _buildForYouTab(state),
@@ -80,7 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
         title: TranslationFile.forYou,
         isCreatePostButtonVisible: false,
         startPostIndex: 0,
-        timeLinePosts: state.forYouPosts ?? [],
+        timeLinePosts: state.forYouPosts,
       );
 
   /// Creates a tab for trending posts with interaction handlers
@@ -89,7 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
         title: TranslationFile.trending,
         isCreatePostButtonVisible: false,
         startPostIndex: 0,
-        timeLinePosts: state.trendingPosts ?? [],
+        timeLinePosts: state.trendingPosts,
       );
 
   /// Creates a tab for timeline posts when navigating from other screens
@@ -101,7 +101,7 @@ class _HomeScreenState extends State<HomeScreen> {
         title: TranslationFile.following,
         isCreatePostButtonVisible: false,
         startPostIndex: 0,
-        timeLinePosts: state.timeLinePosts ?? [],
+        timeLinePosts: state.timeLinePosts,
       );
 
   /// Base method to create a tab model with common functionality
