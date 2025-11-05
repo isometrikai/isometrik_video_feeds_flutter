@@ -17,7 +17,6 @@ class IsrVideoReelConfig {
   static Future<void> initializeSdk({
     required String baseUrl,
     PostInfoClass? postInfo,
-    String? eventQueueApiUrl,
     OnBeforeFlushCallback? onBeforeFlushCallback,
   }) async {
     if (isSdkInitialize) {
@@ -29,7 +28,6 @@ class IsrVideoReelConfig {
     await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     isrConfigureInjection();
     await _initializeHive(
-      eventQueueApiUrl: eventQueueApiUrl,
       onBeforeFlushCallback: onBeforeFlushCallback,
     );
     Bloc.observer = IsrAppBlocObserver();
@@ -57,7 +55,6 @@ class IsrVideoReelConfig {
   }
 
   static Future<void> _initializeHive({
-    String? eventQueueApiUrl,
     OnBeforeFlushCallback? onBeforeFlushCallback,
   }) async {
     await Hive.initFlutter();

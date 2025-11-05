@@ -120,8 +120,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           lastName: lastName,
         ),
       ),
-      // Optional: Provide your own event queue API URL
-      eventQueueApiUrl: 'https://yourapi.com/reel-events',
       // Optional: Provide callback to receive events before flushing
       onBeforeFlushCallback: handleEventsBeforeFlush,
     );

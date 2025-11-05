@@ -36,7 +36,7 @@ class LocalEventQueue with WidgetsBindingObserver {
   });
 
   static const String _boxName = 'local_events';
-  static const int _batchSize = 10;
+  static const int _batchSize = 1;
 
   final OnBeforeFlushCallback? onBeforeFlush;
 
