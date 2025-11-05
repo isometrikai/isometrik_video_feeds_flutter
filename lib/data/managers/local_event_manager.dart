@@ -109,11 +109,14 @@ class LocalEventQueue with WidgetsBindingObserver {
 
   Future<void> flush() async {
     final box = Hive.box<LocalEvent>(_boxName);
+    debugPrint('${runtimeType.toString()} Box length before flushing: ${box.length}');
+
     final events = box.values.toList();
 
     if (events.isEmpty) return;
 
     await box.clear();
+    debugPrint('${runtimeType.toString()} Box length after flushing: ${box.length}');
   }
 
   /// cleanup
