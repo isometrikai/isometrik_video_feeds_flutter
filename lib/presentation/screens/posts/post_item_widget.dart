@@ -3,7 +3,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
-import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/utils/isr_utils.dart';
@@ -301,14 +300,14 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                               _updateState();
                             }
                           }
-                          // ✅ Log event locally
-                          unawaited(EventQueueProvider.instance.addEvent({
-                            'type': EventType.follow.value,
-                            'postId': reelsData.postId,
-                            'userId': widget.loggedInUserId,
-                            'isFollow': reelsData.isFollow,
-                            'timestamp': DateTime.now().toUtc().toIso8601String(),
-                          }));
+                          // // ✅ Log event locally
+                          // unawaited(EventQueueProvider.instance.addEvent({
+                          //   'type': EventType.follow.value,
+                          //   'postId': reelsData.postId,
+                          //   'userId': widget.loggedInUserId,
+                          //   'isFollow': reelsData.isFollow,
+                          //   'timestamp': DateTime.now().toUtc().toIso8601String(),
+                          // }));
                         }
                       },
                       onPressLikeButton: () async {
@@ -326,13 +325,13 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                             _updateState();
                           }
                           // ✅ Log event locally
-                          unawaited(EventQueueProvider.instance.addEvent({
-                            'type': EventType.like.value,
-                            'postId': reelsData.postId,
-                            'userId': widget.loggedInUserId,
-                            'isLiked': reelsData.isLiked,
-                            'timestamp': DateTime.now().toUtc().toIso8601String(),
-                          }));
+                          // unawaited(EventQueueProvider.instance.addEvent({
+                          //   'type': EventType.like.value,
+                          //   'postId': reelsData.postId,
+                          //   'userId': widget.loggedInUserId,
+                          //   'isLiked': reelsData.isLiked,
+                          //   'timestamp': DateTime.now().toUtc().toIso8601String(),
+                          // }));
                         }
                       },
                       onDoubleTap: () async {
@@ -350,13 +349,13 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                             _updateState();
                           }
                           // ✅ Log event locally
-                          unawaited(EventQueueProvider.instance.addEvent({
-                            'type': EventType.like.value,
-                            'postId': reelsData.postId,
-                            'userId': widget.loggedInUserId,
-                            'isLiked': reelsData.isLiked,
-                            'timestamp': DateTime.now().toUtc().toIso8601String(),
-                          }));
+                          // unawaited(EventQueueProvider.instance.addEvent({
+                          //   'type': EventType.like.value,
+                          //   'postId': reelsData.postId,
+                          //   'userId': widget.loggedInUserId,
+                          //   'isLiked': reelsData.isLiked,
+                          //   'timestamp': DateTime.now().toUtc().toIso8601String(),
+                          // }));
                         }
                       },
                       onPressSaveButton: () async {
@@ -367,13 +366,13 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                             reelsData.isSavedPost = reelsData.isSavedPost == false;
                             _updateState();
                           }
-                          unawaited(EventQueueProvider.instance.addEvent({
-                            'type': EventType.save.value,
-                            'postId': reelsData.postId,
-                            'isSaved': reelsData.isSavedPost,
-                            'userId': widget.loggedInUserId,
-                            'timestamp': DateTime.now().toUtc().toIso8601String(),
-                          }));
+                          // unawaited(EventQueueProvider.instance.addEvent({
+                          //   'type': EventType.save.value,
+                          //   'postId': reelsData.postId,
+                          //   'isSaved': reelsData.isSavedPost,
+                          //   'userId': widget.loggedInUserId,
+                          //   'timestamp': DateTime.now().toUtc().toIso8601String(),
+                          // }));
                         }
                       },
                       onTapMentionTag: (mentionedList) async {

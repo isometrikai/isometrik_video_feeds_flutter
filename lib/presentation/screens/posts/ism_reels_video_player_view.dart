@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -115,7 +116,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   // Video state management
   bool _isVideoInitializing = false;
-  bool _isVideoSetupComplete = false;
 
   // Device performance management
   bool _isLowEndDevice = false;
@@ -127,19 +127,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   // Track navigation state to prevent background initialization
   bool _hasNavigatedAway = false;
-
-  /// Get the route observer instance for the consuming app to add to MaterialApp
-  ///
-  /// To enable automatic video pausing when navigating away from reel screens,
-  /// add this route observer to your MaterialApp:
-  ///
-  /// ```dart
-  /// MaterialApp(
-  ///   navigatorObservers: [IsmReelsVideoPlayerView.routeObserver],
-  ///   // ... other properties
-  /// )
-  /// ```
-  static RouteObserver<PageRoute<dynamic>> get routeObserver => _routeObserver;
 
   @override
   void initState() {
@@ -419,7 +406,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
 
     _isVideoInitializing = true;
-    _isVideoSetupComplete = false;
 
     final videoUrl = _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl;
     debugPrint('IsmReelsVideoPlayerView....initializeVideoPlayer video url $videoUrl');
@@ -437,7 +423,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           debugPrint('🎬 Cached controller ${isSameController ? "already set up" : "needs setup"}');
 
           await _setupVideoController();
-          _isVideoSetupComplete = true;
           return;
         } else {
           // If controller exists but not initialized, dispose and recreate
@@ -471,7 +456,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               return;
             }
             await _setupVideoController();
-            _isVideoSetupComplete = true;
             return;
           }
         }
@@ -490,7 +474,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       // Only setup if we have a valid controller
       if (_videoPlayerController != null) {
         await _setupVideoController();
-        _isVideoSetupComplete = true;
       }
     } catch (e) {
       debugPrint(
@@ -2309,8 +2292,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   Widget _buildPageView(int index) {
     final media = _reelData.mediaMetaDataList[index];
-    debugPrint('index $index');
-    debugPrint('mediaUrl ${media.mediaUrl}');
     if (media.mediaType == kPictureType) {
       return SizedBox(
         key: ValueKey('media_$index'), // Consistent key
@@ -2562,42 +2543,39 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   /// Log watch event only once per video when user leaves or video completes
   void _logWatchEventIfNeeded() {
+    final eventMap = <String, dynamic>{
+      'post_id': widget.reelsData?.postId,
+      'view_source': 'feed',
+    };
+
     // Only log if:
     // 1. Not already logged for this video
     // 2. User watched for at least 1 second
-    // 3. Video controller is initialized (to get duration)
-    if (_hasLoggedWatchEvent ||
-        _maxWatchPosition.inSeconds < 1 ||
-        _videoPlayerController == null ||
-        !_videoPlayerController!.isInitialized) {
-      return;
+    if (_hasLoggedWatchEvent == false &&
+        _videoPlayerController != null &&
+        _videoPlayerController!.isInitialized) {
+      try {
+        final duration = _videoPlayerController!.duration;
+        final watchedSeconds = _maxWatchPosition.inSeconds;
+        final totalSeconds = duration.inSeconds;
+
+        // Calculate completion rate as percentage
+        final completionRate = totalSeconds > 0 ? ((watchedSeconds / totalSeconds) * 100) : 0;
+
+        eventMap.addAll({
+          'view_completion_rate': completionRate,
+          'view_duration': watchedSeconds,
+          // 'total_duration': totalSeconds,
+          'view_source': 'feed',
+        });
+
+        // Mark as logged to prevent duplicate logging
+        _hasLoggedWatchEvent = true;
+      } catch (e) {
+        debugPrint('❌ Error logging watch event: $e');
+      }
     }
-
-    try {
-      final duration = _videoPlayerController!.duration;
-      final watchedSeconds = _maxWatchPosition.inSeconds;
-      final totalSeconds = duration.inSeconds;
-
-      // Calculate completion rate as percentage
-      final completionRate = totalSeconds > 0 ? ((watchedSeconds / totalSeconds) * 100) : 0;
-
-      debugPrint('📊 Logging watch event - Post: ${widget.reelsData?.postId}, '
-          'Watched: ${watchedSeconds}s / ${totalSeconds}s, Completion: $completionRate%');
-
-      EventQueueProvider.instance.addEvent({
-        'type': EventType.watch.value,
-        'post_id': widget.reelsData?.postId,
-        'view_completion_rate': completionRate,
-        'view_duration': watchedSeconds,
-        'total_duration': totalSeconds,
-        'view_source': 'feed',
-        'timestamp': DateTime.now().toUtc().toIso8601String(),
-      });
-
-      // Mark as logged to prevent duplicate logging
-      _hasLoggedWatchEvent = true;
-    } catch (e) {
-      debugPrint('❌ Error logging watch event: $e');
-    }
+    debugPrint('Logging watch event - Post: ${jsonEncode(eventMap)}');
+    EventQueueProvider.instance.addEvent(eventMap);
   }
 }
