@@ -570,7 +570,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       _videoPlayerController!.removeListener(_handlePlaybackProgress);
 
       // Set up basic properties with performance optimizations FIRST
-      await _videoPlayerController!.setLooping(false);
+      await _videoPlayerController!.setLooping(true);
 
       // CRITICAL: Set volume BEFORE any seek or play operations to prevent audio flickering
       // Apply global mute state to new videos
@@ -591,10 +591,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       _hasCompletedOneCycle = false;
 
       // Add listener after setup
-      _videoPlayerController!.addListener(_handlePlaybackProgress);
+      // _videoPlayerController!.addListener(_handlePlaybackProgress);
 
       // Start fallback completion detection timer
-      _startCompletionFallbackTimer();
+      // _startCompletionFallbackTimer();
 
       // Start playback only if not already playing and controller is ready
       if (!_videoPlayerController!.isPlaying && _videoPlayerController!.isInitialized) {
