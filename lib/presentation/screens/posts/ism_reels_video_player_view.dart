@@ -1544,6 +1544,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                             stops: const [0.0, 0.3, 0.7, 1.0],
                           ),
                         ),
+                        padding: _reelData.overlayPadding,
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           mainAxisSize: MainAxisSize.max,

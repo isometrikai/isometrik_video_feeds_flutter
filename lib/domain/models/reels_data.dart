@@ -26,6 +26,7 @@ class ReelsData {
     this.onTapShare,
     this.onTapUserProfile,
     this.footerWidget,
+    this.overlayPadding,
     this.actionWidget,
     this.description,
     this.onTapReport,
@@ -63,6 +64,7 @@ class ReelsData {
   final List<String>? hasTags;
   final ReelsWidgetBuilder? footerWidget;
   final ReelsWidgetBuilder? actionWidget;
+  final EdgeInsetsGeometry? overlayPadding;
 
   final Future<bool> Function(bool isSavedPost)? onPressSave;
   final Future<bool> Function(bool)? onPressLike;
