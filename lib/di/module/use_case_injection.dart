@@ -9,8 +9,54 @@ class UseCaseInjection {
   static void inject() {
     // Register use cases with their respective repositories
 
-    IsmInjectionUtils.registerUseCase<IsmLocalDataUseCase>(() =>
-        IsmLocalDataUseCase(
-            IsmInjectionUtils.getRepo<IsrLocalStorageRepository>()));
+    IsmInjectionUtils.registerUseCase<IsmLocalDataUseCase>(
+        () => IsmLocalDataUseCase(IsmInjectionUtils.getRepo<IsrLocalStorageRepository>()));
+
+    /// Social Repository UseCase
+    IsmInjectionUtils.registerUseCase<CreatePostUseCase>(
+        () => CreatePostUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<GetFollowingPostUseCase>(
+        () => GetFollowingPostUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<GetTrendingPostUseCase>(
+        () => GetTrendingPostUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<GetForYouPostUseCase>(
+        () => GetForYouPostUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<FollowPostUseCase>(
+        () => FollowPostUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<SavePostUseCase>(
+        () => SavePostUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<LikePostUseCase>(
+        () => LikePostUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<ReportPostUseCase>(
+        () => ReportPostUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<GetReportReasonsUseCase>(
+        () => GetReportReasonsUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<GetTimelinePostUseCase>(
+        () => GetTimelinePostUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+
+    IsmInjectionUtils.registerUseCase<GetPostDetailsUseCase>(
+        () => GetPostDetailsUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<GoogleCloudStorageUploaderUseCase>(
+        () => GoogleCloudStorageUploaderUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<CommentActionUseCase>(
+        () => CommentActionUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<GetPostCommentUseCase>(
+        () => GetPostCommentUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<MediaProcessingUseCase>(
+        () => MediaProcessingUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<SearchUserUseCase>(
+        () => SearchUserUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<SearchTagUseCase>(
+        () => SearchTagUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+
+    // Google Repository use cases
+    IsmInjectionUtils.registerUseCase<GetAddressFromPinCodeUseCase>(
+        () => GetAddressFromPinCodeUseCase(IsmInjectionUtils.getRepo<GoogleRepository>()));
+    IsmInjectionUtils.registerUseCase<GetAddressFromLatLongUseCase>(
+        () => GetAddressFromLatLongUseCase(IsmInjectionUtils.getRepo<GoogleRepository>()));
+    IsmInjectionUtils.registerUseCase<GeocodeSearchAddressUseCase>(
+        () => GeocodeSearchAddressUseCase(IsmInjectionUtils.getRepo<GoogleRepository>()));
+    IsmInjectionUtils.registerUseCase<GetPlaceDetailsUseCase>(
+        () => GetPlaceDetailsUseCase(IsmInjectionUtils.getRepo<GoogleRepository>()));
   }
 }

@@ -1,4 +1,4 @@
-import 'package:ism_video_reel_player/domain/base_repository.dart';
+import 'package:ism_video_reel_player/domain/repository/base_repository.dart';
 
 abstract class IsrLocalStorageRepository extends BaseRepository {
   Future<String> getUserId();

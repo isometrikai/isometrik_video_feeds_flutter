@@ -8,7 +8,7 @@ import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
-import 'package:ism_video_reel_player/utils/isr_utils.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 
 class IsrVideoReelConfig {
   static BuildContext? buildContext;
@@ -38,14 +38,14 @@ class IsrVideoReelConfig {
   static Future<void> _saveUserInformation({
     PostInfoClass? postInfo,
   }) async {
-    final localStorageManager = IsmInjectionUtils.getOtherClass<IsrLocalStorageManager>();
+    final localStorageManager = IsmInjectionUtils.getOtherClass<LocalStorageManager>();
     final userInfoString = postInfo?.userInformation.toString();
     await localStorageManager.saveValueSecurely(
-        IsrLocalStorageKeys.accessToken, postInfo?.accessToken ?? '');
+        LocalStorageKeys.accessToken, postInfo?.accessToken ?? '');
     await localStorageManager.saveValue(
-        IsrLocalStorageKeys.userInfo, userInfoString, SavedValueDataType.string);
+        LocalStorageKeys.userInfo, userInfoString, SavedValueDataType.string);
     await localStorageManager.saveValue(
-        IsrLocalStorageKeys.userId, postInfo?.userInformation?.userId, SavedValueDataType.string);
+        LocalStorageKeys.userId, postInfo?.userInformation?.userId, SavedValueDataType.string);
   }
 
   static void precacheVideos(List<String> mediaUrls) async {

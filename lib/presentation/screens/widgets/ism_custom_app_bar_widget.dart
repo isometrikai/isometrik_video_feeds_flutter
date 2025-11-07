@@ -3,10 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
-import 'package:ism_video_reel_player/utils/isr_utils.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 
-class IsmCustomAppBarWidget extends StatelessWidget
-    implements PreferredSizeWidget {
+class IsmCustomAppBarWidget extends StatelessWidget implements PreferredSizeWidget {
   const IsmCustomAppBarWidget({
     super.key,
     this.statusBarColor = IsrColors.appBarColor,
@@ -69,8 +68,7 @@ class IsmCustomAppBarWidget extends StatelessWidget
   final bool? showTitleWidget;
 
   @override
-  Size get preferredSize =>
-      Size(IsrDimens.percentWidth(1), height ?? IsrDimens.appBarHeight);
+  Size get preferredSize => Size(IsrDimens.percentWidth(1), height ?? IsrDimens.appBarHeight);
 
   @override
   Widget build(BuildContext context) => AppBar(
@@ -86,8 +84,7 @@ class IsmCustomAppBarWidget extends StatelessWidget
           systemNavigationBarColor: navigationBarColor,
           systemNavigationBarIconBrightness: navigationBarIconBrightness,
         ),
-        leadingWidth:
-            isBackButtonVisible == false ? IsrDimens.twenty : leadingWidth,
+        leadingWidth: isBackButtonVisible == false ? IsrDimens.twenty : leadingWidth,
         titleSpacing: titleSpacing ?? IsrDimens.zero,
         toolbarHeight: height,
         leading: isBackButtonVisible
@@ -108,8 +105,7 @@ class IsmCustomAppBarWidget extends StatelessWidget
             : IsrDimens.boxHeight(IsrDimens.zero),
         automaticallyImplyLeading: false,
         centerTitle: centerTitle,
-        titleTextStyle:
-            titleStyle ?? Theme.of(context).appBarTheme.titleTextStyle,
+        titleTextStyle: titleStyle ?? Theme.of(context).appBarTheme.titleTextStyle,
         toolbarTextStyle: Theme.of(context).appBarTheme.toolbarTextStyle,
         title: titleText == null
             ? showTitleWidget ?? false
@@ -127,8 +123,7 @@ class IsmCustomAppBarWidget extends StatelessWidget
             : Text(
                 titleText!,
               ),
-        actions:
-            showActions == false || actions.isListEmptyOrNull ? null : actions,
+        actions: showActions == false || actions.isListEmptyOrNull ? null : actions,
         bottom: showDivider == true
             ? PreferredSize(
                 preferredSize: Size(

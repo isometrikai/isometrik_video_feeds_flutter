@@ -63,3 +63,43 @@ enum ButtonSize {
 
 /// Enum to specify media type
 enum MediaType { image, video, unknown }
+
+enum PostType {
+  video,
+  photo,
+}
+
+enum FollowAction {
+  follow,
+  unfollow,
+}
+
+enum SocialPostAction {
+  like,
+  unlike,
+  comment,
+  share,
+  report,
+  delete,
+  save,
+  unSave,
+}
+
+enum LikeAction {
+  like,
+  unlike,
+}
+
+enum CommentAction {
+  like,
+  dislike,
+  report,
+  delete,
+  comment,
+  edit,
+}
+
+enum ReasonsFor {
+  socialPost,
+  comment,
+}

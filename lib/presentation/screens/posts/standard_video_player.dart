@@ -5,7 +5,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/media_cache_interface.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/video_player_interface.dart';
-import 'package:ism_video_reel_player/utils/isr_utils.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:video_player/video_player.dart';
 
 /// Wrapper for VideoPlayerController implementing IVideoPlayerController
@@ -137,7 +137,7 @@ class StandardVideoCacheManager implements IVideoCacheManager {
   static const int _maxCacheSize = 10;
 
   VideoPlayerController _createVideoPlayerController(String mediaUrl) {
-    if (IsrVideoReelUtility.isLocalUrl(mediaUrl)) {
+    if (Utility.isLocalUrl(mediaUrl)) {
       return VideoPlayerController.file(
         File(mediaUrl),
         videoPlayerOptions: VideoPlayerOptions(

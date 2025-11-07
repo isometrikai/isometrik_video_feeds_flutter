@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:ism_video_reel_player/utils/isr_utils.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 
 class IsrAppBlocObserver extends BlocObserver {
   final tag = 'IsrAppBlocObserver';
@@ -23,14 +23,12 @@ class IsrAppBlocObserver extends BlocObserver {
 
   @override
   void onChange(BlocBase<dynamic> bloc, Change<dynamic> change) {
-    AppLog(
-        '$tag: Change ${bloc.runtimeType} - ${change.currentState} -> ${change.nextState}');
+    AppLog('$tag: Change ${bloc.runtimeType} - ${change.currentState} -> ${change.nextState}');
     super.onChange(bloc, change);
   }
 
   @override
-  void onTransition(
-      Bloc<dynamic, dynamic> bloc, Transition<dynamic, dynamic> transition) {
+  void onTransition(Bloc<dynamic, dynamic> bloc, Transition<dynamic, dynamic> transition) {
     AppLog.info(
         '$tag: Transition ${bloc.runtimeType} - ${transition.currentState.runtimeType} : ${transition.event.runtimeType} -> ${transition.nextState.runtimeType}');
     super.onTransition(bloc, transition);

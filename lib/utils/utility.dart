@@ -15,12 +15,12 @@ import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
-import 'package:ism_video_reel_player/utils/isr_utils.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class IsrVideoReelUtility {
-  IsrVideoReelUtility._();
+class Utility {
+  Utility._();
 
   static bool isLoading = false;
   static final Connectivity _connectivity = Connectivity();
@@ -252,7 +252,7 @@ class IsrVideoReelUtility {
     if (value == null || value.isEmpty) {
       return IsrTranslationFile.required;
     }
-    final regex = RegExp(IsmAppConstants.passwordPattern);
+    final regex = RegExp(AppConstants.passwordPattern);
     return regex.hasMatch(value) == true ? null : IsrTranslationFile.passwordValidationString;
   }
 
@@ -261,13 +261,13 @@ class IsrVideoReelUtility {
     if (value == null || value.isEmpty) {
       return IsrTranslationFile.required;
     }
-    final regex = RegExp(IsmAppConstants.emailPattern);
+    final regex = RegExp(AppConstants.emailPattern);
     return regex.hasMatch(value) == true ? null : IsrTranslationFile.invalidEmail;
   }
 
   /// email validator to verify email is valid or not
   static bool isValidEmail(String? value) {
-    final regex = RegExp(IsmAppConstants.emailPattern);
+    final regex = RegExp(AppConstants.emailPattern);
     return regex.hasMatch(value!) == true;
   }
 
@@ -520,7 +520,7 @@ class IsrVideoReelUtility {
                 alignment: Alignment.topRight,
                 child: TapHandler(
                   padding: IsrDimens.four,
-                  onTap: IsrVideoReelUtility.closeOpenDialog,
+                  onTap: Utility.closeOpenDialog,
                   child: AppImage.svg(
                     AssetConstants.icCrossIcon,
                     height: IsrDimens.twelve,

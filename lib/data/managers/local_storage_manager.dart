@@ -1,12 +1,12 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:ism_video_reel_player/data/data.dart';
-import 'package:ism_video_reel_player/utils/isr_utils.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 
-class IsrLocalStorageManager {
-  IsrLocalStorageManager(this._sharedPreferencesManager) {
+class LocalStorageManager {
+  LocalStorageManager(this._sharedPreferencesManager) {
     _onInit();
   }
-  final IsrSharedPreferencesManager _sharedPreferencesManager;
+  final SharedPreferencesManager _sharedPreferencesManager;
 
   void _onInit() {
     _sharedPreferencesManager.init();
@@ -43,16 +43,15 @@ class IsrLocalStorageManager {
 
   //clear data
   Future<void> clearData() async {
-    final userId = await getSecuredValue(IsrLocalStorageKeys.userId);
+    final userId = await getSecuredValue(LocalStorageKeys.userId);
     // Retrieve the value you want to keep
-    final preservedValue = _sharedPreferencesManager.getValue(
-        userId, SavedValueDataType.string) as String;
+    final preservedValue =
+        _sharedPreferencesManager.getValue(userId, SavedValueDataType.string) as String;
     await _sharedPreferencesManager.clearData();
     await saveValue(userId, preservedValue, SavedValueDataType.string);
   }
 
-  Future<void> saveValue(
-      String key, dynamic value, SavedValueDataType saveValueDataType) async {
+  Future<void> saveValue(String key, dynamic value, SavedValueDataType saveValueDataType) async {
     await _sharedPreferencesManager.saveValue(key, value, saveValueDataType);
   }
 
@@ -65,8 +64,7 @@ class IsrLocalStorageManager {
 
   /// store the data
   void saveBooleanValue(String key, bool value) async {
-    await _sharedPreferencesManager.saveValue(
-        key, value, SavedValueDataType.bool);
+    await _sharedPreferencesManager.saveValue(key, value, SavedValueDataType.bool);
   }
 
   /// Method For Delete & Override from Secure Storage
@@ -75,7 +73,7 @@ class IsrLocalStorageManager {
       await _flutterSecureStorage.delete(key: key);
       await _flutterSecureStorage.write(key: key, value: value);
     } catch (e, st) {
-      IsrVideoReelUtility.debugCatchLog(error: e, stackTrace: st);
+      Utility.debugCatchLog(error: e, stackTrace: st);
     }
   }
 }

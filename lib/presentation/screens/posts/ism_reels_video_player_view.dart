@@ -7,7 +7,7 @@ import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
-import 'package:ism_video_reel_player/utils/isr_utils.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:lottie/lottie.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -433,7 +433,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     } catch (e) {
       debugPrint(
           'IsmReelsVideoPlayerView...catch video url ${_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl}');
-      IsrVideoReelUtility.debugCatchLog(error: e);
+      Utility.debugCatchLog(error: e);
     } finally {
       _isVideoInitializing = false;
     }
@@ -624,8 +624,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     FilterQuality filterQuality = FilterQuality.high,
     bool showError = false,
   }) {
-    final isLocalUrl =
-        imageUrl.isStringEmptyOrNull == false && IsrVideoReelUtility.isLocalUrl(imageUrl);
+    final isLocalUrl = imageUrl.isStringEmptyOrNull == false && Utility.isLocalUrl(imageUrl);
     return isLocalUrl
         ? AppImage.file(
             imageUrl,

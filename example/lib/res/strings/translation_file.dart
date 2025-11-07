@@ -42,7 +42,7 @@ class TranslationFile {
 
   static const uploadPhotoOrVideo = 'Upload a photo or a video';
   static const uploadPhotoOrVideoToInspire =
-      'Upload a photo or a video to inspire and connect with our ${IsmAppConstants.appName} community.';
+      'Upload a photo or a video to inspire and connect with our ${AppConstants.appName} community.';
   static const description = 'Description';
   static const writeDescription = 'Write a description';
   static const cover = 'Cover';

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:ism_video_reel_player/res/res.dart';
-import 'package:ism_video_reel_player/utils/isr_utils.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 
 ThemeData isrTheme = ThemeData(
   pageTransitionsTheme: const PageTransitionsTheme(
@@ -16,7 +16,7 @@ ThemeData isrTheme = ThemeData(
   primaryColor: IsrColors.appColor,
   iconTheme: const IconThemeData(color: IsrColors.white),
   scaffoldBackgroundColor: IsrColors.scaffoldColor,
-  fontFamily: IsmAppConstants.primaryFontFamily,
+  fontFamily: AppConstants.primaryFontFamily,
   splashColor: IsrColors.appColor.changeOpacity(0.5),
   textTheme: TextTheme(
     displayLarge: IsrStyles.secondaryText18.copyWith(fontWeight: FontWeight.w600),
@@ -28,12 +28,12 @@ ThemeData isrTheme = ThemeData(
     titleLarge: IsrStyles.secondaryText16.copyWith(fontWeight: FontWeight.w600),
     titleMedium: IsrStyles.secondaryText14.copyWith(fontWeight: FontWeight.w600),
     titleSmall: IsrStyles.secondaryText12.copyWith(fontWeight: FontWeight.w600),
-    bodyLarge: IsrStyles.secondaryText16.copyWith(fontFamily: IsmAppConstants.primaryFontFamily),
-    bodyMedium: IsrStyles.secondaryText14.copyWith(fontFamily: IsmAppConstants.primaryFontFamily),
-    bodySmall: IsrStyles.secondaryText12.copyWith(fontFamily: IsmAppConstants.primaryFontFamily),
-    labelLarge: IsrStyles.secondaryText12.copyWith(fontFamily: IsmAppConstants.primaryFontFamily),
-    labelMedium: IsrStyles.secondaryText10.copyWith(fontFamily: IsmAppConstants.primaryFontFamily),
-    labelSmall: IsrStyles.secondaryText8.copyWith(fontFamily: IsmAppConstants.primaryFontFamily),
+    bodyLarge: IsrStyles.secondaryText16.copyWith(fontFamily: AppConstants.primaryFontFamily),
+    bodyMedium: IsrStyles.secondaryText14.copyWith(fontFamily: AppConstants.primaryFontFamily),
+    bodySmall: IsrStyles.secondaryText12.copyWith(fontFamily: AppConstants.primaryFontFamily),
+    labelLarge: IsrStyles.secondaryText12.copyWith(fontFamily: AppConstants.primaryFontFamily),
+    labelMedium: IsrStyles.secondaryText10.copyWith(fontFamily: AppConstants.primaryFontFamily),
+    labelSmall: IsrStyles.secondaryText8.copyWith(fontFamily: AppConstants.primaryFontFamily),
   ),
   datePickerTheme: DatePickerThemeData(
     backgroundColor: IsrColors.appColor,

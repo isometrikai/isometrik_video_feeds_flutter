@@ -1,5 +1,5 @@
-class IsrLocalStorageKeys {
-  IsrLocalStorageKeys._();
+class LocalStorageKeys {
+  LocalStorageKeys._();
 
   static const String language = 'language';
   static const String accessToken = 'accessToken';

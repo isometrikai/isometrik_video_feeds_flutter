@@ -168,29 +168,6 @@ class MentionPosition {
       };
 }
 
-class MediaPosition {
-  MediaPosition({
-    required this.position,
-    required this.x,
-    required this.y,
-  });
-
-  factory MediaPosition.fromJson(Map<String, dynamic> json) => MediaPosition(
-        position: json['position'] as num? ?? 0,
-        x: json['x'] as num? ?? 0,
-        y: json['y'] as num? ?? 0,
-      );
-  num? position;
-  num? x;
-  num? y;
-
-  Map<String, dynamic> toJson() => {
-        'position': position,
-        'x': x,
-        'y': y,
-      };
-}
-
 class PostSetting {
   PostSetting({
     this.isProfilePicVisible = false,

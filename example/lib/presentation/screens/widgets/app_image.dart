@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
-import 'package:ism_video_reel_player/utils/isr_utils.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 
 class AppImage extends StatelessWidget {
   const AppImage.asset(
@@ -213,8 +213,8 @@ class _Network extends StatelessWidget {
     final initials = words.map((word) => word.isNotEmpty ? word[0] : '').join('');
     final isOptimizationEnable =
         !imageUrl.contains('https://cdn.trulyfreehome.dev/trulyfree-staging');
-    final optimizedImageUrl = IsmAppConstants.isGumletEnable && isOptimizationEnable
-        ? IsrVideoReelUtility.buildGumletImageUrl(imageUrl: imageUrl, width: width, height: height)
+    final optimizedImageUrl = AppConstants.isGumletEnable && isOptimizationEnable
+        ? Utility.buildGumletImageUrl(imageUrl: imageUrl, width: width, height: height)
         : imageUrl;
     return CachedNetworkImage(
       width: width,

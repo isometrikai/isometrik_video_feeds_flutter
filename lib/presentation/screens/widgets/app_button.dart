@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/res/res.dart';
-import 'package:ism_video_reel_player/utils/isr_utils.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 
 class AppButton extends StatelessWidget {
   const AppButton({
@@ -131,7 +131,7 @@ class AppButton extends StatelessWidget {
     final baseStyle = TextStyle(
       fontSize: fontSize,
       fontWeight: FontWeight.w500,
-      fontFamily: IsmAppConstants.primaryFontFamily,
+      fontFamily: AppConstants.primaryFontFamily,
     );
 
     if (textColor != null) return baseStyle.copyWith(color: textColor);

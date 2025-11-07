@@ -862,7 +862,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   )
                 : AppImage.svg(icon),
           ),
-          if (label.isStringEmptyOrNull == false) ...[
+          if (label.isEmptyOrNull == false) ...[
             Dimens.boxHeight(Dimens.four),
             Text(
               label ?? '',
@@ -917,7 +917,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<isr.ReelsData?> _handleCreatePost() async {
     final completer = Completer<isr.ReelsData>();
     final postDataModelString = await InjectionUtils.getRouteManagement().goToCreatePostView();
-    if (postDataModelString.isStringEmptyOrNull == false) {
+    if (postDataModelString.isEmptyOrNull == false) {
       final postDataModel =
           TimeLineData.fromMap(jsonDecode(postDataModelString!) as Map<String, dynamic>);
       final reelsData = _getReelData(postDataModel);

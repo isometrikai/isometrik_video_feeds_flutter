@@ -4,11 +4,11 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 
-part 'post_event.dart';
-part 'post_state.dart';
+part 'social_post_event.dart';
+part 'social_post_state.dart';
 
-class PostBloc extends Bloc<PostEvent, PostState> {
-  PostBloc(
+class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
+  SocialPostBloc(
     this._localDataUseCase,
   ) : super(PostInitial(isLoading: false)) {
     on<StartPost>(_onStartPost);
@@ -20,10 +20,9 @@ class PostBloc extends Bloc<PostEvent, PostState> {
   var reelsPageTrendingController = PageController();
   TextEditingController? descriptionController;
 
-  void _onStartPost(StartPost event, Emitter<PostState> emit) async {
+  void _onStartPost(StartPost event, Emitter<SocialPostState> emit) async {
     final userInfoString = await _localDataUseCase.getUserInfo();
-    _userInfoClass = UserInfoClass.fromJson(
-        jsonDecode(userInfoString) as Map<String, dynamic>);
+    _userInfoClass = UserInfoClass.fromJson(jsonDecode(userInfoString) as Map<String, dynamic>);
     final userId = await _localDataUseCase.getUserId();
     emit(UserInformationLoaded(
       userInfoClass: _userInfoClass,

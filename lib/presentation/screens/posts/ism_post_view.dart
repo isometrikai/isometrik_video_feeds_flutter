@@ -6,17 +6,18 @@ import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
-import 'package:ism_video_reel_player/utils/isr_utils.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 class IsmPostView extends StatefulWidget {
-  const IsmPostView(
-      {super.key,
-      required this.tabDataModelList,
-      this.currentIndex = 0,
-      this.allowImplicitScrolling = false,
-      this.onPageChanged,
-      this.onTabChanged});
+  const IsmPostView({
+    super.key,
+    required this.tabDataModelList,
+    this.currentIndex = 0,
+    this.allowImplicitScrolling = false,
+    this.onPageChanged,
+    this.onTabChanged,
+  });
 
   final List<TabDataModel> tabDataModelList;
   final num? currentIndex;
@@ -50,7 +51,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       _currentIndex = 0;
     }
     if (!IsrVideoReelConfig.isSdkInitialize) {
-      IsrVideoReelUtility.showToastMessage('sdk not initialized');
+      Utility.showToastMessage('sdk not initialized');
       return;
     }
     // Initialize TabController with initialIndex = _currentIndex
@@ -61,10 +62,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     );
 
     _refreshControllers = List.generate(_tabDataModelList.length, (index) => RefreshController());
-    var postBloc = IsmInjectionUtils.getBloc<PostBloc>();
+    var postBloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
     if (postBloc.isClosed) {
       isrConfigureInjection();
-      postBloc = IsmInjectionUtils.getBloc<PostBloc>();
+      postBloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
     }
 
     _tabsVisibilityNotifier.value = _tabDataModelList.length > 1;
@@ -100,9 +101,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           statusBarBrightness: Brightness.dark,
           statusBarIconBrightness: Brightness.light,
         ),
-        child: BlocProvider<PostBloc>(
-          create: (context) => IsmInjectionUtils.getBloc<PostBloc>(),
-          child: BlocConsumer<PostBloc, PostState>(
+        child: BlocProvider<SocialPostBloc>(
+          create: (context) => IsmInjectionUtils.getBloc<SocialPostBloc>(),
+          child: BlocConsumer<SocialPostBloc, SocialPostState>(
             listener: (context, state) {
               if (state is UserInformationLoaded) {
                 // IsmInjectionUtils.getBloc<PostBloc>().add(PostsLoadedEvent(
@@ -124,7 +125,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
               _loggedInUserId = newUserId;
               return state is PostInitial
                   ? state.isLoading == true
-                      ? Center(child: IsrVideoReelUtility.loaderWidget())
+                      ? Center(child: Utility.loaderWidget())
                       : const SizedBox.shrink()
                   : DefaultTabController(
                       length: _tabDataModelList.isListEmptyOrNull ? 0 : _tabDataModelList.length,

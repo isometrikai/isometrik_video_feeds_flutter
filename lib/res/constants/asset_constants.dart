@@ -20,6 +20,7 @@ class AssetConstants {
   static const String icLikeUnSelected = '${packageName}assets/icons/ic_like_un_selected_icon.png';
   static const String icCommentIcon = '${packageName}assets/icons/ic_comment_icon.png';
   static const String icMoreIcon = '${packageName}assets/icons/ic_more_icon.png';
+  static const String googleServiceJson = 'assets/json/google_service_json.json';
   static const String icShareIcon = '${packageName}assets/icons/ic_share_icon.png';
   static const String icSaveSelected = '${packageName}assets/icons/ic_save_selected_icon.png';
   static const String icSaveUnSelected = '${packageName}assets/icons/ic_save_un_selected_icon.png';

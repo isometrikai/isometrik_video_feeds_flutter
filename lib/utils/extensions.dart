@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
-import 'package:ism_video_reel_player/utils/isr_utils.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 
 extension ContextExtension on BuildContext {
   ThemeData get theme => Theme.of(this);
@@ -151,5 +151,14 @@ extension MediaTypeValue on MediaType {
         MediaType.image => 0,
         MediaType.video => 1,
         MediaType.unknown => 0,
+      };
+}
+
+extension PlatformExtension on num {
+  String get platformText => switch (this) {
+        1 => 'android',
+        2 => 'ios',
+        int() => 'android',
+        double() => 'android',
       };
 }
