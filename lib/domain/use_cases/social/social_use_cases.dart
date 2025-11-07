@@ -1,11 +1,12 @@
 export 'comment_action_use_case.dart';
 export 'create_post_use_case.dart';
-export 'follow_post_use_case.dart';
+export 'follow_un_follow_user_use_case.dart';
 export 'get_following_post_use_case.dart';
 export 'get_for_you_post_use_case.dart';
 export 'get_post_comment_use_case.dart';
 export 'get_post_details_use_case.dart';
 export 'get_report_reasons_use_case.dart';
+export 'get_tagged_post_use_case.dart';
 export 'get_timeline_post_use_case.dart';
 export 'get_trending_post_use_case.dart';
 export 'google_cloud_storage_uploader_use_case.dart';

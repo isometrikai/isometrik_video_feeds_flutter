@@ -32,13 +32,31 @@ class GoogleRepositoryImpl extends GoogleRepository {
   Future<CustomResponse<GoogleAddressResponse?>> getAddressFromPinCode({
     required bool isLoading,
     required String pinCode,
+    required List<String>? countries,
   }) async {
     try {
       final response = await _apiService.getAddressFromPinCode(
         isLoading: isLoading,
         pinCode: pinCode,
+        countries: countries,
       );
       return _googleMapper.mapAddressFromPinCode(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<CustomResponse<GoogleAddressResponse?>> getAddressFromSearch({
+    required bool isLoading,
+    required String searchText,
+  }) async {
+    try {
+      final response = await _apiService.getAddressFromSearch(
+        isLoading: isLoading,
+        searchText: searchText,
+      );
+      return _googleMapper.mapGeocodeResponse(response);
     } catch (e) {
       rethrow;
     }

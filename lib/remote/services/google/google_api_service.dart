@@ -5,6 +5,12 @@ abstract class GoogleApiService extends BaseService {
   Future<ResponseModel> getAddressFromPinCode({
     required bool isLoading,
     required String pinCode,
+    required List<String>? countries,
+  });
+
+  Future<ResponseModel> getAddressFromSearch({
+    required bool isLoading,
+    required String searchText,
   });
 
   Future<ResponseModel> getAddressFromLatLng({

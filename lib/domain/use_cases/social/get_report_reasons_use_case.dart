@@ -6,7 +6,7 @@ class GetReportReasonsUseCase extends BaseUseCase {
 
   final SocialRepository _repository;
 
-  Future<ApiResult<List<String>?>> executeGetReportReasons({
+  Future<ApiResult<List<ReportReason>?>> executeGetReportReasons({
     required bool isLoading,
   }) async =>
       await super.execute(() async {

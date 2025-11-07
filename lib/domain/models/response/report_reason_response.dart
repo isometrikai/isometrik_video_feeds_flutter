@@ -19,15 +19,47 @@ class ReportReasonResponse {
   factory ReportReasonResponse.fromJson(Map<String, dynamic> json) =>
       ReportReasonResponse(
         message: json['message'] as String? ?? '',
-        data: json['data'] == null
-            ? []
-            : List<String>.from((json['data'] as List).map((x) => x)),
+          data: json['data'] == null
+              ? []
+              : List<ReportReason>.from(
+            (json['data'] as List).map((x) => ReportReason.fromJson(x as Map<String, dynamic>)),
+          ),
       );
   String? message;
-  List<String>? data;
+  List<ReportReason>? data;
 
   Map<String, dynamic> toJson() => {
         'message': message,
-        'data': data == null ? [] : List<dynamic>.from(data!.map((x) => x)),
+        'data': data == null ? [] : data!.map((x) => x.toJson()).toList(),
+  };
+}
+
+class ReportReason {
+  ReportReason({
+    this.id,
+    this.name,
+    this.description,
+    this.createdAt,
+    this.type,
+  });
+
+  factory ReportReason.fromJson(Map<String, dynamic> json) => ReportReason(
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      description: json['description'] as String? ?? '',
+      createdAt: json['created_at'] as String? ?? '',
+      type: json['type'] as String);
+  String? id;
+  String? name;
+  String? description;
+  String? createdAt;
+  String? type;
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'description': description,
+        'created_at': createdAt,
+        'type': type,
       };
 }

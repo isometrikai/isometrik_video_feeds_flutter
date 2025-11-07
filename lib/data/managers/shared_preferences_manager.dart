@@ -45,19 +45,20 @@ class SharedPreferencesManager {
                   ? Utility.encodeChar(DefaultValues.defaultCurrencySymbol)
                   : key == LocalStorageKeys.currencyCode
                       ? DefaultValues.defaultCurrencyCode
-                      : key == LocalStorageKeys.latitude
-                          ? DefaultValues.defaultLatitude
-                          : key == LocalStorageKeys.longitude
-                              ? DefaultValues.defaultLongitude
-                              : key == LocalStorageKeys.userIP
-                                  ? DefaultValues.defaultIpAddress
-                                  : key == LocalStorageKeys.countryId
-                                      ? DefaultValues.defaultCountryId
-                                      : '');
+                      : key == LocalStorageKeys.ipAddress
+                          ? DefaultValues.defaultIpAddress
+                          : key == LocalStorageKeys.countryId
+                              ? DefaultValues.defaultCountryId
+                              : '');
     } else if (getValueDataType == SavedValueDataType.int) {
       return sharedPreferences?.getInt(key) ?? 0;
     } else if (getValueDataType == SavedValueDataType.double) {
-      return sharedPreferences?.getDouble(key) ?? 0;
+      return sharedPreferences?.getDouble(key) ??
+          (key == LocalStorageKeys.latitude
+              ? DefaultValues.defaultLatitude
+              : key == LocalStorageKeys.longitude
+                  ? DefaultValues.defaultLongitude
+                  : 0);
     } else if (getValueDataType == SavedValueDataType.stringList) {
       return sharedPreferences?.getStringList(key) ?? <String>[];
     }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 
 class ReelsData {
   ReelsData({
@@ -46,6 +47,7 @@ class ReelsData {
     this.onTapMentionTag,
     this.onTapPlace,
     this.placeDataList,
+    this.tags,
   });
 
   final String? postId;
@@ -94,6 +96,7 @@ class ReelsData {
   final List<PlaceMetaData>? placeDataList;
   final Future<List<MentionMetaData>?> Function(List<MentionMetaData>)? onTapMentionTag;
   final Function(List<PlaceMetaData>)? onTapPlace;
+  final Tags? tags;
 }
 
 class MediaMetaData {
@@ -243,4 +246,10 @@ class PlaceMetaData {
         'postal_code': postalCode,
         'state': state,
       };
+}
+
+enum PostSectionType {
+  forYou,
+  following,
+  trending,
 }

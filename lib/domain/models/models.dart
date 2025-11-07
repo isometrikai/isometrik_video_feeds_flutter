@@ -4,4 +4,5 @@ export 'reels_data.dart';
 export 'request/request.dart';
 export 'response/response.dart';
 export 'tab_data_model.dart';
+export 'unified_location_item.dart';
 export 'user_info_class.dart';

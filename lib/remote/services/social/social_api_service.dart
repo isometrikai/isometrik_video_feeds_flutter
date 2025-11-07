@@ -37,7 +37,7 @@ abstract class SocialApiService extends BaseService {
     required int pageLimit,
   });
 
-  Future<ResponseModel> followPost({
+  Future<ResponseModel> followUser({
     required bool isLoading,
     required String followingId,
     required Header header,
@@ -138,6 +138,15 @@ abstract class SocialApiService extends BaseService {
     required int page,
     required String searchText,
     required Header header,
+  });
+
+  Future<ResponseModel> getTaggedPosts({
+    required bool isLoading,
+    required Header header,
+    required String tagValue,
+    required TagType tagType,
+    required int page,
+    required int pageLimit,
   });
 
   Future<ResponseModel> getForYouPosts({

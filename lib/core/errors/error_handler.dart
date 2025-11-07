@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/core/core.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
-class IsmErrorHandler {
+class ErrorHandler {
   static AppError handleError(dynamic error, StackTrace stackTrace) {
     // Log the error (you can implement a more sophisticated logging mechanism)
     _logError(error, stackTrace);

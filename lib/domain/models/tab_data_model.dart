@@ -53,13 +53,15 @@ class TabDataModel {
     this.onLoadMore,
     this.onRefresh,
     this.startingPostIndex = 0,
-    this.postSectionType = PostSectionType.following,
+    required this.postSectionType,
+    this.onTapCartIcon,
   });
 
   final String title;
-  final List<ReelsData> reelsDataList;
+  List<ReelsData> reelsDataList;
   final Future<List<ReelsData>> Function()? onLoadMore;
+  final Function(List<String>, String, String)? onTapCartIcon;
   final Future<bool> Function()? onRefresh;
   final int? startingPostIndex;
-  final PostSectionType? postSectionType;
+  final PostSectionType postSectionType;
 }

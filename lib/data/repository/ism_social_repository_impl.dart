@@ -92,20 +92,20 @@ class SocialRepositoryImpl implements SocialRepository {
   }
 
   @override
-  Future<CustomResponse<ResponseClass?>> followPost({
+  Future<CustomResponse<FollowUnfollowResponseModel?>> followUser({
     required bool isLoading,
     required String followingId,
     required FollowAction followAction,
   }) async {
     try {
       final header = await _dataSource.getHeader();
-      final response = await _apiService.followPost(
+      final response = await _apiService.followUser(
         isLoading: isLoading,
         header: header,
         followingId: followingId,
         followAction: followAction,
       );
-      return _mapper.mapResponseData(response);
+      return _socialMapper.mapFollowUnfollowData(response);
     } catch (e) {
       rethrow;
     }
@@ -176,7 +176,7 @@ class SocialRepositoryImpl implements SocialRepository {
   }
 
   @override
-  Future<CustomResponse<List<String>?>> getReportReasons({
+  Future<CustomResponse<List<ReportReason>?>> getReportReasons({
     required bool isLoading,
     ReasonsFor? reasonFor,
   }) async {
@@ -403,6 +403,30 @@ class SocialRepositoryImpl implements SocialRepository {
         searchText: searchText,
       );
       return _socialMapper.mapSearchTagResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<CustomResponse<TimelineResponse?>> getTaggedPosts({
+    required bool isLoading,
+    required String tagValue,
+    required TagType tagType,
+    required int page,
+    required int pageLimit,
+  }) async {
+    try {
+      final header = await _dataSource.getHeader();
+      final response = await _apiService.getTaggedPosts(
+        isLoading: isLoading,
+        header: header,
+        page: page,
+        pageLimit: pageLimit,
+        tagValue: tagValue,
+        tagType: tagType,
+      );
+      return _socialMapper.mapTimelineResponse(response);
     } catch (e) {
       rethrow;
     }

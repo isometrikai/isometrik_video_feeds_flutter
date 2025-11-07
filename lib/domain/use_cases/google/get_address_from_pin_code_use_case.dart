@@ -9,11 +9,13 @@ class GetAddressFromPinCodeUseCase extends BaseUseCase {
   Future<ApiResult<GoogleAddressResponse?>> executeGetAddressFromPinCode({
     required bool isLoading,
     required String pinCode,
+    required List<String>? countries,
   }) async =>
       await super.execute(() async {
         final response = await _repository.getAddressFromPinCode(
           isLoading: isLoading,
           pinCode: pinCode,
+          countries: countries,
         );
         return ApiResult(data: response.responseCode == 200 ? response.data : null);
       });

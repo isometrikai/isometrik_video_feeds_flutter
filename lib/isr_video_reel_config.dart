@@ -18,6 +18,7 @@ class IsrVideoReelConfig {
     required String baseUrl,
     PostInfoClass? postInfo,
     OnBeforeFlushCallback? onBeforeFlushCallback,
+    required Map<String, dynamic> defaultHeaders,
   }) async {
     if (isSdkInitialize) {
       await _saveUserInformation(postInfo: postInfo);
@@ -27,6 +28,9 @@ class IsrVideoReelConfig {
     WidgetsFlutterBinding.ensureInitialized();
     await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     isrConfigureInjection();
+    // ✅ Initialize SDK router
+    IsrAppRouter.initializeRouter();
+    await _storeHeaderValues(defaultHeaders);
     await _initializeHive(
       onBeforeFlushCallback: onBeforeFlushCallback,
     );
@@ -62,5 +66,48 @@ class IsrVideoReelConfig {
 
     // Initialize EventQueueProvider with callback
     EventQueueProvider.initialize(onBeforeFlush: onBeforeFlushCallback);
+  }
+
+  static Future<void> _storeHeaderValues(Map<String, dynamic> defaultHeaders) async {
+    final localStorageManager = IsmInjectionUtils.getOtherClass<LocalStorageManager>();
+    final accessToken = defaultHeaders['Authorization'] as String? ?? '';
+    final language = defaultHeaders['lan'] as String? ?? '';
+    final city = defaultHeaders['city'] as String? ?? '';
+    final state = defaultHeaders['state'] as String? ?? '';
+    final country = defaultHeaders['country'] as String? ?? '';
+    final ipAddress = defaultHeaders['ipaddress'] as String? ?? '';
+    final version = defaultHeaders['version'] as String? ?? '';
+    final currencySymbol = defaultHeaders['currencySymbol'] as String? ?? '';
+    final currencyCode = defaultHeaders['currencyCode'] as String? ?? '';
+    final platform = defaultHeaders['platform'] as String? ?? '';
+    final latitude = defaultHeaders['latitude'] as double? ?? 0;
+    final longitude = defaultHeaders['longitude'] as double? ?? 0;
+    final xTenantId = defaultHeaders['x-tenant-id'] as String? ?? '';
+    final xProjectId = defaultHeaders['x-project-id'] as String? ?? '';
+    await localStorageManager.saveValueSecurely(LocalStorageKeys.accessToken, accessToken);
+    await localStorageManager.saveValue(
+        LocalStorageKeys.language, language, SavedValueDataType.string);
+    await localStorageManager.saveValue(LocalStorageKeys.city, city, SavedValueDataType.string);
+    await localStorageManager.saveValue(LocalStorageKeys.state, state, SavedValueDataType.string);
+    await localStorageManager.saveValue(
+        LocalStorageKeys.country, country, SavedValueDataType.string);
+    await localStorageManager.saveValue(
+        LocalStorageKeys.ipAddress, ipAddress, SavedValueDataType.string);
+    await localStorageManager.saveValue(
+        LocalStorageKeys.version, version, SavedValueDataType.string);
+    await localStorageManager.saveValue(
+        LocalStorageKeys.currencySymbol, currencySymbol, SavedValueDataType.string);
+    await localStorageManager.saveValue(
+        LocalStorageKeys.currencyCode, currencyCode, SavedValueDataType.string);
+    await localStorageManager.saveValue(
+        LocalStorageKeys.platform, platform, SavedValueDataType.string);
+    await localStorageManager.saveValue(
+        LocalStorageKeys.latitude, latitude, SavedValueDataType.double);
+    await localStorageManager.saveValue(
+        LocalStorageKeys.longitude, longitude, SavedValueDataType.double);
+    await localStorageManager.saveValue(
+        LocalStorageKeys.xTenantId, xTenantId, SavedValueDataType.string);
+    await localStorageManager.saveValue(
+        LocalStorageKeys.xProjectId, xProjectId, SavedValueDataType.string);
   }
 }

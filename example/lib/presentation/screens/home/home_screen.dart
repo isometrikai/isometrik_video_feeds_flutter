@@ -122,6 +122,10 @@ class _HomeScreenState extends State<HomeScreen> {
           final result = await _handlePostRefresh(postTabType);
           return result;
         },
+        onTapCartIcon: (productIds, postId, userId) {
+          debugPrint('productIds: $productIds');
+          debugPrint('postId: $postId');
+        },
       );
 
   /// Handles refresh for user posts
@@ -519,7 +523,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: BorderRadius.circular(Dimens.ten), // Rounded corners
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.changeOpacity(0.1), // Light shadow
+                        color: Colors.black.applyOpacity(0.1), // Light shadow
                         spreadRadius: 1,
                         blurRadius: 4,
                         offset: const Offset(0, 2), // Shadow offset
@@ -687,7 +691,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 'Read More',
                                 // !_isExpandedDescription ? 'Read More' : 'Read Less',
                                 style: Styles.white14.copyWith(
-                                  color: AppColors.appColor.changeOpacity(0.6),
+                                  color: AppColors.appColor.applyOpacity(0.6),
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -728,7 +732,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: BorderRadius.circular(Dimens.thirty),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.changeOpacity(0.2),
+                        color: Colors.black.applyOpacity(0.2),
                         spreadRadius: 2,
                         blurRadius: 5,
                         offset: const Offset(0, 2),
@@ -1006,8 +1010,10 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 extension on PostTabType {
-  isr.PostSectionType? toPostSectionType() {
+  isr.PostSectionType toPostSectionType() {
     switch (this) {
+      case PostTabType.forYou:
+        return isr.PostSectionType.forYou;
       case PostTabType.following:
         return isr.PostSectionType.following;
       default:

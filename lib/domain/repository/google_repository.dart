@@ -6,6 +6,7 @@ abstract class GoogleRepository extends BaseRepository {
   Future<CustomResponse<GoogleAddressResponse?>> getAddressFromPinCode({
     required bool isLoading,
     required String pinCode,
+    required List<String>? countries,
   });
 
   Future<CustomResponse<GoogleAddressResponse?>> getAddressFromLatLng({
@@ -31,5 +32,10 @@ abstract class GoogleRepository extends BaseRepository {
     required String fileExtension,
     Function(double)? onProgress,
     String? cloudFolderName,
+  });
+
+  Future<CustomResponse<GoogleAddressResponse?>> getAddressFromSearch({
+    required bool isLoading,
+    required String searchText,
   });
 }

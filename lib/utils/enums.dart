@@ -36,11 +36,6 @@ enum ImageType {
   network;
 }
 
-enum PostSectionType {
-  following,
-  trending,
-}
-
 enum MediaSource {
   gallery,
   camera,
@@ -52,7 +47,8 @@ enum ButtonType {
   tertiary, // Text only button
   danger, // Red background for destructive actions
   success, // Green background for confirmations
-  disabled // Grey, non-interactive
+  disabled, // Grey, non-interactive
+  text, // Simple text button without background or border
 }
 
 enum ButtonSize {
@@ -62,7 +58,12 @@ enum ButtonSize {
 }
 
 /// Enum to specify media type
-enum MediaType { image, video, unknown }
+enum MediaType {
+  video,
+  photo,
+  both,
+  unknown,
+}
 
 enum PostType {
   video,
@@ -102,4 +103,37 @@ enum CommentAction {
 enum ReasonsFor {
   socialPost,
   comment,
+}
+
+enum PostTabType {
+  forYou,
+  following,
+  trending,
+  myPost,
+  otherUserPost,
+  memberUserPost,
+  savedPost,
+  tagPost,
+}
+
+enum TagType {
+  hashtag('hashtag'),
+  place('place'),
+  product('product'),
+  mention('mention');
+
+  const TagType(this.value);
+
+  final String value;
+}
+
+enum SearchTabType {
+  posts('Posts'),
+  account('Accounts'),
+  tags('Tags'),
+  places('Places');
+
+  const SearchTabType(this.displayName);
+
+  final String displayName;
 }

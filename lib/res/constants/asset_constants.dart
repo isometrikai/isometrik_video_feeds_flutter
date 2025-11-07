@@ -38,4 +38,16 @@ class AssetConstants {
       '${packageName}assets/icons/ic_app_image_place_holder.svg';
   static const String icAddFollowerPlaceHolder =
       '${packageName}assets/icons/ic_add_follower_place_holder.svg';
+  static const String icClose = '${packageName}assets/icons/ic_close.svg';
+  static const String icCommentsPlaceHolder =
+      '${packageName}assets/icons/ic_comments_place_holder.svg';
+  static const String icHeartIconSelected = '${packageName}assets/icons/ic_heart_icon_selected.svg';
+  static const String icHeartIconUnSelected =
+      '${packageName}assets/icons/ic_heart_icon_un_selected.svg';
+  static const String icVerticalMoreMenu = '${packageName}assets/icons/ic_vertical_more_icon.svg';
+  static const String icTagIcon = '${packageName}assets/icons/ic_tag_icon.svg';
+  static const String icPlacesIcon = '${packageName}assets/icons/ic_places_icon.svg';
+  static const String icSearchIcon = '${packageName}assets/icons/ic_search_icon.svg';
+  static const String icNoProductsAvailable = '${packageName}assets/icons/no_products_found.svg';
+  static const String icHashTagIcon = '${packageName}assets/icons/ic_has_tag_icon.svg';
 }

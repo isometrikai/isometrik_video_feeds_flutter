@@ -6,7 +6,7 @@ class SocialMapper {
   CustomResponse<PostResponse?> mapPostResponseData(ResponseModel response) =>
       CustomResponse(data: postResponseFromJson(response.data), responseCode: response.statusCode);
 
-  CustomResponse<List<String>?> mapReasonData(ResponseModel response) => CustomResponse(
+  CustomResponse<List<ReportReason>?> mapReasonData(ResponseModel response) => CustomResponse(
       data: reportReasonResponseFromJson(response.data).data, responseCode: response.statusCode);
 
   CustomResponse<CloudDetailsResponse?> mapCloudinaryData(ResponseModel response) => CustomResponse(
@@ -32,6 +32,11 @@ class SocialMapper {
 
   CustomResponse<TimelineResponse?> mapTimelineResponse(ResponseModel response) => CustomResponse(
       data: timelineResponseFromJson(response.data), responseCode: response.statusCode);
+
+  CustomResponse<FollowUnfollowResponseModel?> mapFollowUnfollowData(ResponseModel response) =>
+      CustomResponse(
+          data: getFollowUnfollowResponseModelFromJson(response.data),
+          responseCode: response.statusCode);
 
   CustomResponse<SearchUserResponse?> mapSearchUserResponse(ResponseModel response) =>
       CustomResponse(

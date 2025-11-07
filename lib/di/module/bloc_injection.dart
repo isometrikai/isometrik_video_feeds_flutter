@@ -17,7 +17,38 @@ class BlocInjection {
 
     // Check if PostBloc is already registered
     IsmInjectionUtils.registerBloc<SocialPostBloc>(
-      () => SocialPostBloc(localDataUseCase),
+      () => SocialPostBloc(
+        localDataUseCase,
+        IsmInjectionUtils.getUseCase<GetTimelinePostUseCase>(),
+        IsmInjectionUtils.getUseCase<GetTrendingPostUseCase>(),
+        IsmInjectionUtils.getUseCase<GetForYouPostUseCase>(),
+        IsmInjectionUtils.getUseCase<FollowUnFollowUserUseCase>(),
+        IsmInjectionUtils.getUseCase<SavePostUseCase>(),
+        IsmInjectionUtils.getUseCase<LikePostUseCase>(),
+        IsmInjectionUtils.getUseCase<ReportPostUseCase>(),
+        IsmInjectionUtils.getUseCase<GetReportReasonsUseCase>(),
+        IsmInjectionUtils.getUseCase<GetPostDetailsUseCase>(),
+        IsmInjectionUtils.getUseCase<GetPostCommentUseCase>(),
+        IsmInjectionUtils.getUseCase<CommentActionUseCase>(),
+      ),
     );
+
+    IsmInjectionUtils.registerBloc<PostListingBloc>(() => PostListingBloc(
+          IsmInjectionUtils.getUseCase<GetTaggedPostsUseCase>(),
+          IsmInjectionUtils.getUseCase<SearchTagUseCase>(),
+          IsmInjectionUtils.getUseCase<GeocodeSearchAddressUseCase>(),
+          IsmInjectionUtils.getUseCase<GetPlaceDetailsUseCase>(),
+          IsmInjectionUtils.getUseCase<SearchUserUseCase>(),
+          localDataUseCase,
+          IsmInjectionUtils.getUseCase<FollowUnFollowUserUseCase>(),
+        ));
+
+    IsmInjectionUtils.registerBloc<TagDetailsBloc>(() => TagDetailsBloc(
+          IsmInjectionUtils.getUseCase<GetTaggedPostsUseCase>(),
+        ));
+
+    IsmInjectionUtils.registerBloc<PlaceDetailsBloc>(() => PlaceDetailsBloc(
+          IsmInjectionUtils.getUseCase<GetTaggedPostsUseCase>(),
+        ));
   }
 }

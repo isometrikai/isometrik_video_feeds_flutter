@@ -162,14 +162,14 @@ class SocialApiServiceProvider extends SocialApiService {
           'platform': header.platForm.toString(),
           'latitude': header.latitude.toString(),
           'longitude': header.longitude.toString(),
-          'x-tenant-id': AppConstants.tenantId,
-          'x-project-id': AppConstants.projectId,
+          'x-tenant-id': header.xTenantId,
+          'x-project-id': header.xProjectId,
         },
         isLoading,
       );
 
   @override
-  Future<ResponseModel> followPost({
+  Future<ResponseModel> followUser({
     required bool isLoading,
     required String followingId,
     required Header header,
@@ -180,7 +180,7 @@ class SocialApiServiceProvider extends SocialApiService {
       'following_id': followingId,
     };
     return await networkClient.makeRequest(
-      SocialApiEndPoints.postFollowPost,
+      SocialApiEndPoints.postFollowUser,
       followAction == FollowAction.follow ? NetworkRequestType.post : NetworkRequestType.delete,
       followAction == FollowAction.follow ? map : null,
       followAction == FollowAction.unfollow ? map : null,
@@ -213,7 +213,7 @@ class SocialApiServiceProvider extends SocialApiService {
     required Header header,
   }) async =>
       await networkClient.makeRequest(
-        SocialApiEndPoints.postFollowPost,
+        SocialApiEndPoints.postFollowUser,
         NetworkRequestType.delete,
         null,
         {'following_id': followingId},
@@ -712,6 +712,40 @@ class SocialApiServiceProvider extends SocialApiService {
           'x-project-id': AppConstants.projectId,
         },
         isLoading,
+      );
+
+  @override
+  Future<ResponseModel> getTaggedPosts({
+    required bool isLoading,
+    required Header header,
+    required String tagValue,
+    required TagType tagType,
+    required int page,
+    required int pageLimit,
+  }) async =>
+      await networkClient.makeRequest(
+        SocialApiEndPoints.getTaggedPosts,
+        NetworkRequestType.get,
+        null,
+        {
+          'page': page.toString(),
+          'page_size': pageLimit.toString(),
+        },
+        {
+          'Accept': AppConstants.headerAccept,
+          'Content-Type': AppConstants.headerContentType,
+          'authorization': header.accessToken,
+          'lan': header.language,
+          'currencySymbol': header.currencySymbol,
+          'currencyCode': header.currencyCode,
+          'platform': header.platForm.platformText.toString(),
+          'latitude': header.latitude.toString(),
+          'longitude': header.longitude.toString(),
+          'x-tenant-id': AppConstants.tenantId,
+          'x-project-id': AppConstants.projectId,
+        },
+        isLoading,
+        pathSegments: [tagType.value, tagValue],
       );
 
   @override

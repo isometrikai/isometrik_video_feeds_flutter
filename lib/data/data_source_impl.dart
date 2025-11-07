@@ -30,7 +30,7 @@ class DataSourceImpl extends DataSource {
         LocalStorageKeys.longitude, SavedValueDataType.double) as double;
 
     final ipAddress = await _localStorageManager.getValue(
-        LocalStorageKeys.userIP, SavedValueDataType.string) as String;
+        LocalStorageKeys.ipAddress, SavedValueDataType.string) as String;
 
     final city = '';
 
@@ -54,6 +54,12 @@ class DataSourceImpl extends DataSource {
     final currencyCode = await _localStorageManager.getValue(
         LocalStorageKeys.currencyCode, SavedValueDataType.string) as String;
 
+    final xTenantId = await _localStorageManager.getValue(
+        LocalStorageKeys.xTenantId, SavedValueDataType.string) as String;
+
+    final xProjectId = await _localStorageManager.getValue(
+        LocalStorageKeys.xProjectId, SavedValueDataType.string) as String;
+
     return Header(
       accessToken: accessToken,
       refreshToken: refreshToken,
@@ -71,6 +77,8 @@ class DataSourceImpl extends DataSource {
       timeZone: timeZone,
       currencySymbol: currencySymbol,
       currencyCode: currencyCode,
+      xTenantId: xTenantId,
+      xProjectId: xProjectId,
     );
   }
 }

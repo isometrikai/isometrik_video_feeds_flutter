@@ -1,4 +1,4 @@
-import 'package:ism_video_reel_player/ism_video_reel_player.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 
 /// Abstract interface for media (video/image) cache management
 abstract class IMediaCacheManager {
@@ -61,7 +61,7 @@ class MediaTypeUtil {
 
     // Image extensions
     if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].contains(extension)) {
-      return MediaType.image;
+      return MediaType.photo;
     }
 
     return MediaType.unknown;

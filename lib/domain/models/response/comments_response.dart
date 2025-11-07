@@ -1,10 +1,11 @@
 import 'dart:convert';
 
+import 'package:ism_video_reel_player/utils/extensions.dart';
+
 CommentsResponse commentsResponseFromJson(String str) =>
     CommentsResponse.fromJson(json.decode(str) as Map<String, dynamic>);
 
-String commentsResponseToJson(CommentsResponse data) =>
-    json.encode(data.toJson());
+String commentsResponseToJson(CommentsResponse data) => json.encode(data.toJson());
 
 class CommentsResponse {
   CommentsResponse({
@@ -13,13 +14,12 @@ class CommentsResponse {
     this.totalComments,
   });
 
-  factory CommentsResponse.fromJson(Map<String, dynamic> json) =>
-      CommentsResponse(
+  factory CommentsResponse.fromJson(Map<String, dynamic> json) => CommentsResponse(
         message: json['message'] as String? ?? '',
         data: json['data'] == null
             ? []
-            : List<CommentDataItem>.from((json['data'] as List).map(
-                (x) => CommentDataItem.fromJson(x as Map<String, dynamic>))),
+            : List<CommentDataItem>.from((json['data'] as List)
+                .map((x) => CommentDataItem.fromJson(x as Map<String, dynamic>))),
         totalComments: json['totalComments'] as num? ?? 0,
       );
   String? message;
@@ -28,9 +28,7 @@ class CommentsResponse {
 
   Map<String, dynamic> toJson() => {
         'message': message,
-        'data': data == null
-            ? []
-            : List<dynamic>.from(data!.map((x) => x.toJson())),
+        'data': data == null ? [] : List<dynamic>.from(data!.map((x) => x.toJson())),
         'totalComments': totalComments,
       };
 }
@@ -66,6 +64,7 @@ class CommentDataItem {
     this.isLiked,
     this.likeCount,
     this.parentCommentId,
+    this.tags,
   });
 
   factory CommentDataItem.fromJson(Map<String, dynamic> json) {
@@ -74,9 +73,7 @@ class CommentDataItem {
       id: json['id'] as String? ?? '',
       commentedBy: commenter['username'] as String? ?? '',
       postId: json['post_id'] as String? ?? '',
-      commentedOn: json['created_at'] == null
-          ? null
-          : DateTime.parse(json['created_at'] as String),
+      commentedOn: json['created_at'] == null ? null : DateTime.parse(json['created_at'] as String),
       timeStamp: json['timeStamp'] as num? ?? 0,
       userType: json['userType'] as num? ?? 0,
       userTypeText: json['userTypeText'] as String? ?? '',
@@ -103,9 +100,7 @@ class CommentDataItem {
           ? []
           : List<CommentLikeList>.from((json['commentLikeList'] as List)
               .map((x) => CommentLikeList.fromJson(x as Map<String, dynamic>))),
-      type: json['type'] == null
-          ? null
-          : Type.fromMap(json['type'] as Map<String, dynamic>),
+      type: json['type'] == null ? null : Type.fromMap(json['type'] as Map<String, dynamic>),
       commentedByUserId: commenter['id'] as String? ?? '',
       commentUserType: json['commentUserType'] as num? ?? 0,
       commentUserTypeText: json['commentUserTypeText'] as String? ?? '',
@@ -116,9 +111,9 @@ class CommentDataItem {
       isLiked: json['is_liked'] as bool? ?? false,
       likeCount: json['like_count'] as num? ?? 0,
       parentCommentId: json['parent_id'] as String? ?? '',
+      tags: json.objectOrNull('tags', CommentTags.fromJson),
     );
   }
-
   String? id;
   String? commentedBy;
   String? postId;
@@ -148,6 +143,8 @@ class CommentDataItem {
   bool? isLiked;
   num? likeCount;
   String? parentCommentId;
+  bool showReply = false;
+  CommentTags? tags;
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -163,22 +160,17 @@ class CommentDataItem {
         'userType': userType,
         'userTypeText': userTypeText,
         'content': comment,
-        'hashtags':
-            hashtags == null ? [] : List<dynamic>.from(hashtags!.map((x) => x)),
-        'mentionedUsers': mentionedUsers == null
-            ? []
-            : List<dynamic>.from(mentionedUsers!.map((x) => x)),
+        'hashtags': hashtags == null ? [] : List<dynamic>.from(hashtags!.map((x) => x)),
+        'mentionedUsers':
+            mentionedUsers == null ? [] : List<dynamic>.from(mentionedUsers!.map((x) => x)),
         'ip': ip,
         'city': city,
         'country': country,
         'status': status,
         'reply_count': childCommentCount,
-        'childComments': childComments == null
-            ? []
-            : List<dynamic>.from(childComments!.map((x) => x.toJson())),
-        'likesData': likesData == null
-            ? []
-            : List<dynamic>.from(likesData!.map((x) => x)),
+        'childComments':
+            childComments == null ? [] : List<dynamic>.from(childComments!.map((x) => x.toJson())),
+        'likesData': likesData == null ? [] : List<dynamic>.from(likesData!.map((x) => x)),
         'commentLikeList': commentLikeList == null
             ? []
             : List<dynamic>.from(commentLikeList!.map((x) => x.toJson())),
@@ -190,6 +182,7 @@ class CommentDataItem {
         'is_liked': isLiked,
         'like_count': likeCount,
         'parent_id': parentCommentId,
+        'tags': tags?.toJson(),
       };
 }
 
@@ -201,8 +194,7 @@ class CommentLikeList {
     this.timestamp,
   });
 
-  factory CommentLikeList.fromJson(Map<String, dynamic> json) =>
-      CommentLikeList(
+  factory CommentLikeList.fromJson(Map<String, dynamic> json) => CommentLikeList(
         id: json['_id'] as String? ?? '',
         commentId: json['commentId'] as String? ?? '',
         likedBy: json['likedBy'] as String? ?? '',
@@ -218,6 +210,89 @@ class CommentLikeList {
         'commentId': commentId,
         'likedBy': likedBy,
         'timestamp': timestamp,
+      };
+}
+
+class CommentTags {
+  CommentTags({
+    required this.hashtags,
+    required this.mentions,
+  });
+
+  factory CommentTags.fromJson(Map<String, dynamic> json) => CommentTags(
+        hashtags: (json['hashtags'] as List<dynamic>?)
+                ?.map((e) => (e is Map<String, dynamic>) ? CommentMentionData.fromJson(e) : null)
+                .nonNulls
+                .toList() ??
+            [],
+        mentions: (json['mentions'] as List<dynamic>?)
+                ?.map((e) => (e is Map<String, dynamic>) ? CommentMentionData.fromJson(e) : null)
+                .nonNulls
+                .toList() ??
+            [],
+      );
+  List<CommentMentionData>? hashtags;
+  List<CommentMentionData>? mentions;
+
+  Map<String, dynamic> toJson() => {
+        'hashtags': hashtags?.map((_) => _.toJson()).toList(),
+        'mentions': mentions?.map((_) => _.toJson()).toList(),
+      };
+}
+
+class CommentMentionData {
+  CommentMentionData({
+    this.userId,
+    this.username,
+    this.textPosition,
+    this.tag,
+    this.avatarUrl,
+    this.name,
+  });
+
+  factory CommentMentionData.fromJson(Map<String, dynamic> json) => CommentMentionData(
+        userId: json['user_id'] as String? ?? '',
+        username: json['username'] as String? ?? '',
+        tag: json['tag'] as String? ?? '',
+        textPosition: json['text_position'] == null
+            ? null
+            : CommentTaggedPosition.fromJson(json['text_position'] as Map<String, dynamic>),
+        avatarUrl: json['avatar_url'] as String? ?? '',
+        name: json['name'] as String? ?? '',
+      );
+  String? userId;
+  String? username;
+  String? tag;
+  CommentTaggedPosition? textPosition;
+  String? avatarUrl;
+  String? name;
+
+  Map<String, dynamic> toJson() => {
+        'user_id': userId,
+        'username': username,
+        'tag': tag,
+        'text_position': textPosition?.toJson(),
+        'avatar_url': avatarUrl,
+        'name': name,
+      }.removeEmptyValues();
+}
+
+class CommentTaggedPosition {
+  CommentTaggedPosition({
+    required this.start,
+    required this.end,
+  });
+
+  factory CommentTaggedPosition.fromJson(Map<String, dynamic> json) => CommentTaggedPosition(
+        start: json['start'] as num? ?? 0,
+        end: json['end'] as num? ?? 0,
+      );
+  num? start;
+  num? end;
+
+  Map<String, dynamic> toJson() => {
+        'start': start,
+        'end': end,
       };
 }
 

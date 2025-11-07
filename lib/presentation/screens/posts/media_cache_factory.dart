@@ -1,10 +1,11 @@
 import 'package:flutter/foundation.dart';
-import 'package:ism_video_reel_player/ism_video_reel_player.dart';
+import 'package:ism_video_reel_player/presentation/presentation.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 
 /// Factory class to create and manage media cache instances
 class MediaCacheFactory {
   static final Map<MediaType, IMediaCacheManager> _cacheManagers = {
-    MediaType.image: ImageCacheManager(),
+    MediaType.photo: ImageCacheManager(),
     MediaType.video: VideoCacheManager(),
   };
 
@@ -13,8 +14,7 @@ class MediaCacheFactory {
       _cacheManagers[type] ?? VideoCacheManager();
 
   /// Precache multiple media items, automatically determining their type
-  static Future<void> precacheMedia(List<String> mediaUrls,
-      {bool highPriority = false}) async {
+  static Future<void> precacheMedia(List<String> mediaUrls, {bool highPriority = false}) async {
     final mediaByType = <MediaType, List<String>>{};
 
     // Group URLs by media type
@@ -27,16 +27,12 @@ class MediaCacheFactory {
     final futures = mediaByType.entries.map((entry) {
       final type = entry.key;
       final urls = entry.value;
-      debugPrint(
-          '🚀 MediaCacheFactory: Precaching ${urls.length} ${type.toString()} items');
-      return getCacheManager(type)
-          .precacheMedia(urls, highPriority: highPriority)
-          .then((_) {
+      debugPrint('🚀 MediaCacheFactory: Precaching ${urls.length} ${type.toString()} items');
+      return getCacheManager(type).precacheMedia(urls, highPriority: highPriority).then((_) {
         debugPrint(
             '✅ MediaCacheFactory: Successfully precached ${urls.length} ${type.toString()} items');
       }).catchError((error) {
-        debugPrint(
-            '❌ MediaCacheFactory: Error precaching ${type.toString()} items: $error');
+        debugPrint('❌ MediaCacheFactory: Error precaching ${type.toString()} items: $error');
       });
     });
 

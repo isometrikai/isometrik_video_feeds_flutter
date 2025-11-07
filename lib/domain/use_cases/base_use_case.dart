@@ -1,8 +1,7 @@
 import 'package:ism_video_reel_player/core/core.dart';
 
 abstract class BaseUseCase {
-  Future<ApiResult<T>> execute<T>(
-      Future<ApiResult<T>> Function() action) async {
+  Future<ApiResult<T>> execute<T>(Future<ApiResult<T>> Function() action) async {
     try {
       return await action();
     } catch (e, stackTrace) {
@@ -15,6 +14,5 @@ abstract class BaseUseCase {
   }
 
   // Define the handleError method here or import it from your error handler
-  AppError handleError(Object e, StackTrace stackTrace) =>
-      IsmErrorHandler.handleError(e, stackTrace);
+  AppError handleError(Object e, StackTrace stackTrace) => ErrorHandler.handleError(e, stackTrace);
 }

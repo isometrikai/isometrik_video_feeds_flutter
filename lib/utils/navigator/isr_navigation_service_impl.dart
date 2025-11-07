@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
 class IsrNavigationServiceImpl implements IsrNavigationService {
@@ -9,14 +7,14 @@ class IsrNavigationServiceImpl implements IsrNavigationService {
   final GlobalKey<NavigatorState> navigatorKey;
 
   @override
-  Future<T?> pushNamed<T>(BuildContext context, String routeName, {Object? arguments}) async {
-    final result = await IsrVideoReelConfig.buildContext?.pushNamed(routeName, extra: arguments);
+  Future<T?> pushNamed<T>(String routeName, {Object? arguments}) async {
+    final result = await IsrAppRouter.router.pushNamed(routeName, extra: arguments);
     return result as T?; // Cast the result to the expected type
   }
 
   @override
   void pushReplacementNamed<T>(BuildContext context, String routeName, {Object? arguments}) async {
-    IsrVideoReelConfig.buildContext?.pushReplacementNamed(routeName, extra: arguments);
+    await IsrAppRouter.router.pushReplacementNamed(routeName, extra: arguments);
   }
 
   @override
@@ -31,12 +29,12 @@ class IsrNavigationServiceImpl implements IsrNavigationService {
 
   @override
   void goNamed(BuildContext context, String routeName, {Object? arguments}) {
-    IsrVideoReelConfig.buildContext?.goNamed(routeName, extra: arguments);
+    IsrAppRouter.router.goNamed(routeName, extra: arguments);
   }
 
   @override
   void go(BuildContext context, String routeName, {Object? arguments}) {
-    IsrVideoReelConfig.buildContext?.go(
+    IsrAppRouter.router.go(
       routeName,
       extra: arguments,
     );

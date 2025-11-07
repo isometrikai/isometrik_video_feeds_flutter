@@ -16,17 +16,28 @@ class GoogleApiServiceProvider extends GoogleApiService with AppMixin {
   Future<ResponseModel> getAddressFromPinCode({
     required bool isLoading,
     required String pinCode,
+    required List<String>? countries,
   }) async {
-    final url = '${GoogleApiEndPoints.getAddressFromPinCode}$pinCode&key=$apiKey';
+    var apiURL = '${GoogleApiEndPoints.getGeocodeAddress}?address=$pinCode&key=$apiKey';
+
+    for (var i = 0; i < countries!.length; i++) {
+      final country = countries[i];
+
+      if (i == 0) {
+        apiURL = '$apiURL&components=country:$country';
+      } else {
+        apiURL = '$apiURL|country:$country';
+      }
+    }
 
     if (isLoading) Utility.showLoader();
 
-    final response = await http.get(Uri.parse(url));
+    final response = await http.get(Uri.parse(apiURL));
 
     if (isLoading) Utility.closeProgressDialog();
     printLog(
       this,
-      '\nMethod: ${response.request?.method}\nURL :- $url\nStatus Code :- ${response.statusCode}\nResponse Data :- ${response.body}',
+      '\nMethod: ${response.request?.method}\nURL :- $apiURL\nStatus Code :- ${response.statusCode}\nResponse Data :- ${response.body}',
     );
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
@@ -44,6 +55,42 @@ class GoogleApiServiceProvider extends GoogleApiService with AppMixin {
       );
     } else {
       Utility.closeProgressDialog();
+      throw Exception('Failed to load address');
+    }
+  }
+
+  @override
+  Future<ResponseModel> getAddressFromSearch({
+    required bool isLoading,
+    required String searchText,
+  }) async {
+    // Encode the search text for URL
+    final encodedSearch = Uri.encodeQueryComponent(searchText);
+
+    // Build the API URL - using Places Autocomplete API
+    final apiURL =
+        '${GoogleApiEndPoints.getGeocodeAddress}?address=$encodedSearch&key=$apiKey&language=en&types=geocode';
+
+    final response = await http.get(Uri.parse(apiURL));
+    printLog(
+      this,
+      '\nMethod: ${response.request?.method}\nURL :- $apiURL\nStatus Code :- ${response.statusCode}\nResponse Data :- ${response.body}',
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['status'] == 'OK' || data['status'] == 'ZERO_RESULTS') {
+        return ResponseModel(
+          data: response.body,
+          hasError: false,
+          statusCode: response.statusCode,
+        );
+      }
+      return ResponseModel(
+        data: response.body,
+        hasError: true,
+        statusCode: response.statusCode,
+      );
+    } else {
       throw Exception('Failed to load address');
     }
   }
@@ -135,7 +182,7 @@ class GoogleApiServiceProvider extends GoogleApiService with AppMixin {
     final saveLongitude = await _localStorageManager.getValue(
         LocalStorageKeys.longitude, SavedValueDataType.double) as double;
     final url =
-        '${GoogleApiEndPoints.getAddressFromLatLng}latlng=${latitude ?? saveLatitude},${longitude ?? saveLongitude}&key=$apiKey';
+        '${GoogleApiEndPoints.getGeocodeAddress}?latlng=${latitude ?? saveLatitude},${longitude ?? saveLongitude}&key=$apiKey';
 
     if (isLoading) Utility.showLoader();
 

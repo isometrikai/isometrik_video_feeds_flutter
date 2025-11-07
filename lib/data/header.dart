@@ -16,6 +16,8 @@ class Header {
     required this.timeZone,
     required this.currencySymbol,
     required this.currencyCode,
+    required this.xTenantId,
+    required this.xProjectId,
   });
 
   String accessToken;
@@ -34,4 +36,6 @@ class Header {
   String timeZone;
   String currencySymbol;
   String currencyCode;
+  String xTenantId;
+  String xProjectId;
 }

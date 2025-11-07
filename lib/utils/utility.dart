@@ -6,12 +6,14 @@ import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:ism_video_reel_player/data/data.dart';
+import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -192,24 +194,31 @@ class Utility {
   }
 
   /// shows bottom sheet
-  static Future<T?> showBottomSheet<T>(
-    Widget child, {
+  static Future<T?> showBottomSheet<T>({
+    required Widget child,
     bool isDarkBG = false,
     bool isDismissible = true,
     bool isScrollControlled = true,
-    BuildContext? context,
+    Color? backgroundColor,
+    double? height,
+    bool isRoundedCorners = true,
   }) =>
       showModalBottomSheet<T>(
         context: context ?? IsrVideoReelConfig.buildContext!,
-        builder: (_) => child,
+        builder: (_) => SafeArea(
+          child: SizedBox(
+            height: height,
+            child: child,
+          ),
+        ),
         enableDrag: false,
         showDragHandle: false,
-        useSafeArea: false,
         isDismissible: isDismissible,
         isScrollControlled: isScrollControlled,
-        backgroundColor: isDarkBG
-            ? Theme.of(context ?? IsrVideoReelConfig.buildContext!).primaryColor
-            : IsrColors.white,
+        backgroundColor: backgroundColor ??
+            (isDarkBG
+                ? Theme.of(context ?? IsrVideoReelConfig.buildContext!).primaryColor
+                : IsrColors.white),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(
             top: Radius.circular(IsrDimens.sixteen),
@@ -576,4 +585,217 @@ class Utility {
 
   static bool isLocalUrl(String url) =>
       url.startsWith('http://') == false && url.startsWith('https://') == false;
+
+  /// Builds text spans with highlighted usernames and hashtags from comment tags
+  ///
+  /// This function processes comment text and highlights usernames (@username) and
+  /// hashtags (#hashtag) based on the tags data from the comment.
+  ///
+  /// [text] - The comment text to process
+  /// [baseStyle] - Base text style for normal text
+  /// [tags] - Comment tags containing mentions and hashtags data
+  /// [onUsernameTap] - Callback when username is tapped
+  /// [onHashtagTap] - Callback when hashtag is tapped
+  static List<TextSpan> buildCommentTextSpans(
+    String text,
+    TextStyle baseStyle,
+    CommentTags? tags, {
+    Function(String)? onUsernameTap,
+    Function(String)? onHashtagTap,
+  }) {
+    final spans = <TextSpan>[];
+
+    if (text.isEmpty) return spans;
+
+    // Create a list of all tagged positions (mentions and hashtags)
+    final taggedPositions = <TagPosition>[];
+
+    // Add mention positions
+    if (tags?.mentions != null) {
+      for (final mention in tags!.mentions!) {
+        if (mention.textPosition != null) {
+          taggedPositions.add(TagPosition(
+            start: mention.textPosition!.start?.toInt() ?? 0,
+            end: mention.textPosition!.end?.toInt() ?? 0,
+            type: Tag.mention,
+            data: mention,
+          ));
+        }
+      }
+    }
+
+    // Add hashtag positions
+    if (tags?.hashtags != null) {
+      for (final hashtag in tags!.hashtags!) {
+        if (hashtag.textPosition != null) {
+          taggedPositions.add(TagPosition(
+            start: hashtag.textPosition!.start?.toInt() ?? 0,
+            end: hashtag.textPosition!.end?.toInt() ?? 0,
+            type: Tag.hashtag,
+            data: hashtag,
+          ));
+        }
+      }
+    }
+
+    // Sort positions by start index
+    taggedPositions.sort((a, b) => a.start.compareTo(b.start));
+
+    // Also handle URLs
+    final urlRegex = RegExp(r'(https?:\/\/\S+|www\.\S+)', caseSensitive: false);
+    final urlMatches = urlRegex.allMatches(text);
+    for (final match in urlMatches) {
+      taggedPositions.add(TagPosition(
+        start: match.start,
+        end: match.end,
+        type: Tag.url,
+        data: null,
+      ));
+    }
+
+    // Sort again to include URLs
+    taggedPositions.sort((a, b) => a.start.compareTo(b.start));
+
+    var currentIndex = 0;
+
+    for (final position in taggedPositions) {
+      // Add normal text before the tagged position
+      if (position.start > currentIndex) {
+        spans.add(
+          TextSpan(
+            text: text.substring(currentIndex, position.start),
+            style: baseStyle,
+          ),
+        );
+      }
+
+      // Add the tagged text with appropriate styling and tap handler
+      final taggedText = text.substring(position.start, position.end);
+      var taggedStyle = baseStyle;
+      TapGestureRecognizer? recognizer;
+
+      switch (position.type) {
+        case Tag.mention:
+          taggedStyle = baseStyle.copyWith(
+            fontWeight: FontWeight.w600,
+          );
+          recognizer = TapGestureRecognizer()
+            ..onTap = () {
+              if (onUsernameTap != null && position.data is CommentMentionData) {
+                final mentionData = position.data as CommentMentionData;
+                onUsernameTap(mentionData.userId ?? '');
+              }
+            };
+          break;
+
+        case Tag.hashtag:
+          taggedStyle = baseStyle.copyWith(
+            fontWeight: FontWeight.w600,
+          );
+          recognizer = TapGestureRecognizer()
+            ..onTap = () {
+              if (onHashtagTap != null && position.data is CommentMentionData) {
+                final hashtagData = position.data as CommentMentionData;
+                onHashtagTap(hashtagData.tag ?? '');
+              }
+            };
+          break;
+
+        case Tag.url:
+          taggedStyle = baseStyle.copyWith(
+            color: IsrColors.appColor,
+            decoration: TextDecoration.underline,
+          );
+          final urlToLaunch = taggedText.startsWith('http') ? taggedText : 'https://$taggedText';
+          recognizer = TapGestureRecognizer()
+            ..onTap = () {
+              Utility.launchExternalUrl(urlToLaunch);
+            };
+          break;
+      }
+
+      spans.add(
+        TextSpan(
+          text: taggedText,
+          style: taggedStyle,
+          recognizer: recognizer,
+        ),
+      );
+
+      currentIndex = position.end;
+    }
+
+    // Add remaining text
+    if (currentIndex < text.length) {
+      spans.add(
+        TextSpan(
+          text: text.substring(currentIndex),
+          style: baseStyle,
+        ),
+      );
+    }
+
+    return spans;
+  }
+
+  // get time ago
+  static String getTimeAgoFromDateTime(DateTime? dateTime, {bool showJustNow = false}) {
+    if (dateTime == null) {
+      return '';
+    }
+
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+
+    if (difference.inSeconds < 5 && showJustNow == true) {
+      return IsrTranslationFile.justNow;
+    }
+
+    if (difference.inSeconds < 60) {
+      return '${difference.inSeconds}s';
+    }
+
+    if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}m';
+    }
+
+    if (difference.inHours < 24) {
+      return '${difference.inHours}h';
+    }
+
+    if (difference.inDays < 7) {
+      return '${difference.inDays}d';
+    }
+    if (difference.inDays < 30) {
+      return '${difference.inDays ~/ 7}w';
+    }
+
+    if (difference.inDays < 365) {
+      return '${difference.inDays ~/ 30}mo';
+    }
+
+    return '${difference.inDays ~/ 365}y';
+  }
+}
+
+/// Helper class to represent tagged positions in text
+class TagPosition {
+  TagPosition({
+    required this.start,
+    required this.end,
+    required this.type,
+    this.data,
+  });
+
+  final int start;
+  final int end;
+  final Tag type;
+  final dynamic data;
+}
+
+/// Enum to represent different types of tagged content
+enum Tag {
+  mention,
+  hashtag,
+  url,
 }

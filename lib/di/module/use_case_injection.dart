@@ -21,8 +21,8 @@ class UseCaseInjection {
         () => GetTrendingPostUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<GetForYouPostUseCase>(
         () => GetForYouPostUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
-    IsmInjectionUtils.registerUseCase<FollowPostUseCase>(
-        () => FollowPostUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<FollowUnFollowUserUseCase>(
+        () => FollowUnFollowUserUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<SavePostUseCase>(
         () => SavePostUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<LikePostUseCase>(
@@ -48,6 +48,8 @@ class UseCaseInjection {
         () => SearchUserUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<SearchTagUseCase>(
         () => SearchTagUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<GetTaggedPostsUseCase>(
+        () => GetTaggedPostsUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
 
     // Google Repository use cases
     IsmInjectionUtils.registerUseCase<GetAddressFromPinCodeUseCase>(

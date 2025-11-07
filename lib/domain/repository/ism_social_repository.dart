@@ -27,7 +27,7 @@ abstract class SocialRepository extends BaseRepository {
     required int pageLimit,
   });
 
-  Future<CustomResponse<ResponseClass?>> followPost({
+  Future<CustomResponse<FollowUnfollowResponseModel?>> followUser({
     required bool isLoading,
     required String followingId,
     required FollowAction followAction,
@@ -53,7 +53,7 @@ abstract class SocialRepository extends BaseRepository {
     required String reason,
   });
 
-  Future<CustomResponse<List<String>?>> getReportReasons({
+  Future<CustomResponse<List<ReportReason>?>> getReportReasons({
     required bool isLoading,
     ReasonsFor? reasonFor,
   });
@@ -123,6 +123,14 @@ abstract class SocialRepository extends BaseRepository {
     required int limit,
     required int page,
     required String searchText,
+  });
+
+  Future<CustomResponse<TimelineResponse?>> getTaggedPosts({
+    required bool isLoading,
+    required String tagValue,
+    required TagType tagType,
+    required int page,
+    required int pageLimit,
   });
 
   Future<CustomResponse<TimelineResponse?>> getForYouPosts({

@@ -89,15 +89,12 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     try {
       emit(HomeLoading(isLoading: true));
       await _initializeReelsSdk();
-      await Future.wait([
-        _callGetForYouPost(true, false, false, null),
-        _callGetTrendingPost(true, false, false, null),
-        _callGetTimeLinePost(true, false, false, null),
-      ]);
-      add(LoadPostsEvent(
-          timeLinePostList: _timeLinePostList,
-          trendingPosts: _trendingPostList,
-          forYouPosts: _forYouPostList));
+      // await Future.wait([
+      //   _callGetForYouPost(true, false, false, null),
+      //   _callGetTrendingPost(true, false, false, null),
+      //   _callGetTimeLinePost(true, false, false, null),
+      // ]);
+      add(LoadPostsEvent(timeLinePostList: [], trendingPosts: [], forYouPosts: []));
     } catch (error) {
       emit(HomeError(error.toString()));
     }
@@ -109,6 +106,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     final userName = await _localDataUseCase.getFirstName();
     final firstName = await _localDataUseCase.getFirstName();
     final lastName = await _localDataUseCase.getLastName();
+    final appVersion = await Utility.getAppVersion();
     await isr.IsrVideoReelConfig.initializeSdk(
       baseUrl: AppUrl.appBaseUrl,
       postInfo: isr.PostInfoClass(
@@ -122,6 +120,23 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       ),
       // Optional: Provide callback to receive events before flushing
       onBeforeFlushCallback: handleEventsBeforeFlush,
+      defaultHeaders: {
+        'Accept': 'application/json',
+        'Content-Type': AppConstants.headerContentType,
+        'lan': 'en',
+        'city': 'Bengaluru',
+        'state': 'karnataka',
+        'country': 'India',
+        'ipaddress': '192.168.1.1',
+        'version': appVersion,
+        'currencySymbol': '\$',
+        'currencyCode': 'USD',
+        'platform': Utility.platFormType().platformText,
+        'latitude': DefaultValues.defaultLatitude,
+        'longitude': DefaultValues.defaultLongitude,
+        'x-tenant-id': AppConstants.tenantId,
+        'x-project-id': AppConstants.projectId,
+      },
     );
   }
 
@@ -563,9 +578,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   FutureOr<void> _loadPosts(LoadPostsEvent event, Emitter<HomeState> emit) async {
     final myUserId = await _localDataUseCase.getUserId();
     emit(HomeLoaded(
-      timeLinePosts: event.timeLinePostList,
-      trendingPosts: event.trendingPosts,
-      forYouPosts: event.forYouPosts,
+      timeLinePosts: _timeLinePostList,
+      trendingPosts: _trendingPostList,
+      forYouPosts: _forYouPostList,
       userId: myUserId,
     ));
   }

@@ -2,23 +2,23 @@ part of 'social_post_bloc.dart';
 
 abstract class SocialPostState {}
 
-class PostInitial extends SocialPostState {
-  PostInitial({required this.isLoading});
+class PostLoadingState extends SocialPostState {
+  PostLoadingState({required this.isLoading});
 
   final bool? isLoading;
 }
 
-class UserInformationLoaded extends SocialPostState {
-  UserInformationLoaded({this.userInfoClass, required this.userId});
-
-  final UserInfoClass? userInfoClass;
-  final String userId;
-}
-
-class PostLoadingState extends SocialPostState {
-  PostLoadingState({
+class SocialPostLoadedState extends SocialPostState {
+  SocialPostLoadedState({
+    required this.timeLinePosts,
+    required this.trendingPosts,
+    this.forYouPosts = const [],
     required this.userId,
   });
+
+  final List<TimeLineData> timeLinePosts;
+  final List<TimeLineData> trendingPosts;
+  final List<TimeLineData> forYouPosts;
   final String userId;
 }
 
@@ -28,3 +28,45 @@ class PostSuccessState extends SocialPostState {
   });
   final String userId;
 }
+
+class SocialPostError extends SocialPostState {
+  SocialPostError(this.message);
+
+  final String message;
+}
+
+class PostDetailsLoading extends SocialPostState {}
+
+class PostDetailsLoaded extends SocialPostState {
+  PostDetailsLoaded({
+    required this.productList,
+    required this.totalProductCount,
+  });
+
+  final List<ProductDataModel>? productList;
+  final int totalProductCount;
+}
+
+class LoadPostCommentState extends SocialPostState {
+  LoadPostCommentState({
+    required this.postCommentsList,
+    this.myUserId,
+  });
+
+  final List<CommentDataItem>? postCommentsList;
+  final String? myUserId;
+}
+
+class LoadPostCommentRepliesState extends SocialPostState {
+  LoadPostCommentRepliesState({
+    required this.postCommentRepliesList,
+    this.myUserId,
+  });
+
+  final List<CommentDataItem>? postCommentRepliesList;
+  final String? myUserId;
+}
+
+class LoadingPostComment extends SocialPostState {}
+
+class LoadingPostCommentReplies extends SocialPostState {}

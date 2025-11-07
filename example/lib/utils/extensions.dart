@@ -17,9 +17,7 @@ extension ContextExtension on BuildContext {
 extension emptyExtension on String? {
   bool get isEmptyOrNull {
     final finalString = this?.trim();
-    return finalString == null ||
-        finalString == ' ' ||
-        finalString.isEmpty == true;
+    return finalString == null || finalString == ' ' || finalString.isEmpty == true;
   }
 }
 
@@ -32,9 +30,8 @@ extension zeroOrNullExtension on double? {
 }
 
 extension StringExtension on String {
-  String capitalize() => length > 1
-      ? '${this[0].toUpperCase()}${substring(1).toLowerCase()}'
-      : toUpperCase();
+  String capitalize() =>
+      length > 1 ? '${this[0].toUpperCase()}${substring(1).toLowerCase()}' : toUpperCase();
 }
 
 extension removeEmptyElementExtension on Map<String, dynamic> {
@@ -62,20 +59,20 @@ extension ColorExtension on String {
   Color get toHexColor => Color(int.parse('0xFF$this'));
 }
 
+extension MediaTypeExtensionOnString on String {
+  MediaType get mediaType => switch (this) {
+        'photo' || 'image' => MediaType.photo,
+        'video' => MediaType.video,
+        String() => MediaType.both,
+      };
+}
+
 extension PlatformExtension on num {
   String get platformText => switch (this) {
         1 => 'android',
         2 => 'ios',
         int() => 'android',
         double() => 'android',
-      };
-}
-
-extension MediaTypeExtensionOnString on String {
-  MediaType get mediaType => switch (this) {
-        'photo' => MediaType.photo,
-        'video' => MediaType.video,
-        String() => MediaType.both,
       };
 }
 
@@ -92,9 +89,8 @@ extension DimensionExtension on num {
 }
 
 extension HeightExtension on num {
-  SizedBox get verticalSpace => this == 0
-      ? const SizedBox.shrink()
-      : SizedBox(height: toDouble().scaledValue);
+  SizedBox get verticalSpace =>
+      this == 0 ? const SizedBox.shrink() : SizedBox(height: toDouble().scaledValue);
 }
 
 extension WidthExtension on num {

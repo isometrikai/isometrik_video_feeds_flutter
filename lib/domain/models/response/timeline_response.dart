@@ -82,6 +82,7 @@ class TimeLineData {
     this.previews,
     this.isLiked,
     this.isSaved,
+    this.isFollowing,
   });
 
   factory TimeLineData.fromMap(Map<String, dynamic> json) => TimeLineData(
@@ -118,6 +119,7 @@ class TimeLineData {
                 .map((x) => PreviewMedia.fromMap(x as Map<String, dynamic>))),
         isLiked: json['is_liked'] as bool? ?? false,
         isSaved: json['is_saved'] as bool? ?? false,
+        isFollowing: json['is_following'] as bool? ?? false,
       );
   dynamic textFormatting;
   String? publishedAt;
@@ -137,6 +139,7 @@ class TimeLineData {
   bool? isLiked;
   bool? isSaved;
   bool? isFromLocal;
+  bool? isFollowing;
 
   Map<String, dynamic> toMap() => {
         'text_formatting': textFormatting,
@@ -157,6 +160,7 @@ class TimeLineData {
         'is_liked': isLiked,
         'is_saved': isSaved,
         'isFromLocal': isFromLocal,
+        'is_following': isFollowing,
       };
 }
 
@@ -428,10 +432,11 @@ class SocialUserData {
     this.avatarUrl,
     this.userMetadata,
     this.profileType,
+    this.isFollowing,
   });
 
   factory SocialUserData.fromMap(Map<String, dynamic> json) => SocialUserData(
-        id: json['id'] as String? ?? '',
+        id: json['id'] == null ? (json['user_id'] as String? ?? '') : (json['id'] as String? ?? ''),
         username: json['username'] as String? ?? '',
         fullName: json['full_name'] as String? ?? '',
         displayName: json['display_name'] as String? ?? '',
@@ -440,6 +445,7 @@ class SocialUserData {
         userMetadata: json['user_metadata'] == null
             ? null
             : UserMetadata.fromMap(json['user_metadata'] as Map<String, dynamic>),
+        isFollowing: json['is_following'] as bool? ?? false,
       );
   String? id;
   String? username;
@@ -448,6 +454,7 @@ class SocialUserData {
   String? avatarUrl;
   String? profileType;
   UserMetadata? userMetadata;
+  bool? isFollowing;
 
   Map<String, dynamic> toMap() => {
         'id': id,
@@ -457,6 +464,7 @@ class SocialUserData {
         'avatar_url': avatarUrl,
         'profile_type': profileType,
         'user_metadata': userMetadata?.toMap(),
+        'is_following': isFollowing,
       };
 }
 
@@ -558,52 +566,55 @@ class TaggedPosition {
 
 class SocialProductData {
   SocialProductData({
-    required this.id,
-    required this.name,
-    required this.brandName,
+    required this.productId,
+    required this.productName,
+    required this.brand,
+    required this.category,
     required this.price,
     required this.discountPrice,
     required this.currency,
-    required this.url,
-    required this.imageUrl,
-    required this.position,
+    required this.productUrl,
+    required this.productImage,
+    required this.mediaPosition,
   });
 
   factory SocialProductData.fromJson(Map<String, dynamic> json) => SocialProductData(
-        id: json['id'] as String? ?? '',
-        name: json['name'] as String? ?? '',
-        brandName: json['brand_name'] as String? ?? '',
+        productId: json['product_id'] as String? ?? '',
+        productName: json['product_name'] as String? ?? '',
+        brand: json['brand'] as String? ?? '',
+        category: json['category'] as String? ?? '',
         price: json['price'] as num? ?? 0,
         discountPrice: json['discount_price'] as num? ?? 0,
         currency: json['currency'] == null
             ? null
             : Currency.fromJson(json['currency'] as Map<String, dynamic>),
-        url: json['url'] as String? ?? '',
-        imageUrl: json['image_url'] as String? ?? '',
-        position: json['position'] == null
+        productUrl: json['product_url'] as String? ?? '',
+        productImage: json['product_image'] as String? ?? '',
+        mediaPosition: json['media_position'] == null
             ? null
-            : ProductPosition.fromJson(json['position'] as Map<String, dynamic>),
+            : ProductPosition.fromJson(json['media_position'] as Map<String, dynamic>),
       );
-  String? id;
-  String? name;
-  String? brandName;
+  String? productId;
+  String? productName;
+  String? brand;
+  String? category;
   num? price;
   num? discountPrice;
   Currency? currency;
-  String? url;
-  String? imageUrl;
-  ProductPosition? position;
+  String? productUrl;
+  String? productImage;
+  ProductPosition? mediaPosition;
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'brand_name': brandName,
+        'product_id': productId,
+        'product_name': productName,
+        'brand': brand,
         'price': price,
         'discount_price': discountPrice,
         'currency': currency?.toJson(),
-        'url': url,
-        'image_url': imageUrl,
-        'position': position?.toJson(),
+        'product_url': productUrl,
+        'product_image': productImage,
+        'media_position': mediaPosition?.toJson(),
       };
 }
 
