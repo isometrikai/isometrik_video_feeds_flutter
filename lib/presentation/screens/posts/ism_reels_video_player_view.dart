@@ -1454,7 +1454,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl);
 
                   if (_controllerReady && _videoPlayerController!.isPlaying) {
-                    _videoPlayerController?.pause();
+                    await _videoPlayerController?.pause();
                     _isPlaying = false;
                     _isPlayPauseActioned = false;
                     _isVideoPlaying.value = false;
@@ -2564,10 +2564,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         final completionRate = totalSeconds > 0 ? ((watchedSeconds / totalSeconds) * 100) : 0;
 
         eventMap.addAll({
-          'view_completion_rate': completionRate,
+          'view_completion_rate': completionRate.toInt(),
           'view_duration': watchedSeconds,
           // 'total_duration': totalSeconds,
-          'view_source': 'feed',
         });
 
         // Mark as logged to prevent duplicate logging
