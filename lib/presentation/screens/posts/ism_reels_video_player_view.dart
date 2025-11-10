@@ -1393,7 +1393,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         children: [
           // Only the main GestureDetector as child of the outer Stack
           GestureDetector(
+            onTap: _toggleMuteAndUnMute,
             onLongPress: _togglePlayPause,
+            onDoubleTap: () async {
+              _triggerLikeAnimation(); // Always show animation
+              if (_reelData.isLiked != true && widget.onDoubleTap != null) {
+                await widget.onDoubleTap!();
+              }
+            },
             onLongPressEnd: (_) => _togglePlayPause(),
             child: VisibilityDetector(
               key: Key(_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl),
