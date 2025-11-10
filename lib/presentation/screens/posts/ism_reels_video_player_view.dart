@@ -1263,7 +1263,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   void _callOnTapMentionData(List<MentionMetaData> mentionDataList) {
     if (widget.onTapMentionTag != null) {
+      _pauseForNavigation();
       widget.onTapMentionTag?.call(mentionDataList);
+      _resumeAfterNavigation();
     }
   }
 
