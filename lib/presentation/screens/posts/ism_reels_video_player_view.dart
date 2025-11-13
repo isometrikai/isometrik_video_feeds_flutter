@@ -1810,31 +1810,29 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                               );
                             }
 
-                            return RichText(
-                              text: TextSpan(
-                                children: [
-                                  _cachedDescriptionTextSpan!,
-                                  if (shouldTruncate)
-                                    TextSpan(
-                                      text: value ? ' ' : '... ',
-                                      style: IsrStyles.white14.copyWith(
-                                        color: IsrColors.white.changeOpacity(0.9),
+                            return GestureDetector(
+                              onTap: () {
+                                if (shouldTruncate) {
+                                  _isExpandedDescription.value = !_isExpandedDescription.value;
+                                }
+                              },
+                              child: RichText(
+                                text: TextSpan(
+                                  children: [
+                                    _cachedDescriptionTextSpan!,
+                                    if (shouldTruncate)
+                                      TextSpan(
+                                        text: value ? ' ' : ' ... ',
+                                        style:
+                                        IsrStyles.white14.copyWith(fontWeight: FontWeight.w700),
+                                        recognizer: TapGestureRecognizer()
+                                          ..onTap = () {
+                                            // _isExpandedDescription.value =
+                                            //     !_isExpandedDescription.value;
+                                          },
                                       ),
-                                    ),
-                                  if (shouldTruncate)
-                                    TextSpan(
-                                      text: value ? 'view less' : 'view more',
-                                      style: IsrStyles.white14.copyWith(
-                                        fontWeight: FontWeight.w700,
-                                        color: IsrColors.white,
-                                      ),
-                                      recognizer: TapGestureRecognizer()
-                                        ..onTap = () {
-                                          _isExpandedDescription.value =
-                                              !_isExpandedDescription.value;
-                                        },
-                                    ),
-                                ],
+                                  ],
+                                ),
                               ),
                             );
                           },
