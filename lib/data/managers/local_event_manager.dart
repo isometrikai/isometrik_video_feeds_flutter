@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -87,22 +88,17 @@ class LocalEventQueue with WidgetsBindingObserver {
 
       // Call the callback if provided
       if (onBeforeFlush != null) {
-        debugPrint(
-            '${runtimeType.toString()} Calling onBeforeFlush callback with ${events.length} events');
         try {
           final success = await onBeforeFlush!(events);
           if (success) {
-            debugPrint('${runtimeType.toString()} Callback succeeded, proceeding to flush');
-            await flush();
-          } else {
-            debugPrint('${runtimeType.toString()} Callback failed, skipping flush');
+            unawaited(flush());
           }
         } catch (e) {
           debugPrint('${runtimeType.toString()} Error in callback: $e, skipping flush');
         }
       } else {
         // No callback, proceed with normal flush
-        await flush();
+        unawaited(flush());
       }
     }
   }

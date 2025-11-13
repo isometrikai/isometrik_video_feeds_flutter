@@ -210,24 +210,25 @@ class StandardVideoCacheManager implements IVideoCacheManager {
     try {
       final controller = _createVideoPlayerController(url);
 
-      // Initialize with timeout to prevent hanging
+      // OPTIMIZATION: Add timeout to prevent hanging on slow networks
       await controller.initialize().timeout(
-        const Duration(seconds: 20),
+        const Duration(seconds: 10),
         onTimeout: () {
-          debugPrint('⚠️ Video initialization timeout for: $url');
-          throw TimeoutException('Video initialization timeout', const Duration(seconds: 20));
+          debugPrint('⚠️ StandardVideoPlayer initialization timeout for: $url');
+          throw TimeoutException(
+              'Video initialization timeout', const Duration(seconds: 10));
         },
       );
 
       // Validate video initialization - check for decoding errors
       if (!controller.value.isInitialized) {
-        debugPrint('❌ Video not initialized properly for: $url');
+        debugPrint('❌ StandardVideoPlayer not initialized properly for: $url');
         await controller.dispose();
         return null;
       }
 
       if (controller.value.hasError) {
-        debugPrint('❌ Video has error after initialization: ${controller.value.errorDescription}');
+        debugPrint('❌ StandardVideoPlayer has error after initialization: ${controller.value.errorDescription}');
         debugPrint('❌ URL: $url');
         await controller.dispose();
         return null;
@@ -235,15 +236,9 @@ class StandardVideoCacheManager implements IVideoCacheManager {
 
       // Check for valid video dimensions (Size.zero indicates decoding failure)
       if (controller.value.size == Size.zero) {
-        debugPrint('❌ Video has invalid size (0x0) - possible decoding failure for: $url');
+        debugPrint('❌ StandardVideoPlayer has invalid size (0x0) - possible decoding failure for: $url');
         await controller.dispose();
         return null;
-      }
-
-      // Check for valid duration
-      if (controller.value.duration == Duration.zero) {
-        debugPrint('⚠️ Video has zero duration - possible corrupted file: $url');
-        // Don't fail here as some videos may report duration late
       }
 
       debugPrint(

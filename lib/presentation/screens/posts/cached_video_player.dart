@@ -215,13 +215,13 @@ class CachedVideoCacheManager implements IVideoCacheManager {
     try {
       final controller = _createVideoPlayerController(url);
 
-      // Initialize with timeout
+      // OPTIMIZATION: Reduce timeout from 20s to 10s for faster failure detection
       await controller.initialize().timeout(
-        const Duration(seconds: 20),
+        const Duration(seconds: 10),
         onTimeout: () {
           debugPrint('⚠️ CachedVideoPlayer initialization timeout for: $url');
           throw TimeoutException(
-              'Video initialization timeout', const Duration(seconds: 20));
+              'Video initialization timeout', const Duration(seconds: 10));
         },
       );
 

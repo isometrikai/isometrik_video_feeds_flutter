@@ -90,18 +90,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         });
       }
     });
-
-    if (_tabDataModelList.isListEmptyOrNull == false) {
-      var tabData = _tabDataModelList[_currentIndex];
-      final reelsDataList = tabData.reelsDataList;
-      final listOfUrls = <String>[];
-      for (var reelsData in reelsDataList) {
-        listOfUrls.add(reelsData.mediaMetaDataList.first.mediaUrl);
-        if (reelsData.mediaMetaDataList.first.thumbnailUrl.isStringEmptyOrNull == false) {
-          listOfUrls.add(reelsData.mediaMetaDataList.first.thumbnailUrl);
-        }
-      }
-    }
     postBloc.add(const StartPost());
   }
 
