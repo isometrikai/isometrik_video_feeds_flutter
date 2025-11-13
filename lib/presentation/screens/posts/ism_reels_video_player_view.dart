@@ -2393,7 +2393,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     // If no next media in carousel or single video, notify parent to move to next post
     debugPrint(
         '🎬 Video completed, notifying parent to move to next post. Callback available: ${widget.onVideoCompleted != null}');
-    // widget.onVideoCompleted?.call();
+    widget.onVideoCompleted?.call();
   }
 
   /// Log watch event only once per video when user leaves or video completes
