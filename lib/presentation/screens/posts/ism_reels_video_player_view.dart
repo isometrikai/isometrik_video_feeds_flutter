@@ -62,7 +62,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   IVideoPlayerController? _videoPlayerController;
   IVideoPlayerController?
       _lastSetupController; // Track last setup controller to prevent duplicate setup
-  final Set<String> _loggedMilestones = {}; // prevent duplicates
 
   // Watch event tracking - log only once per video
   Duration _maxWatchPosition = Duration.zero;
@@ -107,9 +106,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   // Track if video has completed one full cycle for auto-advance
   bool _hasCompletedOneCycle = false;
 
-  // Fallback completion detection timer
-  Timer? _completionFallbackTimer;
-
   // Throttle visibility changes to prevent rapid state changes
   DateTime? _lastVisibilityChange;
   static const Duration _visibilityThrottleDuration = Duration(milliseconds: 300);
@@ -119,11 +115,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   // Device performance management
   bool _isLowEndDevice = false;
-  Timer? _performanceMonitorTimer;
-
-  // Route observer for navigation detection
-  static final RouteObserver<PageRoute<dynamic>> _routeObserver =
-      RouteObserver<PageRoute<dynamic>>();
 
   // Track navigation state to prevent background initialization
   bool _hasNavigatedAway = false;
@@ -138,13 +129,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _detectDevicePerformance();
-
-    // Subscribe to route changes
-    final route = ModalRoute.of(context);
-    if (route is PageRoute) {
-      _routeObserver.subscribe(this, route);
-    }
+    // _detectDevicePerformance();
   }
 
   /// Detects device performance capabilities to optimize video playback
@@ -177,14 +162,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       if (_isPlaying) {
         _togglePlayPause();
       }
-      // Pause performance monitoring when app is backgrounded
-      _performanceMonitorTimer?.cancel();
     } else if (state == AppLifecycleState.resumed) {
       if (!_isPlaying) {
         _togglePlayPause();
       }
-      // Resume performance monitoring when app is foregrounded
-      _startPerformanceMonitoring();
     }
   }
 
@@ -210,29 +191,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       _videoPlayerController?.pause();
       _isPlaying = false;
       mountUpdate();
-    }
-  }
-
-  /// Starts performance monitoring to prevent device heating
-  void _startPerformanceMonitoring() {
-    _performanceMonitorTimer?.cancel();
-    _performanceMonitorTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
-      _monitorPerformance();
-    });
-  }
-
-  /// Monitors device performance and adjusts video quality if needed
-  void _monitorPerformance() {
-    if (!mounted || _isDisposed) {
-      _performanceMonitorTimer?.cancel();
-      return;
-    }
-
-    // Check if video is playing and adjust quality for low-end devices
-    if (_videoPlayerController != null && _videoPlayerController!.isPlaying && _isLowEndDevice) {
-      // For low-end devices, we could implement quality reduction here
-      // This is a placeholder for future thermal management
-      debugPrint('🌡️ Performance monitoring: Low-end device optimization active');
     }
   }
 
@@ -278,8 +236,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         'IsmReelsVideoPlayerView ...Post by ...${_reelData.userName}\n Post url ${_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl}');
 
     if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kVideoType) {
-      await _initializeVideoPlayer();
-      mountUpdate();
+      // OPTIMIZATION: Don't block widget initialization - load video in background
+      unawaited(_initializeVideoPlayer().then((_) {
+        if (mounted) {
+          mountUpdate();
+        }
+      }));
 
       // Preload next videos for smoother experience
       _preloadNextVideos();
@@ -352,7 +314,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     // Reset completion flag and progress tracking when changing pages
     _hasCompletedOneCycle = false;
     _lastProgressSecond = -1;
-    _loggedMilestones.clear();
 
     // Reset watch event tracking for the new video
     _maxWatchPosition = Duration.zero;
@@ -433,16 +394,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         }
       }
 
-      // If not cached or needs reinitializing, check if initialization is in progress
+      // OPTIMIZATION: Reduce retry attempts from 5 to 3 for faster failure detection
       if (_videoCacheManager.isMediaInitializing(videoUrl)) {
         debugPrint('IsmReelsVideoPlayerView....Video is being initialized, waiting...');
-        // Wait for initialization with timeout
-        for (var i = 0; i < 5; i++) {
-          // Try up to 5 times
-          await Future.delayed(const Duration(milliseconds: 200));
+        // Wait for initialization with reduced timeout (600ms total instead of 1000ms)
+        for (var i = 0; i < 3; i++) {
           if (!mounted || _isDisposed) {
-            debugPrint(
-                '⚠️ Video initialization cancelled during wait - widget disposed or not mounted');
             return;
           }
 
@@ -466,8 +423,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
       // Check if widget is still valid before final setup
       if (!mounted || _isDisposed) {
-        debugPrint(
-            '⚠️ Video initialization cancelled before final setup - widget disposed or not mounted');
         return;
       }
 
@@ -537,19 +492,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     try {
       if (_videoPlayerController == null) {
-        debugPrint('⚠️ VideoController is null in setup');
         return;
       }
 
       // CRITICAL: Prevent duplicate setup on the same controller instance
       // This is the main cause of audio flickering
       if (_lastSetupController == _videoPlayerController) {
-        debugPrint(
-            '⚠️ Controller already set up, skipping duplicate setup to prevent audio flickering');
         return;
       }
-
-      debugPrint('🎬 Setting up new video controller (preventing duplicate setup)');
 
       // Make sure controller is initialized
       if (!_videoPlayerController!.isInitialized) {
@@ -560,23 +510,17 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       // Remove existing listener to prevent memory leaks
       _videoPlayerController!.removeListener(_handlePlaybackProgress);
 
-      // Set up basic properties with performance optimizations FIRST
-      await _videoPlayerController!.setLooping(true);
-
-      // CRITICAL: Set volume BEFORE any seek or play operations to prevent audio flickering
-      // Apply global mute state to new videos
+      // OPTIMIZATION: Parallelize independent operations for faster setup
+      // Set volume and looping can be done in parallel
       _isMuted = _globalMuteState;
       final targetVolume = _isMuted ? 0.0 : 1.0;
 
-      // Only set volume if it's different from the last set value
-      if (_lastSetVolume != targetVolume) {
-        await _setVolumeSafely(targetVolume);
-      } else {
-        debugPrint('🔊 Volume already at $targetVolume, skipping redundant operation');
-      }
-
-      // Reset to beginning - ensure video starts from the beginning
-      await _videoPlayerController!.seekTo(Duration.zero);
+      // Execute setup operations in parallel
+      await Future.wait([
+        _videoPlayerController!.setLooping(true),
+        if (_lastSetVolume != targetVolume) _setVolumeSafely(targetVolume),
+        _videoPlayerController!.seekTo(Duration.zero),
+      ], eagerError: true);
 
       // Reset completion flag for new video
       _hasCompletedOneCycle = false;
@@ -584,59 +528,37 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       // Add listener after setup
       _videoPlayerController!.addListener(_handlePlaybackProgress);
 
-      // Start fallback completion detection timer
-      _startCompletionFallbackTimer();
-
       // Start playback only if not already playing and controller is ready
       if (!_videoPlayerController!.isPlaying && _videoPlayerController!.isInitialized) {
         // Critical check: Don't start playback if user has navigated away
         if (_hasNavigatedAway) {
-          debugPrint('⏸️ Video initialized but paused - user navigated away');
           return;
         }
 
-        debugPrint('▶️ Starting video playback in setup');
-        await _videoPlayerController!.play();
+        // OPTIMIZATION: Start playback without blocking - let it happen in background
+        unawaited(_videoPlayerController!.play().then((_) {
+          debugPrint('✅ Video playback started successfully');
 
-        // Ensure video starts playing with device-specific timing
-        final retryDelay = _isLowEndDevice ? 200 : 100;
-        await Future.delayed(Duration(milliseconds: retryDelay));
-
-        // Check again before retry
-        if (_hasNavigatedAway) {
-          debugPrint('⏸️ Video retry cancelled - user navigated away during playback');
-          return;
-        }
-
-        if (!_videoPlayerController!.isPlaying) {
-          debugPrint('🔄 Retrying video playback...');
-          await _videoPlayerController!.play();
-
-          // Additional retry for low-end devices
-          if (_isLowEndDevice) {
-            await Future.delayed(const Duration(milliseconds: 150));
-
-            // Final check before second retry
-            if (_hasNavigatedAway) {
-              debugPrint('⏸️ Video second retry cancelled - user navigated away');
-              return;
+          // Retry mechanism without blocking
+          Future.delayed(const Duration(milliseconds: 100), () {
+            if (!_hasNavigatedAway &&
+                _videoPlayerController != null &&
+                !_videoPlayerController!.isPlaying &&
+                !_isDisposed &&
+                mounted) {
+              debugPrint('🔄 Retrying video playback...');
+              unawaited(_videoPlayerController!.play());
             }
-
-            if (!_videoPlayerController!.isPlaying) {
-              debugPrint('🔄 Second retry for low-end device...');
-              await _videoPlayerController!.play();
-            }
-          }
-        }
+          });
+        }).catchError((e) {
+          debugPrint('❌ Error starting video playback: $e');
+        }));
       }
 
       debugPrint('✅ Video controller setup complete');
 
       // Mark this controller as set up to prevent duplicate setup calls
       _lastSetupController = _videoPlayerController;
-
-      // Start performance monitoring for thermal management
-      _startPerformanceMonitoring();
     } catch (e) {
       debugPrint('❌ Error in setupVideoController: $e');
       // Clean up on error
@@ -653,16 +575,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _logWatchEventIfNeeded();
 
     WidgetsBinding.instance.removeObserver(this);
-    _routeObserver.unsubscribe(this);
     _isDisposed = true;
     _tapGestureRecognizer?.dispose();
     _pageController?.dispose();
     _likeAnimationTimer?.cancel();
     _muteAnimationTimer?.cancel();
     _completionDebounceTimer?.cancel();
-    _completionFallbackTimer?.cancel();
     _audioDebounceTimer?.cancel();
-    _performanceMonitorTimer?.cancel();
 
     // Reset audio and controller operation state
     _isAudioOperationInProgress = false;
@@ -1406,7 +1325,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             onLongPressEnd: (_) => _togglePlayPause(),
             child: VisibilityDetector(
               key: Key(_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl),
-              onVisibilityChanged: (info) async {
+              onVisibilityChanged: (info) {
                 if (_isDisposed) return;
                 if (_reelData.showBlur == true ||
                     _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType ==
@@ -1434,26 +1353,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   if (_controllerReady &&
                       !_videoPlayerController!.isPlaying &&
                       !_hasNavigatedAway) {
-                    // If video has completed, reset it to the beginning
-                    if (_hasCompletedOneCycle) {
-                      debugPrint('🔄 Video was completed, resetting to beginning');
-                      _hasCompletedOneCycle = false;
-                      _lastProgressSecond = -1;
-                      _loggedMilestones.clear();
-                      // CRITICAL: Use await for seek to prevent audio flickering
-                      await _videoPlayerController?.seekTo(Duration.zero);
-                    }
-                    // Only play, don't seek if video hasn't completed
-                    // Seeking while video is loaded but not playing causes audio glitches
-                    await _videoPlayerController?.play();
-                    _isPlaying = true;
-                    _isVideoPlaying.value = true;
-                    // OPTIMIZATION: Don't rebuild entire widget for better scrolling performance
-                    // mountUpdate(); // Removed
-                  } else if (_hasNavigatedAway) {
-                    debugPrint('⏸️ Video not auto-playing - user navigated away');
-                  } else if (_controllerReady && _videoPlayerController!.isPlaying) {
-                    debugPrint('▶️ Video already playing, no action needed');
+                    // OPTIMIZATION: Use unawaited to prevent blocking scrolling
+                    // Play video without blocking the UI thread
+                    unawaited(_videoPlayerController?.play().then((_) {
+                      _isPlaying = true;
+                      _isVideoPlaying.value = true;
+                      debugPrint('✅ Video playback started');
+                    }).catchError((e) {
+                      debugPrint('❌ Error starting playback: $e');
+                    }));
                   }
                 } else {
                   // Video is not visible - pause it
@@ -1463,12 +1371,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl);
 
                   if (_controllerReady && _videoPlayerController!.isPlaying) {
-                    await _videoPlayerController?.pause();
-                    _isPlaying = false;
-                    _isPlayPauseActioned = false;
-                    _isVideoPlaying.value = false;
-                    // OPTIMIZATION: Don't rebuild entire widget for better scrolling performance
-                    // mountUpdate(); // Removed
+                    // OPTIMIZATION: Use unawaited to prevent blocking scrolling
+                    unawaited(_videoPlayerController?.pause().then((_) {
+                      _isPlaying = false;
+                      _isPlayPauseActioned = false;
+                      _isVideoPlaying.value = false;
+                      debugPrint('✅ Video paused');
+                    }).catchError((e) {
+                      debugPrint('❌ Error pausing video: $e');
+                    }));
                   }
                 }
               },
@@ -2437,45 +2348,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       _maxWatchPosition = position;
     }
 
-    // Check if video is near the end (within 500ms) or has reached the end
-    final timeRemaining = duration - position;
-    final isNearEnd = timeRemaining.inMilliseconds <= 500; // Within 500ms
-    final hasReachedEnd = position >= duration;
-
-    // Additional completion detection for edge cases
-    final isAtEnd =
-        position.inMilliseconds >= (duration.inMilliseconds - 200); // Within 200ms of end
-    final isDurationValid = duration.inMilliseconds > 0;
-
-    // Debug logging for completion detection
-    if (isNearEnd || hasReachedEnd || isAtEnd) {
-      debugPrint(
-          '🎬 Video completion check - Position: ${position.inSeconds}s, Duration: ${duration.inSeconds}s, '
-          'Time remaining: ${timeRemaining.inMilliseconds}ms, isNearEnd: $isNearEnd, '
-          'hasReachedEnd: $hasReachedEnd, isAtEnd: $isAtEnd, hasCompleted: $_hasCompletedOneCycle');
-    }
-    debugPrint(
-        '🎬 Video completion check - Position: ${position.inSeconds}s, Duration: ${duration.inSeconds}s, '
-        'Time remaining: ${timeRemaining.inMilliseconds}ms, isNearEnd: $isNearEnd, '
-        'hasReachedEnd: $hasReachedEnd, isAtEnd: $isAtEnd, hasCompleted: $_hasCompletedOneCycle');
-
-    // For looping videos, we need to detect when they complete one full cycle
-    // Use multiple conditions to catch different completion scenarios
-    final shouldTriggerCompletion =
-        (isNearEnd || hasReachedEnd || isAtEnd) && isDurationValid && !_hasCompletedOneCycle;
-
-    debugPrint(
-        'shouldTriggerCompletion: $shouldTriggerCompletion (isNearEnd: $isNearEnd, hasReachedEnd: $hasReachedEnd, isAtEnd: $isAtEnd, isDurationValid: $isDurationValid, hasCompleted: $_hasCompletedOneCycle)');
     if (total == progress) {
       _hasCompletedOneCycle = true;
-      _completionFallbackTimer
-          ?.cancel(); // Cancel fallback timer since we detected completion normally
-      _loggedMilestones.add('complete');
-      debugPrint(
-          '🎬 Video completed one cycle! Position: ${position.inSeconds}s, Duration: ${duration.inSeconds}s, '
-          'Time remaining: ${timeRemaining.inMilliseconds}ms, Completion triggered by: '
-          '${isNearEnd ? "isNearEnd" : ""} ${hasReachedEnd ? "hasReachedEnd" : ""} ${isAtEnd ? "isAtEnd" : ""}');
-
       // Handle video completion - check if we should move to next video or next post
       _handleVideoCompletion();
     }
@@ -2486,35 +2360,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     // Debounce completion calls to prevent excessive processing
     _completionDebounceTimer?.cancel();
     _completionDebounceTimer = Timer(const Duration(milliseconds: 100), _processVideoCompletion);
-  }
-
-  /// Starts a fallback timer to detect video completion if normal detection fails
-  void _startCompletionFallbackTimer() {
-    _completionFallbackTimer?.cancel();
-    _completionFallbackTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_isDisposed || !mounted || _hasCompletedOneCycle) {
-        timer.cancel();
-        return;
-      }
-
-      if (_videoPlayerController?.isInitialized == true) {
-        final position = _videoPlayerController!.position;
-        final duration = _videoPlayerController!.duration;
-
-        if (duration.inMilliseconds > 0) {
-          final timeRemaining = duration - position;
-          // If we're very close to the end (within 500ms) and haven't detected completion yet
-          if (timeRemaining.inMilliseconds <= 500 && !_hasCompletedOneCycle) {
-            debugPrint(
-                '🎬 Fallback completion detection triggered! Position: ${position.inSeconds}s, Duration: ${duration.inSeconds}s');
-            _hasCompletedOneCycle = true;
-            _loggedMilestones.add('complete');
-            _handleVideoCompletion();
-            timer.cancel();
-          }
-        }
-      }
-    });
   }
 
   void _processVideoCompletion() {
@@ -2552,7 +2397,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   /// Log watch event only once per video when user leaves or video completes
-  void _logWatchEventIfNeeded() {
+  void _logWatchEventIfNeeded() async {
     final eventMap = <String, dynamic>{
       'post_id': widget.reelsData?.postId,
       'view_source': 'feed',
@@ -2585,6 +2430,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       }
     }
     debugPrint('Logging watch event - Post: ${jsonEncode(eventMap)}');
-    EventQueueProvider.instance.addEvent(eventMap);
+    unawaited(EventQueueProvider.instance.addEvent(eventMap));
   }
 }
