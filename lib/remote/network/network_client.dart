@@ -71,7 +71,7 @@ class NetworkClient with AppMixin {
       }
       return responseModel;
     } else {
-      throw NetworkError(IsrTranslationFile.noInternet);
+      throw AppError(IsrTranslationFile.noInternet, statusCode: 1000);
     }
   }
 

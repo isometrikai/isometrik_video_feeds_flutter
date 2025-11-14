@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -27,7 +26,7 @@ class PostListingView extends StatefulWidget {
 class _PostListingViewState extends State<PostListingView> {
   final TextEditingController _hashtagController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final _postListingBloc = IsmInjectionUtils.getBloc<PostListingBloc>();
+  late PostListingBloc _postListingBloc;
 
   Timer? _debounceTimer;
   static const int _minCharacterLimit = 3;
@@ -47,9 +46,14 @@ class _PostListingViewState extends State<PostListingView> {
   final Map<String, bool> _userFollowingState = {};
 
   @override
-  void initState() {
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // ✅ Get the BLoC from context (from the BlocProvider in the navigation tree)
+    _postListingBloc = context.read<PostListingBloc>();
+
+    // ✅ Now call init after we have the BLoC
     _onStartInit();
-    super.initState();
   }
 
   void _onStartInit() {
@@ -509,11 +513,20 @@ class _PostListingViewState extends State<PostListingView> {
       );
 
   Widget _buildPostImage(TimeLineData post) {
-    final imageUrl = post.media?.first.mediaType?.mediaType == MediaType.video
-        ? post.media?.first.previewUrl!
-        : post.media?.first.url ?? '';
+    var coverUrl = '';
+    if (post.previews.isListEmptyOrNull == false) {
+      final previewUrl = post.previews?.first.url ?? '';
+      if (previewUrl.isStringEmptyOrNull == false) {
+        coverUrl = previewUrl;
+      }
+    }
+    if (coverUrl.isStringEmptyOrNull && post.media.isListEmptyOrNull == false) {
+      coverUrl = post.media?.first.mediaType?.mediaType == MediaType.video
+          ? (post.media?.first.previewUrl.toString() ?? '')
+          : post.media?.first.url.toString() ?? '';
+    }
 
-    if (imageUrl.isStringEmptyOrNull) {
+    if (coverUrl.isStringEmptyOrNull) {
       return Container(
         color: IsrColors.colorF5F5F5,
         child: Icon(
@@ -525,7 +538,7 @@ class _PostListingViewState extends State<PostListingView> {
     }
 
     return AppImage.network(
-      imageUrl ?? '',
+      coverUrl,
       fit: BoxFit.cover,
       width: double.infinity,
       height: double.infinity,
@@ -653,8 +666,7 @@ class _PostListingViewState extends State<PostListingView> {
   void _onTagTapped(dynamic tag) {
     final tagText = (tag?.hashtag as String?) ?? '';
 
-    IsmInjectionUtils.getRouteManagement()
-        .goToTagDetailsView(tagValue: tagText, tagType: TagType.hashtag);
+    IsrAppNavigator.navigateTagDetails(context, tagValue: tagText, tagType: TagType.hashtag);
   }
 
   void _handlePlaceTap(String placeId, String placeName) {
@@ -676,11 +688,12 @@ class _PostListingViewState extends State<PostListingView> {
     final long = result?.geometry?.location?.lng?.toDouble() ?? 0;
 
     // Navigate to place details with fetched data
-    IsmInjectionUtils.getRouteManagement().goToPlaceDetailsView(
+    IsrAppNavigator.navigateToPlaceDetails(
+      context,
       placeId: result?.placeId ?? '',
       placeName: result?.name ?? '',
-      lat: lat,
-      long: long,
+      latitude: lat,
+      longitude: long,
     );
   }
 

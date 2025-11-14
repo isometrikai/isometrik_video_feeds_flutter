@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart' as isr;
 import 'package:ism_video_reel_player_example/di/di.dart';
@@ -30,7 +29,42 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) => isr.IsmPostView(
+        tabDataModelList: [
+          isr.TabDataModel(
+            postSectionType: isr.PostSectionType.forYou,
+            title: TranslationFile.forYou,
+            reelsDataList: [],
+            startingPostIndex: 0,
+            onTapCartIcon: (productIds, postId, userId) {
+              debugPrint('productIds: $productIds');
+              debugPrint('postId: $postId');
+            },
+          ),
+          isr.TabDataModel(
+            postSectionType: isr.PostSectionType.following,
+            title: TranslationFile.following,
+            reelsDataList: [],
+            startingPostIndex: 0,
+            onTapCartIcon: (productIds, postId, userId) {
+              debugPrint('productIds: $productIds');
+              debugPrint('postId: $postId');
+            },
+          ),
+          isr.TabDataModel(
+            postSectionType: isr.PostSectionType.trending,
+            title: TranslationFile.trending,
+            reelsDataList: [],
+            startingPostIndex: 0,
+            onTapCartIcon: (productIds, postId, userId) {
+              debugPrint('productIds: $productIds');
+              debugPrint('postId: $postId');
+            },
+          ),
+        ], // ✅ Already working!
+      );
+
+  /*Scaffold(
         resizeToAvoidBottomInset: false,
         backgroundColor: AppColors.grey.shade100,
         body: BlocBuilder<HomeBloc, HomeState>(
@@ -69,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
             return const SizedBox.shrink();
           },
         ),
-      );
+      );*/
 
   /// Creates a tab for timeline posts when navigating from other screens
   isr.TabDataModel _buildForYouTab(

@@ -30,6 +30,7 @@ class BlocInjection {
         IsmInjectionUtils.getUseCase<GetPostDetailsUseCase>(),
         IsmInjectionUtils.getUseCase<GetPostCommentUseCase>(),
         IsmInjectionUtils.getUseCase<CommentActionUseCase>(),
+        IsmInjectionUtils.getUseCase<GetSocialProductsUseCase>(),
       ),
     );
 

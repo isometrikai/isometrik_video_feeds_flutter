@@ -35,10 +35,10 @@ class SocialPostError extends SocialPostState {
   final String message;
 }
 
-class PostDetailsLoading extends SocialPostState {}
+class SocialProductsLoading extends SocialPostState {}
 
-class PostDetailsLoaded extends SocialPostState {
-  PostDetailsLoaded({
+class SocialProductsLoaded extends SocialPostState {
+  SocialProductsLoaded({
     required this.productList,
     required this.totalProductCount,
   });
@@ -70,3 +70,15 @@ class LoadPostCommentRepliesState extends SocialPostState {
 class LoadingPostComment extends SocialPostState {}
 
 class LoadingPostCommentReplies extends SocialPostState {}
+
+class PostInsightDetailsLoading extends SocialPostState {
+  PostInsightDetailsLoading({this.postId, this.postData});
+  String? postId;
+  TimeLineData? postData;
+}
+
+class PostInsightDetails extends SocialPostState {
+  PostInsightDetails({this.postId, this.postData});
+  String? postId;
+  TimeLineData? postData;
+}

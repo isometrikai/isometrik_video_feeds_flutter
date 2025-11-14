@@ -24,7 +24,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     this._getPostDetailsUseCase,
     this._getPostCommentUseCase,
     this._commentUseCase,
-  ) : super(PostLoadingState(isLoading: false)) {
+    this._getSocialProductsUseCase,
+  ) : super(PostLoadingState(isLoading: true)) {
     on<StartPost>(_onStartPost);
     on<LoadPostData>(_onLoadHomeData);
     on<GetTimeLinePostEvent>(_getTimeLinePost);
@@ -34,11 +35,12 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     on<ReportPostEvent>(_reportPost);
     on<LikePostEvent>(_likePost);
     on<FollowUserEvent>(_followUser);
-    on<GetPostDetailsEvent>(_getPostDetails);
+    on<GetSocialProductsEvent>(_getSocialProducts);
     on<GetPostCommentsEvent>(_getPostComments);
     on<CommentActionEvent>(_doActionOnComment);
     on<LoadPostsEvent>(_loadPosts);
     on<GetMorePostEvent>(_getMorePost);
+    on<GetPostInsightDetailsEvent>(_getPostInsightDetails);
   }
 
   final IsmLocalDataUseCase _localDataUseCase;
@@ -53,6 +55,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   final GetPostDetailsUseCase _getPostDetailsUseCase;
   final GetPostCommentUseCase _getPostCommentUseCase;
   final CommentActionUseCase _commentUseCase;
+  final GetSocialProductsUseCase _getSocialProductsUseCase;
 
   UserInfoClass? _userInfoClass;
   var reelsPageTrendingController = PageController();
@@ -112,7 +115,14 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   }
 
   FutureOr<void> _getMorePost(GetMorePostEvent event, Emitter<SocialPostState> emit) async {
-    if (event.postSectionType == PostSectionType.following) {
+    if (event.postSectionType == PostSectionType.forYou) {
+      await _callGetForYouPost(
+        event.isRefresh,
+        event.isPagination,
+        event.isLoading,
+        event.onComplete,
+      );
+    } else if (event.postSectionType == PostSectionType.following) {
       await _callGetTimeLinePost(
         event.isRefresh,
         event.isPagination,
@@ -401,19 +411,21 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     _isTimeLineLoadingMore = false;
   }
 
-  FutureOr<void> _getPostDetails(GetPostDetailsEvent event, Emitter<SocialPostState> emit) async {
+  FutureOr<void> _getSocialProducts(
+      GetSocialProductsEvent event, Emitter<SocialPostState> emit) async {
     var totalProductCount = 0;
     if (_isDataLoading) return;
     _isDataLoading = true;
     if (event.isFromPagination == false) {
       _detailsCurrentPage = 1;
       _detailsProductList.clear();
-      emit(PostDetailsLoading());
+      emit(SocialProductsLoading());
     } else {
       _detailsCurrentPage++;
     }
-    final apiResult = await _getPostDetailsUseCase.executeGetPostDetails(
+    final apiResult = await _getSocialProductsUseCase.executeGetSocialProducts(
       isLoading: false,
+      postId: event.postId,
       productIds: event.productIds,
       page: _detailsCurrentPage,
       limit: 20,
@@ -424,7 +436,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     } else {
       ErrorHandler.showAppError(appError: apiResult.error);
     }
-    emit(PostDetailsLoaded(productList: _detailsProductList, totalProductCount: totalProductCount));
+    emit(SocialProductsLoaded(
+        productList: _detailsProductList, totalProductCount: totalProductCount));
     _isDataLoading = false;
   }
 
@@ -497,5 +510,27 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       forYouPosts: event.forYouPosts,
       userId: myUserId,
     ));
+  }
+
+  FutureOr<void> _getPostInsightDetails(
+    GetPostInsightDetailsEvent event,
+    Emitter<SocialPostState> emit,
+  ) async {
+    emit(PostInsightDetailsLoading(
+      postId: event.postId ?? '',
+      postData: event.data,
+    ));
+    final apiResult = await _getPostDetailsUseCase.executeGetPostDetails(
+      isLoading: false,
+      postId: event.postId ?? '',
+    );
+    emit(PostInsightDetails(
+      postId: event.postId ?? '',
+      postData: apiResult.data ?? event.data,
+    ));
+    if (apiResult.isError) {
+      ErrorHandler.showAppError(
+          appError: apiResult.error, isNeedToShowError: true, errorViewType: ErrorViewType.toast);
+    }
   }
 }

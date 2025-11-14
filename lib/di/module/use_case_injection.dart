@@ -40,6 +40,8 @@ class UseCaseInjection {
         () => GoogleCloudStorageUploaderUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<CommentActionUseCase>(
         () => CommentActionUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<GetSocialProductsUseCase>(
+        () => GetSocialProductsUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<GetPostCommentUseCase>(
         () => GetPostCommentUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<MediaProcessingUseCase>(

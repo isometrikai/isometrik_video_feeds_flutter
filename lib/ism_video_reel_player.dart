@@ -8,6 +8,7 @@ export 'data/data.dart';
 export 'di/di.dart';
 // Domain exports
 export 'domain/domain.dart';
+export 'domain/models/user_info_class.dart';
 // Config exports
 export 'isr_video_reel_config.dart';
 // Presentation exports

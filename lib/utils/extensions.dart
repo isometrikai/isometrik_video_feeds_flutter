@@ -193,6 +193,11 @@ extension StringCasingExtension on String {
   String? takeIfNotEmpty() => trim().isNotEmpty ? this : null;
 }
 
+extension MediaQueryExtensions on BuildContext {
+  double get bottomPadding => MediaQuery.of(this).padding.bottom;
+  double get totalBottomNavSpace => kBottomNavigationBarHeight + MediaQuery.of(this).padding.bottom;
+}
+
 extension ScopeFunctions<T> on T {
   /// Calls the given function [op] with `this` value and returns the result.
   /// Like Kotlin's `let`.

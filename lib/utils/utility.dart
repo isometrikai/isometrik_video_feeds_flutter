@@ -202,29 +202,43 @@ class Utility {
     Color? backgroundColor,
     double? height,
     bool isRoundedCorners = true,
-  }) =>
-      showModalBottomSheet<T>(
-        context: context ?? IsrVideoReelConfig.buildContext!,
-        builder: (_) => SafeArea(
-          child: SizedBox(
-            height: height,
-            child: child,
-          ),
-        ),
-        enableDrag: false,
-        showDragHandle: false,
-        isDismissible: isDismissible,
-        isScrollControlled: isScrollControlled,
-        backgroundColor: backgroundColor ??
-            (isDarkBG
-                ? Theme.of(context ?? IsrVideoReelConfig.buildContext!).primaryColor
-                : IsrColors.white),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(IsrDimens.sixteen),
-          ),
-        ),
+  }) {
+    // Try to get context from multiple sources
+    final contextToUse = ismNavigatorKey.currentContext ?? IsrVideoReelConfig.buildContext;
+    
+    if (contextToUse == null) {
+      throw FlutterError(
+        'Navigator context is not available. '
+        'This usually happens when:\n'
+        '1. The SDK widgets (IsmPostView/IsmReelsVideoPlayerView) have not been built yet\n'
+        '2. The method is called before the widget tree is initialized\n'
+        'Make sure to call this after the SDK widgets are displayed.',
       );
+    }
+    
+    return showModalBottomSheet<T>(
+      context: contextToUse,
+      builder: (_) => SafeArea(
+        child: SizedBox(
+          height: height,
+          child: child,
+        ),
+      ),
+      enableDrag: false,
+      showDragHandle: false,
+      isDismissible: isDismissible,
+      isScrollControlled: isScrollControlled,
+      backgroundColor: backgroundColor ??
+          (isDarkBG
+              ? Theme.of(contextToUse).primaryColor
+              : IsrColors.white),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(IsrDimens.sixteen),
+        ),
+      ),
+    );
+  }
 
   static void debugCatchLog({
     required dynamic error,

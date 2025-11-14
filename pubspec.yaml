@@ -34,9 +34,11 @@ dependencies:
   intl: ^0.20.2
   lottie: ^3.1.0
   package_info_plus: ^9.0.0
+  percent_indicator: ^4.2.3
   plugin_platform_interface: ^2.1.8
   pull_to_refresh: ^2.0.0
   shared_preferences: ^2.5.3
+  shimmer: ^3.0.0
   url_launcher: ^6.3.2
   uuid: ^4.3.3
   video_player: ^2.10.0

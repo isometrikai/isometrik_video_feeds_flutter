@@ -11,19 +11,16 @@ part 'landing_events.dart';
 part 'landing_state.dart';
 
 class LandingBloc extends Bloc<LandingEvents, LandingState> {
-  LandingBloc(this._localDataUseCase)
-      : super(LandingInitialState(isNeedToShowLoader: false)) {
+  LandingBloc(this._localDataUseCase) : super(LandingInitialState(isNeedToShowLoader: false)) {
     on<LandingStartEvent>(_onStartLanding);
     on<LandingNavigationEvent>(_navigateToNextScreen);
   }
 
   final LocalDataUseCase _localDataUseCase;
 
-  FutureOr<void> _onStartLanding(
-      LandingStartEvent event, Emitter<LandingState> emit) async {
+  FutureOr<void> _onStartLanding(LandingStartEvent event, Emitter<LandingState> emit) async {
     final isLoggedIn = await _localDataUseCase.isLoggedIn();
-    emit(
-        LandingInitialState(isNeedToShowLoader: false, isLoggedIn: isLoggedIn));
+    emit(LandingInitialState(isNeedToShowLoader: false, isLoggedIn: isLoggedIn));
   }
 
   FutureOr<void> _navigateToNextScreen(

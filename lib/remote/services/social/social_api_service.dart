@@ -92,6 +92,15 @@ abstract class SocialApiService extends BaseService {
     required Header header,
   });
 
+  Future<ResponseModel> getSocialProducts({
+    required bool isLoading,
+    required String postId,
+    List<String>? productIds,
+    int? page,
+    int? limit,
+    required Header header,
+  });
+
   Future<ResponseModel> doCommentAction({
     required bool isLoading,
     required Map<String, dynamic> commentRequest,
@@ -100,9 +109,7 @@ abstract class SocialApiService extends BaseService {
 
   Future<ResponseModel> getPostDetails({
     required bool isLoading,
-    List<String>? productIds,
-    int? page,
-    int? limit,
+    required String postId,
     required Header header,
   });
 

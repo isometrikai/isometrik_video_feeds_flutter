@@ -50,4 +50,8 @@ class AssetConstants {
   static const String icSearchIcon = '${packageName}assets/icons/ic_search_icon.svg';
   static const String icNoProductsAvailable = '${packageName}assets/icons/no_products_found.svg';
   static const String icHashTagIcon = '${packageName}assets/icons/ic_has_tag_icon.svg';
+  static const String icArrowBack = '${packageName}assets/icons/ic_arrow_back.svg';
+  static const String icAppLogo = '${packageName}assets/icons/ic_app_logo.svg';
+  static const String icSharePostIcon = '${packageName}assets/icons/ic_share_post_icon.svg';
+  static const String icSaveSelectedIcon = 'assets/icons/ic_save_selected_icon.svg';
 }

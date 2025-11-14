@@ -22,6 +22,7 @@ class PostItemWidget extends StatefulWidget {
     required this.reelsDataList,
     this.videoCacheManager,
     this.onTapCartIcon,
+    this.overlayPadding,
   });
 
   final Future<List<ReelsData>> Function()? onLoadMore;
@@ -36,6 +37,7 @@ class PostItemWidget extends StatefulWidget {
   final List<ReelsData> reelsDataList;
   final VideoCacheManager? videoCacheManager;
   final Function(String)? onTapCartIcon;
+  final EdgeInsetsGeometry? overlayPadding;
 
   @override
   State<PostItemWidget> createState() => _PostItemWidgetState();

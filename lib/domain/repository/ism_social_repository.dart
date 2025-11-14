@@ -69,11 +69,17 @@ abstract class SocialRepository extends BaseRepository {
     required String postId,
   });
 
-  Future<CustomResponse<PostDetailsResponse?>> getPostDetails({
+  Future<CustomResponse<PostDetailsResponse?>> getSocialProducts({
     required bool isLoading,
+    required String postId,
     List<String>? productIds,
     int? page,
     int? limit,
+  });
+
+  Future<CustomResponse<TimeLineData?>> getPostDetails({
+    required bool isLoading,
+    required String postId,
   });
 
   Future<CustomResponse<ResponseClass?>> doCommentAction({

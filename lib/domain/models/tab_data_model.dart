@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 
 // class TabDataModel {
@@ -55,6 +56,9 @@ class TabDataModel {
     this.startingPostIndex = 0,
     required this.postSectionType,
     this.onTapCartIcon,
+    this.placeHolderWidget,
+    this.onTapUserProfile,
+    this.overlayPadding,
   });
 
   final String title;
@@ -64,4 +68,7 @@ class TabDataModel {
   final Future<bool> Function()? onRefresh;
   final int? startingPostIndex;
   final PostSectionType postSectionType;
+  Widget? placeHolderWidget;
+  void Function(TimeLineData)? onTapUserProfile;
+  final EdgeInsetsGeometry? overlayPadding;
 }

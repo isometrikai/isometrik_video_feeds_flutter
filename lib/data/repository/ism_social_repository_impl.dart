@@ -232,6 +232,30 @@ class SocialRepositoryImpl implements SocialRepository {
   }
 
   @override
+  Future<CustomResponse<PostDetailsResponse?>> getSocialProducts({
+    required bool isLoading,
+    required String postId,
+    List<String>? productIds,
+    int? page,
+    int? limit,
+  }) async {
+    try {
+      final response = await _apiService.getSocialProducts(
+        isLoading: isLoading,
+        postId: postId,
+        productIds: productIds,
+        page: page,
+        limit: limit,
+        header: await _dataSource.getHeader(),
+      );
+
+      return _socialMapper.mapPostDetailsResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
   Future<CustomResponse<ResponseClass?>> doCommentAction({
     required bool isLoading,
     required Map<String, dynamic> commentRequest,
@@ -250,22 +274,17 @@ class SocialRepositoryImpl implements SocialRepository {
   }
 
   @override
-  Future<CustomResponse<PostDetailsResponse?>> getPostDetails({
+  Future<CustomResponse<TimeLineData?>> getPostDetails({
     required bool isLoading,
-    List<String>? productIds,
-    int? page,
-    int? limit,
+    required String postId,
   }) async {
     try {
       final response = await _apiService.getPostDetails(
         isLoading: isLoading,
-        productIds: productIds,
-        page: page,
-        limit: limit,
+        postId: postId,
         header: await _dataSource.getHeader(),
       );
-
-      return _socialMapper.mapPostDetailsResponse(response);
+      return _socialMapper.mapTimelineData(response);
     } catch (e) {
       rethrow;
     }

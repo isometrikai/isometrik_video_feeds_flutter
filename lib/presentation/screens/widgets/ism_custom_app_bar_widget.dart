@@ -84,8 +84,10 @@ class IsmCustomAppBarWidget extends StatelessWidget implements PreferredSizeWidg
           systemNavigationBarColor: navigationBarColor,
           systemNavigationBarIconBrightness: navigationBarIconBrightness,
         ),
-        leadingWidth: isBackButtonVisible == false ? IsrDimens.twenty : leadingWidth,
-        titleSpacing: titleSpacing ?? IsrDimens.zero,
+        leadingWidth: isBackButtonVisible == false
+            ? 20.responsiveDimension
+            : leadingWidth ?? 40.responsiveDimension,
+        titleSpacing: titleSpacing ?? 0,
         toolbarHeight: height,
         leading: isBackButtonVisible
             ? leading ??
@@ -94,32 +96,27 @@ class IsmCustomAppBarWidget extends StatelessWidget implements PreferredSizeWidg
                         onTap: onTap ?? context.pop,
                         child: UnconstrainedBox(
                           child: AppImage.svg(
-                            isCrossIcon
-                                ? AssetConstants.icCrossIcon
-                                : AssetConstants.icLeftArrowIcon,
+                            isCrossIcon ? AssetConstants.icCrossIcon : AssetConstants.icArrowBack,
                             color: iconColor ?? titleColor ?? IsrColors.black,
                           ),
                         ),
                       )
-                    : null)
-            : IsrDimens.boxHeight(IsrDimens.zero),
+                    : 0.responsiveVerticalSpace)
+            : 0.responsiveVerticalSpace,
         automaticallyImplyLeading: false,
         centerTitle: centerTitle,
         titleTextStyle: titleStyle ?? Theme.of(context).appBarTheme.titleTextStyle,
         toolbarTextStyle: Theme.of(context).appBarTheme.toolbarTextStyle,
         title: titleText == null
-            ? showTitleWidget ?? false
-                ? TapHandler(
-                    onTap: () {
-                      context.pop();
-                    },
-                    child: AppImage.svg(
-                      AssetConstants.icAppBarIcon,
-                      width: IsrDimens.sixtyFour,
-                      height: IsrDimens.sixteen,
-                    ),
-                  )
-                : titleWidget
+            ? showTitleWidget == true
+                ? titleWidget != null
+                    ? titleWidget
+                    : AppImage.svg(
+                        AssetConstants.icAppLogo,
+                        width: 68.responsiveDimension,
+                        height: 44.responsiveDimension,
+                      )
+                : const SizedBox.shrink()
             : Text(
                 titleText!,
               ),
@@ -127,15 +124,15 @@ class IsmCustomAppBarWidget extends StatelessWidget implements PreferredSizeWidg
         bottom: showDivider == true
             ? PreferredSize(
                 preferredSize: Size(
-                  IsrDimens.percentWidth(1),
-                  IsrDimens.one,
+                  100.percentWidth,
+                  1.responsiveDimension,
                 ),
                 child: Container(
-                  width: IsrDimens.percentWidth(1),
-                  height: dividerThickNess ?? IsrDimens.one,
+                  width: 100.percentWidth,
+                  height: dividerThickNess ?? 1.responsiveDimension,
                   color: dividerColor ?? IsrColors.colorEFEFEF,
                 ),
               )
-            : bottom,
+            : bottom ?? null,
       );
 }

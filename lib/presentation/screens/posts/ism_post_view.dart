@@ -11,7 +11,7 @@ import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
-import 'package:pull_to_refresh/pull_to_refresh.dart';
+import 'package:pull_to_refresh/pull_to_refresh.dart' hide RefreshIndicator;
 
 class IsmPostView extends StatefulWidget {
   const IsmPostView({
@@ -21,6 +21,7 @@ class IsmPostView extends StatefulWidget {
     this.allowImplicitScrolling = false,
     this.onPageChanged,
     this.onTabChanged,
+    this.onTapPlace,
   });
 
   final List<TabDataModel> tabDataModelList;
@@ -28,6 +29,11 @@ class IsmPostView extends StatefulWidget {
   final bool? allowImplicitScrolling;
   final Function(int, String)? onPageChanged;
   final Function(int)? onTabChanged;
+
+  /// Optional callback to override default place navigation
+  /// If not provided, SDK will navigate to PlaceDetailsView automatically
+  /// Parameters: placeId, placeName, latitude, longitude
+  final Function(String placeId, String placeName, double lat, double long)? onTapPlace;
 
   @override
   State<IsmPostView> createState() => _PostViewState();
@@ -41,8 +47,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   final ValueNotifier<bool> _tabsVisibilityNotifier = ValueNotifier<bool>(true);
   List<TabDataModel> _tabDataModelList = [];
   VideoCacheManager? _videoCacheManager;
-  final _socialPostBloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
-  var _isBottomSheetOpen = false;
+  late SocialPostBloc _socialPostBloc; // Will be initialized from context
+  var _currentPostSectionType = PostSectionType.forYou;
 
   @override
   void initState() {
@@ -60,6 +66,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   void _onStartInit() async {
     _tabDataModelList = widget.tabDataModelList;
     _currentIndex = widget.currentIndex?.toInt() ?? 0;
+    _currentPostSectionType = _tabDataModelList[_currentIndex].postSectionType;
     if (_currentIndex >= _tabDataModelList.length) {
       _currentIndex = 0;
     }
@@ -74,8 +81,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       initialIndex: _currentIndex,
     );
 
-    _refreshControllers =
-        List.generate(_tabDataModelList.length, (index) => RefreshController());
+    _refreshControllers = List.generate(_tabDataModelList.length, (index) => RefreshController());
     var postBloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
     if (postBloc.isClosed) {
       isrConfigureInjection();
@@ -91,6 +97,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       if (!mounted) return;
       final newIndex = _postTabController?.index ?? 0;
       if (_currentIndex != newIndex) {
+        _currentPostSectionType = _tabDataModelList[newIndex].postSectionType;
         widget.onTabChanged?.call(newIndex);
         // Handle tab change if we have a user
         if (_loggedInUserId.isNotEmpty) {
@@ -105,103 +112,108 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         });
       }
     });
-    postBloc.add(const StartPost());
+    postBloc.add(LoadPostData());
   }
 
+  // ✅ Provide BLoCs at the root of build
   @override
-  Widget build(BuildContext context) => AnnotatedRegion(
+  Widget build(BuildContext context) => MultiBlocProvider(
+        providers: _getAllBlocProviders(),
+        child: _buildContent(),
+      );
+
+  /// ✅ Get all BLoC providers needed by the SDK
+  /// Note: PostListingBloc and PlaceDetailsBloc are provided during navigation
+  List<BlocProvider> _getAllBlocProviders() => [
+        // Social Post BLoC (main BLoC for this screen)
+        BlocProvider<SocialPostBloc>(
+          create: (_) => IsmInjectionUtils.getBloc<SocialPostBloc>()
+            ..add(const StartPost()), // ✅ Trigger initial load
+        ),
+      ];
+
+  // ✅ Don't wrap with BlocProvider again - just use BlocConsumer
+  Widget _buildContent() => AnnotatedRegion(
         value: const SystemUiOverlayStyle(
           statusBarColor: IsrColors.transparent,
           statusBarBrightness: Brightness.dark,
           statusBarIconBrightness: Brightness.light,
         ),
-        child: BlocProvider<SocialPostBloc>(
-          create: (context) => IsmInjectionUtils.getBloc<SocialPostBloc>(),
-          child: BlocConsumer<SocialPostBloc, SocialPostState>(
-            listenWhen: (previousState, currentState) =>
-                currentState is SocialPostLoadedState,
-            listener: (context, state) {
-              if (state is SocialPostLoadedState) {
-                for (var i = 0; i < _tabDataModelList.length; i++) {
-                  if (_tabDataModelList[i].reelsDataList.isListEmptyOrNull) {
-                    if (_tabDataModelList[i].postSectionType ==
-                        PostSectionType.following) {
-                      final postList = state.timeLinePosts;
-                      final reelDataList = postList
-                          .map((post) =>
-                              _getReelData(post, PostSectionType.following))
-                          .toList();
-                      _tabDataModelList[i].reelsDataList = reelDataList;
-                    }
-                    if (_tabDataModelList[i].postSectionType ==
-                        PostSectionType.forYou) {
-                      final postList = state.forYouPosts;
-                      final reelDataList = postList
-                          .map((post) =>
-                              _getReelData(post, PostSectionType.forYou))
-                          .toList();
-                      _tabDataModelList[i].reelsDataList = reelDataList;
-                    }
-                    if (_tabDataModelList[i].postSectionType ==
-                        PostSectionType.trending) {
-                      final postList = state.trendingPosts;
-                      final reelDataList = postList
-                          .map((post) =>
-                              _getReelData(post, PostSectionType.trending))
-                          .toList();
-                      _tabDataModelList[i].reelsDataList = reelDataList;
-                    }
+        child: BlocConsumer<SocialPostBloc, SocialPostState>(
+          listenWhen: (previousState, currentState) => currentState is SocialPostLoadedState,
+          listener: (context, state) {
+            // ✅ Update _socialPostBloc reference if needed
+            _socialPostBloc = context.read<SocialPostBloc>();
+
+            if (state is SocialPostLoadedState) {
+              for (var i = 0; i < _tabDataModelList.length; i++) {
+                if (_tabDataModelList[i].reelsDataList.isListEmptyOrNull) {
+                  if (_tabDataModelList[i].postSectionType == PostSectionType.following) {
+                    final postList = state.timeLinePosts;
+                    final reelDataList = postList
+                        .map((post) => _getReelData(post, PostSectionType.following))
+                        .toList();
+                    _tabDataModelList[i].reelsDataList = reelDataList;
+                  }
+                  if (_tabDataModelList[i].postSectionType == PostSectionType.forYou) {
+                    final postList = state.forYouPosts;
+                    final reelDataList =
+                        postList.map((post) => _getReelData(post, PostSectionType.forYou)).toList();
+                    _tabDataModelList[i].reelsDataList = reelDataList;
+                  }
+                  if (_tabDataModelList[i].postSectionType == PostSectionType.trending) {
+                    final postList = state.trendingPosts;
+                    final reelDataList = postList
+                        .map((post) => _getReelData(post, PostSectionType.trending))
+                        .toList();
+                    _tabDataModelList[i].reelsDataList = reelDataList;
                   }
                 }
               }
-            },
-            buildWhen: (previousState, currentState) =>
-                currentState is SocialPostLoadedState,
-            builder: (context, state) {
-              final newUserId =
-                  state is SocialPostLoadedState ? state.userId : '';
-              if (newUserId.isNotEmpty && _loggedInUserId.isEmpty) {
-                // Initialize video cache manager when user logs in
-                _videoCacheManager = VideoCacheManager();
-              } else if (newUserId.isEmpty && _loggedInUserId.isNotEmpty) {
-                // Clean up video cache manager when user logs out
-                _videoCacheManager?.clearCache();
-                _videoCacheManager = null;
-              }
-              _loggedInUserId = newUserId;
-              return state is PostLoadingState
-                  ? state.isLoading == true
-                      ? Center(child: Utility.loaderWidget())
-                      : const SizedBox.shrink()
-                  : state is SocialPostLoadedState
-                      ? DefaultTabController(
-                          length: _tabDataModelList.isListEmptyOrNull
-                              ? 0
-                              : _tabDataModelList.length,
-                          initialIndex: _currentIndex,
-                          child: Stack(
-                            children: [
-                              TabBarView(
-                                controller: _postTabController,
-                                children: _tabDataModelList
-                                    .map((tabData) => _buildTabBarView(tabData,
-                                        _tabDataModelList.indexOf(tabData)))
-                                    .toList(),
-                              ),
-                              _buildTabBar(),
-                            ],
-                          ),
-                        )
-                      : const SizedBox.shrink();
-            },
-          ),
+            }
+          },
+          buildWhen: (previousState, currentState) =>
+              currentState is SocialPostLoadedState || currentState is PostLoadingState,
+          builder: (context, state) {
+            final newUserId = state is SocialPostLoadedState ? state.userId : '';
+            if (newUserId.isNotEmpty && _loggedInUserId.isEmpty) {
+              _videoCacheManager = VideoCacheManager();
+            } else if (newUserId.isEmpty && _loggedInUserId.isNotEmpty) {
+              _videoCacheManager?.clearCache();
+              _videoCacheManager = null;
+            }
+            _loggedInUserId = newUserId;
+
+            return state is PostLoadingState
+                ? state.isLoading == true
+                    ? _buildInitialLoadingView()
+                    : const SizedBox.shrink()
+                : state is SocialPostLoadedState
+                    ? DefaultTabController(
+                        length: _tabDataModelList.isListEmptyOrNull ? 0 : _tabDataModelList.length,
+                        initialIndex: _currentIndex,
+                        child: Stack(
+                          children: [
+                            TabBarView(
+                              controller: _postTabController,
+                              children: _tabDataModelList
+                                  .map((tabData) =>
+                                      _buildTabBarView(tabData, _tabDataModelList.indexOf(tabData)))
+                                  .toList(),
+                            ),
+                            _buildTabBar(),
+                          ],
+                        ),
+                      )
+                    : const SizedBox.shrink();
+          },
         ),
       );
 
   Widget _buildTabBarView(TabDataModel tabData, int index) => PostItemWidget(
         key: ValueKey(_getUniqueKey(tabData, index)),
-        videoCacheManager:
-            _loggedInUserId.isNotEmpty ? _videoCacheManager : null,
+        overlayPadding: tabData.overlayPadding,
+        videoCacheManager: _loggedInUserId.isNotEmpty ? _videoCacheManager : null,
         onTapPlaceHolder: () {
           if ((_postTabController?.length ?? 0) > 1) {
             _tabsVisibilityNotifier.value = true;
@@ -212,11 +224,15 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         allowImplicitScrolling: widget.allowImplicitScrolling,
         onPageChanged: widget.onPageChanged,
         reelsDataList: tabData.reelsDataList,
-        onLoadMore: () async => await _handleLoadMore(
-            tabData.postSectionType ?? PostSectionType.trending),
+        onLoadMore: () async => await _handleLoadMore(tabData.postSectionType),
         onRefresh: () async {
           var result = false;
-          result = await tabData.onRefresh?.call() ?? false;
+
+          if (tabData.onRefresh != null) {
+            result = await tabData.onRefresh?.call() ?? false;
+          } else {
+            result = await _handlePostRefresh();
+          }
           // Increment refresh count to force rebuild
           if (result) {
             setState(() {
@@ -229,23 +245,19 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         postSectionType: tabData.postSectionType,
         onTapCartIcon: (postId) {
           if (tabData.onTapCartIcon != null) {
-            final reelData = tabData.reelsDataList
-                .firstWhere((element) => element.postId == postId);
+            final reelData =
+                tabData.reelsDataList.firstWhere((element) => element.postId == postId);
             final productIds = <String>[];
-            final socialProductList =
-                reelData.tags?.products ?? <SocialProductData>[];
+            final socialProductList = reelData.tags?.products ?? <SocialProductData>[];
             for (final productItem in socialProductList) {
               productIds.add(productItem.productId ?? '');
             }
-            tabData.onTapCartIcon
-                ?.call(productIds, postId, reelData.userId ?? '');
+            tabData.onTapCartIcon?.call(productIds, postId, reelData.userId ?? '');
           } else {}
         },
       );
 
-  ReelsData _getReelData(
-          TimeLineData postData, PostSectionType postSectionType) =>
-      ReelsData(
+  ReelsData _getReelData(TimeLineData postData, PostSectionType postSectionType) => ReelsData(
         postSetting: PostSetting(
           isProfilePicVisible: true,
           isCreatePostButtonVisible: true,
@@ -257,24 +269,29 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           isFollowButtonVisible: true,
           isUnFollowButtonVisible: true,
         ),
-        mentions: postData.tags != null &&
-                postData.tags?.mentions.isListEmptyOrNull == false
+        mentions: postData.tags != null && postData.tags?.mentions.isListEmptyOrNull == false
             ? (postData.tags?.mentions?.map(_getMentionMetaData).toList() ?? [])
             : [],
-        tagDataList: postData.tags != null &&
-                postData.tags?.hashtags.isListEmptyOrNull == false
+        tagDataList: postData.tags != null && postData.tags?.hashtags.isListEmptyOrNull == false
             ? postData.tags?.hashtags?.map(_getMentionMetaData).toList()
             : null,
-        placeDataList: postData.tags != null &&
-                postData.tags?.places.isListEmptyOrNull == false
+        placeDataList: postData.tags != null && postData.tags?.places.isListEmptyOrNull == false
             ? postData.tags?.places?.map(_getPlaceMetaData).toList()
             : null,
+        onTapPlace: (placeList) {
+          if (placeList.isListEmptyOrNull) return;
+          if (placeList.length == 1) {
+            _goToPlaceDetailsView(postSectionType, placeList.first, TagType.place);
+          } else {
+            // _showPlaceList(placeList, postSectionType);
+          }
+        },
         onTapMentionTag: (mentionList) async {
           if (mentionList.isListEmptyOrNull) return [];
           if (mentionList.length == 1) {
             final mention = mentionList.first;
             if (mention.tag.isStringEmptyOrNull == false) {
-              _redirectToHashtag(mention.tag, postSectionType, postData);
+              _redirectToHashtag(mention.tag, postSectionType);
               return null;
             } else {
               /// TODO need to check here
@@ -289,10 +306,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         postId: postData.id,
         onCreatePost: () async => await _handleCreatePost(postSectionType),
         tags: postData.tags,
-        mediaMetaDataList:
-            postData.media?.map(_getMediaMetaData).toList() ?? [],
-        // actionWidget: _buildActionButtons(postData),
-        // footerWidget: _buildFooter(postData),
+        mediaMetaDataList: postData.media?.map(_getMediaMetaData).toList() ?? [],
         userId: postData.user?.id ?? '',
         userName: postData.user?.username ?? '',
         profilePhoto: postData.user?.avatarUrl ?? '',
@@ -311,12 +325,12 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         },
         onTapComment: (totalCommentsCount) async {
           final result =
-              await _handleCommentAction(postData.id ?? '', totalCommentsCount);
+              await _handleCommentAction(postData.id ?? '', totalCommentsCount, postSectionType);
           return result;
         },
         onPressMoreButton: () async {
-          // final result = await _handleMoreOptions(postData);
-          return null;
+          final result = await _handleMoreOptions(postData);
+          return result;
         },
         onPressLike: (isLiked) async => _handleLikeAction(isLiked, postData),
         onDoubleTap: (isLiked) async => _handleLikeAction(isLiked, postData),
@@ -343,78 +357,48 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
               onComplete: (success) {
                 completer.complete(success);
               },
-              followAction:
-                  isFollow ? FollowAction.unfollow : FollowAction.follow,
+              followAction: isFollow ? FollowAction.unfollow : FollowAction.follow,
             ));
             return await completer.future;
           } catch (e) {
             return false;
           }
         },
-        // onTapCartIcon: () {
-        //   _handleCartAction(postData);
-        // },
       );
 
-  /// Handles the more options menu for a post
-  // Future<dynamic> _handleMoreOptions(TimeLineData postDataModel) async {
-  //   try {
-  //     return await _showMoreOptionsDialog(
-  //       onPressReport: ({String message = '', String reason = ''}) async {
-  //         final result = await _showReportPostDialog(context);
-  //
-  //         if (result == true) {
-  //           final completer = Completer<bool>();
-  //           _socialPostBloc.add(
-  //             ReportPostEvent(
-  //               postId: postDataModel.id ?? '',
-  //               message: message,
-  //               reason: reason,
-  //               onComplete: (success) {
-  //                 if (success) {
-  //                   Utility.showInSnackBar(TranslationFile.postReportedSuccessfully, context,
-  //                       isSuccessIcon: true);
-  //                 }
-  //                 completer.complete(success);
-  //               },
-  //             ),
-  //           );
-  //           return await completer.future;
-  //         } else {
-  //           return false;
-  //         }
-  //       },
-  //       onDeletePost: () async {
-  //         final result = await _showDeletePostDialog(context);
-  //         if (result == true) {
-  //           final completer = Completer<bool>();
-  //           _socialPostBloc.add(
-  //             DeletePostEvent(
-  //               postId: postDataModel.id ?? '',
-  //               onComplete: (success) {
-  //                 if (success) {
-  //                   Utility.showToastMessage(TranslationFile.postDeletedSuccessfully);
-  //                   _removePostFromList(postDataModel.id ?? '');
-  //                 }
-  //                 completer.complete(success);
-  //               },
-  //             ),
-  //           );
-  //           return await completer.future;
-  //         }
-  //         return false;
-  //       },
-  //       isSelfProfile: postDataModel.user?.id == _myUserId,
-  //       onEditPost: () async {
-  //         final postDataString = await _showEditPostDialog(context, postDataModel);
-  //         return postDataString ?? '';
-  //       },
-  //     );
-  //   } catch (e) {
-  //     debugPrint('Error handling more options: $e');
-  //     return false;
-  //   }
-  // }
+  void _goToPlaceDetailsView(
+      PostSectionType postSectionType, PlaceMetaData placeMetaData, TagType place) async {
+    var lat = 0.0;
+    var long = 0.0;
+    if ((placeMetaData.coordinates?.length ?? 0) > 1) {
+      lat = placeMetaData.coordinates?.first ?? 0;
+      long = placeMetaData.coordinates?[1] ?? 0;
+    }
+
+    // Use callback if provided (allows custom behavior)
+    if (widget.onTapPlace != null) {
+      widget.onTapPlace!(
+        placeMetaData.placeId ?? '',
+        placeMetaData.placeName ?? '',
+        lat,
+        long,
+      );
+      return;
+    }
+
+    // ✅ Default: SDK handles navigation using Navigator with BLoC provider
+    try {
+      IsrAppNavigator.navigateToPlaceDetails(
+        context,
+        placeId: placeMetaData.placeId ?? '',
+        placeName: placeMetaData.placeName ?? '',
+        latitude: lat,
+        longitude: long,
+      );
+    } catch (e) {
+      debugPrint('Navigation failed: $e');
+    }
+  }
 
   Future<bool> _handleLikeAction(bool isLiked, TimeLineData postData) async {
     try {
@@ -435,8 +419,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   }
 
   /// Handles loading more posts for infinite scrolling
-  Future<List<ReelsData>> _handleLoadMore(
-      PostSectionType postSectionType) async {
+  Future<List<ReelsData>> _handleLoadMore(PostSectionType postSectionType) async {
     try {
       final completer = Completer<List<TimeLineData>>();
       _socialPostBloc.add(GetMorePostEvent(
@@ -449,9 +432,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       ));
       final timeLinePostList = await completer.future;
       if (timeLinePostList.isEmpty) return [];
-      final timeLineReelDataList = timeLinePostList
-          .map((post) => _getReelData(post, postSectionType))
-          .toList();
+      final timeLineReelDataList =
+          timeLinePostList.map((post) => _getReelData(post, postSectionType)).toList();
       return timeLineReelDataList;
     } catch (e) {
       debugPrint('Error handling load more: $e');
@@ -462,11 +444,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   // Interaction handlers
   Future<ReelsData?> _handleCreatePost(PostSectionType postSectionType) async {
     final completer = Completer<ReelsData>();
-    final postDataModelString =
-        await IsmInjectionUtils.getRouteManagement().goToCreatePostView();
+    final postDataModelString = await IsrAppNavigator.goToCreatePostView(context);
     if (postDataModelString.isStringEmptyOrNull == false) {
-      final postDataModel = TimeLineData.fromMap(
-          jsonDecode(postDataModelString!) as Map<String, dynamic>);
+      final postDataModel =
+          TimeLineData.fromMap(jsonDecode(postDataModelString!) as Map<String, dynamic>);
       final reelsData = _getReelData(postDataModel, postSectionType);
       completer.complete(reelsData);
     }
@@ -479,8 +460,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         thumbnailUrl: mediaData.previewUrl ?? '',
       );
 
-  MentionMetaData _getMentionMetaData(MentionData mentionData) =>
-      MentionMetaData(
+  MentionMetaData _getMentionMetaData(MentionData mentionData) => MentionMetaData(
         userId: mentionData.userId,
         username: mentionData.username,
         name: mentionData.name,
@@ -519,8 +499,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       builder: (context, value, child) => value == true
           ? Container(
               color: Colors.transparent,
-              padding: EdgeInsets.only(
-                  top: MediaQuery.of(context).padding.top + IsrDimens.twenty),
+              padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + IsrDimens.twenty),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -533,28 +512,22 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                       controller: _postTabController,
                       isScrollable: true,
                       tabAlignment: TabAlignment.start,
-                      labelColor: _tabDataModelList[_currentIndex]
-                              .reelsDataList
-                              .isListEmptyOrNull
+                      labelColor: _tabDataModelList[_currentIndex].reelsDataList.isListEmptyOrNull
                           ? IsrColors.black
                           : IsrColors.white,
-                      unselectedLabelColor: _tabDataModelList[_currentIndex]
-                              .reelsDataList
-                              .isListEmptyOrNull
-                          ? IsrColors.black
-                          : IsrColors.white.changeOpacity(0.6),
-                      indicatorColor: _tabDataModelList[_currentIndex]
-                              .reelsDataList
-                              .isListEmptyOrNull
-                          ? IsrColors.black
-                          : IsrColors.white,
+                      unselectedLabelColor:
+                          _tabDataModelList[_currentIndex].reelsDataList.isListEmptyOrNull
+                              ? IsrColors.black
+                              : IsrColors.white.changeOpacity(0.6),
+                      indicatorColor:
+                          _tabDataModelList[_currentIndex].reelsDataList.isListEmptyOrNull
+                              ? IsrColors.black
+                              : IsrColors.white,
                       indicatorWeight: 3,
                       dividerColor: Colors.transparent,
                       indicatorSize: TabBarIndicatorSize.label,
-                      padding: IsrDimens.edgeInsetsSymmetric(
-                          horizontal: IsrDimens.sixteen),
-                      labelPadding: IsrDimens.edgeInsetsSymmetric(
-                          horizontal: IsrDimens.eight),
+                      padding: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.sixteen),
+                      labelPadding: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.eight),
                       labelStyle: IsrStyles.white16.copyWith(
                         fontWeight: FontWeight.w700,
                         height: 1.5,
@@ -582,16 +555,13 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    // Then dispose other controllers
     _postTabController?.dispose();
     for (var controller in _refreshControllers) {
       controller.dispose();
     }
-
     super.dispose();
   }
 
-  // Track refresh count for each tab to force rebuild on refresh
   final Map<int, int> _refreshCounts = {};
 
   String _getUniqueKey(TabDataModel tabData, int index) {
@@ -601,15 +571,13 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   bool _isFollowingPostsEmpty() {
     final isFollowingPostEmpty = widget.tabDataModelList.length > 1 &&
-        widget.tabDataModelList[0].postSectionType ==
-            PostSectionType.following &&
+        widget.tabDataModelList[0].postSectionType == PostSectionType.following &&
         widget.tabDataModelList[0].reelsDataList.isListEmptyOrNull;
     return isFollowingPostEmpty;
   }
 
-  /// Handles comment action
   Future<int> _handleCommentAction(
-      String postId, int totalCommentsCount) async {
+      String postId, int totalCommentsCount, PostSectionType postSectionType) async {
     final completer = Completer<int>();
 
     final result = await Utility.showBottomSheet<int>(
@@ -618,33 +586,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         totalCommentsCount: totalCommentsCount,
         onTapProfile: (userId) {
           context.pop(totalCommentsCount);
-
-          /// TODO complete this
-          // _socialPostBloc.add(
-          //   RedirectToProfileViewEvent(
-          //     userId: userId,
-          //     onComplete: (isCompleted) {
-          //       if (isCompleted) {
-          //         _startingTrendingPostIndex = _pageIndex;
-          //         _socialPostBloc.add(
-          //           SocialPostInitialEvent(
-          //             isFromNavigation: widget.isFromNavigation,
-          //             // postDataList: widget.postDataList,
-          //             postDataList: [],
-          //             postTabType: widget.postTabType,
-          //             memberUserId: widget.memberUserId,
-          //             postId: widget.postId,
-          //           ),
-          //         );
-          //       }
-          //     },
-          //   ),
-          // );
         },
         onTapHasTag: (hashTag) {
-          /// TODO complete this
-          // InjectionUtils.getRouteManagement()
-          //     .goToPostListingScreen(tagValue: hashTag, tagType: TagType.hashtag);
+          _redirectToHashtag(hashTag, postSectionType);
         },
       ),
       isDarkBG: true,
@@ -655,21 +599,17 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     return completer.future;
   }
 
-  void _redirectToHashtag(
-      String? tag, PostSectionType postSectionType, TimeLineData postData) {
+  void _redirectToHashtag(String? tag, PostSectionType postSectionType) {
     _goToPostListingView(postSectionType, tag ?? '', TagType.hashtag);
   }
 
-  void _showPlaceList(
-      List<PlaceMetaData> placeList, PostTabType postTabType) async {
-    await Utility.showBottomSheet(child: Container());
-  }
-
-  void _goToPostListingView(
-      PostSectionType postTabType, String tagValue, TagType tagType) async {
-    await IsmInjectionUtils.getRouteManagement()
-        .goToPostListingScreen(tagValue: tagValue, tagType: tagType);
-    // _resumePostList(postTabType);
+  void _goToPostListingView(PostSectionType postTabType, String tagValue, TagType tagType) async {
+    // ✅ Navigation now works because we wrap PostListingView with BlocProvider during navigation
+    IsrAppNavigator.navigateToPostListing(
+      context,
+      tagValue: tagValue,
+      tagType: tagType,
+    );
   }
 
   Future<List<MentionMetaData>> _showMentionList(
@@ -677,348 +617,313 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     PostSectionType postSectionType,
     TimeLineData postData,
   ) async {
-    _isBottomSheetOpen = true;
-    final updatedMentionList =
-        await Utility.showBottomSheet<List<MentionMetaData>>(
+    final updatedMentionList = await Utility.showBottomSheet<List<MentionMetaData>>(
       isScrollControlled: true,
-      child: _MentionListBottomSheet(
+      child: MentionListBottomSheet(
         initialMentionList: mentionList,
         postData: postData,
         myUserId: '',
-
-        /// TODO here need to pass loggedIN user id
         socialPostBloc: _socialPostBloc,
         onTapUserProfile: (userId) {
-          /// TODO need to check
-          // _redirectToProfile(userId, postSectionType);
+          context.pop();
+          _tabDataModelList[_currentIndex].onTapUserProfile?.call(postData);
         },
       ),
     );
-    _isBottomSheetOpen = false;
     return updatedMentionList ?? mentionList;
   }
-}
 
-class _MentionListBottomSheet extends StatefulWidget {
-  const _MentionListBottomSheet({
-    required this.initialMentionList,
-    required this.postData,
-    required this.myUserId,
-    required this.socialPostBloc,
-    required this.onTapUserProfile,
-  });
+  /// Builds the initial loading view to prevent background flicker during navigation
+  Widget _buildInitialLoadingView() => Container(
+        width: double.infinity,
+        height: double.infinity,
+        color: Colors.black,
+        child: const Center(child: PostShimmerView()),
+      );
 
-  final List<MentionMetaData> initialMentionList;
-  final TimeLineData postData;
-  final String myUserId;
-  final SocialPostBloc socialPostBloc;
-  final Function(String) onTapUserProfile;
+  /// Handles refresh for user posts
+  Future<bool> _handlePostRefresh() async {
+    final completer = Completer<bool>();
+    _socialPostBloc.add(GetMorePostEvent(
+      isLoading: false,
+      isPagination: false,
+      isRefresh: true,
+      postSectionType: _currentPostSectionType,
+      memberUserId: '',
 
-  @override
-  State<_MentionListBottomSheet> createState() =>
-      _MentionListBottomSheetState();
-}
+      /// TODO need to userId here
+      onComplete: (postDataList) async {
+        completer.complete(true);
+      },
+    ));
+    return await completer.future;
+  }
 
-class _MentionListBottomSheetState extends State<_MentionListBottomSheet> {
-  late List<MentionMetaData> _mentionList;
-  final List<SocialUserData> _socialUserList = [];
-  late SocialPostBloc _socialPostBloc;
+  /// Handles the more options menu for a post
+  Future<dynamic> _handleMoreOptions(TimeLineData postDataModel) async {
+    try {
+      return await _showMoreOptionsDialog(
+        onPressReport: ({String message = '', String reason = ''}) async {
+          final result = await _showReportPostDialog(context);
 
-  @override
-  void initState() {
-    super.initState();
-    _socialPostBloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
-    _mentionList = List.from(widget.initialMentionList);
-    _socialPostBloc.add(GetMentionedUserEvent(
-        postId: widget.postData.id ?? '',
-        onComplete: (mentionedList) {
-          if (mounted && mentionedList.isNotEmpty) {
-            setState(() {
-              _socialUserList.clear();
-              _socialUserList.addAll(mentionedList);
-            });
+          if (result == true) {
+            final completer = Completer<bool>();
+            _socialPostBloc.add(
+              ReportPostEvent(
+                postId: postDataModel.id ?? '',
+                message: message,
+                reason: reason,
+                onComplete: (success) {
+                  if (success) {
+                    Utility.showInSnackBar(IsrTranslationFile.postReportedSuccessfully, context,
+                        isSuccessIcon: true);
+                  }
+                  completer.complete(success);
+                },
+              ),
+            );
+            return await completer.future;
+          } else {
+            return false;
           }
-        }));
-    // If no mentions initially, dismiss the bottom sheet immediately
-    if (_mentionList.isEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          context.pop(_mentionList); // Return empty list
-        }
-      });
+        },
+        onDeletePost: () async {
+          final result = await _showDeletePostDialog(context);
+          if (result == true) {
+            final completer = Completer<bool>();
+            _socialPostBloc.add(
+              DeletePostEvent(
+                postId: postDataModel.id ?? '',
+                onComplete: (success) {
+                  if (success) {
+                    Utility.showToastMessage(IsrTranslationFile.postDeletedSuccessfully);
+                    // _removePostFromList(postDataModel.id ?? ''); /// TODO need to check this
+                  }
+                  completer.complete(success);
+                },
+              ),
+            );
+            return await completer.future;
+          }
+          return false;
+        },
+        isSelfProfile: postDataModel.user?.id == _loggedInUserId,
+        onEditPost: () async {
+          final postDataString = await _showEditPostDialog(context, postDataModel);
+          return postDataString ?? '';
+        },
+        onShowPostInsight: () {
+          IsrAppNavigator.goToPostInsight(context,
+              postId: postDataModel.id ?? '', postData: postDataModel);
+        },
+      );
+    } catch (e) {
+      debugPrint('Error handling more options: $e');
+      return false;
     }
   }
 
-  void _removeMentionFromList(String userId) {
-    // If this is the last mention, dismiss immediately without updating UI
-    if (_mentionList.length == 1 && _mentionList.first.userId == userId) {
-      context.pop(_mentionList); // Return empty list
-      return;
-    }
-
-    setState(() {
-      _mentionList.removeWhere((mention) => mention.userId == userId);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) => PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (didPop, _) {
-          if (!didPop) {
-            context.pop(_mentionList);
+  // Additional handlers for likes, follows, etc.
+  // ... (implement other handlers similarly)
+  Future<dynamic> _showMoreOptionsDialog({
+    Future<bool> Function({String message, String reason})? onPressReport,
+    Future<bool> Function()? onDeletePost,
+    Future<String> Function()? onEditPost,
+    VoidCallback? onShowPostInsight,
+    bool? isSelfProfile,
+  }) async {
+    final completer = Completer<dynamic>();
+    await Utility.showBottomSheet(
+      isDismissible: true,
+      child: MoreOptionsBottomSheet(
+        onPressReport: ({String message = '', String reason = ''}) async {
+          try {
+            if (onPressReport != null) {
+              final isReported = await onPressReport(message: message, reason: reason);
+              completer.complete(isReported);
+              return isReported;
+            }
+            return false;
+          } catch (e) {
+            return false;
           }
         },
-        child: Container(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.9,
-          ),
-          decoration: BoxDecoration(
-            color: IsrColors.white,
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(IsrDimens.twenty),
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Padding(
-                padding: IsrDimens.edgeInsetsSymmetric(
-                  horizontal: IsrDimens.sixteen,
-                  vertical: IsrDimens.twenty,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      IsrTranslationFile.inThisSocialPost,
-                      style: IsrStyles.primaryText18.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: IsrColors.black,
-                      ),
-                    ),
-                    TapHandler(
-                      onTap: () {
-                        context.pop(_mentionList);
-                      },
-                      child: Container(
-                        padding: IsrDimens.edgeInsetsAll(IsrDimens.eight),
-                        child: Icon(
-                          Icons.close,
-                          color: IsrColors.black,
-                          size: IsrDimens.twentyFour,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(height: 1),
-              // User List
-              Flexible(
-                child: _mentionList.isEmpty
-                    ? Center(
-                        child: Padding(
-                          padding:
-                              IsrDimens.edgeInsetsAll(IsrDimens.twentyFour),
-                          child: Text(
-                            'No mentions found',
-                            style: IsrStyles.primaryText14.copyWith(
-                              color: IsrColors.grey,
-                            ),
-                          ),
-                        ),
-                      )
-                    : ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: _mentionList.length,
-                        itemBuilder: (context, index) {
-                          final mentionedData = _mentionList[index];
-                          final socialUserData = _socialUserList
-                              .firstWhere(
-                                  (_) =>
-                                      _.id?.takeIfNotEmpty() != null &&
-                                      _.id == mentionedData.userId,
-                                  orElse: SocialUserData.new)
-                              .takeIf((_) => _.id?.takeIfNotEmpty() != null);
-                          return _buildProfileItem(
-                              mentionedData, socialUserData, index);
-                        },
-                      ),
-              ),
-            ],
-          ),
-        ),
-      );
-
-  Widget _buildProfileItem(MentionMetaData mentionedData,
-          SocialUserData? socialUserData, int index) =>
-      TapHandler(
-        onTap: () {
-          widget.onTapUserProfile(mentionedData.userId ?? '');
-          context.pop(_mentionList);
+        isSelfProfile: isSelfProfile == true,
+        onDeletePost: () async {
+          if (onDeletePost != null) {
+            final isDeleted = await onDeletePost();
+            completer.complete(isDeleted);
+            return isDeleted;
+          }
+          return false;
         },
-        child: Container(
-          padding: IsrDimens.edgeInsetsSymmetric(
-            horizontal: IsrDimens.sixteen,
-            vertical: IsrDimens.twelve,
-          ),
-          decoration: BoxDecoration(
-            border: index < _mentionList.length - 1
-                ? const Border(
-                    bottom: BorderSide(
-                      color: IsrColors.colorDBDBDB,
-                      width: 0.5,
-                    ),
-                  )
-                : null,
-          ),
-          child: Row(
-            children: [
-              // Profile Picture
-              Container(
-                width: IsrDimens.forty,
-                height: IsrDimens.forty,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: IsrColors.colorDBDBDB,
-                    width: 1,
-                  ),
-                ),
-                child: ClipOval(
-                  child: AppImage.network(
-                    socialUserData?.avatarUrl?.takeIfNotEmpty() ??
-                        mentionedData.avatarUrl ??
-                        '',
-                    height: IsrDimens.forty,
-                    width: IsrDimens.forty,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-              IsrDimens.boxWidth(IsrDimens.twelve),
-              // User Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Text(
-                        socialUserData?.displayName?.takeIfNotEmpty() ??
-                            mentionedData.name?.takeIfNotEmpty() ??
-                            mentionedData.username ??
-                            'Unknown User',
-                        style: IsrStyles.primaryText14.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: IsrColors.black,
-                        ),
-                      ),
-                    ),
-                    IsrDimens.boxHeight(IsrDimens.four),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Text(
-                        socialUserData?.username?.takeIfNotEmpty() ??
-                            mentionedData.username ??
-                            '',
-                        style: IsrStyles.primaryText12.copyWith(
-                          color: '767676'.toColor(),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              10.responsiveHorizontalSpace,
-              // Action Button
-              _buildFollowFollowingButton(
-                mentionedData,
-                socialUserData?.isFollowing ?? false,
-                widget.postData.id ?? '',
-              ),
-            ],
-          ),
-        ),
-      );
-
-  Widget _buildFollowFollowingButton(
-    MentionMetaData mentionedData,
-    bool isFollow,
-    String postId,
-  ) {
-    final userId = mentionedData.userId ?? '';
-    var isLoading = false;
-    var isFollowing = isFollow;
-
-    return StatefulBuilder(
-      builder: (context, setState) => userId == widget.myUserId
-          ? AppButton(
-              height: 36.responsiveDimension,
-              width: 95.responsiveDimension,
-              type: ButtonType.secondary,
-              borderRadius: 40.responsiveDimension,
-              title: IsrTranslationFile.remove,
-              isLoading: isLoading,
-              textStyle: IsrStyles.primaryText12.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-              onPress: isLoading == true
-                  ? null
-                  : () {
-                      isLoading = true;
-                      setState.call(() {});
-                      widget.socialPostBloc.add(RemoveMentionEvent(
-                        postId:
-                            postId, // This should be the actual post ID, not user ID
-                        onComplete: (isSuccess) {
-                          isLoading = false;
-                          if (isSuccess) {
-                            // Remove the mention from the list
-                            _removeMentionFromList(userId);
-                          }
-                          setState.call(() {});
-                        },
-                      ));
-                    },
-            )
-          : AppButton(
-              onPress: isLoading == true
-                  ? null
-                  : () {
-                      isLoading = true;
-                      setState.call(() {});
-                      widget.socialPostBloc.add(FollowUserEvent(
-                          followingId: userId,
-                          onComplete: (isSuccess) {
-                            isLoading = false;
-                            if (isSuccess) {
-                              isFollowing = !isFollowing;
-                            }
-                            setState.call(() {});
-                          },
-                          followAction: isFollowing
-                              ? FollowAction.unfollow
-                              : FollowAction.follow));
-                    },
-              height: 36.responsiveDimension,
-              width: 95.responsiveDimension,
-              borderRadius: 40.responsiveDimension,
-              borderColor:
-                  isFollowing ? IsrColors.appColor : IsrColors.transparent,
-              backgroundColor:
-                  isFollowing ? IsrColors.white : IsrColors.appColor,
-              title: isFollowing
-                  ? IsrTranslationFile.following
-                  : IsrTranslationFile.follow,
-              isLoading: isLoading,
-              textStyle: IsrStyles.primaryText12.copyWith(
-                color: isFollowing ? IsrColors.appColor : IsrColors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+        onEditPost: () async {
+          if (onEditPost != null) {
+            final postDataString = await onEditPost();
+            if (postDataString.isStringEmptyOrNull == false) {
+              final postData =
+                  TimeLineData.fromMap(jsonDecode(postDataString) as Map<String, dynamic>);
+              final reelData = _getReelData(postData, _currentPostSectionType);
+              completer.complete(reelData);
+            }
+            return postDataString;
+          }
+          return '';
+        },
+        onShowPostInsight: onShowPostInsight,
+      ),
     );
+    return completer.future;
   }
+
+  Future<bool?> _showReportPostDialog(BuildContext context) => showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  IsrTranslationFile.reportPost,
+                  style: IsrStyles.primaryText18.copyWith(fontWeight: FontWeight.w700),
+                ),
+                16.responsiveVerticalSpace,
+                Text(
+                  IsrTranslationFile.reportPostConfirmation,
+                  style: IsrStyles.primaryText14.copyWith(
+                    color: '4A4A4A'.toColor(),
+                  ),
+                ),
+                32.responsiveVerticalSpace,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    AppButton(
+                      title: IsrTranslationFile.report,
+                      width: 102.responsiveDimension,
+                      onPress: () => Navigator.of(context).pop(true),
+                      backgroundColor: 'E04755'.toColor(),
+                    ),
+                    AppButton(
+                      title: IsrTranslationFile.cancel,
+                      width: 102.responsiveDimension,
+                      onPress: () => Navigator.of(context).pop(false),
+                      backgroundColor: 'F6F6F6'.toColor(),
+                      textColor: Theme.of(context).primaryColor,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+  Future<bool?> _showDeletePostDialog(BuildContext context) => showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  IsrTranslationFile.deletePost,
+                  style: IsrStyles.primaryText18.copyWith(fontWeight: FontWeight.w700),
+                ),
+                16.responsiveVerticalSpace,
+                Text(
+                  IsrTranslationFile.deletePostConfirmation,
+                  style: IsrStyles.primaryText14.copyWith(
+                    color: '4A4A4A'.toColor(),
+                  ),
+                ),
+                32.responsiveVerticalSpace,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    AppButton(
+                      title: IsrTranslationFile.delete,
+                      width: 102.responsiveDimension,
+                      onPress: () => Navigator.of(context).pop(true),
+                      backgroundColor: 'E04755'.toColor(),
+                    ),
+                    AppButton(
+                      title: IsrTranslationFile.cancel,
+                      width: 102.responsiveDimension,
+                      onPress: () => Navigator.of(context).pop(false),
+                      backgroundColor: 'F6F6F6'.toColor(),
+                      textColor: Theme.of(context).primaryColor,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+  Future<String?> _showEditPostDialog(BuildContext context, TimeLineData postDataModel) =>
+      showDialog<String>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  IsrTranslationFile.editPost,
+                  style: IsrStyles.primaryText18.copyWith(fontWeight: FontWeight.w700),
+                ),
+                16.responsiveVerticalSpace,
+                Text(
+                  IsrTranslationFile.editPostConfirmation,
+                  style: IsrStyles.primaryText14.copyWith(
+                    color: '4A4A4A'.toColor(),
+                  ),
+                ),
+                32.responsiveVerticalSpace,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    AppButton(
+                      title: IsrTranslationFile.yes,
+                      width: 102.responsiveDimension,
+                      onPress: () async {
+                        final postDataString = _handleEditPost(postDataModel);
+                        Navigator.of(context).pop(postDataString ?? '');
+                      },
+                      backgroundColor: '006CD8'.toColor(),
+                    ),
+                    AppButton(
+                      title: IsrTranslationFile.cancel,
+                      width: 102.responsiveDimension,
+                      onPress: () => Navigator.of(context).pop(''),
+                      backgroundColor: 'F6F6F6'.toColor(),
+                      textColor: Theme.of(context).primaryColor,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+  /// TODO need to check this
+  String? _handleEditPost(TimeLineData postDataModel) => '';
 }

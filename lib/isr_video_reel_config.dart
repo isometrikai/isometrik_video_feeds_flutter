@@ -1,4 +1,6 @@
 // sdk_config.dart
+import 'dart:convert';
+
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -14,14 +16,17 @@ class IsrVideoReelConfig {
   static BuildContext? buildContext;
   static var isSdkInitialize = false;
 
+  /// Helper method to check if context is available
+  static bool get isContextAvailable => buildContext != null;
+
   static Future<void> initializeSdk({
     required String baseUrl,
-    PostInfoClass? postInfo,
+    UserInfoClass? userInfoClass,
     OnBeforeFlushCallback? onBeforeFlushCallback,
     required Map<String, dynamic> defaultHeaders,
   }) async {
     if (isSdkInitialize) {
-      await _saveUserInformation(postInfo: postInfo);
+      await _saveUserInformation(userInfoClass: userInfoClass);
       return;
     }
     AppUrl.appBaseUrl = baseUrl;
@@ -29,27 +34,24 @@ class IsrVideoReelConfig {
     await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     isrConfigureInjection();
     // ✅ Initialize SDK router
-    IsrAppRouter.initializeRouter();
     await _storeHeaderValues(defaultHeaders);
     await _initializeHive(
       onBeforeFlushCallback: onBeforeFlushCallback,
     );
     Bloc.observer = IsrAppBlocObserver();
-    await _saveUserInformation(postInfo: postInfo);
+    await _saveUserInformation(userInfoClass: userInfoClass);
     isSdkInitialize = true;
   }
 
   static Future<void> _saveUserInformation({
-    PostInfoClass? postInfo,
+    UserInfoClass? userInfoClass,
   }) async {
     final localStorageManager = IsmInjectionUtils.getOtherClass<LocalStorageManager>();
-    final userInfoString = postInfo?.userInformation.toString();
-    await localStorageManager.saveValueSecurely(
-        LocalStorageKeys.accessToken, postInfo?.accessToken ?? '');
+    final userInfoString = jsonEncode(userInfoClass);
     await localStorageManager.saveValue(
         LocalStorageKeys.userInfo, userInfoString, SavedValueDataType.string);
     await localStorageManager.saveValue(
-        LocalStorageKeys.userId, postInfo?.userInformation?.userId, SavedValueDataType.string);
+        LocalStorageKeys.userId, userInfoClass?.userId, SavedValueDataType.string);
   }
 
   static void precacheVideos(List<String> mediaUrls) async {

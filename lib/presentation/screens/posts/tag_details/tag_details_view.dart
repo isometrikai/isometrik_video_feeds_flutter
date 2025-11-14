@@ -360,11 +360,20 @@ class _TagDetailsViewState extends State<TagDetailsView> {
       );
 
   Widget _buildPostImage(TimeLineData post) {
-    final imageUrl = post.media?.first.mediaType?.mediaType == MediaType.video
-        ? post.media?.first.previewUrl!
-        : post.media?.first.url ?? '';
+    var coverUrl = '';
+    if (post.previews.isListEmptyOrNull == false) {
+      final previewUrl = post.previews?.first.url ?? '';
+      if (previewUrl.isStringEmptyOrNull == false) {
+        coverUrl = previewUrl;
+      }
+    }
+    if (coverUrl.isStringEmptyOrNull && post.media.isListEmptyOrNull == false) {
+      coverUrl = post.media?.first.mediaType?.mediaType == MediaType.video
+          ? (post.media?.first.previewUrl.toString() ?? '')
+          : post.media?.first.url.toString() ?? '';
+    }
 
-    if (imageUrl.isStringEmptyOrNull) {
+    if (coverUrl.isStringEmptyOrNull) {
       return Container(
         color: IsrColors.colorF5F5F5,
         child: Icon(
@@ -376,7 +385,7 @@ class _TagDetailsViewState extends State<TagDetailsView> {
     }
 
     return AppImage.network(
-      imageUrl ?? '',
+      coverUrl,
       fit: BoxFit.cover,
       width: double.infinity,
       height: double.infinity,

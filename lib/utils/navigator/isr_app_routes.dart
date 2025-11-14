@@ -1,7 +1,8 @@
-part of 'isr_app_router.dart';
+part of 'isr_app_navigator.dart';
 
 class IsrAppRoutes {
   const IsrAppRoutes._();
+  static const String home = '/';
   static const String landingView = '/${IsrRouteNames.landingView}';
   static const String cameraView = '/${IsrRouteNames.cameraView}';
   static const String postView = '/${IsrRouteNames.postView}';
@@ -18,6 +19,7 @@ class IsrAppRoutes {
 
 class IsrRouteNames {
   IsrRouteNames._();
+  static const String home = 'home';
   static const String landingView = 'landingView';
   static const String cameraView = 'CameraView';
   static const String postView = 'postView';

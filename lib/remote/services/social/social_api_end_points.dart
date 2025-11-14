@@ -15,7 +15,12 @@ class SocialApiEndPoints {
   static const String postComment = '/api/v1/comments';
   static const String postCommentLike = '/api/v1/likes/comment';
   static const String postReportComment = '/api/v1/reports';
-  static String getPostDetails = '/fast/api/v1/social-posts';
+  static const String getPostDetails = '/api/v1/posts/detail';
+  static String get getSocialProducts => '/fast/api/v1/social-pdp/bulk';
+  // static String get getSocialProducts => switch (appFlavour) {
+  //   AppFlavor.production => '/v1/product/socialpost/details',
+  //   AppFlavor.development => '/fast/api/v1/social-pdp/bulk',
+  // };
 
   // static const String getPostDetails = '/fast/api/v1/social-posts';
   static const String putEditPost = '/api/v1/posts';

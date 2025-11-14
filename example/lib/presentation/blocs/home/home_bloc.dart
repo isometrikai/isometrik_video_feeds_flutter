@@ -109,14 +109,11 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     final appVersion = await Utility.getAppVersion();
     await isr.IsrVideoReelConfig.initializeSdk(
       baseUrl: AppUrl.appBaseUrl,
-      postInfo: isr.PostInfoClass(
-        accessToken: accessToken,
-        userInformation: isr.UserInfoClass(
-          userId: userId,
-          userName: userName,
-          firstName: firstName,
-          lastName: lastName,
-        ),
+      userInfoClass: isr.UserInfoClass(
+        userId: userId,
+        userName: userName,
+        firstName: firstName,
+        lastName: lastName,
       ),
       // Optional: Provide callback to receive events before flushing
       onBeforeFlushCallback: handleEventsBeforeFlush,

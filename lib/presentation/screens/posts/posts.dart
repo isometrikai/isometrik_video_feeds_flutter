@@ -7,6 +7,7 @@ export 'ism_reels_video_player_view.dart';
 export 'media_cache_factory.dart';
 export 'media_cache_interface.dart';
 export 'place_details/place_details.dart';
+export 'post_insight/post_insight_view.dart';
 export 'post_item_widget.dart';
 export 'post_listing/post_listing.dart';
 export 'post_place_holder_view.dart';

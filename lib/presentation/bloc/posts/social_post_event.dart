@@ -126,12 +126,14 @@ class ReportPostEvent extends SocialPostEvent {
   final Function(bool) onComplete;
 }
 
-class GetPostDetailsEvent extends SocialPostEvent {
-  GetPostDetailsEvent({
+class GetSocialProductsEvent extends SocialPostEvent {
+  GetSocialProductsEvent({
+    required this.postId,
     this.isFromPagination = false,
     this.productIds,
   });
 
+  final String postId;
   final bool? isFromPagination;
   final List<String>? productIds;
 }

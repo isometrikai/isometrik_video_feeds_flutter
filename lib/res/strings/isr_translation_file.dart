@@ -6,6 +6,8 @@ class IsrTranslationFile {
   static const String timeoutError =
       'Oops! The request took too long to process. Please check your internet connection and try again. If the issue persists, you can contact our support team for assistance.';
   static const String somethingWentWrong = 'Something went wrong';
+  static const String yes = 'Yes';
+  static const String no = 'No';
   static const String ok = 'Ok';
   static const String cancel = 'Cancel';
   static const String continues = 'Continue';
@@ -102,6 +104,7 @@ class IsrTranslationFile {
   static const String delete = 'Delete';
   static const String deletePost = 'Delete Post';
   static const String deletePostConfirmation = 'Are you sure you want to delete this post?';
+  static const String reportPostConfirmation = 'Are you sure you want to report this post?';
   static const String editPostConfirmation = 'Are you sure you want to edit the post?';
   static const postDeletedSuccessfully = 'Post deleted successfully';
   static const String allComments = 'All Comments';
@@ -122,4 +125,18 @@ class IsrTranslationFile {
   static const String retry = 'Retry';
   static const String noPostsDescription =
       'No posts have been shared for this location yet. Be the first to share something!';
+  static const String postInsight = 'Post Insight';
+  static const String views = 'Views';
+  static const String interactions = 'Interactions';
+  static const String followers = 'Followers';
+  static const String nonFollowers = 'Non-Followers';
+  static const String overview = 'Overview';
+  static const String profileActivity = 'Profile activity';
+  static const String statistics = 'Statistics';
+  static const String profileVisits = 'Profile visits';
+  static const String comments = 'Comments';
+  static const String saves = 'Saves';
+  static const String shares = 'Shares';
+  static const String accountEngaged = 'Account Engaged';
+  static const String follows = 'Follows';
 }

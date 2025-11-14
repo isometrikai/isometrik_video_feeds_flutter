@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -44,4 +46,9 @@ class SocialMapper {
 
   CustomResponse<HashTagResponse?> mapSearchTagResponse(ResponseModel response) => CustomResponse(
       data: hashTagResponseFromJson(response.data), responseCode: response.statusCode);
+
+  CustomResponse<TimeLineData?> mapTimelineData(ResponseModel response) {
+    final timeLineData = TimeLineData.fromMap(jsonDecode(response.data) as Map<String, dynamic>);
+    return CustomResponse(data: timeLineData, responseCode: response.statusCode);
+  }
 }

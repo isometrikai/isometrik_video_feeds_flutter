@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -32,7 +31,7 @@ class PlaceDetailsView extends StatefulWidget {
 }
 
 class _PlaceDetailsViewState extends State<PlaceDetailsView> {
-  final _placeDetailsBloc = IsmInjectionUtils.getBloc<PlaceDetailsBloc>();
+  late PlaceDetailsBloc _placeDetailsBloc;
 
   final Completer<GoogleMapController> _mapController = Completer();
   final Set<Marker> _markers = {};
@@ -42,6 +41,8 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
   @override
   void initState() {
     super.initState();
+    // ✅ Get the BLoC from context (from the BlocProvider in the navigation tree)
+    _placeDetailsBloc = context.read<PlaceDetailsBloc>();
     _initializeMap();
     _loadPosts();
   }
@@ -343,11 +344,20 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
       );
 
   Widget _buildPostImage(TimeLineData post) {
-    final imageUrl = post.media?.first.mediaType?.mediaType == MediaType.video
-        ? post.media?.first.previewUrl!
-        : post.media?.first.url ?? '';
+    var coverUrl = '';
+    if (post.previews.isListEmptyOrNull == false) {
+      final previewUrl = post.previews?.first.url ?? '';
+      if (previewUrl.isStringEmptyOrNull == false) {
+        coverUrl = previewUrl;
+      }
+    }
+    if (coverUrl.isStringEmptyOrNull && post.media.isListEmptyOrNull == false) {
+      coverUrl = post.media?.first.mediaType?.mediaType == MediaType.video
+          ? (post.media?.first.previewUrl.toString() ?? '')
+          : post.media?.first.url.toString() ?? '';
+    }
 
-    if (imageUrl.isStringEmptyOrNull) {
+    if (coverUrl.isStringEmptyOrNull) {
       return Container(
         color: IsrColors.colorF5F5F5,
         child: Icon(
@@ -359,7 +369,7 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
     }
 
     return AppImage.network(
-      imageUrl ?? '',
+      coverUrl,
       fit: BoxFit.cover,
       width: double.infinity,
       height: double.infinity,
