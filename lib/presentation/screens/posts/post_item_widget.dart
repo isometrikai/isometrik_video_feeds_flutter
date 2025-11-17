@@ -174,17 +174,15 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                 child: SizedBox(
                   height: MediaQuery.of(context).size.height,
                   child: Center(
-                    child: widget.postSectionType == PostSectionType.trending
-                        ? const Text('No Data')
-                        : widget.placeHolderWidget ??
-                            PostPlaceHolderView(
-                              postSectionType: widget.postSectionType,
-                              onTap: () {
-                                if (widget.onTapPlaceHolder != null) {
-                                  widget.onTapPlaceHolder!();
-                                }
-                              },
-                            ),
+                    child: widget.placeHolderWidget ??
+                        PostPlaceHolderView(
+                          postSectionType: widget.postSectionType,
+                          onTap: () {
+                            if (widget.onTapPlaceHolder != null) {
+                              widget.onTapPlaceHolder!();
+                            }
+                          },
+                        ),
                   ),
                 ),
               ),
@@ -243,6 +241,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                   final reelsData = _reelsDataList[index];
                   return RepaintBoundary(
                     child: IsmReelsVideoPlayerView(
+                      overlayPadding: widget.overlayPadding,
                       reelsData: reelsData,
                       loggedInUserId: widget.loggedInUserId,
                       videoCacheManager: _videoCacheManager,
@@ -324,30 +323,6 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                       onPressLikeButton: () async {
                         if (reelsData.onPressLike != null) {
                           final result = await reelsData.onPressLike!(reelsData.isLiked ?? false);
-                          if (result == true) {
-                            reelsData.isLiked = reelsData.isLiked == false;
-                            if (reelsData.isLiked == true) {
-                              reelsData.likesCount = (reelsData.likesCount ?? 0) + 1;
-                            } else {
-                              if ((reelsData.likesCount ?? 0) > 0) {
-                                reelsData.likesCount = (reelsData.likesCount ?? 0) - 1;
-                              }
-                            }
-                            _updateState();
-                          }
-                          // ✅ Log event locally
-                          // unawaited(EventQueueProvider.instance.addEvent({
-                          //   'type': EventType.like.value,
-                          //   'postId': reelsData.postId,
-                          //   'userId': widget.loggedInUserId,
-                          //   'isLiked': reelsData.isLiked,
-                          //   'timestamp': DateTime.now().toUtc().toIso8601String(),
-                          // }));
-                        }
-                      },
-                      onDoubleTap: () async {
-                        if (reelsData.onDoubleTap != null && reelsData.isLiked == false) {
-                          final result = await reelsData.onDoubleTap!(reelsData.isLiked ?? false);
                           if (result == true) {
                             reelsData.isLiked = reelsData.isLiked == false;
                             if (reelsData.isLiked == true) {

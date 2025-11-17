@@ -260,7 +260,6 @@ class _HomeScreenState extends State<HomeScreen> {
           return result;
         },
         onPressLike: (isLiked) async => _handleLikeAction(isLiked, postData),
-        onDoubleTap: (isLiked) async => _handleLikeAction(isLiked, postData),
         onPressSave: (isSavedPost) async {
           try {
             final completer = Completer<bool>();

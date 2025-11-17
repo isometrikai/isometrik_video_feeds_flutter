@@ -18,7 +18,6 @@ class ReelsData {
     this.likesCount,
     this.onPressSave,
     this.onPressLike,
-    this.onDoubleTap,
     this.onPressFollow,
     this.onRefresh,
     this.onTapCartIcon,
@@ -70,7 +69,6 @@ class ReelsData {
 
   final Future<bool> Function(bool isSavedPost)? onPressSave;
   final Future<bool> Function(bool)? onPressLike;
-  final Future<bool> Function(bool)? onDoubleTap;
   final Future<bool> Function(String, bool)? onPressFollow;
   final Future<bool> Function()? onRefresh;
   final Future<ReelsData?> Function()? onCreatePost;

@@ -89,7 +89,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
 
   void _onStartPost(StartPost event, Emitter<SocialPostState> emit) async {
     final userInfoString = await _localDataUseCase.getUserInfo();
-    _userInfoClass = UserInfoClass.fromJson(jsonDecode(userInfoString) as Map<String, dynamic>);
+    _userInfoClass = userInfoString.isStringEmptyOrNull
+        ? null
+        : UserInfoClass.fromJson(jsonDecode(userInfoString) as Map<String, dynamic>);
     add(LoadPostData());
   }
 

@@ -38,6 +38,7 @@ Future<void> _initializeReelsSdk() async {
     // Optional: Provide callback to receive events before flushing
     onBeforeFlushCallback: (events) async => false,
     defaultHeaders: {
+      'Authorization': accessToken,
       'Accept': 'application/json',
       'Content-Type': AppConstants.headerContentType,
       'lan': 'en',

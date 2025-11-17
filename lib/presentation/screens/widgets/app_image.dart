@@ -254,11 +254,10 @@ class _Network extends StatelessWidget {
       ),
       placeholder: (context, url) => showError
           ? ImagePlaceHolder(
-              borderRadius: borderRadius,
-              placeHolderName: placeHolderName,
               width: width,
               height: height,
-              boxFit: fit ?? BoxFit.contain,
+              borderRadius: borderRadius,
+              placeHolderName: placeHolderName,
               boxShape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
               child: name.isStringEmptyOrNull == false && isProfileImage
                   ? Text(

@@ -260,9 +260,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   ReelsData _getReelData(TimeLineData postData, PostSectionType postSectionType) => ReelsData(
         postSetting: PostSetting(
           isProfilePicVisible: true,
-          isCreatePostButtonVisible: true,
+          isCreatePostButtonVisible: false,
           isCommentButtonVisible: postData.settings?.commentsEnabled == true,
-          isSaveButtonVisible: true,
+          isSaveButtonVisible: postData.settings?.saveEnabled == true,
           isLikeButtonVisible: true,
           isShareButtonVisible: true,
           isMoreButtonVisible: true,
@@ -333,7 +333,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           return result;
         },
         onPressLike: (isLiked) async => _handleLikeAction(isLiked, postData),
-        onDoubleTap: (isLiked) async => _handleLikeAction(isLiked, postData),
         onPressSave: (isSavedPost) async {
           try {
             final completer = Completer<bool>();

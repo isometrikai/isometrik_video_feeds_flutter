@@ -23,7 +23,6 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
     this.onPressFollowButton,
     this.onPressLikeButton,
     this.onPressSaveButton,
-    this.onDoubleTap,
     this.loggedInUserId,
     this.onVideoCompleted,
     this.onTapMentionTag,
@@ -38,7 +37,6 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
   final Future<void> Function()? onPressFollowButton;
   final Future<void> Function()? onPressLikeButton;
   final Future<void> Function()? onPressSaveButton;
-  final Future<void> Function()? onDoubleTap;
   final String? loggedInUserId;
   final VoidCallback? onVideoCompleted;
   final Function(List<MentionMetaData>)? onTapMentionTag;
@@ -136,31 +134,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     super.didChangeDependencies();
     // Capture the BuildContext for SDK use
     IsrVideoReelConfig.buildContext = context;
-    // _detectDevicePerformance();
-  }
-
-  /// Detects device performance capabilities to optimize video playback
-  void _detectDevicePerformance() {
-    // Check device memory and performance characteristics
-    final mediaQuery = MediaQuery.of(context);
-    final screenSize = mediaQuery.size;
-    final devicePixelRatio = mediaQuery.devicePixelRatio;
-
-    // Detect low-end devices based on screen size and pixel ratio
-    _isLowEndDevice = screenSize.width < 400 || devicePixelRatio < 2.0;
-
-    // Platform-specific optimizations
-    final platform = Theme.of(context).platform;
-    if (platform == TargetPlatform.android) {
-      // Android-specific optimizations
-      debugPrint('🤖 Android device detected - applying Android optimizations');
-    } else if (platform == TargetPlatform.iOS) {
-      // iOS-specific optimizations
-      debugPrint('🍎 iOS device detected - applying iOS optimizations');
-    }
-
-    debugPrint('📱 Device Performance: ${_isLowEndDevice ? "Low-end" : "High-end"}');
-    debugPrint('📱 Screen: ${screenSize.width}x${screenSize.height}, DPR: $devicePixelRatio');
   }
 
   @override
@@ -674,8 +647,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           onTap: _toggleMuteAndUnMute,
           onDoubleTap: () async {
             _triggerLikeAnimation(); // Always show animation
-            if (_reelData.isLiked != true && widget.onDoubleTap != null) {
-              await widget.onDoubleTap!();
+            if (_reelData.isLiked != true) {
+              await _callLikeFunction();
             }
           },
           child: mediaWidget,
@@ -1324,8 +1297,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             onLongPress: _togglePlayPause,
             onDoubleTap: () async {
               _triggerLikeAnimation(); // Always show animation
-              if (_reelData.isLiked != true && widget.onDoubleTap != null) {
-                await widget.onDoubleTap!();
+              if (_reelData.isLiked != true) {
+                await _callLikeFunction();
               }
             },
             onLongPressEnd: (_) => _togglePlayPause(),

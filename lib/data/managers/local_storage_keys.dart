@@ -2,8 +2,8 @@ class LocalStorageKeys {
   LocalStorageKeys._();
 
   static const String language = 'language';
-  static const String accessToken = 'accessToken';
-  static const String refreshToken = 'refreshToken';
+  static const String accessToken = 'authorizedToken';
+  static const String refreshToken = 'authorizedRefreshToken';
   static const String userInfo = 'userInfo';
   static const String tokenType = 'tokenType';
   static const String isLoggedIn = 'isLoggedIn';
