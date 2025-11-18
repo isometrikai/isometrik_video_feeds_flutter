@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
+import 'dart:math' as m;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -9,6 +10,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -209,9 +211,8 @@ class Utility {
     bool isRoundedCorners = true,
   }) {
     // Try to get context from multiple sources
-    final contextToUse =
-        ismNavigatorKey.currentContext ?? IsrVideoReelConfig.buildContext;
-
+    final contextToUse = context ?? ismNavigatorKey.currentContext ?? IsrVideoReelConfig.buildContext;
+    
     if (contextToUse == null) {
       throw FlutterError(
         'Navigator context is not available. '
@@ -478,7 +479,7 @@ class Utility {
     );
   }
 
-  static BuildContext? get context => IsrVideoReelConfig.buildContext!;
+  static BuildContext? get context => IsrVideoReelConfig.getBuildContext?.call() ?? IsrVideoReelConfig.buildContext!;
 
   // Define a function to convert a character to its base64Encode
   static String encodeChar(String char) => base64Encode(utf8.encode(char));
@@ -619,6 +620,22 @@ class Utility {
 
   static bool isLocalUrl(String url) =>
       url.startsWith('http://') == false && url.startsWith('https://') == false;
+
+  static String generateRandomId(int length) {
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final rand = m.Random.secure();
+    return List.generate(length, (index) => chars[rand.nextInt(chars.length)]).join();
+  }
+
+  static String getInitials({
+    required String firstName,
+    required String lastName,
+  }) {
+    if (firstName.isEmpty && lastName.isEmpty) return '';
+    if (firstName.isEmpty) return lastName[0].toUpperCase();
+    if (lastName.isEmpty) return firstName[0].toUpperCase();
+    return '${firstName[0].toUpperCase()}${lastName[0].toUpperCase()}';
+  }
 
   /// Builds text spans with highlighted usernames and hashtags from comment tags
   ///
@@ -773,6 +790,22 @@ class Utility {
     }
 
     return spans;
+  }
+
+  static Widget provideBlocIfMissing<T extends Bloc>({
+    required BuildContext context,
+    required T Function() create,
+    required Widget child,
+  }) {
+    try {
+      context.read<T>();
+      return child;
+    } catch (_) {
+      return BlocProvider<T>(
+        create: (_) => create(),
+        child: child,
+      );
+    }
   }
 
   // get time ago

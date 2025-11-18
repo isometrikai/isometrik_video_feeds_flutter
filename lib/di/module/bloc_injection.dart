@@ -52,5 +52,22 @@ class BlocInjection {
     IsmInjectionUtils.registerBloc<PlaceDetailsBloc>(() => PlaceDetailsBloc(
           IsmInjectionUtils.getUseCase<GetTaggedPostsUseCase>(),
         ));
+
+    IsmInjectionUtils.registerBloc<CreatePostBloc>(() => CreatePostBloc(
+          IsmInjectionUtils.getUseCase<CreatePostUseCase>(),
+          IsmInjectionUtils.getUseCase<GetSocialProductsUseCase>(),
+          localDataUseCase,
+          IsmInjectionUtils.getUseCase<GoogleCloudStorageUploaderUseCase>(),
+          IsmInjectionUtils.getUseCase<MediaProcessingUseCase>(),
+        ));
+
+    IsmInjectionUtils.registerBloc<SearchUserBloc>(() => SearchUserBloc(
+      IsmInjectionUtils.getUseCase<SearchUserUseCase>(),
+      IsmInjectionUtils.getUseCase<SearchTagUseCase>(),
+    ));
+
+    IsmInjectionUtils.registerBloc<UploadProgressCubit>(
+      UploadProgressCubit.new,
+    );
   }
 }

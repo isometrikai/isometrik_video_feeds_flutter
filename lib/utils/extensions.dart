@@ -1,9 +1,11 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
+import 'package:video_compress/video_compress.dart';
 
 extension ContextExtension on BuildContext {
   ThemeData get theme => Theme.of(this);
@@ -79,6 +81,7 @@ extension EmptyExtension on String? {
 
 extension EmptyListExtension on List<dynamic>? {
   bool get isListEmptyOrNull => this == null || this?.isEmpty == true;
+  bool get isEmptyOrNull => this == null || this?.isEmpty == true;
 }
 
 extension ZeroOrNullExtension on double? {
@@ -127,6 +130,7 @@ extension RemoveEmptyElementExtension on Map<String, dynamic> {
 
 extension ColorExt on Color {
   Color changeOpacity(double opacity) => withValues(alpha: opacity);
+  Color applyOpacity(double opacity) => withValues(alpha: opacity);
 }
 
 extension PercentageWidthExtension on num {
@@ -152,6 +156,43 @@ extension WidthExtension on num {
       SizedBox(width: toDouble().responsiveDimension);
 }
 
+extension MediaPathCheck on String {
+  bool get isVideoFile {
+    final ext = toLowerCase();
+    return ext.endsWith('.mp4') ||
+        ext.endsWith('.mov') ||
+        ext.endsWith('.avi') ||
+        ext.endsWith('.mkv') ||
+        ext.endsWith('.webm');
+  }
+
+  bool get isImageFile {
+    final ext = toLowerCase();
+    return ext.endsWith('.jpg') ||
+        ext.endsWith('.jpeg') ||
+        ext.endsWith('.png') ||
+        ext.endsWith('.gif') ||
+        ext.endsWith('.webp');
+  }
+}
+
+extension emptyExtension on String? {
+  bool get isEmptyOrNull {
+    final finalString = this?.trim();
+    return finalString == null || finalString == ' ' || finalString.isEmpty == true;
+  }
+}
+
+extension MediaQualityCheck on String {
+  /// Checks if file meets the minimum width & height requirement.
+  Future<bool> hasMinResolution({int minWidth = 240, int minHeight = 240}) async {
+    final info = await VideoCompress.getMediaInfo(this);
+    final width = info.width ?? 0;
+    final height = info.height ?? 0;
+    return width >= minWidth && height >= minHeight;
+  }
+}
+
 extension MediaTypeValue on MediaType {
   int get value => switch (this) {
         MediaType.photo => 0,
@@ -159,6 +200,19 @@ extension MediaTypeValue on MediaType {
         MediaType.both => 2,
         MediaType.unknown => 0,
       };
+}
+
+extension MediaTypeStringExtension on MediaType {
+  String get mediaTypeString => switch (this) {
+    MediaType.photo => 'image',
+    MediaType.video => 'video',
+    MediaType.both => 'carousel',
+    MediaType.unknown => 'unknown',
+  };
+}
+
+extension ColorExtension on String {
+  Color get color => Color(int.parse('0xFF${replaceFirst('#', '')}'));
 }
 
 extension MediaTypeExtensionOnString on String {

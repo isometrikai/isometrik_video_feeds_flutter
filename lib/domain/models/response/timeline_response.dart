@@ -186,6 +186,7 @@ class PreviewMedia {
     this.url,
     this.file,
     this.fileName,
+    this.localFilePath,
   });
 
   Map<String, dynamic> toMap() => {
@@ -200,6 +201,7 @@ class PreviewMedia {
   String? url;
   File? file;
   String? fileName;
+  String? localFilePath;
 }
 
 class EngagementMetrics {
@@ -294,6 +296,7 @@ class MediaData {
     this.position,
     this.url,
     this.previewUrl,
+    this.coverFileLocalPath,
     this.description,
     this.width,
     this.height,
@@ -302,6 +305,8 @@ class MediaData {
     this.fileName,
     this.postType,
     this.size,
+    this.localPath,
+    this.fileExtension
   });
 
   factory MediaData.fromMap(Map<String, dynamic> json) => MediaData(
@@ -334,9 +339,11 @@ class MediaData {
   String? fileExtension;
   String? coverFileName;
   String? coverFileExtension;
+  String? coverFileLocalPath;
   PostType? postType;
   num? size;
   Uint8List? videoThumbnailFileBytes;
+  bool isCompressed = false;
 
   Map<String, dynamic> toMap() => {
         'media_type': mediaType,

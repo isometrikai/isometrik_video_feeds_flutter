@@ -100,6 +100,7 @@ class ProductDataModel {
     this.rewardFinalPrice,
     this.rewerdBasePrice,
     this.outOfStock,
+    this.allowOrderOutOfStock,
     this.sellerPlanDetails,
     this.storeCategoryId,
     this.productType,
@@ -259,6 +260,7 @@ class ProductDataModel {
         rewardFinalPrice: json['rewardFinalPrice'] as num? ?? 0,
         rewerdBasePrice: json['rewerdBasePrice'] as num? ?? 0,
         outOfStock: json['outOfStock'] as bool? ?? false,
+        allowOrderOutOfStock: json['allowOrderOutOfStock'] as bool? ?? false,
         storeCategoryId: json['storeCategoryId'] as String? ?? '',
         sellerPlanDetails: json['sellerPlanDetails'] == null
             ? null
@@ -334,6 +336,7 @@ class ProductDataModel {
   num? rewardFinalPrice;
   num? rewerdBasePrice;
   bool? outOfStock;
+  bool? allowOrderOutOfStock;
   SellerPlanDetails? sellerPlanDetails;
   String? storeCategoryId;
   num? productType;
@@ -415,6 +418,8 @@ class ProductDataModel {
         'sellerPlanDetails': sellerPlanDetails?.toJson(),
         'productType': productType,
         'productSeo': productSeo?.toJson(),
+        'outOfStock': outOfStock,
+        'allowOrderOutOfStock': allowOrderOutOfStock
       };
 
   ProductDataModel copyWith() => ProductDataModel(

@@ -7,6 +7,8 @@ class IsmLocalDataUseCase extends BaseUseCase {
 
   Future<String> getUserId() async => await repository.getUserId();
 
+  Future<String> getUserName() async => await repository.getUserName();
+
   Future<String> getEmail() async => await repository.getEmail();
 
   Future<String> getCurrencySymbol() async =>

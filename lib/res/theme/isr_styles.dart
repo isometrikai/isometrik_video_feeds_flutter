@@ -53,6 +53,20 @@ abstract class IsrStyles {
     fontWeight: FontWeight.w400,
   );
 
+  static TextStyle primaryText20 = TextStyle(
+    color: IsrColors.primaryTextColor,
+    fontSize: IsrDimens.twenty,
+    fontFamily: AppConstants.primaryFontFamily,
+    fontWeight: FontWeight.w400,
+  );
+
+  static TextStyle primaryText20Bold = TextStyle(
+    color: IsrColors.primaryTextColor,
+    fontSize: IsrDimens.twenty,
+    fontFamily: AppConstants.primaryFontFamily,
+    fontWeight: FontWeight.bold,
+  );
+
   static TextStyle secondaryText10 = TextStyle(
     color: IsrColors.secondaryTextColor,
     fontSize: IsrDimens.ten,

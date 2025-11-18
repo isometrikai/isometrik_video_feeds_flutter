@@ -37,6 +37,8 @@ Future<void> _initializeReelsSdk() async {
     ),
     rudderStackDataPlaneUrl: '',
     rudderStackWriteKey: '',
+    googleServiceJsonPath: AssetConstants.googleServiceJson,
+    getCurrentBuildContext: () => exNavigatorKey.currentContext,
     defaultHeaders: {
       'Authorization': accessToken,
       'Accept': 'application/json',

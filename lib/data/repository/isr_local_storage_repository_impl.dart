@@ -116,6 +116,10 @@ class IsrLocalStorageRepositoryImpl implements IsrLocalStorageRepository {
       await getValue(LocalStorageKeys.userInfo, SavedValueDataType.string)
           as String;
 
+  @override
+  Future<String> getUserName() async =>
+      await getValue(LocalStorageKeys.userName, SavedValueDataType.string) as String;
+
   // Implementations for setters
   @override
   void saveLanguage(String value) =>

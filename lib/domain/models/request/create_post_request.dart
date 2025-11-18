@@ -115,12 +115,12 @@ class PostSettingModel {
   final bool? stitchEnabled;
 
   Map<String, dynamic> toJson() => {
-        'advance_interval': advanceInterval,
-        'age_restriction': ageRestriction,
-        'auto_advance': autoAdvance,
-        'comments_enabled': commentsEnabled,
-        'duet_enabled': duetEnabled,
-        'save_enabled': saveEnabled,
-        'stitch_enabled': stitchEnabled,
+        'advance_interval': advanceInterval ?? 0,
+        'age_restriction': ageRestriction ?? false,
+        'auto_advance': autoAdvance ?? false,
+        'comments_enabled': commentsEnabled ?? false,
+        'duet_enabled': duetEnabled ?? false,
+        'save_enabled': saveEnabled ?? false,
+        'stitch_enabled': stitchEnabled ?? false,
       };
 }
