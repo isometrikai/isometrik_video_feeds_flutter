@@ -27,7 +27,8 @@ class SocialApiEndPoints {
   static const String deletePost = '/api/v1/posts';
   static const String getPost = '/social/v1/post';
 
-  static String postMediaProcess(String postId) => '/api/v1/posts/$postId/start-processing';
+  static String postMediaProcess(String postId) =>
+      '/api/v1/posts/$postId/start-processing';
   static const String getSearchUsers = '/api/v1/users/search';
   static const String getSearchTags = '/api/v1/tags/hashtags/search';
   static const String getTaggedPosts = '/api/v1/tags/posts';

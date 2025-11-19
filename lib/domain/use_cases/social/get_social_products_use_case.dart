@@ -21,6 +21,7 @@ class GetSocialProductsUseCase extends BaseUseCase {
           page: page,
           limit: limit,
         );
-        return ApiResult(data: response.responseCode == 200 ? response.data : null);
+        return ApiResult(
+            data: response.responseCode == 200 ? response.data : null);
       });
 }

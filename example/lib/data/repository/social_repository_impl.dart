@@ -314,15 +314,16 @@ class SocialRepositoryImpl implements SocialRepository {
     Function(double p1)? onProgress,
     String? cloudFolderName,
   }) async {
-    final response = await GoogleCloudStorageUploader.uploadFileWithRealProgress(
-        file: file,
-        fileName: fileName,
-        fileExtension: fileExtension,
-        userId: userId,
-        onProgress: (progress) {
-          if (onProgress == null) return;
-          onProgress(progress);
-        });
+    final response =
+        await GoogleCloudStorageUploader.uploadFileWithRealProgress(
+            file: file,
+            fileName: fileName,
+            fileExtension: fileExtension,
+            userId: userId,
+            onProgress: (progress) {
+              if (onProgress == null) return;
+              onProgress(progress);
+            });
     return response ?? '';
   }
 

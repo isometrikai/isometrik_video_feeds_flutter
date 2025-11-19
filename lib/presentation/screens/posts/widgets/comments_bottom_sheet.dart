@@ -47,14 +47,16 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
 
   void _onStartInit() {
     _totalCommentsCount = widget.totalCommentsCount;
-    _socialBloc.add(GetPostCommentsEvent(isLoading: true, postId: widget.postId));
+    _socialBloc
+        .add(GetPostCommentsEvent(isLoading: true, postId: widget.postId));
     _scrollController.addListener(_onScroll);
   }
 
   void _onScroll() {
     if (_scrollController.hasClients) {
       final scrollPosition = _scrollController.position;
-      final scrollPercentage = scrollPosition.pixels / scrollPosition.maxScrollExtent;
+      final scrollPercentage =
+          scrollPosition.pixels / scrollPosition.maxScrollExtent;
 
       if (scrollPercentage >= 0.6 && !_isLoadingMore && _hasMoreComments) {
         _isLoadingMore = true;
@@ -100,14 +102,16 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
         },
         child: BlocConsumer<SocialPostBloc, SocialPostState>(
           listenWhen: (previousState, currentState) =>
-              currentState is LoadPostCommentState || currentState is LoadingPostComment,
+              currentState is LoadPostCommentState ||
+              currentState is LoadingPostComment,
           listener: (context, state) {
             if (state is LoadPostCommentState) {
               _isCommentsLoaded = true;
               _myUserId = state.myUserId ?? '';
               _postCommentList.clear();
               if (state.postCommentsList.isListEmptyOrNull == false) {
-                _postCommentList.addAll(state.postCommentsList as Iterable<CommentDataItem>);
+                _postCommentList.addAll(
+                    state.postCommentsList as Iterable<CommentDataItem>);
               } else {
                 _setReplyComment(null);
               }
@@ -115,7 +119,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
             }
           },
           buildWhen: (previousState, currentState) =>
-              currentState is LoadPostCommentState || currentState is LoadingPostComment,
+              currentState is LoadPostCommentState ||
+              currentState is LoadingPostComment,
           builder: (context, state) => SafeArea(
             child: Container(
               padding: EdgeInsets.only(
@@ -166,7 +171,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                           controller: _scrollController,
                           padding: IsrDimens.edgeInsetsAll(IsrDimens.sixteen),
                           itemCount: _postCommentList.length,
-                          separatorBuilder: (_, __) => 16.responsiveVerticalSpace,
+                          separatorBuilder: (_, __) =>
+                              16.responsiveVerticalSpace,
                           itemBuilder: (context, index) =>
                               _buildCommentItem(_postCommentList[index]),
                         )
@@ -183,7 +189,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
       );
 
   Widget _buildCommentItem(CommentDataItem commentDataItem) {
-    final comment = commentDataItem.also((_) => debugPrint('comment: comment tag: ${_.toJson()}'));
+    final comment = commentDataItem
+        .also((_) => debugPrint('comment: comment tag: ${_.toJson()}'));
     return StatefulBuilder(
       builder: (context, setState) => Column(
         children: [
@@ -202,7 +209,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                             recognizer: TapGestureRecognizer()
                               ..onTap = () {
                                 if (widget.onTapProfile != null) {
-                                  widget.onTapProfile!(comment.commentedByUserId ?? '');
+                                  widget.onTapProfile!(
+                                      comment.commentedByUserId ?? '');
                                 }
                               },
                             style: IsrStyles.primaryText14.copyWith(
@@ -228,7 +236,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                     Row(
                       spacing: 12.responsiveDimension,
                       children: [
-                        if (comment.id.isStringEmptyOrNull && !comment.status.isStringEmptyOrNull)
+                        if (comment.id.isStringEmptyOrNull &&
+                            !comment.status.isStringEmptyOrNull)
                           Text(
                             comment.status ?? '',
                             style: IsrStyles.primaryText12.copyWith(
@@ -237,7 +246,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                           ),
                         if (comment.id != null && comment.id!.isNotEmpty)
                           Text(
-                            Utility.getTimeAgoFromDateTime(comment.commentedOn, showJustNow: true),
+                            Utility.getTimeAgoFromDateTime(comment.commentedOn,
+                                showJustNow: true),
                             style: IsrStyles.primaryText12.copyWith(
                               color: '828282'.toColor(),
                             ),
@@ -262,13 +272,15 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                               ),
                             ),
                           ),
-                        if (!comment.showReply && (comment.childCommentCount ?? 0) > 0)
+                        if (!comment.showReply &&
+                            (comment.childCommentCount ?? 0) > 0)
                           TapHandler(
                             onTap: () {
                               setState(() {
                                 comment.showReply = true;
                               });
-                              if (comment.id != null && comment.childComments?.isNotEmpty != true) {
+                              if (comment.id != null &&
+                                  comment.childComments?.isNotEmpty != true) {
                                 _socialBloc.add(GetPostCommentReplyEvent(
                                     isLoading: true,
                                     parentComment: comment,
@@ -277,8 +289,9 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                             },
                             child: Text(
                               IsrTranslationFile.viewReplies,
-                              style: IsrStyles.primaryText12
-                                  .copyWith(fontWeight: FontWeight.w700, color: '94A0AF'.toColor()),
+                              style: IsrStyles.primaryText12.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: '94A0AF'.toColor()),
                             ),
                           )
                       ],
@@ -314,7 +327,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                           builder: (context) => _buildMoreOptionUI(comment),
                         );
                       },
-                      child: const AppImage.svg(AssetConstants.icVerticalMoreMenu),
+                      child:
+                          const AppImage.svg(AssetConstants.icVerticalMoreMenu),
                     ),
                   ],
                 ),
@@ -348,8 +362,10 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                             comment.childComments?.length ?? 0,
                             (index) => Padding(
                               padding: IsrDimens.edgeInsets(
-                                  left: 32.responsiveDimension, top: 16.responsiveDimension),
-                              child: _buildChildCommentItem(comment.childComments![index], false),
+                                  left: 32.responsiveDimension,
+                                  top: 16.responsiveDimension),
+                              child: _buildChildCommentItem(
+                                  comment.childComments![index], false),
                             ),
                           ),
                           TapHandler(
@@ -361,11 +377,13 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                             child: Container(
                               alignment: Alignment.centerLeft,
                               padding: IsrDimens.edgeInsets(
-                                  left: 32.responsiveDimension, top: 16.responsiveDimension),
+                                  left: 32.responsiveDimension,
+                                  top: 16.responsiveDimension),
                               child: Text(
                                 IsrTranslationFile.hideReplies,
                                 style: IsrStyles.secondaryText12.copyWith(
-                                    fontWeight: FontWeight.w700, color: '94A0AF'.toColor()),
+                                    fontWeight: FontWeight.w700,
+                                    color: '94A0AF'.toColor()),
                               ),
                             ),
                           )
@@ -396,7 +414,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                         recognizer: TapGestureRecognizer()
                           ..onTap = () {
                             if (widget.onTapProfile != null) {
-                              widget.onTapProfile!(comment.commentedByUserId ?? '');
+                              widget.onTapProfile!(
+                                  comment.commentedByUserId ?? '');
                             }
                           },
                         style: IsrStyles.primaryText14.copyWith(
@@ -433,7 +452,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                 Row(
                   spacing: 12.responsiveDimension,
                   children: [
-                    if (comment.id.isStringEmptyOrNull && !comment.status.isStringEmptyOrNull)
+                    if (comment.id.isStringEmptyOrNull &&
+                        !comment.status.isStringEmptyOrNull)
                       Text(
                         comment.status ?? '',
                         style: IsrStyles.primaryText12.copyWith(
@@ -671,7 +691,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                           ),
                           TextSpan(
                             text: commentDataItem?.commentedBy ?? '',
-                            style: IsrStyles.white14.copyWith(fontWeight: FontWeight.w600),
+                            style: IsrStyles.white14
+                                .copyWith(fontWeight: FontWeight.w600),
                           ),
                         ],
                       ),
@@ -689,7 +710,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
             ),
           const Divider(height: 1),
           Padding(
-            padding: IsrDimens.edgeInsetsSymmetric(horizontal: 10.responsiveDimension),
+            padding: IsrDimens.edgeInsetsSymmetric(
+                horizontal: 10.responsiveDimension),
             child: ValueListenableBuilder<TextEditingValue>(
               valueListenable: _replyController,
               builder: (context, value, child) => Row(
@@ -710,22 +732,30 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                         alignLabelWithHint: true,
                       ),
                       onRemoveHashTagData: (mentionData) {
-                        debugPrint('comment: remove hash tag data: ${mentionData.toJson()}');
-                        tagMentions.removeWhere((_) => _.toJson() == mentionData.toJson());
+                        debugPrint(
+                            'comment: remove hash tag data: ${mentionData.toJson()}');
+                        tagMentions.removeWhere(
+                            (_) => _.toJson() == mentionData.toJson());
                       },
                       onRemoveMentionData: (mentionData) {
-                        debugPrint('comment: remove mention data: ${mentionData.toJson()}');
-                        userMentions.removeWhere((_) => _.toJson() == mentionData.toJson());
+                        debugPrint(
+                            'comment: remove mention data: ${mentionData.toJson()}');
+                        userMentions.removeWhere(
+                            (_) => _.toJson() == mentionData.toJson());
                       },
                       onAddHashTagData: (mentionData) {
-                        debugPrint('comment: add hash tag data: ${mentionData.toJson()}');
-                        if (!tagMentions.any((_) => _.toJson() == mentionData.toJson())) {
+                        debugPrint(
+                            'comment: add hash tag data: ${mentionData.toJson()}');
+                        if (!tagMentions
+                            .any((_) => _.toJson() == mentionData.toJson())) {
                           tagMentions.add(mentionData);
                         }
                       },
                       onAddMentionData: (mentionData) {
-                        debugPrint('comment: add mention data: ${mentionData.toJson()}');
-                        if (!userMentions.any((_) => _.toJson() == mentionData.toJson())) {
+                        debugPrint(
+                            'comment: add mention data: ${mentionData.toJson()}');
+                        if (!userMentions
+                            .any((_) => _.toJson() == mentionData.toJson())) {
                           userMentions.add(mentionData);
                         }
                       },
@@ -754,9 +784,12 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                             commentAction: CommentAction.comment,
                             postedBy: _myUserId,
                             commentTags: {
-                              'hashtags': tagMentions.map((e) => e.toJson()).toList(),
-                              'mentions': userMentions.map((e) => e.toJson()).toList(),
-                            }.also((_) => debugPrint('comment: comment tag: $_'))),
+                              'hashtags':
+                                  tagMentions.map((e) => e.toJson()).toList(),
+                              'mentions':
+                                  userMentions.map((e) => e.toJson()).toList(),
+                            }.also(
+                                (_) => debugPrint('comment: comment tag: $_'))),
                       );
                       _replyController.clear();
                       tagMentions.clear();

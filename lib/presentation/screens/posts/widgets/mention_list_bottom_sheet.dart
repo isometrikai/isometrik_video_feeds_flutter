@@ -126,7 +126,8 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
                 child: _mentionList.isEmpty
                     ? Center(
                         child: Padding(
-                          padding: IsrDimens.edgeInsetsAll(IsrDimens.twentyFour),
+                          padding:
+                              IsrDimens.edgeInsetsAll(IsrDimens.twentyFour),
                           child: Text(
                             'No mentions found',
                             style: IsrStyles.primaryText14.copyWith(
@@ -147,7 +148,8 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
                                       _.id == mentionedData.userId,
                                   orElse: SocialUserData.new)
                               .takeIf((_) => _.id?.takeIfNotEmpty() != null);
-                          return _buildProfileItem(mentionedData, socialUserData, index);
+                          return _buildProfileItem(
+                              mentionedData, socialUserData, index);
                         },
                       ),
               ),
@@ -156,8 +158,8 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
         ),
       );
 
-  Widget _buildProfileItem(
-          MentionMetaData mentionedData, SocialUserData? socialUserData, int index) =>
+  Widget _buildProfileItem(MentionMetaData mentionedData,
+          SocialUserData? socialUserData, int index) =>
       TapHandler(
         onTap: () {
           widget.onTapUserProfile(mentionedData.userId ?? '');
@@ -193,7 +195,9 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
                 ),
                 child: ClipOval(
                   child: AppImage.network(
-                    socialUserData?.avatarUrl?.takeIfNotEmpty() ?? mentionedData.avatarUrl ?? '',
+                    socialUserData?.avatarUrl?.takeIfNotEmpty() ??
+                        mentionedData.avatarUrl ??
+                        '',
                     height: IsrDimens.forty,
                     width: IsrDimens.forty,
                     fit: BoxFit.cover,
@@ -223,7 +227,9 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Text(
-                        socialUserData?.username?.takeIfNotEmpty() ?? mentionedData.username ?? '',
+                        socialUserData?.username?.takeIfNotEmpty() ??
+                            mentionedData.username ??
+                            '',
                         style: IsrStyles.primaryText12.copyWith(
                           color: '767676'.toColor(),
                         ),
@@ -271,7 +277,8 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
                       isLoading = true;
                       setState.call(() {});
                       widget.socialPostBloc.add(RemoveMentionEvent(
-                        postId: postId, // This should be the actual post ID, not user ID
+                        postId:
+                            postId, // This should be the actual post ID, not user ID
                         onComplete: (isSuccess) {
                           isLoading = false;
                           if (isSuccess) {
@@ -298,14 +305,20 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
                             }
                             setState.call(() {});
                           },
-                          followAction: isFollowing ? FollowAction.unfollow : FollowAction.follow));
+                          followAction: isFollowing
+                              ? FollowAction.unfollow
+                              : FollowAction.follow));
                     },
               height: 36.responsiveDimension,
               width: 95.responsiveDimension,
               borderRadius: 40.responsiveDimension,
-              borderColor: isFollowing ? IsrColors.appColor : IsrColors.transparent,
-              backgroundColor: isFollowing ? IsrColors.white : IsrColors.appColor,
-              title: isFollowing ? IsrTranslationFile.following : IsrTranslationFile.follow,
+              borderColor:
+                  isFollowing ? IsrColors.appColor : IsrColors.transparent,
+              backgroundColor:
+                  isFollowing ? IsrColors.white : IsrColors.appColor,
+              title: isFollowing
+                  ? IsrTranslationFile.following
+                  : IsrTranslationFile.follow,
               isLoading: isLoading,
               textStyle: IsrStyles.primaryText12.copyWith(
                 color: isFollowing ? IsrColors.appColor : IsrColors.white,

@@ -54,7 +54,9 @@ class UnifiedLocationItem {
     if (country != null && country.isNotEmpty) {
       subtitleParts.add(country);
     }
-    final subtitle = subtitleParts.isNotEmpty ? subtitleParts.join(', ') : result.formattedAddress;
+    final subtitle = subtitleParts.isNotEmpty
+        ? subtitleParts.join(', ')
+        : result.formattedAddress;
 
     return UnifiedLocationItem(
       placeId: result.placeId ?? '',
@@ -72,7 +74,8 @@ class UnifiedLocationItem {
   }
 
   /// Factory constructor for AutoComplete response (Prediction)
-  factory UnifiedLocationItem.fromPrediction(Prediction prediction) => UnifiedLocationItem(
+  factory UnifiedLocationItem.fromPrediction(Prediction prediction) =>
+      UnifiedLocationItem(
         placeId: prediction.placeId ?? '',
         title: prediction.structuredFormatting?.mainText ??
             prediction.description ??
@@ -85,12 +88,15 @@ class UnifiedLocationItem {
       );
 
   /// Factory constructor for NearbyPlaces response
-  factory UnifiedLocationItem.fromNearbyPlace(Map<String, dynamic> json) => UnifiedLocationItem(
+  factory UnifiedLocationItem.fromNearbyPlace(Map<String, dynamic> json) =>
+      UnifiedLocationItem(
         placeId: (json['place_id'] as String?) ?? '',
         title: (json['name'] as String?) ?? 'Unknown Location',
         subtitle: json['vicinity'] as String?,
         vicinity: json['vicinity'] as String?,
-        types: json['types'] != null ? List<String>.from(json['types'] as List) : null,
+        types: json['types'] != null
+            ? List<String>.from(json['types'] as List)
+            : null,
         icon: json['icon'] as String?,
         geometry: json['geometry'],
         scope: json['scope'] as String?,

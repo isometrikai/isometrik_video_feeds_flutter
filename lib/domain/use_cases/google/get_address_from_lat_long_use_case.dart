@@ -17,6 +17,7 @@ class GetAddressFromLatLongUseCase extends BaseUseCase {
           latitude: latitude,
           longitude: longitude,
         );
-        return ApiResult(data: response.responseCode == 200 ? response.data : null);
+        return ApiResult(
+            data: response.responseCode == 200 ? response.data : null);
       });
 }

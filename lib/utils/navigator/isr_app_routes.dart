@@ -11,7 +11,8 @@ class IsrAppRoutes {
   static const String postAttributeView = '/${IsrRouteNames.postAttributeView}';
   static const String tagPeopleScreen = '/${IsrRouteNames.tagPeopleScreen}';
   static const String searchUserScreen = '/${IsrRouteNames.searchUserScreen}';
-  static const String searchLocationScreen = '/${IsrRouteNames.searchLocationScreen}';
+  static const String searchLocationScreen =
+      '/${IsrRouteNames.searchLocationScreen}';
   static const String postListingScreen = '/${IsrRouteNames.postListingScreen}';
   static const String placeDetailsView = '/${IsrRouteNames.placeDetailsView}';
   static const String tagDetailsView = '/${IsrRouteNames.tagDetailsView}';

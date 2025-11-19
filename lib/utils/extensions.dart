@@ -28,7 +28,8 @@ extension DateExtension on DateTime {
 
   bool isSameDay(DateTime other) => isSameMonth(other) && day == other.day;
 
-  bool isSameMonth(DateTime other) => year == other.year && month == other.month;
+  bool isSameMonth(DateTime other) =>
+      year == other.year && month == other.month;
 
   String messageDate() {
     var now = DateTime.now();
@@ -85,8 +86,9 @@ extension ZeroOrNullExtension on double? {
 }
 
 extension StringExtension on String {
-  String capitalize() =>
-      length > 1 ? '${this[0].toUpperCase()}${substring(1).toLowerCase()}' : toUpperCase();
+  String capitalize() => length > 1
+      ? '${this[0].toUpperCase()}${substring(1).toLowerCase()}'
+      : toUpperCase();
 }
 
 extension DurationExtension on Duration {
@@ -140,12 +142,14 @@ extension DimensionExtension on num {
 }
 
 extension HeightExtension on num {
-  SizedBox get responsiveVerticalSpace =>
-      this == 0 ? const SizedBox.shrink() : SizedBox(height: toDouble().responsiveDimension);
+  SizedBox get responsiveVerticalSpace => this == 0
+      ? const SizedBox.shrink()
+      : SizedBox(height: toDouble().responsiveDimension);
 }
 
 extension WidthExtension on num {
-  SizedBox get responsiveHorizontalSpace => SizedBox(width: toDouble().responsiveDimension);
+  SizedBox get responsiveHorizontalSpace =>
+      SizedBox(width: toDouble().responsiveDimension);
 }
 
 extension MediaTypeValue on MediaType {
@@ -185,8 +189,9 @@ extension StringCasingExtension on String {
   String capitalizeEachWord() {
     if (trim().isEmpty) return this;
     return split(' ')
-        .map((word) =>
-            word.isNotEmpty ? '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}' : '')
+        .map((word) => word.isNotEmpty
+            ? '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}'
+            : '')
         .join(' ');
   }
 
@@ -195,7 +200,8 @@ extension StringCasingExtension on String {
 
 extension MediaQueryExtensions on BuildContext {
   double get bottomPadding => MediaQuery.of(this).padding.bottom;
-  double get totalBottomNavSpace => kBottomNavigationBarHeight + MediaQuery.of(this).padding.bottom;
+  double get totalBottomNavSpace =>
+      kBottomNavigationBarHeight + MediaQuery.of(this).padding.bottom;
 }
 
 extension ScopeFunctions<T> on T {
@@ -220,7 +226,8 @@ extension ScopeFunctions<T> on T {
 
   /// Returns `this` if it does NOT satisfy the [predicate], otherwise `null`.
   /// Like Kotlin's `takeUnless`.
-  T? takeUnless(bool Function(T it) predicate) => !predicate(this) ? this : null;
+  T? takeUnless(bool Function(T it) predicate) =>
+      !predicate(this) ? this : null;
 }
 
 extension MapSafeGetters on Map<String, dynamic> {
@@ -228,7 +235,9 @@ extension MapSafeGetters on Map<String, dynamic> {
 
   num? _numOrNull(String key) {
     final value = this[key];
-    return value is num ? value : (value is String ? num.tryParse(value) : null);
+    return value is num
+        ? value
+        : (value is String ? num.tryParse(value) : null);
   }
 
   int? _intOrNull(String key) {
@@ -335,19 +344,25 @@ extension MapSafeGetters on Map<String, dynamic> {
 
   // ----------------- Public versions with defaults -----------------
 
-  num getNum(String key, [num defaultValue = 0]) => _numOrNull(key) ?? defaultValue;
+  num getNum(String key, [num defaultValue = 0]) =>
+      _numOrNull(key) ?? defaultValue;
 
-  int getInt(String key, [int defaultValue = 0]) => _intOrNull(key) ?? defaultValue;
+  int getInt(String key, [int defaultValue = 0]) =>
+      _intOrNull(key) ?? defaultValue;
 
-  double getDouble(String key, [double defaultValue = 0.0]) => _doubleOrNull(key) ?? defaultValue;
+  double getDouble(String key, [double defaultValue = 0.0]) =>
+      _doubleOrNull(key) ?? defaultValue;
 
-  bool getBool(String key, [bool defaultValue = false]) => _boolOrNull(key) ?? defaultValue;
+  bool getBool(String key, [bool defaultValue = false]) =>
+      _boolOrNull(key) ?? defaultValue;
 
-  String getString(String key, [String defaultValue = '']) => _stringOrNull(key) ?? defaultValue;
+  String getString(String key, [String defaultValue = '']) =>
+      _stringOrNull(key) ?? defaultValue;
 
   List<T> getList<T>(String key, [List<T> defaultValue = const []]) =>
       _listOrNull<T>(key) ?? defaultValue;
 
-  Map<String, dynamic> getMap(String key, [Map<String, dynamic> defaultValue = const {}]) =>
+  Map<String, dynamic> getMap(String key,
+          [Map<String, dynamic> defaultValue = const {}]) =>
       _mapOrNull(key) ?? defaultValue;
 }

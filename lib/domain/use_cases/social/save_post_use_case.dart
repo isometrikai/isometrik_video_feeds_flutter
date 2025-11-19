@@ -18,6 +18,7 @@ class SavePostUseCase extends BaseUseCase {
           postId: postId,
           socialPostAction: socialPostAction,
         );
-        return ApiResult(data: response.responseCode == 200 ? response.data : null);
+        return ApiResult(
+            data: response.responseCode == 200 ? response.data : null);
       });
 }

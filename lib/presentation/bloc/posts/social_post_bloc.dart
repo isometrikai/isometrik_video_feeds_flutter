@@ -91,7 +91,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     final userInfoString = await _localDataUseCase.getUserInfo();
     _userInfoClass = userInfoString.isStringEmptyOrNull
         ? null
-        : UserInfoClass.fromJson(jsonDecode(userInfoString) as Map<String, dynamic>);
+        : UserInfoClass.fromJson(
+            jsonDecode(userInfoString) as Map<String, dynamic>);
     add(LoadPostData());
   }
 
@@ -116,7 +117,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     }
   }
 
-  FutureOr<void> _getMorePost(GetMorePostEvent event, Emitter<SocialPostState> emit) async {
+  FutureOr<void> _getMorePost(
+      GetMorePostEvent event, Emitter<SocialPostState> emit) async {
     if (event.postSectionType == PostSectionType.forYou) {
       await _callGetForYouPost(
         event.isRefresh,
@@ -141,12 +143,14 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     }
   }
 
-  FutureOr<void> _getTimeLinePost(GetTimeLinePostEvent event, Emitter<SocialPostState> emit) async {
+  FutureOr<void> _getTimeLinePost(
+      GetTimeLinePostEvent event, Emitter<SocialPostState> emit) async {
     await _callGetTimeLinePost(
         event.isRefresh, event.isPagination, event.isLoading, event.onComplete);
   }
 
-  FutureOr<void> _getTrendingPost(GetTrendingPostEvent event, Emitter<SocialPostState> emit) async {
+  FutureOr<void> _getTrendingPost(
+      GetTrendingPostEvent event, Emitter<SocialPostState> emit) async {
     await _callGetTrendingPost(
         event.isRefresh, event.isPagination, event.isLoading, event.onComplete);
   }
@@ -260,11 +264,13 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     _isForYouLoadingMore = false;
   }
 
-  FutureOr<void> _savePost(SavePostEvent event, Emitter<SocialPostState> emit) async {
+  FutureOr<void> _savePost(
+      SavePostEvent event, Emitter<SocialPostState> emit) async {
     final apiResult = await _savePostUseCase.executeSavePost(
       isLoading: false,
       postId: event.postId,
-      socialPostAction: event.isSaved ? SocialPostAction.unSave : SocialPostAction.save,
+      socialPostAction:
+          event.isSaved ? SocialPostAction.unSave : SocialPostAction.save,
     );
 
     if (apiResult.isSuccess) {
@@ -275,7 +281,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     }
   }
 
-  FutureOr<void> _getReason(GetReasonEvent event, Emitter<SocialPostState> emit) async {
+  FutureOr<void> _getReason(
+      GetReasonEvent event, Emitter<SocialPostState> emit) async {
     final apiResult = await _getReportReasonsUseCase.executeGetReportReasons(
       isLoading: false,
     );
@@ -288,7 +295,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     }
   }
 
-  FutureOr<void> _reportPost(ReportPostEvent event, Emitter<SocialPostState> emit) async {
+  FutureOr<void> _reportPost(
+      ReportPostEvent event, Emitter<SocialPostState> emit) async {
     final apiResult = await _reportPostUseCase.executeReportPost(
       isLoading: false,
       postId: event.postId,
@@ -304,7 +312,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     }
   }
 
-  FutureOr<void> _likePost(LikePostEvent event, Emitter<SocialPostState> emit) async {
+  FutureOr<void> _likePost(
+      LikePostEvent event, Emitter<SocialPostState> emit) async {
     final apiResult = await _likePostUseCase.executeLikePost(
       isLoading: false,
       postId: event.postId,
@@ -320,7 +329,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     }
   }
 
-  FutureOr<void> _followUser(FollowUserEvent event, Emitter<SocialPostState> emit) async {
+  FutureOr<void> _followUser(
+      FollowUserEvent event, Emitter<SocialPostState> emit) async {
     // final myUserId = await _localDataUseCase.getUserId();
     final apiResult = await _followPostUseCase.executeFollowUser(
       isLoading: false,
@@ -434,16 +444,19 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     );
     if (apiResult.isSuccess) {
       totalProductCount = apiResult.data?.count?.toInt() ?? 0;
-      _detailsProductList.addAll(apiResult.data?.data as Iterable<ProductDataModel>);
+      _detailsProductList
+          .addAll(apiResult.data?.data as Iterable<ProductDataModel>);
     } else {
       ErrorHandler.showAppError(appError: apiResult.error);
     }
     emit(SocialProductsLoaded(
-        productList: _detailsProductList, totalProductCount: totalProductCount));
+        productList: _detailsProductList,
+        totalProductCount: totalProductCount));
     _isDataLoading = false;
   }
 
-  FutureOr<void> _getPostComments(GetPostCommentsEvent event, Emitter<SocialPostState> emit) async {
+  FutureOr<void> _getPostComments(
+      GetPostCommentsEvent event, Emitter<SocialPostState> emit) async {
     if (event.isLoading == true) {
       emit(LoadingPostComment());
     }
@@ -459,7 +472,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     ));
   }
 
-  Future<void> _doActionOnComment(CommentActionEvent event, Emitter<SocialPostState> emit) async {
+  Future<void> _doActionOnComment(
+      CommentActionEvent event, Emitter<SocialPostState> emit) async {
     final commentRequest = CommentRequest(
       commentId: event.commentId,
       commentAction: event.commentAction,
@@ -504,7 +518,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     }
   }
 
-  FutureOr<void> _loadPosts(LoadPostsEvent event, Emitter<SocialPostState> emit) async {
+  FutureOr<void> _loadPosts(
+      LoadPostsEvent event, Emitter<SocialPostState> emit) async {
     final myUserId = await _localDataUseCase.getUserId();
     emit(SocialPostLoadedState(
       timeLinePosts: event.timeLinePostList,
@@ -532,7 +547,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     ));
     if (apiResult.isError) {
       ErrorHandler.showAppError(
-          appError: apiResult.error, isNeedToShowError: true, errorViewType: ErrorViewType.toast);
+          appError: apiResult.error,
+          isNeedToShowError: true,
+          errorViewType: ErrorViewType.toast);
     }
   }
 }

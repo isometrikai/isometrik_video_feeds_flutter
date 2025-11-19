@@ -30,7 +30,8 @@ class ErrorHandler {
   }) {
     if (isNeedToShowError || appError is NetworkError) {
       Utility.showAppError(
-          message: message ?? appError?.message ?? '', errorViewType: errorViewType);
+          message: message ?? appError?.message ?? '',
+          errorViewType: errorViewType);
     }
   }
 }

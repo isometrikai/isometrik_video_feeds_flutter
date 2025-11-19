@@ -19,10 +19,12 @@ class ImageCacheManager implements IMediaCacheManager {
   final Queue<String> _lruQueue = Queue<String>();
   final Set<String> _visibleImages = <String>{};
   final DefaultCacheManager _diskCache = DefaultCacheManager();
-  static const int _maxCacheSize = 20; // More images can be cached compared to videos
+  static const int _maxCacheSize =
+      20; // More images can be cached compared to videos
 
   @override
-  Future<void> precacheMedia(List<String> mediaUrls, {bool highPriority = false}) async {
+  Future<void> precacheMedia(List<String> mediaUrls,
+      {bool highPriority = false}) async {
     final futures = <Future<void>>[];
     final validUrls = <String>[];
 
@@ -34,7 +36,8 @@ class ImageCacheManager implements IMediaCacheManager {
       // Only process actual image URLs, skip video URLs
       final mediaType = MediaTypeUtil.getMediaType(url);
       if (mediaType != MediaType.photo) {
-        debugPrint('⚠️ Skipping non-image URL in precacheMedia: $url (type: $mediaType)');
+        debugPrint(
+            '⚠️ Skipping non-image URL in precacheMedia: $url (type: $mediaType)');
         continue;
       }
 
@@ -47,8 +50,9 @@ class ImageCacheManager implements IMediaCacheManager {
     const batchSize = 5; // Process 5 images at a time
     for (var i = 0; i < validUrls.length; i += batchSize) {
       final batch = validUrls.skip(i).take(batchSize);
-      final batchFutures =
-          batch.map((url) => _cacheImage(url, highPriority: highPriority)).toList();
+      final batchFutures = batch
+          .map((url) => _cacheImage(url, highPriority: highPriority))
+          .toList();
 
       if (highPriority) {
         // For high priority, wait for each batch to complete
@@ -74,25 +78,29 @@ class ImageCacheManager implements IMediaCacheManager {
     // Validate that this is actually an image URL
     final mediaType = MediaTypeUtil.getMediaType(cleanUrl);
     if (mediaType != MediaType.photo) {
-      debugPrint('⚠️ Attempted to cache non-image URL: $cleanUrl (type: $mediaType)');
+      debugPrint(
+          '⚠️ Attempted to cache non-image URL: $cleanUrl (type: $mediaType)');
       return;
     }
 
     // Check if already cached in memory
     if (isMediaCached(cleanUrl)) {
-      debugPrint('✅ ImageCacheManager: Image already cached in memory: $cleanUrl');
+      debugPrint(
+          '✅ ImageCacheManager: Image already cached in memory: $cleanUrl');
       return;
     }
 
     // Check if already cached in CachedNetworkImage's disk cache
     if (await _isImageCachedOnDisk(cleanUrl)) {
-      debugPrint('✅ ImageCacheManager: Image already cached on disk: $cleanUrl');
+      debugPrint(
+          '✅ ImageCacheManager: Image already cached on disk: $cleanUrl');
       return;
     }
 
     // Check if already initializing
     if (_initializationCache.containsKey(cleanUrl)) {
-      debugPrint('🔄 ImageCacheManager: Image already being cached, waiting...');
+      debugPrint(
+          '🔄 ImageCacheManager: Image already being cached, waiting...');
       await _initializationCache[cleanUrl];
       return;
     }
@@ -116,18 +124,21 @@ class ImageCacheManager implements IMediaCacheManager {
       if (highPriority) {
         // For high priority, preload into CachedNetworkImage's disk cache
         await _diskCache.downloadFile(url);
-        debugPrint('✅ ImageCacheManager: Successfully cached image on disk: $url');
+        debugPrint(
+            '✅ ImageCacheManager: Successfully cached image on disk: $url');
 
         // Also preload into Flutter's memory cache for instant display
         unawaited(_preloadIntoFlutterCache(url));
       } else {
         // For low priority, just trigger disk caching in background
         unawaited(_diskCache.downloadFile(url).then((_) {
-          debugPrint('✅ ImageCacheManager: Successfully cached image on disk: $url');
+          debugPrint(
+              '✅ ImageCacheManager: Successfully cached image on disk: $url');
         }));
       }
     } catch (e) {
-      debugPrint('❌ ImageCacheManager: Error initializing image cache for URL: $url');
+      debugPrint(
+          '❌ ImageCacheManager: Error initializing image cache for URL: $url');
       debugPrint('Error details: $e');
       rethrow;
     }
@@ -139,9 +150,11 @@ class ImageCacheManager implements IMediaCacheManager {
       final provider = NetworkImage(url);
       // Use the global image cache directly
       provider.resolve(ImageConfiguration.empty);
-      debugPrint('✅ ImageCacheManager: Successfully preloaded image into Flutter cache: $url');
+      debugPrint(
+          '✅ ImageCacheManager: Successfully preloaded image into Flutter cache: $url');
     } catch (e) {
-      debugPrint('❌ ImageCacheManager: Error preloading image into Flutter cache: $e');
+      debugPrint(
+          '❌ ImageCacheManager: Error preloading image into Flutter cache: $e');
     }
   }
 
@@ -202,7 +215,8 @@ class ImageCacheManager implements IMediaCacheManager {
 
   @override
   void clearOutsideRange(List<String> activeUrls) {
-    final urlsToRemove = _imageCache.keys.where((url) => !activeUrls.contains(url)).toList();
+    final urlsToRemove =
+        _imageCache.keys.where((url) => !activeUrls.contains(url)).toList();
     for (final url in urlsToRemove) {
       if (!_visibleImages.contains(url)) {
         clearMedia(url);

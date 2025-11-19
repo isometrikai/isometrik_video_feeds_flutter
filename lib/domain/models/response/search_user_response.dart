@@ -5,7 +5,8 @@ import 'package:ism_video_reel_player/domain/domain.dart';
 SearchUserResponse searchUserResponseFromJson(String str) =>
     SearchUserResponse.fromJson(json.decode(str) as Map<String, dynamic>);
 
-String searchUserResponseToJson(SearchUserResponse data) => json.encode(data.toJson());
+String searchUserResponseToJson(SearchUserResponse data) =>
+    json.encode(data.toJson());
 
 class SearchUserResponse {
   SearchUserResponse({
@@ -20,7 +21,8 @@ class SearchUserResponse {
     this.totalPages,
   });
 
-  factory SearchUserResponse.fromJson(Map<String, dynamic> json) => SearchUserResponse(
+  factory SearchUserResponse.fromJson(Map<String, dynamic> json) =>
+      SearchUserResponse(
         status: json['status'] as String? ?? '',
         message: json['message'] as String? ?? '',
         statusCode: json['statusCode'] as num? ?? 0,
@@ -49,7 +51,8 @@ class SearchUserResponse {
         'message': message,
         'statusCode': statusCode,
         'code': code,
-        'data': data == null ? [] : List<dynamic>.from(data!.map((x) => x.toMap())),
+        'data':
+            data == null ? [] : List<dynamic>.from(data!.map((x) => x.toMap())),
         'total': total,
         'page': page,
         'page_size': pageSize,

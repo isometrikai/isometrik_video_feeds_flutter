@@ -96,7 +96,8 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
                             ...List.generate(
                               _reportReasons.length,
                               (index) => Padding(
-                                padding: IsrDimens.edgeInsets(bottom: IsrDimens.twelve),
+                                padding: IsrDimens.edgeInsets(
+                                    bottom: IsrDimens.twelve),
                                 child: TapHandler(
                                   onTap: () {
                                     setState(() {
@@ -111,20 +112,24 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
                                         decoration: BoxDecoration(
                                           shape: BoxShape.circle,
                                           border: Border.all(
-                                            color: _selectedReason == _reportReasons[index]
+                                            color: _selectedReason ==
+                                                    _reportReasons[index]
                                                 ? Theme.of(context).primaryColor
                                                 : '838383'.toColor(),
                                             width: 2.responsiveDimension,
                                           ),
                                         ),
-                                        child: _selectedReason == _reportReasons[index]
+                                        child: _selectedReason ==
+                                                _reportReasons[index]
                                             ? Center(
                                                 child: Container(
                                                   width: 12.responsiveDimension,
-                                                  height: 12.responsiveDimension,
+                                                  height:
+                                                      12.responsiveDimension,
                                                   decoration: BoxDecoration(
                                                     shape: BoxShape.circle,
-                                                    color: Theme.of(context).primaryColor,
+                                                    color: Theme.of(context)
+                                                        .primaryColor,
                                                   ),
                                                 ),
                                               )

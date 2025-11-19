@@ -168,9 +168,11 @@ class AppButton extends StatelessWidget {
         padding: EdgeInsets.symmetric(horizontal: _getPadding()),
       );
 
-  ButtonStyle _getSecondaryStyle(BuildContext context) => OutlinedButton.styleFrom(
+  ButtonStyle _getSecondaryStyle(BuildContext context) =>
+      OutlinedButton.styleFrom(
         backgroundColor: Colors.transparent,
-        foregroundColor: isDisable ? Colors.grey : Theme.of(context).primaryColor,
+        foregroundColor:
+            isDisable ? Colors.grey : Theme.of(context).primaryColor,
         side: BorderSide(
           color: borderColor ?? Theme.of(context).primaryColor,
           width: 1,
@@ -218,7 +220,8 @@ class AppButton extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(borderRadius ?? IsrDimens.eight),
           side: BorderSide(
-              color: borderColor ?? Theme.of(context).primaryColor, width: borderWidth ?? 0.5),
+              color: borderColor ?? Theme.of(context).primaryColor,
+              width: borderWidth ?? 0.5),
         ),
         textStyle: textStyle,
       );
@@ -268,7 +271,8 @@ class AppButton extends StatelessWidget {
       return SizedBox(
         width: 24,
         height: 24,
-        child: CircularProgressIndicator(strokeWidth: 2, color: loaderColor ?? IsrColors.white),
+        child: CircularProgressIndicator(
+            strokeWidth: 2, color: loaderColor ?? IsrColors.white),
       );
     }
 
@@ -277,9 +281,15 @@ class AppButton extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        if (prefixIcon != null) ...[prefixIcon!, SizedBox(width: IsrDimens.eight)],
+        if (prefixIcon != null) ...[
+          prefixIcon!,
+          SizedBox(width: IsrDimens.eight)
+        ],
         Text(title, style: textStyle ?? _getTextStyle(context)),
-        if (suffixIcon != null) ...[SizedBox(width: IsrDimens.eight), suffixIcon!],
+        if (suffixIcon != null) ...[
+          SizedBox(width: IsrDimens.eight),
+          suffixIcon!
+        ],
       ],
     );
   }
@@ -301,8 +311,10 @@ class AppButton extends StatelessWidget {
 
     return switch (type) {
       ButtonType.primary => baseStyle.copyWith(color: IsrColors.white),
-      ButtonType.secondary => baseStyle.copyWith(color: IsrColors.primaryTextColor),
-      ButtonType.tertiary => baseStyle.copyWith(color: IsrColors.primaryTextColor),
+      ButtonType.secondary =>
+        baseStyle.copyWith(color: IsrColors.primaryTextColor),
+      ButtonType.tertiary =>
+        baseStyle.copyWith(color: IsrColors.primaryTextColor),
       ButtonType.danger => baseStyle.copyWith(color: IsrColors.white),
       ButtonType.success => baseStyle.copyWith(color: IsrColors.white),
       ButtonType.disabled => baseStyle.copyWith(color: IsrColors.grey),

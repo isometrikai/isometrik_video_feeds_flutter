@@ -22,6 +22,7 @@ class GetTaggedPostsUseCase extends BaseUseCase {
           tagValue: tagValue,
           tagType: tagType,
         );
-        return ApiResult(data: response.responseCode == 200 ? response.data : null);
+        return ApiResult(
+            data: response.responseCode == 200 ? response.data : null);
       });
 }

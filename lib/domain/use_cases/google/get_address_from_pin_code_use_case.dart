@@ -17,6 +17,7 @@ class GetAddressFromPinCodeUseCase extends BaseUseCase {
           pinCode: pinCode,
           countries: countries,
         );
-        return ApiResult(data: response.responseCode == 200 ? response.data : null);
+        return ApiResult(
+            data: response.responseCode == 200 ? response.data : null);
       });
 }

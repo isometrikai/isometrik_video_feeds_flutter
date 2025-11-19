@@ -126,7 +126,8 @@ class IsrAppNavigator {
 
     return PageRouteBuilder<T>(
       pageBuilder: (context, animation, secondaryAnimation) => page,
-      transitionsBuilder: (context, animation, secondaryAnimation, child) => _buildTransition(
+      transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+          _buildTransition(
         animation: animation,
         child: child,
         transitionType: transitionType,

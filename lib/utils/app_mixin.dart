@@ -17,8 +17,14 @@ mixin AppMixin {
     }
   }
 
-  void logRequest<T>(T classname, http.Response response, dynamic data, Uri finalUrl,
-      Map<String, String>? headers, ResponseModel res, int timeTaken) {
+  void logRequest<T>(
+      T classname,
+      http.Response response,
+      dynamic data,
+      Uri finalUrl,
+      Map<String, String>? headers,
+      ResponseModel res,
+      int timeTaken) {
     final method = response.request?.method ?? 'GET';
     final url = response.request?.url.toString() ?? finalUrl.toString();
     /* final requestStartTime = DateTime.now().subtract(Duration(
@@ -30,7 +36,8 @@ mixin AppMixin {
     // Construct headers
     var headerString = '';
     if (headers != null) {
-      headerString = headers.entries.map((e) => '-H "${e.key}: ${e.value}"').join(' ');
+      headerString =
+          headers.entries.map((e) => '-H "${e.key}: ${e.value}"').join(' ');
     }
 
     // Construct body
