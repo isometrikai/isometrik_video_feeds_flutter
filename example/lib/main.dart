@@ -35,8 +35,8 @@ Future<void> _initializeReelsSdk() async {
       firstName: firstName,
       lastName: lastName,
     ),
-    // Optional: Provide callback to receive events before flushing
-    onBeforeFlushCallback: (events) async => false,
+    rudderStackDataPlaneUrl: '',
+    rudderStackWriteKey: '',
     defaultHeaders: {
       'Authorization': accessToken,
       'Accept': 'application/json',

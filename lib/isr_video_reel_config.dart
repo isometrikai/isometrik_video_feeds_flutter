@@ -21,8 +21,9 @@ class IsrVideoReelConfig {
 
   static Future<void> initializeSdk({
     required String baseUrl,
+    required String rudderStackWriteKey,
+    required String rudderStackDataPlaneUrl,
     UserInfoClass? userInfoClass,
-    OnBeforeFlushCallback? onBeforeFlushCallback,
     required Map<String, dynamic> defaultHeaders,
   }) async {
     if (isSdkInitialize) {
@@ -36,7 +37,8 @@ class IsrVideoReelConfig {
     // ✅ Initialize SDK router
     await _storeHeaderValues(defaultHeaders);
     await _initializeHive(
-      onBeforeFlushCallback: onBeforeFlushCallback,
+      rudderStackWriteKey: rudderStackWriteKey,
+      rudderStackDataPlaneUrl: rudderStackWriteKey,
     );
     Bloc.observer = IsrAppBlocObserver();
     await _saveUserInformation(userInfoClass: userInfoClass);
@@ -62,13 +64,17 @@ class IsrVideoReelConfig {
   }
 
   static Future<void> _initializeHive({
-    OnBeforeFlushCallback? onBeforeFlushCallback,
+    required String rudderStackWriteKey,
+    required String rudderStackDataPlaneUrl,
   }) async {
     await Hive.initFlutter();
     Hive.registerAdapter(LocalEventAdapter());
 
     // Initialize EventQueueProvider with callback
-    EventQueueProvider.initialize(onBeforeFlush: onBeforeFlushCallback);
+    EventQueueProvider.initialize(
+      rudderStackWriteKey: rudderStackWriteKey,
+      rudderStackDataPlaneUrl: rudderStackDataPlaneUrl,
+    );
   }
 
   static Future<void> _storeHeaderValues(

@@ -115,8 +115,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         firstName: firstName,
         lastName: lastName,
       ),
-      // Optional: Provide callback to receive events before flushing
-      onBeforeFlushCallback: handleEventsBeforeFlush,
+      rudderStackDataPlaneUrl: '',
+      rudderStackWriteKey: '',
       defaultHeaders: {
         'Accept': 'application/json',
         'Content-Type': AppConstants.headerContentType,

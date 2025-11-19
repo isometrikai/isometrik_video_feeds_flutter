@@ -959,6 +959,46 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
+  rudder_plugin_android:
+    dependency: transitive
+    description:
+      name: rudder_plugin_android
+      sha256: "2f82a87a3d2b6bc765899507fa1e48dadbbc9e5a53b5d8be52f42dede8c84640"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.2.0"
+  rudder_plugin_ios:
+    dependency: transitive
+    description:
+      name: rudder_plugin_ios
+      sha256: "8f2fbd2a7b10ab1d54a0e06e93799b3a978a0c426d226a91fd4a184c31302f5f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.2.0"
+  rudder_plugin_web:
+    dependency: transitive
+    description:
+      name: rudder_plugin_web
+      sha256: "579cd2ec736abf86526b5f8252dbfd80647a5ade2598a090ccb017d60dbcd9d6"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.2.0"
+  rudder_sdk_flutter:
+    dependency: transitive
+    description:
+      name: rudder_sdk_flutter
+      sha256: "0c5093ed34f974dd51278b9acc49fd700f3e890635ee725cc16064401cd9f988"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.3.0"
+  rudder_sdk_flutter_platform_interface:
+    dependency: transitive
+    description:
+      name: rudder_sdk_flutter_platform_interface
+      sha256: f3514c96f9e64acc5d1c7c6325cbbaa96971cf5e479e675f06bc9cd8d6321583
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.3.0"
   rxdart:
     dependency: transitive
     description:
