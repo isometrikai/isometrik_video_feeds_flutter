@@ -47,7 +47,8 @@ class CommentTaggingTextField extends StatefulWidget {
   final FocusNode? focusNode;
 
   @override
-  State<CommentTaggingTextField> createState() => _CommentTaggingTextFieldState();
+  State<CommentTaggingTextField> createState() =>
+      _CommentTaggingTextFieldState();
 }
 
 class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
@@ -118,7 +119,8 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
       if (lastAtIndex > lastHashIndex) {
         // @ is more recent
         final textFromAt = text.substring(lastAtIndex + 1, cursorPosition);
-        final hasMultipleAts = lastAtIndex > 0 && textBeforeCursor[lastAtIndex - 1] == '@';
+        final hasMultipleAts =
+            lastAtIndex > 0 && textBeforeCursor[lastAtIndex - 1] == '@';
 
         if (!textFromAt.contains(' ') &&
             !textFromAt.contains('\n') &&
@@ -131,7 +133,8 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
       } else {
         // # is more recent
         final textFromHash = text.substring(lastHashIndex + 1, cursorPosition);
-        final hasMultipleHashes = lastHashIndex > 0 && textBeforeCursor[lastHashIndex - 1] == '#';
+        final hasMultipleHashes =
+            lastHashIndex > 0 && textBeforeCursor[lastHashIndex - 1] == '#';
 
         if (!textFromHash.contains(' ') &&
             !textFromHash.contains('\n') &&
@@ -145,7 +148,8 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
     } else if (lastAtIndex != -1) {
       // Only @ trigger exists
       final textFromAt = text.substring(lastAtIndex + 1, cursorPosition);
-      final hasMultipleAts = lastAtIndex > 0 && textBeforeCursor[lastAtIndex - 1] == '@';
+      final hasMultipleAts =
+          lastAtIndex > 0 && textBeforeCursor[lastAtIndex - 1] == '@';
 
       if (!textFromAt.contains(' ') &&
           !textFromAt.contains('\n') &&
@@ -158,7 +162,8 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
     } else if (lastHashIndex != -1) {
       // Only # trigger exists
       final textFromHash = text.substring(lastHashIndex + 1, cursorPosition);
-      final hasMultipleHashes = lastHashIndex > 0 && textBeforeCursor[lastHashIndex - 1] == '#';
+      final hasMultipleHashes =
+          lastHashIndex > 0 && textBeforeCursor[lastHashIndex - 1] == '#';
 
       if (!textFromHash.contains(' ') &&
           !textFromHash.contains('\n') &&
@@ -193,7 +198,9 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
       }
     } else {
       // Check if we just finished hashtag search and user pressed space
-      if (_isHashtagSearchActive && _lastHashtagSearchTerm.isNotEmpty && text.endsWith(' ')) {
+      if (_isHashtagSearchActive &&
+          _lastHashtagSearchTerm.isNotEmpty &&
+          text.endsWith(' ')) {
         _addHashtagFromSearch(_lastHashtagSearchTerm);
       }
 
@@ -238,7 +245,8 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
       );
 
       // Check if not already added
-      if (!_addedHashtags.any((existing) => existing.tag == hashtagText.trim())) {
+      if (!_addedHashtags
+          .any((existing) => existing.tag == hashtagText.trim())) {
         _addedHashtags.add(mentionData);
         widget.onAddHashTagData?.call(mentionData);
         debugPrint('Hashtag added: ${mentionData.tag}');
@@ -451,7 +459,8 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
       return;
     }
 
-    final renderBox = _textFieldKey.currentContext?.findRenderObject() as RenderBox?;
+    final renderBox =
+        _textFieldKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox == null) return;
 
     final position = renderBox.localToGlobal(Offset.zero);
@@ -577,14 +586,16 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
             child: InkWell(
               onTap: () => _selectHashTag(hasTag),
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 child: Row(
                   children: [
                     // Hashtag content
                     Expanded(
                       child: Text(
                         '#${hasTag.hashtag ?? ''}',
-                        style: IsrStyles.primaryText14.copyWith(fontWeight: FontWeight.w600),
+                        style: IsrStyles.primaryText14
+                            .copyWith(fontWeight: FontWeight.w600),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -592,7 +603,8 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
                     if (hasTag.usageCount != null && hasTag.usageCount! > 0)
                       Text(
                         '${hasTag.usageCount} Posts',
-                        style: IsrStyles.primaryText14.copyWith(color: '868686'.toColor()),
+                        style: IsrStyles.primaryText14
+                            .copyWith(color: '868686'.toColor()),
                       ),
                   ],
                 ),
@@ -629,7 +641,9 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
       // Calculate the position of the inserted mention
       final start = lastAtIndex;
       final end = start +
-          (tagText.trim().length); // trim() to remove trailing space if you don't want it included
+          (tagText
+              .trim()
+              .length); // trim() to remove trailing space if you don't want it included
 
       final mentionData = CommentMentionData(
         tag: hashTag.hashtag,

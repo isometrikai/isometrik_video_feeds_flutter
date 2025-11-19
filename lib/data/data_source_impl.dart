@@ -19,9 +19,11 @@ class DataSourceImpl extends DataSource {
     final language = await _localStorageManager.getValue(
         LocalStorageKeys.language, SavedValueDataType.string) as String;
 
-    final accessToken = await _localStorageManager.getSecuredValue(LocalStorageKeys.accessToken);
+    final accessToken = await _localStorageManager
+        .getSecuredValue(LocalStorageKeys.accessToken);
 
-    final refreshToken = await _localStorageManager.getSecuredValue(LocalStorageKeys.refreshToken);
+    final refreshToken = await _localStorageManager
+        .getSecuredValue(LocalStorageKeys.refreshToken);
 
     final latitude = await _localStorageManager.getValue(
         LocalStorageKeys.latitude, SavedValueDataType.double) as double;

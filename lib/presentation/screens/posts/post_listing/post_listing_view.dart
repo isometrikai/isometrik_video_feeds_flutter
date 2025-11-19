@@ -82,7 +82,8 @@ class _PostListingViewState extends State<PostListingView> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
       // widget.onLoadMore?.call();
     }
   }
@@ -239,8 +240,11 @@ class _PostListingViewState extends State<PostListingView> {
                     child: Text(
                       tab.displayName,
                       style: IsrStyles.primaryText14.copyWith(
-                        color: isSelected ? IsrColors.appColor : IsrColors.color9B9B9B,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        color: isSelected
+                            ? IsrColors.appColor
+                            : IsrColors.color9B9B9B,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
                       ),
                     ),
                   ),
@@ -335,7 +339,8 @@ class _PostListingViewState extends State<PostListingView> {
         ),
       );
 
-  Widget _buildBody() => BlocBuilder<PostListingBloc, PostListingState>(builder: (context, state) {
+  Widget _buildBody() =>
+      BlocBuilder<PostListingBloc, PostListingState>(builder: (context, state) {
         // Handle different state types
         if (state is PostListingLoadingState && state.isLoading) {
           return const Center(child: AppLoader());
@@ -351,7 +356,8 @@ class _PostListingViewState extends State<PostListingView> {
           _tabResults[state.tabType] = state.results;
           _tabLoading[state.tabType] = false;
           // Store the query for this tab to avoid unnecessary API calls
-          final currentQuery = _hashtagController.text.trim().replaceFirst('#', '');
+          final currentQuery =
+              _hashtagController.text.trim().replaceFirst('#', '');
           _tabLastQuery[state.tabType] = currentQuery;
         }
 
@@ -487,7 +493,8 @@ class _PostListingViewState extends State<PostListingView> {
                     child: _buildPostCard(post, index),
                   );
                 },
-                childCount: postList.length /*+ (widget.isLoadingMore ? 1 : 0)*/,
+                childCount:
+                    postList.length /*+ (widget.isLoadingMore ? 1 : 0)*/,
               ),
             ),
           ),
@@ -505,8 +512,10 @@ class _PostListingViewState extends State<PostListingView> {
             children: [
               _buildPostImage(post),
               _buildUserProfileOverlay(post),
-              if (post.tags?.products?.isListEmptyOrNull == false) _buildShopButtonOverlay(post),
-              if (post.media?.first.mediaType?.mediaType == MediaType.video) _buildVideoIcon(),
+              if (post.tags?.products?.isListEmptyOrNull == false)
+                _buildShopButtonOverlay(post),
+              if (post.media?.first.mediaType?.mediaType == MediaType.video)
+                _buildVideoIcon(),
             ],
           ),
         ),
@@ -557,8 +566,9 @@ class _PostListingViewState extends State<PostListingView> {
               CircleAvatar(
                 radius: IsrDimens.twelve,
                 backgroundColor: IsrColors.colorF5F5F5,
-                backgroundImage:
-                    post.user?.avatarUrl != null ? NetworkImage(post.user!.avatarUrl!) : null,
+                backgroundImage: post.user?.avatarUrl != null
+                    ? NetworkImage(post.user!.avatarUrl!)
+                    : null,
                 child: post.user?.avatarUrl == null
                     ? Icon(
                         Icons.person,
@@ -661,12 +671,14 @@ class _PostListingViewState extends State<PostListingView> {
         ),
       );
 
-  String _getHasTagValue() => _hashtagController.text.trim().replaceFirst('#', '');
+  String _getHasTagValue() =>
+      _hashtagController.text.trim().replaceFirst('#', '');
 
   void _onTagTapped(dynamic tag) {
     final tagText = (tag?.hashtag as String?) ?? '';
 
-    IsrAppNavigator.navigateTagDetails(context, tagValue: tagText, tagType: TagType.hashtag);
+    IsrAppNavigator.navigateTagDetails(context,
+        tagValue: tagText, tagType: TagType.hashtag);
   }
 
   void _handlePlaceTap(String placeId, String placeName) {
@@ -709,13 +721,15 @@ class _PostListingViewState extends State<PostListingView> {
             return Container(
               height: IsrDimens.sixty,
               margin: IsrDimens.edgeInsetsSymmetric(
-                  vertical: 4.responsiveDimension, horizontal: 8.responsiveDimension),
+                  vertical: 4.responsiveDimension,
+                  horizontal: 8.responsiveDimension),
               child: TapHandler(
                 onTap: () {
                   _onTagTapped(tag);
                 },
                 child: Padding(
-                  padding: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.sixteen),
+                  padding: IsrDimens.edgeInsetsSymmetric(
+                      horizontal: IsrDimens.sixteen),
                   child: Row(
                     children: [
                       const AppImage.svg(AssetConstants.icTagIcon),
@@ -758,22 +772,25 @@ class _PostListingViewState extends State<PostListingView> {
           physics: const BouncingScrollPhysics(),
           itemCount: places.length,
           itemBuilder: (context, index) {
-            final resultList =
-                (places as List<Result>).map(UnifiedLocationItem.fromLocationResult).toList();
+            final resultList = (places as List<Result>)
+                .map(UnifiedLocationItem.fromLocationResult)
+                .toList();
 
             final result = resultList[index];
             final placeName = result.title;
             return Container(
               height: 60.responsiveDimension,
               margin: IsrDimens.edgeInsetsSymmetric(
-                  vertical: 4.responsiveDimension, horizontal: 8.responsiveDimension),
+                  vertical: 4.responsiveDimension,
+                  horizontal: 8.responsiveDimension),
               child: TapHandler(
                 onTap: () => _handlePlaceTap(
                   result.placeId,
                   placeName,
                 ),
                 child: Padding(
-                  padding: IsrDimens.edgeInsetsSymmetric(horizontal: 16.responsiveDimension),
+                  padding: IsrDimens.edgeInsetsSymmetric(
+                      horizontal: 16.responsiveDimension),
                   child: Row(
                     children: [
                       const AppImage.svg(AssetConstants.icPlacesIcon),
@@ -871,7 +888,9 @@ class _PostListingViewState extends State<PostListingView> {
                             ),
                             4.responsiveVerticalSpace,
                             Text(
-                              user.fullName ?? user.displayName ?? 'No description',
+                              user.fullName ??
+                                  user.displayName ??
+                                  'No description',
                               style: IsrStyles.primaryText14.copyWith(
                                 color: IsrColors.color9B9B9B,
                               ),
@@ -904,7 +923,8 @@ class _PostListingViewState extends State<PostListingView> {
   // Follow button widget with API integration
   Widget _buildFollowButton(SocialUserData user) {
     // Check if user is following from either the user model or local state
-    final isFollowing = _userFollowingState[user.id] ?? user.isFollowing ?? false;
+    final isFollowing =
+        _userFollowingState[user.id] ?? user.isFollowing ?? false;
 
     // Hide button if user is already following
     if (isFollowing) {

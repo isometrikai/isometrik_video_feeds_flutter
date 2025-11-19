@@ -21,8 +21,9 @@ class SearchUserUseCase extends BaseUseCase {
             searchText: searchText,
           );
           return ApiResult(
-            data:
-                response.responseCode == 200 || response.responseCode == 201 ? response.data : null,
+            data: response.responseCode == 200 || response.responseCode == 201
+                ? response.data
+                : null,
           );
         },
       );

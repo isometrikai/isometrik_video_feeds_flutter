@@ -21,7 +21,8 @@ class PlaceDetailsBloc extends Bloc<PlaceDetailsEvent, PlaceDetailsState> {
   final _pageLimit = 20;
   final List<TimeLineData> _posts = [];
 
-  FutureOr<void> _getPlacePosts(GetPlacePostsEvent event, Emitter<PlaceDetailsState> emit) async {
+  FutureOr<void> _getPlacePosts(
+      GetPlacePostsEvent event, Emitter<PlaceDetailsState> emit) async {
     try {
       emit(const PlaceDetailsLoadingState(isLoading: true));
 

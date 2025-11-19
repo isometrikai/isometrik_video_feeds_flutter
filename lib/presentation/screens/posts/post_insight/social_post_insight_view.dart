@@ -34,7 +34,8 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
     _postData = widget.postData;
     _postId = widget.postId;
     log('post insight data: ${_postData?.toMap()}');
-    _socialPostBloc.add(GetPostInsightDetailsEvent(postId: _postId, data: _postData));
+    _socialPostBloc
+        .add(GetPostInsightDetailsEvent(postId: _postId, data: _postData));
     super.initState();
   }
 
@@ -50,13 +51,18 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
         body: BlocConsumer<SocialPostBloc, SocialPostState>(
           bloc: _socialPostBloc,
           buildWhen: (previousState, currentState) =>
-              (currentState is PostInsightDetails && currentState.postId == _postId) ||
-              (currentState is PostInsightDetailsLoading && currentState.postId == _postId),
+              (currentState is PostInsightDetails &&
+                  currentState.postId == _postId) ||
+              (currentState is PostInsightDetailsLoading &&
+                  currentState.postId == _postId),
           listenWhen: (previousState, currentState) =>
-              (currentState is PostInsightDetails && currentState.postId == _postId) ||
-              (currentState is PostInsightDetailsLoading && currentState.postId == _postId),
+              (currentState is PostInsightDetails &&
+                  currentState.postId == _postId) ||
+              (currentState is PostInsightDetailsLoading &&
+                  currentState.postId == _postId),
           listener: (context, state) {
-            _postData = (state is PostInsightDetails) ? state.postData : _postData;
+            _postData =
+                (state is PostInsightDetails) ? state.postData : _postData;
             log('post insight data: ${_postData?.toMap()}');
           },
           builder: (context, state) => SafeArea(
@@ -65,8 +71,8 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
                 RefreshIndicator.adaptive(
                   child: _buildBody(),
                   onRefresh: () async {
-                    _socialPostBloc
-                        .add(GetPostInsightDetailsEvent(postId: _postId, data: _postData));
+                    _socialPostBloc.add(GetPostInsightDetailsEvent(
+                        postId: _postId, data: _postData));
                   },
                 ),
                 if (state is PostInsightDetailsLoading)
@@ -116,9 +122,10 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
       );
 
   Widget _buildPostPreview() {
-    final imageUrl = _postData?.media?.first.mediaType?.mediaType == MediaType.video
-        ? _postData?.media?.first.previewUrl
-        : _postData?.media?.first.url;
+    final imageUrl =
+        _postData?.media?.first.mediaType?.mediaType == MediaType.video
+            ? _postData?.media?.first.previewUrl
+            : _postData?.media?.first.url;
 
     return Column(
       children: [
@@ -155,7 +162,8 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
 
   Widget _buildPostTimestamp() {
     var formattedDate = '';
-    if (_postData?.publishedAt != null && _postData?.publishedAt?.isNotEmpty == true) {
+    if (_postData?.publishedAt != null &&
+        _postData?.publishedAt?.isNotEmpty == true) {
       try {
         final dateTime = DateTime.parse(_postData!.publishedAt!);
         formattedDate = DateFormat('MMMM d \'at\' h:mm a').format(dateTime);
@@ -233,14 +241,16 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
         IsrDimens.boxHeight(IsrDimens.sixteen),
         _buildOverviewItem(IsrTranslationFile.views, views.toString()),
         IsrDimens.boxHeight(IsrDimens.sixteen),
-        _buildOverviewItem(IsrTranslationFile.interactions, interactions.toString()),
+        _buildOverviewItem(
+            IsrTranslationFile.interactions, interactions.toString()),
         IsrDimens.boxHeight(IsrDimens.sixteen),
         Divider(
             height: 1.responsiveDimension,
             color: IsrColors.colorDBDBDB,
             thickness: 1.responsiveDimension),
         IsrDimens.boxHeight(IsrDimens.sixteen),
-        _buildOverviewItem(IsrTranslationFile.profileActivity, profileActivity.toString()),
+        _buildOverviewItem(
+            IsrTranslationFile.profileActivity, profileActivity.toString()),
       ],
     );
   }
@@ -273,7 +283,8 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
     required num selectedValue,
     required String unselectedLabel,
   }) {
-    final selectedPercentage = mainValue > 0 ? ((selectedValue / mainValue) * 100) : 0;
+    final selectedPercentage =
+        mainValue > 0 ? ((selectedValue / mainValue) * 100) : 0;
     final nonselectedPercentage = 100 - selectedPercentage;
 
     return Column(
@@ -296,7 +307,9 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
         Text(
           mainLabel,
           style: IsrStyles.primaryText12.copyWith(
-              fontSize: IsrDimens.twelve, fontWeight: FontWeight.w500, color: '767676'.toColor()),
+              fontSize: IsrDimens.twelve,
+              fontWeight: FontWeight.w500,
+              color: '767676'.toColor()),
         ),
         16.responsiveVerticalSpace,
         Row(
@@ -346,7 +359,8 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
           required Color color,
           bool isAlignLeft = true}) =>
       Column(
-        crossAxisAlignment: isAlignLeft ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+        crossAxisAlignment:
+            isAlignLeft ? CrossAxisAlignment.start : CrossAxisAlignment.end,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
@@ -354,7 +368,8 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
             style: IsrStyles.primaryText16Bold,
           ),
           Row(
-            mainAxisAlignment: isAlignLeft ? MainAxisAlignment.start : MainAxisAlignment.end,
+            mainAxisAlignment:
+                isAlignLeft ? MainAxisAlignment.start : MainAxisAlignment.end,
             children: [
               if (!isAlignLeft) ...[
                 Text(
@@ -411,7 +426,8 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
             color: IsrColors.colorDBDBDB,
             thickness: 1.responsiveDimension),
         IsrDimens.boxHeight(IsrDimens.sixteen),
-        _buildStatisticItem(IsrTranslationFile.accountEngaged, accountEngaged.toString()),
+        _buildStatisticItem(
+            IsrTranslationFile.accountEngaged, accountEngaged.toString()),
       ],
     );
   }
@@ -442,7 +458,8 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
           style: IsrStyles.primaryText14Bold,
         ),
         IsrDimens.boxHeight(IsrDimens.sixteen),
-        _buildStatisticItem(IsrTranslationFile.profileVisits, profileVisits.toString()),
+        _buildStatisticItem(
+            IsrTranslationFile.profileVisits, profileVisits.toString()),
         IsrDimens.boxHeight(IsrDimens.sixteen),
         _buildStatisticItem(IsrTranslationFile.follows, follows.toString()),
       ],

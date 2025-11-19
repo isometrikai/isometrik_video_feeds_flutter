@@ -15,5 +15,6 @@ export 'isr_video_reel_config.dart';
 export 'presentation/presentation.dart';
 
 class IsmVideoReelPlayer {
-  Future<String?> getPlatformVersion() => IsmVideoReelPlayerPlatform.instance.getPlatformVersion();
+  Future<String?> getPlatformVersion() =>
+      IsmVideoReelPlayerPlatform.instance.getPlatformVersion();
 }

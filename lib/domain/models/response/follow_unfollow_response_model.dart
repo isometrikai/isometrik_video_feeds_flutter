@@ -1,10 +1,12 @@
 import 'dart:convert';
 
-FollowUnfollowResponseModel getFollowUnfollowResponseModelFromJson(String str) =>
-    FollowUnfollowResponseModel.fromMap(json.decode(str) as Map<String, dynamic>);
+FollowUnfollowResponseModel getFollowUnfollowResponseModelFromJson(
+        String str) =>
+    FollowUnfollowResponseModel.fromMap(
+        json.decode(str) as Map<String, dynamic>);
 
 String getFollowUnfollowResponseModelToJson(FollowUnfollowResponseModel data) =>
-    json.encode(data.toJson()); 
+    json.encode(data.toJson());
 
 class FollowUnfollowResponseModel {
   FollowUnfollowResponseModel({

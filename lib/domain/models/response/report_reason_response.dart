@@ -19,11 +19,12 @@ class ReportReasonResponse {
   factory ReportReasonResponse.fromJson(Map<String, dynamic> json) =>
       ReportReasonResponse(
         message: json['message'] as String? ?? '',
-          data: json['data'] == null
-              ? []
-              : List<ReportReason>.from(
-            (json['data'] as List).map((x) => ReportReason.fromJson(x as Map<String, dynamic>)),
-          ),
+        data: json['data'] == null
+            ? []
+            : List<ReportReason>.from(
+                (json['data'] as List).map(
+                    (x) => ReportReason.fromJson(x as Map<String, dynamic>)),
+              ),
       );
   String? message;
   List<ReportReason>? data;
@@ -31,7 +32,7 @@ class ReportReasonResponse {
   Map<String, dynamic> toJson() => {
         'message': message,
         'data': data == null ? [] : data!.map((x) => x.toJson()).toList(),
-  };
+      };
 }
 
 class ReportReason {

@@ -10,16 +10,20 @@ class ApiServiceInjection {
   /// Registers all API service implementations with the dependency injection container.
   static void inject() {
     final networkClient = NetworkClient(baseUrl: AppUrl.appBaseUrl);
-    final deviceInfoManager = IsmInjectionUtils.getOtherClass<DeviceInfoManager>();
+    final deviceInfoManager =
+        IsmInjectionUtils.getOtherClass<DeviceInfoManager>();
 
     // Create instances of network clients with base URLs
     // final networkClient = NetworkClient(baseUrl: AppUrl.appBaseUrl);
-    final localStorageManager = IsmInjectionUtils.getOtherClass<LocalStorageManager>();
+    final localStorageManager =
+        IsmInjectionUtils.getOtherClass<LocalStorageManager>();
 
-    IsmInjectionUtils.registerApiService<SocialApiService>(() => SocialApiServiceProvider(
-        networkClient: networkClient, deviceInfoManager: deviceInfoManager));
-    IsmInjectionUtils.registerApiService<GoogleApiService>(() => GoogleApiServiceProvider(
-        localStorageManager,
-        apiKey: 'AIzaSyAtEV8g9_ndGsbBaeZuIpTpFRqpd8JE1RY'));
+    IsmInjectionUtils.registerApiService<SocialApiService>(() =>
+        SocialApiServiceProvider(
+            networkClient: networkClient,
+            deviceInfoManager: deviceInfoManager));
+    IsmInjectionUtils.registerApiService<GoogleApiService>(() =>
+        GoogleApiServiceProvider(localStorageManager,
+            apiKey: 'AIzaSyAtEV8g9_ndGsbBaeZuIpTpFRqpd8JE1RY'));
   }
 }

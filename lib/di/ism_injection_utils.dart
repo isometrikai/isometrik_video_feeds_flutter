@@ -10,10 +10,12 @@ class IsmInjectionUtils {
 
   static T getCubit<T extends BlocBase<Object>>() => isrGetIt<T>();
 
-  static T getUseCase<T extends BaseUseCase>() => isrGetIt<T>(); // Generic method to get use cases
+  static T getUseCase<T extends BaseUseCase>() =>
+      isrGetIt<T>(); // Generic method to get use cases
 
   // Generic function to register a Bloc
-  static void registerBloc<T extends BlocBase<Object>>(T Function() factoryFunc) {
+  static void registerBloc<T extends BlocBase<Object>>(
+      T Function() factoryFunc) {
     unRegister<T>();
     isrGetIt.registerFactory<T>(factoryFunc);
   }
@@ -36,10 +38,12 @@ class IsmInjectionUtils {
     }
   }
 
-  static T getRepo<T extends BaseRepository>() => isrGetIt<T>(); // Generic method to get repository
+  static T getRepo<T extends BaseRepository>() =>
+      isrGetIt<T>(); // Generic method to get repository
 
   // Generic function to register a api service
-  static void registerApiService<T extends BaseService>(T Function() factoryFunc) {
+  static void registerApiService<T extends BaseService>(
+      T Function() factoryFunc) {
     unRegister<T>();
     isrGetIt.registerFactory<T>(factoryFunc);
   }
@@ -53,5 +57,6 @@ class IsmInjectionUtils {
     isrGetIt.registerFactory<T>(factoryFunc);
   }
 
-  static T getOtherClass<T extends Object>() => isrGetIt<T>(); // Generic method to get api service
+  static T getOtherClass<T extends Object>() =>
+      isrGetIt<T>(); // Generic method to get api service
 }

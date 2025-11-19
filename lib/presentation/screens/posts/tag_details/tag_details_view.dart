@@ -43,7 +43,8 @@ class _TagDetailsViewState extends State<TagDetailsView> {
 
   void _setupScrollListener() {
     _scrollController.addListener(() {
-      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      if (_scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent - 200) {
         // Load more posts when near bottom
         _tagDetailsBloc.add(GetTagDetailsEvent(
           tagValue: widget.tagValue,
@@ -221,13 +222,17 @@ class _TagDetailsViewState extends State<TagDetailsView> {
   String _getTagDisplayText() {
     switch (widget.tagType) {
       case TagType.hashtag:
-        return widget.tagValue.startsWith('#') ? widget.tagValue : '#${widget.tagValue}';
+        return widget.tagValue.startsWith('#')
+            ? widget.tagValue
+            : '#${widget.tagValue}';
       case TagType.place:
         return widget.tagValue;
       case TagType.product:
         return widget.tagValue;
       case TagType.mention:
-        return widget.tagValue.startsWith('@') ? widget.tagValue : '@${widget.tagValue}';
+        return widget.tagValue.startsWith('@')
+            ? widget.tagValue
+            : '@${widget.tagValue}';
     }
   }
 
@@ -352,8 +357,10 @@ class _TagDetailsViewState extends State<TagDetailsView> {
           child: Stack(
             children: [
               _buildPostImage(post),
-              if (post.tags?.products?.isListEmptyOrNull == false) _buildProductsOverlay(post),
-              if (post.media?.first.mediaType?.mediaType == MediaType.video) _buildVideoIcon(),
+              if (post.tags?.products?.isListEmptyOrNull == false)
+                _buildProductsOverlay(post),
+              if (post.media?.first.mediaType?.mediaType == MediaType.video)
+                _buildVideoIcon(),
             ],
           ),
         ),

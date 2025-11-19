@@ -12,15 +12,16 @@ class RepositoryInjection {
     final dataSource = IsmInjectionUtils.getOtherClass<DataSource>();
 
     // Retrieve the data source instance from the service locator
-    final localStorageManager = IsmInjectionUtils.getOtherClass<LocalStorageManager>();
+    final localStorageManager =
+        IsmInjectionUtils.getOtherClass<LocalStorageManager>();
 
     // Register the repositories with their respective implementations
     IsmInjectionUtils.registerRepo<IsrLocalStorageRepository>(
         () => IsrLocalStorageRepositoryImpl(localStorageManager));
 
-    IsmInjectionUtils.registerRepo<SocialRepository>(() =>
-        SocialRepositoryImpl(IsmInjectionUtils.getApiService<SocialApiService>(), dataSource));
-    IsmInjectionUtils.registerRepo<GoogleRepository>(
-        () => GoogleRepositoryImpl(IsmInjectionUtils.getApiService<GoogleApiService>()));
+    IsmInjectionUtils.registerRepo<SocialRepository>(() => SocialRepositoryImpl(
+        IsmInjectionUtils.getApiService<SocialApiService>(), dataSource));
+    IsmInjectionUtils.registerRepo<GoogleRepository>(() => GoogleRepositoryImpl(
+        IsmInjectionUtils.getApiService<GoogleApiService>()));
   }
 }

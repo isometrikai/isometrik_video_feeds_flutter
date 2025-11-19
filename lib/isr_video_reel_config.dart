@@ -46,12 +46,13 @@ class IsrVideoReelConfig {
   static Future<void> _saveUserInformation({
     UserInfoClass? userInfoClass,
   }) async {
-    final localStorageManager = IsmInjectionUtils.getOtherClass<LocalStorageManager>();
+    final localStorageManager =
+        IsmInjectionUtils.getOtherClass<LocalStorageManager>();
     final userInfoString = jsonEncode(userInfoClass);
     await localStorageManager.saveValue(
         LocalStorageKeys.userInfo, userInfoString, SavedValueDataType.string);
-    await localStorageManager.saveValue(
-        LocalStorageKeys.userId, userInfoClass?.userId, SavedValueDataType.string);
+    await localStorageManager.saveValue(LocalStorageKeys.userId,
+        userInfoClass?.userId, SavedValueDataType.string);
   }
 
   static void precacheVideos(List<String> mediaUrls) async {
@@ -70,8 +71,10 @@ class IsrVideoReelConfig {
     EventQueueProvider.initialize(onBeforeFlush: onBeforeFlushCallback);
   }
 
-  static Future<void> _storeHeaderValues(Map<String, dynamic> defaultHeaders) async {
-    final localStorageManager = IsmInjectionUtils.getOtherClass<LocalStorageManager>();
+  static Future<void> _storeHeaderValues(
+      Map<String, dynamic> defaultHeaders) async {
+    final localStorageManager =
+        IsmInjectionUtils.getOtherClass<LocalStorageManager>();
     final accessToken = defaultHeaders['Authorization'] as String? ?? '';
     final language = defaultHeaders['lan'] as String? ?? '';
     final city = defaultHeaders['city'] as String? ?? '';
@@ -86,19 +89,22 @@ class IsrVideoReelConfig {
     final longitude = defaultHeaders['longitude'] as double? ?? 0;
     final xTenantId = defaultHeaders['x-tenant-id'] as String? ?? '';
     final xProjectId = defaultHeaders['x-project-id'] as String? ?? '';
-    await localStorageManager.saveValueSecurely(LocalStorageKeys.accessToken, accessToken);
+    await localStorageManager.saveValueSecurely(
+        LocalStorageKeys.accessToken, accessToken);
     await localStorageManager.saveValue(
         LocalStorageKeys.language, language, SavedValueDataType.string);
-    await localStorageManager.saveValue(LocalStorageKeys.city, city, SavedValueDataType.string);
-    await localStorageManager.saveValue(LocalStorageKeys.state, state, SavedValueDataType.string);
+    await localStorageManager.saveValue(
+        LocalStorageKeys.city, city, SavedValueDataType.string);
+    await localStorageManager.saveValue(
+        LocalStorageKeys.state, state, SavedValueDataType.string);
     await localStorageManager.saveValue(
         LocalStorageKeys.country, country, SavedValueDataType.string);
     await localStorageManager.saveValue(
         LocalStorageKeys.ipAddress, ipAddress, SavedValueDataType.string);
     await localStorageManager.saveValue(
         LocalStorageKeys.version, version, SavedValueDataType.string);
-    await localStorageManager.saveValue(
-        LocalStorageKeys.currencySymbol, currencySymbol, SavedValueDataType.string);
+    await localStorageManager.saveValue(LocalStorageKeys.currencySymbol,
+        currencySymbol, SavedValueDataType.string);
     await localStorageManager.saveValue(
         LocalStorageKeys.currencyCode, currencyCode, SavedValueDataType.string);
     await localStorageManager.saveValue(

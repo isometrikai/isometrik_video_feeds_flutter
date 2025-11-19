@@ -21,7 +21,8 @@ class TagDetailsBloc extends Bloc<TagDetailsEvent, TagDetailsState> {
   final _pageLimit = 20;
   final List<TimeLineData> _posts = [];
 
-  FutureOr<void> _getTagDetails(GetTagDetailsEvent event, Emitter<TagDetailsState> emit) async {
+  FutureOr<void> _getTagDetails(
+      GetTagDetailsEvent event, Emitter<TagDetailsState> emit) async {
     try {
       emit(const TagDetailsLoadingState(isLoading: true));
 

@@ -349,7 +349,8 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
                               ),
                               itemBuilder: (context, index) {
                                 final location = _searchResults[index];
-                                final isSelected = _taggedPlace?.placeId == location.placeId;
+                                final isSelected =
+                                    _taggedPlace?.placeId == location.placeId;
 
                                 return ListTile(
                                   contentPadding: const EdgeInsets.symmetric(
@@ -374,14 +375,18 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
                                         location.description ??
                                         '',
                                     style: TextStyle(
-                                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w600
+                                          : FontWeight.w500,
                                       fontSize: 16,
                                     ),
                                   ),
                                   subtitle: Padding(
                                     padding: const EdgeInsets.only(top: 2),
                                     child: Text(
-                                      location.structuredFormatting?.secondaryText ?? '',
+                                      location.structuredFormatting
+                                              ?.secondaryText ??
+                                          '',
                                       style: TextStyle(
                                         color: Colors.grey[600],
                                         fontSize: 14,

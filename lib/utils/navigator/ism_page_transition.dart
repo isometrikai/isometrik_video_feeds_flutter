@@ -22,8 +22,8 @@ class IsmPageTransition extends CustomTransitionPage<void> {
 
   final TransitionType transitionType;
 
-  static Widget _buildTransition(
-      Animation<double> animation, Widget child, TransitionType transitionType) {
+  static Widget _buildTransition(Animation<double> animation, Widget child,
+      TransitionType transitionType) {
     switch (transitionType) {
       case TransitionType.bottomToTop:
         return _buildBottomToTopTransition(animation, child);
@@ -40,7 +40,8 @@ class IsmPageTransition extends CustomTransitionPage<void> {
     }
   }
 
-  static Widget _buildBottomToTopTransition(Animation<double> animation, Widget child) {
+  static Widget _buildBottomToTopTransition(
+      Animation<double> animation, Widget child) {
     const begin = Offset(0.0, 1.0); // Start from the bottom
     const end = Offset.zero; // End at the original position
     const curve = Curves.easeInOut;
@@ -54,7 +55,8 @@ class IsmPageTransition extends CustomTransitionPage<void> {
     );
   }
 
-  static Widget _buildTopToBottomTransition(Animation<double> animation, Widget child) {
+  static Widget _buildTopToBottomTransition(
+      Animation<double> animation, Widget child) {
     const begin = Offset(0.0, -1.0); // Start from the top
     const end = Offset.zero; // End at the original position
     const curve = Curves.easeInOut;
@@ -68,12 +70,15 @@ class IsmPageTransition extends CustomTransitionPage<void> {
     );
   }
 
-  static Widget _buildFadeTransition(Animation<double> animation, Widget child) => FadeTransition(
+  static Widget _buildFadeTransition(
+          Animation<double> animation, Widget child) =>
+      FadeTransition(
         opacity: animation,
         child: child,
       );
 
-  static Widget _buildLeftToRightTransition(Animation<double> animation, Widget child) {
+  static Widget _buildLeftToRightTransition(
+      Animation<double> animation, Widget child) {
     const begin = Offset(-1.0, 0.0); // Start from the left
     const end = Offset.zero; // End at the original position
     const curve = Curves.easeInOut;
@@ -87,7 +92,8 @@ class IsmPageTransition extends CustomTransitionPage<void> {
     );
   }
 
-  static Widget _buildRightToLeftTransition(Animation<double> animation, Widget child) {
+  static Widget _buildRightToLeftTransition(
+      Animation<double> animation, Widget child) {
     const begin = Offset(1.0, 0.0); // Start from the right
     const end = Offset.zero; // End at the original position
     const curve = Curves.easeInOut;

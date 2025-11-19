@@ -18,7 +18,8 @@ class GoogleApiServiceProvider extends GoogleApiService with AppMixin {
     required String pinCode,
     required List<String>? countries,
   }) async {
-    var apiURL = '${GoogleApiEndPoints.getGeocodeAddress}?address=$pinCode&key=$apiKey';
+    var apiURL =
+        '${GoogleApiEndPoints.getGeocodeAddress}?address=$pinCode&key=$apiKey';
 
     for (var i = 0; i < countries!.length; i++) {
       final country = countries[i];
@@ -144,7 +145,8 @@ class GoogleApiServiceProvider extends GoogleApiService with AppMixin {
   Future<ResponseModel> getPlaceDetails({
     required String placeId,
   }) async {
-    final apiURL = '${GoogleApiEndPoints.getPlaceDetails}?placeid=$placeId&key=$apiKey';
+    final apiURL =
+        '${GoogleApiEndPoints.getPlaceDetails}?placeid=$placeId&key=$apiKey';
 
     final response = await http.get(Uri.parse(apiURL));
     printLog(

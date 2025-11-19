@@ -35,7 +35,8 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
   var _searchPostPage = 1;
   final _searchPostLimit = 20;
 
-  FutureOr<void> _getHashTagPosts(GetHashTagPostEvent event, Emitter<PostListingState> emit) async {
+  FutureOr<void> _getHashTagPosts(
+      GetHashTagPostEvent event, Emitter<PostListingState> emit) async {
     emit(PostListingLoadingState(isLoading: true));
     if (event.tagValue.isEmpty) {
       emit(PostLoadedState(postList: []));
@@ -54,7 +55,8 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
       emit(PostLoadedState(postList: apiResult.data?.data ?? []));
     } else {
       _searchPostPage = _searchPostPage == 1 ? 1 : _searchPostPage--;
-      emit(PostLoadedState(postList: _searchPostPage == 1 ? [] : apiResult.data?.data ?? []));
+      emit(PostLoadedState(
+          postList: _searchPostPage == 1 ? [] : apiResult.data?.data ?? []));
     }
   }
 

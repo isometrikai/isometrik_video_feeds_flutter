@@ -78,7 +78,8 @@ class LocalEventQueue with WidgetsBindingObserver {
 
     await box.add(event);
 
-    debugPrint('${runtimeType.toString()} Event payload: ${jsonEncode(event.payload)}');
+    debugPrint(
+        '${runtimeType.toString()} Event payload: ${jsonEncode(event.payload)}');
     debugPrint('${runtimeType.toString()} Event added: ${event.id}');
     debugPrint('${runtimeType.toString()} Box length: ${box.length}');
 
@@ -94,7 +95,8 @@ class LocalEventQueue with WidgetsBindingObserver {
             unawaited(flush());
           }
         } catch (e) {
-          debugPrint('${runtimeType.toString()} Error in callback: $e, skipping flush');
+          debugPrint(
+              '${runtimeType.toString()} Error in callback: $e, skipping flush');
         }
       } else {
         // No callback, proceed with normal flush
@@ -105,14 +107,16 @@ class LocalEventQueue with WidgetsBindingObserver {
 
   Future<void> flush() async {
     final box = Hive.box<LocalEvent>(_boxName);
-    debugPrint('${runtimeType.toString()} Box length before flushing: ${box.length}');
+    debugPrint(
+        '${runtimeType.toString()} Box length before flushing: ${box.length}');
 
     final events = box.values.toList();
 
     if (events.isEmpty) return;
 
     await box.clear();
-    debugPrint('${runtimeType.toString()} Box length after flushing: ${box.length}');
+    debugPrint(
+        '${runtimeType.toString()} Box length after flushing: ${box.length}');
   }
 
   /// cleanup

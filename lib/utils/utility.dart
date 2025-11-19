@@ -27,20 +27,23 @@ class Utility {
   static bool isLoading = false;
   static final Connectivity _connectivity = Connectivity();
 
-  static void hideKeyboard() => SystemChannels.textInput.invokeMethod('TextInput.hide');
+  static void hideKeyboard() =>
+      SystemChannels.textInput.invokeMethod('TextInput.hide');
 
   static void updateLater(
     VoidCallback callback, [
     bool addDelay = true,
   ]) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(addDelay ? const Duration(milliseconds: 10) : Duration.zero, () {
+      Future.delayed(
+          addDelay ? const Duration(milliseconds: 10) : Duration.zero, () {
         callback();
       });
     });
   }
 
-  static String jsonEncodePretty(Object? object) => JsonEncoder.withIndent(' ' * 4).convert(object);
+  static String jsonEncodePretty(Object? object) =>
+      JsonEncoder.withIndent(' ' * 4).convert(object);
 
   static Future<bool> get isNetworkAvailable async {
     final result = await _connectivity.checkConnectivity();
@@ -58,7 +61,8 @@ class Utility {
   }) async {
     isLoading = true;
     await showDialog(
-      barrierColor: loaderType == LoaderType.withBackGround ? null : Colors.transparent,
+      barrierColor:
+          loaderType == LoaderType.withBackGround ? null : Colors.transparent,
       context: context!,
       builder: (_) => AppLoader(
         message: message,
@@ -141,7 +145,8 @@ class Utility {
               if (isToShowTitle == true)
                 Text(
                   titleText ?? IsrTranslationFile.alert,
-                  style: IsrStyles.secondaryText14.copyWith(fontWeight: FontWeight.w700),
+                  style: IsrStyles.secondaryText14
+                      .copyWith(fontWeight: FontWeight.w700),
                 ),
               if (message.isStringEmptyOrNull == false) ...[
                 IsrDimens.boxHeight(IsrDimens.eight),
@@ -204,8 +209,9 @@ class Utility {
     bool isRoundedCorners = true,
   }) {
     // Try to get context from multiple sources
-    final contextToUse = ismNavigatorKey.currentContext ?? IsrVideoReelConfig.buildContext;
-    
+    final contextToUse =
+        ismNavigatorKey.currentContext ?? IsrVideoReelConfig.buildContext;
+
     if (contextToUse == null) {
       throw FlutterError(
         'Navigator context is not available. '
@@ -215,7 +221,7 @@ class Utility {
         'Make sure to call this after the SDK widgets are displayed.',
       );
     }
-    
+
     return showModalBottomSheet<T>(
       context: contextToUse,
       builder: (_) => SafeArea(
@@ -229,9 +235,7 @@ class Utility {
       isDismissible: isDismissible,
       isScrollControlled: isScrollControlled,
       backgroundColor: backgroundColor ??
-          (isDarkBG
-              ? Theme.of(contextToUse).primaryColor
-              : IsrColors.white),
+          (isDarkBG ? Theme.of(contextToUse).primaryColor : IsrColors.white),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(IsrDimens.sixteen),
@@ -276,7 +280,9 @@ class Utility {
       return IsrTranslationFile.required;
     }
     final regex = RegExp(AppConstants.passwordPattern);
-    return regex.hasMatch(value) == true ? null : IsrTranslationFile.passwordValidationString;
+    return regex.hasMatch(value) == true
+        ? null
+        : IsrTranslationFile.passwordValidationString;
   }
 
   /// email validator to verify email is valid or not
@@ -285,7 +291,9 @@ class Utility {
       return IsrTranslationFile.required;
     }
     final regex = RegExp(AppConstants.emailPattern);
-    return regex.hasMatch(value) == true ? null : IsrTranslationFile.invalidEmail;
+    return regex.hasMatch(value) == true
+        ? null
+        : IsrTranslationFile.invalidEmail;
   }
 
   /// email validator to verify email is valid or not
@@ -295,7 +303,8 @@ class Utility {
   }
 
   /// converts a double number into decimal number till 2 decimal point
-  static String? convertToDecimalValue(double originalValue, {bool isRemoveTrailingZero = false}) =>
+  static String? convertToDecimalValue(double originalValue,
+          {bool isRemoveTrailingZero = false}) =>
       NumberFormat(originalValue % 1 == 0 ? '#' : '#.##').format(originalValue);
 
   // returns app version
@@ -340,7 +349,8 @@ class Utility {
             Flexible(
               child: Text(
                 message,
-                style: IsrStyles.primaryText14.copyWith(color: foregroundColor ?? IsrColors.white),
+                style: IsrStyles.primaryText14
+                    .copyWith(color: foregroundColor ?? IsrColors.white),
               ),
             ),
           ],
@@ -361,14 +371,16 @@ class Utility {
 
   static Widget loaderWidget({bool? isAdaptive = true}) => Center(
         child: isAdaptive == true
-            ? const CircularProgressIndicator.adaptive(backgroundColor: Colors.white)
+            ? const CircularProgressIndicator.adaptive(
+                backgroundColor: Colors.white)
             : const CircularProgressIndicator(color: Colors.white),
       );
 
   /// get formated date
   static String getFormattedDateWithNumberOfDays(int? numberOfDays,
           {String? dataFormat = 'EEEE, dd MMM'}) =>
-      DateFormat(dataFormat).format(DateTime.now().add(Duration(days: numberOfDays ?? 0)));
+      DateFormat(dataFormat)
+          .format(DateTime.now().add(Duration(days: numberOfDays ?? 0)));
 
   static Color rgbStringToColor(String rgbString) {
     final rgbRegex = RegExp(r'rgb\((\d+),(\d+),(\d+)\)');
@@ -385,12 +397,13 @@ class Utility {
     return IsrColors.transparent;
   }
 
-  static String getFormattedPrice(double price, String? currencySymbol) => NumberFormat.currency(
-          decimalDigits: price % 1 == 0 ? 0 : 2,
-          symbol: currencySymbol.isStringEmptyOrNull
-              ? DefaultValues.defaultCurrencySymbol
-              : currencySymbol)
-      .format(price);
+  static String getFormattedPrice(double price, String? currencySymbol) =>
+      NumberFormat.currency(
+              decimalDigits: price % 1 == 0 ? 0 : 2,
+              symbol: currencySymbol.isStringEmptyOrNull
+                  ? DefaultValues.defaultCurrencySymbol
+                  : currencySymbol)
+          .format(price);
 
   static Future<void> showCustomModalBottomSheet({
     required BuildContext context,
@@ -442,7 +455,8 @@ class Utility {
       );
 
   //capitalize the first letter of each word
-  static String capitalizeString(String text, {bool? isName}) => text.split(' ').map((word) {
+  static String capitalizeString(String text, {bool? isName}) =>
+      text.split(' ').map((word) {
         if (word.isNotEmpty) {
           return word[0].toUpperCase() + word.substring(1);
         } else {
@@ -471,7 +485,8 @@ class Utility {
 
   //Function for converting timestamp to formatted data
   static String convertTimestamp(int timestamp, String format) =>
-      DateFormat(format).format(DateTime.fromMillisecondsSinceEpoch(timestamp * 1000));
+      DateFormat(format)
+          .format(DateTime.fromMillisecondsSinceEpoch(timestamp * 1000));
 
   /// converts epoch date time into current date time
   static String getEpochConvertedTime(String timeStamp, String format) {
@@ -486,8 +501,10 @@ class Utility {
   // }
 
   /// returns gumlet image url
-  static String buildGumletImageUrl({required String imageUrl, double? width, double? height}) {
-    final finalImageUrl = removeSourceUrl(imageUrl).replaceAll('trulyfree-staging/', '');
+  static String buildGumletImageUrl(
+      {required String imageUrl, double? width, double? height}) {
+    final finalImageUrl =
+        removeSourceUrl(imageUrl).replaceAll('trulyfree-staging/', '');
     final queryParameter = StringBuffer();
     if (width != null && width != 0) {
       queryParameter.write('w=$width');
@@ -512,7 +529,8 @@ class Utility {
     final netIndex = url.indexOf('.net');
 
     // Determine the starting point for searching the slash
-    var startIndex = comIndex != -1 ? comIndex + 4 : (netIndex != -1 ? netIndex + 4 : -1);
+    var startIndex =
+        comIndex != -1 ? comIndex + 4 : (netIndex != -1 ? netIndex + 4 : -1);
     // If neither '.com' nor '.net' is found, return -1
     if (startIndex == -1) {
       return url.substring(url.lastIndexOf('/') + 1);
@@ -523,11 +541,12 @@ class Utility {
   }
 
   /// remove escape sequences
-  static String cleanText(String inputText) =>
-      inputText.replaceAll(RegExp(r'[\n\t\r]'), ''); // Removes newline, tab, and carriage return
+  static String cleanText(String inputText) => inputText.replaceAll(
+      RegExp(r'[\n\t\r]'), ''); // Removes newline, tab, and carriage return
 
   ///show custom widget dialog
-  static Future<void> showCustomDialog({required BuildContext context, required Widget child}) =>
+  static Future<void> showCustomDialog(
+          {required BuildContext context, required Widget child}) =>
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -557,7 +576,8 @@ class Utility {
         ),
       );
 
-  static bool _isErrorShowing = false; // Flag to track if an error is currently displayed
+  static bool _isErrorShowing =
+      false; // Flag to track if an error is currently displayed
 
   static void showAppError({
     BuildContext? context,
@@ -695,7 +715,8 @@ class Utility {
           );
           recognizer = TapGestureRecognizer()
             ..onTap = () {
-              if (onUsernameTap != null && position.data is CommentMentionData) {
+              if (onUsernameTap != null &&
+                  position.data is CommentMentionData) {
                 final mentionData = position.data as CommentMentionData;
                 onUsernameTap(mentionData.userId ?? '');
               }
@@ -720,7 +741,9 @@ class Utility {
             color: IsrColors.appColor,
             decoration: TextDecoration.underline,
           );
-          final urlToLaunch = taggedText.startsWith('http') ? taggedText : 'https://$taggedText';
+          final urlToLaunch = taggedText.startsWith('http')
+              ? taggedText
+              : 'https://$taggedText';
           recognizer = TapGestureRecognizer()
             ..onTap = () {
               Utility.launchExternalUrl(urlToLaunch);
@@ -753,7 +776,8 @@ class Utility {
   }
 
   // get time ago
-  static String getTimeAgoFromDateTime(DateTime? dateTime, {bool showJustNow = false}) {
+  static String getTimeAgoFromDateTime(DateTime? dateTime,
+      {bool showJustNow = false}) {
     if (dateTime == null) {
       return '';
     }

@@ -80,7 +80,8 @@ class PostShimmerView extends StatelessWidget {
         ),
       );
 
-  Widget _shimmerBox({required double width, required double height}) => Shimmer.fromColors(
+  Widget _shimmerBox({required double width, required double height}) =>
+      Shimmer.fromColors(
         baseColor: Colors.grey.shade800,
         highlightColor: Colors.grey.shade600,
         child: Container(
