@@ -375,9 +375,8 @@ class _PostItemWidgetState extends State<PostItemWidget>
                         if (reelsData.onPressSave != null) {
                           final result = await reelsData
                               .onPressSave!(reelsData.isSavedPost ?? false);
-                          if (result == true) {
-                            reelsData.isSavedPost =
-                                reelsData.isSavedPost == false;
+                          if (result != reelsData.isSavedPost) {
+                            reelsData.isSavedPost = result;
                             _updateState();
                           }
                           // unawaited(EventQueueProvider.instance.addEvent({
