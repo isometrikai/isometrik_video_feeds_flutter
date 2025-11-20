@@ -673,7 +673,7 @@ class ProductPosition {
   num? y;
 
   Map<String, dynamic> toJson() => {
-        'media_position': mediaPosition,
+        'position': mediaPosition,
         'x': x,
         'y': y,
       };
