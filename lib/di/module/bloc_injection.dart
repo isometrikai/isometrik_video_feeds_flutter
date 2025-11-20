@@ -33,6 +33,8 @@ class BlocInjection {
         IsmInjectionUtils.getUseCase<GetPostCommentUseCase>(),
         IsmInjectionUtils.getUseCase<CommentActionUseCase>(),
         IsmInjectionUtils.getUseCase<GetSocialProductsUseCase>(),
+        IsmInjectionUtils.getUseCase<GetMentionedUsersUseCase>(),
+        IsmInjectionUtils.getUseCase<RemoveMentionUseCase>(),
       ),
     );
 

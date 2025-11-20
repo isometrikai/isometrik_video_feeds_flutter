@@ -687,7 +687,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         initialMentionList: mentionList,
         postData: postData,
         myUserId: '',
-        socialPostBloc: _socialPostBloc,
         onTapUserProfile: (userId) {
           context.pop();
           _tabDataModelList[_currentIndex].onTapUserProfile?.call(userId);

@@ -22,6 +22,10 @@ class UseCaseInjection {
         GetTrendingPostUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<GetForYouPostUseCase>(() =>
         GetForYouPostUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<GetMentionedUsersUseCase>(() =>
+        GetMentionedUsersUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<RemoveMentionUseCase>(() =>
+        RemoveMentionUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<FollowUnFollowUserUseCase>(() =>
         FollowUnFollowUserUseCase(
             IsmInjectionUtils.getRepo<SocialRepository>()));

@@ -822,4 +822,63 @@ class SocialApiServiceProvider extends SocialApiService {
         },
         isLoading,
       );
+
+  @override
+  Future<ResponseModel> getMentionedUsers({
+    required bool isLoading,
+    required Header header,
+    required String postId,
+    required int page,
+    required int pageLimit,
+  }) async =>
+      await networkClient.makeRequest(
+        '${SocialApiEndPoints.getMentionedUsers}/$postId/mentioned-users',
+        NetworkRequestType.get,
+        null,
+        {
+          'page': page.toString(),
+          'page_size': pageLimit.toString(),
+        },
+        {
+          'Accept': AppConstants.headerAccept,
+          'Content-Type': AppConstants.headerContentType,
+          'authorization': header.accessToken,
+          'lan': header.language,
+          'currencySymbol': header.currencySymbol,
+          'currencyCode': header.currencyCode,
+          'platform': header.platForm.platformText.toString(),
+          'latitude': header.latitude.toString(),
+          'longitude': header.longitude.toString(),
+          'x-tenant-id': AppConstants.tenantId,
+          'x-project-id': AppConstants.projectId,
+        },
+        isLoading,
+      );
+  @override
+  Future<ResponseModel> removeMentionFromPost({
+    required bool isLoading,
+    required Header header,
+    required String postId,
+  }) async =>
+      await networkClient.makeRequest(
+        SocialApiEndPoints.deleteMention,
+        NetworkRequestType.delete,
+        null,
+        null,
+        {
+          'Accept': AppConstants.headerAccept,
+          'Content-Type': AppConstants.headerContentType,
+          'authorization': header.accessToken,
+          'lan': header.language,
+          'currencySymbol': header.currencySymbol,
+          'currencyCode': header.currencyCode,
+          'platform': header.platForm.platformText.toString(),
+          'latitude': header.latitude.toString(),
+          'longitude': header.longitude.toString(),
+          'x-tenant-id': AppConstants.tenantId,
+          'x-project-id': AppConstants.projectId,
+        },
+        isLoading,
+        pathSegments: [postId],
+      );
 }
