@@ -58,17 +58,19 @@ class TabDataModel {
     this.onTapCartIcon,
     this.placeHolderWidget,
     this.onTapUserProfile,
+    this.onPressSave,
     this.overlayPadding,
   });
 
   final String title;
   List<ReelsData> reelsDataList;
   final Future<List<ReelsData>> Function()? onLoadMore;
-  final Function(List<String>, String, String)? onTapCartIcon;
+  final Function(List<String> productIds, String postId, String userId)? onTapCartIcon;
   final Future<bool> Function()? onRefresh;
   final int? startingPostIndex;
   final PostSectionType postSectionType;
   Widget? placeHolderWidget;
-  void Function(TimeLineData)? onTapUserProfile;
+  void Function(String? userId)? onTapUserProfile;
+  final Future<bool> Function(bool isSavedPost, TimeLineData postData)? onPressSave;
   final EdgeInsetsGeometry? overlayPadding;
 }

@@ -172,7 +172,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                     final postList = state.timeLinePosts;
                     final reelDataList = postList
                         .map((post) =>
-                            _getReelData(post, PostSectionType.following))
+                            _getReelData(post, _tabDataModelList[i]))
                         .toList();
                     _tabDataModelList[i].reelsDataList = reelDataList;
                   }
@@ -181,7 +181,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                     final postList = state.forYouPosts;
                     final reelDataList = postList
                         .map((post) =>
-                            _getReelData(post, PostSectionType.forYou))
+                            _getReelData(post, _tabDataModelList[i]))
                         .toList();
                     _tabDataModelList[i].reelsDataList = reelDataList;
                   }
@@ -190,7 +190,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                     final postList = state.trendingPosts;
                     final reelDataList = postList
                         .map((post) =>
-                            _getReelData(post, PostSectionType.trending))
+                            _getReelData(post, _tabDataModelList[i]))
                         .toList();
                     _tabDataModelList[i].reelsDataList = reelDataList;
                   }
@@ -255,7 +255,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         allowImplicitScrolling: widget.allowImplicitScrolling,
         onPageChanged: widget.onPageChanged,
         reelsDataList: tabData.reelsDataList,
-        onLoadMore: () async => await _handleLoadMore(tabData.postSectionType),
+        onLoadMore: () async => await _handleLoadMore(tabData),
         onRefresh: () async {
           var result = false;
 
@@ -291,7 +291,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       );
 
   ReelsData _getReelData(
-          TimeLineData postData, PostSectionType postSectionType) =>
+          TimeLineData postData, TabDataModel tabData, ) =>
       ReelsData(
         postSetting: PostSetting(
           isProfilePicVisible: true,
@@ -320,7 +320,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           if (placeList.isListEmptyOrNull) return;
           if (placeList.length == 1) {
             _goToPlaceDetailsView(
-                postSectionType, placeList.first, TagType.place);
+                tabData.postSectionType, placeList.first, TagType.place);
           } else {
             // _showPlaceList(placeList, postSectionType);
           }
@@ -330,20 +330,18 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           if (mentionList.length == 1) {
             final mention = mentionList.first;
             if (mention.tag.isStringEmptyOrNull == false) {
-              _redirectToHashtag(mention.tag, postSectionType);
+              _redirectToHashtag(mention.tag, tabData.postSectionType);
               return null;
             } else {
-              /// TODO need to check here
-              // await _redirectToProfile(mention.userId ?? '', postSectionType);
-              // _resumePostList(postTabType);
+              tabData.onTapUserProfile?.call(mention.userId);
             }
           } else {
-            return _showMentionList(mentionList, postSectionType, postData);
+            return _showMentionList(mentionList, tabData.postSectionType, postData);
           }
           return mentionList;
         },
         postId: postData.id,
-        onCreatePost: () async => await _handleCreatePost(postSectionType),
+        onCreatePost: () async => await _handleCreatePost(tabData),
         tags: postData.tags,
         mediaMetaDataList:
             postData.media?.map(_getMediaMetaData).toList() ?? [],
@@ -361,20 +359,23 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         productCount: postData.tags?.products?.length ?? 0,
         description: postData.caption ?? '',
         onTapUserProfile: (isSelfProfile) {
-          debugPrint('onTapUserProfile: $isSelfProfile');
+          tabData.onTapUserProfile?.call(postData.user?.id);
         },
         onTapComment: (totalCommentsCount) async {
           final result = await _handleCommentAction(
-              postData.id ?? '', totalCommentsCount, postSectionType);
+              postData.id ?? '', totalCommentsCount, tabData.postSectionType);
           return result;
         },
         onPressMoreButton: () async {
-          final result = await _handleMoreOptions(postData);
+          final result = await _handleMoreOptions(postData, tabData);
           return result;
         },
         onPressLike: (isLiked) async => _handleLikeAction(isLiked, postData),
         onPressSave: (isSavedPost) async {
           try {
+            if (tabData.onPressSave != null) {
+              return tabData.onPressSave?.call(isSavedPost, postData) ?? isSavedPost;
+            }
             final completer = Completer<bool>();
             _socialPostBloc.add(SavePostEvent(
               postId: postData.id ?? '',
@@ -460,21 +461,21 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   /// Handles loading more posts for infinite scrolling
   Future<List<ReelsData>> _handleLoadMore(
-      PostSectionType postSectionType) async {
+      TabDataModel tabData) async {
     try {
       final completer = Completer<List<TimeLineData>>();
       _socialPostBloc.add(GetMorePostEvent(
         isLoading: false,
         isPagination: true,
         isRefresh: false,
-        postSectionType: postSectionType,
+        postSectionType: tabData.postSectionType,
         memberUserId: '',
         onComplete: completer.complete,
       ));
       final timeLinePostList = await completer.future;
       if (timeLinePostList.isEmpty) return [];
       final timeLineReelDataList = timeLinePostList
-          .map((post) => _getReelData(post, postSectionType))
+          .map((post) => _getReelData(post, tabData))
           .toList();
       return timeLineReelDataList;
     } catch (e) {
@@ -484,14 +485,14 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   }
 
   // Interaction handlers
-  Future<ReelsData?> _handleCreatePost(PostSectionType postSectionType) async {
+  Future<ReelsData?> _handleCreatePost(TabDataModel tabData) async {
     final completer = Completer<ReelsData>();
     final postDataModelString =
         await IsrAppNavigator.goToCreatePostView(context);
     if (postDataModelString.isStringEmptyOrNull == false) {
       final postDataModel = TimeLineData.fromMap(
           jsonDecode(postDataModelString!) as Map<String, dynamic>);
-      final reelsData = _getReelData(postDataModel, postSectionType);
+      final reelsData = _getReelData(postDataModel, tabData);
       completer.complete(reelsData);
     }
     return completer.future;
@@ -689,7 +690,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         socialPostBloc: _socialPostBloc,
         onTapUserProfile: (userId) {
           context.pop();
-          _tabDataModelList[_currentIndex].onTapUserProfile?.call(postData);
+          _tabDataModelList[_currentIndex].onTapUserProfile?.call(userId);
         },
       ),
     );
@@ -723,9 +724,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   }
 
   /// Handles the more options menu for a post
-  Future<dynamic> _handleMoreOptions(TimeLineData postDataModel) async {
+  Future<dynamic> _handleMoreOptions(TimeLineData postDataModel, TabDataModel tabData) async {
     try {
       return await _showMoreOptionsDialog(
+        tabData: tabData,
         onPressReport: ({String message = '', String reason = ''}) async {
           final result = await _showReportPostDialog(context);
 
@@ -797,6 +799,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     Future<String> Function()? onEditPost,
     VoidCallback? onShowPostInsight,
     bool? isSelfProfile,
+    required TabDataModel tabData,
   }) async {
     final completer = Completer<dynamic>();
     await Utility.showBottomSheet(
@@ -830,7 +833,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
             if (postDataString.isStringEmptyOrNull == false) {
               final postData = TimeLineData.fromMap(
                   jsonDecode(postDataString) as Map<String, dynamic>);
-              final reelData = _getReelData(postData, _currentPostSectionType);
+              final reelData = _getReelData(postData, tabData);
               completer.complete(reelData);
             }
             return postDataString;
