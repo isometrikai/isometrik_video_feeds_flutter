@@ -664,7 +664,7 @@ class ProductPosition {
 
   factory ProductPosition.fromJson(Map<String, dynamic> json) =>
       ProductPosition(
-        mediaPosition: json['media_position'] as num? ?? 0,
+        mediaPosition: json['position'] as num? ?? 0,
         x: json['x'] as num? ?? 0,
         y: json['y'] as num? ?? 0,
       );
