@@ -37,6 +37,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     on<FollowUserEvent>(_followUser);
     on<GetSocialProductsEvent>(_getSocialProducts);
     on<GetPostCommentsEvent>(_getPostComments);
+    on<GetPostCommentReplyEvent>(_getPostCommentReplies);
     on<CommentActionEvent>(_doActionOnComment);
     on<LoadPostsEvent>(_loadPosts);
     on<GetMorePostEvent>(_getMorePost);
@@ -84,6 +85,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   bool _hasForYouMoreData = true;
   bool _isForYouLoadingMore = false;
   final _forYouPageSize = 20;
+  var _commentPage = 1;
 
   final List<ProductDataModel> _detailsProductList = [];
 
@@ -455,63 +457,177 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     _isDataLoading = false;
   }
 
-  FutureOr<void> _getPostComments(
-      GetPostCommentsEvent event, Emitter<SocialPostState> emit) async {
+  FutureOr<void> _getPostComments(GetPostCommentsEvent event, Emitter<SocialPostState> emit) async {
     if (event.isLoading == true) {
       emit(LoadingPostComment());
     }
+    _commentPage = event.isPagination ? _commentPage + 1 : 1;
     final apiResult = await _getPostCommentUseCase.executeGetPostComment(
       postId: event.postId,
-      isLoading: false,
+      isLoading: event.isLoading == true,
+      page: _commentPage,
+      pageLimit: 20,
     );
     final postCommentsList = apiResult.data?.data;
+
+    if (event.createdComment != null &&
+        event.createdComment?.comment?.isNotEmpty == true &&
+        event.createdComment?.parentCommentId?.isNotEmpty != true) {
+      final created = event.createdComment!;
+      final alreadyExists = postCommentsList?.firstOrNull?.comment == event.createdComment?.comment;
+
+      if (!alreadyExists) {
+        // Insert at the beginning only if it doesn't already exist
+        postCommentsList?.insert(0, created);
+      }
+    }
+
     final myUserId = await _localDataUseCase.getUserId();
-    emit(LoadPostCommentState(
-      postCommentsList: postCommentsList,
+    if (event.onComplete != null) {
+      event.onComplete?.call(postCommentsList ?? []);
+    } else {
+      emit(LoadPostCommentState(
+        postCommentsList: postCommentsList,
+        myUserId: myUserId,
+      ));
+    }
+  }
+
+  FutureOr<void> _getPostCommentReplies(
+      GetPostCommentReplyEvent event, Emitter<SocialPostState> emit) async {
+    if (event.isLoading == true) {
+      emit(LoadingPostCommentReplies());
+    }
+    final apiResult = await _getPostCommentUseCase.executeGetPostComment(
+      postId: event.postId,
+      parentCommitId: event.parentComment.id,
+      isLoading: false,
+    );
+    final postCommentRepliesList = apiResult.data?.data;
+    final myUserId = await _localDataUseCase.getUserId();
+    emit(LoadPostCommentRepliesState(
+      postCommentRepliesList: postCommentRepliesList,
       myUserId: myUserId,
     ));
   }
 
-  Future<void> _doActionOnComment(
-      CommentActionEvent event, Emitter<SocialPostState> emit) async {
+  Future<void> _doActionOnComment(CommentActionEvent event, Emitter<SocialPostState> emit) async {
     final commentRequest = CommentRequest(
-      commentId: event.commentId,
-      commentAction: event.commentAction,
-      postId: event.postId,
-      userType: event.commentAction == CommentAction.comment ? 1 : null,
-      comment: event.replyText,
-      postedBy: event.postedBy,
-      parentCommentId: event.parentCommentId,
-      reason: event.reportReason,
-      message: event.commentMessage,
-      commentIds: event.commentIds,
-    );
+            commentId: event.commentId,
+            commentAction: event.commentAction,
+            postId: event.postId,
+            userType: event.commentAction == CommentAction.comment ? 1 : null,
+            comment: event.replyText,
+            postedBy: event.postedBy,
+            parentCommentId: event.parentCommentId,
+            reason: event.reportReason,
+            message: event.commentMessage,
+            commentIds: event.commentIds,
+            tags: event.commentTags)
+        .also((_) => debugPrint('comment: comment req tag: ${_.toJson()}'));
+    final myUserId = await _localDataUseCase.getUserId();
+    final commentList = event.postCommentList?.toList();
+    CommentDataItem? comment;
+    if (event.commentAction == CommentAction.comment) {
+      comment = CommentDataItem(
+        commentedBy: await _localDataUseCase.getUserName(),
+        comment: commentRequest.comment,
+        postId: commentRequest.postId,
+        commentedByUserId: myUserId,
+        parentCommentId: commentRequest.parentCommentId,
+        timeStamp: DateTime.now().millisecondsSinceEpoch,
+        commentedOn: DateTime.now(),
+        likeCount: 0,
+        status: IsrTranslationFile.posting,
+        tags: CommentTags.fromJson(commentRequest.tags ?? {}),
+      );
+
+      if (commentList != null) {
+        if (comment.parentCommentId != null && comment.parentCommentId!.isNotEmpty) {
+          // Find parent comment
+          final parentComment = commentList.firstWhere(
+            (element) => element.id == comment?.parentCommentId,
+            orElse: () => throw Exception('Parent comment not found'),
+          );
+
+          // Ensure childComments list exists
+          parentComment.childComments ??= [];
+
+          // Insert reply at the beginning
+          parentComment.childComments!.insert(0, comment);
+          parentComment.childCommentCount ??= 0;
+          parentComment.childCommentCount = parentComment.childCommentCount! + 1;
+        } else {
+          // Top-level comment → insert at the beginning
+          commentList.insert(0, comment);
+        }
+
+        emit(
+          LoadPostCommentState(
+            postCommentsList: commentList,
+            myUserId: myUserId,
+          ),
+        );
+      }
+      // ✅ Delay before calling API
+      Future.delayed(const Duration(seconds: 2), () {
+        add(
+          GetPostCommentsEvent(
+              postId: event.postId ?? '', isLoading: false, createdComment: comment),
+        );
+      });
+    }
     final apiResult = await _commentUseCase.executeCommentAction(
-      isLoading: true,
+      isLoading: event.isLoading ?? true,
       commentRequest: commentRequest.toJson(),
     );
     if (apiResult.isSuccess) {
       if (event.commentAction == CommentAction.comment) {
-        add(GetPostCommentsEvent(
-          postId: event.postId ?? '',
-          isLoading: true,
-        ));
-      } else {
-        if (event.commentAction == CommentAction.report) {
-          ErrorHandler.showAppError(
-            appError: apiResult.error,
-            message: IsrTranslationFile.commentReportedSuccessfully,
-            isNeedToShowError: true,
-            errorViewType: ErrorViewType.snackBar,
+        comment?.status = IsrTranslationFile.inReview;
+        if (commentList != null) {
+          emit(
+            LoadPostCommentState(
+              postCommentsList: commentList,
+              myUserId: myUserId,
+            ),
           );
         }
+        // ✅ Delay before calling API
+        Future.delayed(const Duration(seconds: 2), () {
+          add(
+            GetPostCommentsEvent(
+                postId: event.postId ?? '', isLoading: false, createdComment: comment),
+          );
+        });
+      } else if (event.commentAction == CommentAction.report) {
+        ErrorHandler.showAppError(
+          appError: apiResult.error,
+          message: IsrTranslationFile.commentReportedSuccessfully,
+          isNeedToShowError: true,
+          errorViewType: ErrorViewType.snackBar,
+        );
+      } else if (event.commentAction == CommentAction.delete &&
+          event.commentId?.trim().isNotEmpty == true) {
+        final commentList = event.postCommentList?.toList() ?? [];
+        if (event.parentCommentId?.trim().isNotEmpty == true) {
+          final parentComment =
+              commentList.firstWhere((comment) => comment.id == event.parentCommentId);
+          parentComment.childComments?.removeWhere((comment) => comment.id == event.commentId);
+        } else {
+          commentList.removeWhere((comment) => comment.id == event.commentId);
+        }
+        emit(
+          LoadPostCommentState(
+            postCommentsList: commentList,
+            myUserId: myUserId,
+          ),
+        );
       }
     } else {
       ErrorHandler.showAppError(
-        appError: apiResult.error,
-        isNeedToShowError: true,
-        errorViewType: ErrorViewType.dialog,
-      );
+          appError: apiResult.error,
+          isNeedToShowError: apiResult.statusCode == 500,
+          errorViewType: ErrorViewType.dialog);
     }
     if (event.onComplete != null) {
       event.onComplete?.call(event.commentId ?? '', apiResult.isSuccess);

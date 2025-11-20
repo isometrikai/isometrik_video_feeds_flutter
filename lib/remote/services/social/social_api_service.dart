@@ -89,7 +89,10 @@ abstract class SocialApiService extends BaseService {
   Future<ResponseModel> getPostComments({
     required bool isLoading,
     required String postId,
+    required String? parentCommitId,
     required Header header,
+    int? page,
+    int? pageLimit,
   });
 
   Future<ResponseModel> getSocialProducts({

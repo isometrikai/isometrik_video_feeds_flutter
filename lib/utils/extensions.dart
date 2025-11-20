@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
+import 'package:ism_video_reel_player/di/ism_injection_utils.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:video_compress/video_compress.dart';
 
@@ -420,3 +421,50 @@ extension MapSafeGetters on Map<String, dynamic> {
           [Map<String, dynamic> defaultValue = const {}]) =>
       _mapOrNull(key) ?? defaultValue;
 }
+
+extension BlocSafeGetter on BuildContext {
+  T getOrCreateBloc<T extends BlocBase<Object>>() {
+    T? bloc;
+
+    // Try getting from context
+    try {
+      bloc = read<T>();
+      if (bloc.isClosed) bloc = null;
+    } catch (_) {
+      bloc = null;
+    }
+
+    // If missing or closed → create from DI
+    bloc ??= IsmInjectionUtils.getBloc<T>();
+
+    return bloc;
+  }
+
+  Widget attachBlocIfNeeded<T extends BlocBase<Object>>({
+    required Widget child,
+  }) {
+    T? bloc;
+
+    // Try reading the bloc from the widget tree
+    try {
+      bloc = read<T>();
+    } catch (_) {
+      bloc = null;
+    }
+
+    // If bloc exists but is closed → ignore it
+    if (bloc != null && bloc.isClosed) {
+      bloc = null;
+    }
+
+    // If bloc missing or closed → create new from DI
+    bloc ??= IsmInjectionUtils.getBloc<T>();
+
+    // Return child wrapped with provider
+    return BlocProvider<T>.value(
+      value: bloc,
+      child: child,
+    );
+  }
+}
+

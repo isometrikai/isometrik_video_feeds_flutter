@@ -57,7 +57,7 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
   final List<HashTagData> _hashTagResults = [];
   bool _isSearching = false;
   String _currentSearchTerm = '';
-  SearchUserBloc get _searchUserBloc => BlocProvider.of<SearchUserBloc>(context);
+  SearchUserBloc get _searchUserBloc => context.getOrCreateBloc();
   final List<CommentMentionData> _addedHashtags = [];
   final List<CommentMentionData> _addedMentions = [];
   bool _ignoreNextChange = false;

@@ -27,7 +27,7 @@ class CommentsBottomSheet extends StatefulWidget {
 }
 
 class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
-  final _socialBloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
+  SocialPostBloc get _socialBloc => context.getOrCreateBloc();
   final _postCommentList = <CommentDataItem>[];
   var _myUserId = '';
   var _isCommentsLoaded = false;
@@ -105,6 +105,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
               currentState is LoadPostCommentState ||
               currentState is LoadingPostComment,
           listener: (context, state) {
+            debugPrint('comment: state: $state comments : ${_postCommentList.map((_) => '${_.id}, ${_.comment}')}');
             if (state is LoadPostCommentState) {
               _isCommentsLoaded = true;
               _myUserId = state.myUserId ?? '';
@@ -280,7 +281,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                 comment.showReply = true;
                               });
                               if (comment.id != null &&
-                                  comment.childComments?.isNotEmpty != true) {
+                                  comment.childComments.isEmptyOrNull) {
                                 _socialBloc.add(GetPostCommentReplyEvent(
                                     isLoading: true,
                                     parentComment: comment,
@@ -427,22 +428,11 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                         '${comment.comment ?? ''}',
                         IsrStyles.primaryText14,
                         comment.tags,
-                        onUsernameTap: (username) {
-                          /// TODO need to navigate to user profile
-                          // Navigate to social post view for username mention
-                          // IsmInjectionUtils.getRouteManagement().goToSocialPostView(
-                          //   tagType: TagType.mention,
-                          //   tagValue: username,
-                          // );
+                        onUsernameTap: (userId) {
+                          widget.onTapProfile?.call(userId);
                         },
                         onHashtagTap: (hashtag) {
-                          /// TODO need to navigate to user profile
-
-                          // Navigate to social post view for hashtag
-                          // IsmInjectionUtils.getRouteManagement().goToSocialPostView(
-                          //   tagType: TagType.hashtag,
-                          //   tagValue: hashtag,
-                          // );
+                          widget.onTapHasTag?.call(hashtag);
                         },
                       ),
                     ],
@@ -783,6 +773,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                             replyText: value.text,
                             commentAction: CommentAction.comment,
                             postedBy: _myUserId,
+                            postCommentList: _postCommentList,
                             commentTags: {
                               'hashtags':
                                   tagMentions.map((e) => e.toJson()).toList(),

@@ -426,7 +426,10 @@ class SocialApiServiceProvider extends SocialApiService {
   Future<ResponseModel> getPostComments({
     required bool isLoading,
     required String postId,
+    required String? parentCommitId,
     required Header header,
+    int? page = 1,
+    int? pageLimit = 10,
   }) async =>
       await networkClient.makeRequest(
         SocialApiEndPoints.getPostComments,
@@ -434,6 +437,9 @@ class SocialApiServiceProvider extends SocialApiService {
         null,
         {
           'post_id': postId,
+          'page': page.toString(),
+          'page_size': pageLimit.toString(),
+          if (parentCommitId != null) 'parent_id': parentCommitId,
         },
         {
           'Accept': AppConstants.headerAccept,

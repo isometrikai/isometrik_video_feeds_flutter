@@ -20,11 +20,9 @@ class CommentRequest {
         postedBy: json['postedBy'] as String? ?? '',
         comment: json['content'] as String? ?? '',
         isNewLike: json['isNewLike'] as bool?,
-        commentAction:
-            json['commentAction'] as CommentAction? ?? CommentAction.like,
-        userTags: json['userTags'] == null
-            ? []
-            : List<dynamic>.from((json['userTags'] as List).map((x) => x)),
+        commentAction: json['commentAction'] as CommentAction? ?? CommentAction.like,
+        userTags: json['userTags'] == null ? [] : List<dynamic>.from((json['userTags'] as List).map((x) => x)),
+        tags: json['tags'] == null ? null : Map<String, dynamic>.from(json['tags'] as Map),
       );
 
   CommentRequest({
@@ -41,6 +39,7 @@ class CommentRequest {
     this.reason,
     this.message,
     this.commentIds,
+    this.tags,
   });
 
   num? userType;
@@ -56,6 +55,7 @@ class CommentRequest {
   String? reason;
   String? message;
   List<String>? commentIds;
+  Map<String, dynamic>? tags;
 
   Map<String, dynamic> toJson() => {
         'userType': userType,
@@ -66,11 +66,11 @@ class CommentRequest {
         'content': comment,
         'commentAction': commentAction,
         'isNewLike': isNewLike,
-        'userTags':
-            userTags == null ? [] : List<dynamic>.from(userTags!.map((x) => x)),
+        'userTags': userTags == null ? [] : List<dynamic>.from(userTags!.map((x) => x)),
         'parent_id': parentCommentId,
         'reason': reason,
         'message': message,
         'commentIds': commentIds,
+        'tags': tags,
       };
 }

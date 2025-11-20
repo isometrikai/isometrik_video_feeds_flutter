@@ -190,5 +190,6 @@ class IsrTranslationFile {
   static const String startTypingToFindPeopleToTag = 'Start typing to find people to tag';
   static const String noLocationFound = 'No Location Found';
   static const String trySearchingWithADifferentName = 'Try searching with a different name';
-
+  static const String posting = 'Posting...';
+  static const String inReview = 'InReview';
 }
