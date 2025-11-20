@@ -37,6 +37,8 @@ abstract class IsrLocalStorageRepository extends BaseRepository {
 
   Future<String> getUserInfo();
 
+  Future<String> getUserName();
+
   void saveLanguage(String value);
 
   void saveIsLoggedIn(bool value);

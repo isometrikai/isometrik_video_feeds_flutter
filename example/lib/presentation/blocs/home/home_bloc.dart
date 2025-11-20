@@ -115,6 +115,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         firstName: firstName,
         lastName: lastName,
       ),
+      googleServiceJsonPath: AssetConstants.googleServiceJson,
+      getCurrentBuildContext: () => exNavigatorKey.currentContext,
       rudderStackDataPlaneUrl: '',
       rudderStackWriteKey: '',
       defaultHeaders: {

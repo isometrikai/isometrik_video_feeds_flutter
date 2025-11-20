@@ -9,6 +9,7 @@ class IsrTranslationFile {
   static const String yes = 'Yes';
   static const String no = 'No';
   static const String ok = 'Ok';
+  static const String next = 'Next';
   static const String cancel = 'Cancel';
   static const String continues = 'Continue';
   static const String alert = 'Alert';
@@ -28,6 +29,7 @@ class IsrTranslationFile {
   static const String category = 'Category';
   static const String selectCategory = 'Select Category';
   static const String allowComments = 'Allow Comments';
+  static const String allowSave = 'Allow Save';
   static const String allowDownloads = 'Allow Downloads';
   static const String post = 'Post';
   static const String sdkNotInitialized = 'sdk not initialized';
@@ -56,11 +58,13 @@ class IsrTranslationFile {
   static const writeDescription = 'Write a description';
   static const cover = 'Cover';
   static const editCover = 'Edit Cover';
+  static const addCover = 'Add Cover';
   static const whenToPost = 'When to post';
   static const now = 'Now';
   static const schedule = 'Schedule';
   static const schedulePost = 'Schedule Post';
   static const linkProductsToPost = 'Link Products to Post';
+  static const linkProducts = 'Link Products';
   static const noProductsLinkedYet = 'No products linked yet!';
   static const connectProductsToPost =
       'Connect products to posts for better visibility and engagement';
@@ -148,4 +152,43 @@ class IsrTranslationFile {
   static const String shares = 'Shares';
   static const String accountEngaged = 'Account Engaged';
   static const String follows = 'Follows';
+  static const String pleaseSelectMinimumResolution =
+      'Please select media with minimum resolution of 240 x 240 pixels';
+  static const String allFilesUploadedSuccessfully = 'All files uploaded successfully';
+  static const String uploadingMediaFiles = 'Uploading Media Files';
+  static const String uploadingCoverFiles = 'Uploading Cover Files';
+  static const String uploadingPreviewFiles = 'Uploading Preview Files';
+  static const String uploadComplete = 'Upload Complete';
+  static const String successfullyUploaded = 'Successfully Uploaded';
+  static const String yourMediaFilesHaveBeenUploadedSuccessfully =
+      'Your media files have been uploaded successfully';
+  static const String tagPeople = 'Tag People';
+  static const String tagLocation = 'Tag location';
+  static const String people = 'People';
+  static const String addLocation = 'Add Location';
+  static const String addCaption = 'Add a caption';
+  static const String afterTalentsBack = 'After Talents Back';
+  static const String talentsBack = 'Talents Back';
+  static const String link = 'Link';
+  static const String unLink = 'Unlink';
+  static const String linked = 'Linked';
+  static const String saveChanges = 'Save changes';
+  static const String outOfStock = 'Out of stock';
+  static const String notifyMe = 'Notify me';
+  static const String earn = 'Earn';
+  static const String talents = 'talents';
+  static const String choosePhoto = 'Choose photo';
+  static const String chooseVideo = 'Choose video';
+  static const String taggedPeople = 'Tagged People';
+  static const String listOfPeopleLinkedToThePost = 'List of people linked to the post';
+  static const String search = 'search';
+  static const String noPeopleFound = 'No people found';
+  static const String selectedPeople = 'Selected People';
+  static const String noPeopleSelected = 'No people selected';
+  static const String searchForPeople = 'Search for people';
+  static const String noUserFound = 'No User Found';
+  static const String startTypingToFindPeopleToTag = 'Start typing to find people to tag';
+  static const String noLocationFound = 'No Location Found';
+  static const String trySearchingWithADifferentName = 'Try searching with a different name';
+
 }

@@ -39,7 +39,11 @@ class AppConstants {
   static const String cloudinaryThumbnailFolder = 'thumbnail/folder/';
 
   static const bool isCompressionEnable = true;
-  static const bool isMultipleMediaSelectionEnabled = false;
+  static const bool isMultipleMediaSelectionEnabled = true;
+  static const bool isForYouPostEnable = true;
+  static const int imageMediaLimit = 10;
+  static const int videoMediaLimit = 10;
+  static const int totalMediaLimit = 10;
 
   static const List<String> restrictedWords = [
     'null',

@@ -17,3 +17,5 @@ export 'video_cache_manager.dart';
 export 'video_player_factory.dart';
 export 'video_player_interface.dart';
 export 'widgets/widgets.dart';
+export 'tag_people/tag_people.dart';
+export 'search_user/search_user.dart';

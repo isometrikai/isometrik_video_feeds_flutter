@@ -15,6 +15,9 @@ import 'package:ism_video_reel_player/utils/utils.dart';
 class IsrVideoReelConfig {
   static BuildContext? buildContext;
   static var isSdkInitialize = false;
+  static BuildContext? Function()? getBuildContext;
+  static String? googleServiceJsonPath;
+
 
   /// Helper method to check if context is available
   static bool get isContextAvailable => buildContext != null;
@@ -25,11 +28,15 @@ class IsrVideoReelConfig {
     required String rudderStackDataPlaneUrl,
     UserInfoClass? userInfoClass,
     required Map<String, dynamic> defaultHeaders,
+    String? googleServiceJsonPath,
+    BuildContext? Function()? getCurrentBuildContext,
   }) async {
     if (isSdkInitialize) {
       await _saveUserInformation(userInfoClass: userInfoClass);
       return;
     }
+    IsrVideoReelConfig.googleServiceJsonPath = googleServiceJsonPath;
+    getBuildContext = getCurrentBuildContext;
     AppUrl.appBaseUrl = baseUrl;
     WidgetsFlutterBinding.ensureInitialized();
     await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
@@ -53,8 +60,16 @@ class IsrVideoReelConfig {
     final userInfoString = jsonEncode(userInfoClass);
     await localStorageManager.saveValue(
         LocalStorageKeys.userInfo, userInfoString, SavedValueDataType.string);
-    await localStorageManager.saveValue(LocalStorageKeys.userId,
-        userInfoClass?.userId, SavedValueDataType.string);
+    await localStorageManager.saveValue(
+        LocalStorageKeys.userId, userInfoClass?.userId, SavedValueDataType.string);
+    await localStorageManager.saveValue(
+        LocalStorageKeys.userName, userInfoClass?.userName, SavedValueDataType.string);
+    await localStorageManager.saveValue(
+        LocalStorageKeys.firstName, userInfoClass?.firstName, SavedValueDataType.string);
+    await localStorageManager.saveValue(
+        LocalStorageKeys.lastName, userInfoClass?.lastName, SavedValueDataType.string);
+    await localStorageManager.saveValue(
+        LocalStorageKeys.profilePic, userInfoClass?.profilePic, SavedValueDataType.string);
   }
 
   static void precacheVideos(List<String> mediaUrls) async {

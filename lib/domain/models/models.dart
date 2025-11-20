@@ -1,4 +1,6 @@
 export 'isr_reels_properties.dart';
+export 'media_info_class.dart';
+export 'post_attribute_class.dart';
 export 'post_info_class.dart';
 export 'reels_data.dart';
 export 'request/request.dart';

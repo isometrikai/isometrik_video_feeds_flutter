@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/di/di.dart';
-import 'package:ism_video_reel_player/domain/models/response/timeline_response.dart';
+import 'package:ism_video_reel_player/domain/models/models.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
@@ -82,15 +82,99 @@ class IsrAppNavigator {
     BuildContext context, {
     TransitionType? transitionType,
   }) async {
-    final page = BlocProvider<TagDetailsBloc>(
-      create: (_) => IsmInjectionUtils.getBloc<TagDetailsBloc>(),
-      child: const SizedBox(),
+    final page = MultiBlocProvider(
+      providers: [
+        BlocProvider<CreatePostBloc>(
+          create: (_) => IsmInjectionUtils.getBloc<CreatePostBloc>(),
+        ),
+        BlocProvider<SearchUserBloc>(
+          create: (_) => IsmInjectionUtils.getBloc<SearchUserBloc>(),
+        ),
+        BlocProvider<UploadProgressCubit>(
+          create: (_) => IsmInjectionUtils.getBloc<UploadProgressCubit>(),
+        ),
+      ],
+      child: const CreatePostMultimediaWrapper(),
     );
 
-    final result = await Navigator.of(context).push<String>(
+    final result =
+        await Navigator.of(context, rootNavigator: true).push<String>(
       _buildRoute(page: page, transitionType: transitionType),
     );
     return result;
+  }
+
+  static Future<String?> goToPostAttributionView(
+      BuildContext context, {
+        PostAttributeClass? postAttributeClass,
+        bool isEditMode = false,
+        TransitionType? transitionType,
+      }) async {
+    final page = MultiBlocProvider(
+      providers: [
+        BlocProvider.value(value: context.read<CreatePostBloc>()),
+        BlocProvider.value(value: context.read<SearchUserBloc>()),
+        BlocProvider.value(value: context.read<UploadProgressCubit>()),
+      ],
+      child: PostAttributeView(
+        postAttributeClass: postAttributeClass,
+        isEditMode: isEditMode,
+      ),
+    );
+
+    final result =
+    await Navigator.of(context, rootNavigator: true).push<String>(
+      _buildRoute(page: page, transitionType: transitionType),
+    );
+    return result;
+  }
+
+  static Future<List<MentionData>?> goToTagPeopleScreen(
+      BuildContext context, {
+        List<MentionData>? mentionDataList,
+        List<MediaData>? mediaDataList,
+        TransitionType? transitionType,
+      }) async {
+    final page = MultiBlocProvider(
+      providers: [
+        BlocProvider.value(value: context.read<CreatePostBloc>()),
+        BlocProvider.value(value: context.read<SearchUserBloc>()),
+        BlocProvider.value(value: context.read<UploadProgressCubit>()),
+      ],
+      child: TagPeopleScreen(
+        mentionDataList: mentionDataList ?? [],
+        mediaDataList: mediaDataList ?? [],
+      ),
+    );
+
+    final result =
+    await Navigator.of(context, rootNavigator: true).push<List<MentionData>?>(
+      _buildRoute(page: page, transitionType: transitionType),
+    );
+    return result;
+  }
+
+  static Future<List<SocialUserData>> goToSearchUserScreen(
+      BuildContext context, {
+        List<SocialUserData>? socialUserList,
+        TransitionType? transitionType,
+      }) async {
+    final page = MultiBlocProvider(
+      providers: [
+        BlocProvider.value(value: context.read<CreatePostBloc>()),
+        BlocProvider.value(value: context.read<SearchUserBloc>()),
+        BlocProvider.value(value: context.read<UploadProgressCubit>()),
+      ],
+      child: SearchUserView(
+        socialUserList: socialUserList ?? [],
+      ),
+    );
+
+    final result =
+    await Navigator.of(context, rootNavigator: true).push<List<SocialUserData>?>(
+      _buildRoute(page: page, transitionType: transitionType),
+    );
+    return result?.toList() ?? [];
   }
 
   static void goToPostInsight(
@@ -107,7 +191,7 @@ class IsrAppNavigator {
       ),
     );
 
-    Navigator.of(context).push(
+    Navigator.of(context, rootNavigator: true).push(
       _buildRoute(page: page, transitionType: transitionType),
     );
   }

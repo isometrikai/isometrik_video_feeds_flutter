@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -56,7 +57,7 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
   final List<HashTagData> _hashTagResults = [];
   bool _isSearching = false;
   String _currentSearchTerm = '';
-  // final _searchUserBloc = IsmInjectionUtils.getBloc<SearchUserBloc>();
+  SearchUserBloc get _searchUserBloc => BlocProvider.of<SearchUserBloc>(context);
   final List<CommentMentionData> _addedHashtags = [];
   final List<CommentMentionData> _addedMentions = [];
   bool _ignoreNextChange = false;
@@ -317,19 +318,18 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
 
     final completer = Completer<void>();
 
-    /// TODO complete this
-    // _searchUserBloc.add(
-    //   SearchUserEvent(
-    //     searchText: query,
-    //     isLoading: false,
-    //     onComplete: (userList) {
-    //       completer.complete();
-    //       if (!_isHashtagSearchActive && query == _currentSearchTerm) {
-    //         _setResult(userList);
-    //       }
-    //     },
-    //   ),
-    // );
+    _searchUserBloc.add(
+      SearchUserEvent(
+        searchText: query,
+        isLoading: false,
+        onComplete: (userList) {
+          completer.complete();
+          if (!_isHashtagSearchActive && query == _currentSearchTerm) {
+            _setResult(userList);
+          }
+        },
+      ),
+    );
   }
 
   Future<void> _searchHashtags(String query) async {
@@ -348,19 +348,18 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
 
     final completer = Completer<void>();
 
-    /// TODO complete this
-    // _searchUserBloc.add(
-    //   SearchTagEvent(
-    //     searchText: query,
-    //     isLoading: false,
-    //     onComplete: (tagList) {
-    //       completer.complete();
-    //       if (_isHashtagSearchActive && query == _currentSearchTerm) {
-    //         _setHashtagResult(tagList, query);
-    //       }
-    //     },
-    //   ),
-    // );
+    _searchUserBloc.add(
+      SearchTagEvent(
+        searchText: query,
+        isLoading: false,
+        onComplete: (tagList) {
+          completer.complete();
+          if (_isHashtagSearchActive && query == _currentSearchTerm) {
+            _setHashtagResult(tagList, query);
+          }
+        },
+      ),
+    );
   }
 
   void _setResult(List<SocialUserData> userList) {

@@ -8,6 +8,7 @@ class LocalStorageKeys {
   static const String tokenType = 'tokenType';
   static const String isLoggedIn = 'isLoggedIn';
   static const String userId = 'userId';
+  static const String userName = 'userName';
   static const String currencySymbol = 'currencySymbol';
   static const String currencyCode = 'currencyCode';
   static const String latitude = 'latitude';
