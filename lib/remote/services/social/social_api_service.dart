@@ -165,4 +165,18 @@ abstract class SocialApiService extends BaseService {
     required int page,
     required int pageLimit,
   });
+
+  Future<ResponseModel> getMentionedUsers({
+    required bool isLoading,
+    required Header header,
+    required String postId,
+    required int page,
+    required int pageLimit,
+  });
+
+  Future<ResponseModel> removeMentionFromPost({
+    required bool isLoading,
+    required Header header,
+    required String postId,
+  });
 }

@@ -147,4 +147,16 @@ abstract class SocialRepository extends BaseRepository {
     required int page,
     required int pageLimit,
   });
+
+  Future<CustomResponse<SearchUserResponse?>> getMentionedUsers({
+    required bool isLoading,
+    required String postId,
+    required int page,
+    required int pageLimit,
+  });
+
+  Future<CustomResponse<ResponseClass?>> removeMentionFromPost({
+    required bool isLoading,
+    required String postId,
+  });
 }

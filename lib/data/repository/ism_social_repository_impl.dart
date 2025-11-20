@@ -477,4 +477,43 @@ class SocialRepositoryImpl implements SocialRepository {
       rethrow;
     }
   }
+
+  @override
+  Future<CustomResponse<SearchUserResponse?>> getMentionedUsers({
+    required bool isLoading,
+    required String postId,
+    required int page,
+    required int pageLimit,
+  }) async {
+    try {
+      final header = await _dataSource.getHeader();
+      final response = await _apiService.getMentionedUsers(
+        isLoading: isLoading,
+        header: header,
+        postId: postId,
+        page: page,
+        pageLimit: pageLimit,
+      );
+      return _socialMapper.mapSearchUserResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+  @override
+  Future<CustomResponse<ResponseClass?>> removeMentionFromPost({
+    required bool isLoading,
+    required String postId,
+  }) async {
+    try {
+      final header = await _dataSource.getHeader();
+      final response = await _apiService.removeMentionFromPost(
+        isLoading: isLoading,
+        header: header,
+        postId: postId,
+      );
+      return _mapper.mapResponseData(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

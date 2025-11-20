@@ -25,6 +25,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     this._getPostCommentUseCase,
     this._commentUseCase,
     this._getSocialProductsUseCase,
+    this._getMentionedUsersUseCase,
+    this._removeMentionUseCase,
   ) : super(PostLoadingState(isLoading: true)) {
     on<StartPost>(_onStartPost);
     on<LoadPostData>(_onLoadHomeData);
@@ -42,6 +44,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     on<LoadPostsEvent>(_loadPosts);
     on<GetMorePostEvent>(_getMorePost);
     on<GetPostInsightDetailsEvent>(_getPostInsightDetails);
+    on<GetMentionedUserEvent>(_getMentionedUser);
+    on<RemoveMentionEvent>(_removeMention);
   }
 
   final IsmLocalDataUseCase _localDataUseCase;
@@ -57,6 +61,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   final GetPostCommentUseCase _getPostCommentUseCase;
   final CommentActionUseCase _commentUseCase;
   final GetSocialProductsUseCase _getSocialProductsUseCase;
+  final GetMentionedUsersUseCase _getMentionedUsersUseCase;
+  final RemoveMentionUseCase _removeMentionUseCase;
 
   UserInfoClass? _userInfoClass;
   var reelsPageTrendingController = PageController();
@@ -645,6 +651,37 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     }
     if (event.onComplete != null) {
       event.onComplete?.call(event.commentId ?? '', apiResult.isSuccess);
+    }
+  }
+
+  FutureOr<void> _getMentionedUser(
+      GetMentionedUserEvent event, Emitter<SocialPostState> emit) async {
+    final apiResult = await _getMentionedUsersUseCase.executeGetMentionedUser(
+      isLoading: false,
+      postId: event.postId,
+      page: 1,
+      pageLimit: 10,
+    );
+    event.onComplete?.call(apiResult.data?.data ?? []);
+    if (apiResult.isError) {
+      ErrorHandler.showAppError(
+          appError: apiResult.error,
+          isNeedToShowError: true,
+          errorViewType: ErrorViewType.toast);
+    }
+  }
+
+  FutureOr<void> _removeMention(RemoveMentionEvent event, Emitter<SocialPostState> emit) async {
+    final apiResult = await _removeMentionUseCase.executeRemoveMention(
+      isLoading: false,
+      postId: event.postId,
+    );
+    event.onComplete?.call(apiResult.isSuccess);
+    if (apiResult.isError) {
+      ErrorHandler.showAppError(
+          appError: apiResult.error,
+          isNeedToShowError: true,
+          errorViewType: ErrorViewType.toast);
     }
   }
 

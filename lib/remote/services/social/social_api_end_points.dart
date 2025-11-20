@@ -33,4 +33,6 @@ class SocialApiEndPoints {
   static const String getSearchTags = '/api/v1/tags/hashtags/search';
   static const String getTaggedPosts = '/api/v1/tags/posts';
   static const String getForYouPosts = '/api/v1/posts/fyp';
+  static const String getMentionedUsers = '/api/v1/posts';
+  static const String deleteMention = '/api/v1/posts/mentions';
 }
