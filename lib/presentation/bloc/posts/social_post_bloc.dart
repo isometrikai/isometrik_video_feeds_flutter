@@ -95,7 +95,11 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         ? null
         : UserInfoClass.fromJson(
             jsonDecode(userInfoString) as Map<String, dynamic>);
-    add(LoadPostData());
+    add(LoadPostData(
+      fetchForYou: event.fetchForYou,
+      fetchTimeline: event.fetchTimeline,
+      fetchTrending: event.fetchTrending,
+    ));
   }
 
   Future<void> _onLoadHomeData(
@@ -106,9 +110,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     try {
       emit(PostLoadingState(isLoading: true));
       await Future.wait([
-        _callGetForYouPost(true, false, false, null),
-        _callGetTrendingPost(true, false, false, null),
-        _callGetTimeLinePost(true, false, false, null),
+        if (event.fetchForYou) _callGetForYouPost(true, false, false, null),
+        if (event.fetchTrending) _callGetTrendingPost(true, false, false, null),
+        if (event.fetchTimeline) _callGetTimeLinePost(true, false, false, null),
       ]);
       add(LoadPostsEvent(
           timeLinePostList: _timeLinePostList,
@@ -457,7 +461,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     _isDataLoading = false;
   }
 
-  FutureOr<void> _getPostComments(GetPostCommentsEvent event, Emitter<SocialPostState> emit) async {
+  FutureOr<void> _getPostComments(
+      GetPostCommentsEvent event, Emitter<SocialPostState> emit) async {
     if (event.isLoading == true) {
       emit(LoadingPostComment());
     }
@@ -474,7 +479,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         event.createdComment?.comment?.isNotEmpty == true &&
         event.createdComment?.parentCommentId?.isNotEmpty != true) {
       final created = event.createdComment!;
-      final alreadyExists = postCommentsList?.firstOrNull?.comment == event.createdComment?.comment;
+      final alreadyExists = postCommentsList?.firstOrNull?.comment ==
+          event.createdComment?.comment;
 
       if (!alreadyExists) {
         // Insert at the beginning only if it doesn't already exist
@@ -511,7 +517,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     ));
   }
 
-  Future<void> _doActionOnComment(CommentActionEvent event, Emitter<SocialPostState> emit) async {
+  Future<void> _doActionOnComment(
+      CommentActionEvent event, Emitter<SocialPostState> emit) async {
     final commentRequest = CommentRequest(
             commentId: event.commentId,
             commentAction: event.commentAction,
@@ -543,7 +550,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       );
 
       if (commentList != null) {
-        if (comment.parentCommentId != null && comment.parentCommentId!.isNotEmpty) {
+        if (comment.parentCommentId != null &&
+            comment.parentCommentId!.isNotEmpty) {
           // Find parent comment
           final parentComment = commentList.firstWhere(
             (element) => element.id == comment?.parentCommentId,
@@ -556,7 +564,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
           // Insert reply at the beginning
           parentComment.childComments!.insert(0, comment);
           parentComment.childCommentCount ??= 0;
-          parentComment.childCommentCount = parentComment.childCommentCount! + 1;
+          parentComment.childCommentCount =
+              parentComment.childCommentCount! + 1;
         } else {
           // Top-level comment → insert at the beginning
           commentList.insert(0, comment);
@@ -573,7 +582,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       Future.delayed(const Duration(seconds: 2), () {
         add(
           GetPostCommentsEvent(
-              postId: event.postId ?? '', isLoading: false, createdComment: comment),
+              postId: event.postId ?? '',
+              isLoading: false,
+              createdComment: comment),
         );
       });
     }
@@ -596,7 +607,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         Future.delayed(const Duration(seconds: 2), () {
           add(
             GetPostCommentsEvent(
-                postId: event.postId ?? '', isLoading: false, createdComment: comment),
+                postId: event.postId ?? '',
+                isLoading: false,
+                createdComment: comment),
           );
         });
       } else if (event.commentAction == CommentAction.report) {
@@ -610,9 +623,10 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
           event.commentId?.trim().isNotEmpty == true) {
         final commentList = event.postCommentList?.toList() ?? [];
         if (event.parentCommentId?.trim().isNotEmpty == true) {
-          final parentComment =
-              commentList.firstWhere((comment) => comment.id == event.parentCommentId);
-          parentComment.childComments?.removeWhere((comment) => comment.id == event.commentId);
+          final parentComment = commentList
+              .firstWhere((comment) => comment.id == event.parentCommentId);
+          parentComment.childComments
+              ?.removeWhere((comment) => comment.id == event.commentId);
         } else {
           commentList.removeWhere((comment) => comment.id == event.commentId);
         }

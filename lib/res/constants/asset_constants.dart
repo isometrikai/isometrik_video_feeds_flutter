@@ -40,7 +40,9 @@ class AssetConstants {
       '${packageName}assets/icons/ic_comment_icon.png';
   static const String icMoreIcon =
       '${packageName}assets/icons/ic_more_icon.png';
-  static final String googleServiceJson = IsrVideoReelConfig.googleServiceJsonPath ?? 'assets/json/google_service_json.json';
+  static final String googleServiceJson =
+      IsrVideoReelConfig.googleServiceJsonPath ??
+          'assets/json/google_service_json.json';
   static const String icShareIcon =
       '${packageName}assets/icons/ic_share_icon.png';
   static const String icSaveSelected =
@@ -94,14 +96,23 @@ class AssetConstants {
       '${packageName}assets/icons/ic_share_post_icon.svg';
   static const String icSaveSelectedIcon =
       'assets/icons/ic_save_selected_icon.svg';
-  static const String postUploadedAnimation = '${packageName}assets/animation/post_uploaded_gif.json';
+  static const String postUploadedAnimation =
+      '${packageName}assets/animation/post_uploaded_gif.json';
   static const String icTagUser = '${packageName}assets/icons/ic_tag_user.svg';
-  static const String icAllowComment = '${packageName}assets/icons/ic_allow_comment.svg';
-  static const String icAllowSave = '${packageName}assets/icons/ic_allow_save.svg';
-  static const String icPostLocation = '${packageName}assets/icons/ic_post_location.svg';
-  static const String icTimerIcon = '${packageName}assets/icons/ic_timer_icon.svg';
-  static const String icTalentIcon = '${packageName}assets/icons/ic_talent_icon.png';
-  static const String icMediaSelectMultiple = '${packageName}assets/icons/ic_media_select_multiple.svg';
-  static const String icMediaSelectSingle = '${packageName}assets/icons/ic_media_select_single.svg';
-  static const String icNearbyPlace = '${packageName}assets/icons/ic_near_by_place.svg';
+  static const String icAllowComment =
+      '${packageName}assets/icons/ic_allow_comment.svg';
+  static const String icAllowSave =
+      '${packageName}assets/icons/ic_allow_save.svg';
+  static const String icPostLocation =
+      '${packageName}assets/icons/ic_post_location.svg';
+  static const String icTimerIcon =
+      '${packageName}assets/icons/ic_timer_icon.svg';
+  static const String icTalentIcon =
+      '${packageName}assets/icons/ic_talent_icon.png';
+  static const String icMediaSelectMultiple =
+      '${packageName}assets/icons/ic_media_select_multiple.svg';
+  static const String icMediaSelectSingle =
+      '${packageName}assets/icons/ic_media_select_single.svg';
+  static const String icNearbyPlace =
+      '${packageName}assets/icons/ic_near_by_place.svg';
 }

@@ -93,7 +93,6 @@ class _ProImageEditorWrapperState extends State<ProImageEditorWrapper> {
 
   /// Get editor configuration based on editing mode
   ProImageEditorConfigs _getEditorConfigs() {
-
     var _mainEditorConfig = mainEditorConfig(widget.mediaEditConfig);
 
     // Configure based on editing mode

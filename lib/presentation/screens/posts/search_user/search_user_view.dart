@@ -20,11 +20,13 @@ class SearchUserView extends StatefulWidget {
   _SearchUserViewState createState() => _SearchUserViewState();
 }
 
-class _SearchUserViewState extends State<SearchUserView> with TickerProviderStateMixin {
+class _SearchUserViewState extends State<SearchUserView>
+    with TickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   bool _isSearching = false;
-  SearchUserBloc get _searchUserBloc => BlocProvider.of<SearchUserBloc>(context);
+  SearchUserBloc get _searchUserBloc =>
+      BlocProvider.of<SearchUserBloc>(context);
   final List<SocialUserData> _searchResults = [];
   late AnimationController _loadingAnimationController;
   late AnimationController _resultsAnimationController;
@@ -175,10 +177,12 @@ class _SearchUserViewState extends State<SearchUserView> with TickerProviderStat
                   style: IsrStyles.primaryText16,
                   decoration: InputDecoration(
                     hintText: IsrTranslationFile.search,
-                    hintStyle: IsrStyles.primaryText14.copyWith(color: '767676'.toColor()),
+                    hintStyle: IsrStyles.primaryText14
+                        .copyWith(color: '767676'.toColor()),
                     prefixIconColor: '#878787'.toColor(),
                     prefix: Container(
-                      margin: IsrDimens.edgeInsets(right: 10.responsiveDimension),
+                      margin:
+                          IsrDimens.edgeInsets(right: 10.responsiveDimension),
                       child: AppImage.svg(
                         AssetConstants.icSearchIcon,
                         color: '#878787'.toColor(),
@@ -193,7 +197,8 @@ class _SearchUserViewState extends State<SearchUserView> with TickerProviderStat
                               _performSearch('');
                             },
                             child: Container(
-                              padding: IsrDimens.edgeInsetsAll(8.responsiveDimension),
+                              padding: IsrDimens.edgeInsetsAll(
+                                  8.responsiveDimension),
                               child: Container(
                                 width: 20.responsiveDimension,
                                 height: 20.responsiveDimension,
@@ -211,7 +216,8 @@ class _SearchUserViewState extends State<SearchUserView> with TickerProviderStat
                           )
                         : null,
                     border: InputBorder.none,
-                    contentPadding: IsrDimens.edgeInsetsAll(10.responsiveDimension),
+                    contentPadding:
+                        IsrDimens.edgeInsetsAll(10.responsiveDimension),
                   ),
                 ),
               ),
@@ -236,13 +242,16 @@ class _SearchUserViewState extends State<SearchUserView> with TickerProviderStat
 
   /// Build selected users display
   Widget _buildSelectedUsers() => Container(
-        margin: IsrDimens.edgeInsetsSymmetric(horizontal: 16.responsiveDimension, vertical: 8.responsiveDimension),
+        margin: IsrDimens.edgeInsetsSymmetric(
+            horizontal: 16.responsiveDimension,
+            vertical: 8.responsiveDimension),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               IsrTranslationFile.selectedPeople,
-              style: IsrStyles.primaryText14.copyWith(fontWeight: FontWeight.w600),
+              style:
+                  IsrStyles.primaryText14.copyWith(fontWeight: FontWeight.w600),
             ),
             8.verticalSpace,
             SingleChildScrollView(
@@ -258,7 +267,9 @@ class _SearchUserViewState extends State<SearchUserView> with TickerProviderStat
 
   /// Build individual selected user chip
   Widget _buildSelectedUserChip(SocialUserData user) => Container(
-        padding: IsrDimens.edgeInsetsSymmetric(horizontal: 12.responsiveDimension, vertical: 8.responsiveDimension),
+        padding: IsrDimens.edgeInsetsSymmetric(
+            horizontal: 12.responsiveDimension,
+            vertical: 8.responsiveDimension),
         decoration: BoxDecoration(
           color: const Color(0xFFE3F2FD),
           borderRadius: BorderRadius.circular(20),
@@ -295,8 +306,8 @@ class _SearchUserViewState extends State<SearchUserView> with TickerProviderStat
             Flexible(
               child: Text(
                 user.username ?? 'Unknown User',
-                style: IsrStyles.primaryText14
-                    .copyWith(fontWeight: FontWeight.w500, color: '1976D2'.toColor()),
+                style: IsrStyles.primaryText14.copyWith(
+                    fontWeight: FontWeight.w500, color: '1976D2'.toColor()),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -323,7 +334,8 @@ class _SearchUserViewState extends State<SearchUserView> with TickerProviderStat
 
   Widget _buildEmptyState() => Center(
         child: Padding(
-          padding: IsrDimens.edgeInsetsSymmetric(horizontal: 32.responsiveDimension),
+          padding:
+              IsrDimens.edgeInsetsSymmetric(horizontal: 32.responsiveDimension),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -337,14 +349,16 @@ class _SearchUserViewState extends State<SearchUserView> with TickerProviderStat
                 _currentSearchText.isEmptyOrNull
                     ? IsrTranslationFile.searchForPeople
                     : IsrTranslationFile.noUserFound,
-                style: IsrStyles.primaryText18.copyWith(fontWeight: FontWeight.w600),
+                style: IsrStyles.primaryText18
+                    .copyWith(fontWeight: FontWeight.w600),
               ),
               8.verticalSpace,
               Text(
                 _currentSearchText.isEmptyOrNull
                     ? IsrTranslationFile.startTypingToFindPeopleToTag
                     : IsrTranslationFile.trySearchingWithADifferentName,
-                style: IsrStyles.primaryText14.copyWith(color: '666666'.toColor()),
+                style:
+                    IsrStyles.primaryText14.copyWith(color: '666666'.toColor()),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -372,7 +386,9 @@ class _SearchUserViewState extends State<SearchUserView> with TickerProviderStat
     return InkWell(
       onTap: () => _toggleSelection(result),
       child: Container(
-        padding: IsrDimens.edgeInsetsSymmetric(horizontal: 16.responsiveDimension, vertical: 12.responsiveDimension),
+        padding: IsrDimens.edgeInsetsSymmetric(
+            horizontal: 16.responsiveDimension,
+            vertical: 12.responsiveDimension),
         child: Row(
           children: [
             // User avatar
@@ -409,15 +425,17 @@ class _SearchUserViewState extends State<SearchUserView> with TickerProviderStat
                 children: [
                   Text(
                     result.displayName ?? '',
-                    style: IsrStyles.primaryText16
-                        .copyWith(fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500),
+                    style: IsrStyles.primaryText16.copyWith(
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.w500),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   2.verticalSpace,
                   Text(
                     result.username!,
-                    style: IsrStyles.primaryText14.copyWith(color: '666666'.toColor()),
+                    style: IsrStyles.primaryText14
+                        .copyWith(color: '666666'.toColor()),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -431,19 +449,21 @@ class _SearchUserViewState extends State<SearchUserView> with TickerProviderStat
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(4),
                 border: Border.all(
-                  color: isSelected ? const Color(0xFF1976D2) : '767676'.toColor(),
+                  color:
+                      isSelected ? const Color(0xFF1976D2) : '767676'.toColor(),
                   width: 2,
                 ),
-                color: isSelected ? const Color(0xFF1976D2) : Colors.transparent,
+                color:
+                    isSelected ? const Color(0xFF1976D2) : Colors.transparent,
               ),
               child: isSelected
                   ? Center(
-                    child: Icon(
+                      child: Icon(
                         Icons.check,
                         color: Colors.white,
                         size: 12.responsiveDimension,
                       ),
-                  )
+                    )
                   : null,
             ),
           ],

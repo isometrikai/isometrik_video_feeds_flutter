@@ -34,7 +34,8 @@ class MediaEditView extends StatefulWidget {
   final Future<bool> Function(List<MediaEditItem> editededMedia)? onComplete;
   final Future<MediaEditSoundItem?> Function(MediaEditSoundItem? sound)?
       onSelectSound;
-  final Future<List<MediaEditItem>?> Function(List<MediaEditItem> editededMedia)? addMoreMedia;
+  final Future<List<MediaEditItem>?> Function(
+      List<MediaEditItem> editededMedia)? addMoreMedia;
   final Future<String?> Function()? pickCoverPic;
 
   @override
@@ -339,7 +340,7 @@ class _MediaEditViewState extends State<MediaEditView> {
 
     return Center(
       child: AspectRatio(
-        aspectRatio: 9/16, // 9:16 aspect ratio
+        aspectRatio: 9 / 16, // 9:16 aspect ratio
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
@@ -385,24 +386,27 @@ class _MediaEditViewState extends State<MediaEditView> {
   }
 
   Widget _bodyAppBar(MediaEditLoadedState state) => Padding(
-    padding: EdgeInsets.all(7.responsiveDimension),
-    child: Row(
-      mainAxisSize: MainAxisSize.max,
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
+        padding: EdgeInsets.all(7.responsiveDimension),
+        child: Row(
+          mainAxisSize: MainAxisSize.max,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _buildAppBarIcon(icon: Icons.close, onTap: () => Navigator.pop(context),),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildAppBarIcon(
+                  icon: Icons.close,
+                  onTap: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [],
+            ),
           ],
         ),
-        const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [],
-        ),
-      ],
-    ),
-  );
+      );
 
   Widget _buildAppBarIcon({
     required IconData icon,
@@ -426,7 +430,8 @@ class _MediaEditViewState extends State<MediaEditView> {
         ),
       );
 
-  Widget _buildMediaContent(MediaEditItem mediaItem, MediaEditLoadedState state) {
+  Widget _buildMediaContent(
+      MediaEditItem mediaItem, MediaEditLoadedState state) {
     if (mediaItem.mediaType == EditMediaType.video) {
       return _buildVideoContent(mediaItem, state);
     } else {
@@ -434,7 +439,8 @@ class _MediaEditViewState extends State<MediaEditView> {
     }
   }
 
-  Widget _buildVideoContent(MediaEditItem mediaItem, MediaEditLoadedState state) {
+  Widget _buildVideoContent(
+      MediaEditItem mediaItem, MediaEditLoadedState state) {
     return VideoPreviewWidget(
       mediaEditItem: mediaItem,
       onRemoveMedia: () => _removeCurrentMedia(state),
@@ -456,7 +462,8 @@ class _MediaEditViewState extends State<MediaEditView> {
     );
   }
 
-  Widget _buildSectionButtons(MediaEditItem currentItem, bool isVideo, MediaEditLoadedState state) {
+  Widget _buildSectionButtons(
+      MediaEditItem currentItem, bool isVideo, MediaEditLoadedState state) {
     List<Widget> buttons;
 
     if (isVideo) {
@@ -632,7 +639,8 @@ class _MediaEditViewState extends State<MediaEditView> {
                     return;
                   }
                 }
-                _bloc.add(ReorderMediaEvent(oldIndex: oldIndex, newIndex: newIndex));
+                _bloc.add(
+                    ReorderMediaEvent(oldIndex: oldIndex, newIndex: newIndex));
               },
               onNoReorder: (int index) {
                 // Triggered when user cancels reorder
@@ -650,7 +658,8 @@ class _MediaEditViewState extends State<MediaEditView> {
                     child: Stack(
                       children: [
                         GestureDetector(
-                          onTap: () => _bloc.add(OnSelectMediaEvent(index: index)),
+                          onTap: () =>
+                              _bloc.add(OnSelectMediaEvent(index: index)),
                           child: Container(
                             width: 48.responsiveDimension,
                             height: 48.responsiveDimension,
@@ -716,10 +725,14 @@ class _MediaEditViewState extends State<MediaEditView> {
                               widget.mediaEditConfig.showDialogFunction.call(
                                 context: context,
                                 title: widget.mediaEditConfig.removeMediaTitle,
-                                message: widget.mediaEditConfig.removeMediaMessage,
-                                positiveButtonText: widget.mediaEditConfig.removeButtonText,
-                                negativeButtonText: widget.mediaEditConfig.cancelButtonText,
-                                onPressPositiveButton: () => _bloc.add(ConfirmRemoveMediaEvent()),
+                                message:
+                                    widget.mediaEditConfig.removeMediaMessage,
+                                positiveButtonText:
+                                    widget.mediaEditConfig.removeButtonText,
+                                negativeButtonText:
+                                    widget.mediaEditConfig.cancelButtonText,
+                                onPressPositiveButton: () =>
+                                    _bloc.add(ConfirmRemoveMediaEvent()),
                                 onPressNegativeButton: () {},
                               );
                             },
@@ -773,5 +786,4 @@ class _MediaEditViewState extends State<MediaEditView> {
           ],
         ),
       );
-
 }

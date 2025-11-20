@@ -180,13 +180,16 @@ extension MediaPathCheck on String {
 extension emptyExtension on String? {
   bool get isEmptyOrNull {
     final finalString = this?.trim();
-    return finalString == null || finalString == ' ' || finalString.isEmpty == true;
+    return finalString == null ||
+        finalString == ' ' ||
+        finalString.isEmpty == true;
   }
 }
 
 extension MediaQualityCheck on String {
   /// Checks if file meets the minimum width & height requirement.
-  Future<bool> hasMinResolution({int minWidth = 240, int minHeight = 240}) async {
+  Future<bool> hasMinResolution(
+      {int minWidth = 240, int minHeight = 240}) async {
     final info = await VideoCompress.getMediaInfo(this);
     final width = info.width ?? 0;
     final height = info.height ?? 0;
@@ -205,11 +208,11 @@ extension MediaTypeValue on MediaType {
 
 extension MediaTypeStringExtension on MediaType {
   String get mediaTypeString => switch (this) {
-    MediaType.photo => 'image',
-    MediaType.video => 'video',
-    MediaType.both => 'carousel',
-    MediaType.unknown => 'unknown',
-  };
+        MediaType.photo => 'image',
+        MediaType.video => 'video',
+        MediaType.both => 'carousel',
+        MediaType.unknown => 'unknown',
+      };
 }
 
 extension ColorExtension on String {
@@ -467,4 +470,3 @@ extension BlocSafeGetter on BuildContext {
     );
   }
 }
-

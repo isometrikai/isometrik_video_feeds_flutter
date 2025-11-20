@@ -114,7 +114,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         });
       }
     });
-    postBloc.add(LoadPostData());
+    postBloc.add(LoadPostData(
+      fetchForYou: _fetchForYou,
+      fetchTimeline: _fetchTimeline,
+      fetchTrending: _fetchTrending,
+    ));
   }
 
   // ✅ Provide BLoCs at the root of build
@@ -124,13 +128,25 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         child: _buildContent(),
       );
 
+  bool get _fetchForYou => widget.tabDataModelList
+      .any((element) => element.postSectionType == PostSectionType.forYou);
+
+  bool get _fetchTimeline => widget.tabDataModelList
+      .any((element) => element.postSectionType == PostSectionType.following);
+
+  bool get _fetchTrending => widget.tabDataModelList
+      .any((element) => element.postSectionType == PostSectionType.trending);
+
   /// ✅ Get all BLoC providers needed by the SDK
   /// Note: PostListingBloc and PlaceDetailsBloc are provided during navigation
   List<BlocProvider> _getAllBlocProviders() => [
         // Social Post BLoC (main BLoC for this screen)
         BlocProvider<SocialPostBloc>(
           create: (_) => IsmInjectionUtils.getBloc<SocialPostBloc>()
-            ..add(const StartPost()), // ✅ Trigger initial load
+            ..add(StartPost(
+                fetchForYou: _fetchForYou,
+                fetchTrending: _fetchTrending,
+                fetchTimeline: _fetchTimeline)), // ✅ Trigger initial load
         ),
       ];
 
@@ -620,7 +636,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       child: MultiBlocProvider(
         providers: [
           BlocProvider.value(value: _socialPostBloc),
-          BlocProvider.value(value: context.getOrCreateBloc<CommentActionCubit>()),
+          BlocProvider.value(
+              value: context.getOrCreateBloc<CommentActionCubit>()),
           BlocProvider.value(value: context.getOrCreateBloc<SearchUserBloc>()),
         ],
         child: CommentsBottomSheet(

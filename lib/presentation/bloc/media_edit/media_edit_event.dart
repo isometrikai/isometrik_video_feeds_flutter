@@ -97,4 +97,3 @@ class NavigateToCoverPhotoEvent extends MediaEditEvent {
 }
 
 class ProceedToNextEvent extends MediaEditEvent {}
-

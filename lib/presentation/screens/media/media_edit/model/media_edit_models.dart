@@ -17,20 +17,19 @@ enum EditMediaType {
 
   String toJson() => name;
 }
+
 // Media editing models
 class MediaEditItem {
-
-  MediaEditItem({
-    required this.originalPath,
-    this.editedPath,
-    required this.mediaType,
-    required this.width,
-    required this.height,
-    this.duration,
-    this.thumbnailPath,
-    this.sound,
-    this.metaData
-  });
+  MediaEditItem(
+      {required this.originalPath,
+      this.editedPath,
+      required this.mediaType,
+      required this.width,
+      required this.height,
+      this.duration,
+      this.thumbnailPath,
+      this.sound,
+      this.metaData});
 
   factory MediaEditItem.fromJson(Map<String, dynamic> json) => MediaEditItem(
       originalPath: json['originalPath'] as String? ?? '',
@@ -42,9 +41,10 @@ class MediaEditItem {
       height: (json['height'] as num? ?? 0).toDouble(),
       duration: json['duration'] as int?,
       thumbnailPath: json['thumbnailPath'] as String?,
-      sound: json['sound'] != null ? MediaEditSoundItem.fromJson(json['sound'] as Map<String, dynamic>) : null,
-      metaData: json['metaData'] as Map<String, dynamic>?
-    );
+      sound: json['sound'] != null
+          ? MediaEditSoundItem.fromJson(json['sound'] as Map<String, dynamic>)
+          : null,
+      metaData: json['metaData'] as Map<String, dynamic>?);
   final String originalPath;
   String? editedPath;
   final EditMediaType mediaType; // 'image' or 'video'
@@ -65,27 +65,27 @@ class MediaEditItem {
     String? thumbnailPath,
     MediaEditSoundItem? sound,
     Map<String, dynamic>? metaData,
-  }) => MediaEditItem(
-      originalPath: originalPath ?? this.originalPath,
-      editedPath: editedPath ?? this.editedPath,
-      mediaType: mediaType ?? this.mediaType,
-      width: width ?? this.width,
-      height: height ?? this.height,
-      duration: duration ?? this.duration,
-      thumbnailPath: thumbnailPath ?? this.thumbnailPath,
-      sound: sound ?? this.sound,
-      metaData: metaData ?? this.metaData
-    );
+  }) =>
+      MediaEditItem(
+          originalPath: originalPath ?? this.originalPath,
+          editedPath: editedPath ?? this.editedPath,
+          mediaType: mediaType ?? this.mediaType,
+          width: width ?? this.width,
+          height: height ?? this.height,
+          duration: duration ?? this.duration,
+          thumbnailPath: thumbnailPath ?? this.thumbnailPath,
+          sound: sound ?? this.sound,
+          metaData: metaData ?? this.metaData);
 
   Map<String, dynamic> toJson() => {
-      'originalPath': originalPath,
-      'editedPath': editedPath,
-      'mediaType': mediaType.toJson(),
-      'width': width,
-      'height': height,
-      'duration': duration,
-      'thumbnailPath': thumbnailPath,
-      'sound': sound?.toJson(),
-      'metaData': metaData
-    };
+        'originalPath': originalPath,
+        'editedPath': editedPath,
+        'mediaType': mediaType.toJson(),
+        'width': width,
+        'height': height,
+        'duration': duration,
+        'thumbnailPath': thumbnailPath,
+        'sound': sound?.toJson(),
+        'metaData': metaData
+      };
 }

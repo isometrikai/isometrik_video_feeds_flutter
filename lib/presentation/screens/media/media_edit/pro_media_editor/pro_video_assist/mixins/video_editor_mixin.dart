@@ -118,7 +118,8 @@ mixin VideoEditorMixin<T extends StatefulWidget> on State<T> {
 
         // Log the error for debugging but don't crash the app
         if (e.toString().contains('MissingPluginException')) {
-          debugPrint('ProVideoEditor plugin not available on this platform. Thumbnails will be empty.');
+          debugPrint(
+              'ProVideoEditor plugin not available on this platform. Thumbnails will be empty.');
         }
       }
     });

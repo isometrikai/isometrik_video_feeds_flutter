@@ -63,7 +63,6 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
     }
   }
 
-
   void _showCameraOptions() {
     showModalBottomSheet(
       context: context,
@@ -106,7 +105,8 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
                   label: 'Photo',
                   onTap: () {
                     Navigator.pop(context);
-                    _bloc.add(CaptureMediaEvent(mediaType: SelectedMediaType.image));
+                    _bloc.add(
+                        CaptureMediaEvent(mediaType: SelectedMediaType.image));
                   },
                 ),
                 _buildCameraOption(
@@ -114,7 +114,8 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
                   label: 'Video',
                   onTap: () {
                     Navigator.pop(context);
-                    _bloc.add(CaptureMediaEvent(mediaType: SelectedMediaType.video));
+                    _bloc.add(
+                        CaptureMediaEvent(mediaType: SelectedMediaType.video));
                   },
                 ),
               ],
@@ -158,7 +159,6 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
         ),
       );
 
-
   /// Determines if the file is a video or image based on file extension
   Future<SelectedMediaType> _getMediaType(File file) async {
     final filePath = file.path;
@@ -177,7 +177,8 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
     if (mediaType == SelectedMediaType.video) {
       try {
         final mediaInfo = await VideoCompress.getMediaInfo(file.path);
-        return (mediaInfo.duration ?? 0).toInt() ~/ 1000; // Convert from milliseconds to seconds
+        return (mediaInfo.duration ?? 0).toInt() ~/
+            1000; // Convert from milliseconds to seconds
       } catch (e) {
         debugPrint('Error getting video duration: $e');
         return 0;
@@ -319,10 +320,10 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
             ),
             body: BlocBuilder<MediaSelectionBloc, MediaSelectionState>(
               buildWhen: (previous, current) =>
-              current is MediaSelectionLoadingState
-              || current is MediaSelectionPermissionDeniedState
-              || current is MediaSelectionLoadedState
-              || current is MediaSelectionErrorState,
+                  current is MediaSelectionLoadingState ||
+                  current is MediaSelectionPermissionDeniedState ||
+                  current is MediaSelectionLoadedState ||
+                  current is MediaSelectionErrorState,
               builder: (context, state) {
                 if (state is MediaSelectionInitialState ||
                     state is MediaSelectionLoadingState) {
@@ -404,7 +405,8 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
                                 children: [
                                   _buildOptimizedMediaContent(media),
                                   // Video duration indicator
-                                  if (media.mediaType == SelectedMediaType.video)
+                                  if (media.mediaType ==
+                                      SelectedMediaType.video)
                                     Positioned(
                                       bottom: 1,
                                       right: 1,
@@ -414,12 +416,14 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
                                           vertical: 2,
                                         ),
                                         decoration: BoxDecoration(
-                                          color:
-                                              Colors.black.withValues(alpha: 0.7),
-                                          borderRadius: BorderRadius.circular(4),
+                                          color: Colors.black
+                                              .withValues(alpha: 0.7),
+                                          borderRadius:
+                                              BorderRadius.circular(4),
                                         ),
                                         child: Text(
-                                          _formatDuration((media.duration ?? 0).toInt()),
+                                          _formatDuration(
+                                              (media.duration ?? 0).toInt()),
                                           style: const TextStyle(
                                             color: Colors.white,
                                             fontSize: 8,
@@ -437,8 +441,8 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
                             top: 0,
                             right: 0,
                             child: GestureDetector(
-                              onTap: () =>
-                                  _bloc.add(DeselectMediaEvent(mediaData: media)),
+                              onTap: () => _bloc
+                                  .add(DeselectMediaEvent(mediaData: media)),
                               child: Container(
                                 width: 12,
                                 height: 12,
@@ -505,7 +509,8 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
                     position: PopupMenuPosition.under,
                     color: Colors.white.withValues(alpha: 0.9),
                     itemBuilder: (context) => state.albums
-                        .map((album) => _buildAlbumMenuItem(album, state.currentAlbum))
+                        .map((album) =>
+                            _buildAlbumMenuItem(album, state.currentAlbum))
                         .toList(),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -557,7 +562,6 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
           ),
         ],
       );
-
 
   Widget _buildScrollableMediaGrid(MediaSelectionLoadedState state) {
     // Calculate total items: camera button + gallery media
@@ -693,7 +697,8 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
               top: 4,
               right: 4,
               child: GestureDetector(
-                onTap: () => _bloc.add(DeselectMediaEvent(mediaData: mediaData)),
+                onTap: () =>
+                    _bloc.add(DeselectMediaEvent(mediaData: mediaData)),
                 child: Container(
                   width: 24,
                   height: 24,

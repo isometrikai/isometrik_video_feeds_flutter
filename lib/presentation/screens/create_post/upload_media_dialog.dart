@@ -35,7 +35,7 @@ class UploadMediaDialog extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
         ),
         child: Padding(
-          padding:IsrDimens.edgeInsetsAll(IsrDimens.twentyFour),
+          padding: IsrDimens.edgeInsetsAll(IsrDimens.twentyFour),
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -59,21 +59,22 @@ class UploadMediaDialog extends StatelessWidget {
                         Navigator.pop(context);
                         FocusManager.instance.primaryFocus?.unfocus();
                       },
-                      borderRadius:IsrDimens.twenty,
-                      padding:IsrDimens.eight,
+                      borderRadius: IsrDimens.twenty,
+                      padding: IsrDimens.eight,
                       child: const AppImage.svg(AssetConstants.icCrossIcon),
                     ),
                   ],
                 ),
-               IsrDimens.boxHeight(IsrDimens.sixteen),
+                IsrDimens.boxHeight(IsrDimens.sixteen),
                 Text(
                   IsrTranslationFile.noNakedPicture,
                   style: IsrStyles.secondaryText14.copyWith(
                     color: IsrColors.color909090,
                   ),
                 ),
-               IsrDimens.boxHeight(IsrDimens.twentyFour),
-                if (mediaType == MediaType.photo || mediaType == MediaType.both) ...[
+                IsrDimens.boxHeight(IsrDimens.twentyFour),
+                if (mediaType == MediaType.photo ||
+                    mediaType == MediaType.both) ...[
                   _buildOptionItem(
                     context: context,
                     icon: const AppImage.svg(AssetConstants.icCameraIcon),
@@ -84,9 +85,10 @@ class UploadMediaDialog extends StatelessWidget {
                       MediaSource.camera,
                     ),
                   ),
-                 IsrDimens.boxHeight(IsrDimens.sixteen),
+                  IsrDimens.boxHeight(IsrDimens.sixteen),
                 ],
-                if (mediaType == MediaType.photo || mediaType == MediaType.both) ...[
+                if (mediaType == MediaType.photo ||
+                    mediaType == MediaType.both) ...[
                   _buildOptionItem(
                     context: context,
                     icon: const AppImage.svg(AssetConstants.icGalleryIcon),
@@ -97,9 +99,10 @@ class UploadMediaDialog extends StatelessWidget {
                       MediaSource.gallery,
                     ),
                   ),
-                 IsrDimens.boxHeight(IsrDimens.sixteen),
+                  IsrDimens.boxHeight(IsrDimens.sixteen),
                 ],
-                if (mediaType == MediaType.video || mediaType == MediaType.both) ...[
+                if (mediaType == MediaType.video ||
+                    mediaType == MediaType.both) ...[
                   _buildOptionItem(
                     context: context,
                     icon: const AppImage.svg(AssetConstants.icCameraIcon),
@@ -110,9 +113,10 @@ class UploadMediaDialog extends StatelessWidget {
                       MediaSource.camera,
                     ),
                   ),
-                 IsrDimens.boxHeight(IsrDimens.sixteen),
+                  IsrDimens.boxHeight(IsrDimens.sixteen),
                 ],
-                if (mediaType == MediaType.video || mediaType == MediaType.both) ...[
+                if (mediaType == MediaType.video ||
+                    mediaType == MediaType.both) ...[
                   _buildOptionItem(
                     context: context,
                     icon: const AppImage.svg(AssetConstants.icGalleryIcon),
@@ -138,16 +142,16 @@ class UploadMediaDialog extends StatelessWidget {
   }) =>
       TapHandler(
         onTap: onTap,
-        borderRadius:IsrDimens.eight,
-        padding:IsrDimens.eight,
+        borderRadius: IsrDimens.eight,
+        padding: IsrDimens.eight,
         child: Row(
           children: [
             SizedBox(
-              width:IsrDimens.forty,
-              height:IsrDimens.forty,
+              width: IsrDimens.forty,
+              height: IsrDimens.forty,
               child: icon,
             ),
-           IsrDimens.boxWidth(IsrDimens.sixteen),
+            IsrDimens.boxWidth(IsrDimens.sixteen),
             Text(
               title,
               style: IsrStyles.primaryText14,

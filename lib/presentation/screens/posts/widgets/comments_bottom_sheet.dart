@@ -105,7 +105,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
               currentState is LoadPostCommentState ||
               currentState is LoadingPostComment,
           listener: (context, state) {
-            debugPrint('comment: state: $state comments : ${_postCommentList.map((_) => '${_.id}, ${_.comment}')}');
+            debugPrint(
+                'comment: state: $state comments : ${_postCommentList.map((_) => '${_.id}, ${_.comment}')}');
             if (state is LoadPostCommentState) {
               _isCommentsLoaded = true;
               _myUserId = state.myUserId ?? '';

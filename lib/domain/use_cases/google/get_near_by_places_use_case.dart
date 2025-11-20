@@ -17,7 +17,8 @@ class GetNearByPlacesUseCase extends BaseUseCase {
           placeType: placeType,
           radius: radius,
         );
-        return ApiResult(data: response.responseCode == 200 ? response.data : null);
+        return ApiResult(
+            data: response.responseCode == 200 ? response.data : null);
       });
 }
 

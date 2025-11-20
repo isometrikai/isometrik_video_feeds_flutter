@@ -7,9 +7,12 @@ import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
-import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart' as mc;
-import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit.dart' as me;
-import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart' as ms;
+import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart'
+    as mc;
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit.dart'
+    as me;
+import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart'
+    as ms;
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -18,7 +21,8 @@ import 'package:path/path.dart' as path;
 
 class CreatePostMultimediaWrapper extends StatefulWidget {
   const CreatePostMultimediaWrapper({super.key, this.onTagProduct});
-  final Future<List<ProductDataModel>?> Function(List<ProductDataModel>)? onTagProduct;
+  final Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
+      onTagProduct;
   @override
   State<CreatePostMultimediaWrapper> createState() =>
       _CreatePostMultimediaWrapperState();
@@ -48,19 +52,17 @@ class _CreatePostMultimediaWrapperState
   );
 
   late final mediaEditConfig = me.MediaEditConfig(
-      primaryColor: IsrColors.appColor,
-      primaryTextColor: IsrColors.primaryTextColor,
-      backgroundColor: Colors.white,
-      appBarColor: Colors.white,
-      primaryFontFamily: AppConstants.primaryFontFamily,
+    primaryColor: IsrColors.appColor,
+    primaryTextColor: IsrColors.primaryTextColor,
+    backgroundColor: Colors.white,
+    appBarColor: Colors.white,
+    primaryFontFamily: AppConstants.primaryFontFamily,
   );
 
   Future<bool> _onMediaSelectionComplete(
       List<ms.MediaAssetData> selectedMedia) async {
     // Convert to MediaEditItem and navigate to edit view
-    final mediaEditItems = selectedMedia
-        .map(mapSelectedToEditMedia)
-        .toList();
+    final mediaEditItems = selectedMedia.map(mapSelectedToEditMedia).toList();
 
     if (mediaEditItems.isNotEmpty) {
       // Navigate to media edit view with the result
@@ -116,7 +118,8 @@ class _CreatePostMultimediaWrapperState
             selectMediaTitle: IsrTranslationFile.addCover,
             imageMediaLimit: AppConstants.imageMediaLimit - presentImageCount,
             videoMediaLimit: AppConstants.videoMediaLimit - presentVideoCount,
-            mediaLimit: AppConstants.totalMediaLimit - (presentImageCount + presentVideoCount),
+            mediaLimit: AppConstants.totalMediaLimit -
+                (presentImageCount + presentVideoCount),
           ),
         ),
       ),
@@ -130,7 +133,9 @@ class _CreatePostMultimediaWrapperState
       MaterialPageRoute(
         builder: (context) => ms.MediaSelectionView(
           mediaSelectionConfig: mediaSelectionConfig.copyWith(
-              mediaListType: ms.MediaListType.image, isMultiSelect: false, selectMediaTitle: IsrTranslationFile.addCover),
+              mediaListType: ms.MediaListType.image,
+              isMultiSelect: false,
+              selectMediaTitle: IsrTranslationFile.addCover),
         ),
       ),
     );
@@ -246,7 +251,6 @@ class _CreatePostMultimediaWrapperState
     );
   }
 
-
   Future<bool> _onMediaEditComplete(List<me.MediaEditItem> editedMedia) async {
     if (editedMedia.isNotEmpty) {
       final _mediaDataList = editedMedia
@@ -273,15 +277,18 @@ class _CreatePostMultimediaWrapperState
               fileExtension: _getFileExtension(
                   editItem.editedPath ?? editItem.originalPath)))
           .toList();
-      _createPostBloc
-          .add(PostAttributeNavigationEvent(newMediaDataList: _mediaDataList, context: context, onTagProduct: widget.onTagProduct));
+      _createPostBloc.add(PostAttributeNavigationEvent(
+          newMediaDataList: _mediaDataList,
+          context: context,
+          onTagProduct: widget.onTagProduct));
       return false;
     }
     return false;
   }
 
   bool _isDialogOpen = false;
-  UploadProgressCubit get _progressCubit => BlocProvider.of<UploadProgressCubit>(context);
+  UploadProgressCubit get _progressCubit =>
+      BlocProvider.of<UploadProgressCubit>(context);
 
   @override
   Widget build(BuildContext context) =>
@@ -343,16 +350,16 @@ class _CreatePostMultimediaWrapperState
       );
 
   Future<String?> _captureMedia() async => await Navigator.push<String?>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => mc.CameraCaptureView(
-          onPickMedia: () async {
-            Navigator.pop(context);
-            return null;
-          },
+        context,
+        MaterialPageRoute(
+          builder: (context) => mc.CameraCaptureView(
+            onPickMedia: () async {
+              Navigator.pop(context);
+              return null;
+            },
+          ),
         ),
-      ),
-    );
+      );
 
   Widget _buildSuccessBottomSheet({
     required Function() onTapBack,
@@ -360,8 +367,8 @@ class _CreatePostMultimediaWrapperState
     required String message,
   }) =>
       Container(
-        width:IsrDimens.getScreenWidth(context),
-        padding:IsrDimens.edgeInsetsAll(IsrDimens.sixteen),
+        width: IsrDimens.getScreenWidth(context),
+        padding: IsrDimens.edgeInsetsAll(IsrDimens.sixteen),
         child: Stack(
           alignment: Alignment.center,
           children: [
@@ -385,8 +392,8 @@ class _CreatePostMultimediaWrapperState
                 Lottie.asset(
                   AssetConstants.postUploadedAnimation,
                   animate: true,
-                  height:IsrDimens.seventy,
-                  width:IsrDimens.seventy,
+                  height: IsrDimens.seventy,
+                  width: IsrDimens.seventy,
                   repeat: false,
                 ),
                 24.verticalSpace,
@@ -394,7 +401,7 @@ class _CreatePostMultimediaWrapperState
                   message,
                   style: IsrStyles.primaryText16.copyWith(
                     fontWeight: FontWeight.w700,
-                    fontSize:IsrDimens.eighteen,
+                    fontSize: IsrDimens.eighteen,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -403,7 +410,7 @@ class _CreatePostMultimediaWrapperState
                   IsrTranslationFile.yourPostHasBeenSuccessfullyPosted,
                   style: IsrStyles.primaryText14.copyWith(
                     color: Colors.grey,
-                    fontSize:IsrDimens.fifteen,
+                    fontSize: IsrDimens.fifteen,
                   ),
                   textAlign: TextAlign.center,
                 ),

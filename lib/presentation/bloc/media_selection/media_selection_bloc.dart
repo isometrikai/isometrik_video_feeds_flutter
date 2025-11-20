@@ -15,7 +15,8 @@ import '../../screens/media/media_selection/model/media_asset_data.dart';
 part 'media_selection_event.dart';
 part 'media_selection_state.dart';
 
-class MediaSelectionBloc extends Bloc<MediaSelectionEvent, MediaSelectionState> {
+class MediaSelectionBloc
+    extends Bloc<MediaSelectionEvent, MediaSelectionState> {
   MediaSelectionBloc() : super(MediaSelectionInitialState()) {
     on<MediaSelectionInitialEvent>(_onInitial);
     on<RequestPermissionEvent>(_onRequestPermission);
@@ -115,7 +116,7 @@ class MediaSelectionBloc extends Bloc<MediaSelectionEvent, MediaSelectionState> 
         final recentCount = await recentAlbum.first.assetCountAsync;
         if (recentCount > 0) {
           log('load local media -> recent album ${recentAlbum.length}');
-          for (final album in recentAlbum){
+          for (final album in recentAlbum) {
             final count = await album.assetCountAsync;
             log('load local media -> album ${album.name} -> count $count');
           }
@@ -557,7 +558,8 @@ class MediaSelectionBloc extends Bloc<MediaSelectionEvent, MediaSelectionState> 
 
     // Limit concurrent thumbnail generation
     if (_thumbnailGenerationInProgress.length >= _maxConcurrentThumbnails) {
-      while (_thumbnailGenerationInProgress.length >= _maxConcurrentThumbnails) {
+      while (
+          _thumbnailGenerationInProgress.length >= _maxConcurrentThumbnails) {
         await Future.delayed(const Duration(milliseconds: 50));
       }
     }
@@ -598,4 +600,3 @@ class MediaSelectionBloc extends Bloc<MediaSelectionEvent, MediaSelectionState> 
     _thumbnailGenerationInProgress.clear();
   }
 }
-

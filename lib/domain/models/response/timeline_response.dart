@@ -290,24 +290,23 @@ class LikeTypes {
 }
 
 class MediaData {
-  MediaData({
-    this.mediaType,
-    this.assetId,
-    this.position,
-    this.url,
-    this.previewUrl,
-    this.coverFileLocalPath,
-    this.description,
-    this.width,
-    this.height,
-    this.duration,
-    this.file,
-    this.fileName,
-    this.postType,
-    this.size,
-    this.localPath,
-    this.fileExtension
-  });
+  MediaData(
+      {this.mediaType,
+      this.assetId,
+      this.position,
+      this.url,
+      this.previewUrl,
+      this.coverFileLocalPath,
+      this.description,
+      this.width,
+      this.height,
+      this.duration,
+      this.file,
+      this.fileName,
+      this.postType,
+      this.size,
+      this.localPath,
+      this.fileExtension});
 
   factory MediaData.fromMap(Map<String, dynamic> json) => MediaData(
         mediaType: json['media_type'] as String? ?? '',
