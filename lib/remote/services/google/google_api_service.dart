@@ -19,6 +19,12 @@ abstract class GoogleApiService extends BaseService {
     double? longitude,
   });
 
+  Future<ResponseModel> getNearByPlaces({
+    required String placeType,
+    required bool isLoading,
+    double radius,
+  });
+
   Future<ResponseModel> getAddressByAutoCompleteSearch({
     required String searchText,
     required String placeType,

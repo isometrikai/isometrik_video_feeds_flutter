@@ -1,3 +1,4 @@
+import 'package:ism_video_reel_player/core/core.dart';
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 
@@ -12,5 +13,7 @@ class AppModuleInjection {
             IsmInjectionUtils.getOtherClass<SharedPreferencesManager>()));
     IsmInjectionUtils.registerOtherClass<DataSource>(() =>
         DataSourceImpl(IsmInjectionUtils.getOtherClass<LocalStorageManager>()));
+    IsmInjectionUtils.registerOtherClass<LocationManager>(
+            () => LocationManager(IsmInjectionUtils.getOtherClass<LocalStorageManager>()));
   }
 }

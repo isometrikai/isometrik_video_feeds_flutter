@@ -103,4 +103,5 @@ class AssetConstants {
   static const String icTalentIcon = '${packageName}assets/icons/ic_talent_icon.png';
   static const String icMediaSelectMultiple = '${packageName}assets/icons/ic_media_select_multiple.svg';
   static const String icMediaSelectSingle = '${packageName}assets/icons/ic_media_select_single.svg';
+  static const String icNearbyPlace = '${packageName}assets/icons/ic_near_by_place.svg';
 }

@@ -18,10 +18,12 @@ class PostAttributeView extends StatefulWidget {
     super.key,
     required this.postAttributeClass,
     required this.isEditMode,
+    this.onTagProduct
   });
 
   final PostAttributeClass? postAttributeClass;
   final bool? isEditMode;
+  final Future<List<ProductDataModel>?> Function(List<ProductDataModel>)? onTagProduct;
 
   @override
   State<PostAttributeView> createState() => _PostAttributeViewState();
@@ -520,28 +522,29 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Link Products
-                      _buildOptionTile(
-                        icon: AssetConstants.icCartIcon,
-                        title: IsrTranslationFile.linkProducts,
-                        onTap: _getLinkedProducts,
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (_linkedProducts.isNotEmpty) ...[
-                              Text(
-                                '${_linkedProducts.length} ${IsrTranslationFile.product}${_linkedProducts.length > 1 ? 's' : ''}',
-                                style: IsrStyles.primaryText14,
+                      if (widget.onTagProduct != null)
+                        _buildOptionTile(
+                          icon: AssetConstants.icCartIcon,
+                          title: IsrTranslationFile.linkProducts,
+                          onTap: _getLinkedProducts,
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (_linkedProducts.isNotEmpty) ...[
+                                Text(
+                                  '${_linkedProducts.length} ${IsrTranslationFile.product}${_linkedProducts.length > 1 ? 's' : ''}',
+                                  style: IsrStyles.primaryText14,
+                                ),
+                                8.horizontalSpace,
+                              ],
+                              Icon(
+                                Icons.chevron_right,
+                                color: '333333'.toColor(),
+                                size: 20.responsiveDimension,
                               ),
-                              8.horizontalSpace,
                             ],
-                            Icon(
-                              Icons.chevron_right,
-                              color: '333333'.toColor(),
-                              size: 20.responsiveDimension,
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
 
                       // Tag People
                       _buildOptionTile(
@@ -781,14 +784,13 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
       ),
       color: hasLocation ? IsrColors.appColor : IsrColors.primaryTextColor,
       onTap: () async {
-        // final result = null; //await IsmInjectionUtils.getRouteManagement()
-        //     .goToSearchLocationScreen(taggedPlaceList: taggedPlaces);
-        //
-        // if (result != null) {
-        //   _postAttributeClass?.taggedPlaces = result;
-        //   setState(() {});
-        //   _updatePostButtonState();
-        // }
+        final result = await IsrAppNavigator.goToSearchLocation(context, taggedPlaceList: taggedPlaces);
+
+        if (result != null) {
+          _postAttributeClass?.taggedPlaces = result;
+          setState(() {});
+          _updatePostButtonState();
+        }
       },
       onTrailingTap: !hasLocation
           ? null
@@ -1240,13 +1242,12 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
 
   /// Get linked products from product selection screen
   void _getLinkedProducts() async {
-    // final result = await IsmInjectionUtils.getRouteManagement()
-    //     .goToLinkProductScreen(linkedProducts: _linkedProducts);
-    // setState(() {
-    //   _linkedProducts.clear();
-    //   _linkedProducts.addAll(result ?? []);
-    // });
-    // _updatePostButtonState();
+    final result = await widget.onTagProduct?.call(_linkedProducts.toList());
+    setState(() {
+      _linkedProducts.clear();
+      _linkedProducts.addAll(result ?? []);
+    });
+    _updatePostButtonState();
   }
 
   void _playPause(VideoPlayerController controller) async {

@@ -7,6 +7,7 @@ export 'get_post_details_response.dart';
 export 'google_address_response.dart';
 export 'guest_sign_in_response.dart';
 export 'hash_tag_response.dart';
+export 'near_by_place_response.dart';
 export 'post_location.dart';
 export 'post_response.dart';
 export 'report_reason_response.dart';

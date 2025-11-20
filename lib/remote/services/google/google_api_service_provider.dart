@@ -213,4 +213,45 @@ class GoogleApiServiceProvider extends GoogleApiService with AppMixin {
       throw Exception('Failed to load address');
     }
   }
+
+  @override
+  Future<ResponseModel> getNearByPlaces({
+    required String placeType,
+    required bool isLoading,
+    double radius = 10000, // meters
+  }) async {
+    final saveLatitude = await _localStorageManager.getValue(
+        LocalStorageKeys.latitude, SavedValueDataType.double) as double;
+    final saveLongitude = await _localStorageManager.getValue(
+        LocalStorageKeys.longitude, SavedValueDataType.double) as double;
+    final url =
+        '${GoogleApiEndPoints.getNearByPlaces}?location=$saveLatitude,$saveLongitude&key=$apiKey&radius=$radius&types=$placeType';
+
+    if (isLoading) Utility.showLoader();
+
+    final response = await http.get(Uri.parse(url));
+
+    Utility.closeProgressDialog();
+    printLog(
+      this,
+      '\nMethod: ${response.request?.method}\nURL :- $url\nStatus Code :- ${response.statusCode}\nResponse Data :- ${response.body}',
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['status'] == 'OK') {
+        return ResponseModel(
+          data: response.body,
+          hasError: false,
+          statusCode: response.statusCode,
+        );
+      }
+      return ResponseModel(
+        data: response.body,
+        hasError: true,
+        statusCode: response.statusCode,
+      );
+    } else {
+      throw Exception('Failed to load address');
+    }
+  }
 }

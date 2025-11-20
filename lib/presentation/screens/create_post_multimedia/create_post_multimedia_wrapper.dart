@@ -17,8 +17,8 @@ import 'package:lottie/lottie.dart';
 import 'package:path/path.dart' as path;
 
 class CreatePostMultimediaWrapper extends StatefulWidget {
-  const CreatePostMultimediaWrapper({super.key});
-
+  const CreatePostMultimediaWrapper({super.key, this.onTagProduct});
+  final Future<List<ProductDataModel>?> Function(List<ProductDataModel>)? onTagProduct;
   @override
   State<CreatePostMultimediaWrapper> createState() =>
       _CreatePostMultimediaWrapperState();
@@ -274,7 +274,7 @@ class _CreatePostMultimediaWrapperState
                   editItem.editedPath ?? editItem.originalPath)))
           .toList();
       _createPostBloc
-          .add(PostAttributeNavigationEvent(newMediaDataList: _mediaDataList, context: context));
+          .add(PostAttributeNavigationEvent(newMediaDataList: _mediaDataList, context: context, onTagProduct: widget.onTagProduct));
       return false;
     }
     return false;

@@ -61,6 +61,9 @@ class UseCaseInjection {
     IsmInjectionUtils.registerUseCase<GetAddressFromPinCodeUseCase>(() =>
         GetAddressFromPinCodeUseCase(
             IsmInjectionUtils.getRepo<GoogleRepository>()));
+    IsmInjectionUtils.registerUseCase<GetNearByPlacesUseCase>(() =>
+        GetNearByPlacesUseCase(
+            IsmInjectionUtils.getRepo<GoogleRepository>()));
     IsmInjectionUtils.registerUseCase<GetAddressFromLatLongUseCase>(() =>
         GetAddressFromLatLongUseCase(
             IsmInjectionUtils.getRepo<GoogleRepository>()));
