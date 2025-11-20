@@ -80,6 +80,7 @@ class IsrAppNavigator {
 
   static Future<String?> goToCreatePostView(
     BuildContext context, {
+    Future<List<ProductDataModel>?> Function(List<ProductDataModel>)? onTagProduct,
     TransitionType? transitionType,
   }) async {
     final page = MultiBlocProvider(
@@ -94,7 +95,7 @@ class IsrAppNavigator {
           create: (_) => IsmInjectionUtils.getBloc<UploadProgressCubit>(),
         ),
       ],
-      child: const CreatePostMultimediaWrapper(),
+      child: CreatePostMultimediaWrapper(onTagProduct: onTagProduct,),
     );
 
     final result =
@@ -105,11 +106,12 @@ class IsrAppNavigator {
   }
 
   static Future<String?> goToPostAttributionView(
-      BuildContext context, {
-        PostAttributeClass? postAttributeClass,
-        bool isEditMode = false,
-        TransitionType? transitionType,
-      }) async {
+    BuildContext context, {
+    PostAttributeClass? postAttributeClass,
+    bool isEditMode = false,
+    Future<List<ProductDataModel>?> Function(List<ProductDataModel>)? onTagProduct,
+    TransitionType? transitionType,
+  }) async {
     final page = MultiBlocProvider(
       providers: [
         BlocProvider.value(value: context.getOrCreateBloc<CreatePostBloc>()),
@@ -119,11 +121,12 @@ class IsrAppNavigator {
       child: PostAttributeView(
         postAttributeClass: postAttributeClass,
         isEditMode: isEditMode,
+        onTagProduct: onTagProduct,
       ),
     );
 
     final result =
-    await Navigator.of(context, rootNavigator: true).push<String>(
+        await Navigator.of(context, rootNavigator: true).push<String>(
       _buildRoute(page: page, transitionType: transitionType),
     );
     return result;
