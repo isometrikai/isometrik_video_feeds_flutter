@@ -61,14 +61,14 @@ class MediaGridItemWidget extends StatelessWidget {
                 builder: (context, thumbnailSnapshot) {
                   if (thumbnailSnapshot.hasData &&
                       thumbnailSnapshot.data != null) {
-            return Image.file(
-              File(thumbnailSnapshot.data!),
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-              errorBuilder: (context, error, stackTrace) =>
-                  _buildVideoPlaceholder(),
-            );
+                    return Image.file(
+                      File(thumbnailSnapshot.data!),
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                      errorBuilder: (context, error, stackTrace) =>
+                          _buildVideoPlaceholder(),
+                    );
                   }
                   return _buildVideoPlaceholder();
                 },

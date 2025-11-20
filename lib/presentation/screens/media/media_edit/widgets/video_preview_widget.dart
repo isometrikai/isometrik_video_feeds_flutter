@@ -132,7 +132,8 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error loading video: ${e.toString().replaceFirst('Exception: ', '')}'),
+            content: Text(
+                'Error loading video: ${e.toString().replaceFirst('Exception: ', '')}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -157,7 +158,7 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
     setState(() {
       _showPauseIcon = true;
     });
-    
+
     _pauseIconTimer?.cancel();
     _pauseIconTimer = Timer(const Duration(seconds: 2), () {
       if (mounted) {
@@ -182,8 +183,8 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-                _videoController!.value.errorDescription ?? 'Unknown video error'),
+            content: Text(_videoController!.value.errorDescription ??
+                'Unknown video error'),
             backgroundColor: Colors.red,
           ),
         );
@@ -193,10 +194,10 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
 
   void _onVisibilityChanged(VisibilityInfo visibilityInfo) {
     final isVisible = visibilityInfo.visibleFraction >= 1.0; // Fully visible
-    
+
     if (_isVideoVisible != isVisible) {
       _isVideoVisible = isVisible;
-      
+
       if (_videoController != null && _videoController!.value.isInitialized) {
         if (!isVisible && _videoController!.value.isPlaying) {
           // Video is not fully visible and is playing - pause it
@@ -224,7 +225,8 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
           width: double.infinity,
           height: double.infinity,
           color: Colors.black,
-          child: _videoController != null && _videoController!.value.isInitialized
+          child: _videoController != null &&
+                  _videoController!.value.isInitialized
               ? Stack(
                   alignment: Alignment.center,
                   children: [
@@ -237,7 +239,7 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
                     ),
                     // Play/Pause Icon Overlay
                     AnimatedOpacity(
-                      opacity: _videoController!.value.isPlaying 
+                      opacity: _videoController!.value.isPlaying
                           ? (_showPauseIcon ? 1.0 : 0.0)
                           : 1.0,
                       duration: const Duration(milliseconds: 300),
@@ -249,8 +251,8 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
-                          _videoController!.value.isPlaying 
-                              ? Icons.pause 
+                          _videoController!.value.isPlaying
+                              ? Icons.pause
                               : Icons.play_arrow,
                           color: Colors.white,
                           size: 40,
@@ -265,11 +267,13 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        CircularProgressIndicator(color: widget.mediaEditConfig.primaryColor),
+                        CircularProgressIndicator(
+                            color: widget.mediaEditConfig.primaryColor),
                         const SizedBox(height: 16),
                         Text(
                           'Loading video...',
-                          style: TextStyle(color: widget.mediaEditConfig.primaryTextColor),
+                          style: TextStyle(
+                              color: widget.mediaEditConfig.primaryTextColor),
                         ),
                       ],
                     ),

@@ -119,16 +119,17 @@ class IsrLocalStorageRepositoryImpl implements IsrLocalStorageRepository {
   @override
   Future<double> getLatitude() async =>
       await getValue(LocalStorageKeys.latitude, SavedValueDataType.double)
-      as double;
+          as double;
 
   @override
   Future<double> getLongitude() async =>
       await getValue(LocalStorageKeys.longitude, SavedValueDataType.double)
-      as double;
+          as double;
 
   @override
   Future<String> getUserName() async =>
-      await getValue(LocalStorageKeys.userName, SavedValueDataType.string) as String;
+      await getValue(LocalStorageKeys.userName, SavedValueDataType.string)
+          as String;
 
   // Implementations for setters
   @override

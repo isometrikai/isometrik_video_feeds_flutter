@@ -51,4 +51,3 @@ class MediaSelectionCompletedState extends MediaSelectionState {
 
   final List<MediaAssetData> selectedMedia;
 }
-

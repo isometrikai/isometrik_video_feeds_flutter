@@ -95,7 +95,7 @@ class _VideoCoverSelectorViewState extends State<VideoCoverSelectorView> {
   bool _isGeneratingFrames = false;
   int _framesGenerated = 0;
   final ScrollController _frameScrollController = ScrollController();
-  
+
   // Track individual frame states
   List<FrameState> _frameStates = [];
 
@@ -112,32 +112,34 @@ class _VideoCoverSelectorViewState extends State<VideoCoverSelectorView> {
 
     // Initialize frame states for all timestamps
     final timestamps = List.generate(_totalVideoDuration, (index) => index);
-    _frameStates = timestamps.map((timestamp) => 
-      FrameState(timestamp: timestamp, state: FrameGenerationState.pending)
-    ).toList();
-    
+    _frameStates = timestamps
+        .map((timestamp) => FrameState(
+            timestamp: timestamp, state: FrameGenerationState.pending))
+        .toList();
+
     // Update UI to show the list immediately
     if (mounted) {
       setState(() {
         _videoFrames = List.filled(_totalVideoDuration, ''); // Placeholder list
       });
     }
-    
+
     // Limit concurrency to prevent memory overload
     const maxConcurrency = 4;
-    
+
     // Process timestamps in batches
     for (var i = 0; i < timestamps.length; i += maxConcurrency) {
       final batch = timestamps.skip(i).take(maxConcurrency).toList();
-      
+
       // Generate thumbnails for current batch in parallel
-      final batchFutures = batch.map((timestamp) => 
-        _extractSingleThumbnailWithProgress(videoPath, outputDir, timestamp)
-      ).toList();
-      
+      final batchFutures = batch
+          .map((timestamp) => _extractSingleThumbnailWithProgress(
+              videoPath, outputDir, timestamp))
+          .toList();
+
       // Wait for all thumbnails in current batch to complete
       await Future.wait(batchFutures);
-      
+
       // Small delay between batches to prevent overwhelming the system
       if (i + maxConcurrency < timestamps.length) {
         await Future.delayed(const Duration(milliseconds: 100));
@@ -148,7 +150,9 @@ class _VideoCoverSelectorViewState extends State<VideoCoverSelectorView> {
     if (mounted) {
       setState(() {
         _videoFrames = _frameStates
-            .where((frame) => frame.state == FrameGenerationState.completed && frame.filePath != null)
+            .where((frame) =>
+                frame.state == FrameGenerationState.completed &&
+                frame.filePath != null)
             .map((frame) => frame.filePath!)
             .toList();
         _framesGenerated = _videoFrames.length;
@@ -157,10 +161,12 @@ class _VideoCoverSelectorViewState extends State<VideoCoverSelectorView> {
   }
 
   /// Extract a single thumbnail at a specific timestamp with progress tracking
-  Future<void> _extractSingleThumbnailWithProgress(String videoPath, String outputDir, int timestamp) async {
+  Future<void> _extractSingleThumbnailWithProgress(
+      String videoPath, String outputDir, int timestamp) async {
     // Update state to generating
-    _updateFrameState(timestamp, FrameGenerationState.generating, progress: 0.0);
-    
+    _updateFrameState(timestamp, FrameGenerationState.generating,
+        progress: 0.0);
+
     try {
       final thumbnailFile = await VideoThumbnail.thumbnailFile(
         video: videoPath,
@@ -168,14 +174,16 @@ class _VideoCoverSelectorViewState extends State<VideoCoverSelectorView> {
         quality: 75,
         timeMs: timestamp * 1000, // Convert seconds to milliseconds
       );
-      
+
       if (thumbnailFile.path.isNotEmpty) {
         // Rename the file to have a consistent naming pattern
-        final newPath = '$outputDir/frame_${timestamp.toString().padLeft(4, '0')}.jpg';
+        final newPath =
+            '$outputDir/frame_${timestamp.toString().padLeft(4, '0')}.jpg';
         final file = File(thumbnailFile.path);
         if (await file.exists()) {
           await file.rename(newPath);
-          _updateFrameState(timestamp, FrameGenerationState.completed, filePath: newPath, progress: 1.0);
+          _updateFrameState(timestamp, FrameGenerationState.completed,
+              filePath: newPath, progress: 1.0);
         } else {
           _updateFrameState(timestamp, FrameGenerationState.failed);
         }
@@ -189,10 +197,12 @@ class _VideoCoverSelectorViewState extends State<VideoCoverSelectorView> {
   }
 
   /// Update frame state and trigger UI update
-  void _updateFrameState(int timestamp, FrameGenerationState state, {String? filePath, double progress = 0.0}) {
+  void _updateFrameState(int timestamp, FrameGenerationState state,
+      {String? filePath, double progress = 0.0}) {
     if (!mounted) return;
-    
-    final index = _frameStates.indexWhere((frame) => frame.timestamp == timestamp);
+
+    final index =
+        _frameStates.indexWhere((frame) => frame.timestamp == timestamp);
     if (index != -1) {
       setState(() {
         _frameStates[index] = _frameStates[index].copyWith(
@@ -203,7 +213,6 @@ class _VideoCoverSelectorViewState extends State<VideoCoverSelectorView> {
       });
     }
   }
-
 
   @override
   void dispose() {
@@ -267,7 +276,8 @@ class _VideoCoverSelectorViewState extends State<VideoCoverSelectorView> {
       return;
     }
 
-    debugPrint('Extracting frames using get_thumbnail_video (parallel) for video: $videoPath');
+    debugPrint(
+        'Extracting frames using get_thumbnail_video (parallel) for video: $videoPath');
     debugPrint('Video duration: $_totalVideoDuration seconds');
 
     try {
@@ -298,7 +308,8 @@ class _VideoCoverSelectorViewState extends State<VideoCoverSelectorView> {
     // Only auto-select if the frame is completed
     if (closestFrameIndex != _selectedFrameIndex &&
         closestFrameIndex < _frameStates.length &&
-        _frameStates[closestFrameIndex].state == FrameGenerationState.completed) {
+        _frameStates[closestFrameIndex].state ==
+            FrameGenerationState.completed) {
       setState(() {
         _selectedFrameIndex = closestFrameIndex;
       });
@@ -339,7 +350,7 @@ class _VideoCoverSelectorViewState extends State<VideoCoverSelectorView> {
 
   void _selectFrame(int index) {
     // Only allow selection of completed frames
-    if (index < _frameStates.length && 
+    if (index < _frameStates.length &&
         _frameStates[index].state == FrameGenerationState.completed) {
       setState(() {
         _selectedFrameIndex = index;
@@ -388,9 +399,10 @@ class _VideoCoverSelectorViewState extends State<VideoCoverSelectorView> {
   }
 
   void _confirmSelection() {
-    if (_selectedFrameIndex >= 0 && 
+    if (_selectedFrameIndex >= 0 &&
         _selectedFrameIndex < _frameStates.length &&
-        _frameStates[_selectedFrameIndex].state == FrameGenerationState.completed &&
+        _frameStates[_selectedFrameIndex].state ==
+            FrameGenerationState.completed &&
         _frameStates[_selectedFrameIndex].filePath != null) {
       // Return the selected frame file
       Navigator.pop(context, File(_frameStates[_selectedFrameIndex].filePath!));
@@ -537,7 +549,6 @@ class _VideoCoverSelectorViewState extends State<VideoCoverSelectorView> {
         padding: const EdgeInsets.symmetric(vertical: 16),
         child: Column(
           children: [
-
             // Frames list
             Expanded(
               child: _frameStates.isEmpty
@@ -592,7 +603,7 @@ class _VideoCoverSelectorViewState extends State<VideoCoverSelectorView> {
             ),
           ),
         );
-      
+
       case FrameGenerationState.generating:
         return Container(
           color: widget.mediaEditConfig.greyColor.withValues(alpha: 0.1),
@@ -624,7 +635,7 @@ class _VideoCoverSelectorViewState extends State<VideoCoverSelectorView> {
             ],
           ),
         );
-      
+
       case FrameGenerationState.completed:
         if (frameState.filePath != null) {
           return Image.file(
@@ -649,7 +660,7 @@ class _VideoCoverSelectorViewState extends State<VideoCoverSelectorView> {
             ),
           );
         }
-      
+
       case FrameGenerationState.failed:
         return Container(
           color: widget.mediaEditConfig.greyColor.withValues(alpha: 0.1),

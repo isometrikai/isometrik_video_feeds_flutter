@@ -47,13 +47,15 @@ class UploadProgressDialog extends StatelessWidget {
                 children: [
                   Text(
                     title ?? '',
-                    style: IsrStyles.primaryText16.copyWith(fontWeight: FontWeight.w600),
+                    style: IsrStyles.primaryText16
+                        .copyWith(fontWeight: FontWeight.w600),
                   ),
                   16.verticalSpace,
                   LinearProgressIndicator(
                     value: progress / 100,
                     backgroundColor: IsrColors.colorF5F5F5,
-                    valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                        Theme.of(context).primaryColor),
                     minHeight: 8.responsiveDimension,
                     borderRadius: BorderRadius.circular(4.responsiveDimension),
                   ),

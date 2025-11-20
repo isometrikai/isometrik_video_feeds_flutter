@@ -63,9 +63,9 @@ class BlocInjection {
         ));
 
     IsmInjectionUtils.registerBloc<SearchUserBloc>(() => SearchUserBloc(
-      IsmInjectionUtils.getUseCase<SearchUserUseCase>(),
-      IsmInjectionUtils.getUseCase<SearchTagUseCase>(),
-    ));
+          IsmInjectionUtils.getUseCase<SearchUserUseCase>(),
+          IsmInjectionUtils.getUseCase<SearchTagUseCase>(),
+        ));
 
     IsmInjectionUtils.registerBloc<SearchLocationBloc>(() => SearchLocationBloc(
           localDataUseCase,
@@ -80,9 +80,9 @@ class BlocInjection {
     );
 
     IsmInjectionUtils.registerBloc<CommentActionCubit>(
-          () => CommentActionCubit(
+      () => CommentActionCubit(
         localDataUseCase,
-            IsmInjectionUtils.getUseCase<CommentActionUseCase>(),
+        IsmInjectionUtils.getUseCase<CommentActionUseCase>(),
       ),
     );
   }

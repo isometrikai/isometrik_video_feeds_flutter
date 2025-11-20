@@ -211,8 +211,10 @@ class Utility {
     bool isRoundedCorners = true,
   }) {
     // Try to get context from multiple sources
-    final contextToUse = context ?? ismNavigatorKey.currentContext ?? IsrVideoReelConfig.buildContext;
-    
+    final contextToUse = context ??
+        ismNavigatorKey.currentContext ??
+        IsrVideoReelConfig.buildContext;
+
     if (contextToUse == null) {
       throw FlutterError(
         'Navigator context is not available. '
@@ -479,7 +481,9 @@ class Utility {
     );
   }
 
-  static BuildContext? get context => IsrVideoReelConfig.getBuildContext?.call() ?? IsrVideoReelConfig.buildContext!;
+  static BuildContext? get context =>
+      IsrVideoReelConfig.getBuildContext?.call() ??
+      IsrVideoReelConfig.buildContext!;
 
   // Define a function to convert a character to its base64Encode
   static String encodeChar(String char) => base64Encode(utf8.encode(char));
@@ -622,9 +626,11 @@ class Utility {
       url.startsWith('http://') == false && url.startsWith('https://') == false;
 
   static String generateRandomId(int length) {
-    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const chars =
+        'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     final rand = m.Random.secure();
-    return List.generate(length, (index) => chars[rand.nextInt(chars.length)]).join();
+    return List.generate(length, (index) => chars[rand.nextInt(chars.length)])
+        .join();
   }
 
   static String getInitials({

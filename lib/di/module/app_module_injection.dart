@@ -13,7 +13,7 @@ class AppModuleInjection {
             IsmInjectionUtils.getOtherClass<SharedPreferencesManager>()));
     IsmInjectionUtils.registerOtherClass<DataSource>(() =>
         DataSourceImpl(IsmInjectionUtils.getOtherClass<LocalStorageManager>()));
-    IsmInjectionUtils.registerOtherClass<LocationManager>(
-            () => LocationManager(IsmInjectionUtils.getOtherClass<LocalStorageManager>()));
+    IsmInjectionUtils.registerOtherClass<LocationManager>(() => LocationManager(
+        IsmInjectionUtils.getOtherClass<LocalStorageManager>()));
   }
 }

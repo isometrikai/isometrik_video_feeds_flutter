@@ -181,7 +181,8 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
         appBar: IsmCustomAppBarWidget(
           backgroundColor: Colors.white,
           leading: IconButton(
-            icon: Icon(Icons.close, color: Colors.black, size: 24.responsiveDimension),
+            icon: Icon(Icons.close,
+                color: Colors.black, size: 24.responsiveDimension),
             onPressed: () => Navigator.pop(context),
           ),
           titleText: 'Tag people',
@@ -416,8 +417,7 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                                             )
                                           : CircleAvatar(
                                               radius: IsrDimens.twentyFour,
-                                              backgroundColor:
-                                                  '#E5F0FB'.color,
+                                              backgroundColor: '#E5F0FB'.color,
                                               child: Text(
                                                 Utility.getInitials(
                                                   firstName: person.name
@@ -700,11 +700,12 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
             ))
         .toList();
 
-    final taggedUserList = await IsrAppNavigator.goToSearchUserScreen(context, socialUserList: selectedUsers);
+    final taggedUserList = await IsrAppNavigator.goToSearchUserScreen(context,
+        socialUserList: selectedUsers);
 
     if (taggedUserList.isEmptyOrNull) return;
     _setMentionedUserPosition(taggedUserList, mediaIndex, relativePosition);
-    }
+  }
 
   void _handleVideoTap(TapUpDetails? details, BoxConstraints? constraints,
       int mediaIndex) async {
@@ -729,11 +730,12 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
             ))
         .toList();
 
-    final taggedUserList = await IsrAppNavigator.goToSearchUserScreen(context, socialUserList: selectedUsers);
+    final taggedUserList = await IsrAppNavigator.goToSearchUserScreen(context,
+        socialUserList: selectedUsers);
 
     if (taggedUserList.isEmptyOrNull) return;
     _setMentionedUserPosition(taggedUserList, mediaIndex, relativePosition);
-    }
+  }
 
   void _setMentionedUserPosition(
       List<SocialUserData> taggedUserList, int mediaIndex, Offset? position) {

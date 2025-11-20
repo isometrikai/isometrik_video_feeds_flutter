@@ -19,9 +19,11 @@ class PostCreateEvent extends CreatePostEvent {
 }
 
 class PostAttributeNavigationEvent extends CreatePostEvent {
-  PostAttributeNavigationEvent({this.newMediaDataList, required this.context, this.onTagProduct});
+  PostAttributeNavigationEvent(
+      {this.newMediaDataList, required this.context, this.onTagProduct});
   final List<MediaData>? newMediaDataList;
-  final Future<List<ProductDataModel>?> Function(List<ProductDataModel>)? onTagProduct;
+  final Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
+      onTagProduct;
   final BuildContext context;
 }
 

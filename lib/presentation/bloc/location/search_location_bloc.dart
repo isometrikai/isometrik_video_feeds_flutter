@@ -13,7 +13,8 @@ import 'package:geolocator/geolocator.dart';
 part 'search_location_events.dart';
 part 'search_location_state.dart';
 
-class SearchLocationBloc extends Bloc<SearchLocationEvent, SearchLocationState> {
+class SearchLocationBloc
+    extends Bloc<SearchLocationEvent, SearchLocationState> {
   SearchLocationBloc(
     this._localDataUseCase,
     this._getPlaceDetailsUseCase,
@@ -32,7 +33,8 @@ class SearchLocationBloc extends Bloc<SearchLocationEvent, SearchLocationState> 
   final GetNearByPlacesUseCase _getNearByPlacesUseCase;
   final GeocodeSearchAddressUseCase _geocodeSearchAddressUseCase;
   final LocationManager _locationManager;
-  final DeBouncer _deBouncer = DeBouncer(duration: const Duration(milliseconds: 900));
+  final DeBouncer _deBouncer =
+      DeBouncer(duration: const Duration(milliseconds: 900));
 
   FutureOr<void> _getNearByPlaces(
       GetNearByPlacesEvent event, Emitter<SearchLocationState> emit) async {
@@ -52,12 +54,15 @@ class SearchLocationBloc extends Bloc<SearchLocationEvent, SearchLocationState> 
         for (final result in results) {
           try {
             // Check if prediction has the structure of a nearby place (with name, vicinity)
-            if (result.toJson().containsKey('name') && result.toJson().containsKey('vicinity')) {
+            if (result.toJson().containsKey('name') &&
+                result.toJson().containsKey('vicinity')) {
               // This is a nearby place response
-              unifiedItems.add(UnifiedLocationItem.fromNearbyPlace(result.toJson()));
+              unifiedItems
+                  .add(UnifiedLocationItem.fromNearbyPlace(result.toJson()));
             } else {
               // This is an autocomplete prediction
-              unifiedItems.add(UnifiedLocationItem.fromNearbyPlace(result.toJson()));
+              unifiedItems
+                  .add(UnifiedLocationItem.fromNearbyPlace(result.toJson()));
             }
           } catch (e) {
             debugPrint('Error converting prediction to unified item: $e');
@@ -73,7 +78,8 @@ class SearchLocationBloc extends Bloc<SearchLocationEvent, SearchLocationState> 
     }
   }
 
-  FutureOr<void> _searchAddress(SearchAddressEvent event, Emitter<SearchLocationState> emit) async {
+  FutureOr<void> _searchAddress(
+      SearchAddressEvent event, Emitter<SearchLocationState> emit) async {
     _deBouncer.run(() {
       _getGeocodeAddress(event, emit);
     });
@@ -93,7 +99,8 @@ class SearchLocationBloc extends Bloc<SearchLocationEvent, SearchLocationState> 
     }
   }
 
-  FutureOr<void> _getPlaceDetails(GetPlaceDetails event, Emitter<SearchLocationState> emit) async {
+  FutureOr<void> _getPlaceDetails(
+      GetPlaceDetails event, Emitter<SearchLocationState> emit) async {
     final apiResult = await _getPlaceDetailsUseCase.executeGetPlaceDetail(
       placeId: event.placeId,
     );
@@ -128,7 +135,8 @@ class SearchLocationBloc extends Bloc<SearchLocationEvent, SearchLocationState> 
       }
 
       if (permission == LocationPermission.deniedForever) {
-        emit(SearchLocationErrorState(error: 'Location permission permanently denied'));
+        emit(SearchLocationErrorState(
+            error: 'Location permission permanently denied'));
         return;
       }
 
@@ -198,10 +206,12 @@ class SearchLocationBloc extends Bloc<SearchLocationEvent, SearchLocationState> 
           // Get nearby places after fallback location is obtained
           add(GetNearByPlacesEvent());
         } else {
-          emit(SearchLocationErrorState(error: 'Failed to get current location: $e'));
+          emit(SearchLocationErrorState(
+              error: 'Failed to get current location: $e'));
         }
       } catch (fallbackError) {
-        emit(SearchLocationErrorState(error: 'Failed to get location: $fallbackError'));
+        emit(SearchLocationErrorState(
+            error: 'Failed to get location: $fallbackError'));
       }
     }
   }

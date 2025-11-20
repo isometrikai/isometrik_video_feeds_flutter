@@ -44,7 +44,8 @@ class _MediaPreviewWidgetState extends State<MediaPreviewWidget>
   late AnimationController _buttonAnimationController;
   late Animation<double> _buttonOpacityAnimation;
   final PhotoViewController _photoViewController = PhotoViewController();
-  final PhotoViewScaleStateController _scaleStateController = PhotoViewScaleStateController();
+  final PhotoViewScaleStateController _scaleStateController =
+      PhotoViewScaleStateController();
 
   // State management
   bool _showPlayPauseButton = true;
@@ -230,10 +231,10 @@ class _MediaPreviewWidgetState extends State<MediaPreviewWidget>
 
   void _onVisibilityChanged(VisibilityInfo visibilityInfo) {
     final isVisible = visibilityInfo.visibleFraction >= 1.0; // Fully visible
-    
+
     if (_isVideoVisible != isVisible) {
       _isVideoVisible = isVisible;
-      
+
       if (_videoController != null && _videoController!.value.isInitialized) {
         if (!isVisible && _videoController!.value.isPlaying) {
           // Video is not fully visible and is playing - pause it
@@ -404,11 +405,11 @@ class _MediaPreviewWidgetState extends State<MediaPreviewWidget>
       );
 
   Widget _buildImageContent() => PhotoView(
-    imageProvider: FileImage(File(widget.mediaData.localPath ?? '')),
-    minScale: PhotoViewComputedScale.contained,
-    maxScale: PhotoViewComputedScale.covered * 2,
-    backgroundDecoration: const BoxDecoration(color: Colors.white),
-  );
+        imageProvider: FileImage(File(widget.mediaData.localPath ?? '')),
+        minScale: PhotoViewComputedScale.contained,
+        maxScale: PhotoViewComputedScale.covered * 2,
+        backgroundDecoration: const BoxDecoration(color: Colors.white),
+      );
 
   Widget _buildNavigationControls() => Positioned(
         bottom: 16,

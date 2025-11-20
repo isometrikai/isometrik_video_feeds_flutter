@@ -31,4 +31,3 @@ class MediaEditCompletedState extends MediaEditState {
 }
 
 class MediaEditEmptyState extends MediaEditState {}
-

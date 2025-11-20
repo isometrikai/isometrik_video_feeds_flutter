@@ -41,13 +41,22 @@ class MediaEditConfig {
     TextStyle? primaryText14,
     TextStyle? primaryText18,
   })  : primaryColor = primaryColor ?? MediaEditConstant.primaryColor,
-        closeIcon = closeIcon ?? MediaEditConstant.closeIcon(color: Colors.black),
-        removeIcon = removeIcon ?? MediaEditConstant.removeIcon(color: Colors.red),
-        addMoreIcon = addMoreIcon ?? MediaEditConstant.addMoreIcon(color: primaryColor ?? MediaEditConstant.primaryColor),
-        editIcon = editIcon ?? MediaEditConstant.editIcon(color: primaryColor ?? MediaEditConstant.primaryColor),
+        closeIcon =
+            closeIcon ?? MediaEditConstant.closeIcon(color: Colors.black),
+        removeIcon =
+            removeIcon ?? MediaEditConstant.removeIcon(color: Colors.red),
+        addMoreIcon = addMoreIcon ??
+            MediaEditConstant.addMoreIcon(
+                color: primaryColor ?? MediaEditConstant.primaryColor),
+        editIcon = editIcon ??
+            MediaEditConstant.editIcon(
+                color: primaryColor ?? MediaEditConstant.primaryColor),
         playIcon = playIcon ?? MediaEditConstant.playIcon(color: Colors.white),
-        pauseIcon = pauseIcon ?? MediaEditConstant.pauseIcon(color: Colors.white),
-        checkIcon = checkIcon ?? MediaEditConstant.checkIcon(color: primaryColor ?? MediaEditConstant.primaryColor),
+        pauseIcon =
+            pauseIcon ?? MediaEditConstant.pauseIcon(color: Colors.white),
+        checkIcon = checkIcon ??
+            MediaEditConstant.checkIcon(
+                color: primaryColor ?? MediaEditConstant.primaryColor),
         primaryText14 = primaryText14 ?? MediaEditConstant.primaryText14,
         primaryText18 = primaryText18 ?? MediaEditConstant.primaryText18;
 
@@ -157,14 +166,16 @@ class MediaEditConstant {
 
   //text
   static const String removeMediaTitle = 'Remove Media';
-  static const String removeMediaMessage = 'Are you sure you want to remove this media?';
+  static const String removeMediaMessage =
+      'Are you sure you want to remove this media?';
   static const String removeButtonText = 'Remove';
   static const String cancelButtonText = 'Cancel';
   static const String editCoverTitle = 'Edit Cover';
   static const String addFromGalleryText = 'Add from Gallery';
   static const String extractingFramesText = 'Extracting frames ...';
   static const String extractedFramesText = 'Extracted frames';
-  static const String selectFrameMessage = 'Please select a frame or choose from gallery';
+  static const String selectFrameMessage =
+      'Please select a frame or choose from gallery';
 
   //default dialog function
   static Future<void> showDialogFunction({
@@ -175,10 +186,11 @@ class MediaEditConstant {
     required String negativeButtonText,
     required VoidCallback onPressPositiveButton,
     required VoidCallback onPressNegativeButton,
-  }) async => showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) => AlertDialog(
+  }) async =>
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) => AlertDialog(
           title: Text(
             title,
             style: primaryText18,
@@ -205,9 +217,7 @@ class MediaEditConstant {
                 Navigator.of(context).pop();
                 onPressPositiveButton();
               },
-              style: TextButton.styleFrom(
-                backgroundColor: Colors.red
-              ),
+              style: TextButton.styleFrom(backgroundColor: Colors.red),
               child: Text(
                 positiveButtonText,
                 style: primaryText14.copyWith(
@@ -218,7 +228,7 @@ class MediaEditConstant {
             ),
           ],
         ),
-    );
+      );
 
   //text styles
   static const TextStyle primaryText14 = TextStyle(

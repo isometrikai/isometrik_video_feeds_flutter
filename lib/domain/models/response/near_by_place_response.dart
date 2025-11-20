@@ -5,7 +5,8 @@ import 'package:ism_video_reel_player/domain/domain.dart';
 NearByPlaceResponse nearByPlaceResponseFromJson(String str) =>
     NearByPlaceResponse.fromJson(json.decode(str) as Map<String, dynamic>);
 
-String nearByPlaceResponseToJson(NearByPlaceResponse data) => json.encode(data.toJson());
+String nearByPlaceResponseToJson(NearByPlaceResponse data) =>
+    json.encode(data.toJson());
 
 class NearByPlaceResponse {
   NearByPlaceResponse({
@@ -15,15 +16,17 @@ class NearByPlaceResponse {
     this.status,
   });
 
-  factory NearByPlaceResponse.fromJson(Map<String, dynamic> json) => NearByPlaceResponse(
+  factory NearByPlaceResponse.fromJson(Map<String, dynamic> json) =>
+      NearByPlaceResponse(
         htmlAttributions: json['html_attributions'] == null
             ? []
-            : List<dynamic>.from((json['html_attributions'] as List).map((x) => x)),
+            : List<dynamic>.from(
+                (json['html_attributions'] as List).map((x) => x)),
         nextPageToken: json['next_page_token'] as String?,
         results: json['results'] == null
             ? []
-            : List<NearByPlaceResult>.from((json['results'] as List)
-                .map((x) => NearByPlaceResult.fromJson(x as Map<String, dynamic>))),
+            : List<NearByPlaceResult>.from((json['results'] as List).map(
+                (x) => NearByPlaceResult.fromJson(x as Map<String, dynamic>))),
         status: json['status'] as String?,
       );
   final List<dynamic>? htmlAttributions;
@@ -32,10 +35,13 @@ class NearByPlaceResponse {
   final String? status;
 
   Map<String, dynamic> toJson() => {
-        'html_attributions':
-            htmlAttributions == null ? [] : List<dynamic>.from(htmlAttributions!.map((x) => x)),
+        'html_attributions': htmlAttributions == null
+            ? []
+            : List<dynamic>.from(htmlAttributions!.map((x) => x)),
         'next_page_token': nextPageToken,
-        'results': results == null ? [] : List<dynamic>.from(results!.map((x) => x.toJson())),
+        'results': results == null
+            ? []
+            : List<dynamic>.from(results!.map((x) => x.toJson())),
         'status': status,
       };
 }
@@ -61,7 +67,8 @@ class NearByPlaceResult {
     this.priceLevel,
   });
 
-  factory NearByPlaceResult.fromJson(Map<String, dynamic> json) => NearByPlaceResult(
+  factory NearByPlaceResult.fromJson(Map<String, dynamic> json) =>
+      NearByPlaceResult(
         geometry: json['geometry'] == null
             ? null
             : Geometry.fromJson(json['geometry'] as Map<String, dynamic>),
@@ -71,19 +78,22 @@ class NearByPlaceResult {
         name: json['name'] as String?,
         photos: json['photos'] == null
             ? []
-            : List<Photo>.from(
-                (json['photos'] as List).map((x) => Photo.fromJson(x as Map<String, dynamic>))),
+            : List<Photo>.from((json['photos'] as List)
+                .map((x) => Photo.fromJson(x as Map<String, dynamic>))),
         placeId: json['place_id'] as String?,
         reference: json['reference'] as String?,
         scope: json['scope'] as String? ?? '',
         types: json['types'] == null
             ? []
-            : List<String>.from((json['types'] as List).map((x) => x as String)),
+            : List<String>.from(
+                (json['types'] as List).map((x) => x as String)),
         vicinity: json['vicinity'] as String?,
-        businessStatus: businessStatusValues.map[json['business_status'] as String?],
+        businessStatus:
+            businessStatusValues.map[json['business_status'] as String?],
         openingHours: json['opening_hours'] == null
             ? null
-            : OpeningHours.fromJson(json['opening_hours'] as Map<String, dynamic>),
+            : OpeningHours.fromJson(
+                json['opening_hours'] as Map<String, dynamic>),
         plusCode: json['plus_code'] == null
             ? null
             : PlusCode.fromJson(json['plus_code'] as Map<String, dynamic>),
@@ -115,7 +125,9 @@ class NearByPlaceResult {
         'icon_background_color': iconBackgroundColor,
         'icon_mask_base_uri': iconMaskBaseUri,
         'name': name,
-        'photos': photos == null ? [] : List<dynamic>.from(photos!.map((x) => x.toJson())),
+        'photos': photos == null
+            ? []
+            : List<dynamic>.from(photos!.map((x) => x.toJson())),
         'place_id': placeId,
         'reference': reference,
         'scope': scope,
@@ -132,7 +144,8 @@ class NearByPlaceResult {
 
 enum BusinessStatus { OPERATIONAL }
 
-final businessStatusValues = EnumValues({'OPERATIONAL': BusinessStatus.OPERATIONAL});
+final businessStatusValues =
+    EnumValues({'OPERATIONAL': BusinessStatus.OPERATIONAL});
 
 class Viewport {
   Viewport({
@@ -184,7 +197,8 @@ class Photo {
         height: json['height'] as int?,
         htmlAttributions: json['html_attributions'] == null
             ? []
-            : List<String>.from((json['html_attributions'] as List).map((x) => x as String)),
+            : List<String>.from(
+                (json['html_attributions'] as List).map((x) => x as String)),
         photoReference: json['photo_reference'] as String?,
         width: json['width'] as int?,
       );
@@ -195,8 +209,9 @@ class Photo {
 
   Map<String, dynamic> toJson() => {
         'height': height,
-        'html_attributions':
-            htmlAttributions == null ? [] : List<dynamic>.from(htmlAttributions!.map((x) => x)),
+        'html_attributions': htmlAttributions == null
+            ? []
+            : List<dynamic>.from(htmlAttributions!.map((x) => x)),
         'photo_reference': photoReference,
         'width': width,
       };

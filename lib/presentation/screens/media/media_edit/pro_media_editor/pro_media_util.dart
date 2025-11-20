@@ -14,16 +14,15 @@ import 'package:pro_image_editor/pro_image_editor.dart';
 PaintEditorConfigs paintEditorConfigs(MediaEditConfig mediaEditConfig) =>
     PaintEditorConfigs(
       style: PaintEditorStyle(
-        uiOverlayStyle: uiOverLay,
-        appBarColor: mediaEditConfig.blackColor,
-        appBarBackground: mediaEditConfig.whiteColor,
-        bottomBarBackground: mediaEditConfig.whiteColor,
-        bottomBarActiveItemColor: mediaEditConfig.primaryColor,
-        bottomBarInactiveItemColor: mediaEditConfig.primaryTextColor,
-        background: mediaEditConfig.whiteColor,
-        lineWidthBottomSheetBackground: mediaEditConfig.whiteColor,
-        opacityBottomSheetBackground: mediaEditConfig.whiteColor
-      ),
+          uiOverlayStyle: uiOverLay,
+          appBarColor: mediaEditConfig.blackColor,
+          appBarBackground: mediaEditConfig.whiteColor,
+          bottomBarBackground: mediaEditConfig.whiteColor,
+          bottomBarActiveItemColor: mediaEditConfig.primaryColor,
+          bottomBarInactiveItemColor: mediaEditConfig.primaryTextColor,
+          background: mediaEditConfig.whiteColor,
+          lineWidthBottomSheetBackground: mediaEditConfig.whiteColor,
+          opacityBottomSheetBackground: mediaEditConfig.whiteColor),
     );
 
 TextEditorConfigs textEditorConfigs(MediaEditConfig mediaEditConfig) =>
@@ -100,18 +99,18 @@ MainEditorConfigs mainEditorConfig(MediaEditConfig mediaEditConfig) =>
         enableDoubleTapZoom: true,
         mobilePanInteraction: MobilePanInteraction.dragSelect,
         style: MainEditorStyle(
-            uiOverlayStyle: uiOverLay,
-            appBarColor: mediaEditConfig.blackColor,
-            appBarBackground: mediaEditConfig.whiteColor,
-            bottomBarBackground: mediaEditConfig.whiteColor,
-            bottomBarColor: mediaEditConfig.primaryTextColor,
-            background: mediaEditConfig.whiteColor,
-            bodyPadding: const EdgeInsets.all(12),
-            bodyBackground: mediaEditConfig.blackColor,
-            bodyBorderColor: mediaEditConfig.blackColor,
-            bodyCornerRadius: 20.responsiveDimension,
-            bodyBorderWidth: 0,
-            outsideCaptureAreaLayerOpacity: 0,
+          uiOverlayStyle: uiOverLay,
+          appBarColor: mediaEditConfig.blackColor,
+          appBarBackground: mediaEditConfig.whiteColor,
+          bottomBarBackground: mediaEditConfig.whiteColor,
+          bottomBarColor: mediaEditConfig.primaryTextColor,
+          background: mediaEditConfig.whiteColor,
+          bodyPadding: const EdgeInsets.all(12),
+          bodyBackground: mediaEditConfig.blackColor,
+          bodyBorderColor: mediaEditConfig.blackColor,
+          bodyCornerRadius: 20.responsiveDimension,
+          bodyBorderWidth: 0,
+          outsideCaptureAreaLayerOpacity: 0,
         ),
         tools: [
           SubEditorMode.paint,
@@ -174,7 +173,9 @@ ProImageEditorConfigs proImageEditorConfigs(MediaEditConfig mediaEditConfig) =>
       filterEditor: filterEditorConfigs(mediaEditConfig),
       blurEditor: blurEditorConfigs(mediaEditConfig),
       tuneEditor: tuneEditorConfigs(mediaEditConfig),
-      designMode: Platform.isAndroid ? ImageEditorDesignMode.material : ImageEditorDesignMode.cupertino,
+      designMode: Platform.isAndroid
+          ? ImageEditorDesignMode.material
+          : ImageEditorDesignMode.cupertino,
     );
 
 /// Builds the sticker picker interface

@@ -62,23 +62,30 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
       controlsPosition: VideoEditorControlPosition.bottom,
       style: VideoEditorStyle(
         trimBarBackground: widget.mediaEditConfig.primaryColor,
-          trimBarBorderWidth: 2,
+        trimBarBorderWidth: 2,
         trimBarColor: widget.mediaEditConfig.primaryColor,
-        toolbarPadding: EdgeInsets.only(bottom: 16.responsiveDimension, top: 16.responsiveDimension, left: 12.responsiveDimension, right: 12.responsiveDimension),
-        trimBarPadding: EdgeInsets.only(bottom: 16.responsiveDimension, top: 16.responsiveDimension),
-        muteButtonBackground: widget.mediaEditConfig.blackColor.withValues(alpha: 0.4),
+        toolbarPadding: EdgeInsets.only(
+            bottom: 16.responsiveDimension,
+            top: 16.responsiveDimension,
+            left: 12.responsiveDimension,
+            right: 12.responsiveDimension),
+        trimBarPadding: EdgeInsets.only(
+            bottom: 16.responsiveDimension, top: 16.responsiveDimension),
+        muteButtonBackground:
+            widget.mediaEditConfig.blackColor.withValues(alpha: 0.4),
         muteButtonColor: widget.mediaEditConfig.whiteColor,
-        trimDurationBackground: widget.mediaEditConfig.blackColor.withValues(alpha: 0.4),
+        trimDurationBackground:
+            widget.mediaEditConfig.blackColor.withValues(alpha: 0.4),
         trimDurationTextColor: widget.mediaEditConfig.whiteColor,
-        playIndicatorBackground: widget.mediaEditConfig.blackColor.withValues(alpha: 0.4),
+        playIndicatorBackground:
+            widget.mediaEditConfig.blackColor.withValues(alpha: 0.4),
         playIndicatorColor: widget.mediaEditConfig.whiteColor,
       ),
       // maxTrimDuration: Duration(seconds: 15),
     );
     generateThumbnails();
     video = EditorVideo.file(File(widget.mediaPath));
-    _videoController =
-        VideoPlayerController.file(File(widget.mediaPath));
+    _videoController = VideoPlayerController.file(File(widget.mediaPath));
 
     await Future.wait([
       setMetadata(),
@@ -148,50 +155,49 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
 
   @override
   Widget build(BuildContext context) => AnimatedSwitcher(
-      duration: const Duration(milliseconds: 220),
-      child: proVideoController == null
-          ? const VideoInitializingWidget()
-          : _buildEditor(),
-    );
+        duration: const Duration(milliseconds: 220),
+        child: proVideoController == null
+            ? const VideoInitializingWidget()
+            : _buildEditor(),
+      );
 
   Widget _buildEditor() => ProImageEditor.video(
-      proVideoController!,
-      callbacks: ProImageEditorCallbacks(
-        onCompleteWithParameters: _saveEditedVideo,
-        videoEditorCallbacks: VideoEditorCallbacks(
-          onPause: _videoController.pause,
-          onPlay: _videoController.play,
-          onMuteToggle: (isMuted) {
-            _videoController.setVolume(isMuted ? 0 : 100);
-          },
-          onTrimSpanUpdate: (durationSpan) {
-            if (_videoController.value.isPlaying) {
-              proVideoController!.pause();
-            }
-          },
-          onTrimSpanEnd: _seekToPosition,
+        proVideoController!,
+        callbacks: ProImageEditorCallbacks(
+          onCompleteWithParameters: _saveEditedVideo,
+          videoEditorCallbacks: VideoEditorCallbacks(
+            onPause: _videoController.pause,
+            onPlay: _videoController.play,
+            onMuteToggle: (isMuted) {
+              _videoController.setVolume(isMuted ? 0 : 100);
+            },
+            onTrimSpanUpdate: (durationSpan) {
+              if (_videoController.value.isPlaying) {
+                proVideoController!.pause();
+              }
+            },
+            onTrimSpanEnd: _seekToPosition,
+          ),
         ),
-      ),
-      configs: _getEditorConfigs(),
-    );
+        configs: _getEditorConfigs(),
+      );
 
   /// Get editor configuration based on editing mode
   ProImageEditorConfigs _getEditorConfigs() {
-
     var _mainEditorConfig = mainEditorConfig(widget.mediaEditConfig).copyWith(
       widgets: MainEditorWidgets(
         removeLayerArea: (
-            removeAreaKey,
-            editor,
-            rebuildStream,
-            isLayerBeingTransformed,
-            ) =>
+          removeAreaKey,
+          editor,
+          rebuildStream,
+          isLayerBeingTransformed,
+        ) =>
             VideoEditorRemoveArea(
-              removeAreaKey: removeAreaKey,
-              editor: editor,
-              rebuildStream: rebuildStream,
-              isLayerBeingTransformed: isLayerBeingTransformed,
-            ),
+          removeAreaKey: removeAreaKey,
+          editor: editor,
+          rebuildStream: rebuildStream,
+          isLayerBeingTransformed: isLayerBeingTransformed,
+        ),
       ),
       tools: [
         SubEditorMode.paint,
@@ -204,20 +210,19 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
       ],
     );
 
-    final _paintEditorConfig = paintEditorConfigs(widget.mediaEditConfig).copyWith(
-      tools: const [
-        PaintMode.moveAndZoom,
-        PaintMode.freeStyle,
-        PaintMode.arrow,
-        PaintMode.line,
-        PaintMode.rect,
-        PaintMode.circle,
-        PaintMode.dashLine,
-        PaintMode.dashDotLine,
-        PaintMode.polygon,
-        PaintMode.eraser,
-      ]
-    );
+    final _paintEditorConfig =
+        paintEditorConfigs(widget.mediaEditConfig).copyWith(tools: const [
+      PaintMode.moveAndZoom,
+      PaintMode.freeStyle,
+      PaintMode.arrow,
+      PaintMode.line,
+      PaintMode.rect,
+      PaintMode.circle,
+      PaintMode.dashLine,
+      PaintMode.dashDotLine,
+      PaintMode.polygon,
+      PaintMode.eraser,
+    ]);
     var _videoConfig = videoConfigs.copyWith(
       playTimeSmoothingDuration: const Duration(milliseconds: 600),
       showTrimBar: false,
@@ -228,16 +233,11 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
     // Configure based on editing mode
     switch (widget.editingMode) {
       case 'Trim':
-        _mainEditorConfig = _mainEditorConfig.copyWith(
-          tools: [],
-          showUndoRedoActions: false
-        );
+        _mainEditorConfig =
+            _mainEditorConfig.copyWith(tools: [], showUndoRedoActions: false);
         _proConfig = _proConfig.copyWith(
-          layerInteraction: const LayerInteractionConfigs(
-            hideBottomToolbar: true,
-            hideToolbarOnInteraction: true
-          )
-        );
+            layerInteraction: const LayerInteractionConfigs(
+                hideBottomToolbar: true, hideToolbarOnInteraction: true));
         _videoConfig = _videoConfig.copyWith(
           showTrimBar: true,
         );
@@ -262,37 +262,39 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
 
   /// Builds the sticker picker interface
   Widget _buildStickerPicker(
-      Function(WidgetLayer) setLayer,
-      ScrollController scrollController,
-      ) => Container(
-      height: 300,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Stickers',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: GridView.builder(
-              controller: scrollController,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4,
-                crossAxisSpacing: 8,
-                mainAxisSpacing: 8,
+    Function(WidgetLayer) setLayer,
+    ScrollController scrollController,
+  ) =>
+      Container(
+        height: 300,
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Stickers',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
-              itemCount: _getStickerCount(),
-              itemBuilder: (context, index) => _buildStickerItem(index, setLayer),
             ),
-          ),
-        ],
-      ),
-    );
+            const SizedBox(height: 16),
+            Expanded(
+              child: GridView.builder(
+                controller: scrollController,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 4,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                ),
+                itemCount: _getStickerCount(),
+                itemBuilder: (context, index) =>
+                    _buildStickerItem(index, setLayer),
+              ),
+            ),
+          ],
+        ),
+      );
 
   /// Returns the number of available stickers
   int _getStickerCount() {
@@ -302,58 +304,59 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
   }
 
   /// Builds individual sticker items
-  Widget _buildStickerItem(int index, Function(WidgetLayer) setLayer) => GestureDetector(
-      onTap: () {
-        // Create a simple text-based sticker for demonstration
-        // In a real implementation, you would use actual sticker images
-        final stickerWidget = Container(
-          width: 100,
-          height: 100,
+  Widget _buildStickerItem(int index, Function(WidgetLayer) setLayer) =>
+      GestureDetector(
+        onTap: () {
+          // Create a simple text-based sticker for demonstration
+          // In a real implementation, you would use actual sticker images
+          final stickerWidget = Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              color: Colors.blue.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue, width: 2),
+            ),
+            child: const Center(
+              child: Text(
+                '😊', // Simple emoji as placeholder
+                style: TextStyle(fontSize: 40),
+              ),
+            ),
+          );
+
+          // Create a WidgetLayer with the sticker
+          final widgetLayer = WidgetLayer(
+            widget: stickerWidget,
+            exportConfigs: const WidgetLayerExportConfigs(),
+          );
+
+          // Set the layer and close the picker
+          setLayer(widgetLayer);
+        },
+        child: Container(
           decoration: BoxDecoration(
-            color: Colors.blue.withValues(alpha: 0.3),
+            color: Colors.grey.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.blue, width: 2),
+            border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
           ),
           child: const Center(
             child: Text(
-              '😊', // Simple emoji as placeholder
-              style: TextStyle(fontSize: 40),
+              '😊', // Placeholder emoji
+              style: TextStyle(fontSize: 30),
             ),
           ),
-        );
-
-        // Create a WidgetLayer with the sticker
-        final widgetLayer = WidgetLayer(
-          widget: stickerWidget,
-          exportConfigs: const WidgetLayerExportConfigs(),
-        );
-
-        // Set the layer and close the picker
-        setLayer(widgetLayer);
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.grey.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
         ),
-        child: const Center(
-          child: Text(
-            '😊', // Placeholder emoji
-            style: TextStyle(fontSize: 30),
-          ),
-        ),
-      ),
-    );
+      );
 
   Widget _buildVideoPlayer() => Center(
-      child: AspectRatio(
-        aspectRatio: _videoController.value.size.aspectRatio,
-        child: VideoPlayer(
-          _videoController,
+        child: AspectRatio(
+          aspectRatio: _videoController.value.size.aspectRatio,
+          child: VideoPlayer(
+            _videoController,
+          ),
         ),
-      ),
-    );
+      );
 
   Future<void> _saveEditedVideo(CompleteParameters parameters) async {
     try {
@@ -388,7 +391,8 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
               'savedLocally': true,
             });
           } else {
-            debugPrint('Failed to create Video AssetEntity, using file directly');
+            debugPrint(
+                'Failed to create Video AssetEntity, using file directly');
             _navigateBack({
               'success': true,
               'file': outputFile,

@@ -37,7 +37,6 @@ enum Orientation {
 }
 
 class MediaAssetData {
-
   MediaAssetData({
     this.assetId,
     this.localPath,
@@ -54,23 +53,23 @@ class MediaAssetData {
   });
 
   factory MediaAssetData.fromJson(Map<String, dynamic> json) => MediaAssetData(
-      assetId: json['assetId'] as String?,
-      localPath: json['localPath'] as String?,
-      isTemp: json['isTemp'] as String?,
-      file: json['file'] != null ? File(json['file'] as String) : null,
-      mediaType: json['mediaType'] != null
-          ? SelectedMediaType.fromString(json['mediaType'] as String)
-          : null,
-      height: json['height'] as int?,
-      width: json['width'] as int?,
-      extension: json['extension'] as String?,
-      duration: json['duration'] as int?,
-      orientation: json['orientation'] != null
-          ? Orientation.fromString(json['orientation'] as String)
-          : null,
-      thumbnailPath: json['thumbnailPath'] as String?,
-      isCaptured: json['isCaptured'] as bool?,
-    );
+        assetId: json['assetId'] as String?,
+        localPath: json['localPath'] as String?,
+        isTemp: json['isTemp'] as String?,
+        file: json['file'] != null ? File(json['file'] as String) : null,
+        mediaType: json['mediaType'] != null
+            ? SelectedMediaType.fromString(json['mediaType'] as String)
+            : null,
+        height: json['height'] as int?,
+        width: json['width'] as int?,
+        extension: json['extension'] as String?,
+        duration: json['duration'] as int?,
+        orientation: json['orientation'] != null
+            ? Orientation.fromString(json['orientation'] as String)
+            : null,
+        thumbnailPath: json['thumbnailPath'] as String?,
+        isCaptured: json['isCaptured'] as bool?,
+      );
   String? assetId;
   String? localPath;
   String? isTemp;
@@ -95,27 +94,27 @@ class MediaAssetData {
 
   // JSON serialization
   Map<String, dynamic> toJson() => {
-      'assetId': assetId,
-      'localPath': localPath,
-      'isTemp': isTemp,
-      'file': file?.path,
-      'mediaType': mediaType?.toJson(),
-      'height': height,
-      'width': width,
-      'extension': extension,
-      'duration': duration,
-      'orientation': orientation?.toJson(),
-      'thumbnailPath': thumbnailPath,
-      'isCaptured': isCaptured,
-    };
+        'assetId': assetId,
+        'localPath': localPath,
+        'isTemp': isTemp,
+        'file': file?.path,
+        'mediaType': mediaType?.toJson(),
+        'height': height,
+        'width': width,
+        'extension': extension,
+        'duration': duration,
+        'orientation': orientation?.toJson(),
+        'thumbnailPath': thumbnailPath,
+        'isCaptured': isCaptured,
+      };
 
   // ===== Override equality and hashCode =====
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is MediaAssetData &&
-              runtimeType == other.runtimeType &&
-              assetId == other.assetId;
+      other is MediaAssetData &&
+          runtimeType == other.runtimeType &&
+          assetId == other.assetId;
 
   @override
   int get hashCode => assetId.hashCode;

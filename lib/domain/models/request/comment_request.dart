@@ -20,9 +20,14 @@ class CommentRequest {
         postedBy: json['postedBy'] as String? ?? '',
         comment: json['content'] as String? ?? '',
         isNewLike: json['isNewLike'] as bool?,
-        commentAction: json['commentAction'] as CommentAction? ?? CommentAction.like,
-        userTags: json['userTags'] == null ? [] : List<dynamic>.from((json['userTags'] as List).map((x) => x)),
-        tags: json['tags'] == null ? null : Map<String, dynamic>.from(json['tags'] as Map),
+        commentAction:
+            json['commentAction'] as CommentAction? ?? CommentAction.like,
+        userTags: json['userTags'] == null
+            ? []
+            : List<dynamic>.from((json['userTags'] as List).map((x) => x)),
+        tags: json['tags'] == null
+            ? null
+            : Map<String, dynamic>.from(json['tags'] as Map),
       );
 
   CommentRequest({
@@ -66,7 +71,8 @@ class CommentRequest {
         'content': comment,
         'commentAction': commentAction,
         'isNewLike': isNewLike,
-        'userTags': userTags == null ? [] : List<dynamic>.from(userTags!.map((x) => x)),
+        'userTags':
+            userTags == null ? [] : List<dynamic>.from(userTags!.map((x) => x)),
         'parent_id': parentCommentId,
         'reason': reason,
         'message': message,

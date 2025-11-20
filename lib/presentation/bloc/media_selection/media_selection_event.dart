@@ -67,4 +67,3 @@ class ProceedToEditFilterEvent extends MediaSelectionEvent {
 
   final List<MediaAssetData>? media;
 }
-

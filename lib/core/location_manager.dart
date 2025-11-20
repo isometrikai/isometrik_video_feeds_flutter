@@ -21,7 +21,8 @@ class LocationManager with AppMixin {
     permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
-      if (permission != LocationPermission.whileInUse && permission != LocationPermission.always) {
+      if (permission != LocationPermission.whileInUse &&
+          permission != LocationPermission.always) {
         printLog(
           this,
           'Location permissions are denied.',
@@ -32,9 +33,12 @@ class LocationManager with AppMixin {
 
     /// Get the current position
     final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium));
-    await _localStorageManager.saveValue(LocalStorageKeys.latitude, position.latitude, SavedValueDataType.double);
-    await _localStorageManager.saveValue(LocalStorageKeys.longitude, position.longitude, SavedValueDataType.double);
+        locationSettings:
+            const LocationSettings(accuracy: LocationAccuracy.medium));
+    await _localStorageManager.saveValue(LocalStorageKeys.latitude,
+        position.latitude, SavedValueDataType.double);
+    await _localStorageManager.saveValue(LocalStorageKeys.longitude,
+        position.longitude, SavedValueDataType.double);
 
     printLog(
       this,

@@ -18,7 +18,6 @@ class IsrVideoReelConfig {
   static BuildContext? Function()? getBuildContext;
   static String? googleServiceJsonPath;
 
-
   /// Helper method to check if context is available
   static bool get isContextAvailable => buildContext != null;
 
@@ -60,16 +59,16 @@ class IsrVideoReelConfig {
     final userInfoString = jsonEncode(userInfoClass);
     await localStorageManager.saveValue(
         LocalStorageKeys.userInfo, userInfoString, SavedValueDataType.string);
-    await localStorageManager.saveValue(
-        LocalStorageKeys.userId, userInfoClass?.userId, SavedValueDataType.string);
-    await localStorageManager.saveValue(
-        LocalStorageKeys.userName, userInfoClass?.userName, SavedValueDataType.string);
-    await localStorageManager.saveValue(
-        LocalStorageKeys.firstName, userInfoClass?.firstName, SavedValueDataType.string);
-    await localStorageManager.saveValue(
-        LocalStorageKeys.lastName, userInfoClass?.lastName, SavedValueDataType.string);
-    await localStorageManager.saveValue(
-        LocalStorageKeys.profilePic, userInfoClass?.profilePic, SavedValueDataType.string);
+    await localStorageManager.saveValue(LocalStorageKeys.userId,
+        userInfoClass?.userId, SavedValueDataType.string);
+    await localStorageManager.saveValue(LocalStorageKeys.userName,
+        userInfoClass?.userName, SavedValueDataType.string);
+    await localStorageManager.saveValue(LocalStorageKeys.firstName,
+        userInfoClass?.firstName, SavedValueDataType.string);
+    await localStorageManager.saveValue(LocalStorageKeys.lastName,
+        userInfoClass?.lastName, SavedValueDataType.string);
+    await localStorageManager.saveValue(LocalStorageKeys.profilePic,
+        userInfoClass?.profilePic, SavedValueDataType.string);
   }
 
   static void precacheVideos(List<String> mediaUrls) async {

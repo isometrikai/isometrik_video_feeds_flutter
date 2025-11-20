@@ -5,11 +5,27 @@ abstract class SocialPostEvent {
 }
 
 class StartPost extends SocialPostEvent {
-  const StartPost();
+  const StartPost({
+    required this.fetchForYou,
+    required this.fetchTrending,
+    required this.fetchTimeline,
+  });
+
+  final bool fetchForYou;
+  final bool fetchTrending;
+  final bool fetchTimeline;
 }
 
 class LoadPostData extends SocialPostEvent {
-  LoadPostData();
+  const LoadPostData({
+    required this.fetchForYou,
+    required this.fetchTrending,
+    required this.fetchTimeline,
+  });
+
+  final bool fetchForYou;
+  final bool fetchTrending;
+  final bool fetchTimeline;
 }
 
 class LoadPostsEvent extends SocialPostEvent {

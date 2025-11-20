@@ -25,6 +25,9 @@ class GoogleMapper {
           ResponseModel response) =>
       CustomResponse(data: placeDetailsFromJson(response.data));
 
-  CustomResponse<NearByPlaceResponse?> mapNearByResponse(ResponseModel response) => CustomResponse(
-      data: nearByPlaceResponseFromJson(response.data), responseCode: response.statusCode);
+  CustomResponse<NearByPlaceResponse?> mapNearByResponse(
+          ResponseModel response) =>
+      CustomResponse(
+          data: nearByPlaceResponseFromJson(response.data),
+          responseCode: response.statusCode);
 }

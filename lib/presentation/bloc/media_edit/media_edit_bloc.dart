@@ -64,7 +64,7 @@ class MediaEditBloc extends Bloc<MediaEditEvent, MediaEditState> {
   }
 
   Future<void> _onRemoveMedia(
-      OnRemoveMediaEvent event,
+    OnRemoveMediaEvent event,
     Emitter<MediaEditState> emit,
   ) async {
     _pendingRemoveIndex = event.index;
@@ -114,7 +114,7 @@ class MediaEditBloc extends Bloc<MediaEditEvent, MediaEditState> {
   }
 
   Future<void> _onSelectMedia(
-      OnSelectMediaEvent event,
+    OnSelectMediaEvent event,
     Emitter<MediaEditState> emit,
   ) async {
     if (event.index >= 0 && event.index < _mediaEditItems.length) {
@@ -146,9 +146,11 @@ class MediaEditBloc extends Bloc<MediaEditEvent, MediaEditState> {
     // Update current index to follow the reordered item
     if (_currentIndex == event.oldIndex) {
       _currentIndex = event.newIndex;
-    } else if (_currentIndex > event.oldIndex && _currentIndex <= event.newIndex) {
+    } else if (_currentIndex > event.oldIndex &&
+        _currentIndex <= event.newIndex) {
       _currentIndex--;
-    } else if (_currentIndex < event.oldIndex && _currentIndex >= event.newIndex) {
+    } else if (_currentIndex < event.oldIndex &&
+        _currentIndex >= event.newIndex) {
       _currentIndex++;
     }
 
@@ -373,4 +375,3 @@ class MediaEditBloc extends Bloc<MediaEditEvent, MediaEditState> {
 
   int? get pendingRemoveIndex => _pendingRemoveIndex;
 }
-

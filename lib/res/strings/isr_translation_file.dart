@@ -154,7 +154,8 @@ class IsrTranslationFile {
   static const String follows = 'Follows';
   static const String pleaseSelectMinimumResolution =
       'Please select media with minimum resolution of 240 x 240 pixels';
-  static const String allFilesUploadedSuccessfully = 'All files uploaded successfully';
+  static const String allFilesUploadedSuccessfully =
+      'All files uploaded successfully';
   static const String uploadingMediaFiles = 'Uploading Media Files';
   static const String uploadingCoverFiles = 'Uploading Cover Files';
   static const String uploadingPreviewFiles = 'Uploading Preview Files';
@@ -180,16 +181,19 @@ class IsrTranslationFile {
   static const String choosePhoto = 'Choose photo';
   static const String chooseVideo = 'Choose video';
   static const String taggedPeople = 'Tagged People';
-  static const String listOfPeopleLinkedToThePost = 'List of people linked to the post';
+  static const String listOfPeopleLinkedToThePost =
+      'List of people linked to the post';
   static const String search = 'search';
   static const String noPeopleFound = 'No people found';
   static const String selectedPeople = 'Selected People';
   static const String noPeopleSelected = 'No people selected';
   static const String searchForPeople = 'Search for people';
   static const String noUserFound = 'No User Found';
-  static const String startTypingToFindPeopleToTag = 'Start typing to find people to tag';
+  static const String startTypingToFindPeopleToTag =
+      'Start typing to find people to tag';
   static const String noLocationFound = 'No Location Found';
-  static const String trySearchingWithADifferentName = 'Try searching with a different name';
+  static const String trySearchingWithADifferentName =
+      'Try searching with a different name';
   static const String posting = 'Posting...';
   static const String inReview = 'InReview';
   static const String searchLocation = 'Search location';

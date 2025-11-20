@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -120,32 +119,33 @@ class MediaSelectionConfig {
     MediaListType? mediaListType,
     double? gridItemAspectRatio,
     double? gridItemMaxWidth,
-  }) => MediaSelectionConfig(
-      primaryColor: primaryColor ?? this.primaryColor,
-      primaryTextColor: primaryTextColor ?? this.primaryTextColor,
-      backgroundColor: backgroundColor ?? this.backgroundColor,
-      appBarColor: appBarColor ?? this.appBarColor,
-      primaryFontFamily: primaryFontFamily ?? this.primaryFontFamily,
-      closeIcon: closeIcon ?? this.closeIcon,
-      cameraIcon: cameraIcon ?? this.cameraIcon,
-      videoIcon: videoIcon ?? this.videoIcon,
-      playIcon: playIcon ?? this.playIcon,
-      pauseIcon: pauseIcon ?? this.pauseIcon,
-      singleSelectModeIcon: singleSelectModeIcon ?? this.singleSelectModeIcon,
-      multiSelectModeIcon: multiSelectModeIcon ?? this.multiSelectModeIcon,
-      selectMediaTitle: selectMediaTitle ?? this.selectMediaTitle,
-      doneButtonText: doneButtonText ?? this.doneButtonText,
-      isMultiSelect: isMultiSelect ?? this.isMultiSelect,
-      videoMediaLimit: videoMediaLimit ?? this.videoMediaLimit,
-      imageMediaLimit: imageMediaLimit ?? this.imageMediaLimit,
-      mediaLimit: mediaLimit ?? this.mediaLimit,
-      thumbnailQuality: thumbnailQuality ?? this.thumbnailQuality,
-      videoMaxDuration: videoMaxDuration ?? this.videoMaxDuration,
-      pageSize: pageSize ?? this.pageSize,
-      mediaListType: mediaListType ?? this.mediaListType,
-      gridItemAspectRatio: gridItemAspectRatio ?? this.gridItemAspectRatio,
-      gridItemMaxWidth: gridItemMaxWidth ?? this.gridItemMaxWidth,
-    );
+  }) =>
+      MediaSelectionConfig(
+        primaryColor: primaryColor ?? this.primaryColor,
+        primaryTextColor: primaryTextColor ?? this.primaryTextColor,
+        backgroundColor: backgroundColor ?? this.backgroundColor,
+        appBarColor: appBarColor ?? this.appBarColor,
+        primaryFontFamily: primaryFontFamily ?? this.primaryFontFamily,
+        closeIcon: closeIcon ?? this.closeIcon,
+        cameraIcon: cameraIcon ?? this.cameraIcon,
+        videoIcon: videoIcon ?? this.videoIcon,
+        playIcon: playIcon ?? this.playIcon,
+        pauseIcon: pauseIcon ?? this.pauseIcon,
+        singleSelectModeIcon: singleSelectModeIcon ?? this.singleSelectModeIcon,
+        multiSelectModeIcon: multiSelectModeIcon ?? this.multiSelectModeIcon,
+        selectMediaTitle: selectMediaTitle ?? this.selectMediaTitle,
+        doneButtonText: doneButtonText ?? this.doneButtonText,
+        isMultiSelect: isMultiSelect ?? this.isMultiSelect,
+        videoMediaLimit: videoMediaLimit ?? this.videoMediaLimit,
+        imageMediaLimit: imageMediaLimit ?? this.imageMediaLimit,
+        mediaLimit: mediaLimit ?? this.mediaLimit,
+        thumbnailQuality: thumbnailQuality ?? this.thumbnailQuality,
+        videoMaxDuration: videoMaxDuration ?? this.videoMaxDuration,
+        pageSize: pageSize ?? this.pageSize,
+        mediaListType: mediaListType ?? this.mediaListType,
+        gridItemAspectRatio: gridItemAspectRatio ?? this.gridItemAspectRatio,
+        gridItemMaxWidth: gridItemMaxWidth ?? this.gridItemMaxWidth,
+      );
 }
 
 class MediaSelectionConstant {
@@ -208,8 +208,10 @@ class MediaSelectionConstant {
   static const int imageMediaLimit = 10;
   static const int mediaLimit = 10;
   static const MediaListType mediaListType = MediaListType.imageVideo;
-  static const double gridItemAspectRatio = 9/16; // 9:16 ratio for reels-like appearance
-  static const double gridItemMaxWidth = 120.0; // Desired item width for responsive grid
+  static const double gridItemAspectRatio =
+      9 / 16; // 9:16 ratio for reels-like appearance
+  static const double gridItemMaxWidth =
+      120.0; // Desired item width for responsive grid
 }
 
 enum MediaListType {

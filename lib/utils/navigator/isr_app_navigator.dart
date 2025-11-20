@@ -80,7 +80,8 @@ class IsrAppNavigator {
 
   static Future<String?> goToCreatePostView(
     BuildContext context, {
-    Future<List<ProductDataModel>?> Function(List<ProductDataModel>)? onTagProduct,
+    Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
+        onTagProduct,
     TransitionType? transitionType,
   }) async {
     final page = MultiBlocProvider(
@@ -95,7 +96,9 @@ class IsrAppNavigator {
           create: (_) => IsmInjectionUtils.getBloc<UploadProgressCubit>(),
         ),
       ],
-      child: CreatePostMultimediaWrapper(onTagProduct: onTagProduct,),
+      child: CreatePostMultimediaWrapper(
+        onTagProduct: onTagProduct,
+      ),
     );
 
     final result =
@@ -109,14 +112,16 @@ class IsrAppNavigator {
     BuildContext context, {
     PostAttributeClass? postAttributeClass,
     bool isEditMode = false,
-    Future<List<ProductDataModel>?> Function(List<ProductDataModel>)? onTagProduct,
+    Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
+        onTagProduct,
     TransitionType? transitionType,
   }) async {
     final page = MultiBlocProvider(
       providers: [
         BlocProvider.value(value: context.getOrCreateBloc<CreatePostBloc>()),
         BlocProvider.value(value: context.getOrCreateBloc<SearchUserBloc>()),
-        BlocProvider.value(value: context.getOrCreateBloc<UploadProgressCubit>()),
+        BlocProvider.value(
+            value: context.getOrCreateBloc<UploadProgressCubit>()),
       ],
       child: PostAttributeView(
         postAttributeClass: postAttributeClass,
@@ -133,37 +138,39 @@ class IsrAppNavigator {
   }
 
   static Future<List<TaggedPlace>?> goToSearchLocation(
-      BuildContext context, {
-        List<TaggedPlace>? taggedPlaceList,
-        TransitionType? transitionType,
-      }) async {
+    BuildContext context, {
+    List<TaggedPlace>? taggedPlaceList,
+    TransitionType? transitionType,
+  }) async {
     final page = MultiBlocProvider(
       providers: [
-        BlocProvider.value(value: context.getOrCreateBloc<SearchLocationBloc>()),
+        BlocProvider.value(
+            value: context.getOrCreateBloc<SearchLocationBloc>()),
       ],
       child: SearchLocationScreen(
         taggedPlaceList: taggedPlaceList,
       ),
     );
 
-    final result =
-    await Navigator.of(context, rootNavigator: true).push<List<TaggedPlace>?>(
+    final result = await Navigator.of(context, rootNavigator: true)
+        .push<List<TaggedPlace>?>(
       _buildRoute(page: page, transitionType: transitionType),
     );
     return result;
   }
 
   static Future<List<MentionData>?> goToTagPeopleScreen(
-      BuildContext context, {
-        List<MentionData>? mentionDataList,
-        List<MediaData>? mediaDataList,
-        TransitionType? transitionType,
-      }) async {
+    BuildContext context, {
+    List<MentionData>? mentionDataList,
+    List<MediaData>? mediaDataList,
+    TransitionType? transitionType,
+  }) async {
     final page = MultiBlocProvider(
       providers: [
         BlocProvider.value(value: context.getOrCreateBloc<CreatePostBloc>()),
         BlocProvider.value(value: context.getOrCreateBloc<SearchUserBloc>()),
-        BlocProvider.value(value: context.getOrCreateBloc<UploadProgressCubit>()),
+        BlocProvider.value(
+            value: context.getOrCreateBloc<UploadProgressCubit>()),
       ],
       child: TagPeopleScreen(
         mentionDataList: mentionDataList ?? [],
@@ -171,31 +178,32 @@ class IsrAppNavigator {
       ),
     );
 
-    final result =
-    await Navigator.of(context, rootNavigator: true).push<List<MentionData>?>(
+    final result = await Navigator.of(context, rootNavigator: true)
+        .push<List<MentionData>?>(
       _buildRoute(page: page, transitionType: transitionType),
     );
     return result;
   }
 
   static Future<List<SocialUserData>> goToSearchUserScreen(
-      BuildContext context, {
-        List<SocialUserData>? socialUserList,
-        TransitionType? transitionType,
-      }) async {
+    BuildContext context, {
+    List<SocialUserData>? socialUserList,
+    TransitionType? transitionType,
+  }) async {
     final page = MultiBlocProvider(
       providers: [
         BlocProvider.value(value: context.getOrCreateBloc<CreatePostBloc>()),
         BlocProvider.value(value: context.getOrCreateBloc<SearchUserBloc>()),
-        BlocProvider.value(value: context.getOrCreateBloc<UploadProgressCubit>()),
+        BlocProvider.value(
+            value: context.getOrCreateBloc<UploadProgressCubit>()),
       ],
       child: SearchUserView(
         socialUserList: socialUserList ?? [],
       ),
     );
 
-    final result =
-    await Navigator.of(context, rootNavigator: true).push<List<SocialUserData>?>(
+    final result = await Navigator.of(context, rootNavigator: true)
+        .push<List<SocialUserData>?>(
       _buildRoute(page: page, transitionType: transitionType),
     );
     return result?.toList() ?? [];

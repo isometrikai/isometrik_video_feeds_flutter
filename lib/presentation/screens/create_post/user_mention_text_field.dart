@@ -51,7 +51,8 @@ class _UserMentionTextFieldState extends State<UserMentionTextField> {
   bool _showLoading = false;
   bool _isSearching = false;
   String _currentSearchTerm = '';
-  SearchUserBloc get _searchUserBloc => BlocProvider.of<SearchUserBloc>(context);
+  SearchUserBloc get _searchUserBloc =>
+      BlocProvider.of<SearchUserBloc>(context);
   final List<MentionData> _addedHashtags = [];
   final List<MentionData> _addedMentions = [];
   bool _ignoreNextChange = false;
@@ -500,7 +501,8 @@ class _UserMentionTextFieldState extends State<UserMentionTextField> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding:IsrDimens.edgeInsetsSymmetric(horizontal: 10.responsiveDimension),
+            padding: IsrDimens.edgeInsetsSymmetric(
+                horizontal: 10.responsiveDimension),
             child: TextField(
               controller: widget.controller,
               maxLength: widget.maxLength,
@@ -560,8 +562,9 @@ class _UserMentionTextFieldState extends State<UserMentionTextField> {
               minHeight: 2,
               backgroundColor: Colors.transparent,
               color: Colors.blue,
-            ) else
-          const Divider(),
+            )
+          else
+            const Divider(),
         ],
       );
 
@@ -572,7 +575,8 @@ class _UserMentionTextFieldState extends State<UserMentionTextField> {
             Container(
               margin: const EdgeInsets.only(top: 8),
               constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.3, // Maximum 40% of screen height
+                maxHeight: MediaQuery.of(context).size.height *
+                    0.3, // Maximum 40% of screen height
               ),
               child: ListView.separated(
                 shrinkWrap: true,
@@ -601,7 +605,7 @@ class _UserMentionTextFieldState extends State<UserMentionTextField> {
                                       '',
                                 )
                               : CircleAvatar(
-                                  radius:IsrDimens.twelve,
+                                  radius: IsrDimens.twelve,
                                   backgroundColor: IsrColors.white,
                                   child: Text(
                                     Utility.getInitials(
@@ -667,9 +671,9 @@ class _UserMentionTextFieldState extends State<UserMentionTextField> {
   Widget _buildHashtagSuggestions() =>
       _isSearching && _hashTagResults.isNotEmpty
           ? Column(
-            children: [
-              const Divider(height: 1, thickness: 1),
-              Container(
+              children: [
+                const Divider(height: 1, thickness: 1),
+                Container(
                   constraints: BoxConstraints(
                     maxHeight: MediaQuery.of(context).size.height *
                         0.4, // Maximum 40% of screen height
@@ -721,8 +725,8 @@ class _UserMentionTextFieldState extends State<UserMentionTextField> {
                     },
                   ),
                 ),
-            ],
-          )
+              ],
+            )
           : const SizedBox.shrink();
 
   @override

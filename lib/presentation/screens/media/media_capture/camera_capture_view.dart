@@ -25,7 +25,7 @@ class CameraCaptureView extends StatefulWidget {
 
 class _CameraCaptureViewState extends State<CameraCaptureView>
     with WidgetsBindingObserver {
-  late final CameraBloc _cameraBloc;//IsmInjectionUtils.getBloc<CameraBloc>();
+  late final CameraBloc _cameraBloc; //IsmInjectionUtils.getBloc<CameraBloc>();
   final _imagePicker = ImagePicker();
 
   @override
@@ -74,89 +74,89 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
   Widget build(BuildContext context) {
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
     return BlocProvider(
-  create: (context) => _cameraBloc,
-  child: BlocConsumer<CameraBloc, CameraState>(
-      listener: (context, state) {
-        if (state is CameraErrorState) {
-          Utility.showToastMessage(state.message);
-        } else if (state is CameraPhotoCapturedState) {
-          _onCompleteCapture(state.photoPath, MediaType.photo);
-        } else if (state is CameraRecordingConfirmedState) {
-          _onCompleteCapture(state.mediaPath, MediaType.video);
-        } else if (state is CameraRecordingReadyState) {
-          _onCompleteCapture(state.videoPath, MediaType.video);
-        }
-      },
-      builder: (context, state) {
-        if (state is CameraLoadingState) {
+      create: (context) => _cameraBloc,
+      child: BlocConsumer<CameraBloc, CameraState>(
+        listener: (context, state) {
+          if (state is CameraErrorState) {
+            Utility.showToastMessage(state.message);
+          } else if (state is CameraPhotoCapturedState) {
+            _onCompleteCapture(state.photoPath, MediaType.photo);
+          } else if (state is CameraRecordingConfirmedState) {
+            _onCompleteCapture(state.mediaPath, MediaType.video);
+          } else if (state is CameraRecordingReadyState) {
+            _onCompleteCapture(state.videoPath, MediaType.video);
+          }
+        },
+        builder: (context, state) {
+          if (state is CameraLoadingState) {
+            return const Scaffold(
+              backgroundColor: Colors.black,
+              body: Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              ),
+            );
+          }
+
+          if (state is CameraErrorState) {
+            return Scaffold(
+              backgroundColor: Colors.white,
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error, color: Colors.white, size: 64),
+                    const SizedBox(height: 16),
+                    Text(
+                      state.message,
+                      style: IsrStyles.white16,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    AppButton(
+                      title: 'Retry',
+                      onPress: () => _cameraBloc.add(CameraInitializeEvent()),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          if (state is CameraInitializedState ||
+              state is CameraSwitchedState ||
+              state is CameraFlashToggledState ||
+              state is CameraZoomChangedState ||
+              state is CameraDurationChangedState ||
+              state is CameraRecordingState ||
+              state is CameraMediaTypeChangedState ||
+              state is CameraRecordingReadyState ||
+              state is CameraRecordingDiscardedState ||
+              state is CameraFilterAppliedState) {
+            if (mounted && context.mounted) {
+              return _buildCameraView(state);
+            }
+          }
+
+          if (state is CameraInitialState) {
+            final controller = _cameraBloc.cameraController;
+            if (controller != null &&
+                controller.value.isInitialized &&
+                !controller.value.hasError &&
+                mounted &&
+                context.mounted) {
+              return _buildCameraView(state);
+            }
+          }
+
           return const Scaffold(
             backgroundColor: Colors.black,
             body: Center(
               child: CircularProgressIndicator(color: Colors.white),
             ),
           );
-        }
-
-        if (state is CameraErrorState) {
-          return Scaffold(
-            backgroundColor: Colors.white,
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error, color: Colors.white, size: 64),
-                  const SizedBox(height: 16),
-                  Text(
-                    state.message,
-                    style: IsrStyles.white16,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  AppButton(
-                    title: 'Retry',
-                    onPress: () => _cameraBloc.add(CameraInitializeEvent()),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-
-        if (state is CameraInitializedState ||
-            state is CameraSwitchedState ||
-            state is CameraFlashToggledState ||
-            state is CameraZoomChangedState ||
-            state is CameraDurationChangedState ||
-            state is CameraRecordingState ||
-            state is CameraMediaTypeChangedState ||
-            state is CameraRecordingReadyState ||
-            state is CameraRecordingDiscardedState ||
-            state is CameraFilterAppliedState) {
-          if (mounted && context.mounted) {
-            return _buildCameraView(state);
-          }
-        }
-
-        if (state is CameraInitialState) {
-          final controller = _cameraBloc.cameraController;
-          if (controller != null &&
-              controller.value.isInitialized &&
-              !controller.value.hasError &&
-              mounted &&
-              context.mounted) {
-            return _buildCameraView(state);
-          }
-        }
-
-        return const Scaffold(
-          backgroundColor: Colors.black,
-          body: Center(
-            child: CircularProgressIndicator(color: Colors.white),
-          ),
-        );
-      },
-    ),
-);
+        },
+      ),
+    );
   }
 
   Widget _buildCameraView(CameraState state) => Scaffold(
@@ -174,7 +174,9 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
             ),
             onPressed: () => Navigator.pop(context),
           ),
-          actions: (_cameraBloc.selectedMediaType == MediaType.video) ? _buildDurationSelection() : [],
+          actions: (_cameraBloc.selectedMediaType == MediaType.video)
+              ? _buildDurationSelection()
+              : [],
         ),
         body: Column(
           children: [
@@ -238,50 +240,51 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
   }
 
   Widget _buildBottomControls() => SafeArea(
-    child: Padding(
-      padding: IsrDimens.edgeInsetsAll(IsrDimens.sixteen).copyWith(bottom: 0),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildZoomControls(),
-
-          IsrDimens.boxHeight(IsrDimens.twenty),
-
-          // Main Controls Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.start,
+        child: Padding(
+          padding:
+              IsrDimens.edgeInsetsAll(IsrDimens.sixteen).copyWith(bottom: 0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    if (_cameraBloc.recordedVideoPath != null &&
-                        !_cameraBloc.isRecording) ...[
-                      _buildDiscardButton(),
-                      16.responsiveVerticalSpace,
-                    ],
-                    _buildFlashButton(),
-                  ],
-                ),
-              ),
-              _buildRecordButton(),
-              Expanded(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    _cameraBloc.recordedVideoPath != null &&
-                            !_cameraBloc.isRecording
-                        ? _buildRetakeButton()
-                        : _buildCameraSwitchButton(),
-                  ],
-                ),
+              _buildZoomControls(),
+
+              IsrDimens.boxHeight(IsrDimens.twenty),
+
+              // Main Controls Row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        if (_cameraBloc.recordedVideoPath != null &&
+                            !_cameraBloc.isRecording) ...[
+                          _buildDiscardButton(),
+                          16.responsiveVerticalSpace,
+                        ],
+                        _buildFlashButton(),
+                      ],
+                    ),
+                  ),
+                  _buildRecordButton(),
+                  Expanded(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        _cameraBloc.recordedVideoPath != null &&
+                                !_cameraBloc.isRecording
+                            ? _buildRetakeButton()
+                            : _buildCameraSwitchButton(),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
-      ),
-    ),
-  );
+        ),
+      );
 
   Widget _buildZoomControls() => Container(
         width: IsrDimens.percentWidth(0.5),
@@ -506,11 +509,11 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
   }
 
   List<Widget> _buildDurationSelection() => [
-    _buildDurationButton('15s', 15),
-    IsrDimens.boxWidth(IsrDimens.sixteen),
-    _buildDurationButton('60s', 60),
-    IsrDimens.boxWidth(IsrDimens.sixteen),
-  ];
+        _buildDurationButton('15s', 15),
+        IsrDimens.boxWidth(IsrDimens.sixteen),
+        _buildDurationButton('60s', 60),
+        IsrDimens.boxWidth(IsrDimens.sixteen),
+      ];
 
   Widget _buildDurationButton(String label, int duration) {
     final isSelected = _cameraBloc.selectedDuration == duration;
