@@ -67,6 +67,9 @@ abstract class SocialRepository extends BaseRepository {
   Future<CustomResponse<CommentsResponse?>> getPostComments({
     required bool isLoading,
     required String postId,
+    required String? parentCommitId,
+    int? page,
+    int? pageLimit,
   });
 
   Future<CustomResponse<PostDetailsResponse?>> getSocialProducts({

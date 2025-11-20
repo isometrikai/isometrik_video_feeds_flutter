@@ -217,12 +217,18 @@ class SocialRepositoryImpl implements SocialRepository {
   Future<CustomResponse<CommentsResponse?>> getPostComments({
     required bool isLoading,
     required String postId,
+    required String? parentCommitId,
+    int? page,
+    int? pageLimit,
   }) async {
     try {
       final response = await _apiService.getPostComments(
         isLoading: isLoading,
         postId: postId,
+        parentCommitId: parentCommitId,
         header: await _dataSource.getHeader(),
+        page: page,
+        pageLimit: pageLimit,
       );
 
       return _socialMapper.mapCommentsResponse(response);

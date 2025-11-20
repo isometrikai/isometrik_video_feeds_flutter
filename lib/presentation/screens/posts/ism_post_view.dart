@@ -617,15 +617,23 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     final completer = Completer<int>();
 
     final result = await Utility.showBottomSheet<int>(
-      child: CommentsBottomSheet(
-        postId: postId,
-        totalCommentsCount: totalCommentsCount,
-        onTapProfile: (userId) {
-          context.pop(totalCommentsCount);
-        },
-        onTapHasTag: (hashTag) {
-          _redirectToHashtag(hashTag, postSectionType);
-        },
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider.value(value: _socialPostBloc),
+          BlocProvider.value(value: context.getOrCreateBloc<CommentActionCubit>()),
+          BlocProvider.value(value: context.getOrCreateBloc<SearchUserBloc>()),
+        ],
+        child: CommentsBottomSheet(
+          postId: postId,
+          totalCommentsCount: totalCommentsCount,
+          onTapProfile: (userId) {
+            context.pop(totalCommentsCount);
+          },
+          onTapHasTag: (hashTag) {
+            context.pop(totalCommentsCount);
+            _redirectToHashtag(hashTag, postSectionType);
+          },
+        ),
       ),
       isDarkBG: true,
       backgroundColor: Colors.black,

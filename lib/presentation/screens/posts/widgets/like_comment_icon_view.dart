@@ -97,7 +97,7 @@ class _LikeCommentIconViewState extends State<LikeCommentIconView> {
             width: iconSize,
             child: TapHandler(
               onTap: () {
-                context.read<CommentActionCubit>().doActionOnComment(
+                context.getOrCreateBloc<CommentActionCubit>().doActionOnComment(
                       commentAction == CommentAction.like
                           ? CommentAction.dislike
                           : CommentAction.like,

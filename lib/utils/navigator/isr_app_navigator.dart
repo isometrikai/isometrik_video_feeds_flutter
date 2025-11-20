@@ -112,9 +112,9 @@ class IsrAppNavigator {
       }) async {
     final page = MultiBlocProvider(
       providers: [
-        BlocProvider.value(value: context.read<CreatePostBloc>()),
-        BlocProvider.value(value: context.read<SearchUserBloc>()),
-        BlocProvider.value(value: context.read<UploadProgressCubit>()),
+        BlocProvider.value(value: context.getOrCreateBloc<CreatePostBloc>()),
+        BlocProvider.value(value: context.getOrCreateBloc<SearchUserBloc>()),
+        BlocProvider.value(value: context.getOrCreateBloc<UploadProgressCubit>()),
       ],
       child: PostAttributeView(
         postAttributeClass: postAttributeClass,
@@ -137,9 +137,9 @@ class IsrAppNavigator {
       }) async {
     final page = MultiBlocProvider(
       providers: [
-        BlocProvider.value(value: context.read<CreatePostBloc>()),
-        BlocProvider.value(value: context.read<SearchUserBloc>()),
-        BlocProvider.value(value: context.read<UploadProgressCubit>()),
+        BlocProvider.value(value: context.getOrCreateBloc<CreatePostBloc>()),
+        BlocProvider.value(value: context.getOrCreateBloc<SearchUserBloc>()),
+        BlocProvider.value(value: context.getOrCreateBloc<UploadProgressCubit>()),
       ],
       child: TagPeopleScreen(
         mentionDataList: mentionDataList ?? [],
@@ -161,9 +161,9 @@ class IsrAppNavigator {
       }) async {
     final page = MultiBlocProvider(
       providers: [
-        BlocProvider.value(value: context.read<CreatePostBloc>()),
-        BlocProvider.value(value: context.read<SearchUserBloc>()),
-        BlocProvider.value(value: context.read<UploadProgressCubit>()),
+        BlocProvider.value(value: context.getOrCreateBloc<CreatePostBloc>()),
+        BlocProvider.value(value: context.getOrCreateBloc<SearchUserBloc>()),
+        BlocProvider.value(value: context.getOrCreateBloc<UploadProgressCubit>()),
       ],
       child: SearchUserView(
         socialUserList: socialUserList ?? [],

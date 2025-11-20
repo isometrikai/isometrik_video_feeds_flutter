@@ -69,5 +69,12 @@ class BlocInjection {
     IsmInjectionUtils.registerBloc<UploadProgressCubit>(
       UploadProgressCubit.new,
     );
+
+    IsmInjectionUtils.registerBloc<CommentActionCubit>(
+          () => CommentActionCubit(
+        localDataUseCase,
+            IsmInjectionUtils.getUseCase<CommentActionUseCase>(),
+      ),
+    );
   }
 }
