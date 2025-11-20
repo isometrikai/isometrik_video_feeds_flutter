@@ -1333,7 +1333,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     _postAttributeClass.linkedProducts = linkedProducts;
     _postAttributeClass.createPostRequest = _createPostRequest;
 
-    await IsrAppNavigator.goToPostAttributionView(event.context, postAttributeClass: _postAttributeClass, isEditMode: _isForEdit);
+    await IsrAppNavigator.goToPostAttributionView(event.context, postAttributeClass: _postAttributeClass, isEditMode: _isForEdit, onTagProduct: event.onTagProduct);
 
     // if (resultPostAttributeClass != null) {
     //   _postAttributeClass = resultPostAttributeClass;
