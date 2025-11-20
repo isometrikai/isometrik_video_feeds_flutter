@@ -132,7 +132,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       .any((element) => element.postSectionType == PostSectionType.forYou);
 
   bool get _fetchTimeline => widget.tabDataModelList
-      .any((element) => element.postSectionType == PostSectionType.trending);
+      .any((element) => element.postSectionType == PostSectionType.following);
 
   bool get _fetchTrending => widget.tabDataModelList
       .any((element) => element.postSectionType == PostSectionType.trending);
