@@ -15,6 +15,12 @@ abstract class GoogleRepository extends BaseRepository {
     double? longitude,
   });
 
+  Future<CustomResponse<NearByPlaceResponse?>> getNearByPlaces({
+    required String placeType,
+    required bool isLoading,
+    double? radius,
+  });
+
   Future<CustomResponse<AddressPlacesAutocompleteResponse?>>
       getAddressByAutoCompleteSearch({
     required String searchText,

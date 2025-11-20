@@ -9,3 +9,4 @@ export 'post_listing/post_listing.dart';
 export 'posts/social_posts.dart';
 export 'tag_details/tag_details.dart';
 export 'search_user/search_user.dart';
+export 'location/search_location.dart';

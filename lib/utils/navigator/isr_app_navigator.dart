@@ -129,6 +129,27 @@ class IsrAppNavigator {
     return result;
   }
 
+  static Future<List<TaggedPlace>?> goToSearchLocation(
+      BuildContext context, {
+        List<TaggedPlace>? taggedPlaceList,
+        TransitionType? transitionType,
+      }) async {
+    final page = MultiBlocProvider(
+      providers: [
+        BlocProvider.value(value: context.getOrCreateBloc<SearchLocationBloc>()),
+      ],
+      child: SearchLocationScreen(
+        taggedPlaceList: taggedPlaceList,
+      ),
+    );
+
+    final result =
+    await Navigator.of(context, rootNavigator: true).push<List<TaggedPlace>?>(
+      _buildRoute(page: page, transitionType: transitionType),
+    );
+    return result;
+  }
+
   static Future<List<MentionData>?> goToTagPeopleScreen(
       BuildContext context, {
         List<MentionData>? mentionDataList,

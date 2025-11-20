@@ -34,6 +34,10 @@ class IsmLocalDataUseCase extends BaseUseCase {
 
   Future<String> getUserInfo() async => await repository.getUserInfo();
 
+  Future<double> getLatitude() async => await repository.getLatitude();
+
+  Future<double> getLongitude() async => await repository.getLongitude();
+
   void saveLanguage(String value) => repository.saveLanguage(value);
 
   void saveIsLoggedIn(bool value) => repository.saveIsLoggedIn(value);
@@ -51,6 +55,10 @@ class IsmLocalDataUseCase extends BaseUseCase {
   void saveLastName(String value) => repository.saveLastName(value);
 
   void saveProfilePic(String value) => repository.saveProfilePic(value);
+
+  void saveLatitude(double value) => repository.saveLatitude(value);
+
+  void saveLongitude(double value) => repository.saveLongitude(value);
 
   void clearLocalData() {
     repository.clearLocalData();

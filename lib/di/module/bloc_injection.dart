@@ -1,5 +1,6 @@
 // lib/di/module/bloc_injection.dart
 
+import 'package:ism_video_reel_player/core/core.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
@@ -65,6 +66,14 @@ class BlocInjection {
       IsmInjectionUtils.getUseCase<SearchUserUseCase>(),
       IsmInjectionUtils.getUseCase<SearchTagUseCase>(),
     ));
+
+    IsmInjectionUtils.registerBloc<SearchLocationBloc>(() => SearchLocationBloc(
+          localDataUseCase,
+          IsmInjectionUtils.getUseCase<GetPlaceDetailsUseCase>(),
+          IsmInjectionUtils.getUseCase<GetNearByPlacesUseCase>(),
+          IsmInjectionUtils.getOtherClass<LocationManager>(),
+          IsmInjectionUtils.getUseCase<GeocodeSearchAddressUseCase>(),
+        ));
 
     IsmInjectionUtils.registerBloc<UploadProgressCubit>(
       UploadProgressCubit.new,

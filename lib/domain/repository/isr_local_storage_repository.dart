@@ -39,6 +39,10 @@ abstract class IsrLocalStorageRepository extends BaseRepository {
 
   Future<String> getUserName();
 
+  Future<double> getLatitude();
+
+  Future<double> getLongitude();
+
   void saveLanguage(String value);
 
   void saveIsLoggedIn(bool value);
@@ -56,4 +60,8 @@ abstract class IsrLocalStorageRepository extends BaseRepository {
   void saveLastName(String value);
 
   void saveProfilePic(String value);
+
+  void saveLatitude(double value);
+
+  void saveLongitude(double value);
 }

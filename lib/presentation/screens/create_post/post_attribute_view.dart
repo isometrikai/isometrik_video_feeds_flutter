@@ -781,14 +781,13 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
       ),
       color: hasLocation ? IsrColors.appColor : IsrColors.primaryTextColor,
       onTap: () async {
-        // final result = null; //await IsmInjectionUtils.getRouteManagement()
-        //     .goToSearchLocationScreen(taggedPlaceList: taggedPlaces);
-        //
-        // if (result != null) {
-        //   _postAttributeClass?.taggedPlaces = result;
-        //   setState(() {});
-        //   _updatePostButtonState();
-        // }
+        final result = await IsrAppNavigator.goToSearchLocation(context, taggedPlaceList: taggedPlaces);
+
+        if (result != null) {
+          _postAttributeClass?.taggedPlaces = result;
+          setState(() {});
+          _updatePostButtonState();
+        }
       },
       onTrailingTap: !hasLocation
           ? null

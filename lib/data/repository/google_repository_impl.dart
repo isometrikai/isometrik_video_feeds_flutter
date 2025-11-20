@@ -29,6 +29,23 @@ class GoogleRepositoryImpl extends GoogleRepository {
   }
 
   @override
+  Future<CustomResponse<NearByPlaceResponse?>> getNearByPlaces({
+    required String placeType,
+    required bool isLoading,
+    double? radius,
+  }) async {
+    try {
+      final response = await _apiService.getNearByPlaces(
+        placeType: placeType,
+        isLoading: isLoading,
+      );
+      return _googleMapper.mapNearByResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
   Future<CustomResponse<GoogleAddressResponse?>> getAddressFromPinCode({
     required bool isLoading,
     required String pinCode,
