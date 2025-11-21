@@ -1,5 +1,6 @@
 export 'comment_action_use_case.dart';
 export 'create_post_use_case.dart';
+export 'delete_post_use_case.dart';
 export 'follow_un_follow_user_use_case.dart';
 export 'get_following_post_use_case.dart';
 export 'get_for_you_post_use_case.dart';

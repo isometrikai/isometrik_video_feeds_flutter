@@ -33,6 +33,8 @@ class UseCaseInjection {
         () => SavePostUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<GetUserPostDataUseCase>(
             () => GetUserPostDataUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<DeletePostUseCase>(
+            () => DeletePostUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<LikePostUseCase>(
         () => LikePostUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<ReportPostUseCase>(

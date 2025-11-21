@@ -22,6 +22,7 @@ class IsmPostView extends StatefulWidget {
     this.onPageChanged,
     this.onTabChanged,
     this.onTapPlace,
+    this.onTagProduct,
   });
 
   final List<TabDataModel> tabDataModelList;
@@ -29,6 +30,7 @@ class IsmPostView extends StatefulWidget {
   final bool? allowImplicitScrolling;
   final Function(int, String)? onPageChanged;
   final Function(int)? onTabChanged;
+  final Future<List<ProductDataModel>?> Function(List<ProductDataModel>)? onTagProduct;
 
   /// Optional callback to override default place navigation
   /// If not provided, SDK will navigate to PlaceDetailsView automatically
@@ -95,11 +97,12 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     if (_isFollowingPostsEmpty()) {
       // _tabsVisibilityNotifier.value = false;
     }
-    _postTabController?.addListener(() {
+    _postTabController?.addListener(() async {
       if (!mounted) return;
       final newIndex = _postTabController?.index ?? 0;
       if (_currentIndex != newIndex) {
-        _currentPostSectionType = _tabDataModelList[newIndex].postSectionType;
+        final tabData = _tabDataModelList[newIndex];
+        _currentPostSectionType = tabData.postSectionType;
         widget.onTabChanged?.call(newIndex);
         // Handle tab change if we have a user
         if (_loggedInUserId.isNotEmpty) {
@@ -112,6 +115,13 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         setState(() {
           _currentIndex = newIndex;
         });
+        if (tabData.reelsDataList.isEmpty){
+          final result = await _handlePostRefresh(tabData);
+          if (result) {
+            setState(() {
+            });
+          }
+        }
       }
     });
     _socialPostBloc.add(LoadPostData(
@@ -205,7 +215,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                                       _tabDataModelList.indexOf(tabData)))
                                   .toList(),
                             ),
-                            _buildTabBar(),
+                            if (_tabDataModelList.length > 1)
+                              _buildTabBar(),
                           ],
                         ),
                       )
@@ -738,7 +749,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                   if (success) {
                     Utility.showToastMessage(
                         IsrTranslationFile.postDeletedSuccessfully);
-                    // _removePostFromList(postDataModel.id ?? ''); /// TODO need to check this
+                    _removePostFromList(postDataModel.id ?? '', tabData);
                   }
                   completer.complete(success);
                 },
@@ -763,6 +774,13 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       debugPrint('Error handling more options: $e');
       return false;
     }
+  }
+
+  void _removePostFromList(String postId, TabDataModel tabData) {
+    for (var tabData in _tabDataModelList) {
+      tabData.reelsDataList.removeWhere((element) => element.id == postId);
+    }
+    tabData.onDeletePostSuccess?.call(postId, tabData.reelsDataList.isEmpty);
   }
 
   // Additional handlers for likes, follows, etc.
@@ -955,7 +973,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                       title: IsrTranslationFile.yes,
                       width: 102.responsiveDimension,
                       onPress: () async {
-                        final postDataString = _handleEditPost(postDataModel);
+                        final postDataString = await _handleEditPost(postDataModel);
                         Navigator.of(context).pop(postDataString ?? '');
                       },
                       backgroundColor: '006CD8'.toColor(),
@@ -975,6 +993,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         ),
       );
 
-  /// TODO need to check this
-  String? _handleEditPost(TimeLineData postDataModel) => '';
+  Future<String?> _handleEditPost(TimeLineData postDataModel) async {
+    final postDataString =
+    await IsrAppNavigator.goToEditPostView(context, postData: postDataModel, onTagProduct: widget.onTagProduct);
+    return postDataString;
+  }
 }

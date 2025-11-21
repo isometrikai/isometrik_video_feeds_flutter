@@ -59,6 +59,7 @@ class TabDataModel {
     this.onTapUserProfile,
     this.onPressSave,
     this.overlayPadding,
+    this.onDeletePostSuccess,
     this.userId,
     this.postId,
     this.tagValue,
@@ -70,6 +71,7 @@ class TabDataModel {
   final Function(List<String> productIds, String postId, String userId)? onTapCartIcon;
   final int? startingPostIndex;
   final PostSectionType postSectionType;
+  final Function(String postId, bool isPostEmpty)? onDeletePostSuccess;
   Widget? placeHolderWidget;
   String? userId;
   String? postId;

@@ -108,6 +108,37 @@ class IsrAppNavigator {
     return result;
   }
 
+  static Future<String?> goToEditPostView(
+      BuildContext context, {
+        required TimeLineData postData,
+        Future<List<ProductDataModel>?> Function(List<ProductDataModel>)? onTagProduct,
+        TransitionType? transitionType,
+      }) async {
+    final page = MultiBlocProvider(
+      providers: [
+        BlocProvider<CreatePostBloc>(
+          create: (_) => IsmInjectionUtils.getBloc<CreatePostBloc>(),
+        ),
+        BlocProvider<SearchUserBloc>(
+          create: (_) => IsmInjectionUtils.getBloc<SearchUserBloc>(),
+        ),
+        BlocProvider<UploadProgressCubit>(
+          create: (_) => IsmInjectionUtils.getBloc<UploadProgressCubit>(),
+        ),
+      ],
+      child: CreatePostView(
+        postData: postData,
+        onTagProduct: onTagProduct,
+      ),
+    );
+
+    final result =
+    await Navigator.of(context, rootNavigator: true).push<String>(
+      _buildRoute(page: page, transitionType: transitionType),
+    );
+    return result;
+  }
+
   static Future<String?> goToPostAttributionView(
     BuildContext context, {
     PostAttributeClass? postAttributeClass,
