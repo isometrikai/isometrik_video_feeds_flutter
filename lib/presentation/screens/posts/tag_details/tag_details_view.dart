@@ -25,6 +25,10 @@ class TagDetailsView extends StatefulWidget {
 class _TagDetailsViewState extends State<TagDetailsView> {
   final _tagDetailsBloc = IsmInjectionUtils.getBloc<TagDetailsBloc>();
   final ScrollController _scrollController = ScrollController();
+  bool _isLoadingMore = false;
+  final List<TimeLineData> _postsList = [];
+  final ValueNotifier<int> _postCountNotifier = ValueNotifier<int>(0);
+  var _hasMoreData = true;
 
   @override
   void initState() {
@@ -43,16 +47,32 @@ class _TagDetailsViewState extends State<TagDetailsView> {
 
   void _setupScrollListener() {
     _scrollController.addListener(() {
-      if (_scrollController.position.pixels >=
-          _scrollController.position.maxScrollExtent - 200) {
-        // Load more posts when near bottom
-        _tagDetailsBloc.add(GetTagDetailsEvent(
-          tagValue: widget.tagValue,
-          tagType: widget.tagType,
-          isFromPagination: true,
-        ));
+      // Check if widget is still mounted and has clients
+      if (!mounted || !_scrollController.hasClients) return;
+
+      // Check if scrolled to 65% of the content
+      final scrollPercentage =
+          _scrollController.position.pixels / _scrollController.position.maxScrollExtent;
+
+      // Trigger pagination at 65% scroll
+      if (scrollPercentage >= 0.65 && !_isLoadingMore && _hasMoreData) {
+        _loadMorePosts();
       }
     });
+  }
+
+  void _loadMorePosts() {
+    if (!mounted || _isLoadingMore) return;
+
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    _tagDetailsBloc.add(GetTagDetailsEvent(
+      tagValue: widget.tagValue,
+      tagType: widget.tagType,
+      isFromPagination: true,
+    ));
   }
 
   @override
@@ -68,23 +88,39 @@ class _TagDetailsViewState extends State<TagDetailsView> {
 
             // Posts Grid
             Expanded(
-              child: BlocBuilder<TagDetailsBloc, TagDetailsState>(
+              child: BlocConsumer<TagDetailsBloc, TagDetailsState>(
                 bloc: _tagDetailsBloc,
+                listener: (context, state) {
+                  // Reset loading flag when pagination completes
+                  if (!mounted) return;
+
+                  if (state is TagDetailsLoadedState || state is TagDetailsErrorState) {
+                    if (_isLoadingMore) {
+                      setState(() {
+                        _isLoadingMore = false;
+                      });
+                    }
+                    if (state is TagDetailsLoadedState) {
+                      _hasMoreData = state.hasMoreData;
+                      _postsList.clear();
+                      _postsList.addAll(state.posts);
+                      _postCountNotifier.value = _postsList.length;
+                    }
+                  }
+                },
                 builder: (context, state) {
                   if (state is TagDetailsLoadingState && state.isLoading) {
                     return const Center(
                       child: CircularProgressIndicator(),
                     );
-                  } else if (state is TagDetailsLoadedState) {
-                    if (state.posts.isEmpty) {
-                      return _buildEmptyState();
-                    } else {
-                      return _buildPostsGrid(state.posts);
-                    }
                   } else if (state is TagDetailsErrorState) {
                     return _buildErrorState(state.error);
                   }
-                  return _buildEmptyState();
+                  if (_postsList.isEmptyOrNull) {
+                    return _buildEmptyState();
+                  } else {
+                    return _buildPostsGrid(_postsList);
+                  }
                 },
               ),
             ),
@@ -111,7 +147,7 @@ class _TagDetailsViewState extends State<TagDetailsView> {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.changeOpacity(0.1),
+                      color: Colors.black.applyOpacity(0.1),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -153,86 +189,31 @@ class _TagDetailsViewState extends State<TagDetailsView> {
             SizedBox(height: 8.responsiveDimension),
 
             // Posts Count
-            BlocBuilder<TagDetailsBloc, TagDetailsState>(
-              bloc: _tagDetailsBloc,
-              builder: (context, state) {
-                var postCount = 0;
-                if (state is TagDetailsLoadedState) {
-                  postCount = state.posts.length;
-                }
-                return Text(
-                  '$postCount Posts',
-                  style: TextStyle(
-                    fontSize: 16.responsiveDimension,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
-                );
-              },
+            ValueListenableBuilder<int>(
+              valueListenable: _postCountNotifier,
+              builder: (context, value, child) => Text(
+                '$value Posts',
+                style: TextStyle(
+                  fontSize: 16.responsiveDimension,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ),
           ],
         ),
       );
 
-  Color _getTagColor() {
-    switch (widget.tagType) {
-      case TagType.hashtag:
-        return const Color(0xFF1E3A8A); // Dark blue for hashtags
-      case TagType.place:
-        return const Color(0xFF059669); // Green for places
-      case TagType.product:
-        return const Color(0xFFDC2626); // Red for products
-      case TagType.mention:
-        return const Color(0xFF7C3AED); // Purple for mentions
-    }
-  }
-
-  Widget _getTagIcon() {
-    switch (widget.tagType) {
-      case TagType.hashtag:
-        return Text(
-          '#',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 32.responsiveDimension,
-            fontWeight: FontWeight.bold,
-          ),
-        );
-      case TagType.place:
-        return Icon(
-          Icons.location_on,
-          color: Colors.white,
-          size: 32.responsiveDimension,
-        );
-      case TagType.product:
-        return Icon(
-          Icons.shopping_bag,
-          color: Colors.white,
-          size: 32.responsiveDimension,
-        );
-      case TagType.mention:
-        return Icon(
-          Icons.alternate_email,
-          color: Colors.white,
-          size: 32.responsiveDimension,
-        );
-    }
-  }
-
   String _getTagDisplayText() {
     switch (widget.tagType) {
       case TagType.hashtag:
-        return widget.tagValue.startsWith('#')
-            ? widget.tagValue
-            : '#${widget.tagValue}';
+        return widget.tagValue.startsWith('#') ? widget.tagValue : '#${widget.tagValue}';
       case TagType.place:
         return widget.tagValue;
       case TagType.product:
         return widget.tagValue;
       case TagType.mention:
-        return widget.tagValue.startsWith('@')
-            ? widget.tagValue
-            : '@${widget.tagValue}';
+        return widget.tagValue.startsWith('@') ? widget.tagValue : '@${widget.tagValue}';
     }
   }
 
@@ -322,11 +303,19 @@ class _TagDetailsViewState extends State<TagDetailsView> {
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
                   if (index == postList.length) {
-                    return const SizedBox.shrink();
+                    return _isLoadingMore
+                        ? const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(16.0),
+                              child: CircularProgressIndicator(),
+                            ),
+                          )
+                        : const SizedBox.shrink();
                   }
 
                   final post = postList[index];
                   return TapHandler(
+                    key: ValueKey('post_${post.id}'),
                     onTap: () => {
                       /// TODO need to check
                       // IsmInjectionUtils.getRouteManagement().goToSocialPostView(
@@ -340,7 +329,9 @@ class _TagDetailsViewState extends State<TagDetailsView> {
                     child: _buildPostCard(post, index),
                   );
                 },
-                childCount: postList.length,
+                childCount: postList.length + (_isLoadingMore ? 1 : 0),
+                addAutomaticKeepAlives: true,
+                addRepaintBoundaries: true,
               ),
             ),
           ),
@@ -357,10 +348,8 @@ class _TagDetailsViewState extends State<TagDetailsView> {
           child: Stack(
             children: [
               _buildPostImage(post),
-              if (post.tags?.products?.isListEmptyOrNull == false)
-                _buildProductsOverlay(post),
-              if (post.media?.first.mediaType?.mediaType == MediaType.video)
-                _buildVideoIcon(),
+              if (post.tags?.products?.isEmptyOrNull == false) _buildProductsOverlay(post),
+              if (post.media?.first.mediaType?.mediaType == MediaType.video) _buildVideoIcon(),
             ],
           ),
         ),
@@ -368,19 +357,19 @@ class _TagDetailsViewState extends State<TagDetailsView> {
 
   Widget _buildPostImage(TimeLineData post) {
     var coverUrl = '';
-    if (post.previews.isListEmptyOrNull == false) {
+    if (post.previews.isEmptyOrNull == false) {
       final previewUrl = post.previews?.first.url ?? '';
-      if (previewUrl.isStringEmptyOrNull == false) {
+      if (previewUrl.isEmptyOrNull == false) {
         coverUrl = previewUrl;
       }
     }
-    if (coverUrl.isStringEmptyOrNull && post.media.isListEmptyOrNull == false) {
+    if (coverUrl.isEmptyOrNull && post.media.isEmptyOrNull == false) {
       coverUrl = post.media?.first.mediaType?.mediaType == MediaType.video
           ? (post.media?.first.previewUrl.toString() ?? '')
           : post.media?.first.url.toString() ?? '';
     }
 
-    if (coverUrl.isStringEmptyOrNull) {
+    if (coverUrl.isEmptyOrNull) {
       return Container(
         color: IsrColors.colorF5F5F5,
         child: Icon(
@@ -410,7 +399,7 @@ class _TagDetailsViewState extends State<TagDetailsView> {
             vertical: IsrDimens.four,
           ),
           decoration: BoxDecoration(
-            color: IsrColors.black.changeOpacity(0.7),
+            color: IsrColors.black.applyOpacity(0.7),
             borderRadius: BorderRadius.only(
               bottomLeft: Radius.circular(8.responsiveDimension),
               bottomRight: Radius.circular(8.responsiveDimension),
@@ -436,7 +425,7 @@ class _TagDetailsViewState extends State<TagDetailsView> {
           child: Container(
             padding: IsrDimens.edgeInsetsAll(IsrDimens.eight),
             decoration: BoxDecoration(
-              color: IsrColors.black.changeOpacity(0.3),
+              color: IsrColors.black.applyOpacity(0.3),
               borderRadius: BorderRadius.circular(IsrDimens.twentyFour),
             ),
             child: Icon(

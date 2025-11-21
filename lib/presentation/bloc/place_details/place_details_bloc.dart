@@ -21,14 +21,15 @@ class PlaceDetailsBloc extends Bloc<PlaceDetailsEvent, PlaceDetailsState> {
   final _pageLimit = 20;
   final List<TimeLineData> _posts = [];
 
-  FutureOr<void> _getPlacePosts(
-      GetPlacePostsEvent event, Emitter<PlaceDetailsState> emit) async {
+  FutureOr<void> _getPlacePosts(GetPlacePostsEvent event, Emitter<PlaceDetailsState> emit) async {
     try {
-      emit(const PlaceDetailsLoadingState(isLoading: true));
+      emit(PlaceDetailsLoadingState(isLoading: event.isFromPagination == false));
 
       if (!event.isFromPagination) {
         _currentPage = 1;
         _posts.clear();
+      } else {
+        _currentPage++;
       }
 
       // Use place name as tag value to search for posts tagged with this place

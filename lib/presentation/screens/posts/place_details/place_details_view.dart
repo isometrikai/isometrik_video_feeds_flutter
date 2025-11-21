@@ -37,6 +37,9 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
   final Set<Marker> _markers = {};
   CameraPosition? _initialCameraPosition;
   final ScrollController _scrollController = ScrollController();
+  bool _isLoadingMore = false;
+  final List<TimeLineData> _postsList = [];
+  var _hasMoreData = true;
 
   @override
   void initState() {
@@ -45,6 +48,44 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
     _placeDetailsBloc = context.read<PlaceDetailsBloc>();
     _initializeMap();
     _loadPosts();
+    _setupScrollListener();
+  }
+
+  void _setupScrollListener() {
+    _scrollController.addListener(() {
+      // Check if widget is still mounted and has clients
+      if (!mounted || !_scrollController.hasClients) return;
+
+      // Check if scrolled to 65% of the content
+      final scrollPercentage =
+          _scrollController.position.pixels / _scrollController.position.maxScrollExtent;
+
+      // Trigger pagination at 65% scroll
+      if (scrollPercentage >= 0.65 && !_isLoadingMore && _hasMoreData) {
+        _loadMorePosts();
+      }
+    });
+  }
+
+  void _loadMorePosts() {
+    if (!mounted || _isLoadingMore || widget.placeId.isEmptyOrNull) return;
+
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    _placeDetailsBloc.add(GetPlacePostsEvent(
+      placeId: widget.placeId ?? '',
+      latitude: widget.latitude,
+      longitude: widget.longitude,
+      isFromPagination: true,
+    ));
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   void _initializeMap() {
@@ -126,8 +167,7 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
 
                   // Back Button
                   Positioned(
-                    top: MediaQuery.of(context).padding.top +
-                        10.responsiveDimension,
+                    top: MediaQuery.of(context).padding.top + 10.responsiveDimension,
                     left: 16.responsiveDimension,
                     child: GestureDetector(
                       onTap: () => context.pop(),
@@ -139,7 +179,7 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.changeOpacity(0.1),
+                              color: Colors.black.applyOpacity(0.1),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -156,8 +196,7 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
 
                   // Open in Google Maps Button
                   Positioned(
-                    top: MediaQuery.of(context).padding.top +
-                        10.responsiveDimension,
+                    top: MediaQuery.of(context).padding.top + 10.responsiveDimension,
                     right: 16.responsiveDimension,
                     child: GestureDetector(
                       onTap: () {
@@ -174,7 +213,7 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.changeOpacity(0.1),
+                              color: Colors.black.applyOpacity(0.1),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -209,7 +248,7 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            widget.placeName.isStringEmptyOrNull == false
+                            widget.placeName.isEmptyOrNull == false
                                 ? (widget.placeName ?? '')
                                 : 'India - Bengaluru',
                             style: TextStyle(
@@ -222,26 +261,40 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
                       ),
                     ),
 
-                    // Posts Grid with BlocBuilder
+                    // Posts Grid with BlocConsumer
                     Expanded(
-                      child: BlocBuilder<PlaceDetailsBloc, PlaceDetailsState>(
+                      child: BlocConsumer<PlaceDetailsBloc, PlaceDetailsState>(
                         bloc: _placeDetailsBloc,
+                        listener: (context, state) {
+                          // Reset loading flag when pagination completes
+                          if (!mounted) return;
+
+                          if (state is PlacePostsLoadedState || state is PlaceDetailsErrorState) {
+                            if (_isLoadingMore) {
+                              setState(() {
+                                _isLoadingMore = false;
+                              });
+                            }
+                            if (state is PlacePostsLoadedState) {
+                              _hasMoreData = state.hasMoreData;
+                              _postsList.clear();
+                              _postsList.addAll(state.posts);
+                            }
+                          }
+                        },
                         builder: (context, state) {
-                          if (state is PlaceDetailsLoadingState &&
-                              state.isLoading) {
+                          if (state is PlaceDetailsLoadingState && state.isLoading) {
                             return const Center(
                               child: CircularProgressIndicator(),
                             );
-                          } else if (state is PlacePostsLoadedState) {
-                            if (state.posts.isEmpty) {
-                              return _buildEmptyState();
-                            } else {
-                              return _buildPostsGrid(state.posts);
-                            }
                           } else if (state is PlaceDetailsErrorState) {
                             return _buildErrorState(state.error);
                           }
-                          return _buildEmptyState();
+                          if (_postsList.isEmptyOrNull) {
+                            return _buildEmptyState();
+                          } else {
+                            return _buildPostsGrid(_postsList);
+                          }
                         },
                       ),
                     ),
@@ -297,33 +350,37 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
                 mainAxisSpacing: IsrDimens.four,
                 childAspectRatio: 0.75,
               ),
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  if (index == postList.length) {
-                    return /*widget.isLoadingMore
-                        ? const Center(child: AppLoader())
-                        :*/
-                        const SizedBox.shrink();
-                  }
+              delegate: SliverChildBuilderDelegate((context, index) {
+                if (index == postList.length) {
+                  return _isLoadingMore
+                      ? const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(16.0),
+                            child: CircularProgressIndicator(),
+                          ),
+                        )
+                      : const SizedBox.shrink();
+                }
 
-                  final post = postList[index];
-                  return TapHandler(
-                    onTap: () => {
-                      /// TODO need to check this one
-                      // IsmInjectionUtils.getRouteManagement().goToSocialPostView(
-                      //   postDataList: postList,
-                      //   startingPostIndex: index,
-                      //   postTabType: PostTabType.tagPost,
-                      //   tagType: TagType.place,
-                      //   tagValue: widget.placeId,
-                      // ),
-                    },
-                    child: _buildPostCard(post, index),
-                  );
-                },
-                childCount:
-                    postList.length /*+ (widget.isLoadingMore ? 1 : 0)*/,
-              ),
+                final post = postList[index];
+                return TapHandler(
+                  key: ValueKey('post_${post.id}'),
+                  onTap: () => {
+                    /// TODO need to check this one
+                    // IsmInjectionUtils.getRouteManagement().goToSocialPostView(
+                    //   postDataList: postList,
+                    //   startingPostIndex: index,
+                    //   postTabType: PostTabType.tagPost,
+                    //   tagType: TagType.place,
+                    //   tagValue: widget.placeId,
+                    // ),
+                  },
+                  child: _buildPostCard(post, index),
+                );
+              },
+                  childCount: postList.length + (_isLoadingMore ? 1 : 0),
+                  addAutomaticKeepAlives: true,
+                  addRepaintBoundaries: true),
             ),
           ),
         ],
@@ -340,10 +397,8 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
             children: [
               _buildPostImage(post),
               _buildUserProfileOverlay(post),
-              if (post.tags?.products?.isListEmptyOrNull == false)
-                _buildShopButtonOverlay(post),
-              if (post.media?.first.mediaType?.mediaType == MediaType.video)
-                _buildVideoIcon(),
+              if (post.tags?.products?.isListEmptyOrNull == false) _buildShopButtonOverlay(post),
+              if (post.media?.first.mediaType?.mediaType == MediaType.video) _buildVideoIcon(),
             ],
           ),
         ),
@@ -351,9 +406,9 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
 
   Widget _buildPostImage(TimeLineData post) {
     var coverUrl = '';
-    if (post.previews.isListEmptyOrNull == false) {
+    if (post.previews.isEmptyOrNull == false) {
       final previewUrl = post.previews?.first.url ?? '';
-      if (previewUrl.isStringEmptyOrNull == false) {
+      if (previewUrl.isEmptyOrNull == false) {
         coverUrl = previewUrl;
       }
     }
@@ -394,9 +449,8 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
               CircleAvatar(
                 radius: IsrDimens.twelve,
                 backgroundColor: IsrColors.colorF5F5F5,
-                backgroundImage: post.user?.avatarUrl != null
-                    ? NetworkImage(post.user!.avatarUrl!)
-                    : null,
+                backgroundImage:
+                    post.user?.avatarUrl != null ? NetworkImage(post.user!.avatarUrl!) : null,
                 child: post.user?.avatarUrl == null
                     ? Icon(
                         Icons.person,
@@ -485,6 +539,7 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
         bottom: 0,
         child: Center(
           child: Container(
+            padding: IsrDimens.edgeInsetsAll(IsrDimens.eight),
             decoration: BoxDecoration(
               color: IsrColors.black.changeOpacity(0.3),
               borderRadius: BorderRadius.circular(IsrDimens.twentyFour),
@@ -542,8 +597,7 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
 
   /// Returns true if the map was opened successfully, false otherwise
   /// First tries to open Google Maps app, then falls back to webview
-  Future<bool> openGoogleMaps(
-      double latitude, double longitude, String placeName) async {
+  Future<bool> openGoogleMaps(double latitude, double longitude, String placeName) async {
     try {
       // URL encode the place name for safe URL usage
       final encodedPlaceName = Uri.encodeComponent(placeName);
@@ -578,8 +632,7 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
       }
 
       // Fallback to webview if app is not installed
-      final googleMapsUrl =
-          'https://www.google.com/maps/search/?api=1&query=$encodedPlaceName';
+      final googleMapsUrl = 'https://www.google.com/maps/search/?api=1&query=$encodedPlaceName';
       final webUri = Uri.parse(googleMapsUrl);
 
       if (await canLaunchUrl(webUri)) {
