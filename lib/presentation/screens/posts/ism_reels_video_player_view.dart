@@ -44,15 +44,13 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
   final EdgeInsetsGeometry? overlayPadding;
 
   @override
-  State<IsmReelsVideoPlayerView> createState() =>
-      _IsmReelsVideoPlayerViewState();
+  State<IsmReelsVideoPlayerView> createState() => _IsmReelsVideoPlayerViewState();
 }
 
 class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver, RouteAware {
   // Use MediaCacheFactory instead of direct VideoCacheManager
-  VideoCacheManager get _videoCacheManager =>
-      widget.videoCacheManager ?? VideoCacheManager();
+  VideoCacheManager get _videoCacheManager => widget.videoCacheManager ?? VideoCacheManager();
 
   // Add constants for media types
   static const int kPictureType = 0;
@@ -80,17 +78,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   final ValueNotifier<bool> _isExpandedDescription = ValueNotifier(false);
   final ValueNotifier<bool> _isSaveLoading = ValueNotifier(false);
   final ValueNotifier<bool> _isLikeLoading = ValueNotifier(false);
-  final ValueNotifier<bool> _isVideoPlaying =
-      ValueNotifier(true); // For reducing rebuilds
+  final ValueNotifier<bool> _isVideoPlaying = ValueNotifier(true); // For reducing rebuilds
 
   // Audio state management
-  static bool _globalMuteState =
-      false; // Global mute state that persists across all videos
+  static bool _globalMuteState = false; // Global mute state that persists across all videos
   bool _isMuted = false;
   bool _isAudioOperationInProgress = false;
   Timer? _audioDebounceTimer;
-  double?
-      _lastSetVolume; // Track last set volume to prevent redundant operations
+  double? _lastSetVolume; // Track last set volume to prevent redundant operations
   final _maxLengthToShow = 50;
   late ReelsData _reelData;
 
@@ -116,8 +111,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   // Throttle visibility changes to prevent rapid state changes
   DateTime? _lastVisibilityChange;
-  static const Duration _visibilityThrottleDuration =
-      Duration(milliseconds: 300);
+  static const Duration _visibilityThrottleDuration = Duration(milliseconds: 300);
 
   // Video state management
   bool _isVideoInitializing = false;
@@ -144,8 +138,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.paused) {
+    if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
       if (_isPlaying) {
         _togglePlayPause();
       }
@@ -172,8 +165,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   @override
   void didPushNext() {
     // User navigated away from this screen
-    debugPrint(
-        '⏸️ Video player: User navigated away from reel screen - pausing video');
+    debugPrint('⏸️ Video player: User navigated away from reel screen - pausing video');
     _hasNavigatedAway = true; // Set navigation state
     if (_isPlaying && _controllerReady) {
       _videoPlayerController?.pause();
@@ -184,9 +176,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   /// Returns true if the video controller is ready for playback.
   bool get _controllerReady =>
-      _videoPlayerController != null &&
-      !_isDisposed &&
-      _videoPlayerController!.isInitialized;
+      _videoPlayerController != null && !_isDisposed && _videoPlayerController!.isInitialized;
 
   /// Returns true if the current post has multiple media items (carousel).
   bool get _hasMultipleMedia => _reelData.mediaMetaDataList.length > 1;
@@ -199,12 +189,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       _currentPageNotifier.value = 0;
     }
 
-    _mentionedMetaDataList = _reelData.mentions
-        .where((mentionData) => mentionData.mediaPosition != null)
-        .toList();
+    _mentionedMetaDataList =
+        _reelData.mentions.where((mentionData) => mentionData.mediaPosition != null).toList();
     _pageMentionMetaDataList = _mentionedMetaDataList
-        .where((mention) =>
-            mention.mediaPosition?.position == _currentPageNotifier.value + 1)
+        .where((mention) => mention.mediaPosition?.position == _currentPageNotifier.value + 1)
         .toList();
     // _mentionedDataList = _reelData.mentions
     //     .where((mentionData) => mentionData.textPosition != null)
@@ -227,8 +215,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     debugPrint(
         'IsmReelsVideoPlayerView ...Post by ...${_reelData.userName}\n Post url ${_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl}');
 
-    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType ==
-        kVideoType) {
+    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kVideoType) {
       // OPTIMIZATION: Don't block widget initialization - load video in background
       unawaited(_initializeVideoPlayer().then((_) {
         if (mounted) {
@@ -257,14 +244,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     final nextThumbnails = <String>[];
 
     // OPTIMIZATION: Only preload next 1 video to reduce memory pressure
-    for (var i = 1;
-        i <= 1 && (currentIndex + i) < _reelData.mediaMetaDataList.length;
-        i++) {
+    for (var i = 1; i <= 1 && (currentIndex + i) < _reelData.mediaMetaDataList.length; i++) {
       final nextIndex = currentIndex + i;
       final mediaData = _reelData.mediaMetaDataList[nextIndex];
 
-      if (mediaData.mediaType == kVideoType &&
-          mediaData.mediaUrl.isStringEmptyOrNull == false) {
+      if (mediaData.mediaType == kVideoType && mediaData.mediaUrl.isStringEmptyOrNull == false) {
         nextVideos.add(mediaData.mediaUrl);
         if (mediaData.thumbnailUrl.isNotEmpty) {
           nextThumbnails.add(mediaData.thumbnailUrl);
@@ -275,8 +259,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (nextVideos.isNotEmpty) {
       // Preload videos and thumbnails together (non-blocking)
       final allMedia = [...nextVideos, ...nextThumbnails];
-      unawaited(MediaCacheFactory.precacheMedia(allMedia, highPriority: false)
-          .then((_) {
+      unawaited(MediaCacheFactory.precacheMedia(allMedia, highPriority: false).then((_) {
         debugPrint(
             '✅ VideoPlayer: Successfully preloaded ${nextVideos.length} videos and ${nextThumbnails.length} thumbnails');
       }).catchError((error) {
@@ -295,8 +278,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
 
     // Pause current video if playing
-    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType ==
-        kVideoType) {
+    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kVideoType) {
       await _videoPlayerController?.pause();
       _disposeCurrentVideoController();
     }
@@ -304,8 +286,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _currentPageNotifier.value = index;
 
     _pageMentionMetaDataList = _mentionedMetaDataList
-        .where((mention) =>
-            mention.mediaPosition?.position == _currentPageNotifier.value + 1)
+        .where((mention) => mention.mediaPosition?.position == _currentPageNotifier.value + 1)
         .toList();
     _isPlaying = true;
     _isPlayPauseActioned = false;
@@ -320,8 +301,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     // mountUpdate();
 
     // Initialize new video if needed
-    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType ==
-        kVideoType) {
+    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kVideoType) {
       // Parent widget (PostItemWidget) handles caching
 
       await _initializeVideoPlayer();
@@ -334,8 +314,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (_videoPlayerController != null &&
         _reelData.mediaMetaDataList.isNotEmpty &&
         _currentPageNotifier.value < _reelData.mediaMetaDataList.length &&
-        !_videoCacheManager.isMediaCached(
-            _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl)) {
+        !_videoCacheManager
+            .isMediaCached(_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl)) {
       _videoPlayerController?.dispose();
     }
     _videoPlayerController = null;
@@ -349,16 +329,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   /// - If pre-caching is in progress, waits for the same initialization future.
   /// - Only creates a new controller if not cached or initializing.
   Future<void> _initializeVideoPlayer() async {
-    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl
-            .isStringEmptyOrNull !=
+    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl.isStringEmptyOrNull !=
         false) {
       return;
     }
 
     // Check if widget is disposed or not mounted (but allow initialization if user navigated away)
     if (_isDisposed || !mounted) {
-      debugPrint(
-          '⚠️ Video initialization cancelled - widget disposed or not mounted');
+      debugPrint('⚠️ Video initialization cancelled - widget disposed or not mounted');
       return;
     }
 
@@ -370,32 +348,26 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     _isVideoInitializing = true;
 
-    final videoUrl =
-        _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl;
-    debugPrint(
-        'IsmReelsVideoPlayerView....initializeVideoPlayer video url $videoUrl');
+    final videoUrl = _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl;
+    debugPrint('IsmReelsVideoPlayerView....initializeVideoPlayer video url $videoUrl');
 
     try {
       // First try to get cached controller
-      _videoPlayerController = _videoCacheManager.getCachedMedia(videoUrl)
-          as IVideoPlayerController?;
+      _videoPlayerController =
+          _videoCacheManager.getCachedMedia(videoUrl) as IVideoPlayerController?;
 
       if (_videoPlayerController != null) {
-        debugPrint(
-            'IsmReelsVideoPlayerView....Using cached video controller for $videoUrl');
+        debugPrint('IsmReelsVideoPlayerView....Using cached video controller for $videoUrl');
         if (_videoPlayerController!.isInitialized) {
           // Check if this is the same controller we already set up
-          final isSameController =
-              _lastSetupController == _videoPlayerController;
-          debugPrint(
-              '🎬 Cached controller ${isSameController ? "already set up" : "needs setup"}');
+          final isSameController = _lastSetupController == _videoPlayerController;
+          debugPrint('🎬 Cached controller ${isSameController ? "already set up" : "needs setup"}');
 
           await _setupVideoController();
           return;
         } else {
           // If controller exists but not initialized, dispose and recreate
-          debugPrint(
-              '⚠️ Cached controller not initialized, disposing and recreating');
+          debugPrint('⚠️ Cached controller not initialized, disposing and recreating');
           await _videoPlayerController!.dispose();
           _videoPlayerController = null;
           _lastSetupController = null;
@@ -404,24 +376,20 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
       // OPTIMIZATION: Reduce retry attempts from 5 to 3 for faster failure detection
       if (_videoCacheManager.isMediaInitializing(videoUrl)) {
-        debugPrint(
-            'IsmReelsVideoPlayerView....Video is being initialized, waiting...');
+        debugPrint('IsmReelsVideoPlayerView....Video is being initialized, waiting...');
         // Wait for initialization with reduced timeout (600ms total instead of 1000ms)
         for (var i = 0; i < 3; i++) {
           if (!mounted || _isDisposed) {
             return;
           }
 
-          _videoPlayerController = _videoCacheManager.getCachedMedia(videoUrl)
-              as IVideoPlayerController?;
-          if (_videoPlayerController != null &&
-              _videoPlayerController!.isInitialized) {
-            debugPrint(
-                'IsmReelsVideoPlayerView....Found initialized controller after waiting');
+          _videoPlayerController =
+              _videoCacheManager.getCachedMedia(videoUrl) as IVideoPlayerController?;
+          if (_videoPlayerController != null && _videoPlayerController!.isInitialized) {
+            debugPrint('IsmReelsVideoPlayerView....Found initialized controller after waiting');
             // Check if widget is still valid before setting up controller
             if (!mounted || _isDisposed) {
-              debugPrint(
-                  '⚠️ Video setup cancelled - widget disposed or not mounted');
+              debugPrint('⚠️ Video setup cancelled - widget disposed or not mounted');
               return;
             }
             await _setupVideoController();
@@ -454,13 +422,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   /// Fallback initialization method for video controller.
   /// Only used if not cached or pre-caching is not in progress.
   Future<void> _initializeVideoControllerNormally(String videoUrl) async {
-    debugPrint(
-        'IsmReelsVideoPlayerView....Initializing video controller normally $videoUrl');
+    debugPrint('IsmReelsVideoPlayerView....Initializing video controller normally $videoUrl');
 
     // Check if widget is still valid before starting normal initialization
     if (_isDisposed || !mounted) {
-      debugPrint(
-          '⚠️ Normal video initialization cancelled - widget disposed or not mounted');
+      debugPrint('⚠️ Normal video initialization cancelled - widget disposed or not mounted');
       return;
     }
 
@@ -470,8 +436,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
 
     // Try to get from cache first
-    _videoPlayerController =
-        _videoCacheManager.getCachedMedia(mediaUrl) as IVideoPlayerController?;
+    _videoPlayerController = _videoCacheManager.getCachedMedia(mediaUrl) as IVideoPlayerController?;
 
     if (_videoPlayerController == null) {
       // If not in cache, trigger precaching which will create a new controller
@@ -484,8 +449,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         return;
       }
 
-      _videoPlayerController = _videoCacheManager.getCachedMedia(mediaUrl)
-          as IVideoPlayerController?;
+      _videoPlayerController =
+          _videoCacheManager.getCachedMedia(mediaUrl) as IVideoPlayerController?;
 
       if (_videoPlayerController == null) return;
     }
@@ -544,8 +509,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       _videoPlayerController!.addListener(_handlePlaybackProgress);
 
       // Start playback only if not already playing and controller is ready
-      if (!_videoPlayerController!.isPlaying &&
-          _videoPlayerController!.isInitialized) {
+      if (!_videoPlayerController!.isPlaying && _videoPlayerController!.isInitialized) {
         // Critical check: Don't start playback if user has navigated away
         if (_hasNavigatedAway) {
           return;
@@ -605,11 +569,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _lastSetupController = null;
 
     // Mark video as not visible for cache manager
-    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl
-            .isStringEmptyOrNull ==
+    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl.isStringEmptyOrNull ==
         false) {
-      _videoCacheManager.markAsNotVisible(
-          _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl);
+      _videoCacheManager
+          .markAsNotVisible(_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl);
     }
     // Dispose controller if not cached with proper cleanup
     if (_videoPlayerController != null) {
@@ -618,11 +581,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         _videoPlayerController!.pause();
 
         // Only dispose if not cached to prevent memory leaks
-        if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl
-                    .isStringEmptyOrNull ==
+        if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl.isStringEmptyOrNull ==
                 false &&
-            !_videoCacheManager.isMediaCached(_reelData
-                .mediaMetaDataList[_currentPageNotifier.value].mediaUrl)) {
+            !_videoCacheManager
+                .isMediaCached(_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl)) {
           _videoPlayerController!.dispose();
         }
       } catch (e) {
@@ -642,8 +604,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     FilterQuality filterQuality = FilterQuality.high,
     bool showError = false,
   }) {
-    final isLocalUrl =
-        imageUrl.isStringEmptyOrNull == false && Utility.isLocalUrl(imageUrl);
+    final isLocalUrl = imageUrl.isStringEmptyOrNull == false && Utility.isLocalUrl(imageUrl);
     return isLocalUrl
         ? AppImage.file(
             imageUrl,
@@ -667,8 +628,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     if (_reelData.showBlur == true) {
       mediaWidget = _getImageWidget(
-        imageUrl: _reelData
-            .mediaMetaDataList[_currentPageNotifier.value].thumbnailUrl,
+        imageUrl: _reelData.mediaMetaDataList[_currentPageNotifier.value].thumbnailUrl,
         width: IsrDimens.getScreenWidth(context),
         height: IsrDimens.getScreenHeight(context),
         fit: BoxFit.cover,
@@ -739,11 +699,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       );
 
   Widget _buildSingleMediaContent() {
-    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType ==
-        kPictureType) {
+    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kPictureType) {
       return _getImageWidget(
-        imageUrl:
-            _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl,
+        imageUrl: _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl,
         width: IsrDimens.getScreenWidth(context),
         height: IsrDimens.getScreenHeight(context),
         fit: BoxFit.cover,
@@ -787,8 +745,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           ] else ...[
             // Video is not ready, show a thumbnail
             _getImageWidget(
-              imageUrl: _reelData
-                  .mediaMetaDataList[_currentPageNotifier.value].thumbnailUrl,
+              imageUrl: _reelData.mediaMetaDataList[_currentPageNotifier.value].thumbnailUrl,
               width: IsrDimens.getScreenWidth(context),
               height: IsrDimens.getScreenHeight(context),
               fit: BoxFit.cover,
@@ -818,9 +775,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             ] else ...[
               Center(
                 child: _getImageWidget(
-                  imageUrl: _reelData
-                      .mediaMetaDataList[_currentPageNotifier.value]
-                      .thumbnailUrl,
+                  imageUrl: _reelData.mediaMetaDataList[_currentPageNotifier.value].thumbnailUrl,
                   width: IsrDimens.getScreenWidth(context),
                   height: IsrDimens.getScreenHeight(context),
                   fit: BoxFit.contain,
@@ -836,14 +791,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   // New methods for mentions functionality
   List<Widget> _buildMentionsOverlay() => _pageMentionMetaDataList
       .map<Widget>((mention) => Positioned(
-            left: ((mention.mediaPosition?.x ?? 0) /
-                    100 *
-                    IsrDimens.getScreenWidth(context)) -
-                60,
-            top: ((mention.mediaPosition?.y ?? 0) /
-                    100 *
-                    IsrDimens.getScreenHeight(context)) -
-                30,
+            left: ((mention.mediaPosition?.x ?? 0) / 100 * IsrDimens.getScreenWidth(context)) - 60,
+            top: ((mention.mediaPosition?.y ?? 0) / 100 * IsrDimens.getScreenHeight(context)) - 30,
             child: _buildMentionTag(mention),
           ))
       .toList();
@@ -937,8 +886,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               children: [
                 // User Tag
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xFF667eea), Color(0xFF764ba2)],
@@ -1010,9 +958,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: _mentionsVisible
-                ? Colors.blue.changeOpacity(0.9)
-                : Colors.black.changeOpacity(0.6),
+            color:
+                _mentionsVisible ? Colors.blue.changeOpacity(0.9) : Colors.black.changeOpacity(0.6),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: Colors.white.changeOpacity(0.3),
@@ -1030,9 +977,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                _mentionsVisible
-                    ? Icons.person_pin
-                    : Icons.person_pin_circle_outlined,
+                _mentionsVisible ? Icons.person_pin : Icons.person_pin_circle_outlined,
                 color: Colors.white,
                 size: 16,
               ),
@@ -1202,13 +1147,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           _reelData.mediaMetaDataList.length,
           (index) => Container(
             margin: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.two),
-            width: IsrDimens.six,
-            height: IsrDimens.six,
+            width: IsrDimens.ten,
+            height: IsrDimens.ten,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: index == currentPage
-                  ? IsrColors.white
-                  : IsrColors.white.changeOpacity(0.4),
+              color: index == currentPage ? IsrColors.white : IsrColors.white.changeOpacity(0.4),
             ),
           ),
         ),
@@ -1330,8 +1273,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   void _togglePlayPause() {
     if (_reelData.showBlur == true ||
-        _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType ==
-            kPictureType) {
+        _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kPictureType) {
       return;
     }
     if (!_controllerReady) return;
@@ -1361,13 +1303,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             },
             onLongPressEnd: (_) => _togglePlayPause(),
             child: VisibilityDetector(
-              key: Key(_reelData
-                  .mediaMetaDataList[_currentPageNotifier.value].mediaUrl),
+              key: Key(_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl),
               onVisibilityChanged: (info) {
                 if (_isDisposed) return;
                 if (_reelData.showBlur == true ||
-                    _reelData.mediaMetaDataList[_currentPageNotifier.value]
-                            .mediaType ==
+                    _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType ==
                         kPictureType) {
                   return;
                 }
@@ -1375,8 +1315,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 // Throttle visibility changes to prevent audio flickering from rapid state changes
                 final now = DateTime.now();
                 if (_lastVisibilityChange != null &&
-                    now.difference(_lastVisibilityChange!) <
-                        _visibilityThrottleDuration) {
+                    now.difference(_lastVisibilityChange!) < _visibilityThrottleDuration) {
                   debugPrint('⚠️ Visibility change throttled (too frequent)');
                   return;
                 }
@@ -1384,11 +1323,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
                 // Video is visible - play it
                 if (info.visibleFraction > 0.7) {
-                  debugPrint(
-                      '▶️ Video visible (${info.visibleFraction}) - attempting playback');
+                  debugPrint('▶️ Video visible (${info.visibleFraction}) - attempting playback');
                   // Mark video as visible in cache manager
-                  _videoCacheManager.markAsVisible(_reelData
-                      .mediaMetaDataList[_currentPageNotifier.value].mediaUrl);
+                  _videoCacheManager.markAsVisible(
+                      _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl);
 
                   // Don't auto-play if user has navigated to another screen
                   if (_controllerReady &&
@@ -1406,11 +1344,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   }
                 } else {
                   // Video is not visible - pause it
-                  debugPrint(
-                      '⏸️ Video not visible (${info.visibleFraction}) - pausing');
+                  debugPrint('⏸️ Video not visible (${info.visibleFraction}) - pausing');
                   // Mark video as not visible in cache manager
-                  _videoCacheManager.markAsNotVisible(_reelData
-                      .mediaMetaDataList[_currentPageNotifier.value].mediaUrl);
+                  _videoCacheManager.markAsNotVisible(
+                      _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl);
 
                   if (_controllerReady && _videoPlayerController!.isPlaying) {
                     // OPTIMIZATION: Use unawaited to prevent blocking scrolling
@@ -1440,8 +1377,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       ),
                     ),
                   if (_showMuteAnimation &&
-                      _reelData.mediaMetaDataList[_currentPageNotifier.value]
-                              .mediaType ==
+                      _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType ==
                           kVideoType)
                     Center(
                       child: AnimatedScale(
@@ -1518,8 +1454,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                     _buildBottomSectionWithoutOverlay(),
                               ),
                             ),
-                            _reelData.actionWidget?.child ??
-                                _buildRightSideActions(),
+                            _reelData.actionWidget?.child ?? _buildRightSideActions(),
                           ],
                         ),
                       ),
@@ -1527,11 +1462,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   ),
                   // Persistent mute icon indicator in top-right (placed last to be on top)
                   if (_isMuted &&
-                      _reelData.mediaMetaDataList[_currentPageNotifier.value]
-                              .mediaType ==
+                      _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType ==
                           kVideoType)
                     Positioned(
-                      top: IsrDimens.sixty + IsrDimens.ten,
+                      top: IsrDimens.oneHundredForty,
                       right: IsrDimens.sixteen,
                       child: GestureDetector(
                         behavior: HitTestBehavior.opaque,
@@ -1559,8 +1493,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   Widget _buildRightSideActions() => RepaintBoundary(
         child: Padding(
-          padding: IsrDimens.edgeInsets(
-              bottom: IsrDimens.forty, right: IsrDimens.sixteen),
+          padding: IsrDimens.edgeInsets(bottom: IsrDimens.forty, right: IsrDimens.sixteen),
           child: Column(
             spacing: IsrDimens.twenty,
             mainAxisSize: MainAxisSize.min,
@@ -1594,8 +1527,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       width: IsrDimens.thirtyFive,
                       height: IsrDimens.thirtyFive,
                       isProfileImage: true,
-                      name:
-                          '${_reelData.firstName ?? ''} ${_reelData.lastName ?? ''}',
+                      name: '${_reelData.firstName ?? ''} ${_reelData.lastName ?? ''}',
                     ),
                   ),
                 ),
@@ -1711,8 +1643,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                     height: IsrDimens.twentyFour,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                          Theme.of(context).primaryColor),
+                      valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
                     ),
                   )
                 : AppImage.asset(icon),
@@ -1731,9 +1662,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   Widget _buildBottomSectionWithoutOverlay() => Padding(
         padding: IsrDimens.edgeInsets(
-            left: IsrDimens.sixteen,
-            right: IsrDimens.sixteen,
-            bottom: IsrDimens.fifteen),
+            left: IsrDimens.sixteen, right: IsrDimens.sixteen, bottom: IsrDimens.fifteen),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -1775,15 +1704,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                           Text(
                             IsrTranslationFile.shop,
                             style: IsrStyles.primaryText12.copyWith(
-                                color: IsrColors.color0F1E91,
-                                fontWeight: FontWeight.w700),
+                                color: IsrColors.color0F1E91, fontWeight: FontWeight.w700),
                           ),
                           IsrDimens.boxHeight(IsrDimens.four),
                           Text(
                             '${_reelData.productCount} ${_reelData.productCount == 1 ? IsrTranslationFile.product : IsrTranslationFile.products}',
                             style: IsrStyles.primaryText10.copyWith(
-                                color: IsrColors.color0F1E91,
-                                fontWeight: FontWeight.w500),
+                                color: IsrColors.color0F1E91, fontWeight: FontWeight.w500),
                           ),
                         ],
                       ),
@@ -1812,8 +1739,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                     onTap: () async {
                                       if (_reelData.onTapUserProfile != null) {
                                         _pauseForNavigation();
-                                        await _reelData
-                                            .onTapUserProfile!(false);
+                                        await _reelData.onTapUserProfile!(false);
                                         _resumeAfterNavigation();
                                       }
                                     },
@@ -1840,8 +1766,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                           valueListenable: _isExpandedDescription,
                           builder: (context, value, child) {
                             final fullDescription = _reelData.description ?? '';
-                            final shouldTruncate =
-                                fullDescription.length > _maxLengthToShow;
+                            final shouldTruncate = fullDescription.length > _maxLengthToShow;
 
                             // Show truncated version when collapsed, full version when expanded
                             final displayText = shouldTruncate && !value
@@ -1852,13 +1777,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                             if (_lastParsedDescription != displayText.trim() ||
                                 _cachedDescriptionTextSpan == null) {
                               _lastParsedDescription = displayText.trim();
-                              _cachedDescriptionTextSpan =
-                                  _buildDescriptionTextSpan(
+                              _cachedDescriptionTextSpan = _buildDescriptionTextSpan(
                                 displayText.trim(),
                                 _mentionedDataList,
                                 _taggedDataList,
-                                IsrStyles.white14.copyWith(
-                                    color: IsrColors.white.changeOpacity(0.9)),
+                                IsrStyles.white14
+                                    .copyWith(color: IsrColors.white.changeOpacity(0.9)),
                                 (mention) {
                                   _callOnTapMentionData([mention]);
                                 },
@@ -1868,8 +1792,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                             return GestureDetector(
                               onTap: () {
                                 if (shouldTruncate) {
-                                  _isExpandedDescription.value =
-                                      !_isExpandedDescription.value;
+                                  _isExpandedDescription.value = !_isExpandedDescription.value;
                                 }
                               },
                               child: RichText(
@@ -1879,8 +1802,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                     if (shouldTruncate)
                                       TextSpan(
                                         text: value ? ' ' : ' ... ',
-                                        style: IsrStyles.white14.copyWith(
-                                            fontWeight: FontWeight.w700),
+                                        style:
+                                            IsrStyles.white14.copyWith(fontWeight: FontWeight.w700),
                                         recognizer: TapGestureRecognizer()
                                           ..onTap = () {
                                             // _isExpandedDescription.value =
@@ -1896,25 +1819,21 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       ],
                       // Mentioned Users and Location in same row
                       if (_reelData.mentions.isListEmptyOrNull == false ||
-                          _reelData.placeDataList?.isListEmptyOrNull ==
-                              false) ...[
+                          _reelData.placeDataList?.isListEmptyOrNull == false) ...[
                         IsrDimens.boxHeight(IsrDimens.eight),
                         Row(
                           children: [
                             // Mentioned Users Section
-                            if (_reelData.mentions.isListEmptyOrNull ==
-                                false) ...[
+                            if (_reelData.mentions.isListEmptyOrNull == false) ...[
                               Expanded(
                                 child: _buildMentionedUsersSection(),
                               ),
-                              if (_reelData.placeDataList?.isListEmptyOrNull ==
-                                  false) ...[
+                              if (_reelData.placeDataList?.isListEmptyOrNull == false) ...[
                                 IsrDimens.boxWidth(IsrDimens.ten),
                               ],
                             ],
                             // Location Section
-                            if (_reelData.placeDataList?.isListEmptyOrNull ==
-                                false) ...[
+                            if (_reelData.placeDataList?.isListEmptyOrNull == false) ...[
                               Expanded(
                                 child: _buildLocationSection(),
                               ),
@@ -1936,8 +1855,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       );
 
   Widget _buildCommissionTag() => Container(
-        padding: IsrDimens.edgeInsetsSymmetric(
-            horizontal: IsrDimens.six, vertical: IsrDimens.three),
+        padding:
+            IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.six, vertical: IsrDimens.three),
         decoration: BoxDecoration(
           color: Colors.black.changeOpacity(0.5),
           borderRadius: IsrDimens.borderRadiusAll(5),
@@ -1955,8 +1874,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (_reelData.isSelfProfile == true) return const SizedBox.shrink();
 
     // FOLLOW button
-    if (_reelData.postSetting?.isFollowButtonVisible == true &&
-        _reelData.isFollow == false) {
+    if (_reelData.postSetting?.isFollowButtonVisible == true && _reelData.isFollow == false) {
       return ValueListenableBuilder<bool>(
         valueListenable: _isFollowLoading,
         builder: (context, isLoading, child) => AnimatedSwitcher(
@@ -1983,8 +1901,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   child: MaterialButton(
                     minWidth: IsrDimens.sixty,
                     height: IsrDimens.twentyFour,
-                    padding: IsrDimens.edgeInsetsSymmetric(
-                        horizontal: IsrDimens.twelve),
+                    padding: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twelve),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(IsrDimens.twenty)),
                     onPressed: _callFollowFunction,
@@ -2001,8 +1918,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
 
     // FOLLOWING button (Unfollow option visible)
-    if (_reelData.isFollow == true &&
-        _reelData.postSetting?.isUnFollowButtonVisible == true) {
+    if (_reelData.isFollow == true && _reelData.postSetting?.isUnFollowButtonVisible == true) {
       return Container(
         height: IsrDimens.twentyFour,
         decoration: BoxDecoration(
@@ -2236,8 +2152,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       // Pause video before opening comments
       _pauseForNavigation();
 
-      final commentCount =
-          await _reelData.onTapComment!(_reelData.commentCount ?? 0);
+      final commentCount = await _reelData.onTapComment!(_reelData.commentCount ?? 0);
 
       // Resume video when coming back
       _resumeAfterNavigation();
@@ -2282,7 +2197,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           imageUrl: media.mediaUrl,
           width: IsrDimens.getScreenWidth(context),
           height: IsrDimens.getScreenHeight(context),
-          fit: BoxFit.cover,
+          fit: BoxFit.contain,
         ),
       );
     } else {
@@ -2311,16 +2226,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   /// Handles mute/unmute toggle for videos only, with animation.
   void _toggleMuteAndUnMute() {
-    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType !=
-        kVideoType) {
+    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType != kVideoType) {
       // Only allow mute/unmute for videos
       return;
     }
 
     // Debounce audio operations to prevent flickering - increased to 250ms for stability
     _audioDebounceTimer?.cancel();
-    _audioDebounceTimer =
-        Timer(const Duration(milliseconds: 250), _performMuteToggle);
+    _audioDebounceTimer = Timer(const Duration(milliseconds: 250), _performMuteToggle);
   }
 
   void _performMuteToggle() {
@@ -2379,8 +2292,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   /// Helper method to build the video player widget
-  Widget _buildVideoPlayerWidget(IVideoPlayerController controller) =>
-      Container(
+  Widget _buildVideoPlayerWidget(IVideoPlayerController controller) => Container(
         color: Colors.black,
         child: Center(
           child: RepaintBoundary(
@@ -2393,9 +2305,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   Timer? _completionDebounceTimer;
 
   void _handlePlaybackProgress() {
-    if (!mounted ||
-        _videoPlayerController == null ||
-        !_videoPlayerController!.isInitialized) {
+    if (!mounted || _videoPlayerController == null || !_videoPlayerController!.isInitialized) {
       return;
     }
 
@@ -2426,17 +2336,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   void _handleVideoCompletion() {
     // Debounce completion calls to prevent excessive processing
     _completionDebounceTimer?.cancel();
-    _completionDebounceTimer =
-        Timer(const Duration(milliseconds: 100), _processVideoCompletion);
+    _completionDebounceTimer = Timer(const Duration(milliseconds: 100), _processVideoCompletion);
   }
 
   void _processVideoCompletion() {
-    debugPrint(
-        '🎬 _handleVideoCompletion called - disposed: $_isDisposed, mounted: $mounted');
+    debugPrint('🎬 _handleVideoCompletion called - disposed: $_isDisposed, mounted: $mounted');
 
     if (_isDisposed || !mounted) {
-      debugPrint(
-          '🎬 _handleVideoCompletion: Early return due to disposed or not mounted');
+      debugPrint('🎬 _handleVideoCompletion: Early return due to disposed or not mounted');
       return;
     }
 
@@ -2448,8 +2355,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       // If there's a next media item in the carousel, move to it
       if (_currentPageNotifier.value < _reelData.mediaMetaDataList.length - 1) {
         final nextIndex = _currentPageNotifier.value + 1;
-        debugPrint(
-            '🎬 Video completed, moving to next media in carousel: $nextIndex');
+        debugPrint('🎬 Video completed, moving to next media in carousel: $nextIndex');
         _pageController?.animateToPage(
           nextIndex,
           duration: const Duration(milliseconds: 300),
@@ -2486,8 +2392,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         final totalSeconds = duration.inSeconds;
 
         // Calculate completion rate as percentage
-        final completionRate =
-            totalSeconds > 0 ? ((watchedSeconds / totalSeconds) * 100) : 0;
+        final completionRate = totalSeconds > 0 ? ((watchedSeconds / totalSeconds) * 100) : 0;
 
         eventMap.addAll({
           'view_completion_rate': completionRate.toInt(),

@@ -42,6 +42,10 @@ class _PostListingViewState extends State<PostListingView> {
   final Map<SearchTabType, bool> _tabLoading = {};
   final Map<SearchTabType, String> _tabLastQuery = {};
 
+  // Pagination management per tab
+  final Map<SearchTabType, bool> _tabLoadingMore = {};
+  final Map<SearchTabType, bool> _tabHasMoreData = {};
+
   // Track follow state for users
   final Map<String, bool> _userFollowingState = {};
 
@@ -64,6 +68,8 @@ class _PostListingViewState extends State<PostListingView> {
     for (final tab in SearchTabType.values) {
       _tabLoading[tab] = false;
       _tabResults[tab] = [];
+      _tabLoadingMore[tab] = false;
+      _tabHasMoreData[tab] = true;
     }
 
     // Load initial data based on search query or tag value
@@ -82,13 +88,44 @@ class _PostListingViewState extends State<PostListingView> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
-      // widget.onLoadMore?.call();
+    // Check if widget is still mounted and has clients
+    if (!mounted || !_scrollController.hasClients) return;
+
+    // Check if scrolled to 65% of the content
+    final scrollPercentage =
+        _scrollController.position.pixels / _scrollController.position.maxScrollExtent;
+
+    // Trigger pagination at 65% scroll for the selected tab
+    if (scrollPercentage >= 0.65 &&
+        !(_tabLoadingMore[_selectedTab] ?? false) &&
+        (_tabHasMoreData[_selectedTab] ?? false)) {
+      _loadMoreForSelectedTab();
     }
   }
 
+  void _loadMoreForSelectedTab() {
+    if (!mounted) return;
+
+    final searchQuery = _hashtagController.text.trim().replaceFirst('#', '');
+    if (searchQuery.isEmpty) return;
+
+    setState(() {
+      _tabLoadingMore[_selectedTab] = true;
+    });
+
+    _postListingBloc.add(
+      GetSearchResultsEvent(
+        searchQuery: searchQuery,
+        tabType: _selectedTab,
+        isLoading: false,
+        isFromPagination: true,
+      ),
+    );
+  }
+
   void _onSearchChanged(String hashtagValue) {
+    if (!mounted) return;
+
     setState(() {});
 
     // Cancel previous timer
@@ -116,6 +153,8 @@ class _PostListingViewState extends State<PostListingView> {
     final cleanQuery = searchQuery.replaceFirst('#', '');
     if (cleanQuery.isEmpty) return;
 
+    if (!mounted) return;
+
     // Set loading state for all tabs (since cache was cleared)
     setState(() {
       for (final tab in SearchTabType.values) {
@@ -139,8 +178,9 @@ class _PostListingViewState extends State<PostListingView> {
     final searchQuery = _hashtagController.text.trim().replaceFirst('#', '');
     if (searchQuery.isEmpty) return;
 
+    if (!mounted) return;
+
     // Check if the selected tab already has results for the same query
-    final hasResults = _tabResults[_selectedTab]?.isNotEmpty ?? false;
     final lastQuery = _tabLastQuery[_selectedTab] ?? '';
 
     if (lastQuery == searchQuery) {
@@ -167,6 +207,8 @@ class _PostListingViewState extends State<PostListingView> {
   }
 
   void _clearSearch() {
+    if (!mounted) return;
+
     // Clear search and posts if less than minimum characters
     setState(() {
       _postList.clear();
@@ -180,6 +222,8 @@ class _PostListingViewState extends State<PostListingView> {
   }
 
   void _clearCachedResults() {
+    if (!mounted) return;
+
     // Clear cached results for all tabs when search query changes
     setState(() {
       _lastSearchQuery = ''; // Reset last search query
@@ -187,6 +231,8 @@ class _PostListingViewState extends State<PostListingView> {
         _tabResults[tab] = [];
         _tabLoading[tab] = false;
         _tabLastQuery[tab] = ''; // Clear query tracking for each tab
+        _tabLoadingMore[tab] = false;
+        _tabHasMoreData[tab] = true;
       }
     });
   }
@@ -220,6 +266,7 @@ class _PostListingViewState extends State<PostListingView> {
             return Expanded(
               child: GestureDetector(
                 onTap: () {
+                  if (!mounted) return;
                   setState(() {
                     _selectedTab = tab;
                   });
@@ -240,11 +287,8 @@ class _PostListingViewState extends State<PostListingView> {
                     child: Text(
                       tab.displayName,
                       style: IsrStyles.primaryText14.copyWith(
-                        color: isSelected
-                            ? IsrColors.appColor
-                            : IsrColors.color9B9B9B,
-                        fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.normal,
+                        color: isSelected ? IsrColors.appColor : IsrColors.color9B9B9B,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                       ),
                     ),
                   ),
@@ -339,31 +383,59 @@ class _PostListingViewState extends State<PostListingView> {
         ),
       );
 
-  Widget _buildBody() =>
-      BlocBuilder<PostListingBloc, PostListingState>(builder: (context, state) {
-        // Handle different state types
-        if (state is PostListingLoadingState && state.isLoading) {
-          return const Center(child: AppLoader());
-        }
+  Widget _buildBody() => BlocConsumer<PostListingBloc, PostListingState>(
+        bloc: _postListingBloc,
+        listener: (context, state) {
+          // Handle pagination completion
+          if (!mounted) return;
 
-        // Update the list from state
-        if (state is PostLoadedState) {
-          _postList.clear();
-          _postList.addAll(state.postList);
-        }
+          if (state is SearchResultsLoadedState) {
+            if (_tabLoadingMore[state.tabType] ?? false) {
+              setState(() {
+                _tabLoadingMore[state.tabType] = false;
+                // If we got empty results, no more data available
+                if (state.results.isEmpty) {
+                  _tabHasMoreData[state.tabType] = false;
+                }
+              });
+            }
+          }
+        },
+        builder: (context, state) {
+          // Handle different state types
+          if (state is PostListingLoadingState && state.isLoading) {
+            return const Center(child: AppLoader());
+          }
 
-        if (state is SearchResultsLoadedState) {
-          _tabResults[state.tabType] = state.results;
-          _tabLoading[state.tabType] = false;
-          // Store the query for this tab to avoid unnecessary API calls
-          final currentQuery =
-              _hashtagController.text.trim().replaceFirst('#', '');
-          _tabLastQuery[state.tabType] = currentQuery;
-        }
+          // Update the list from state
+          if (state is PostLoadedState) {
+            _postList.clear();
+            _postList.addAll(state.postList);
+          }
 
-        // Show content based on selected tab
-        return _buildTabContent();
-      });
+          if (state is SearchResultsLoadedState) {
+            // For pagination, append results; for fresh search, replace
+            final isLoadingMore = _tabLoadingMore[state.tabType] ?? false;
+            if (isLoadingMore && state.results.isNotEmpty) {
+              // Pagination: append results
+              final existingResults = _tabResults[state.tabType] ?? [];
+              _tabResults[state.tabType] = [...existingResults, ...state.results];
+            } else if (!isLoadingMore) {
+              // Fresh search: replace results
+              _tabResults[state.tabType] = state.results;
+              // Reset hasMoreData for fresh search
+              _tabHasMoreData[state.tabType] = state.results.isNotEmpty;
+            }
+            _tabLoading[state.tabType] = false;
+            // Store the query for this tab to avoid unnecessary API calls
+            final currentQuery = _hashtagController.text.trim().replaceFirst('#', '');
+            _tabLastQuery[state.tabType] = currentQuery;
+          }
+
+          // Show content based on selected tab
+          return _buildTabContent();
+        },
+      );
 
   Widget _buildTabContent() {
     final results = _tabResults[_selectedTab] ?? [];
@@ -456,50 +528,58 @@ class _PostListingViewState extends State<PostListingView> {
     }
   }
 
-  Widget _buildPostsGrid(List<TimeLineData> postList) => CustomScrollView(
-        controller: _scrollController,
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          SliverPadding(
-            padding: IsrDimens.edgeInsetsAll(IsrDimens.eight),
-            sliver: SliverGrid(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: IsrDimens.four,
-                mainAxisSpacing: IsrDimens.four,
-                childAspectRatio: 0.75,
-              ),
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  if (index == postList.length) {
-                    return /*widget.isLoadingMore
-                        ? const Center(child: AppLoader())
-                        :*/
-                        const SizedBox.shrink();
-                  }
+  Widget _buildPostsGrid(List<TimeLineData> postList) {
+    final isLoadingMore = _tabLoadingMore[SearchTabType.posts] ?? false;
 
-                  final post = postList[index];
-                  return TapHandler(
-                    onTap: () => {
-                      /// TODO need to check navigation here
-                      // IsmInjectionUtils.getRouteManagement().goToSocialPostView(
-                      //   postDataList: postList,
-                      //   startingPostIndex: index,
-                      //   postTabType: PostTabType.tagPost,
-                      //   tagType: widget.tagType,
-                      //   tagValue: widget.tagValue,
-                      // ),
-                    },
-                    child: _buildPostCard(post, index),
-                  );
-                },
-                childCount:
-                    postList.length /*+ (widget.isLoadingMore ? 1 : 0)*/,
-              ),
+    return CustomScrollView(
+      controller: _scrollController,
+      physics: const BouncingScrollPhysics(),
+      slivers: [
+        SliverPadding(
+          padding: IsrDimens.edgeInsetsAll(IsrDimens.eight),
+          sliver: SliverGrid(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: IsrDimens.four,
+              mainAxisSpacing: IsrDimens.four,
+              childAspectRatio: 0.75,
             ),
+            delegate: SliverChildBuilderDelegate((context, index) {
+              if (index == postList.length) {
+                return isLoadingMore
+                    ? const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    : const SizedBox.shrink();
+              }
+
+              final post = postList[index];
+              return TapHandler(
+                key: ValueKey('post_${post.id}'),
+                onTap: () => {
+                  /// TODO need to check navigation here
+                  // IsmInjectionUtils.getRouteManagement().goToSocialPostView(
+                  //   postDataList: postList,
+                  //   startingPostIndex: index,
+                  //   postTabType: PostTabType.tagPost,
+                  //   tagType: widget.tagType,
+                  //   tagValue: widget.tagValue,
+                  // ),
+                },
+                child: _buildPostCard(post, index),
+              );
+            },
+                childCount: postList.length + (isLoadingMore ? 1 : 0),
+                addAutomaticKeepAlives: true,
+                addRepaintBoundaries: true),
           ),
-        ],
-      );
+        ),
+      ],
+    );
+  }
 
   Widget _buildPostCard(TimeLineData post, int index) => Container(
         decoration: BoxDecoration(
@@ -512,10 +592,8 @@ class _PostListingViewState extends State<PostListingView> {
             children: [
               _buildPostImage(post),
               _buildUserProfileOverlay(post),
-              if (post.tags?.products?.isListEmptyOrNull == false)
-                _buildShopButtonOverlay(post),
-              if (post.media?.first.mediaType?.mediaType == MediaType.video)
-                _buildVideoIcon(),
+              if (post.tags?.products?.isEmptyOrNull == false) _buildShopButtonOverlay(post),
+              if (post.media?.first.mediaType?.mediaType == MediaType.video) _buildVideoIcon(),
             ],
           ),
         ),
@@ -523,19 +601,19 @@ class _PostListingViewState extends State<PostListingView> {
 
   Widget _buildPostImage(TimeLineData post) {
     var coverUrl = '';
-    if (post.previews.isListEmptyOrNull == false) {
+    if (post.previews.isEmptyOrNull == false) {
       final previewUrl = post.previews?.first.url ?? '';
-      if (previewUrl.isStringEmptyOrNull == false) {
+      if (previewUrl.isEmptyOrNull == false) {
         coverUrl = previewUrl;
       }
     }
-    if (coverUrl.isStringEmptyOrNull && post.media.isListEmptyOrNull == false) {
+    if (coverUrl.isEmptyOrNull && post.media.isEmptyOrNull == false) {
       coverUrl = post.media?.first.mediaType?.mediaType == MediaType.video
           ? (post.media?.first.previewUrl.toString() ?? '')
           : post.media?.first.url.toString() ?? '';
     }
 
-    if (coverUrl.isStringEmptyOrNull) {
+    if (coverUrl.isEmptyOrNull) {
       return Container(
         color: IsrColors.colorF5F5F5,
         child: Icon(
@@ -563,19 +641,12 @@ class _PostListingViewState extends State<PostListingView> {
           padding: IsrDimens.edgeInsetsAll(IsrDimens.eight),
           child: Row(
             children: [
-              CircleAvatar(
-                radius: IsrDimens.twelve,
-                backgroundColor: IsrColors.colorF5F5F5,
-                backgroundImage: post.user?.avatarUrl != null
-                    ? NetworkImage(post.user!.avatarUrl!)
-                    : null,
-                child: post.user?.avatarUrl == null
-                    ? Icon(
-                        Icons.person,
-                        color: IsrColors.color9B9B9B,
-                        size: IsrDimens.sixteen,
-                      )
-                    : null,
+              AppImage.network(
+                post.user?.avatarUrl ?? '',
+                height: 20.responsiveDimension,
+                width: 20.responsiveDimension,
+                name: post.user?.fullName ?? '',
+                isProfileImage: true,
               ),
               IsrDimens.eight.responsiveHorizontalSpace,
               Expanded(
@@ -604,15 +675,15 @@ class _PostListingViewState extends State<PostListingView> {
             vertical: IsrDimens.eight,
           ),
           decoration: BoxDecoration(
-            color: IsrColors.black.changeOpacity(0.6),
+            color: IsrColors.black.applyOpacity(0.6),
             borderRadius: BorderRadius.circular(8.responsiveDimension),
             border: Border.all(
-              color: IsrColors.white.changeOpacity(0.2),
+              color: IsrColors.white.applyOpacity(0.2),
               width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: IsrColors.black.changeOpacity(0.1),
+                color: IsrColors.black.applyOpacity(0.1),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -659,7 +730,7 @@ class _PostListingViewState extends State<PostListingView> {
           child: Container(
             padding: IsrDimens.edgeInsetsAll(IsrDimens.eight),
             decoration: BoxDecoration(
-              color: IsrColors.black.changeOpacity(0.3),
+              color: IsrColors.black.applyOpacity(0.3),
               borderRadius: BorderRadius.circular(IsrDimens.twentyFour),
             ),
             child: Icon(
@@ -671,14 +742,12 @@ class _PostListingViewState extends State<PostListingView> {
         ),
       );
 
-  String _getHasTagValue() =>
-      _hashtagController.text.trim().replaceFirst('#', '');
+  String _getHasTagValue() => _hashtagController.text.trim().replaceFirst('#', '');
 
   void _onTagTapped(dynamic tag) {
     final tagText = (tag?.hashtag as String?) ?? '';
 
-    IsrAppNavigator.navigateTagDetails(context,
-        tagValue: tagText, tagType: TagType.hashtag);
+    IsrAppNavigator.navigateTagDetails(context, tagValue: tagText, tagType: TagType.hashtag);
   }
 
   void _handlePlaceTap(String placeId, String placeName) {
@@ -710,43 +779,128 @@ class _PostListingViewState extends State<PostListingView> {
   }
 
   // Tab-specific content builders
-  Widget _buildTagsList(List<dynamic> tags) => RefreshIndicator(
-        onRefresh: () async {},
-        child: ListView.builder(
-          controller: _scrollController,
-          physics: const BouncingScrollPhysics(),
-          itemCount: tags.length,
-          itemBuilder: (context, index) {
-            final tag = tags[index];
-            return Container(
-              height: IsrDimens.sixty,
-              margin: IsrDimens.edgeInsetsSymmetric(
-                  vertical: 4.responsiveDimension,
-                  horizontal: 8.responsiveDimension),
-              child: TapHandler(
-                onTap: () {
-                  _onTagTapped(tag);
-                },
-                child: Padding(
-                  padding: IsrDimens.edgeInsetsSymmetric(
-                      horizontal: IsrDimens.sixteen),
-                  child: Row(
-                    children: [
-                      const AppImage.svg(AssetConstants.icTagIcon),
-                      12.responsiveHorizontalSpace,
-                      Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${tag?.hashtag ?? 'tag${index + 1}'}',
-                              style: IsrStyles.primaryText14Bold,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+  Widget _buildTagsList(List<dynamic> tags) {
+    final isLoadingMore = _tabLoadingMore[SearchTabType.tags] ?? false;
+
+    return RefreshIndicator(
+      onRefresh: () async {},
+      child: ListView.builder(
+        controller: _scrollController,
+        physics: const BouncingScrollPhysics(),
+        itemCount: tags.length + (isLoadingMore ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index == tags.length) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: CircularProgressIndicator(),
+              ),
+            );
+          }
+
+          final tag = tags[index];
+          final tagHashtag = tag?.hashtag ?? 'tag${index + 1}';
+          return Container(
+            key: ValueKey('tag_$tagHashtag'),
+            height: IsrDimens.sixty,
+            margin: IsrDimens.edgeInsetsSymmetric(
+                vertical: 4.responsiveDimension, horizontal: 8.responsiveDimension),
+            child: TapHandler(
+              onTap: () {
+                _onTagTapped(tag);
+              },
+              child: Padding(
+                padding: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.sixteen),
+                child: Row(
+                  children: [
+                    const AppImage.svg(AssetConstants.icTagIcon),
+                    12.responsiveHorizontalSpace,
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '$tagHashtag',
+                            style: IsrStyles.primaryText14Bold,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            '${tag?.usageCount ?? (index + 1) * 10} Posts',
+                            style: IsrStyles.primaryText12.copyWith(
+                              color: IsrColors.color9B9B9B,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildPlacesList(List<dynamic> places) {
+    final isLoadingMore = _tabLoadingMore[SearchTabType.places] ?? false;
+
+    return RefreshIndicator(
+      onRefresh: () async {},
+      child: ListView.builder(
+        controller: _scrollController,
+        physics: const BouncingScrollPhysics(),
+        itemCount: places.length + (isLoadingMore ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index == places.length) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: CircularProgressIndicator(),
+              ),
+            );
+          }
+
+          final resultList =
+              (places as List<Result>).map(UnifiedLocationItem.fromLocationResult).toList();
+
+          final result = resultList[index];
+          final placeName = result.title;
+          return Container(
+            key: ValueKey('place_${result.placeId}'),
+            height: 60.responsiveDimension,
+            margin: IsrDimens.edgeInsetsSymmetric(
+                vertical: 4.responsiveDimension, horizontal: 8.responsiveDimension),
+            child: TapHandler(
+              onTap: () => _handlePlaceTap(
+                result.placeId,
+                placeName,
+              ),
+              child: Padding(
+                padding: IsrDimens.edgeInsetsSymmetric(horizontal: 16.responsiveDimension),
+                child: Row(
+                  children: [
+                    const AppImage.svg(AssetConstants.icPlacesIcon),
+                    12.responsiveHorizontalSpace,
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            placeName,
+                            style: IsrStyles.primaryText14Bold,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (result.subtitle?.isNotEmpty == true) ...[
                             Text(
-                              '${tag?.usageCount ?? (index + 1) * 10} Posts',
+                              result.subtitle ?? '',
                               style: IsrStyles.primaryText12.copyWith(
                                 color: IsrColors.color9B9B9B,
                               ),
@@ -754,162 +908,113 @@ class _PostListingViewState extends State<PostListingView> {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ],
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildAccountsList(List<dynamic> accounts) {
+    final isLoadingMore = _tabLoadingMore[SearchTabType.account] ?? false;
+
+    return RefreshIndicator(
+      onRefresh: () async {},
+      child: ListView.builder(
+        controller: _scrollController,
+        physics: const BouncingScrollPhysics(),
+        itemCount: accounts.length + (isLoadingMore ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index == accounts.length) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: CircularProgressIndicator(),
+              ),
             );
-          },
-        ),
-      );
+          }
 
-  Widget _buildPlacesList(List<dynamic> places) => RefreshIndicator(
-        onRefresh: () async {},
-        child: ListView.builder(
-          controller: _scrollController,
-          physics: const BouncingScrollPhysics(),
-          itemCount: places.length,
-          itemBuilder: (context, index) {
-            final resultList = (places as List<Result>)
-                .map(UnifiedLocationItem.fromLocationResult)
-                .toList();
-
-            final result = resultList[index];
-            final placeName = result.title;
-            return Container(
-              height: 60.responsiveDimension,
-              margin: IsrDimens.edgeInsetsSymmetric(
-                  vertical: 4.responsiveDimension,
-                  horizontal: 8.responsiveDimension),
-              child: TapHandler(
-                onTap: () => _handlePlaceTap(
-                  result.placeId,
-                  placeName,
+          final user = accounts[index] as SocialUserData;
+          return Container(
+            key: ValueKey('account_${user.id}'),
+            height: 80.responsiveDimension,
+            margin: IsrDimens.edgeInsetsSymmetric(
+              vertical: 4.responsiveDimension,
+              horizontal: 8.responsiveDimension,
+            ),
+            child: TapHandler(
+              onTap: () => _handleAccountTap(user),
+              child: Padding(
+                padding: IsrDimens.edgeInsetsSymmetric(
+                  horizontal: 16.responsiveDimension,
+                  vertical: 12.responsiveDimension,
                 ),
-                child: Padding(
-                  padding: IsrDimens.edgeInsetsSymmetric(
-                      horizontal: 16.responsiveDimension),
-                  child: Row(
-                    children: [
-                      const AppImage.svg(AssetConstants.icPlacesIcon),
-                      12.responsiveHorizontalSpace,
-                      Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              placeName,
-                              style: IsrStyles.primaryText14Bold,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                child: Row(
+                  children: [
+                    // Profile Picture
+                    Container(
+                      width: 56.responsiveDimension,
+                      height: 56.responsiveDimension,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: IsrColors.colorDBDBDB,
+                          width: 1,
+                        ),
+                      ),
+                      child: ClipOval(
+                        child: AppImage.network(
+                          user.avatarUrl ?? '',
+                          height: 56.responsiveDimension,
+                          width: 56.responsiveDimension,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    12.responsiveHorizontalSpace,
+                    // User Info
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            user.username ?? 'Unknown User',
+                            style: IsrStyles.primaryText16Bold.copyWith(
+                              color: IsrColors.color242424,
                             ),
-                            if (result.subtitle?.isNotEmpty == true) ...[
-                              Text(
-                                result.subtitle ?? '',
-                                style: IsrStyles.primaryText12.copyWith(
-                                  color: IsrColors.color9B9B9B,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      );
-
-  Widget _buildAccountsList(List<dynamic> accounts) => RefreshIndicator(
-        onRefresh: () async {},
-        child: ListView.builder(
-          controller: _scrollController,
-          physics: const BouncingScrollPhysics(),
-          itemCount: accounts.length,
-          itemBuilder: (context, index) {
-            final user = accounts[index] as SocialUserData;
-            return Container(
-              height: 80.responsiveDimension,
-              margin: IsrDimens.edgeInsetsSymmetric(
-                vertical: 4.responsiveDimension,
-                horizontal: 8.responsiveDimension,
-              ),
-              child: TapHandler(
-                onTap: () => _handleAccountTap(user),
-                child: Padding(
-                  padding: IsrDimens.edgeInsetsSymmetric(
-                    horizontal: 16.responsiveDimension,
-                    vertical: 12.responsiveDimension,
-                  ),
-                  child: Row(
-                    children: [
-                      // Profile Picture
-                      Container(
-                        width: 56.responsiveDimension,
-                        height: 56.responsiveDimension,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: IsrColors.colorDBDBDB,
-                            width: 1,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                        child: ClipOval(
-                          child: AppImage.network(
-                            user.avatarUrl ?? '',
-                            height: 56.responsiveDimension,
-                            width: 56.responsiveDimension,
-                            fit: BoxFit.cover,
+                          4.responsiveVerticalSpace,
+                          Text(
+                            user.fullName ?? user.displayName ?? 'No description',
+                            style: IsrStyles.primaryText14.copyWith(
+                              color: IsrColors.color9B9B9B,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
+                        ],
                       ),
-                      12.responsiveHorizontalSpace,
-                      // User Info
-                      Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              user.username ?? 'Unknown User',
-                              style: IsrStyles.primaryText16Bold.copyWith(
-                                color: IsrColors.color242424,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            4.responsiveVerticalSpace,
-                            Text(
-                              user.fullName ??
-                                  user.displayName ??
-                                  'No description',
-                              style: IsrStyles.primaryText14.copyWith(
-                                color: IsrColors.color9B9B9B,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                      // Follow/Following Button
-                      _buildFollowButton(user),
-                    ],
-                  ),
+                    ),
+                    // Follow/Following Button
+                    _buildFollowButton(user),
+                  ],
                 ),
               ),
-            );
-          },
-        ),
-      );
+            ),
+          );
+        },
+      ),
+    );
+  }
 
   void _handleAccountTap(SocialUserData user) {
     /// TODO need to decide
@@ -923,8 +1028,7 @@ class _PostListingViewState extends State<PostListingView> {
   // Follow button widget with API integration
   Widget _buildFollowButton(SocialUserData user) {
     // Check if user is following from either the user model or local state
-    final isFollowing =
-        _userFollowingState[user.id] ?? user.isFollowing ?? false;
+    final isFollowing = _userFollowingState[user.id] ?? user.isFollowing ?? false;
 
     // Hide button if user is already following
     if (isFollowing) {
@@ -955,7 +1059,7 @@ class _PostListingViewState extends State<PostListingView> {
         followingId: user.id!,
         followAction: FollowAction.follow,
         onComplete: (isSuccess) {
-          if (isSuccess) {
+          if (isSuccess && mounted) {
             // Update local state to hide the follow button
             setState(() {
               _userFollowingState[user.id!] = true;
