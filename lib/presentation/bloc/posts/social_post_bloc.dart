@@ -29,6 +29,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     this._removeMentionUseCase,
     this._getTaggedPostsUseCase,
     this._getUserPostDataUseCase,
+    this._deletePostUseCase,
   ) : super(PostLoadingState(isLoading: true)) {
     on<StartPost>(_onStartPost);
     on<LoadPostData>(_onLoadHomeData);
@@ -39,6 +40,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     on<ReportPostEvent>(_reportPost);
     on<LikePostEvent>(_likePost);
     on<FollowUserEvent>(_followUser);
+    on<DeletePostEvent>(_deletePost);
     on<GetSocialProductsEvent>(_getSocialProducts);
     on<GetPostCommentsEvent>(_getPostComments);
     on<GetPostCommentReplyEvent>(_getPostCommentReplies);
@@ -55,6 +57,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   final GetTrendingPostUseCase _getTrendingPostUseCase;
   final GetForYouPostUseCase _getForYouPostUseCase;
   final FollowUnFollowUserUseCase _followPostUseCase;
+  final DeletePostUseCase _deletePostUseCase;
   final SavePostUseCase _savePostUseCase;
   final LikePostUseCase _likePostUseCase;
   final ReportPostUseCase _reportPostUseCase;
@@ -354,6 +357,19 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       ErrorHandler.showAppError(appError: apiResult.error);
       event.onComplete.call(false);
     }
+  }
+
+  FutureOr<void> _deletePost(DeletePostEvent event, Emitter<SocialPostState> emit) async {
+    final userId = await _localDataUseCase.getUserId();
+    if (userId.isEmptyOrNull) {
+      event.onComplete(false);
+      return;
+    }
+    final apiResult = await _deletePostUseCase.executeDeletePost(
+      isLoading: false,
+      postId: event.postId,
+    );
+    event.onComplete(apiResult.isSuccess);
   }
 
   FutureOr<void> _followUser(

@@ -17,11 +17,13 @@ class CreatePostView extends StatefulWidget {
   const CreatePostView({
     super.key,
     this.postData,
+    this.onTagProduct,
   });
 
   static bool disableAutoDismissForTest = false;
 
   final TimeLineData? postData;
+  final Future<List<ProductDataModel>?> Function(List<ProductDataModel>)? onTagProduct;
 
   @override
   State<CreatePostView> createState() => _CreatePostViewState();
@@ -368,7 +370,7 @@ class _CreatePostViewState extends State<CreatePostView> {
 
   void _onPressCreateButton() async {
     // Navigate to post attribute view and wait for result
-    _createPostBloc.add(PostAttributeNavigationEvent(context: context));
+    _createPostBloc.add(PostAttributeNavigationEvent(context: context, onTagProduct: widget.onTagProduct));
   }
 
   @override
