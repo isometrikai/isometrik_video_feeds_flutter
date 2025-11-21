@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -35,9 +34,7 @@ class _MediaPreviewWidgetState extends State<MediaPreviewWidget> {
   @override
   void initState() {
     super.initState();
-    _mediaKey = widget.mediaData.localPath ??
-        widget.mediaData.url ??
-        UniqueKey().toString();
+    _mediaKey = widget.mediaData.localPath ?? widget.mediaData.url ?? UniqueKey().toString();
     _initializeVideoPlayer();
   }
 
@@ -51,9 +48,7 @@ class _MediaPreviewWidgetState extends State<MediaPreviewWidget> {
   void didUpdateWidget(MediaPreviewWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.mediaData != widget.mediaData) {
-      _mediaKey = widget.mediaData.localPath ??
-          widget.mediaData.url ??
-          UniqueKey().toString();
+      _mediaKey = widget.mediaData.localPath ?? widget.mediaData.url ?? UniqueKey().toString();
       _initializeVideoPlayer();
     }
   }
@@ -63,11 +58,9 @@ class _MediaPreviewWidgetState extends State<MediaPreviewWidget> {
       try {
         if (widget.mediaData.localPath?.isNotEmpty == true &&
             Utility.isLocalUrl(widget.mediaData.localPath!)) {
-          _controller =
-              VideoPlayerController.file(File(widget.mediaData.localPath!));
+          _controller = VideoPlayerController.file(File(widget.mediaData.localPath!));
         } else if (widget.mediaData.url?.isNotEmpty == true) {
-          _controller = VideoPlayerController.networkUrl(
-              Uri.parse(widget.mediaData.url!));
+          _controller = VideoPlayerController.networkUrl(Uri.parse(widget.mediaData.url!));
         }
         await _controller?.initialize();
         setState(() {});
@@ -95,12 +88,10 @@ class _MediaPreviewWidgetState extends State<MediaPreviewWidget> {
   }
 
   @override
-  Widget build(BuildContext context) =>
-      BlocConsumer<CreatePostBloc, CreatePostState>(
+  Widget build(BuildContext context) => BlocConsumer<CreatePostBloc, CreatePostState>(
         listenWhen: (previous, current) => current is CompressionProgressState,
         listener: (context, state) {
-          if (state is CompressionProgressState &&
-              state.mediaKey == _mediaKey) {
+          if (state is CompressionProgressState && state.mediaKey == _mediaKey) {
             // 🎯 Only update progress if this widget’s media matches
             setState(() {
               _compressionProgress = state.progress;
@@ -159,20 +150,14 @@ class _MediaPreviewWidgetState extends State<MediaPreviewWidget> {
               ],
             )
           : AppImage.network(widget.mediaData.previewUrl ?? '',
-              width: IsrDimens.sixty,
-              height: IsrDimens.sixty,
-              fit: BoxFit.cover);
+              width: IsrDimens.sixty, height: IsrDimens.sixty, fit: BoxFit.cover);
     } else {
       return widget.mediaData.localPath?.isNotEmpty == true &&
               Utility.isLocalUrl(widget.mediaData.localPath!)
           ? AppImage.file(widget.mediaData.localPath!,
-              width: IsrDimens.sixty,
-              height: IsrDimens.sixty,
-              fit: BoxFit.cover)
+              width: IsrDimens.sixty, height: IsrDimens.sixty, fit: BoxFit.cover)
           : AppImage.network(widget.mediaData.url ?? '',
-              width: IsrDimens.sixty,
-              height: IsrDimens.sixty,
-              fit: BoxFit.cover);
+              width: IsrDimens.sixty, height: IsrDimens.sixty, fit: BoxFit.cover);
     }
   }
 }
