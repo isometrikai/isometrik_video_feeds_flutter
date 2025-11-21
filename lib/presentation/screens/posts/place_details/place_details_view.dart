@@ -13,18 +13,20 @@ import 'package:url_launcher/url_launcher.dart';
 
 /// A view that displays place details with Google Map and related posts
 class PlaceDetailsView extends StatefulWidget {
-  const PlaceDetailsView({
+  PlaceDetailsView({
     super.key,
     this.placeId,
     this.placeName,
     this.latitude,
     this.longitude,
+    this.onTapProfilePicture,
   });
 
   final String? placeId;
   final String? placeName;
   final double? latitude;
   final double? longitude;
+  Function(String)? onTapProfilePicture;
 
   @override
   State<PlaceDetailsView> createState() => _PlaceDetailsViewState();
