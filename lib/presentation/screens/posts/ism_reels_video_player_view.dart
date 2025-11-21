@@ -73,6 +73,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   var _isPlaying = true;
   var _isPlayPauseActioned = false;
   var _isDisposed = false;
+  var _isPageChanging =
+      false; // Flag to prevent visibility detector interference during page transitions
 
   final ValueNotifier<bool> _isFollowLoading = ValueNotifier(false);
   final ValueNotifier<bool> _isExpandedDescription = ValueNotifier(false);
@@ -266,6 +268,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   void _onPageChanged(int index) async {
     if (_currentPageNotifier.value == index) return;
 
+    // Set flag to prevent visibility detector from interfering during page transition
+    _isPageChanging = true;
+
     // Hide mentions when changing pages
     if (_mentionsVisible) {
       _mentionsVisible = false;
@@ -300,6 +305,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       await _initializeVideoPlayer();
       mountUpdate();
     }
+
+    // Reset the flag after page transition completes (allow time for animation)
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (!_isDisposed) {
+        _isPageChanging = false;
+      }
+    });
   }
 
   /// Dispose the current video controller
@@ -713,18 +725,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 child: SizedBox(
                   child: Builder(
                     builder: (context) {
-                      final controller = _videoPlayerController;
-                      if (controller == null) {
-                        return const SizedBox.shrink();
-                      }
-                      final size = controller.videoSize;
-                      final aspect = controller.aspectRatio;
+                      final size = _videoPlayerController!.videoSize;
+                      final aspect = _videoPlayerController!.aspectRatio;
                       return SizedBox(
                         height: size.height,
                         width: size.width,
                         child: AspectRatio(
                           aspectRatio: aspect,
-                          child: _buildVideoPlayerWidget(controller),
+                          child: _buildVideoPlayerWidget(_videoPlayerController!),
                         ),
                       );
                     },
@@ -982,6 +990,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   return;
                 }
 
+                // Ignore visibility changes during page transitions in multimedia posts
+                // This prevents the video from pausing during PageView animation
+                if (_isPageChanging && _hasMultipleMedia) {
+                  debugPrint('⏭️ Ignoring visibility change during page transition');
+                  return;
+                }
+
                 // Throttle visibility changes to prevent audio flickering from rapid state changes
                 final now = DateTime.now();
                 if (_lastVisibilityChange != null &&
@@ -992,7 +1007,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 _lastVisibilityChange = now;
 
                 // Video is visible - play it
-                if (info.visibleFraction > 0.7) {
+                if (info.visibleFraction > 0.9) {
                   debugPrint('▶️ Video visible (${info.visibleFraction}) - attempting playback');
                   // Mark video as visible in cache manager
                   _videoCacheManager.markAsVisible(

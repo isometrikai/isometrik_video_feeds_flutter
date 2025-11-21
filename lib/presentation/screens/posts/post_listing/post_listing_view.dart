@@ -13,11 +13,13 @@ class PostListingView extends StatefulWidget {
     required this.tagValue,
     required this.tagType,
     this.searchQuery,
+    this.onTapProfilePicture,
   });
 
   final String tagValue;
   TagType tagType;
   final String? searchQuery;
+  Function(String)? onTapProfilePicture;
 
   @override
   State<PostListingView> createState() => _PostListingViewState();
@@ -1017,6 +1019,10 @@ class _PostListingViewState extends State<PostListingView> {
   }
 
   void _handleAccountTap(SocialUserData user) {
+    if (widget.onTapProfilePicture != null) {
+      widget.onTapProfilePicture?.call(user.id ?? '');
+    }
+
     /// TODO need to decide
     // Navigate to user profile
     // IsmInjectionUtils.getRouteManagement().goToUserProfileDetail(
