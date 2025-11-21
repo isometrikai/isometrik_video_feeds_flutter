@@ -15,8 +15,9 @@ export 'isr_video_reel_config.dart';
 export 'presentation/presentation.dart';
 //remote
 export 'remote/remote.dart';
-// utils
-export 'utils/utils.dart';
+// page navigator
+export 'utils/navigator/navigator.dart';
+
 
 class IsmVideoReelPlayer {
   Future<String?> getPlatformVersion() =>
