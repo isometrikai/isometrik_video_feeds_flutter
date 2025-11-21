@@ -79,4 +79,40 @@ class TabDataModel {
   void Function(String? userId)? onTapUserProfile;
   final Future<bool> Function(bool isSavedPost, TimeLineData postData)? onPressSave;
   final EdgeInsetsGeometry? overlayPadding;
+
+  // -------------------------------------------------------
+  //                      COPY WITH
+  // -------------------------------------------------------
+  TabDataModel copyWith({
+    String? title,
+    List<TimeLineData>? reelsDataList,
+    Function(List<String> productIds, String postId, String userId)? onTapCartIcon,
+    int? startingPostIndex,
+    PostSectionType? postSectionType,
+    Function(String postId, bool isPostEmpty)? onDeletePostSuccess,
+    Widget? placeHolderWidget,
+    String? userId,
+    String? postId,
+    String? tagValue,
+    TagType? tagType,
+    void Function(String? userId)? onTapUserProfile,
+    Future<bool> Function(bool isSavedPost, TimeLineData postData)? onPressSave,
+    EdgeInsetsGeometry? overlayPadding,
+  }) => TabDataModel(
+      title: title ?? this.title,
+      reelsDataList: reelsDataList ?? this.reelsDataList,
+      startingPostIndex: startingPostIndex ?? this.startingPostIndex,
+      postSectionType: postSectionType ?? this.postSectionType,
+      onTapCartIcon: onTapCartIcon ?? this.onTapCartIcon,
+      placeHolderWidget: placeHolderWidget ?? this.placeHolderWidget,
+      onTapUserProfile: onTapUserProfile ?? this.onTapUserProfile,
+      onPressSave: onPressSave ?? this.onPressSave,
+      overlayPadding: overlayPadding ?? this.overlayPadding,
+      onDeletePostSuccess: onDeletePostSuccess ?? this.onDeletePostSuccess,
+      userId: userId ?? this.userId,
+      postId: postId ?? this.postId,
+      tagValue: tagValue ?? this.tagValue,
+      tagType: tagType ?? this.tagType,
+    );
 }
+
