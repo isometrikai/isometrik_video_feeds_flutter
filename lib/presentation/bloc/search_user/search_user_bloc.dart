@@ -1,13 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
-import 'package:ism_video_reel_player/presentation/presentation.dart';
-import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
-import 'package:ism_video_reel_player/domain/models/response/hash_tag_response.dart';
-import 'package:ism_video_reel_player/domain/models/response/timeline_response.dart';
 
 part 'search_events.dart';
 part 'search_states.dart';
@@ -26,8 +21,7 @@ class SearchUserBloc extends Bloc<SearchEvents, SearchStates> {
   final List<SocialUserData> _searchUsersList = [];
   final List<HashTagData> _searchTagList = [];
 
-  FutureOr<void> _searchUser(
-      SearchUserEvent event, Emitter<SearchStates> emit) async {
+  FutureOr<void> _searchUser(SearchUserEvent event, Emitter<SearchStates> emit) async {
     if (event.searchText.isEmptyOrNull) {
       if (event.onComplete != null) {
         event.onComplete!([]);
@@ -49,8 +43,7 @@ class SearchUserBloc extends Bloc<SearchEvents, SearchStates> {
     }
   }
 
-  FutureOr<void> _searchTag(
-      SearchTagEvent event, Emitter<SearchStates> emit) async {
+  FutureOr<void> _searchTag(SearchTagEvent event, Emitter<SearchStates> emit) async {
     final apiResult = await searchTagUseCase.executeSearchTag(
       isLoading: event.isLoading == true,
       limit: 20,

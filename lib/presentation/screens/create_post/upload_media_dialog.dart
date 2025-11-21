@@ -1,12 +1,9 @@
 // Create a new file: lib/presentation/widgets/dialogs/upload_media_dialog.dart
 
 import 'package:flutter/material.dart';
-import 'package:ism_video_reel_player/di/di.dart';
-import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class UploadMediaResult {
   UploadMediaResult({
@@ -73,8 +70,7 @@ class UploadMediaDialog extends StatelessWidget {
                   ),
                 ),
                 IsrDimens.boxHeight(IsrDimens.twentyFour),
-                if (mediaType == MediaType.photo ||
-                    mediaType == MediaType.both) ...[
+                if (mediaType == MediaType.photo || mediaType == MediaType.both) ...[
                   _buildOptionItem(
                     context: context,
                     icon: const AppImage.svg(AssetConstants.icCameraIcon),
@@ -87,8 +83,7 @@ class UploadMediaDialog extends StatelessWidget {
                   ),
                   IsrDimens.boxHeight(IsrDimens.sixteen),
                 ],
-                if (mediaType == MediaType.photo ||
-                    mediaType == MediaType.both) ...[
+                if (mediaType == MediaType.photo || mediaType == MediaType.both) ...[
                   _buildOptionItem(
                     context: context,
                     icon: const AppImage.svg(AssetConstants.icGalleryIcon),
@@ -101,8 +96,7 @@ class UploadMediaDialog extends StatelessWidget {
                   ),
                   IsrDimens.boxHeight(IsrDimens.sixteen),
                 ],
-                if (mediaType == MediaType.video ||
-                    mediaType == MediaType.both) ...[
+                if (mediaType == MediaType.video || mediaType == MediaType.both) ...[
                   _buildOptionItem(
                     context: context,
                     icon: const AppImage.svg(AssetConstants.icCameraIcon),
@@ -115,8 +109,7 @@ class UploadMediaDialog extends StatelessWidget {
                   ),
                   IsrDimens.boxHeight(IsrDimens.sixteen),
                 ],
-                if (mediaType == MediaType.video ||
-                    mediaType == MediaType.both) ...[
+                if (mediaType == MediaType.video || mediaType == MediaType.both) ...[
                   _buildOptionItem(
                     context: context,
                     icon: const AppImage.svg(AssetConstants.icGalleryIcon),

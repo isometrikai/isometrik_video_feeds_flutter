@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:ism_video_reel_player/di/di.dart';
-import 'package:ism_video_reel_player/domain/domain.dart';
-import 'package:ism_video_reel_player/presentation/cubits/upload_progress/upload_progress_cubit.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -47,15 +44,13 @@ class UploadProgressDialog extends StatelessWidget {
                 children: [
                   Text(
                     title ?? '',
-                    style: IsrStyles.primaryText16
-                        .copyWith(fontWeight: FontWeight.w600),
+                    style: IsrStyles.primaryText16.copyWith(fontWeight: FontWeight.w600),
                   ),
                   16.verticalSpace,
                   LinearProgressIndicator(
                     value: progress / 100,
                     backgroundColor: IsrColors.colorF5F5F5,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                        Theme.of(context).primaryColor),
+                    valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
                     minHeight: 8.responsiveDimension,
                     borderRadius: BorderRadius.circular(4.responsiveDimension),
                   ),

@@ -1,6 +1,5 @@
 import 'package:ism_video_reel_player/core/core.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
-import 'package:ism_video_reel_player/utils/utils.dart';
 
 class GetUserPostDataUseCase extends BaseUseCase {
   GetUserPostDataUseCase(this._socialRepository);

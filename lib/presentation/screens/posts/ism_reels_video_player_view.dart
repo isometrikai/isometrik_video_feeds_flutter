@@ -106,18 +106,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   Timer? _muteAnimationTimer;
   double _muteIconScale = 1.0;
 
-  // Track if video has completed one full cycle for auto-advance
-  bool _hasCompletedOneCycle = false;
-
   // Throttle visibility changes to prevent rapid state changes
   DateTime? _lastVisibilityChange;
   static const Duration _visibilityThrottleDuration = Duration(milliseconds: 300);
 
   // Video state management
   bool _isVideoInitializing = false;
-
-  // Device performance management
-  bool _isLowEndDevice = false;
 
   // Track navigation state to prevent background initialization
   bool _hasNavigatedAway = false;
@@ -292,7 +286,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _isPlayPauseActioned = false;
 
     // Reset completion flag and progress tracking when changing pages
-    _hasCompletedOneCycle = false;
     _lastProgressSecond = -1;
 
     // Reset watch event tracking for the new video
@@ -501,9 +494,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         if (_lastSetVolume != targetVolume) _setVolumeSafely(targetVolume),
         _videoPlayerController!.seekTo(Duration.zero),
       ], eagerError: true);
-
-      // Reset completion flag for new video
-      _hasCompletedOneCycle = false;
 
       // Add listener after setup
       _videoPlayerController!.addListener(_handlePlaybackProgress);
@@ -788,220 +778,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         ),
       );
 
-  // New methods for mentions functionality
-  List<Widget> _buildMentionsOverlay() => _pageMentionMetaDataList
-      .map<Widget>((mention) => Positioned(
-            left: ((mention.mediaPosition?.x ?? 0) / 100 * IsrDimens.getScreenWidth(context)) - 60,
-            top: ((mention.mediaPosition?.y ?? 0) / 100 * IsrDimens.getScreenHeight(context)) - 30,
-            child: _buildMentionTag(mention),
-          ))
-      .toList();
-
-  Widget _buildMentionsOverlayWithCenterArea() {
-    final screenWidth = IsrDimens.getScreenWidth(context);
-    final screenHeight = IsrDimens.getScreenHeight(context);
-
-    // Define center area dimensions (adjust as needed)
-    final centerAreaWidth = screenWidth * 0.6; // 60% of screen width
-    final centerAreaHeight = screenHeight * 0.6; // 60% of screen height
-    final centerAreaLeft = (screenWidth - centerAreaWidth) / 2;
-    final centerAreaTop = (screenHeight - centerAreaHeight) / 2;
-
-    return Stack(
-      children: [
-        // Top area - captures taps
-        Positioned(
-          left: 0,
-          top: 0,
-          right: 0,
-          height: centerAreaTop,
-          child: GestureDetector(
-            onTap: _toggleMentions,
-            child: Container(color: Colors.transparent),
-          ),
-        ),
-
-        // Bottom area - captures taps
-        Positioned(
-          left: 0,
-          top: centerAreaTop + centerAreaHeight,
-          right: 0,
-          bottom: 0,
-          child: GestureDetector(
-            onTap: _toggleMentions,
-            child: Container(color: Colors.transparent),
-          ),
-        ),
-
-        // Left area - captures taps
-        Positioned(
-          left: 0,
-          top: centerAreaTop,
-          width: centerAreaLeft,
-          height: centerAreaHeight,
-          child: GestureDetector(
-            onTap: _toggleMentions,
-            child: Container(color: Colors.transparent),
-          ),
-        ),
-
-        // Right area - captures taps
-        Positioned(
-          left: centerAreaLeft + centerAreaWidth,
-          top: centerAreaTop,
-          right: 0,
-          height: centerAreaHeight,
-          child: GestureDetector(
-            onTap: _toggleMentions,
-            child: Container(color: Colors.transparent),
-          ),
-        ),
-
-        // Center area - allows tap-through to mention tags
-        Positioned(
-          left: centerAreaLeft,
-          top: centerAreaTop,
-          width: centerAreaWidth,
-          height: centerAreaHeight,
-          child: IgnorePointer(
-            child: Container(color: Colors.transparent),
-          ),
-        ),
-
-        // Mention tags overlay
-        ..._buildMentionsOverlay(),
-      ],
-    );
-  }
-
-  Widget _buildMentionTag(MentionMetaData mention) => AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.elasticOut,
-        child: GestureDetector(
-          onTap: () => _showMentionDetails(mention),
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 140),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // User Tag
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF667eea), Color(0xFF764ba2)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white, width: 2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.changeOpacity(0.4),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      AppImage.network(
-                        height: 30.responsiveDimension,
-                        width: 30.responsiveDimension,
-                        mention.avatarUrl ?? '',
-                        isProfileImage: true,
-                        name: mention.username ?? '',
-                      ),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          '@${mention.username}',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            shadows: [
-                              Shadow(
-                                offset: const Offset(0, 1),
-                                blurRadius: 2,
-                                color: Colors.black.changeOpacity(0.5),
-                              ),
-                            ],
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Pointer triangle
-                CustomPaint(
-                  painter: TrianglePainter(
-                    color: Colors.white,
-                  ),
-                  size: const Size(12, 8),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-
-  Widget _buildMentionsToggleButton() => GestureDetector(
-        onTap: () {
-          setState(() {
-            _mentionsVisible = !_mentionsVisible;
-          });
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color:
-                _mentionsVisible ? Colors.blue.changeOpacity(0.9) : Colors.black.changeOpacity(0.6),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: Colors.white.changeOpacity(0.3),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.changeOpacity(0.3),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                _mentionsVisible ? Icons.person_pin : Icons.person_pin_circle_outlined,
-                color: Colors.white,
-                size: 16,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '${_pageMentionMetaDataList.length}',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  shadows: [
-                    Shadow(
-                      offset: const Offset(0, 1),
-                      blurRadius: 2,
-                      color: Colors.black.changeOpacity(0.5),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-
   void _toggleMentions() {
     if (_pageMentionMetaDataList.isListEmptyOrNull == false) {
       if (_mentionsVisible) {
@@ -1029,112 +805,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         }
       });
     }
-  }
-
-  void _showMentionDetails(MentionMetaData mention) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle bar
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // User avatar
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF667eea), Color(0xFF764ba2)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 3),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.changeOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Center(
-                child: Text(
-                  mention.username![0].toUpperCase(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Username
-            Text(
-              '@${mention.username}',
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            // Action buttons
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      Navigator.pop(context);
-                      _callOnTapMentionData([mention]);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF667eea),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                      elevation: 2,
-                    ),
-                    child: const Text(
-                      'View Profile',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: MediaQuery.of(context).padding.bottom),
-          ],
-        ),
-      ),
-    );
   }
 
   Widget _buildMediaIndicators(int currentPage) {
@@ -2326,7 +1996,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
 
     if (total == progress) {
-      _hasCompletedOneCycle = true;
       // Handle video completion - check if we should move to next video or next post
       _handleVideoCompletion();
     }

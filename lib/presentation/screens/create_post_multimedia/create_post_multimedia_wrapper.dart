@@ -3,44 +3,33 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:ism_video_reel_player/di/di.dart';
-import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
-import 'package:ism_video_reel_player/presentation/presentation.dart';
-import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart'
-    as mc;
-import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit.dart'
-    as me;
+import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart' as mc;
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit.dart' as me;
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart'
     as ms;
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:lottie/lottie.dart';
 import 'package:path/path.dart' as path;
 
 class CreatePostMultimediaWrapper extends StatefulWidget {
   const CreatePostMultimediaWrapper({super.key, this.onTagProduct});
-  final Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
-      onTagProduct;
+  final Future<List<ProductDataModel>?> Function(List<ProductDataModel>)? onTagProduct;
   @override
-  State<CreatePostMultimediaWrapper> createState() =>
-      _CreatePostMultimediaWrapperState();
+  State<CreatePostMultimediaWrapper> createState() => _CreatePostMultimediaWrapperState();
 }
 
-class _CreatePostMultimediaWrapperState
-    extends State<CreatePostMultimediaWrapper> {
-  CreatePostBloc get _createPostBloc =>
-      BlocProvider.of<CreatePostBloc>(context);
+class _CreatePostMultimediaWrapperState extends State<CreatePostMultimediaWrapper> {
+  CreatePostBloc get _createPostBloc => BlocProvider.of<CreatePostBloc>(context);
   final mediaSelectionConfig = ms.MediaSelectionConfig(
     isMultiSelect: true,
     imageMediaLimit: AppConstants.imageMediaLimit,
     videoMediaLimit: AppConstants.videoMediaLimit,
     mediaLimit: AppConstants.totalMediaLimit,
-    singleSelectModeIcon:
-        const AppImage.svg(AssetConstants.icMediaSelectSingle),
-    multiSelectModeIcon:
-        const AppImage.svg(AssetConstants.icMediaSelectMultiple),
+    singleSelectModeIcon: const AppImage.svg(AssetConstants.icMediaSelectSingle),
+    multiSelectModeIcon: const AppImage.svg(AssetConstants.icMediaSelectMultiple),
     doneButtonText: IsrTranslationFile.next,
     selectMediaTitle: IsrTranslationFile.newPost,
     primaryColor: IsrColors.appColor,
@@ -59,8 +48,7 @@ class _CreatePostMultimediaWrapperState
     primaryFontFamily: AppConstants.primaryFontFamily,
   );
 
-  Future<bool> _onMediaSelectionComplete(
-      List<ms.MediaAssetData> selectedMedia) async {
+  Future<bool> _onMediaSelectionComplete(List<ms.MediaAssetData> selectedMedia) async {
     // Convert to MediaEditItem and navigate to edit view
     final mediaEditItems = selectedMedia.map(mapSelectedToEditMedia).toList();
 
@@ -84,8 +72,7 @@ class _CreatePostMultimediaWrapperState
     return false;
   }
 
-  me.MediaEditItem mapSelectedToEditMedia(ms.MediaAssetData media) =>
-      me.MediaEditItem(
+  me.MediaEditItem mapSelectedToEditMedia(ms.MediaAssetData media) => me.MediaEditItem(
         originalPath: media.localPath ?? '',
         mediaType: media.mediaType == ms.SelectedMediaType.video
             ? me.EditMediaType.video
@@ -93,20 +80,16 @@ class _CreatePostMultimediaWrapperState
         width: (media.width ?? 0).toDouble(),
         height: (media.height ?? 0).toDouble(),
         duration: media.duration?.toInt(),
-        thumbnailPath: media.mediaType == ms.SelectedMediaType.video
-            ? media.thumbnailPath
-            : media.localPath,
+        thumbnailPath:
+            media.mediaType == ms.SelectedMediaType.video ? media.thumbnailPath : media.localPath,
         metaData: media.toJson(),
       );
 
-  Future<List<me.MediaEditItem>?> _onAddMoreMedia(
-      List<me.MediaEditItem> editMedia) async {
-    final presentVideoCount = editMedia
-        .where((item) => item.mediaType == me.EditMediaType.video)
-        .length;
-    final presentImageCount = editMedia
-        .where((item) => item.mediaType == me.EditMediaType.image)
-        .length;
+  Future<List<me.MediaEditItem>?> _onAddMoreMedia(List<me.MediaEditItem> editMedia) async {
+    final presentVideoCount =
+        editMedia.where((item) => item.mediaType == me.EditMediaType.video).length;
+    final presentImageCount =
+        editMedia.where((item) => item.mediaType == me.EditMediaType.image).length;
 
     final res = await Navigator.push<List<ms.MediaAssetData>>(
       context,
@@ -118,8 +101,7 @@ class _CreatePostMultimediaWrapperState
             selectMediaTitle: IsrTranslationFile.addCover,
             imageMediaLimit: AppConstants.imageMediaLimit - presentImageCount,
             videoMediaLimit: AppConstants.videoMediaLimit - presentVideoCount,
-            mediaLimit: AppConstants.totalMediaLimit -
-                (presentImageCount + presentVideoCount),
+            mediaLimit: AppConstants.totalMediaLimit - (presentImageCount + presentVideoCount),
           ),
         ),
       ),
@@ -260,42 +242,32 @@ class _CreatePostMultimediaWrapperState
               mediaType: editItem.mediaType.toJson(),
               url: editItem.editedPath ?? editItem.originalPath,
               localPath: editItem.editedPath ?? editItem.originalPath,
-              previewUrl: editItem.thumbnailPath ??
-                  editItem.editedPath ??
-                  editItem.originalPath,
-              coverFileLocalPath: editItem.thumbnailPath ??
-                  editItem.editedPath ??
-                  editItem.originalPath,
+              previewUrl: editItem.thumbnailPath ?? editItem.editedPath ?? editItem.originalPath,
+              coverFileLocalPath:
+                  editItem.thumbnailPath ?? editItem.editedPath ?? editItem.originalPath,
               width: editItem.width,
               height: editItem.height,
               duration: editItem.duration,
               fileName: '',
-              postType: editItem.mediaType == me.EditMediaType.video
-                  ? PostType.video
-                  : PostType.photo,
+              postType:
+                  editItem.mediaType == me.EditMediaType.video ? PostType.video : PostType.photo,
               position: editedMedia.indexOf(editItem) + 1,
-              fileExtension: _getFileExtension(
-                  editItem.editedPath ?? editItem.originalPath)))
+              fileExtension: _getFileExtension(editItem.editedPath ?? editItem.originalPath)))
           .toList();
       _createPostBloc.add(PostAttributeNavigationEvent(
-          newMediaDataList: _mediaDataList,
-          context: context,
-          onTagProduct: widget.onTagProduct));
+          newMediaDataList: _mediaDataList, context: context, onTagProduct: widget.onTagProduct));
       return false;
     }
     return false;
   }
 
   bool _isDialogOpen = false;
-  UploadProgressCubit get _progressCubit =>
-      BlocProvider.of<UploadProgressCubit>(context);
+  UploadProgressCubit get _progressCubit => BlocProvider.of<UploadProgressCubit>(context);
 
   @override
-  Widget build(BuildContext context) =>
-      BlocListener<CreatePostBloc, CreatePostState>(
+  Widget build(BuildContext context) => BlocListener<CreatePostBloc, CreatePostState>(
         listenWhen: (previousState, currentState) =>
-            currentState is PostCreatedState ||
-            currentState is ShowProgressDialogState,
+            currentState is PostCreatedState || currentState is ShowProgressDialogState,
         listener: (context, state) {
           if (state is PostCreatedState) {
             Utility.showBottomSheet(
@@ -337,8 +309,7 @@ class _CreatePostMultimediaWrapperState
             }
             // Update all cubit state values
             _progressCubit.updateProgress(state.progress ?? 0);
-            _progressCubit.updateTitle(
-                state.title ?? IsrTranslationFile.uploadingMediaFiles);
+            _progressCubit.updateTitle(state.title ?? IsrTranslationFile.uploadingMediaFiles);
             _progressCubit.updateSubtitle(state.subTitle ?? '');
           }
         },
