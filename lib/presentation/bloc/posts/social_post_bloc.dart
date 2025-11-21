@@ -27,6 +27,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     this._getSocialProductsUseCase,
     this._getMentionedUsersUseCase,
     this._removeMentionUseCase,
+    this._getTaggedPostsUseCase,
+    this._getUserPostDataUseCase,
   ) : super(PostLoadingState(isLoading: true)) {
     on<StartPost>(_onStartPost);
     on<LoadPostData>(_onLoadHomeData);
@@ -63,34 +65,28 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   final GetSocialProductsUseCase _getSocialProductsUseCase;
   final GetMentionedUsersUseCase _getMentionedUsersUseCase;
   final RemoveMentionUseCase _removeMentionUseCase;
+  final GetTaggedPostsUseCase _getTaggedPostsUseCase;
+  final GetUserPostDataUseCase _getUserPostDataUseCase;
 
   UserInfoClass? _userInfoClass;
   var reelsPageTrendingController = PageController();
   TextEditingController? descriptionController;
 
-  final List<TimeLineData> _trendingPostList = [];
-  final List<TimeLineData> _timeLinePostList = [];
-  final List<TimeLineData> _forYouPostList = [];
+  final _postsByTab = <PostTabAssistData>[];
+
+  PostTabAssistData _getTabAssistData(PostSectionType tab) => _postsByTab
+          .toList()
+          .firstWhere((_) => _.postSectionType == tab, orElse: () {
+        final tabAssist = PostTabAssistData(postSectionType: tab, postList: []);
+        _postsByTab.add(tabAssist);
+        return tabAssist;
+      });
 
   int currentPage = 0;
   final followingPageSize = 20;
-  int _trendingCurrentPage = 1;
-  bool _hasTrendingMoreData = true;
-  bool _isTrendingLoadingMore = false;
-  final _trendingPageSize = 20;
-
-  bool _isTimeLineLoadingMore = false;
-  bool _hasMoreTimeLineData = true;
-  int _timeLineCurrentPage = 1;
-  final _timeLinePageSize = 20;
 
   var _isDataLoading = false;
   var _detailsCurrentPage = 1;
-
-  int _forYouCurrentPage = 1;
-  bool _hasForYouMoreData = true;
-  bool _isForYouLoadingMore = false;
-  final _forYouPageSize = 20;
   var _commentPage = 1;
 
   final List<ProductDataModel> _detailsProductList = [];
@@ -101,11 +97,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         ? null
         : UserInfoClass.fromJson(
             jsonDecode(userInfoString) as Map<String, dynamic>);
-    add(LoadPostData(
-      fetchForYou: event.fetchForYou,
-      fetchTimeline: event.fetchTimeline,
-      fetchTrending: event.fetchTrending,
-    ));
+    // add(LoadPostData(
+    //   postSections: event.postSections
+    // ));
   }
 
   Future<void> _onLoadHomeData(
@@ -115,15 +109,21 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     // final userId = await _localDataUseCase.getUserId();
     try {
       emit(PostLoadingState(isLoading: true));
-      await Future.wait([
-        if (event.fetchForYou) _callGetForYouPost(true, false, false, null),
-        if (event.fetchTrending) _callGetTrendingPost(true, false, false, null),
-        if (event.fetchTimeline) _callGetTimeLinePost(true, false, false, null),
-      ]);
-      add(LoadPostsEvent(
-          timeLinePostList: _timeLinePostList,
-          trendingPosts: _trendingPostList,
-          forYouPosts: _forYouPostList));
+      _postsByTab.clear();
+      _postsByTab.addAll(event.postSections);
+      for(final postTab in event.postSections) {
+        if (postTab.postList.isEmpty){
+          if (postTab.postId?.trim().isNotEmpty == true && postTab.postList.isEmpty){
+            final postIdData = await _getPostDetails(postTab.postId ?? '');
+            if (postIdData != null) {
+              postTab.postList.add(postIdData);
+              add(LoadPostsEvent(postsByTab: _postsByTab.asMap().map((key, value) => MapEntry(value.postSectionType, value.postList))));
+            }
+          }
+          await _callGetTabPost(postTab, false, false, false, null);
+        }
+        add(LoadPostsEvent(postsByTab: _postsByTab.asMap().map((key, value) => MapEntry(value.postSectionType, value.postList))));
+      }
     } catch (error) {
       emit(SocialPostError(error.toString()));
     }
@@ -131,149 +131,164 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
 
   FutureOr<void> _getMorePost(
       GetMorePostEvent event, Emitter<SocialPostState> emit) async {
-    if (event.postSectionType == PostSectionType.forYou) {
-      await _callGetForYouPost(
-        event.isRefresh,
-        event.isPagination,
-        event.isLoading,
-        event.onComplete,
-      );
-    } else if (event.postSectionType == PostSectionType.following) {
-      await _callGetTimeLinePost(
-        event.isRefresh,
-        event.isPagination,
-        event.isLoading,
-        event.onComplete,
-      );
-    } else {
-      await _callGetTrendingPost(
-        event.isRefresh,
-        event.isPagination,
-        event.isLoading,
-        event.onComplete,
-      );
-    }
+    await _callGetTabPost(
+      _getTabAssistData(event.postSectionType),
+      event.isRefresh,
+      event.isPagination,
+      event.isLoading,
+      event.onComplete,
+    );
   }
 
   FutureOr<void> _getTimeLinePost(
       GetTimeLinePostEvent event, Emitter<SocialPostState> emit) async {
-    await _callGetTimeLinePost(
-        event.isRefresh, event.isPagination, event.isLoading, event.onComplete);
+    await _callGetTabPost(
+        _getTabAssistData(PostSectionType.trending), event.isRefresh, event.isPagination, event.isLoading, event.onComplete);
   }
 
   FutureOr<void> _getTrendingPost(
       GetTrendingPostEvent event, Emitter<SocialPostState> emit) async {
-    await _callGetTrendingPost(
-        event.isRefresh, event.isPagination, event.isLoading, event.onComplete);
+    await _callGetTabPost(
+        _getTabAssistData(PostSectionType.trending), event.isRefresh, event.isPagination, event.isLoading, event.onComplete);
   }
 
-  Future<void> _callGetTrendingPost(
+  Future<void> _callGetTabPost(
+    PostTabAssistData postTabAssistData,
     bool isFromRefresh,
     bool isFromPagination,
     bool isLoading,
     Function(List<TimeLineData>)? onComplete,
   ) async {
-    // For refresh, clear cache and start from page 0
+    final postSectionType = postTabAssistData.postSectionType;
+    final tabAssistData = _getTabAssistData(postSectionType);
+
+    // For refresh, clear cache and start from page 1
     if (isFromRefresh) {
-      _trendingPostList.clear();
-      _trendingCurrentPage = 1;
-      _hasTrendingMoreData = true;
-      _isTrendingLoadingMore = false;
-    } else if (!isFromPagination && _trendingPostList.isNotEmpty) {
+      tabAssistData.postList.clear();
+      tabAssistData.currentPage = 1;
+      tabAssistData.hasMoreData = true;
+      tabAssistData.isLoadingMore = false;
+    } else if (!isFromPagination && tabAssistData.postList.isNotEmpty) {
       // If we have cached posts and it's not a refresh, emit them immediately
       // emit(HomeLoaded(followingPosts: _followingPostList, trendingPosts: _trendingPostList));
     }
 
     if (!isFromPagination) {
-      _trendingCurrentPage = 1;
-      _hasTrendingMoreData = true;
-    } else if (_isTrendingLoadingMore || !_hasTrendingMoreData) {
+      tabAssistData.currentPage = 1;
+      tabAssistData.hasMoreData = true;
+    } else if (tabAssistData.isLoadingMore || !tabAssistData.hasMoreData) {
       return;
     }
 
-    _isTrendingLoadingMore = true;
+    tabAssistData.isLoadingMore = true;
 
-    final apiResult = await _getTrendingPostUseCase.executeGetTrendingPost(
-      isLoading: isLoading,
-      page: _trendingCurrentPage,
-      pageLimit: _trendingPageSize,
-    );
+    TimeLineData? postIdPostData;
+    debugPrint('social_post_bloc => postIdPostData cond: ${(postTabAssistData.postId?.trim().isNotEmpty == true && postTabAssistData.postList.isEmpty)}');
+    if (postTabAssistData.postId?.trim().isNotEmpty == true && postTabAssistData.postList.isEmpty){
+      postIdPostData = await _getPostDetails(postTabAssistData.postId ?? '', onSuccess: postTabAssistData.postList.add);
+      debugPrint('social_post_bloc => postIdPostData: ${postIdPostData?.id}');
+    }
 
-    if (apiResult.isSuccess) {
-      final postDataList = apiResult.data?.data as List<TimeLineData>;
-      if (postDataList.isListEmptyOrNull) {
-        _hasTrendingMoreData = false;
-      } else {
-        if (isFromPagination) {
-          _trendingPostList.addAll(postDataList);
-        } else {
-          _trendingPostList
-            ..clear()
-            ..addAll(postDataList);
+    // Route to the correct use case based on PostSectionType
+    ApiResult<TimelineResponse?>? apiResult;
+    switch (postSectionType) {
+      case PostSectionType.trending:
+        apiResult = await _getTrendingPostUseCase.executeGetTrendingPost(
+          isLoading: isLoading,
+          page: tabAssistData.currentPage,
+          pageLimit: tabAssistData.pageSize,
+        );
+        break;
+      case PostSectionType.forYou:
+        apiResult = await _getForYouPostUseCase.executeGetForYouPost(
+          isLoading: isLoading,
+          page: tabAssistData.currentPage,
+          pageLimit: tabAssistData.pageSize,
+        );
+        break;
+      case PostSectionType.following:
+        apiResult = await _getTimelinePostUseCase.executeTimeLinePost(
+          isLoading: isLoading,
+          page: tabAssistData.currentPage,
+          pageLimit: tabAssistData.pageSize,
+        );
+        break;
+      case PostSectionType.savedPost:
+        apiResult = await _savePostUseCase.executeGetProfileSavedPostData(
+          isLoading: isLoading,
+          page: tabAssistData.currentPage,
+          pageSize: tabAssistData.pageSize,
+        );
+        break;
+      case PostSectionType.tagPost:
+        if (tabAssistData.tagType != null && tabAssistData.tagValue != null) {
+          apiResult = await _getTaggedPostsUseCase.executeGetTaggedPosts(
+            isLoading: isLoading,
+            page: tabAssistData.currentPage,
+            pageLimit: tabAssistData.pageSize,
+            tagValue: tabAssistData.tagValue!,
+            tagType: tabAssistData.tagType!,
+          );
         }
-        if (onComplete != null) {
-          onComplete(postDataList);
+        break;
+      case PostSectionType.myTaggedPost:
+        apiResult = await _getTaggedPostsUseCase.executeGetTaggedPosts(
+          isLoading: isLoading,
+          page: tabAssistData.currentPage,
+          pageLimit: tabAssistData.pageSize,
+          tagValue: await _localDataUseCase.getUserId(),
+          tagType: TagType.mention,
+        );
+        break;
+      case PostSectionType.myPost:
+        apiResult = await _getUserPostDataUseCase.executeGetUserProfilePostData(
+          isLoading: isLoading,
+          page: tabAssistData.currentPage,
+          pageSize: tabAssistData.pageSize,
+          memberId: tabAssistData.userId ?? await _localDataUseCase.getUserId(),
+        );
+        break;
+      case PostSectionType.otherUserPost:
+        if (tabAssistData.userId != null) {
+          apiResult =
+              await _getUserPostDataUseCase.executeGetUserProfilePostData(
+            isLoading: isLoading,
+            page: tabAssistData.currentPage,
+            pageSize: tabAssistData.pageSize,
+            memberId: tabAssistData.userId!,
+          );
         }
-        _trendingCurrentPage++;
-        // emit(HomeLoaded(followingPosts: _followingPostList, trendingPosts: _trendingPostList));
+        break;
+      default:
+        break;
+    }
+    var postDataList = <TimeLineData>[];
+    if (postIdPostData != null) {
+      postDataList.add(postIdPostData);
+    }
+    postDataList.addAll(apiResult?.data?.data ?? []);
+    if (postDataList.isNotEmpty) {
+      if (postDataList.length < tabAssistData.pageSize) {
+        tabAssistData.hasMoreData = false;
       }
-    } else {
-      ErrorHandler.showAppError(appError: apiResult.error);
-    }
 
-    _isTrendingLoadingMore = false;
-  }
-
-  Future<void> _callGetForYouPost(
-    bool isFromRefresh,
-    bool isFromPagination,
-    bool isLoading,
-    Function(List<TimeLineData>)? onComplete,
-  ) async {
-    // For refresh, clear cache and start from page 0
-    if (isFromRefresh) {
-      _forYouPostList.clear();
-      _forYouCurrentPage = 1;
-      _hasForYouMoreData = true;
-      _isForYouLoadingMore = false;
-    }
-
-    if (!isFromPagination) {
-      _forYouCurrentPage = 1;
-      _hasForYouMoreData = true;
-    } else if (_isForYouLoadingMore || !_hasForYouMoreData) {
-      return;
-    }
-
-    _isForYouLoadingMore = true;
-
-    final apiResult = await _getForYouPostUseCase.executeGetForYouPost(
-      isLoading: isLoading,
-      page: _forYouCurrentPage,
-      pageLimit: _forYouPageSize,
-    );
-
-    if (apiResult.isSuccess) {
-      final postDataList = apiResult.data?.data as List<TimeLineData>;
-      if (postDataList.isListEmptyOrNull) {
-        _hasForYouMoreData = false;
+      if (isFromPagination) {
+        tabAssistData.postList.addAll(postDataList);
       } else {
-        if (isFromPagination) {
-          _forYouPostList.addAll(postDataList);
-        } else {
-          _forYouPostList
-            ..clear()
-            ..addAll(postDataList);
-        }
-        if (onComplete != null) {
-          onComplete(postDataList);
-        }
-        _forYouCurrentPage++;
+        tabAssistData.postList
+          ..clear()
+          ..addAll(postDataList);
       }
+      tabAssistData.currentPage++;
     } else {
-      ErrorHandler.showAppError(appError: apiResult.error);
+      tabAssistData.hasMoreData = false;
+      ErrorHandler.showAppError(appError: apiResult?.error);
     }
-    _isForYouLoadingMore = false;
+    if (onComplete != null) {
+      onComplete(postDataList);
+    }
+
+    tabAssistData.isLoadingMore = false;
   }
 
   FutureOr<void> _savePost(
@@ -361,78 +376,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       isPagination: false,
       isRefresh: true,
       onComplete: (postList) {
-        add(LoadPostsEvent(
-          timeLinePostList: _timeLinePostList,
-          trendingPosts: _timeLinePostList,
-          forYouPosts: _forYouPostList,
-        ));
+        add(LoadPostsEvent(postsByTab: _postsByTab.asMap().map((key, value) => MapEntry(value.postSectionType, value.postList))));
       },
     ));
-  }
-
-  Future<void> _callGetTimeLinePost(
-    bool isFromRefresh,
-    bool isFromPagination,
-    bool isLoading,
-    Function(List<TimeLineData>)? onComplete,
-  ) async {
-    // For refresh, clear cache and start from page 0
-    if (isFromRefresh) {
-      _timeLinePostList.clear();
-      _timeLineCurrentPage = 1;
-      _hasMoreTimeLineData = true;
-      _isTimeLineLoadingMore = false;
-    } else if (!isFromPagination && _timeLinePostList.isNotEmpty) {
-      // If we have cached posts and it's not a refresh, emit them immediately
-      // emit(HomeLoaded(followingPosts: _followingPostList, trendingPosts: _trendingPostList));
-    }
-
-    if (!isFromPagination) {
-      _timeLineCurrentPage = 1;
-      _hasMoreTimeLineData = true;
-    } else if (_isTimeLineLoadingMore || !_hasMoreTimeLineData) {
-      return;
-    }
-
-    _isTimeLineLoadingMore = true;
-
-    final apiResult = await _getTimelinePostUseCase.executeTimeLinePost(
-      isLoading: isLoading,
-      page: _timeLineCurrentPage,
-      pageLimit: _timeLinePageSize,
-    );
-
-    if (apiResult.isSuccess) {
-      final postDataList = apiResult.data?.data as List<TimeLineData>;
-      try {
-        final newPosts = postDataList
-            .map((postData) => TimeLineData.fromMap(postData.toMap()))
-            .toList(); // Updated line
-        if (newPosts.length < _timeLinePageSize) {
-          _hasMoreTimeLineData = false;
-        }
-
-        if (isFromPagination) {
-          _timeLinePostList.addAll(postDataList);
-        } else {
-          _timeLinePostList
-            ..clear()
-            ..addAll(postDataList);
-        }
-
-        if (onComplete != null) {
-          onComplete(newPosts);
-        }
-
-        _timeLineCurrentPage++;
-      } catch (e, stackTrace) {
-        AppLog.error('Error logged: $e', stackTrace);
-      }
-    } else {
-      ErrorHandler.showAppError(appError: apiResult.error);
-    }
-
-    _isTimeLineLoadingMore = false;
   }
 
   FutureOr<void> _getSocialProducts(
@@ -671,7 +617,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     }
   }
 
-  FutureOr<void> _removeMention(RemoveMentionEvent event, Emitter<SocialPostState> emit) async {
+  FutureOr<void> _removeMention(
+      RemoveMentionEvent event, Emitter<SocialPostState> emit) async {
     final apiResult = await _removeMentionUseCase.executeRemoveMention(
       isLoading: false,
       postId: event.postId,
@@ -689,9 +636,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       LoadPostsEvent event, Emitter<SocialPostState> emit) async {
     final myUserId = await _localDataUseCase.getUserId();
     emit(SocialPostLoadedState(
-      timeLinePosts: event.timeLinePostList,
-      trendingPosts: event.trendingPosts,
-      forYouPosts: event.forYouPosts,
+      postsByTab: event.postsByTab,
       userId: myUserId,
     ));
   }
@@ -718,5 +663,25 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
           isNeedToShowError: true,
           errorViewType: ErrorViewType.toast);
     }
+  }
+
+  Future<TimeLineData?> _getPostDetails(String postId, {Function(TimeLineData data)? onSuccess, bool showError = true}) async {
+    final result = await _getPostDetailsUseCase.executeGetPostDetails(
+      isLoading: false,
+      postId: postId ?? '',
+    );
+
+    if (result.isSuccess && onSuccess != null) {
+      result.data?.let(onSuccess);
+    }
+
+    if (result.isError && showError) {
+      ErrorHandler.showAppError(
+          appError: result.error,
+          isNeedToShowError: true,
+          errorViewType: ErrorViewType.toast);
+    }
+
+    return result.data;
   }
 }

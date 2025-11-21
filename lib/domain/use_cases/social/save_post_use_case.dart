@@ -21,4 +21,21 @@ class SavePostUseCase extends BaseUseCase {
         return ApiResult(
             data: response.responseCode == 200 ? response.data : null);
       });
+
+  Future<ApiResult<TimelineResponse?>> executeGetProfileSavedPostData({
+    required bool isLoading,
+    required int page,
+    required int pageSize,
+  }) async =>
+      await super.execute(() async {
+        final response = await _repository.getProfileSavedPostData(
+          isLoading: isLoading,
+          page: page,
+          pageSize: pageSize,
+        );
+        return ApiResult(
+            data: response.responseCode == 200 && response.responseCode != 204
+                ? response.data
+                : null);
+      });
 }

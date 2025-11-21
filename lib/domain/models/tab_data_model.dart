@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
+import 'package:ism_video_reel_player/utils/enums.dart';
 
 // class TabDataModel {
 //   TabDataModel({
@@ -51,8 +52,6 @@ class TabDataModel {
   TabDataModel({
     required this.title,
     required this.reelsDataList,
-    this.onLoadMore,
-    this.onRefresh,
     this.startingPostIndex = 0,
     required this.postSectionType,
     this.onTapCartIcon,
@@ -60,16 +59,22 @@ class TabDataModel {
     this.onTapUserProfile,
     this.onPressSave,
     this.overlayPadding,
+    this.userId,
+    this.postId,
+    this.tagValue,
+    this.tagType,
   });
 
   final String title;
-  List<ReelsData> reelsDataList;
-  final Future<List<ReelsData>> Function()? onLoadMore;
+  List<TimeLineData> reelsDataList;
   final Function(List<String> productIds, String postId, String userId)? onTapCartIcon;
-  final Future<bool> Function()? onRefresh;
   final int? startingPostIndex;
   final PostSectionType postSectionType;
   Widget? placeHolderWidget;
+  String? userId;
+  String? postId;
+  String? tagValue;
+  TagType? tagType;
   void Function(String? userId)? onTapUserProfile;
   final Future<bool> Function(bool isSavedPost, TimeLineData postData)? onPressSave;
   final EdgeInsetsGeometry? overlayPadding;

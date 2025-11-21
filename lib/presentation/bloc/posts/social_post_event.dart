@@ -6,38 +6,26 @@ abstract class SocialPostEvent {
 
 class StartPost extends SocialPostEvent {
   const StartPost({
-    required this.fetchForYou,
-    required this.fetchTrending,
-    required this.fetchTimeline,
+    required this.postSections,
   });
 
-  final bool fetchForYou;
-  final bool fetchTrending;
-  final bool fetchTimeline;
+  final List<PostTabAssistData> postSections;
 }
 
 class LoadPostData extends SocialPostEvent {
   const LoadPostData({
-    required this.fetchForYou,
-    required this.fetchTrending,
-    required this.fetchTimeline,
+    required this.postSections,
   });
 
-  final bool fetchForYou;
-  final bool fetchTrending;
-  final bool fetchTimeline;
+  final List<PostTabAssistData> postSections;
 }
 
 class LoadPostsEvent extends SocialPostEvent {
   LoadPostsEvent({
-    required this.timeLinePostList,
-    required this.trendingPosts,
-    required this.forYouPosts,
+    required this.postsByTab,
   });
 
-  final List<TimeLineData> timeLinePostList;
-  final List<TimeLineData> trendingPosts;
-  final List<TimeLineData> forYouPosts;
+  final Map<PostSectionType, List<TimeLineData>> postsByTab;
 }
 
 class GetTimeLinePostEvent extends SocialPostEvent {

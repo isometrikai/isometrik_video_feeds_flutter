@@ -258,4 +258,10 @@ enum PostSectionType {
   forYou,
   following,
   trending,
+  myPost,
+  otherUserPost,
+  savedPost,
+  myTaggedPost,
+  tagPost,
+  singlePost,
 }

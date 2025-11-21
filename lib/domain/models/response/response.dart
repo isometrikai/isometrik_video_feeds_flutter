@@ -10,6 +10,7 @@ export 'hash_tag_response.dart';
 export 'near_by_place_response.dart';
 export 'post_location.dart';
 export 'post_response.dart';
+export 'post_tab_assist.dart';
 export 'report_reason_response.dart';
 export 'response_class.dart';
 export 'search_user_response.dart';

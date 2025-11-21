@@ -26,7 +26,8 @@ class SocialApiEndPoints {
   static const String putEditPost = '/api/v1/posts';
   static const String deletePost = '/api/v1/posts';
   static const String getPost = '/social/v1/post';
-
+  static const getSavedPostsOfUserSocial = '/api/v1/posts/saved';
+  static const getProfileUserPostSocial = '/api/v1/posts/user';
   static String postMediaProcess(String postId) =>
       '/api/v1/posts/$postId/start-processing';
   static const String getSearchUsers = '/api/v1/users/search';
