@@ -14,7 +14,6 @@ import flutter_secure_storage_macos
 import geolocator_apple
 import ism_video_reel_player
 import package_info_plus
-import path_provider_foundation
 import photo_manager
 import pro_video_editor
 import shared_preferences_foundation
@@ -33,7 +32,6 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   GeolocatorPlugin.register(with: registry.registrar(forPlugin: "GeolocatorPlugin"))
   IsmVideoReelPlayerPlugin.register(with: registry.registrar(forPlugin: "IsmVideoReelPlayerPlugin"))
   FPPPackageInfoPlusPlugin.register(with: registry.registrar(forPlugin: "FPPPackageInfoPlusPlugin"))
-  PathProviderPlugin.register(with: registry.registrar(forPlugin: "PathProviderPlugin"))
   PhotoManagerPlugin.register(with: registry.registrar(forPlugin: "PhotoManagerPlugin"))
   ProVideoEditorPlugin.register(with: registry.registrar(forPlugin: "ProVideoEditorPlugin"))
   SharedPreferencesPlugin.register(with: registry.registrar(forPlugin: "SharedPreferencesPlugin"))
