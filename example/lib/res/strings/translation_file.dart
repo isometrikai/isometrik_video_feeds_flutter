@@ -14,6 +14,7 @@ class TranslationFile {
   static const String homeNavigation = 'Home';
   static const String accountNavigation = 'Account';
   static const String myAccount = 'My Account';
+  static const String myPost = 'My Post';
   static const String register = 'Register';
   static const String alert = 'Alert';
   static const String follow = 'Follow';
@@ -38,6 +39,11 @@ class TranslationFile {
   static const String tagPeople = 'Tag people';
   static const String tagLocation = 'Tag location';
   static const String post = 'Post';
+  static const String saved = 'Saved';
+  static const String tagged = 'Tagged';
+  static const String single = 'single';
+  static const String singleTrending = 'single Trend';
+  static const String others = 'Others';
   static const String sdkNotInitialized = 'sdk not initialized';
 
   static const uploadPhotoOrVideo = 'Upload a photo or a video';

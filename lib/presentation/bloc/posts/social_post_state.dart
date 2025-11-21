@@ -10,15 +10,11 @@ class PostLoadingState extends SocialPostState {
 
 class SocialPostLoadedState extends SocialPostState {
   SocialPostLoadedState({
-    required this.timeLinePosts,
-    required this.trendingPosts,
-    this.forYouPosts = const [],
+    required this.postsByTab,
     required this.userId,
   });
 
-  final List<TimeLineData> timeLinePosts;
-  final List<TimeLineData> trendingPosts;
-  final List<TimeLineData> forYouPosts;
+  final Map<PostSectionType, List<TimeLineData>> postsByTab;
   final String userId;
 }
 

@@ -17,6 +17,8 @@ export 'presentation/presentation.dart';
 export 'remote/remote.dart';
 // page navigator
 export 'utils/navigator/navigator.dart';
+// enum
+export 'utils/enums.dart';
 
 
 class IsmVideoReelPlayer {

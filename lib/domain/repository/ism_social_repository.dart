@@ -142,6 +142,19 @@ abstract class SocialRepository extends BaseRepository {
     required int pageLimit,
   });
 
+  Future<CustomResponse<TimelineResponse?>> getProfileSavedPostData({
+    required bool isLoading,
+    required int page,
+    required int pageSize,
+  });
+
+  Future<CustomResponse<TimelineResponse?>> getProfileUserPostData({
+    required bool isLoading,
+    required int page,
+    required int pageSize,
+    required String memberId,
+  });
+
   Future<CustomResponse<TimelineResponse?>> getForYouPosts({
     required bool isLoading,
     required int page,

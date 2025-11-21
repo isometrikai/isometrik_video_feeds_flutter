@@ -84,10 +84,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
     _refreshControllers =
         List.generate(_tabDataModelList.length, (index) => RefreshController());
-    var postBloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
-    if (postBloc.isClosed) {
+    _socialPostBloc = context.getOrCreateBloc();
+    if (_socialPostBloc.isClosed) {
       isrConfigureInjection();
-      postBloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
+      _socialPostBloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
     }
 
     _tabsVisibilityNotifier.value = _tabDataModelList.length > 1;
@@ -114,11 +114,16 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         });
       }
     });
-    postBloc.add(LoadPostData(
-      fetchForYou: _fetchForYou,
-      fetchTimeline: _fetchTimeline,
-      fetchTrending: _fetchTrending,
-    ));
+    _socialPostBloc.add(LoadPostData(
+        postSections: widget.tabDataModelList
+            .map((_) => PostTabAssistData(
+                postSectionType: _.postSectionType,
+                postList: _.reelsDataList,
+                postId: _.postId,
+                userId: _.userId,
+                tagType: _.tagType,
+                tagValue: _.tagValue))
+            .toList()));
   }
 
   // ✅ Provide BLoCs at the root of build
@@ -128,25 +133,18 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         child: _buildContent(),
       );
 
-  bool get _fetchForYou => widget.tabDataModelList
-      .any((element) => element.postSectionType == PostSectionType.forYou);
-
-  bool get _fetchTimeline => widget.tabDataModelList
-      .any((element) => element.postSectionType == PostSectionType.following);
-
-  bool get _fetchTrending => widget.tabDataModelList
-      .any((element) => element.postSectionType == PostSectionType.trending);
-
   /// ✅ Get all BLoC providers needed by the SDK
   /// Note: PostListingBloc and PlaceDetailsBloc are provided during navigation
   List<BlocProvider> _getAllBlocProviders() => [
         // Social Post BLoC (main BLoC for this screen)
         BlocProvider<SocialPostBloc>(
-          create: (_) => IsmInjectionUtils.getBloc<SocialPostBloc>()
+          create: (_) => _socialPostBloc
             ..add(StartPost(
-                fetchForYou: _fetchForYou,
-                fetchTrending: _fetchTrending,
-                fetchTimeline: _fetchTimeline)), // ✅ Trigger initial load
+                postSections: widget.tabDataModelList
+                    .map((_) => PostTabAssistData(
+                        postSectionType: _.postSectionType,
+                        postList: _.reelsDataList))
+                    .toList())), // ✅ Trigger initial load
         ),
       ];
 
@@ -158,44 +156,20 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           statusBarIconBrightness: Brightness.light,
         ),
         child: BlocConsumer<SocialPostBloc, SocialPostState>(
+          bloc: _socialPostBloc,
           listenWhen: (previousState, currentState) =>
               currentState is SocialPostLoadedState,
           listener: (context, state) {
             // ✅ Update _socialPostBloc reference if needed
-            _socialPostBloc = context.read<SocialPostBloc>();
-
+            debugPrint('ism_post_view: listener called with state: $state');
             if (state is SocialPostLoadedState) {
-              for (var i = 0; i < _tabDataModelList.length; i++) {
-                if (_tabDataModelList[i].reelsDataList.isListEmptyOrNull) {
-                  if (_tabDataModelList[i].postSectionType ==
-                      PostSectionType.following) {
-                    final postList = state.timeLinePosts;
-                    final reelDataList = postList
-                        .map((post) =>
-                            _getReelData(post, _tabDataModelList[i]))
-                        .toList();
-                    _tabDataModelList[i].reelsDataList = reelDataList;
-                  }
-                  if (_tabDataModelList[i].postSectionType ==
-                      PostSectionType.forYou) {
-                    final postList = state.forYouPosts;
-                    final reelDataList = postList
-                        .map((post) =>
-                            _getReelData(post, _tabDataModelList[i]))
-                        .toList();
-                    _tabDataModelList[i].reelsDataList = reelDataList;
-                  }
-                  if (_tabDataModelList[i].postSectionType ==
-                      PostSectionType.trending) {
-                    final postList = state.trendingPosts;
-                    final reelDataList = postList
-                        .map((post) =>
-                            _getReelData(post, _tabDataModelList[i]))
-                        .toList();
-                    _tabDataModelList[i].reelsDataList = reelDataList;
-                  }
-                }
-              }
+              state.postsByTab.forEach((sectionType, posts) {
+                _tabDataModelList
+                    .where((_) => _.postSectionType == sectionType)
+                    .firstOrNull
+                    ?.let(
+                        (tabData) => {tabData.reelsDataList = posts.toList()});
+              });
             }
           },
           buildWhen: (previousState, currentState) =>
@@ -254,16 +228,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         loggedInUserId: _loggedInUserId,
         allowImplicitScrolling: widget.allowImplicitScrolling,
         onPageChanged: widget.onPageChanged,
-        reelsDataList: tabData.reelsDataList,
+        reelsDataList:
+            tabData.reelsDataList.map((_) => _getReelData(_, tabData)).toList(),
         onLoadMore: () async => await _handleLoadMore(tabData),
         onRefresh: () async {
-          var result = false;
-
-          if (tabData.onRefresh != null) {
-            result = await tabData.onRefresh?.call() ?? false;
-          } else {
-            result = await _handlePostRefresh();
-          }
+          var result = await _handlePostRefresh(tabData);
           // Increment refresh count to force rebuild
           if (result) {
             setState(() {
@@ -277,7 +246,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         onTapCartIcon: (postId) {
           if (tabData.onTapCartIcon != null) {
             final reelData = tabData.reelsDataList
-                .firstWhere((element) => element.postId == postId);
+                .firstWhere((element) => element.id == postId);
             final productIds = <String>[];
             final socialProductList =
                 reelData.tags?.products ?? <SocialProductData>[];
@@ -291,7 +260,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       );
 
   ReelsData _getReelData(
-          TimeLineData postData, TabDataModel tabData, ) =>
+    TimeLineData postData,
+    TabDataModel tabData,
+  ) =>
       ReelsData(
         postSetting: PostSetting(
           isProfilePicVisible: true,
@@ -336,7 +307,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
               tabData.onTapUserProfile?.call(mention.userId);
             }
           } else {
-            return _showMentionList(mentionList, tabData.postSectionType, postData);
+            return _showMentionList(
+                mentionList, tabData.postSectionType, postData);
           }
           return mentionList;
         },
@@ -374,7 +346,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         onPressSave: (isSavedPost) async {
           try {
             if (tabData.onPressSave != null) {
-              return tabData.onPressSave?.call(isSavedPost, postData) ?? isSavedPost;
+              return tabData.onPressSave?.call(isSavedPost, postData) ??
+                  isSavedPost;
             }
             final completer = Completer<bool>();
             _socialPostBloc.add(SavePostEvent(
@@ -460,8 +433,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   }
 
   /// Handles loading more posts for infinite scrolling
-  Future<List<ReelsData>> _handleLoadMore(
-      TabDataModel tabData) async {
+  Future<List<ReelsData>> _handleLoadMore(TabDataModel tabData) async {
     try {
       final completer = Completer<List<TimeLineData>>();
       _socialPostBloc.add(GetMorePostEvent(
@@ -474,9 +446,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       ));
       final timeLinePostList = await completer.future;
       if (timeLinePostList.isEmpty) return [];
-      final timeLineReelDataList = timeLinePostList
-          .map((post) => _getReelData(post, tabData))
-          .toList();
+      final timeLineReelDataList =
+          timeLinePostList.map((post) => _getReelData(post, tabData)).toList();
       return timeLineReelDataList;
     } catch (e) {
       debugPrint('Error handling load more: $e');
@@ -549,55 +520,57 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Theme(
-                    data: ThemeData(
-                      splashColor: Colors.transparent,
-                      highlightColor: Colors.transparent,
-                    ),
-                    child: TabBar(
-                      controller: _postTabController,
-                      isScrollable: true,
-                      tabAlignment: TabAlignment.start,
-                      labelColor: _tabDataModelList[_currentIndex]
-                              .reelsDataList
-                              .isListEmptyOrNull
-                          ? IsrColors.black
-                          : IsrColors.white,
-                      unselectedLabelColor: _tabDataModelList[_currentIndex]
-                              .reelsDataList
-                              .isListEmptyOrNull
-                          ? IsrColors.black
-                          : IsrColors.white.changeOpacity(0.6),
-                      indicatorColor: _tabDataModelList[_currentIndex]
-                              .reelsDataList
-                              .isListEmptyOrNull
-                          ? IsrColors.black
-                          : IsrColors.white,
-                      indicatorWeight: 3,
-                      dividerColor: Colors.transparent,
-                      indicatorSize: TabBarIndicatorSize.label,
-                      padding: IsrDimens.edgeInsetsSymmetric(
-                          horizontal: IsrDimens.sixteen),
-                      labelPadding: IsrDimens.edgeInsetsSymmetric(
-                          horizontal: IsrDimens.eight),
-                      labelStyle: IsrStyles.white16.copyWith(
-                        fontWeight: FontWeight.w700,
-                        height: 1.5,
+                  Expanded(
+                    child: Theme(
+                      data: ThemeData(
+                        splashColor: Colors.transparent,
+                        highlightColor: Colors.transparent,
                       ),
-                      unselectedLabelStyle: IsrStyles.white16.copyWith(
-                        fontWeight: FontWeight.w400,
-                        height: 1.5,
-                      ),
-                      tabs: _tabDataModelList
-                          .map(
-                            (tab) => Tab(
-                              child: Text(
-                                tab.title,
-                                textAlign: TextAlign.center,
+                      child: TabBar(
+                        controller: _postTabController,
+                        isScrollable: true,
+                        tabAlignment: TabAlignment.start,
+                        labelColor: _tabDataModelList[_currentIndex]
+                                .reelsDataList
+                                .isListEmptyOrNull
+                            ? IsrColors.black
+                            : IsrColors.white,
+                        unselectedLabelColor: _tabDataModelList[_currentIndex]
+                                .reelsDataList
+                                .isListEmptyOrNull
+                            ? IsrColors.black
+                            : IsrColors.white.changeOpacity(0.6),
+                        indicatorColor: _tabDataModelList[_currentIndex]
+                                .reelsDataList
+                                .isListEmptyOrNull
+                            ? IsrColors.black
+                            : IsrColors.white,
+                        indicatorWeight: 3,
+                        dividerColor: Colors.transparent,
+                        indicatorSize: TabBarIndicatorSize.label,
+                        padding: IsrDimens.edgeInsetsSymmetric(
+                            horizontal: IsrDimens.sixteen),
+                        labelPadding: IsrDimens.edgeInsetsSymmetric(
+                            horizontal: IsrDimens.eight),
+                        labelStyle: IsrStyles.white16.copyWith(
+                          fontWeight: FontWeight.w700,
+                          height: 1.5,
+                        ),
+                        unselectedLabelStyle: IsrStyles.white16.copyWith(
+                          fontWeight: FontWeight.w400,
+                          height: 1.5,
+                        ),
+                        tabs: _tabDataModelList
+                            .map(
+                              (tab) => Tab(
+                                child: Text(
+                                  tab.title,
+                                  textAlign: TextAlign.center,
+                                ),
                               ),
-                            ),
-                          )
-                          .toList(),
+                            )
+                            .toList(),
+                      ),
                     ),
                   ),
                 ],
@@ -705,7 +678,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       );
 
   /// Handles refresh for user posts
-  Future<bool> _handlePostRefresh() async {
+  Future<bool> _handlePostRefresh(TabDataModel tabData) async {
     final completer = Completer<bool>();
     _socialPostBloc.add(GetMorePostEvent(
       isLoading: false,
@@ -713,9 +686,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       isRefresh: true,
       postSectionType: _currentPostSectionType,
       memberUserId: '',
-
-      /// TODO need to userId here
       onComplete: (postDataList) async {
+        tabData.reelsDataList
+          ..clear()
+          ..addAll(postDataList);
         completer.complete(true);
       },
     ));
@@ -723,7 +697,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   }
 
   /// Handles the more options menu for a post
-  Future<dynamic> _handleMoreOptions(TimeLineData postDataModel, TabDataModel tabData) async {
+  Future<dynamic> _handleMoreOptions(
+      TimeLineData postDataModel, TabDataModel tabData) async {
     try {
       return await _showMoreOptionsDialog(
         tabData: tabData,

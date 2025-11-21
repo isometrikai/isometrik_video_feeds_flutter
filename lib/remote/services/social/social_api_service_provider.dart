@@ -759,6 +759,65 @@ class SocialApiServiceProvider extends SocialApiService {
       );
 
   @override
+  Future<ResponseModel> getProfileSavedPostData({
+    required bool isLoading,
+    required Header header,
+    required int page,
+    required int pageSize,
+  }) async =>
+      await networkClient.makeRequest(
+        SocialApiEndPoints.getSavedPostsOfUserSocial,
+        NetworkRequestType.get,
+        {},
+        {
+          'page': '$page',
+          'page_size': '$pageSize',
+        }.removeEmptyValues(),
+        {
+          'Accept': AppConstants.headerAccept,
+          'Content-Type': AppConstants.headerContentType,
+          'currencySymbol': header.currencySymbol,
+          'currencyCode': header.currencyCode,
+          'platform': header.platForm.toString(),
+          'language': header.language,
+          'Authorization': header.accessToken,
+          'x-tenant-id': AppConstants.tenantId,
+          'x-project-id': AppConstants.projectId,
+        },
+        isLoading,
+      );
+
+  @override
+  Future<ResponseModel> getProfileUserPostDataSocial({
+    required bool isLoading,
+    required Header header,
+    required int page,
+    required int pageSize,
+    required String memberId,
+  }) async =>
+      await networkClient.makeRequest(
+        '${SocialApiEndPoints.getProfileUserPostSocial}/$memberId',
+        NetworkRequestType.get,
+        {},
+        {
+          'page': '$page',
+          'page_size': '$pageSize',
+        }.removeEmptyValues(),
+        {
+          'Accept': AppConstants.headerAccept,
+          'Content-Type': AppConstants.headerContentType,
+          'currencySymbol': header.currencySymbol,
+          'currencyCode': header.currencyCode,
+          'platform': header.platForm.toString(),
+          'language': header.language,
+          'Authorization': header.accessToken,
+          'x-tenant-id': AppConstants.tenantId,
+          'x-project-id': AppConstants.projectId,
+        },
+        isLoading,
+      );
+
+  @override
   Future<ResponseModel> getTaggedPosts({
     required bool isLoading,
     required Header header,

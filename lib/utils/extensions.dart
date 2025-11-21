@@ -439,7 +439,7 @@ extension BlocSafeGetter on BuildContext {
 
     // If missing or closed → create from DI
     bloc ??= IsmInjectionUtils.getBloc<T>();
-
+    debugPrint("Bloc: ${bloc.hashCode}");
     return bloc;
   }
 

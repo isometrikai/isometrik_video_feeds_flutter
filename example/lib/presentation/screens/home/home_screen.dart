@@ -61,6 +61,69 @@ class _HomeScreenState extends State<HomeScreen> {
               debugPrint('postId: $postId');
             },
           ),
+          isr.TabDataModel(
+            postSectionType: isr.PostSectionType.myPost,
+            title: TranslationFile.myPost,
+            reelsDataList: [],
+            startingPostIndex: 0,
+            onTapCartIcon: (productIds, postId, userId) {
+              debugPrint('productIds: $productIds');
+              debugPrint('postId: $postId');
+            },
+          ),
+          isr.TabDataModel(
+            postSectionType: isr.PostSectionType.savedPost,
+            title: TranslationFile.saved,
+            reelsDataList: [],
+            startingPostIndex: 0,
+            onTapCartIcon: (productIds, postId, userId) {
+              debugPrint('productIds: $productIds');
+              debugPrint('postId: $postId');
+            },
+          ),
+          isr.TabDataModel(
+            postSectionType: isr.PostSectionType.myTaggedPost,
+            title: TranslationFile.tagged,
+            reelsDataList: [],
+            startingPostIndex: 0,
+            onTapCartIcon: (productIds, postId, userId) {
+              debugPrint('productIds: $productIds');
+              debugPrint('postId: $postId');
+            },
+          ),
+          isr.TabDataModel(
+            postSectionType: isr.PostSectionType.singlePost,
+            title: TranslationFile.single,
+            reelsDataList: [],
+            postId: 'post_ab8fd4f9c562', //hardCoded post id
+            startingPostIndex: 0,
+            onTapCartIcon: (productIds, postId, userId) {
+              debugPrint('productIds: $productIds');
+              debugPrint('postId: $postId');
+            },
+          ),
+          isr.TabDataModel(
+            postSectionType: isr.PostSectionType.trending,
+            title: TranslationFile.singleTrending,
+            reelsDataList: [],
+            postId: 'post_ab8fd4f9c562', //hardCoded post id
+            startingPostIndex: 0,
+            onTapCartIcon: (productIds, postId, userId) {
+              debugPrint('productIds: $productIds');
+              debugPrint('postId: $postId');
+            },
+          ),
+          isr.TabDataModel(
+            postSectionType: isr.PostSectionType.otherUserPost,
+            title: TranslationFile.others,
+            reelsDataList: [],
+            userId: '67c69bb7e0295f209db1d0e9', //hardCoded userId of user asjadibrahim10215
+            startingPostIndex: 0,
+            onTapCartIcon: (productIds, postId, userId) {
+              debugPrint('productIds: $productIds');
+              debugPrint('postId: $postId');
+            },
+          ),
         ], // ✅ Already working!
       );
 
@@ -149,13 +212,8 @@ class _HomeScreenState extends State<HomeScreen> {
       isr.TabDataModel(
         postSectionType: postTabType.toPostSectionType(),
         title: title,
-        reelsDataList: timeLinePosts.map(_getReelData).toList(),
-        onLoadMore: () async => await _handleLoadMore(postTabType),
+        reelsDataList: timeLinePosts.map((_) => isr.TimeLineData.fromMap(_.toMap())).toList(),
         startingPostIndex: startPostIndex,
-        onRefresh: () async {
-          final result = await _handlePostRefresh(postTabType);
-          return result;
-        },
         onTapCartIcon: (productIds, postId, userId) {
           debugPrint('productIds: $productIds');
           debugPrint('postId: $postId');

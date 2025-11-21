@@ -35,6 +35,8 @@ class BlocInjection {
         IsmInjectionUtils.getUseCase<GetSocialProductsUseCase>(),
         IsmInjectionUtils.getUseCase<GetMentionedUsersUseCase>(),
         IsmInjectionUtils.getUseCase<RemoveMentionUseCase>(),
+        IsmInjectionUtils.getUseCase<GetTaggedPostsUseCase>(),
+        IsmInjectionUtils.getUseCase<GetUserPostDataUseCase>(),
       ),
     );
 

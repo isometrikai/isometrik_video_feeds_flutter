@@ -159,6 +159,21 @@ abstract class SocialApiService extends BaseService {
     required int pageLimit,
   });
 
+  Future<ResponseModel> getProfileSavedPostData({
+    required bool isLoading,
+    required Header header,
+    required int page,
+    required int pageSize,
+  });
+
+  Future<ResponseModel> getProfileUserPostDataSocial({
+    required bool isLoading,
+    required Header header,
+    required int page,
+    required int pageSize,
+    required String memberId,
+  });
+
   Future<ResponseModel> getForYouPosts({
     required bool isLoading,
     required Header header,

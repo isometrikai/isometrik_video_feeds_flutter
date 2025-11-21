@@ -459,6 +459,41 @@ class SocialRepositoryImpl implements SocialRepository {
   }
 
   @override
+  Future<CustomResponse<TimelineResponse?>> getProfileSavedPostData({
+    required bool isLoading,
+    required int page,
+    required int pageSize,
+  }) async {
+    final header = await _dataSource.getHeader();
+    final response = await _apiService.getProfileSavedPostData(
+      isLoading: isLoading,
+      header: header,
+      page: page,
+      pageSize: pageSize,
+    );
+    return _socialMapper.mapTimelineResponse(response);
+  }
+
+  @override
+  Future<CustomResponse<TimelineResponse?>> getProfileUserPostData({
+    required bool isLoading,
+    required int page,
+    required int pageSize,
+    required String memberId,
+  }) async {
+    final header = await _dataSource.getHeader();
+    final response = await _apiService.getProfileUserPostDataSocial(
+      isLoading: isLoading,
+      header: header,
+      page: page,
+      pageSize: pageSize,
+      memberId: memberId,
+    );
+
+    return _socialMapper.mapTimelineResponse(response);
+  }
+
+  @override
   Future<CustomResponse<TimelineResponse?>> getForYouPosts({
     required bool isLoading,
     required int page,
