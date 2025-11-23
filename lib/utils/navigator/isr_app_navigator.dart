@@ -15,6 +15,7 @@ class IsrAppNavigator {
 
   /// Navigate to post listing screen
   /// ✅ Wraps the destination with necessary BLoC providers
+  /// Uses rootNavigator to hide bottom navigation bar
   static void navigateToPostListing(
     BuildContext context, {
     required String tagValue,
@@ -31,7 +32,7 @@ class IsrAppNavigator {
       ),
     );
 
-    Navigator.of(context).push(
+    Navigator.of(context, rootNavigator: true).push(
       _buildRoute(page: page, transitionType: transitionType),
     );
   }
@@ -58,7 +59,7 @@ class IsrAppNavigator {
       ),
     );
 
-    Navigator.of(context).push(
+    Navigator.of(context, rootNavigator: true).push(
       _buildRoute(page: page, transitionType: transitionType),
     );
   }
@@ -77,7 +78,7 @@ class IsrAppNavigator {
       ),
     );
 
-    Navigator.of(context).push(
+    Navigator.of(context, rootNavigator: true).push(
       _buildRoute(page: page, transitionType: transitionType),
     );
   }
