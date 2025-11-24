@@ -353,6 +353,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
               postData.id ?? '', totalCommentsCount, tabData.postSectionType);
           return result;
         },
+        onTapShare: (tabData.onShareClick == null)
+            ? null
+            : () {
+                tabData.onShareClick?.call(postData);
+              },
         onPressMoreButton: () async {
           final result = await _handleMoreOptions(postData, tabData);
           return result;
