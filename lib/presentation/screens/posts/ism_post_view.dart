@@ -651,7 +651,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     final updatedMentionList = await Utility.showBottomSheet<List<MentionMetaData>>(
       isScrollControlled: true,
       child: MentionListBottomSheet(
-        initialMentionList: mentionList,
+        initialMentionList: [],
         postData: postData,
         myUserId: '',
         onTapUserProfile: (userId) {
