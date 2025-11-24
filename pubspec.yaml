@@ -17,6 +17,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_bloc: ^9.1.1
+  flutter_hls_video_player: ^1.0.1
   flutter_screenutil: ^5.9.3
   get_thumbnail_video: ^0.7.3
   permission_handler: ^12.0.0+1
