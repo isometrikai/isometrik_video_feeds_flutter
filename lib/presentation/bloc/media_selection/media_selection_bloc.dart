@@ -94,6 +94,14 @@ class MediaSelectionBloc
         type: pm.RequestType.common,
         hasAll: true,
         onlyAll: true,
+        filterOption: pm.FilterOptionGroup(
+          orders: [
+            const pm.OrderOption(
+              type: pm.OrderOptionType.updateDate,
+              asc: false, // false = NEW → OLD
+            )
+          ],
+        ),
       );
 
       // 2. Images Album
@@ -101,6 +109,14 @@ class MediaSelectionBloc
         type: pm.RequestType.image,
         hasAll: true,
         onlyAll: true,
+        filterOption: pm.FilterOptionGroup(
+          orders: [
+            const pm.OrderOption(
+              type: pm.OrderOptionType.updateDate,
+              asc: false, // false = NEW → OLD
+            )
+          ],
+        ),
       );
 
       // 3. Videos Album
@@ -108,6 +124,14 @@ class MediaSelectionBloc
         type: pm.RequestType.video,
         hasAll: true,
         onlyAll: true,
+        filterOption: pm.FilterOptionGroup(
+          orders: [
+            const pm.OrderOption(
+              type: pm.OrderOptionType.updateDate,
+              asc: false, // false = NEW → OLD
+            )
+          ],
+        ),
       );
 
       // Add albums if they have content

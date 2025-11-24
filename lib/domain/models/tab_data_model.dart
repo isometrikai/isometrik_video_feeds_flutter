@@ -63,11 +63,13 @@ class TabDataModel {
     this.postId,
     this.tagValue,
     this.tagType,
+    this.onShareClick,
   });
 
   final String title;
   List<TimeLineData> reelsDataList;
-  final Function(List<String> productIds, String postId, String userId)? onTapCartIcon;
+  final Function(List<String> productIds, String postId, String userId)?
+      onTapCartIcon;
   final int? startingPostIndex;
   final PostSectionType postSectionType;
   final Function(String postId, bool isPostEmpty)? onDeletePostSuccess;
@@ -77,7 +79,9 @@ class TabDataModel {
   String? tagValue;
   TagType? tagType;
   void Function(String? userId)? onTapUserProfile;
-  final Future<bool> Function(bool isSavedPost, TimeLineData postData)? onPressSave;
+  final Future<bool> Function(bool isSavedPost, TimeLineData postData)?
+      onPressSave;
+  final Future<void> Function(TimeLineData postData)? onShareClick;
   final EdgeInsetsGeometry? overlayPadding;
 
   // -------------------------------------------------------
@@ -86,7 +90,8 @@ class TabDataModel {
   TabDataModel copyWith({
     String? title,
     List<TimeLineData>? reelsDataList,
-    Function(List<String> productIds, String postId, String userId)? onTapCartIcon,
+    Function(List<String> productIds, String postId, String userId)?
+        onTapCartIcon,
     int? startingPostIndex,
     PostSectionType? postSectionType,
     Function(String postId, bool isPostEmpty)? onDeletePostSuccess,
@@ -98,21 +103,23 @@ class TabDataModel {
     void Function(String? userId)? onTapUserProfile,
     Future<bool> Function(bool isSavedPost, TimeLineData postData)? onPressSave,
     EdgeInsetsGeometry? overlayPadding,
-  }) => TabDataModel(
-      title: title ?? this.title,
-      reelsDataList: reelsDataList ?? this.reelsDataList,
-      startingPostIndex: startingPostIndex ?? this.startingPostIndex,
-      postSectionType: postSectionType ?? this.postSectionType,
-      onTapCartIcon: onTapCartIcon ?? this.onTapCartIcon,
-      placeHolderWidget: placeHolderWidget ?? this.placeHolderWidget,
-      onTapUserProfile: onTapUserProfile ?? this.onTapUserProfile,
-      onPressSave: onPressSave ?? this.onPressSave,
-      overlayPadding: overlayPadding ?? this.overlayPadding,
-      onDeletePostSuccess: onDeletePostSuccess ?? this.onDeletePostSuccess,
-      userId: userId ?? this.userId,
-      postId: postId ?? this.postId,
-      tagValue: tagValue ?? this.tagValue,
-      tagType: tagType ?? this.tagType,
-    );
+    Future<void> Function(TimeLineData postData)? onShareClick,
+  }) =>
+      TabDataModel(
+        title: title ?? this.title,
+        reelsDataList: reelsDataList ?? this.reelsDataList,
+        startingPostIndex: startingPostIndex ?? this.startingPostIndex,
+        postSectionType: postSectionType ?? this.postSectionType,
+        onTapCartIcon: onTapCartIcon ?? this.onTapCartIcon,
+        placeHolderWidget: placeHolderWidget ?? this.placeHolderWidget,
+        onTapUserProfile: onTapUserProfile ?? this.onTapUserProfile,
+        onPressSave: onPressSave ?? this.onPressSave,
+        overlayPadding: overlayPadding ?? this.overlayPadding,
+        onDeletePostSuccess: onDeletePostSuccess ?? this.onDeletePostSuccess,
+        userId: userId ?? this.userId,
+        postId: postId ?? this.postId,
+        tagValue: tagValue ?? this.tagValue,
+        tagType: tagType ?? this.tagType,
+        onShareClick: onShareClick ?? this.onShareClick,
+      );
 }
-

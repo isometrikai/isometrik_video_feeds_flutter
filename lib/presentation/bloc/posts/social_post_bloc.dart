@@ -588,10 +588,15 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
           event.commentId?.trim().isNotEmpty == true) {
         final commentList = event.postCommentList?.toList() ?? [];
         if (event.parentCommentId?.trim().isNotEmpty == true) {
+          debugPrint('Social_bloc: commetIds => {${commentList.map((e) => e.id).toList()}}');
           final parentComment = commentList
-              .firstWhere((comment) => comment.id == event.parentCommentId);
-          parentComment.childComments
+              .where((comment) => comment.id == event.parentCommentId).firstOrNull;
+          parentComment?.childComments
               ?.removeWhere((comment) => comment.id == event.commentId);
+          parentComment?.childCommentCount = (parentComment.childCommentCount ?? 1) - 1;
+          if (parentComment?.childComments?.isEmpty == true) {
+            parentComment?.showReply = false;
+          }
         } else {
           commentList.removeWhere((comment) => comment.id == event.commentId);
         }

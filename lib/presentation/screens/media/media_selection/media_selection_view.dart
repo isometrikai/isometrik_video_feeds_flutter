@@ -210,7 +210,10 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
             mediaData.thumbnailPath = snapshot.data;
             return _buildCachedImage(snapshot.data!);
           }
-          return _buildVideoPlaceholder();
+          return Center(
+            child: CircularProgressIndicator(
+                color: widget.mediaSelectionConfig.primaryColor),
+          );
         },
       );
 
