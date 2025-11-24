@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -25,64 +24,64 @@ class MentionListBottomSheet extends StatefulWidget {
 }
 
 class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
-  late List<MentionMetaData> _mentionList;
+  // late List<MentionMetaData> _mentionList;
   final List<SocialUserData> _socialUserList = [];
   late SocialPostBloc _socialPostBloc;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _socialPostBloc = context.getOrCreateBloc();
-    _mentionList = List.from(widget.initialMentionList);
+    // _mentionList = List.from(widget.initialMentionList);
     _socialPostBloc.add(GetMentionedUserEvent(
         postId: widget.postData.id ?? '',
         onComplete: (mentionedList) {
-          if (mounted && mentionedList.isNotEmpty) {
+          if (mounted) {
             setState(() {
-              _socialUserList.clear();
-              _socialUserList.addAll(mentionedList);
+              _isLoading = false;
+              if (mentionedList.isNotEmpty) {
+                _socialUserList.clear();
+                _socialUserList.addAll(mentionedList);
+              }
             });
           }
         }));
     // If no mentions initially, dismiss the bottom sheet immediately
-    if (_mentionList.isEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          context.pop(_mentionList); // Return empty list
-        }
-      });
-    }
+    // if (_mentionList.isEmpty) {
+    //   WidgetsBinding.instance.addPostFrameCallback((_) {
+    //     if (mounted) {
+    //       context.pop(_mentionList); // Return empty list
+    //     }
+    //   });
+    // }
   }
 
   void _removeMentionFromList(String userId) {
     // If this is the last mention, dismiss immediately without updating UI
-    if (_mentionList.length == 1 && _mentionList.first.userId == userId) {
-      context.pop(_mentionList); // Return empty list
-      return;
-    }
+    // if (_socialUserList.length == 1 && _socialUserList.first.userId == userId) {
+    //   context.pop(_socialUserList); // Return empty list
+    //   return;
+    // }
 
     setState(() {
-      _mentionList.removeWhere((mention) => mention.userId == userId);
+      _socialUserList.removeWhere((mention) => mention.id == userId);
     });
   }
 
   @override
-  Widget build(BuildContext context) =>
-      PopScope(
+  Widget build(BuildContext context) => PopScope(
         canPop: false,
         onPopInvokedWithResult: (didPop, _) {
           if (!didPop) {
-            context.pop(_mentionList);
+            context.pop();
           }
         },
         child: BlocProvider<SocialPostBloc>(
           create: (context) => _socialPostBloc,
           child: Container(
             constraints: BoxConstraints(
-              maxHeight: MediaQuery
-                  .of(context)
-                  .size
-                  .height * 0.9,
+              maxHeight: MediaQuery.of(context).size.height * 0.9,
             ),
             decoration: BoxDecoration(
               color: IsrColors.white,
@@ -111,7 +110,7 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
                       ),
                       TapHandler(
                         onTap: () {
-                          context.pop(_mentionList);
+                          context.pop();
                         },
                         child: Container(
                           padding: IsrDimens.edgeInsetsAll(IsrDimens.eight),
@@ -127,49 +126,54 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
                 ),
                 const Divider(height: 1),
                 // User List
-                Flexible(
-                  child: _mentionList.isEmpty
-                      ? Center(
-                    child: Padding(
-                      padding:
-                      IsrDimens.edgeInsetsAll(IsrDimens.twentyFour),
-                      child: Text(
-                        'No mentions found',
-                        style: IsrStyles.primaryText14.copyWith(
-                          color: IsrColors.grey,
+                _isLoading
+                    ? Padding(
+                        padding: IsrDimens.edgeInsetsSymmetric(
+                          vertical: IsrDimens.forty,
                         ),
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            color: IsrColors.appColor,
+                          ),
+                        ),
+                      )
+                    : Flexible(
+                        child: _socialUserList.isEmpty
+                            ? Container(
+                                constraints: BoxConstraints(
+                                  minHeight: MediaQuery.of(context).size.height * 0.3,
+                                ),
+                                child: Center(
+                                  child: Padding(
+                                    padding: IsrDimens.edgeInsetsAll(IsrDimens.twentyFour),
+                                    child: Text(
+                                      'No mentions found',
+                                      style: IsrStyles.primaryText14.copyWith(
+                                        color: IsrColors.grey,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : ListView.builder(
+                                shrinkWrap: true,
+                                itemCount: _socialUserList.length,
+                                itemBuilder: (context, index) {
+                                  final socialUserData = _socialUserList[index];
+                                  return _buildProfileItem(socialUserData, index);
+                                },
+                              ),
                       ),
-                    ),
-                  )
-                      : ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: _mentionList.length,
-                    itemBuilder: (context, index) {
-                      final mentionedData = _mentionList[index];
-                      final socialUserData = _socialUserList
-                          .firstWhere(
-                              (_) =>
-                          _.id?.takeIfNotEmpty() != null &&
-                              _.id == mentionedData.userId,
-                          orElse: SocialUserData.new)
-                          .takeIf((_) => _.id?.takeIfNotEmpty() != null);
-                      return _buildProfileItem(
-                          mentionedData, socialUserData, index);
-                    },
-                  ),
-                ),
               ],
             ),
           ),
         ),
       );
 
-  Widget _buildProfileItem(MentionMetaData mentionedData,
-      SocialUserData? socialUserData, int index) =>
-      TapHandler(
+  Widget _buildProfileItem(SocialUserData? socialUserData, int index) => TapHandler(
         onTap: () {
-          widget.onTapUserProfile(mentionedData.userId ?? '');
-          context.pop(_mentionList);
+          widget.onTapUserProfile(socialUserData?.id ?? '');
+          context.pop([]);
         },
         child: Container(
           padding: IsrDimens.edgeInsetsSymmetric(
@@ -177,13 +181,13 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
             vertical: IsrDimens.twelve,
           ),
           decoration: BoxDecoration(
-            border: index < _mentionList.length - 1
+            border: index < _socialUserList.length - 1
                 ? const Border(
-              bottom: BorderSide(
-                color: IsrColors.colorDBDBDB,
-                width: 0.5,
-              ),
-            )
+                    bottom: BorderSide(
+                      color: IsrColors.colorDBDBDB,
+                      width: 0.5,
+                    ),
+                  )
                 : null,
           ),
           child: Row(
@@ -201,9 +205,7 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
                 ),
                 child: ClipOval(
                   child: AppImage.network(
-                    socialUserData?.avatarUrl?.takeIfNotEmpty() ??
-                        mentionedData.avatarUrl ??
-                        '',
+                    socialUserData?.avatarUrl?.takeIfNotEmpty() ?? '',
                     height: IsrDimens.forty,
                     width: IsrDimens.forty,
                     fit: BoxFit.cover,
@@ -220,8 +222,8 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
                       scrollDirection: Axis.horizontal,
                       child: Text(
                         socialUserData?.displayName?.takeIfNotEmpty() ??
-                            mentionedData.name?.takeIfNotEmpty() ??
-                            mentionedData.username ??
+                            socialUserData?.fullName?.takeIfNotEmpty() ??
+                            socialUserData?.username ??
                             'Unknown User',
                         style: IsrStyles.primaryText14.copyWith(
                           fontWeight: FontWeight.w600,
@@ -233,9 +235,7 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Text(
-                        socialUserData?.username?.takeIfNotEmpty() ??
-                            mentionedData.username ??
-                            '',
+                        socialUserData?.username?.takeIfNotEmpty() ?? '',
                         style: IsrStyles.primaryText12.copyWith(
                           color: '767676'.toColor(),
                         ),
@@ -247,8 +247,7 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
               10.responsiveHorizontalSpace,
               // Action Button
               _buildFollowFollowingButton(
-                mentionedData,
-                socialUserData?.isFollowing ?? false,
+                socialUserData,
                 widget.postData.id ?? '',
               ),
             ],
@@ -256,80 +255,73 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
         ),
       );
 
-  Widget _buildFollowFollowingButton(MentionMetaData mentionedData,
-      bool isFollow,
-      String postId,) {
-    final userId = mentionedData.userId ?? '';
+  Widget _buildFollowFollowingButton(
+    SocialUserData? socialUserData,
+    String postId,
+  ) {
+    final userId = socialUserData?.id ?? '';
     var isLoading = false;
-    var isFollowing = isFollow;
+    var isFollowing = socialUserData?.isFollowing ?? false;
 
     return StatefulBuilder(
-      builder: (context, setState) =>
-      userId == widget.myUserId
+      builder: (context, setState) => userId == widget.myUserId
           ? AppButton(
-        height: 36.responsiveDimension,
-        width: 95.responsiveDimension,
-        type: ButtonType.secondary,
-        borderRadius: 40.responsiveDimension,
-        title: IsrTranslationFile.remove,
-        isLoading: isLoading,
-        textStyle: IsrStyles.primaryText12.copyWith(
-          fontWeight: FontWeight.w600,
-        ),
-        onPress: isLoading == true
-            ? null
-            : () {
-          isLoading = true;
-          setState.call(() {});
-          _socialPostBloc.add(RemoveMentionEvent(
-            postId:
-            postId, // This should be the actual post ID, not user ID
-            onComplete: (isSuccess) {
-              isLoading = false;
-              if (isSuccess) {
-                // Remove the mention from the list
-                _removeMentionFromList(userId);
-              }
-              setState.call(() {});
-            },
-          ));
-        },
-      )
+              height: 36.responsiveDimension,
+              width: 95.responsiveDimension,
+              type: ButtonType.secondary,
+              borderRadius: 40.responsiveDimension,
+              title: IsrTranslationFile.remove,
+              isLoading: isLoading,
+              textStyle: IsrStyles.primaryText12.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+              onPress: isLoading == true
+                  ? null
+                  : () {
+                      isLoading = true;
+                      setState.call(() {});
+                      _socialPostBloc.add(RemoveMentionEvent(
+                        postId: postId, // This should be the actual post ID, not user ID
+                        onComplete: (isSuccess) {
+                          isLoading = false;
+                          if (isSuccess) {
+                            // Remove the mention from the list
+                            _removeMentionFromList(userId);
+                          }
+                          setState.call(() {});
+                        },
+                      ));
+                    },
+            )
           : AppButton(
-        onPress: isLoading == true
-            ? null
-            : () {
-          isLoading = true;
-          setState.call(() {});
-          _socialPostBloc.add(FollowUserEvent(
-              followingId: userId,
-              onComplete: (isSuccess) {
-                isLoading = false;
-                if (isSuccess) {
-                  isFollowing = !isFollowing;
-                }
-                setState.call(() {});
-              },
-              followAction: isFollowing
-                  ? FollowAction.unfollow
-                  : FollowAction.follow));
-        },
-        height: 36.responsiveDimension,
-        width: 95.responsiveDimension,
-        borderRadius: 40.responsiveDimension,
-        borderColor:
-        isFollowing ? IsrColors.appColor : IsrColors.transparent,
-        backgroundColor:
-        isFollowing ? IsrColors.white : IsrColors.appColor,
-        title: isFollowing
-            ? IsrTranslationFile.following
-            : IsrTranslationFile.follow,
-        isLoading: isLoading,
-        textStyle: IsrStyles.primaryText12.copyWith(
-          color: isFollowing ? IsrColors.appColor : IsrColors.white,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
+              onPress: isLoading == true
+                  ? null
+                  : () {
+                      isLoading = true;
+                      setState.call(() {});
+                      _socialPostBloc.add(FollowUserEvent(
+                          followingId: userId,
+                          onComplete: (isSuccess) {
+                            isLoading = false;
+                            if (isSuccess) {
+                              isFollowing = !isFollowing;
+                            }
+                            setState.call(() {});
+                          },
+                          followAction: isFollowing ? FollowAction.unfollow : FollowAction.follow));
+                    },
+              height: 36.responsiveDimension,
+              width: 100.responsiveDimension,
+              borderRadius: 40.responsiveDimension,
+              borderColor: isFollowing ? IsrColors.appColor : IsrColors.transparent,
+              backgroundColor: isFollowing ? IsrColors.white : IsrColors.appColor,
+              title: isFollowing ? IsrTranslationFile.following : IsrTranslationFile.follow,
+              isLoading: isLoading,
+              textStyle: IsrStyles.primaryText12.copyWith(
+                color: isFollowing ? IsrColors.appColor : IsrColors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
     );
   }
 }
