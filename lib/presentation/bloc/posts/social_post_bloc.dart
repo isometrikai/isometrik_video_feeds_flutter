@@ -387,14 +387,11 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       ErrorHandler.showAppError(appError: apiResult.error);
       event.onComplete.call(false);
     }
-    add(GetTimeLinePostEvent(
-      isLoading: false,
-      isPagination: false,
-      isRefresh: true,
-      onComplete: (postList) {
-        add(LoadPostsEvent(postsByTab: _postsByTab.asMap().map((key, value) => MapEntry(value.postSectionType, value.postList))));
-      },
-    ));
+    if (_postsByTab.any((_) => _.postSectionType == PostSectionType.trending)) {
+      await _callGetTabPost(_getTabAssistData(PostSectionType.following), true,
+          false, false, null);
+      add(LoadPostsEvent(postsByTab: _postsByTab.asMap().map((key, value) => MapEntry(value.postSectionType, value.postList))));
+    }
   }
 
   FutureOr<void> _getSocialProducts(
