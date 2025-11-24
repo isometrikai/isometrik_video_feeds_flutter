@@ -561,15 +561,16 @@ class _PostListingViewState extends State<PostListingView> {
               final post = postList[index];
               return TapHandler(
                 key: ValueKey('post_${post.id}'),
-                onTap: () => {
-                  /// TODO need to check navigation here
-                  // IsmInjectionUtils.getRouteManagement().goToSocialPostView(
-                  //   postDataList: postList,
-                  //   startingPostIndex: index,
-                  //   postTabType: PostTabType.tagPost,
-                  //   tagType: widget.tagType,
-                  //   tagValue: widget.tagValue,
-                  // ),
+                onTap: () {
+                  IsrAppNavigator.navigateToReelsPlayer(
+                    context,
+                    postDataList: postList,
+                    startingPostIndex: index,
+                    postSectionType: PostSectionType.tagPost,
+                    tagValue: widget.tagValue,
+                    tagType: widget.tagType,
+                    onTapProfilePicture: widget.onTapProfilePicture,
+                  );
                 },
                 child: _buildPostCard(post, index),
               );
