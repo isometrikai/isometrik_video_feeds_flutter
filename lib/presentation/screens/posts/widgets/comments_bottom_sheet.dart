@@ -555,6 +555,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                             parentCommentId: comment.parentCommentId,
                             postId: widget.postId,
                             commentAction: CommentAction.delete,
+                            postCommentList: _postCommentList.toList(),
                             onComplete: (commentId, isSuccess) {},
                           ),
                         );
