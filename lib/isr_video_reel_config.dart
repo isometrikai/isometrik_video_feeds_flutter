@@ -44,7 +44,7 @@ class IsrVideoReelConfig {
     await _storeHeaderValues(defaultHeaders);
     await _initializeHive(
       rudderStackWriteKey: rudderStackWriteKey,
-      rudderStackDataPlaneUrl: rudderStackWriteKey,
+      rudderStackDataPlaneUrl: rudderStackDataPlaneUrl,
     );
     Bloc.observer = IsrAppBlocObserver();
     await _saveUserInformation(userInfoClass: userInfoClass);
