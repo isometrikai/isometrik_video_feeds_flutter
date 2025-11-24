@@ -83,6 +83,64 @@ class IsrAppNavigator {
     );
   }
 
+  /// Navigate to full-screen reels player with post list
+  static void navigateToReelsPlayer(
+    BuildContext context, {
+    required List<TimeLineData> postDataList,
+    required int startingPostIndex,
+    required PostSectionType postSectionType,
+    String? tagValue,
+    TagType? tagType,
+    Function(String)? onTapProfilePicture,
+    Function(List<String>, String, String)? onTapCartIcon,
+    Function(String, String, double, double)? onTapPlace,
+    TransitionType? transitionType,
+  }) {
+    final tabData = TabDataModel(
+      title: _getTabTitle(postSectionType),
+      postSectionType: postSectionType,
+      reelsDataList: postDataList,
+      startingPostIndex: startingPostIndex,
+      onTapUserProfile: onTapProfilePicture != null ? (userId) => onTapProfilePicture(userId ?? '') : null,
+      onTapCartIcon: onTapCartIcon,
+      tagValue: tagValue,
+      tagType: tagType,
+    );
+
+    final page = BlocProvider<SocialPostBloc>(
+      create: (_) => IsmInjectionUtils.getBloc<SocialPostBloc>(),
+      child: IsmPostView(
+        tabDataModelList: [tabData],
+        currentIndex: 0,
+        onTapPlace: onTapPlace,
+      ),
+    );
+
+    Navigator.of(context, rootNavigator: true).push(
+      _buildRoute(page: page, transitionType: transitionType),
+    );
+  }
+
+  /// Helper method to get tab title based on post section type
+  static String _getTabTitle(PostSectionType postSectionType) {
+    switch (postSectionType) {
+      case PostSectionType.forYou:
+        return 'For You';
+      case PostSectionType.following:
+        return 'Following';
+      case PostSectionType.trending:
+        return 'Trending';
+      case PostSectionType.myPost:
+        return 'My Posts';
+      case PostSectionType.savedPost:
+        return 'Saved';
+      case PostSectionType.tagPost:
+        return 'Posts';
+      default:
+        return 'Posts';
+    }
+  }
+
   static Future<String?> goToCreatePostView(
     BuildContext context, {
     Future<List<ProductDataModel>?> Function(List<ProductDataModel>)? onTagProduct,

@@ -367,15 +367,16 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
                 final post = postList[index];
                 return TapHandler(
                   key: ValueKey('post_${post.id}'),
-                  onTap: () => {
-                    /// TODO need to check this one
-                    // IsmInjectionUtils.getRouteManagement().goToSocialPostView(
-                    //   postDataList: postList,
-                    //   startingPostIndex: index,
-                    //   postTabType: PostTabType.tagPost,
-                    //   tagType: TagType.place,
-                    //   tagValue: widget.placeId,
-                    // ),
+                  onTap: () {
+                    IsrAppNavigator.navigateToReelsPlayer(
+                      context,
+                      postDataList: postList,
+                      startingPostIndex: index,
+                      postSectionType: PostSectionType.tagPost,
+                      tagValue: widget.placeId,
+                      tagType: TagType.place,
+                      onTapProfilePicture: widget.onTapProfilePicture,
+                    );
                   },
                   child: _buildPostCard(post, index),
                 );
@@ -522,7 +523,7 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
                     ),
                   ),
                   Text(
-                    '${post.tags?.products?.length ?? 0} ${IsrTranslationFile.products}}',
+                    '${post.tags?.products?.length ?? 0} ${IsrTranslationFile.products}',
                     style: IsrStyles.primaryText10.copyWith(
                       color: IsrColors.white.changeOpacity(0.9),
                     ),

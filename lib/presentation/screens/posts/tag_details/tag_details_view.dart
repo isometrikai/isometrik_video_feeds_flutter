@@ -316,15 +316,15 @@ class _TagDetailsViewState extends State<TagDetailsView> {
                   final post = postList[index];
                   return TapHandler(
                     key: ValueKey('post_${post.id}'),
-                    onTap: () => {
-                      /// TODO need to check
-                      // IsmInjectionUtils.getRouteManagement().goToSocialPostView(
-                      //   postDataList: postList,
-                      //   startingPostIndex: index,
-                      //   postTabType: PostTabType.tagPost,
-                      //   tagType: widget.tagType,
-                      //   tagValue: widget.tagValue,
-                      // ),
+                    onTap: () {
+                      IsrAppNavigator.navigateToReelsPlayer(
+                        context,
+                        postDataList: postList,
+                        startingPostIndex: index,
+                        postSectionType: PostSectionType.tagPost,
+                        tagValue: widget.tagValue,
+                        tagType: widget.tagType,
+                      );
                     },
                     child: _buildPostCard(post, index),
                   );

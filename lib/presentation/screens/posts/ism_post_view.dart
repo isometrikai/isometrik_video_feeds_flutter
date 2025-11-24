@@ -205,12 +205,33 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                                       _buildTabBarView(tabData, _tabDataModelList.indexOf(tabData)))
                                   .toList(),
                             ),
-                            if (_tabDataModelList.length > 1) _buildTabBar(),
+                            if (_tabDataModelList.length > 1) ...[
+                              _buildTabBar()
+                            ] else ...[
+                              _buildBackButton()
+                            ],
                           ],
                         ),
                       )
                     : const SizedBox.shrink();
           },
+        ),
+      );
+
+  Widget _buildBackButton() => Positioned(
+        top: MediaQuery.of(context).padding.top + 10,
+        left: 16.responsiveDimension,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.black.applyOpacity(0.5),
+            shape: BoxShape.circle,
+          ),
+          child: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () {
+              context.pop();
+            },
+          ),
         ),
       );
 
@@ -221,7 +242,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         onTapPlaceHolder: () {
           if ((_postTabController?.length ?? 0) > 1) {
             _tabsVisibilityNotifier.value = true;
-            _postTabController?.animateTo(1);
+            final trendingTabIndex = _tabDataModelList
+                .indexWhere((tabData) => tabData.postSectionType == PostSectionType.trending);
+            if (trendingTabIndex != -1) {
+              _postTabController?.animateTo(trendingTabIndex);
+            }
           }
         },
         loggedInUserId: _loggedInUserId,
