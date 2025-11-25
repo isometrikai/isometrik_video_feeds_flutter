@@ -25,6 +25,7 @@ class IsrTranslationFile {
   static const String addAProduct = 'Add a product';
   static const String addASound = 'Add a Sound';
   static const String newPost = 'New Post';
+  static const String newReel = 'New Reel';
   static const String writeCaption = 'Write a caption...';
   static const String category = 'Category';
   static const String selectCategory = 'Select Category';

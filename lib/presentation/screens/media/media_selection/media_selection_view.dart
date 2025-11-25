@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
 import 'package:video_compress/video_compress.dart';
 import 'package:ism_video_reel_player/di/di.dart';
@@ -250,6 +251,20 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
     return album.name;
   }
 
+  String _getAlbumDisplayIcon(pm.AssetPathEntity? album) {
+    if (album == null) return AssetConstants.icMediaRecent;
+
+    if (album.isAll && album.type == pm.RequestType.image) {
+      return AssetConstants.icMediaPhotos;
+    } else if (album.isAll && album.type == pm.RequestType.video) {
+      return AssetConstants.icMediaVideos;
+    } else if (album.isAll) {
+      return AssetConstants.icMediaRecent;
+    } else {
+      return AssetConstants.icMediaRecent;
+    }
+  }
+
   PopupMenuEntry<pm.AssetPathEntity> _buildAlbumMenuItem(
       pm.AssetPathEntity album, pm.AssetPathEntity? currentAlbum) {
     final isSelected = album == currentAlbum;
@@ -260,27 +275,31 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
     return PopupMenuItem<pm.AssetPathEntity>(
       value: album,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: EdgeInsets.all(10.responsiveDimension),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            AppImage.svg(
+              _getAlbumDisplayIcon(album),
+              width: 24.responsiveDimension,
+              height: 24.responsiveDimension,
+            ),
+            10.horizontalSpace,
             Expanded(
               child: Text(
                 displayName,
                 style: TextStyle(
-                  color: isSelected
-                      ? widget.mediaSelectionConfig.primaryColor
-                      : Colors.black,
-                  fontSize: 14,
+                  color: Colors.black,
+                  fontSize: 14.responsiveDimension,
                   fontFamily: widget.mediaSelectionConfig.primaryFontFamily,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
             if (isSelected)
               Icon(
                 Icons.check,
-                color: widget.mediaSelectionConfig.primaryColor,
+                color: widget.mediaSelectionConfig.primaryTextColor,
                 size: 20,
               ),
           ],
@@ -303,8 +322,8 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
           child: Scaffold(
             backgroundColor: widget.mediaSelectionConfig.backgroundColor,
             appBar: AppBar(
-              backgroundColor: widget.mediaSelectionConfig.appBarColor,
-              elevation: 1,
+              backgroundColor: IsrColors.white,
+              elevation: 0,
               leading: IconButton(
                 icon: widget.mediaSelectionConfig.closeIcon,
                 onPressed: () => Navigator.pop(context),
@@ -321,35 +340,37 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
               ),
               centerTitle: true,
             ),
-            body: BlocBuilder<MediaSelectionBloc, MediaSelectionState>(
-              buildWhen: (previous, current) =>
-                  current is MediaSelectionLoadingState ||
-                  current is MediaSelectionPermissionDeniedState ||
-                  current is MediaSelectionLoadedState ||
-                  current is MediaSelectionErrorState,
-              builder: (context, state) {
-                if (state is MediaSelectionInitialState ||
-                    state is MediaSelectionLoadingState) {
-                  return Center(
-                    child: CircularProgressIndicator(
-                        color: widget.mediaSelectionConfig.primaryColor),
-                  );
-                } else if (state is MediaSelectionPermissionDeniedState) {
-                  return _buildPermissionDenied();
-                } else if (state is MediaSelectionLoadedState) {
-                  return _buildBody(state);
-                } else if (state is MediaSelectionErrorState) {
-                  return Center(
-                    child: Text(
-                      state.message,
-                      style: TextStyle(
-                        color: widget.mediaSelectionConfig.primaryTextColor,
+            body: SafeArea(
+              child: BlocBuilder<MediaSelectionBloc, MediaSelectionState>(
+                buildWhen: (previous, current) =>
+                    current is MediaSelectionLoadingState ||
+                    current is MediaSelectionPermissionDeniedState ||
+                    current is MediaSelectionLoadedState ||
+                    current is MediaSelectionErrorState,
+                builder: (context, state) {
+                  if (state is MediaSelectionInitialState ||
+                      state is MediaSelectionLoadingState) {
+                    return Center(
+                      child: CircularProgressIndicator(
+                          color: widget.mediaSelectionConfig.primaryColor),
+                    );
+                  } else if (state is MediaSelectionPermissionDeniedState) {
+                    return _buildPermissionDenied();
+                  } else if (state is MediaSelectionLoadedState) {
+                    return _buildBody(state);
+                  } else if (state is MediaSelectionErrorState) {
+                    return Center(
+                      child: Text(
+                        state.message,
+                        style: TextStyle(
+                          color: widget.mediaSelectionConfig.primaryTextColor,
+                        ),
                       ),
-                    ),
-                  );
-                }
-                return const SizedBox.shrink();
-              },
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
+              ),
             ),
           ),
         ),
@@ -502,7 +523,7 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
         children: [
           // Album selector and controls
           Container(
-            height: 50,
+            height: 50.responsiveDimension,
             color: Colors.white,
             child: Row(
               children: [
@@ -510,13 +531,13 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
                   child: PopupMenuButton<pm.AssetPathEntity>(
                     onSelected: _onAlbumSelected,
                     position: PopupMenuPosition.under,
-                    color: Colors.white.withValues(alpha: 0.9),
+                    color: Colors.white,
                     itemBuilder: (context) => state.albums
                         .map((album) =>
                             _buildAlbumMenuItem(album, state.currentAlbum))
                         .toList(),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.responsiveDimension),
                     ),
                     elevation: 8,
                     child: Container(

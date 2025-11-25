@@ -39,7 +39,7 @@ class _CreatePostMultimediaWrapperState
     multiSelectModeIcon:
         const AppImage.svg(AssetConstants.icMediaSelectMultiple),
     doneButtonText: IsrTranslationFile.next,
-    selectMediaTitle: IsrTranslationFile.newPost,
+    selectMediaTitle: IsrTranslationFile.newReel,
     primaryColor: IsrColors.appColor,
     primaryTextColor: IsrColors.primaryTextColor,
     backgroundColor: Colors.white,

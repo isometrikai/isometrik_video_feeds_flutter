@@ -449,59 +449,61 @@ class _VideoCoverSelectorViewState extends State<VideoCoverSelectorView> {
             ),
           ],
         ),
-        body: _isLoading
-            ? Center(
-                child: CircularProgressIndicator(
-                    color: widget.mediaEditConfig.primaryColor),
-              )
-            : Column(
-                children: [
-                  // Main video preview area
-                  Expanded(
-                    flex: 3,
-                    child: Container(
+        body: SafeArea(
+          child: _isLoading
+              ? Center(
+                  child: CircularProgressIndicator(
+                      color: widget.mediaEditConfig.primaryColor),
+                )
+              : Column(
+                  children: [
+                    // Main video preview area
+                    Expanded(
+                      flex: 3,
+                      child: Container(
+                        margin: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          color: Colors.grey[900],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: _buildVideoPreview(),
+                        ),
+                      ),
+                    ),
+          
+                    // Video frames strip
+                    Expanded(
+                      flex: 1,
+                      child: _buildFramesStrip(),
+                    ),
+          
+                    // Add from Gallery button
+                    Container(
+                      width: double.infinity,
                       margin: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        color: Colors.grey[900],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: _buildVideoPreview(),
-                      ),
-                    ),
-                  ),
-
-                  // Video frames strip
-                  Expanded(
-                    flex: 1,
-                    child: _buildFramesStrip(),
-                  ),
-
-                  // Add from Gallery button
-                  Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.all(16),
-                    child: ElevatedButton(
-                      onPressed: _selectFromGallery,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: widget.mediaEditConfig.primaryColor,
-                        padding: const EdgeInsets.symmetric(vertical: 13),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(22),
+                      child: ElevatedButton(
+                        onPressed: _selectFromGallery,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: widget.mediaEditConfig.primaryColor,
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(22),
+                          ),
                         ),
-                      ),
-                      child: Text(
-                        widget.mediaEditConfig.addFromGalleryText,
-                        style: widget.mediaEditConfig.primaryText14.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                        child: Text(
+                          widget.mediaEditConfig.addFromGalleryText,
+                          style: widget.mediaEditConfig.primaryText14.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+        ),
       );
 
   Widget _buildVideoPreview() {

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:ism_video_reel_player/res/res.dart';
+import 'package:ism_video_reel_player/utils/extensions.dart';
 import '../media_selection.dart';
 
 class CameraButtonWidget extends StatelessWidget {
@@ -15,7 +17,7 @@ class CameraButtonWidget extends StatelessWidget {
   Widget build(BuildContext context) => GestureDetector(
         onTap: onTap,
         child: Container(
-          color: Colors.grey[100],
+          color: '#5D5D5D'.color,
           child: Center(
             child: mediaSelectionConfig.cameraIcon,
           ),
