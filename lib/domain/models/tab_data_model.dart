@@ -84,6 +84,10 @@ class TabDataModel {
   final Future<void> Function(TimeLineData postData)? onShareClick;
   final EdgeInsetsGeometry? overlayPadding;
 
+  //to maintain state
+  int? currentIndex; //to maintain post position
+  String? currentPostId; //to maintain post position
+
   // -------------------------------------------------------
   //                      COPY WITH
   // -------------------------------------------------------

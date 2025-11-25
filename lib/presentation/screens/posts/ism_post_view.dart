@@ -262,9 +262,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         },
         loggedInUserId: _loggedInUserId,
         allowImplicitScrolling: widget.allowImplicitScrolling,
-        onPageChanged: widget.onPageChanged,
-        reelsDataList:
-            tabData.reelsDataList.map((_) => _getReelData(_, tabData)).toList(),
+        onPageChanged: (index, postId) {
+          tabData.currentIndex = index;
+          widget.onPageChanged?.call(index, postId);
+        },
+        reelsDataList: tabData.reelsDataList.map((_) => _getReelData(_, tabData)).toList(),
         onLoadMore: () async => await _handleLoadMore(tabData),
         onRefresh: () async {
           var result = await _handlePostRefresh(tabData);
@@ -276,7 +278,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           }
           return result;
         },
-        startingPostIndex: tabData.startingPostIndex,
+        startingPostIndex: tabData.currentIndex ?? tabData.startingPostIndex,
         postSectionType: tabData.postSectionType,
         onTapCartIcon: (postId) {
           if (tabData.onTapCartIcon != null) {
@@ -307,8 +309,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           isLikeButtonVisible: true,
           isShareButtonVisible: true,
           isMoreButtonVisible: true,
-          isFollowButtonVisible: true,
-          isUnFollowButtonVisible: true,
+          isFollowButtonVisible: postData.user?.id != _loggedInUserId,
+          isUnFollowButtonVisible: postData.user?.id != _loggedInUserId,
         ),
         mentions: postData.tags != null &&
                 postData.tags?.mentions.isListEmptyOrNull == false
@@ -356,8 +358,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         userId: postData.user?.id ?? '',
         userName: postData.user?.username ?? '',
         profilePhoto: postData.user?.avatarUrl ?? '',
-        firstName: '',
-        lastName: '',
+        firstName: postData.user?.displayName?.split(' ').firstOrNull ?? '',
+        lastName: postData.user?.displayName?.split(' ').takeIf((_) => _.length > 1)?.lastOrNull ?? '',
         likesCount: postData.engagementMetrics?.likeTypes?.love?.toInt() ?? 0,
         commentCount: postData.engagementMetrics?.comments?.toInt() ?? 0,
         isFollow: postData.isFollowing == true,
