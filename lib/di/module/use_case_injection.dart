@@ -23,7 +23,8 @@ class UseCaseInjection {
     IsmInjectionUtils.registerUseCase<GetForYouPostUseCase>(() =>
         GetForYouPostUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<GetMentionedUsersUseCase>(() =>
-        GetMentionedUsersUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+        GetMentionedUsersUseCase(
+            IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<RemoveMentionUseCase>(() =>
         RemoveMentionUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<FollowUnFollowUserUseCase>(() =>
@@ -31,10 +32,10 @@ class UseCaseInjection {
             IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<SavePostUseCase>(
         () => SavePostUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
-    IsmInjectionUtils.registerUseCase<GetUserPostDataUseCase>(
-            () => GetUserPostDataUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<GetUserPostDataUseCase>(() =>
+        GetUserPostDataUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<DeletePostUseCase>(
-            () => DeletePostUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+        () => DeletePostUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<LikePostUseCase>(
         () => LikePostUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<ReportPostUseCase>(

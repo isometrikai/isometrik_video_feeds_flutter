@@ -53,7 +53,8 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
   Future<void> _initializePlayer() async {
     try {
-      final videoPath = widget.mediaItem.editedPath ?? widget.mediaItem.originalPath;
+      final videoPath =
+          widget.mediaItem.editedPath ?? widget.mediaItem.originalPath;
 
       if (videoPath.isEmpty) {
         setState(() {
@@ -135,7 +136,8 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   void _seekRelative(Duration duration) {
     final newPosition = _currentPosition + duration;
     final clampedPosition = Duration(
-      milliseconds: newPosition.inMilliseconds.clamp(0, _totalDuration.inMilliseconds),
+      milliseconds:
+          newPosition.inMilliseconds.clamp(0, _totalDuration.inMilliseconds),
     );
     _seekTo(clampedPosition);
   }
@@ -342,8 +344,10 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                   children: [
                     // Rewind 10 seconds
                     IconButton(
-                      onPressed: () => _seekRelative(const Duration(seconds: -10)),
-                      icon: const Icon(Icons.replay_10, color: Colors.white, size: 32),
+                      onPressed: () =>
+                          _seekRelative(const Duration(seconds: -10)),
+                      icon: const Icon(Icons.replay_10,
+                          color: Colors.white, size: 32),
                     ),
 
                     // Play/Pause
@@ -358,8 +362,10 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
                     // Forward 10 seconds
                     IconButton(
-                      onPressed: () => _seekRelative(const Duration(seconds: 10)),
-                      icon: const Icon(Icons.forward_10, color: Colors.white, size: 32),
+                      onPressed: () =>
+                          _seekRelative(const Duration(seconds: 10)),
+                      icon: const Icon(Icons.forward_10,
+                          color: Colors.white, size: 32),
                     ),
                   ],
                 ),
@@ -372,11 +378,13 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                   children: [
                     Text(
                       _formatDuration(_currentPosition),
-                      style: IsrStyles.primaryText14.copyWith(color: Colors.white),
+                      style:
+                          IsrStyles.primaryText14.copyWith(color: Colors.white),
                     ),
                     Text(
                       _formatDuration(_totalDuration),
-                      style: IsrStyles.primaryText14.copyWith(color: Colors.white),
+                      style:
+                          IsrStyles.primaryText14.copyWith(color: Colors.white),
                     ),
                   ],
                 ),

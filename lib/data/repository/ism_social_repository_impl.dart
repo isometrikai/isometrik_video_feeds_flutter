@@ -534,6 +534,7 @@ class SocialRepositoryImpl implements SocialRepository {
       rethrow;
     }
   }
+
   @override
   Future<CustomResponse<ResponseClass?>> removeMentionFromPost({
     required bool isLoading,

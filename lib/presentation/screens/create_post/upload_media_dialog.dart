@@ -70,7 +70,8 @@ class UploadMediaDialog extends StatelessWidget {
                   ),
                 ),
                 IsrDimens.boxHeight(IsrDimens.twentyFour),
-                if (mediaType == MediaType.photo || mediaType == MediaType.both) ...[
+                if (mediaType == MediaType.photo ||
+                    mediaType == MediaType.both) ...[
                   _buildOptionItem(
                     context: context,
                     icon: const AppImage.svg(AssetConstants.icCameraIcon),
@@ -83,7 +84,8 @@ class UploadMediaDialog extends StatelessWidget {
                   ),
                   IsrDimens.boxHeight(IsrDimens.sixteen),
                 ],
-                if (mediaType == MediaType.photo || mediaType == MediaType.both) ...[
+                if (mediaType == MediaType.photo ||
+                    mediaType == MediaType.both) ...[
                   _buildOptionItem(
                     context: context,
                     icon: const AppImage.svg(AssetConstants.icGalleryIcon),
@@ -96,7 +98,8 @@ class UploadMediaDialog extends StatelessWidget {
                   ),
                   IsrDimens.boxHeight(IsrDimens.sixteen),
                 ],
-                if (mediaType == MediaType.video || mediaType == MediaType.both) ...[
+                if (mediaType == MediaType.video ||
+                    mediaType == MediaType.both) ...[
                   _buildOptionItem(
                     context: context,
                     icon: const AppImage.svg(AssetConstants.icCameraIcon),
@@ -109,7 +112,8 @@ class UploadMediaDialog extends StatelessWidget {
                   ),
                   IsrDimens.boxHeight(IsrDimens.sixteen),
                 ],
-                if (mediaType == MediaType.video || mediaType == MediaType.both) ...[
+                if (mediaType == MediaType.video ||
+                    mediaType == MediaType.both) ...[
                   _buildOptionItem(
                     context: context,
                     icon: const AppImage.svg(AssetConstants.icGalleryIcon),

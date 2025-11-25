@@ -52,7 +52,8 @@ class _ProductToLinkItemState extends State<ProductToLinkItem> {
     final dynamic productImages = productDataModel?.images;
     var imageUrl = productImages == null
         ? ''
-        : (productImages is List<ImageData> && (productImages).isEmptyOrNull == false)
+        : (productImages is List<ImageData> &&
+                (productImages).isEmptyOrNull == false)
             ? (productImages[0].small?.isEmpty == true
                 ? productImages[0].medium ?? ''
                 : productImages[0].small ?? '')
@@ -68,7 +69,8 @@ class _ProductToLinkItemState extends State<ProductToLinkItem> {
     final membersSavePercentage = (finalPriceList != null &&
             finalPriceList.msrpPrice != null &&
             finalPriceList.basePrice != null)
-        ? ((finalPriceList.msrpPrice! - finalPriceList.basePrice!) / finalPriceList.msrpPrice!) *
+        ? ((finalPriceList.msrpPrice! - finalPriceList.basePrice!) /
+                finalPriceList.msrpPrice!) *
             100
         : 0;
     final brandName = productDataModel?.brandTitle?.isEmptyOrNull == false
@@ -102,9 +104,12 @@ class _ProductToLinkItemState extends State<ProductToLinkItem> {
                 fit: BoxFit.cover,
               ),
               if (isAutoShipProduct)
-                _buildTag(productDataModel?.sellerPlanDetails?.sellerPlanName ?? '', '00000'.color),
+                _buildTag(
+                    productDataModel?.sellerPlanDetails?.sellerPlanName ?? '',
+                    '00000'.color),
               if ((productDataModel?.rewardFinalPrice?.toDouble() ?? 0) > 0)
-                _buildEarnTalentTag(productDataModel?.rewardFinalPrice?.toDouble() ?? 0),
+                _buildEarnTalentTag(
+                    productDataModel?.rewardFinalPrice?.toDouble() ?? 0),
             ],
           ),
           16.horizontalSpace,
@@ -159,8 +164,12 @@ class _ProductToLinkItemState extends State<ProductToLinkItem> {
                       children: [
                         Text(
                           Utility.getFormattedPrice(
-                              (productDataModel?.finalPriceList?.basePrice?.toDouble() ?? 0) -
-                                  (productDataModel?.rewardFinalPrice?.toDouble() ?? 0),
+                              (productDataModel?.finalPriceList?.basePrice
+                                          ?.toDouble() ??
+                                      0) -
+                                  (productDataModel?.rewardFinalPrice
+                                          ?.toDouble() ??
+                                      0),
                               productDataModel?.currencySymbol),
                           style: IsrStyles.primaryText16.copyWith(
                             color: Theme.of(context).primaryColor,
@@ -190,10 +199,14 @@ class _ProductToLinkItemState extends State<ProductToLinkItem> {
                           : IsrTranslationFile.link,
                   textStyle: IsrStyles.primaryText14.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: widget.isLinked ? IsrColors.appColor : IsrColors.white),
-                  type: widget.isLinked ? ButtonType.secondary : ButtonType.primary,
-                  isDisable:
-                      widget.isLinked == false && productDataModel?.isAllVariantInStock == '0',
+                      color: widget.isLinked
+                          ? IsrColors.appColor
+                          : IsrColors.white),
+                  type: widget.isLinked
+                      ? ButtonType.secondary
+                      : ButtonType.primary,
+                  isDisable: widget.isLinked == false &&
+                      productDataModel?.isAllVariantInStock == '0',
                   width: 101.responsiveDimension,
                   size: ButtonSize.small,
                   onPress: () {
@@ -216,7 +229,8 @@ class _ProductToLinkItemState extends State<ProductToLinkItem> {
         top: 5,
         left: 5,
         child: ClipRRect(
-          borderRadius: BorderRadius.all(Radius.circular(6.responsiveDimension)),
+          borderRadius:
+              BorderRadius.all(Radius.circular(6.responsiveDimension)),
           child: Container(
             padding: IsrDimens.edgeInsetsSymmetric(
               horizontal: IsrDimens.eight,
@@ -224,12 +238,14 @@ class _ProductToLinkItemState extends State<ProductToLinkItem> {
             ),
             decoration: BoxDecoration(
               color: backgroundColor,
-              borderRadius: BorderRadius.all(Radius.circular(6.responsiveDimension)),
+              borderRadius:
+                  BorderRadius.all(Radius.circular(6.responsiveDimension)),
             ),
             child: Text(
               tagName,
               textAlign: TextAlign.center,
-              style: IsrStyles.white10.copyWith(fontWeight: FontWeight.w500, color: '001E57'.color),
+              style: IsrStyles.white10
+                  .copyWith(fontWeight: FontWeight.w500, color: '001E57'.color),
             ),
           ),
         ),
@@ -247,7 +263,8 @@ class _ProductToLinkItemState extends State<ProductToLinkItem> {
             color: IsrColors.white,
             borderRadius: IsrDimens.borderRadiusAll(6.responsiveDimension),
             border: Border.all(
-                color: IsrColors.black.changeOpacity(0.3), width: 0.5.responsiveDimension),
+                color: IsrColors.black.changeOpacity(0.3),
+                width: 0.5.responsiveDimension),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -256,8 +273,8 @@ class _ProductToLinkItemState extends State<ProductToLinkItem> {
               Text(
                 '${IsrTranslationFile.earn} ',
                 textAlign: TextAlign.center,
-                style:
-                    IsrStyles.white10.copyWith(fontWeight: FontWeight.w500, color: '333333'.color),
+                style: IsrStyles.white10.copyWith(
+                    fontWeight: FontWeight.w500, color: '333333'.color),
               ),
               3.horizontalSpace,
               AppImage.asset(
@@ -269,15 +286,15 @@ class _ProductToLinkItemState extends State<ProductToLinkItem> {
               Text(
                 talentValue.toStringAsFixed(2),
                 textAlign: TextAlign.center,
-                style:
-                    IsrStyles.white10.copyWith(fontWeight: FontWeight.w500, color: '333333'.color),
+                style: IsrStyles.white10.copyWith(
+                    fontWeight: FontWeight.w500, color: '333333'.color),
               ),
               3.horizontalSpace,
               Text(
                 IsrTranslationFile.talents,
                 textAlign: TextAlign.center,
-                style:
-                    IsrStyles.white10.copyWith(fontWeight: FontWeight.w500, color: '333333'.color),
+                style: IsrStyles.white10.copyWith(
+                    fontWeight: FontWeight.w500, color: '333333'.color),
               ),
             ],
           ),

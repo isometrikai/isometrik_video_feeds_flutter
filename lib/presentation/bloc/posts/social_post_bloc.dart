@@ -114,18 +114,23 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       emit(PostLoadingState(isLoading: true));
       _postsByTab.clear();
       _postsByTab.addAll(event.postSections);
-      for(final postTab in event.postSections) {
-        if (postTab.postList.isEmpty){
-          if (postTab.postId?.trim().isNotEmpty == true && postTab.postList.isEmpty){
+      for (final postTab in event.postSections) {
+        if (postTab.postList.isEmpty) {
+          if (postTab.postId?.trim().isNotEmpty == true &&
+              postTab.postList.isEmpty) {
             final postIdData = await _getPostDetails(postTab.postId ?? '');
             if (postIdData != null) {
               postTab.postList.add(postIdData);
-              add(LoadPostsEvent(postsByTab: _postsByTab.asMap().map((key, value) => MapEntry(value.postSectionType, value.postList))));
+              add(LoadPostsEvent(
+                  postsByTab: _postsByTab.asMap().map((key, value) =>
+                      MapEntry(value.postSectionType, value.postList))));
             }
           }
           await _callGetTabPost(postTab, false, false, false, null);
         }
-        add(LoadPostsEvent(postsByTab: _postsByTab.asMap().map((key, value) => MapEntry(value.postSectionType, value.postList))));
+        add(LoadPostsEvent(
+            postsByTab: _postsByTab.asMap().map((key, value) =>
+                MapEntry(value.postSectionType, value.postList))));
       }
     } catch (error) {
       emit(SocialPostError(error.toString()));
@@ -145,14 +150,14 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
 
   FutureOr<void> _getTimeLinePost(
       GetTimeLinePostEvent event, Emitter<SocialPostState> emit) async {
-    await _callGetTabPost(
-        _getTabAssistData(PostSectionType.trending), event.isRefresh, event.isPagination, event.isLoading, event.onComplete);
+    await _callGetTabPost(_getTabAssistData(PostSectionType.trending),
+        event.isRefresh, event.isPagination, event.isLoading, event.onComplete);
   }
 
   FutureOr<void> _getTrendingPost(
       GetTrendingPostEvent event, Emitter<SocialPostState> emit) async {
-    await _callGetTabPost(
-        _getTabAssistData(PostSectionType.trending), event.isRefresh, event.isPagination, event.isLoading, event.onComplete);
+    await _callGetTabPost(_getTabAssistData(PostSectionType.trending),
+        event.isRefresh, event.isPagination, event.isLoading, event.onComplete);
   }
 
   Future<void> _callGetTabPost(
@@ -186,9 +191,12 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     tabAssistData.isLoadingMore = true;
 
     TimeLineData? postIdPostData;
-    debugPrint('social_post_bloc => postIdPostData cond: ${(postTabAssistData.postId?.trim().isNotEmpty == true && postTabAssistData.postList.isEmpty)}');
-    if (postTabAssistData.postId?.trim().isNotEmpty == true && postTabAssistData.postList.isEmpty){
-      postIdPostData = await _getPostDetails(postTabAssistData.postId ?? '', onSuccess: postTabAssistData.postList.add);
+    debugPrint(
+        'social_post_bloc => postIdPostData cond: ${(postTabAssistData.postId?.trim().isNotEmpty == true && postTabAssistData.postList.isEmpty)}');
+    if (postTabAssistData.postId?.trim().isNotEmpty == true &&
+        postTabAssistData.postList.isEmpty) {
+      postIdPostData = await _getPostDetails(postTabAssistData.postId ?? '',
+          onSuccess: postTabAssistData.postList.add);
       debugPrint('social_post_bloc => postIdPostData: ${postIdPostData?.id}');
     }
 
@@ -359,7 +367,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     }
   }
 
-  FutureOr<void> _deletePost(DeletePostEvent event, Emitter<SocialPostState> emit) async {
+  FutureOr<void> _deletePost(
+      DeletePostEvent event, Emitter<SocialPostState> emit) async {
     final userId = await _localDataUseCase.getUserId();
     if (userId.isEmptyOrNull) {
       event.onComplete(false);
@@ -390,7 +399,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     if (_postsByTab.any((_) => _.postSectionType == PostSectionType.trending)) {
       await _callGetTabPost(_getTabAssistData(PostSectionType.following), true,
           false, false, null);
-      add(LoadPostsEvent(postsByTab: _postsByTab.asMap().map((key, value) => MapEntry(value.postSectionType, value.postList))));
+      add(LoadPostsEvent(
+          postsByTab: _postsByTab.asMap().map((key, value) =>
+              MapEntry(value.postSectionType, value.postList))));
     }
   }
 
@@ -588,12 +599,15 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
           event.commentId?.trim().isNotEmpty == true) {
         final commentList = event.postCommentList?.toList() ?? [];
         if (event.parentCommentId?.trim().isNotEmpty == true) {
-          debugPrint('Social_bloc: commetIds => {${commentList.map((e) => e.id).toList()}}');
+          debugPrint(
+              'Social_bloc: commetIds => {${commentList.map((e) => e.id).toList()}}');
           final parentComment = commentList
-              .where((comment) => comment.id == event.parentCommentId).firstOrNull;
+              .where((comment) => comment.id == event.parentCommentId)
+              .firstOrNull;
           parentComment?.childComments
               ?.removeWhere((comment) => comment.id == event.commentId);
-          parentComment?.childCommentCount = (parentComment.childCommentCount ?? 1) - 1;
+          parentComment?.childCommentCount =
+              (parentComment.childCommentCount ?? 1) - 1;
           if (parentComment?.childComments?.isEmpty == true) {
             parentComment?.showReply = false;
           }
@@ -683,7 +697,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     }
   }
 
-  Future<TimeLineData?> _getPostDetails(String postId, {Function(TimeLineData data)? onSuccess, bool showError = true}) async {
+  Future<TimeLineData?> _getPostDetails(String postId,
+      {Function(TimeLineData data)? onSuccess, bool showError = true}) async {
     final result = await _getPostDetailsUseCase.executeGetPostDetails(
       isLoading: false,
       postId: postId ?? '',

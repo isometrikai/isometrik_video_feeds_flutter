@@ -59,8 +59,8 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
       if (!mounted || !_scrollController.hasClients) return;
 
       // Check if scrolled to 65% of the content
-      final scrollPercentage =
-          _scrollController.position.pixels / _scrollController.position.maxScrollExtent;
+      final scrollPercentage = _scrollController.position.pixels /
+          _scrollController.position.maxScrollExtent;
 
       // Trigger pagination at 65% scroll
       if (scrollPercentage >= 0.65 && !_isLoadingMore && _hasMoreData) {
@@ -169,7 +169,8 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
 
                   // Back Button
                   Positioned(
-                    top: MediaQuery.of(context).padding.top + 10.responsiveDimension,
+                    top: MediaQuery.of(context).padding.top +
+                        10.responsiveDimension,
                     left: 16.responsiveDimension,
                     child: GestureDetector(
                       onTap: () => context.pop(),
@@ -198,7 +199,8 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
 
                   // Open in Google Maps Button
                   Positioned(
-                    top: MediaQuery.of(context).padding.top + 10.responsiveDimension,
+                    top: MediaQuery.of(context).padding.top +
+                        10.responsiveDimension,
                     right: 16.responsiveDimension,
                     child: GestureDetector(
                       onTap: () {
@@ -271,7 +273,8 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
                           // Reset loading flag when pagination completes
                           if (!mounted) return;
 
-                          if (state is PlacePostsLoadedState || state is PlaceDetailsErrorState) {
+                          if (state is PlacePostsLoadedState ||
+                              state is PlaceDetailsErrorState) {
                             if (_isLoadingMore) {
                               setState(() {
                                 _isLoadingMore = false;
@@ -285,7 +288,8 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
                           }
                         },
                         builder: (context, state) {
-                          if (state is PlaceDetailsLoadingState && state.isLoading) {
+                          if (state is PlaceDetailsLoadingState &&
+                              state.isLoading) {
                             return const Center(
                               child: CircularProgressIndicator(),
                             );
@@ -400,8 +404,10 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
             children: [
               _buildPostImage(post),
               _buildUserProfileOverlay(post),
-              if (post.tags?.products?.isListEmptyOrNull == false) _buildShopButtonOverlay(post),
-              if (post.media?.first.mediaType?.mediaType == MediaType.video) _buildVideoIcon(),
+              if (post.tags?.products?.isListEmptyOrNull == false)
+                _buildShopButtonOverlay(post),
+              if (post.media?.first.mediaType?.mediaType == MediaType.video)
+                _buildVideoIcon(),
             ],
           ),
         ),
@@ -452,8 +458,9 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
               CircleAvatar(
                 radius: IsrDimens.twelve,
                 backgroundColor: IsrColors.colorF5F5F5,
-                backgroundImage:
-                    post.user?.avatarUrl != null ? NetworkImage(post.user!.avatarUrl!) : null,
+                backgroundImage: post.user?.avatarUrl != null
+                    ? NetworkImage(post.user!.avatarUrl!)
+                    : null,
                 child: post.user?.avatarUrl == null
                     ? Icon(
                         Icons.person,
@@ -600,7 +607,8 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
 
   /// Returns true if the map was opened successfully, false otherwise
   /// First tries to open Google Maps app, then falls back to webview
-  Future<bool> openGoogleMaps(double latitude, double longitude, String placeName) async {
+  Future<bool> openGoogleMaps(
+      double latitude, double longitude, String placeName) async {
     try {
       // URL encode the place name for safe URL usage
       final encodedPlaceName = Uri.encodeComponent(placeName);
@@ -635,7 +643,8 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
       }
 
       // Fallback to webview if app is not installed
-      final googleMapsUrl = 'https://www.google.com/maps/search/?api=1&query=$encodedPlaceName';
+      final googleMapsUrl =
+          'https://www.google.com/maps/search/?api=1&query=$encodedPlaceName';
       final webUri = Uri.parse(googleMapsUrl);
 
       if (await canLaunchUrl(webUri)) {

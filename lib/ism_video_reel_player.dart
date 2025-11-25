@@ -20,7 +20,6 @@ export 'utils/navigator/navigator.dart';
 // enum
 export 'utils/enums.dart';
 
-
 class IsmVideoReelPlayer {
   Future<String?> getPlatformVersion() =>
       IsmVideoReelPlayerPlatform.instance.getPlatformVersion();

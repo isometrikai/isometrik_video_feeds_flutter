@@ -101,7 +101,9 @@ class IsrAppNavigator {
       postSectionType: postSectionType,
       reelsDataList: postDataList,
       startingPostIndex: startingPostIndex,
-      onTapUserProfile: onTapProfilePicture != null ? (userId) => onTapProfilePicture(userId ?? '') : null,
+      onTapUserProfile: onTapProfilePicture != null
+          ? (userId) => onTapProfilePicture(userId ?? '')
+          : null,
       onTapCartIcon: onTapCartIcon,
       tagValue: tagValue,
       tagType: tagType,
@@ -143,7 +145,8 @@ class IsrAppNavigator {
 
   static Future<String?> goToCreatePostView(
     BuildContext context, {
-    Future<List<ProductDataModel>?> Function(List<ProductDataModel>)? onTagProduct,
+    Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
+        onTagProduct,
     TransitionType? transitionType,
   }) async {
     final page = MultiBlocProvider(
@@ -163,7 +166,8 @@ class IsrAppNavigator {
       ),
     );
 
-    final result = await Navigator.of(context, rootNavigator: true).push<String>(
+    final result =
+        await Navigator.of(context, rootNavigator: true).push<String>(
       _buildRoute(page: page, transitionType: transitionType),
     );
     return result;
@@ -172,7 +176,8 @@ class IsrAppNavigator {
   static Future<String?> goToEditPostView(
     BuildContext context, {
     required TimeLineData postData,
-    Future<List<ProductDataModel>?> Function(List<ProductDataModel>)? onTagProduct,
+    Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
+        onTagProduct,
     TransitionType? transitionType,
   }) async {
     final page = MultiBlocProvider(
@@ -193,7 +198,8 @@ class IsrAppNavigator {
       ),
     );
 
-    final result = await Navigator.of(context, rootNavigator: true).push<String>(
+    final result =
+        await Navigator.of(context, rootNavigator: true).push<String>(
       _buildRoute(page: page, transitionType: transitionType),
     );
     return result;
@@ -203,14 +209,16 @@ class IsrAppNavigator {
     BuildContext context, {
     PostAttributeClass? postAttributeClass,
     bool isEditMode = false,
-    Future<List<ProductDataModel>?> Function(List<ProductDataModel>)? onTagProduct,
+    Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
+        onTagProduct,
     TransitionType? transitionType,
   }) async {
     final page = MultiBlocProvider(
       providers: [
         BlocProvider.value(value: context.getOrCreateBloc<CreatePostBloc>()),
         BlocProvider.value(value: context.getOrCreateBloc<SearchUserBloc>()),
-        BlocProvider.value(value: context.getOrCreateBloc<UploadProgressCubit>()),
+        BlocProvider.value(
+            value: context.getOrCreateBloc<UploadProgressCubit>()),
       ],
       child: PostAttributeView(
         postAttributeClass: postAttributeClass,
@@ -219,7 +227,8 @@ class IsrAppNavigator {
       ),
     );
 
-    final result = await Navigator.of(context, rootNavigator: true).push<String>(
+    final result =
+        await Navigator.of(context, rootNavigator: true).push<String>(
       _buildRoute(page: page, transitionType: transitionType),
     );
     return result;
@@ -232,14 +241,16 @@ class IsrAppNavigator {
   }) async {
     final page = MultiBlocProvider(
       providers: [
-        BlocProvider.value(value: context.getOrCreateBloc<SearchLocationBloc>()),
+        BlocProvider.value(
+            value: context.getOrCreateBloc<SearchLocationBloc>()),
       ],
       child: SearchLocationScreen(
         taggedPlaceList: taggedPlaceList,
       ),
     );
 
-    final result = await Navigator.of(context, rootNavigator: true).push<List<TaggedPlace>?>(
+    final result = await Navigator.of(context, rootNavigator: true)
+        .push<List<TaggedPlace>?>(
       _buildRoute(page: page, transitionType: transitionType),
     );
     return result;
@@ -255,7 +266,8 @@ class IsrAppNavigator {
       providers: [
         BlocProvider.value(value: context.getOrCreateBloc<CreatePostBloc>()),
         BlocProvider.value(value: context.getOrCreateBloc<SearchUserBloc>()),
-        BlocProvider.value(value: context.getOrCreateBloc<UploadProgressCubit>()),
+        BlocProvider.value(
+            value: context.getOrCreateBloc<UploadProgressCubit>()),
       ],
       child: TagPeopleScreen(
         mentionDataList: mentionDataList ?? [],
@@ -263,7 +275,8 @@ class IsrAppNavigator {
       ),
     );
 
-    final result = await Navigator.of(context, rootNavigator: true).push<List<MentionData>?>(
+    final result = await Navigator.of(context, rootNavigator: true)
+        .push<List<MentionData>?>(
       _buildRoute(page: page, transitionType: transitionType),
     );
     return result;
@@ -278,14 +291,16 @@ class IsrAppNavigator {
       providers: [
         BlocProvider.value(value: context.getOrCreateBloc<CreatePostBloc>()),
         BlocProvider.value(value: context.getOrCreateBloc<SearchUserBloc>()),
-        BlocProvider.value(value: context.getOrCreateBloc<UploadProgressCubit>()),
+        BlocProvider.value(
+            value: context.getOrCreateBloc<UploadProgressCubit>()),
       ],
       child: SearchUserView(
         socialUserList: socialUserList ?? [],
       ),
     );
 
-    final result = await Navigator.of(context, rootNavigator: true).push<List<SocialUserData>?>(
+    final result = await Navigator.of(context, rootNavigator: true)
+        .push<List<SocialUserData>?>(
       _buildRoute(page: page, transitionType: transitionType),
     );
     return result?.toList() ?? [];
@@ -324,7 +339,8 @@ class IsrAppNavigator {
 
     return PageRouteBuilder<T>(
       pageBuilder: (context, animation, secondaryAnimation) => page,
-      transitionsBuilder: (context, animation, secondaryAnimation, child) => _buildTransition(
+      transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+          _buildTransition(
         animation: animation,
         child: child,
         transitionType: transitionType,

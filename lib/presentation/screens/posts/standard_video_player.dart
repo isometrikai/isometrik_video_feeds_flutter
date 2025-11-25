@@ -28,7 +28,8 @@ class StandardVideoPlayerController implements IVideoPlayerController {
         if (_controller.value.hasError && !_hasLoggedError) {
           _hasLoggedError = true;
           debugPrint('❌ Video playback error detected during runtime');
-          debugPrint('❌ Error description: ${_controller.value.errorDescription}');
+          debugPrint(
+              '❌ Error description: ${_controller.value.errorDescription}');
           debugPrint('❌ Video size: ${_controller.value.size}');
           debugPrint('❌ Position: ${_controller.value.position}');
           debugPrint('❌ Duration: ${_controller.value.duration}');
@@ -40,7 +41,8 @@ class StandardVideoPlayerController implements IVideoPlayerController {
             _controller.value.size == Size.zero &&
             !_hasLoggedError) {
           _hasLoggedError = true;
-          debugPrint('⚠️ Video size became zero during playback - possible decoder failure');
+          debugPrint(
+              '⚠️ Video size became zero during playback - possible decoder failure');
           debugPrint('⚠️ This may cause green blocks or corrupted frames');
         }
       }
@@ -128,10 +130,12 @@ class StandardVideoCacheManager implements IVideoCacheManager {
 
   StandardVideoCacheManager._internal();
 
-  static final StandardVideoCacheManager _instance = StandardVideoCacheManager._internal();
+  static final StandardVideoCacheManager _instance =
+      StandardVideoCacheManager._internal();
 
   final Map<String, StandardVideoPlayerController> _videoControllerCache = {};
-  final Map<String, Future<StandardVideoPlayerController?>> _initializationCache = {};
+  final Map<String, Future<StandardVideoPlayerController?>>
+      _initializationCache = {};
   final Queue<String> _lruQueue = Queue<String>();
   final Set<String> _visibleVideos = <String>{};
   static const int _maxCacheSize = 10;
@@ -160,21 +164,25 @@ class StandardVideoCacheManager implements IVideoCacheManager {
       'Accept-Encoding': 'gzip, deflate, br',
       'Connection': 'keep-alive',
       'Cache-Control': 'no-cache',
-      if (isHls) 'X-Playback-Session-Id': DateTime.now().millisecondsSinceEpoch.toString(),
+      if (isHls)
+        'X-Playback-Session-Id':
+            DateTime.now().millisecondsSinceEpoch.toString(),
     };
 
     return VideoPlayerController.networkUrl(
       Uri.parse(url),
       videoPlayerOptions: VideoPlayerOptions(
         mixWithOthers: true,
-        allowBackgroundPlayback: false, // Better resource management to prevent decoding issues
+        allowBackgroundPlayback:
+            false, // Better resource management to prevent decoding issues
       ),
       httpHeaders: headers,
       formatHint: isHls ? VideoFormat.hls : null,
     );
   }
 
-  Future<StandardVideoPlayerController?> _initializeVideoController(String url) async {
+  Future<StandardVideoPlayerController?> _initializeVideoController(
+      String url) async {
     // Validate that this is actually a video URL
     final mediaType = MediaTypeUtil.getMediaType(url);
     if (mediaType != MediaType.video) {
@@ -204,8 +212,10 @@ class StandardVideoCacheManager implements IVideoCacheManager {
     }
   }
 
-  Future<StandardVideoPlayerController?> _createAndInitializeController(String url) async {
-    debugPrint('StandardVideoCacheManager: _createAndInitializeController: $url');
+  Future<StandardVideoPlayerController?> _createAndInitializeController(
+      String url) async {
+    debugPrint(
+        'StandardVideoCacheManager: _createAndInitializeController: $url');
     try {
       final controller = _createVideoPlayerController(url);
 
@@ -214,7 +224,8 @@ class StandardVideoCacheManager implements IVideoCacheManager {
         const Duration(seconds: 10),
         onTimeout: () {
           debugPrint('⚠️ StandardVideoPlayer initialization timeout for: $url');
-          throw TimeoutException('Video initialization timeout', const Duration(seconds: 10));
+          throw TimeoutException(
+              'Video initialization timeout', const Duration(seconds: 10));
         },
       );
 
@@ -252,7 +263,9 @@ class StandardVideoCacheManager implements IVideoCacheManager {
 
       return StandardVideoPlayerController(controller);
     } catch (e, stackTrace) {
-      debugPrintStack(label: 'StandardVideoCacheManager cached error $e', stackTrace: stackTrace);
+      debugPrintStack(
+          label: 'StandardVideoCacheManager cached error $e',
+          stackTrace: stackTrace);
       debugPrint('❌ Error creating video controller for URL: $url - Error: $e');
       return null;
     }
@@ -276,7 +289,8 @@ class StandardVideoCacheManager implements IVideoCacheManager {
   }
 
   @override
-  Future<void> precacheVideos(List<String> videoUrls, {bool highPriority = false}) async {
+  Future<void> precacheVideos(List<String> videoUrls,
+      {bool highPriority = false}) async {
     final futures = <Future<void>>[];
     final validUrls = <String>[];
 
@@ -288,7 +302,8 @@ class StandardVideoCacheManager implements IVideoCacheManager {
       // Only process actual video URLs, skip image URLs
       final mediaType = MediaTypeUtil.getMediaType(url);
       if (mediaType != MediaType.video) {
-        debugPrint('⚠️ Skipping non-video URL in precacheVideos: $url (type: $mediaType)');
+        debugPrint(
+            '⚠️ Skipping non-video URL in precacheVideos: $url (type: $mediaType)');
         continue;
       }
 
@@ -362,8 +377,9 @@ class StandardVideoCacheManager implements IVideoCacheManager {
   @override
   void clearControllersOutsideRange(List<String> activeUrls) {
     final urlsToKeep = Set<String>.from(activeUrls);
-    final urlsToRemove =
-        _videoControllerCache.keys.where((url) => !urlsToKeep.contains(url)).toList();
+    final urlsToRemove = _videoControllerCache.keys
+        .where((url) => !urlsToKeep.contains(url))
+        .toList();
 
     for (final url in urlsToRemove) {
       clearVideo(url);

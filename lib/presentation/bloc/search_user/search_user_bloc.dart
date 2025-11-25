@@ -21,7 +21,8 @@ class SearchUserBloc extends Bloc<SearchEvents, SearchStates> {
   final List<SocialUserData> _searchUsersList = [];
   final List<HashTagData> _searchTagList = [];
 
-  FutureOr<void> _searchUser(SearchUserEvent event, Emitter<SearchStates> emit) async {
+  FutureOr<void> _searchUser(
+      SearchUserEvent event, Emitter<SearchStates> emit) async {
     if (event.searchText.isEmptyOrNull) {
       if (event.onComplete != null) {
         event.onComplete!([]);
@@ -43,7 +44,8 @@ class SearchUserBloc extends Bloc<SearchEvents, SearchStates> {
     }
   }
 
-  FutureOr<void> _searchTag(SearchTagEvent event, Emitter<SearchStates> emit) async {
+  FutureOr<void> _searchTag(
+      SearchTagEvent event, Emitter<SearchStates> emit) async {
     final apiResult = await searchTagUseCase.executeSearchTag(
       isLoading: event.isLoading == true,
       limit: 20,

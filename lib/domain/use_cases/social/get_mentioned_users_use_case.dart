@@ -19,6 +19,7 @@ class GetMentionedUsersUseCase extends BaseUseCase {
           page: page,
           pageLimit: pageLimit,
         );
-        return ApiResult(data: response.responseCode == 200 ? response.data : null);
+        return ApiResult(
+            data: response.responseCode == 200 ? response.data : null);
       });
 }

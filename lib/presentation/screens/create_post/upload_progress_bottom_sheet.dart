@@ -7,15 +7,18 @@ import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:lottie/lottie.dart';
 
 class UploadProgressBottomSheet extends StatelessWidget {
-  const UploadProgressBottomSheet({Key? key, this.onClose, this.message}) : super(key: key);
+  const UploadProgressBottomSheet({Key? key, this.onClose, this.message})
+      : super(key: key);
   final VoidCallback? onClose;
   final String? message;
 
   @override
-  Widget build(BuildContext context) => BlocBuilder<UploadProgressCubit, ProgressState>(
+  Widget build(BuildContext context) =>
+      BlocBuilder<UploadProgressCubit, ProgressState>(
         builder: (context, state) => Container(
           margin: IsrDimens.edgeInsetsSymmetric(
-              horizontal: 16.responsiveDimension, vertical: 20.responsiveDimension),
+              horizontal: 16.responsiveDimension,
+              vertical: 20.responsiveDimension),
           padding: IsrDimens.edgeInsetsAll(24.responsiveDimension),
           decoration: BoxDecoration(
             color: Colors.white,
@@ -58,7 +61,8 @@ class UploadProgressBottomSheet extends StatelessWidget {
                             ),
                             8.verticalSpace,
                             Text(
-                              IsrTranslationFile.yourMediaFilesHaveBeenUploadedSuccessfully,
+                              IsrTranslationFile
+                                  .yourMediaFilesHaveBeenUploadedSuccessfully,
                               style: IsrStyles.primaryText14.copyWith(
                                 color: Colors.grey[600],
                               ),
