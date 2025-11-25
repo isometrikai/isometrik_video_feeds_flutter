@@ -85,8 +85,8 @@ class TabDataModel {
   final EdgeInsetsGeometry? overlayPadding;
 
   //to maintain state
-  int? currentIndex; //to maintain post position
-  String? currentPostId; //to maintain post position
+  // int? currentIndex; //to maintain post position
+  // String? currentPostId; //to maintain post position
 
   // -------------------------------------------------------
   //                      COPY WITH

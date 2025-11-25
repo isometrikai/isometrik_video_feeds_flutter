@@ -262,10 +262,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         },
         loggedInUserId: _loggedInUserId,
         allowImplicitScrolling: widget.allowImplicitScrolling,
-        onPageChanged: (index, postId) {
-          tabData.currentIndex = index;
-          widget.onPageChanged?.call(index, postId);
-        },
+        onPageChanged: widget.onPageChanged,
         reelsDataList: tabData.reelsDataList.map((_) => _getReelData(_, tabData)).toList(),
         onLoadMore: () async => await _handleLoadMore(tabData),
         onRefresh: () async {
@@ -278,7 +275,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           }
           return result;
         },
-        startingPostIndex: tabData.currentIndex ?? tabData.startingPostIndex,
+        startingPostIndex: tabData.startingPostIndex,
         postSectionType: tabData.postSectionType,
         onTapCartIcon: (postId) {
           if (tabData.onTapCartIcon != null) {
