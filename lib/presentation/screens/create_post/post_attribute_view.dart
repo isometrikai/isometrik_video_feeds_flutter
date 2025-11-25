@@ -615,9 +615,6 @@ class _PostAttributeViewState extends State<PostAttributeView>
                       // Add Location
                       _buildLocationTile(),
 
-                      // Schedule Post (only if not in edit mode)
-                      if (!_isEditMode) _buildSchedulePostTile(),
-
                       // Allow Comments
                       _buildSwitchTile(
                         icon: AssetConstants.icAllowComment,
@@ -643,6 +640,9 @@ class _PostAttributeViewState extends State<PostAttributeView>
                           _updatePostButtonState();
                         },
                       ),
+
+                      // Schedule Post (only if not in edit mode)
+                      if (!_isEditMode) _buildSchedulePostTile(),
                     ],
                   ),
 
