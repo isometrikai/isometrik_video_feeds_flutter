@@ -178,37 +178,39 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
               ? _buildDurationSelection()
               : [],
         ),
-        body: Column(
-          children: [
-            Expanded(
-              child: Stack(
-                children: [
-                  state is CameraRecordingReadyState
-                      ? Positioned.fill(child: _buildVideoPreview(state))
-                      : Positioned.fill(child: _buildCameraPreview(state)),
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: Column(
-                      children: [
-                        _buildBottomControls(),
-                        16.responsiveVerticalSpace,
-                        if (_cameraBloc.isRecording)
-                          _buildRecordingProgressBar(state)
-                        else
-                          4.responsiveVerticalSpace,
-                      ],
+        body: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: Stack(
+                  children: [
+                    state is CameraRecordingReadyState
+                        ? Positioned.fill(child: _buildVideoPreview(state))
+                        : Positioned.fill(child: _buildCameraPreview(state)),
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: Column(
+                        children: [
+                          _buildBottomControls(),
+                          16.responsiveVerticalSpace,
+                          if (_cameraBloc.isRecording)
+                            _buildRecordingProgressBar(state)
+                          else
+                            4.responsiveVerticalSpace,
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            if (_cameraBloc.recordedVideoPath == null ||
-                _cameraBloc.isRecording) ...[
-              _buildModeSelection(),
+              if (_cameraBloc.recordedVideoPath == null ||
+                  _cameraBloc.isRecording) ...[
+                _buildModeSelection(),
+              ],
             ],
-          ],
+          ),
         ),
       );
 
