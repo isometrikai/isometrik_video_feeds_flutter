@@ -115,4 +115,10 @@ class AssetConstants {
       '${packageName}assets/icons/ic_media_select_single.svg';
   static const String icNearbyPlace =
       '${packageName}assets/icons/ic_near_by_place.svg';
+  static const String icMediaRecent =
+      '${packageName}assets/icons/ic_media_recent.svg';
+  static const String icMediaPhotos =
+      '${packageName}assets/icons/ic_media_photos.svg';
+  static const String icMediaVideos =
+      '${packageName}assets/icons/ic_media_videos.svg';
 }
