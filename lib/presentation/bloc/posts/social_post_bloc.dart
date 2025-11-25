@@ -277,6 +277,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     if (postIdPostData != null) {
       postDataList.add(postIdPostData);
     }
+    if (tabAssistData.postSectionType == PostSectionType.following){
+      apiResult?.data?.data?.forEach((_) => _.isFollowing = true);
+    }
     postDataList.addAll(apiResult?.data?.data ?? []);
     if (postDataList.isNotEmpty) {
       if (postDataList.length < tabAssistData.pageSize) {
