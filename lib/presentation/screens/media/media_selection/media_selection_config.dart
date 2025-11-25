@@ -44,7 +44,7 @@ class MediaSelectionConfig {
             closeIcon ?? MediaSelectionConstant.closeIcon(color: Colors.black),
         cameraIcon = cameraIcon ??
             MediaSelectionConstant.cameraIcon(
-                color: primaryColor ?? MediaSelectionConstant.primaryColor),
+                color: Colors.white ?? MediaSelectionConstant.primaryColor),
         videoIcon = videoIcon ??
             MediaSelectionConstant.videoIcon(
                 color: primaryColor ?? MediaSelectionConstant.primaryColor),
@@ -168,7 +168,7 @@ class MediaSelectionConstant {
   static Widget cameraIcon({Color? color}) => Icon(
         Icons.camera_alt,
         color: color ?? MediaSelectionConstant.primaryColor,
-        size: 40,
+        size: 24,
       );
 
   static Widget videoIcon({Color? color}) => Icon(

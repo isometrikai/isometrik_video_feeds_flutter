@@ -303,8 +303,8 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
           child: Scaffold(
             backgroundColor: widget.mediaSelectionConfig.backgroundColor,
             appBar: AppBar(
-              backgroundColor: widget.mediaSelectionConfig.appBarColor,
-              elevation: 1,
+              backgroundColor: IsrColors.white,
+              elevation: 0,
               leading: IconButton(
                 icon: widget.mediaSelectionConfig.closeIcon,
                 onPressed: () => Navigator.pop(context),
@@ -321,35 +321,37 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
               ),
               centerTitle: true,
             ),
-            body: BlocBuilder<MediaSelectionBloc, MediaSelectionState>(
-              buildWhen: (previous, current) =>
-                  current is MediaSelectionLoadingState ||
-                  current is MediaSelectionPermissionDeniedState ||
-                  current is MediaSelectionLoadedState ||
-                  current is MediaSelectionErrorState,
-              builder: (context, state) {
-                if (state is MediaSelectionInitialState ||
-                    state is MediaSelectionLoadingState) {
-                  return Center(
-                    child: CircularProgressIndicator(
-                        color: widget.mediaSelectionConfig.primaryColor),
-                  );
-                } else if (state is MediaSelectionPermissionDeniedState) {
-                  return _buildPermissionDenied();
-                } else if (state is MediaSelectionLoadedState) {
-                  return _buildBody(state);
-                } else if (state is MediaSelectionErrorState) {
-                  return Center(
-                    child: Text(
-                      state.message,
-                      style: TextStyle(
-                        color: widget.mediaSelectionConfig.primaryTextColor,
+            body: SafeArea(
+              child: BlocBuilder<MediaSelectionBloc, MediaSelectionState>(
+                buildWhen: (previous, current) =>
+                    current is MediaSelectionLoadingState ||
+                    current is MediaSelectionPermissionDeniedState ||
+                    current is MediaSelectionLoadedState ||
+                    current is MediaSelectionErrorState,
+                builder: (context, state) {
+                  if (state is MediaSelectionInitialState ||
+                      state is MediaSelectionLoadingState) {
+                    return Center(
+                      child: CircularProgressIndicator(
+                          color: widget.mediaSelectionConfig.primaryColor),
+                    );
+                  } else if (state is MediaSelectionPermissionDeniedState) {
+                    return _buildPermissionDenied();
+                  } else if (state is MediaSelectionLoadedState) {
+                    return _buildBody(state);
+                  } else if (state is MediaSelectionErrorState) {
+                    return Center(
+                      child: Text(
+                        state.message,
+                        style: TextStyle(
+                          color: widget.mediaSelectionConfig.primaryTextColor,
+                        ),
                       ),
-                    ),
-                  );
-                }
-                return const SizedBox.shrink();
-              },
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
+              ),
             ),
           ),
         ),
@@ -502,7 +504,7 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
         children: [
           // Album selector and controls
           Container(
-            height: 50,
+            height: 50.responsiveDimension,
             color: Colors.white,
             child: Row(
               children: [
