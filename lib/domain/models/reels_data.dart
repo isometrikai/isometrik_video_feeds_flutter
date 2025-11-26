@@ -2,53 +2,39 @@ import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
+/// Core reel data model (NO callbacks)
 class ReelsData {
   ReelsData({
+    this.postData,
     this.postId,
-    this.profilePhoto,
-    this.userId,
     this.userName,
+    this.userId,
     this.firstName,
     this.lastName,
-    this.hasTags,
+    this.profilePhoto,
     this.isVerifiedUser,
     this.isSelfProfile = false,
-    this.isFollow = false,
+    this.description,
+    required this.mediaMetaDataList,
+    this.isFollow,
     this.isLiked,
     this.likesCount,
-    this.onPressSave,
-    this.onPressLike,
-    this.onPressFollow,
-    this.onRefresh,
-    this.onTapCartIcon,
-    this.placeHolderWidget,
-    this.onTapComment,
-    this.onTapShare,
-    this.onTapUserProfile,
-    this.footerWidget,
-    this.overlayPadding,
-    this.actionWidget,
-    this.description,
-    this.onTapReport,
+    this.hasTags,
     this.showBlur,
     this.productCount,
-    this.onPressMoreButton,
     this.commentCount,
     this.postStatus,
     this.isCreatePostButtonVisible,
     this.isScheduledPost,
     this.isSavedPost,
     this.postSetting,
-    this.onCreatePost,
-    required this.mediaMetaDataList,
     this.mentions = const [],
     this.tagDataList,
-    this.onTapMentionTag,
-    this.onTapPlace,
     this.placeDataList,
     this.tags,
   });
 
+  final dynamic postData;
   final String? postId;
   final String? userName;
   final String? userId;
@@ -58,44 +44,63 @@ class ReelsData {
   final bool? isVerifiedUser;
   final bool? isSelfProfile;
   final String? description;
+
   final List<MediaMetaData> mediaMetaDataList;
+
   bool? isFollow;
   bool? isLiked;
+  bool? isSavedPost;
   int? likesCount;
+  int? commentCount;
   final List<String>? hasTags;
-  final ReelsWidgetBuilder? footerWidget;
-  final ReelsWidgetBuilder? actionWidget;
-  final EdgeInsetsGeometry? overlayPadding;
 
-  final Future<bool> Function(bool isSavedPost)? onPressSave;
-  final Future<bool> Function(bool)? onPressLike;
-  final Future<bool> Function(String, bool)? onPressFollow;
-  final Future<bool> Function()? onRefresh;
-  final Future<ReelsData?> Function()? onCreatePost;
-
-  // final Future<num>? Function(String, String)? onTapCartIcon;
-  final VoidCallback? onTapCartIcon;
-  final Future<dynamic> Function()? onPressMoreButton;
-  final Widget? placeHolderWidget;
-  final Future<int>? Function(int)? onTapComment;
-  final VoidCallback? onTapShare;
-  final Function(bool)? onTapUserProfile;
-  final Function()? onTapReport;
   final bool? showBlur;
   final int? productCount;
-  int? commentCount;
   final int? postStatus;
   final bool? isCreatePostButtonVisible;
   final bool? isScheduledPost;
-  bool? isSavedPost;
   final PostSetting? postSetting;
+
   List<MentionMetaData> mentions;
   final List<MentionMetaData>? tagDataList;
   final List<PlaceMetaData>? placeDataList;
-  final Future<List<MentionMetaData>?> Function(List<MentionMetaData>)?
-      onTapMentionTag;
-  final Function(List<PlaceMetaData>)? onTapPlace;
   final Tags? tags;
+
+  ReelsData copyWith({
+    bool? isFollow,
+    bool? isLiked,
+    bool? isSavedPost,
+    int? likesCount,
+    int? commentCount,
+  }) => ReelsData(
+      postData: postData,
+      postId: postId,
+      userName: userName,
+      userId: userId,
+      firstName: firstName,
+      lastName: lastName,
+      profilePhoto: profilePhoto,
+      isVerifiedUser: isVerifiedUser,
+      isSelfProfile: isSelfProfile,
+      description: description,
+      mediaMetaDataList: mediaMetaDataList,
+      hasTags: hasTags,
+      showBlur: showBlur,
+      productCount: productCount,
+      postStatus: postStatus,
+      isCreatePostButtonVisible: isCreatePostButtonVisible,
+      isScheduledPost: isScheduledPost,
+      postSetting: postSetting,
+      mentions: mentions,
+      tagDataList: tagDataList,
+      placeDataList: placeDataList,
+      tags: tags,
+      isFollow: isFollow ?? this.isFollow,
+      isLiked: isLiked ?? this.isLiked,
+      isSavedPost: isSavedPost ?? this.isSavedPost,
+      likesCount: likesCount ?? this.likesCount,
+      commentCount: commentCount ?? this.commentCount,
+    );
 }
 
 class MediaMetaData {

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ism_video_reel_player/data/managers/local_event_manager.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -13,13 +14,15 @@ class PostListingView extends StatefulWidget {
     required this.tagValue,
     required this.tagType,
     this.searchQuery,
-    this.onTapProfilePicture,
+    this.tabConfig = const TabConfig(),
+    this.postConfig = const PostConfig(),
   });
 
   final String tagValue;
   TagType tagType;
   final String? searchQuery;
-  Function(String)? onTapProfilePicture;
+  final TabConfig tabConfig;
+  final PostConfig postConfig;
 
   @override
   State<PostListingView> createState() => _PostListingViewState();
@@ -578,7 +581,8 @@ class _PostListingViewState extends State<PostListingView> {
                         postSectionType: PostSectionType.tagPost,
                         tagValue: widget.tagValue,
                         tagType: widget.tagType,
-                        onTapProfilePicture: widget.onTapProfilePicture,
+                        tabConfig: widget.tabConfig,
+                        postConfig: widget.postConfig,
                       );
                     },
                     child: _buildPostCard(post, index),
@@ -760,7 +764,7 @@ class _PostListingViewState extends State<PostListingView> {
   void _onTagTapped(dynamic tag) {
     final tagText = (tag?.hashtag as String?) ?? '';
 
-    IsrAppNavigator.navigateTagDetails(context, tagValue: tagText, tagType: TagType.hashtag);
+    IsrAppNavigator.navigateTagDetails(context, tagValue: tagText, tagType: TagType.hashtag, tabConfig: widget.tabConfig, postConfig: widget.postConfig);
   }
 
   void _handlePlaceTap(String placeId, String placeName) {
@@ -788,6 +792,8 @@ class _PostListingViewState extends State<PostListingView> {
       placeName: result?.name ?? '',
       latitude: lat,
       longitude: long,
+      tabConfig: widget.tabConfig,
+      postConfig: widget.postConfig,
     );
   }
 
@@ -993,8 +999,9 @@ class _PostListingViewState extends State<PostListingView> {
       );
 
   void _handleAccountTap(SocialUserData user) {
-    if (widget.onTapProfilePicture != null) {
-      widget.onTapProfilePicture?.call(user.id ?? '');
+    if (widget.postConfig.postCallBackConfig?.onProfileClick != null) {
+      widget.postConfig.postCallBackConfig?.onProfileClick?.call(null, user.id ?? '');
+      _logProfileEvent(user.id ?? '', '');
     }
 
     /// TODO need to decide
@@ -1003,6 +1010,19 @@ class _PostListingViewState extends State<PostListingView> {
     //   userId: user.id ?? '',
     //   incomingFrom: 'search',
     // );
+  }
+
+
+  void _logProfileEvent(String userId, String postId) {
+    final profileEvent = {
+      'post_id': postId,
+      'user_id': userId,
+      'category': EventCategory.socialGraph.value,
+      'timestamp': DateTime.now().toIso8601String(),
+    };
+
+    unawaited(EventQueueProvider.instance
+        .addEvent(EventType.profileViewed.value, profileEvent.removeEmptyValues()));
   }
 
   // Follow button widget with API integration

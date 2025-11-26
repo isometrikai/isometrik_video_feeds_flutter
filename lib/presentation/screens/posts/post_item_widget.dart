@@ -19,11 +19,9 @@ class PostItemWidget extends StatefulWidget {
     this.startingPostIndex = 0,
     this.loggedInUserId,
     this.allowImplicitScrolling = true,
-    this.onPageChanged,
     required this.reelsDataList,
     this.videoCacheManager,
-    this.onTapCartIcon,
-    this.overlayPadding,
+    required this.reelsConfig,
   });
 
   final Future<List<ReelsData>> Function()? onLoadMore;
@@ -34,11 +32,9 @@ class PostItemWidget extends StatefulWidget {
   final int? startingPostIndex;
   final String? loggedInUserId;
   final bool? allowImplicitScrolling;
-  final Function(int, String)? onPageChanged;
   final List<ReelsData> reelsDataList;
   final VideoCacheManager? videoCacheManager;
-  final Function(String)? onTapCartIcon;
-  final EdgeInsetsGeometry? overlayPadding;
+  final ReelsConfig reelsConfig;
 
   @override
   State<PostItemWidget> createState() => _PostItemWidgetState();
@@ -232,8 +228,8 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                       );
                     }
                   }
-                  if (widget.onPageChanged != null) {
-                    widget.onPageChanged!(index, post.postId ?? '');
+                  if (widget.reelsConfig.onReelsChange != null) {
+                    widget.reelsConfig.onReelsChange?.call(post, index);
                   }
                 },
                 itemCount: _reelsDataList.length,
@@ -242,16 +238,18 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                   final reelsData = _reelsDataList[index];
                   return RepaintBoundary(
                     child: IsmReelsVideoPlayerView(
-                      overlayPadding: widget.overlayPadding,
+                      index: index,
                       reelsData: reelsData,
                       loggedInUserId: widget.loggedInUserId,
                       videoCacheManager: _videoCacheManager,
                       // Add refresh count to force rebuild
                       key: ValueKey('${reelsData.postId}_${_refreshCounts[index] ?? 0}'),
                       // onVideoCompleted: () => _handleVideoCompletion(index),
+                      reelsConfig: widget.reelsConfig,
                       onPressMoreButton: () async {
-                        if (reelsData.onPressMoreButton == null) return;
-                        final result = await reelsData.onPressMoreButton!.call();
+                        if (widget.reelsConfig.onPressMoreButton == null) return;
+                        final result =
+                        await widget.reelsConfig.onPressMoreButton!.call(reelsData);
                         if (result == null) return;
                         if (result is bool) {
                           final isSuccess = result;
@@ -289,8 +287,8 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                         }
                       },
                       onCreatePost: () async {
-                        if (reelsData.onCreatePost != null) {
-                          final result = await reelsData.onCreatePost!();
+                        if (widget.reelsConfig.onCreatePost != null) {
+                          final result = await widget.reelsConfig.onCreatePost!(reelsData);
                           if (result != null) {
                             _reelsDataList.insert(index, result);
                             _updateState();
@@ -298,9 +296,10 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                         }
                       },
                       onPressFollowButton: () async {
-                        if (reelsData.onPressFollow != null) {
-                          final result = await reelsData.onPressFollow!(
-                              reelsData.userId ?? '', reelsData.isFollow ?? false);
+                        if (widget.reelsConfig.onPressFollow != null) {
+                          final result = await widget.reelsConfig.onPressFollow!(
+                              reelsData,
+                              reelsData.isFollow ?? false);
                           if (result == true && mounted) {
                             final index = _reelsDataList
                                 .indexWhere((element) => element.postId == reelsData.postId);
@@ -322,8 +321,9 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                         }
                       },
                       onPressLikeButton: () async {
-                        if (reelsData.onPressLike != null) {
-                          final result = await reelsData.onPressLike!(reelsData.isLiked ?? false);
+                        if (widget.reelsConfig.onPressLike != null) {
+                          final result = await widget.reelsConfig
+                              .onPressLike!(reelsData, reelsData.isLiked ?? false);
                           if (result == true) {
                             reelsData.isLiked = reelsData.isLiked == false;
                             if (reelsData.isLiked == true) {
@@ -346,11 +346,11 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                         }
                       },
                       onPressSaveButton: () async {
-                        if (reelsData.onPressSave != null) {
-                          final result =
-                              await reelsData.onPressSave!(reelsData.isSavedPost ?? false);
-                          if (result) {
-                            reelsData.isSavedPost = reelsData.isSavedPost == false;
+                        if (widget.reelsConfig.onPressSave != null) {
+                          final result = await widget.reelsConfig
+                              .onPressSave!(reelsData, reelsData.isSavedPost ?? false);
+                          if (result != reelsData.isSavedPost) {
+                            reelsData.isSavedPost = result;
                             _updateState();
                           }
                           // unawaited(EventQueueProvider.instance.addEvent({
@@ -363,8 +363,9 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                         }
                       },
                       onTapMentionTag: (mentionedList) async {
-                        if (reelsData.onTapMentionTag != null) {
-                          final result = await reelsData.onTapMentionTag!(mentionedList);
+                        if (widget.reelsConfig.onTapMentionTag != null) {
+                          final result =
+                              await widget.reelsConfig.onTapMentionTag!(reelsData, mentionedList);
                           if (result.isListEmptyOrNull == false) {
                             final index = _reelsDataList
                                 .indexWhere((element) => element.postId == reelsData.postId);
@@ -377,11 +378,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                         }
                       },
                       onTapCartIcon: (productId) {
-                        if (widget.onTapCartIcon != null) {
-                          widget.onTapCartIcon!(productId);
-                        } else if (reelsData.onTapCartIcon != null) {
-                          reelsData.onTapCartIcon!();
-                        }
+                        widget.reelsConfig.onTaggedProduct?.call(reelsData);
                       },
                     ),
                   );

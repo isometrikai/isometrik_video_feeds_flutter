@@ -27,7 +27,8 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
     this.onVideoCompleted,
     this.onTapMentionTag,
     this.onTapCartIcon,
-    this.overlayPadding,
+    required this.index,
+    required this.reelsConfig,
   });
 
   final VideoCacheManager? videoCacheManager;
@@ -41,7 +42,9 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
   final VoidCallback? onVideoCompleted;
   final Function(List<MentionMetaData>)? onTapMentionTag;
   final Function(String)? onTapCartIcon;
-  final EdgeInsetsGeometry? overlayPadding;
+  final int index;
+  final ReelsConfig reelsConfig;
+
 
   @override
   State<IsmReelsVideoPlayerView> createState() => _IsmReelsVideoPlayerViewState();
@@ -512,7 +515,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     return TapHandler(
       onTap: () async {
         _pauseForNavigation();
-        await _reelData.onTapPlace?.call(placeList);
+        await widget.reelsConfig.onTapPlace?.call(_reelData, placeList);
         _resumeAfterNavigation();
       },
       child: Row(
@@ -658,18 +661,19 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                           stops: const [0.0, 0.3, 0.7, 1.0],
                         ),
                       ),
-                      padding: widget.overlayPadding,
+                      padding: widget.reelsConfig.overlayPadding,
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         mainAxisSize: MainAxisSize.max,
                         children: [
                           Expanded(
                             child: SingleChildScrollView(
-                              child: _reelData.footerWidget?.child ??
+                              child: widget.reelsConfig.footerWidget?.call(_reelData).child ??
                                   _buildBottomSectionWithoutOverlay(),
                             ),
                           ),
-                          _reelData.actionWidget?.child ?? _buildRightSideActions(),
+                          widget.reelsConfig.actionWidget?.call(_reelData).child ??
+                              _buildRightSideActions(),
                         ],
                       ),
                     ),
@@ -716,9 +720,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 TapHandler(
                   borderRadius: IsrDimens.thirty,
                   onTap: () async {
-                    if (_reelData.onTapUserProfile != null) {
+                    if (widget.reelsConfig.onTapUserProfile != null) {
                       _pauseForNavigation();
-                      await _reelData.onTapUserProfile!(true);
+                      await widget.reelsConfig.onTapUserProfile!(_reelData);
                       _resumeAfterNavigation();
                     }
                   },
@@ -800,9 +804,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   icon: AssetConstants.icShareIcon,
                   label: IsrTranslationFile.share,
                   onTap: () async {
-                    if (_reelData.onTapShare != null) {
+                    if (widget.reelsConfig.onTapShare != null) {
                       _pauseForNavigation();
-                      _reelData.onTapShare!();
+                      await widget.reelsConfig.onTapShare!(_reelData);
                       _resumeAfterNavigation();
                     }
                   },
@@ -952,9 +956,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                 Flexible(
                                   child: TapHandler(
                                     onTap: () async {
-                                      if (_reelData.onTapUserProfile != null) {
+                                      if (widget.reelsConfig.onTapUserProfile != null) {
                                         _pauseForNavigation();
-                                        await _reelData.onTapUserProfile?.call(false);
+                                        await widget.reelsConfig
+                                            .onTapUserProfile?.call(_reelData);
                                         _resumeAfterNavigation();
                                       }
                                     },
@@ -1399,11 +1404,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   void _handleCommentClick(StateSetter setBuilderState) async {
-    if (_reelData.onTapComment != null) {
+    if (widget.reelsConfig.onTapComment != null) {
       // Pause video before opening comments
       _pauseForNavigation();
 
-      final commentCount = await _reelData.onTapComment!(_reelData.commentCount ?? 0);
+      final commentCount =
+          await widget.reelsConfig.onTapComment!(_reelData, _reelData.commentCount ?? 0);
 
       // Resume video when coming back
       _resumeAfterNavigation();
