@@ -131,7 +131,7 @@ class LocalEventQueue with WidgetsBindingObserver {
           final rudderProperties = RudderProperty();
           rudderProperties.putValue(map: event.payload);
           RudderController.instance.track(
-            'Post Viewed',
+            event.eventName,
             properties: rudderProperties,
           );
         }

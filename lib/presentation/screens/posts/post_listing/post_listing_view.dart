@@ -94,8 +94,8 @@ class _PostListingViewState extends State<PostListingView> {
     if (!mounted || !_scrollController.hasClients) return;
 
     // Check if scrolled to 65% of the content
-    final scrollPercentage = _scrollController.position.pixels /
-        _scrollController.position.maxScrollExtent;
+    final scrollPercentage =
+        _scrollController.position.pixels / _scrollController.position.maxScrollExtent;
 
     // Trigger pagination at 65% scroll for the selected tab
     if (scrollPercentage >= 0.65 &&
@@ -110,6 +110,8 @@ class _PostListingViewState extends State<PostListingView> {
 
     final searchQuery = _hashtagController.text.trim().replaceFirst('#', '');
     if (searchQuery.isEmpty) return;
+
+    debugPrint('🔄 LoadMore: Requesting next page for ${_selectedTab.name}');
 
     setState(() {
       _tabLoadingMore[_selectedTab] = true;
@@ -289,11 +291,8 @@ class _PostListingViewState extends State<PostListingView> {
                     child: Text(
                       tab.displayName,
                       style: IsrStyles.primaryText14.copyWith(
-                        color: isSelected
-                            ? IsrColors.appColor
-                            : IsrColors.color9B9B9B,
-                        fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.normal,
+                        color: isSelected ? IsrColors.appColor : IsrColors.color9B9B9B,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                       ),
                     ),
                   ),
@@ -322,7 +321,6 @@ class _PostListingViewState extends State<PostListingView> {
               children: [
                 Expanded(
                   child: Container(
-                    height: IsrDimens.forty,
                     decoration: BoxDecoration(
                       color: IsrColors.colorF5F5F5,
                       borderRadius: BorderRadius.circular(IsrDimens.twenty),
@@ -395,20 +393,27 @@ class _PostListingViewState extends State<PostListingView> {
           if (!mounted) return;
 
           if (state is SearchResultsLoadedState) {
+            // Always reset loading state
             if (_tabLoadingMore[state.tabType] ?? false) {
               setState(() {
                 _tabLoadingMore[state.tabType] = false;
-                // If we got empty results, no more data available
-                if (state.results.isEmpty) {
-                  _tabHasMoreData[state.tabType] = false;
-                }
               });
+            }
+
+            // If it's pagination and empty, mark no more data
+            if (state.isFromPagination && state.results.isEmpty) {
+              setState(() {
+                _tabHasMoreData[state.tabType] = false;
+              });
+              debugPrint('⚠️ Listener: No more data for ${state.tabType.name}');
             }
           }
         },
         builder: (context, state) {
           // Handle different state types
-          if (state is PostListingLoadingState && state.isLoading) {
+          // Only show full screen loader if it's NOT pagination loading
+          final isAnyTabLoadingMore = _tabLoadingMore.values.any((loading) => loading);
+          if (state is PostListingLoadingState && state.isLoading && !isAnyTabLoadingMore) {
             return const Center(child: AppLoader());
           }
 
@@ -419,25 +424,32 @@ class _PostListingViewState extends State<PostListingView> {
           }
 
           if (state is SearchResultsLoadedState) {
-            // For pagination, append results; for fresh search, replace
-            final isLoadingMore = _tabLoadingMore[state.tabType] ?? false;
-            if (isLoadingMore && state.results.isNotEmpty) {
-              // Pagination: append results
-              final existingResults = _tabResults[state.tabType] ?? [];
-              _tabResults[state.tabType] = [
-                ...existingResults,
-                ...state.results
-              ];
-            } else if (!isLoadingMore) {
-              // Fresh search: replace results
+            // Use isFromPagination from state
+            if (state.isFromPagination) {
+              // Pagination mode: only append if results are not empty
+              if (state.results.isNotEmpty) {
+                // Append new results to existing ones
+                final existingResults = _tabResults[state.tabType] ?? [];
+                _tabResults[state.tabType] = [...existingResults, ...state.results];
+                debugPrint(
+                    '✅ Pagination: Appended ${state.results.length} items to ${state.tabType.name}. Total: ${_tabResults[state.tabType]?.length}');
+              } else {
+                // Empty results during pagination - keep existing data
+                debugPrint(
+                    '⚠️ Pagination: No more data for ${state.tabType.name}. Keeping existing ${_tabResults[state.tabType]?.length} items');
+                // DON'T modify _tabResults - keep existing data intact
+              }
+            } else {
+              // Fresh search: replace results completely
               _tabResults[state.tabType] = state.results;
               // Reset hasMoreData for fresh search
               _tabHasMoreData[state.tabType] = state.results.isNotEmpty;
+              debugPrint(
+                  '🔄 Fresh search: Loaded ${state.results.length} items for ${state.tabType.name}');
             }
             _tabLoading[state.tabType] = false;
             // Store the query for this tab to avoid unnecessary API calls
-            final currentQuery =
-                _hashtagController.text.trim().replaceFirst('#', '');
+            final currentQuery = _hashtagController.text.trim().replaceFirst('#', '');
             _tabLastQuery[state.tabType] = currentQuery;
           }
 
@@ -449,17 +461,18 @@ class _PostListingViewState extends State<PostListingView> {
   Widget _buildTabContent() {
     final results = _tabResults[_selectedTab] ?? [];
     final isLoading = _tabLoading[_selectedTab] ?? false;
+    final isLoadingMore = _tabLoadingMore[_selectedTab] ?? false;
 
-    if (isLoading) {
+    // Only show full screen loader if it's initial loading (not pagination)
+    if (isLoading && !isLoadingMore && results.isEmpty) {
       return const Center(child: AppLoader());
     }
 
-    if (results.isEmpty) {
+    if (results.isEmpty && !isLoading) {
       return _buildEmptyState(_selectedTab);
     }
 
-    // Show cached results indicator if results are from cache
-
+    // Show content with pagination loader at bottom (if loading more)
     return Column(
       children: [
         Expanded(
@@ -537,59 +550,46 @@ class _PostListingViewState extends State<PostListingView> {
     }
   }
 
-  Widget _buildPostsGrid(List<TimeLineData> postList) {
-    final isLoadingMore = _tabLoadingMore[SearchTabType.posts] ?? false;
-
-    return CustomScrollView(
-      controller: _scrollController,
-      physics: const BouncingScrollPhysics(),
-      slivers: [
-        SliverPadding(
-          padding: IsrDimens.edgeInsetsAll(IsrDimens.eight),
-          sliver: SliverGrid(
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: IsrDimens.four,
-              mainAxisSpacing: IsrDimens.four,
-              childAspectRatio: 0.75,
-            ),
-            delegate: SliverChildBuilderDelegate((context, index) {
-              if (index == postList.length) {
-                return isLoadingMore
-                    ? const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(16.0),
-                          child: CircularProgressIndicator(),
-                        ),
-                      )
-                    : const SizedBox.shrink();
-              }
-
-              final post = postList[index];
-              return TapHandler(
-                key: ValueKey('post_${post.id}'),
-                onTap: () {
-                  IsrAppNavigator.navigateToReelsPlayer(
-                    context,
-                    postDataList: postList,
-                    startingPostIndex: index,
-                    postSectionType: PostSectionType.tagPost,
-                    tagValue: widget.tagValue,
-                    tagType: widget.tagType,
-                    onTapProfilePicture: widget.onTapProfilePicture,
+  Widget _buildPostsGrid(List<TimeLineData> postList) => CustomScrollView(
+        controller: _scrollController,
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          SliverPadding(
+            padding: IsrDimens.edgeInsetsAll(IsrDimens.eight),
+            sliver: SliverGrid(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: IsrDimens.four,
+                mainAxisSpacing: IsrDimens.four,
+                childAspectRatio: 0.75,
+              ),
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final post = postList[index];
+                  return TapHandler(
+                    key: ValueKey('post_${post.id}'),
+                    onTap: () {
+                      IsrAppNavigator.navigateToReelsPlayer(
+                        context,
+                        postDataList: postList,
+                        startingPostIndex: index,
+                        postSectionType: PostSectionType.tagPost,
+                        tagValue: widget.tagValue,
+                        tagType: widget.tagType,
+                        onTapProfilePicture: widget.onTapProfilePicture,
+                      );
+                    },
+                    child: _buildPostCard(post, index),
                   );
                 },
-                child: _buildPostCard(post, index),
-              );
-            },
-                childCount: postList.length + (isLoadingMore ? 1 : 0),
+                childCount: postList.length,
                 addAutomaticKeepAlives: true,
-                addRepaintBoundaries: true),
+                addRepaintBoundaries: true,
+              ),
+            ),
           ),
-        ),
-      ],
-    );
-  }
+        ],
+      );
 
   Widget _buildPostCard(TimeLineData post, int index) => Container(
         decoration: BoxDecoration(
@@ -602,10 +602,8 @@ class _PostListingViewState extends State<PostListingView> {
             children: [
               _buildPostImage(post),
               _buildUserProfileOverlay(post),
-              if (post.tags?.products?.isEmptyOrNull == false)
-                _buildShopButtonOverlay(post),
-              if (post.media?.first.mediaType?.mediaType == MediaType.video)
-                _buildVideoIcon(),
+              if (post.tags?.products?.isEmptyOrNull == false) _buildShopButtonOverlay(post),
+              if (post.media?.first.mediaType?.mediaType == MediaType.video) _buildVideoIcon(),
             ],
           ),
         ),
@@ -754,14 +752,12 @@ class _PostListingViewState extends State<PostListingView> {
         ),
       );
 
-  String _getHasTagValue() =>
-      _hashtagController.text.trim().replaceFirst('#', '');
+  String _getHasTagValue() => _hashtagController.text.trim().replaceFirst('#', '');
 
   void _onTagTapped(dynamic tag) {
     final tagText = (tag?.hashtag as String?) ?? '';
 
-    IsrAppNavigator.navigateTagDetails(context,
-        tagValue: tagText, tagType: TagType.hashtag);
+    IsrAppNavigator.navigateTagDetails(context, tagValue: tagText, tagType: TagType.hashtag);
   }
 
   void _handlePlaceTap(String placeId, String placeName) {
@@ -793,133 +789,43 @@ class _PostListingViewState extends State<PostListingView> {
   }
 
   // Tab-specific content builders
-  Widget _buildTagsList(List<dynamic> tags) {
-    final isLoadingMore = _tabLoadingMore[SearchTabType.tags] ?? false;
-
-    return RefreshIndicator(
-      onRefresh: () async {},
-      child: ListView.builder(
-        controller: _scrollController,
-        physics: const BouncingScrollPhysics(),
-        itemCount: tags.length + (isLoadingMore ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index == tags.length) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: CircularProgressIndicator(),
-              ),
-            );
-          }
-
-          final tag = tags[index];
-          final tagHashtag = tag?.hashtag ?? 'tag${index + 1}';
-          return Container(
-            key: ValueKey('tag_$tagHashtag'),
-            height: IsrDimens.sixty,
-            margin: IsrDimens.edgeInsetsSymmetric(
-                vertical: 4.responsiveDimension,
-                horizontal: 8.responsiveDimension),
-            child: TapHandler(
-              onTap: () {
-                _onTagTapped(tag);
-              },
-              child: Padding(
-                padding: IsrDimens.edgeInsetsSymmetric(
-                    horizontal: IsrDimens.sixteen),
-                child: Row(
-                  children: [
-                    const AppImage.svg(AssetConstants.icTagIcon),
-                    12.responsiveHorizontalSpace,
-                    Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '$tagHashtag',
-                            style: IsrStyles.primaryText14Bold,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Text(
-                            '${tag?.usageCount ?? (index + 1) * 10} Posts',
-                            style: IsrStyles.primaryText12.copyWith(
-                              color: IsrColors.color9B9B9B,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildPlacesList(List<dynamic> places) {
-    final isLoadingMore = _tabLoadingMore[SearchTabType.places] ?? false;
-
-    return RefreshIndicator(
-      onRefresh: () async {},
-      child: ListView.builder(
-        controller: _scrollController,
-        physics: const BouncingScrollPhysics(),
-        itemCount: places.length + (isLoadingMore ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index == places.length) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: CircularProgressIndicator(),
-              ),
-            );
-          }
-
-          final resultList = (places as List<Result>)
-              .map(UnifiedLocationItem.fromLocationResult)
-              .toList();
-
-          final result = resultList[index];
-          final placeName = result.title;
-          return Container(
-            key: ValueKey('place_${result.placeId}'),
-            height: 60.responsiveDimension,
-            margin: IsrDimens.edgeInsetsSymmetric(
-                vertical: 4.responsiveDimension,
-                horizontal: 8.responsiveDimension),
-            child: TapHandler(
-              onTap: () => _handlePlaceTap(
-                result.placeId,
-                placeName,
-              ),
-              child: Padding(
-                padding: IsrDimens.edgeInsetsSymmetric(
-                    horizontal: 16.responsiveDimension),
-                child: Row(
-                  children: [
-                    const AppImage.svg(AssetConstants.icPlacesIcon),
-                    12.responsiveHorizontalSpace,
-                    Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            placeName,
-                            style: IsrStyles.primaryText14Bold,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          if (result.subtitle?.isNotEmpty == true) ...[
+  Widget _buildTagsList(List<dynamic> tags) => RefreshIndicator(
+        onRefresh: () async {},
+        child: ListView.builder(
+          controller: _scrollController,
+          physics: const BouncingScrollPhysics(),
+          itemCount: tags.length,
+          itemBuilder: (context, index) {
+            final tag = tags[index];
+            final tagHashtag = tag?.hashtag ?? 'tag${index + 1}';
+            return Container(
+              key: ValueKey('tag_$tagHashtag'),
+              height: IsrDimens.sixty,
+              margin: IsrDimens.edgeInsetsSymmetric(
+                  vertical: 4.responsiveDimension, horizontal: 8.responsiveDimension),
+              child: TapHandler(
+                onTap: () {
+                  _onTagTapped(tag);
+                },
+                child: Padding(
+                  padding: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.sixteen),
+                  child: Row(
+                    children: [
+                      const AppImage.svg(AssetConstants.icTagIcon),
+                      12.responsiveHorizontalSpace,
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             Text(
-                              result.subtitle ?? '',
+                              '$tagHashtag',
+                              style: IsrStyles.primaryText14Bold,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              '${tag?.usageCount ?? (index + 1) * 10} Posts',
                               style: IsrStyles.primaryText12.copyWith(
                                 color: IsrColors.color9B9B9B,
                               ),
@@ -927,115 +833,161 @@ class _PostListingViewState extends State<PostListingView> {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ],
-                        ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildAccountsList(List<dynamic> accounts) {
-    final isLoadingMore = _tabLoadingMore[SearchTabType.account] ?? false;
-
-    return RefreshIndicator(
-      onRefresh: () async {},
-      child: ListView.builder(
-        controller: _scrollController,
-        physics: const BouncingScrollPhysics(),
-        itemCount: accounts.length + (isLoadingMore ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index == accounts.length) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: CircularProgressIndicator(),
               ),
             );
-          }
+          },
+        ),
+      );
 
-          final user = accounts[index] as SocialUserData;
-          return Container(
-            key: ValueKey('account_${user.id}'),
-            height: 80.responsiveDimension,
-            margin: IsrDimens.edgeInsetsSymmetric(
-              vertical: 4.responsiveDimension,
-              horizontal: 8.responsiveDimension,
-            ),
-            child: TapHandler(
-              onTap: () => _handleAccountTap(user),
-              child: Padding(
-                padding: IsrDimens.edgeInsetsSymmetric(
-                  horizontal: 16.responsiveDimension,
-                  vertical: 12.responsiveDimension,
+  Widget _buildPlacesList(List<dynamic> places) => RefreshIndicator(
+        onRefresh: () async {},
+        child: ListView.builder(
+          controller: _scrollController,
+          physics: const BouncingScrollPhysics(),
+          itemCount: places.length,
+          itemBuilder: (context, index) {
+            final resultList =
+                (places as List<Result>).map(UnifiedLocationItem.fromLocationResult).toList();
+
+            final result = resultList[index];
+            final placeName = result.title;
+            return Container(
+              key: ValueKey('place_${result.placeId}'),
+              height: 60.responsiveDimension,
+              margin: IsrDimens.edgeInsetsSymmetric(
+                  vertical: 4.responsiveDimension, horizontal: 8.responsiveDimension),
+              child: TapHandler(
+                onTap: () => _handlePlaceTap(
+                  result.placeId,
+                  placeName,
                 ),
-                child: Row(
-                  children: [
-                    // Profile Picture
-                    Container(
-                      width: 56.responsiveDimension,
-                      height: 56.responsiveDimension,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: IsrColors.colorDBDBDB,
-                          width: 1,
+                child: Padding(
+                  padding: IsrDimens.edgeInsetsSymmetric(horizontal: 16.responsiveDimension),
+                  child: Row(
+                    children: [
+                      const AppImage.svg(AssetConstants.icPlacesIcon),
+                      12.responsiveHorizontalSpace,
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              placeName,
+                              style: IsrStyles.primaryText14Bold,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (result.subtitle?.isNotEmpty == true) ...[
+                              Text(
+                                result.subtitle ?? '',
+                                style: IsrStyles.primaryText12.copyWith(
+                                  color: IsrColors.color9B9B9B,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ],
                         ),
                       ),
-                      child: ClipOval(
-                        child: AppImage.network(
-                          user.avatarUrl ?? '',
-                          height: 56.responsiveDimension,
-                          width: 56.responsiveDimension,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                    12.responsiveHorizontalSpace,
-                    // User Info
-                    Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            user.username ?? 'Unknown User',
-                            style: IsrStyles.primaryText16Bold.copyWith(
-                              color: IsrColors.color242424,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          4.responsiveVerticalSpace,
-                          Text(
-                            user.fullName ??
-                                user.displayName ??
-                                'No description',
-                            style: IsrStyles.primaryText14.copyWith(
-                              color: IsrColors.color9B9B9B,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Follow/Following Button
-                    _buildFollowButton(user),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          );
-        },
-      ),
-    );
-  }
+            );
+          },
+        ),
+      );
+
+  Widget _buildAccountsList(List<dynamic> accounts) => RefreshIndicator(
+        onRefresh: () async {},
+        child: ListView.builder(
+          controller: _scrollController,
+          physics: const BouncingScrollPhysics(),
+          itemCount: accounts.length,
+          itemBuilder: (context, index) {
+            final user = accounts[index] as SocialUserData;
+            return Container(
+              key: ValueKey('account_${user.id}'),
+              height: 80.responsiveDimension,
+              margin: IsrDimens.edgeInsetsSymmetric(
+                vertical: 4.responsiveDimension,
+                horizontal: 8.responsiveDimension,
+              ),
+              child: TapHandler(
+                onTap: () => _handleAccountTap(user),
+                child: Padding(
+                  padding: IsrDimens.edgeInsetsSymmetric(
+                    horizontal: 16.responsiveDimension,
+                    vertical: 12.responsiveDimension,
+                  ),
+                  child: Row(
+                    children: [
+                      // Profile Picture
+                      Container(
+                        width: 56.responsiveDimension,
+                        height: 56.responsiveDimension,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: IsrColors.colorDBDBDB,
+                            width: 1,
+                          ),
+                        ),
+                        child: ClipOval(
+                          child: AppImage.network(
+                            user.avatarUrl ?? '',
+                            height: 56.responsiveDimension,
+                            width: 56.responsiveDimension,
+                            fit: BoxFit.cover,
+                            isProfileImage: true,
+                            name: user.fullName ?? '',
+                          ),
+                        ),
+                      ),
+                      12.responsiveHorizontalSpace,
+                      // User Info
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              user.username ?? 'Unknown User',
+                              style: IsrStyles.primaryText16Bold.copyWith(
+                                color: IsrColors.color242424,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            4.responsiveVerticalSpace,
+                            Text(
+                              user.fullName ?? user.displayName ?? 'No description',
+                              style: IsrStyles.primaryText14.copyWith(
+                                color: IsrColors.color9B9B9B,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Follow/Following Button
+                      _buildFollowButton(user),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      );
 
   void _handleAccountTap(SocialUserData user) {
     if (widget.onTapProfilePicture != null) {
@@ -1053,8 +1005,7 @@ class _PostListingViewState extends State<PostListingView> {
   // Follow button widget with API integration
   Widget _buildFollowButton(SocialUserData user) {
     // Check if user is following from either the user model or local state
-    final isFollowing =
-        _userFollowingState[user.id] ?? user.isFollowing ?? false;
+    final isFollowing = _userFollowingState[user.id] ?? user.isFollowing ?? false;
 
     // Hide button if user is already following
     if (isFollowing) {

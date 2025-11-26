@@ -157,13 +157,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _pageMentionMetaDataList = _mentionedMetaDataList
         .where((mention) => mention.mediaPosition?.position == _currentPageNotifier.value + 1)
         .toList();
-    // _mentionedDataList = _reelData.mentions
-    //     .where((mentionData) => mentionData.textPosition != null)
-    //     .toList();
-    // _taggedDataList = _reelData.tagDataList
-    //         ?.where((mentionData) => mentionData.textPosition != null)
-    //         .toList() ??
-    //     [];
     _mentionedDataList = _reelData.mentions;
     _taggedDataList = _reelData.tagDataList ?? [];
     _postDescription = _reelData.description ?? '';
@@ -174,9 +167,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     // Initialize PageController for carousel
     _pageController = PageController(initialPage: 0);
-
-    debugPrint(
-        'IsmReelsVideoPlayerView ...Post by ...${_reelData.userName}\n Post url ${_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl}');
 
     // Preload next videos for smoother experience
     _preloadNextVideos();
@@ -752,6 +742,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       width: IsrDimens.thirtyFive,
                       height: IsrDimens.thirtyFive,
                       isProfileImage: true,
+                      textColor: IsrColors.white,
                       name: '${_reelData.firstName ?? ''} ${_reelData.lastName ?? ''}',
                     ),
                   ),
@@ -879,6 +870,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               label ?? '',
               style: IsrStyles.white12.copyWith(
                 fontWeight: FontWeight.w500,
+                decoration: TextDecoration.none,
               ),
             ),
           ],
@@ -1090,6 +1082,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           IsrTranslationFile.creatorEarnsCommission,
           style: IsrStyles.white10.copyWith(
             color: IsrColors.colorF4F4F4,
+            decoration: TextDecoration.none,
           ),
         ),
       );
@@ -1304,6 +1297,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             text: matchedText,
             style: defaultStyle.copyWith(
               fontWeight: FontWeight.w800,
+              decoration: TextDecoration.none,
             ),
             recognizer: TapGestureRecognizer()
               ..onTap = () {
@@ -1330,6 +1324,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             text: matchedText,
             style: defaultStyle.copyWith(
               fontWeight: FontWeight.w800,
+              decoration: TextDecoration.none,
             ),
             recognizer: TapGestureRecognizer()
               ..onTap = () {
@@ -1340,7 +1335,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           if (matchedText.isNotEmpty) {
             spans.add(TextSpan(
               text: matchedText,
-              style: defaultStyle.copyWith(fontWeight: FontWeight.w800),
+              style: defaultStyle.copyWith(
+                fontWeight: FontWeight.w800,
+                decoration: TextDecoration.none,
+              ),
             ));
           }
         }
@@ -1484,7 +1482,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   /// log image post event
   void _logImagePostEvent() {
     if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kPictureType) {
-      sendAnalyticsEvent({});
+      sendAnalyticsEvent({
+        'media_url': _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl,
+      });
     }
   }
 
