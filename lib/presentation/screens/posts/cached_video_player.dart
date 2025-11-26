@@ -153,7 +153,14 @@ class CachedVideoCacheManager implements IVideoCacheManager {
       {};
   final Queue<String> _lruQueue = Queue<String>();
   final Set<String> _visibleVideos = <String>{};
-  static const int _maxCacheSize = 10;
+
+  // OPTIMIZATION: Platform-specific cache size for memory management
+  // Android has stricter memory limits for hardware decoders
+  // Aggressively reduced to prevent NO_MEMORY decoder errors
+  static int get _maxCacheSize => Platform.isAndroid ? 6 : 30;
+
+  // Track memory errors to adaptively reduce cache
+  int _memoryErrorCount = 0;
 
   CachedVideoPlayerPlus _createVideoPlayerController(String mediaUrl) {
     if (Utility.isLocalUrl(mediaUrl)) {
@@ -189,8 +196,18 @@ class CachedVideoCacheManager implements IVideoCacheManager {
 
   Future<CachedVideoPlayerWrapper?> _initializeVideoController(
       String url) async {
+    // If already initializing, wait for existing initialization
     if (_initializationCache.containsKey(url)) {
       return _initializationCache[url];
+    }
+
+    // ANDROID FIX: Clear stuck initializations if cache is getting full
+    if (Platform.isAndroid && _initializationCache.length > 2) {
+      debugPrint('⚠️ Too many concurrent initializations (${_initializationCache.length}), clearing cache');
+      await _clearNonVisibleVideos();
+
+      // Give system time to release resources
+      await Future.delayed(const Duration(milliseconds: 200));
     }
 
     final initFuture = _createAndInitializeController(url);
@@ -213,17 +230,98 @@ class CachedVideoCacheManager implements IVideoCacheManager {
   Future<CachedVideoPlayerWrapper?> _createAndInitializeController(
       String url) async {
     try {
+      // CRITICAL: Proactive cache management for Android BEFORE initialization
+      if (Platform.isAndroid) {
+        // Clear cache if we're approaching the limit
+        if (_videoControllerCache.length >= _maxCacheSize - 1) {
+          debugPrint('🔥 Proactive: Clearing cache before initialization (at limit)');
+          await _clearNonVisibleVideos();
+
+          // Give decoders time to fully release resources
+          await Future.delayed(const Duration(milliseconds: 300));
+        }
+
+        // Add small delay between initializations to prevent decoder overload
+        if (_memoryErrorCount > 0) {
+          final delay = 500 * _memoryErrorCount.clamp(1, 3);
+          debugPrint('⏳ Adding ${delay}ms delay before initialization (error count: $_memoryErrorCount)');
+          await Future.delayed(Duration(milliseconds: delay));
+        }
+      }
+
       final controller = _createVideoPlayerController(url);
 
-      // OPTIMIZATION: Reduce timeout from 20s to 10s for faster failure detection
-      await controller.initialize().timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          debugPrint('⚠️ CachedVideoPlayer initialization timeout for: $url');
-          throw TimeoutException(
-              'Video initialization timeout', const Duration(seconds: 10));
-        },
-      );
+      // OPTIMIZATION: Platform-specific timeout for initialization
+      // Android: 3s (faster failure to free memory quickly)
+      // iOS: 5s (more lenient as iOS handles memory better)
+      final timeoutDuration = Duration(seconds: Platform.isAndroid ? 3 : 5);
+
+      try {
+        await controller.initialize().timeout(
+          timeoutDuration,
+          onTimeout: () {
+            debugPrint('⚠️ CachedVideoPlayer initialization timeout for: $url');
+            throw TimeoutException('Video initialization timeout', timeoutDuration);
+          },
+        );
+      } catch (e) {
+        // CRITICAL FIX: On Android, if initialization fails due to memory,
+        // aggressively clear cache and retry ONCE
+        final errorMsg = e.toString().toLowerCase();
+        final isMemoryError = Platform.isAndroid &&
+            (errorMsg.contains('no_memory') ||
+             errorMsg.contains('0xfffffff4') ||
+             errorMsg.contains('decoder init failed') ||
+             errorMsg.contains('mediacodec') ||
+             errorMsg.contains('videoerror') ||
+             errorMsg.contains('exoplaybackexception'));
+
+        if (isMemoryError) {
+          _memoryErrorCount++;
+          debugPrint('🔥 CRITICAL: Memory/Decoder error detected! (Count: $_memoryErrorCount)');
+          debugPrint('🔥 Error type: ${e.runtimeType}');
+          debugPrint('🔥 Error message: $e');
+          debugPrint('🔥 Disposing failed controller and clearing cache...');
+
+          // CRITICAL: Dispose the failed controller first!
+          try {
+            await controller.controller.dispose();
+          } catch (_) {}
+
+          await _clearNonVisibleVideos();
+
+          // Create a NEW controller for retry (don't reuse failed one!)
+          final retryController = _createVideoPlayerController(url);
+
+          // Retry initialization ONCE after clearing cache
+          try {
+            await retryController.initialize().timeout(
+              timeoutDuration,
+              onTimeout: () {
+                debugPrint('⚠️ CachedVideoPlayer retry initialization timeout for: $url');
+                throw TimeoutException('Video retry initialization timeout', timeoutDuration);
+              },
+            );
+            debugPrint('✅ Video initialized successfully after cache clear!');
+            // Reset error count on success
+            if (_memoryErrorCount > 0) _memoryErrorCount--;
+
+            // Use the retry controller instead of the failed one
+            final retryWrapper = CachedVideoPlayerWrapper(retryController);
+            await retryWrapper.setLooping(false);
+            await retryWrapper.setVolume(1.0);
+            return retryWrapper;
+          } catch (retryError) {
+            debugPrint('❌ Retry failed after cache clear: $retryError');
+            try {
+              await retryController.controller.dispose();
+            } catch (_) {}
+            rethrow;
+          }
+        } else {
+          rethrow;
+        }
+      }
 
       final wrapper = CachedVideoPlayerWrapper(controller);
 
@@ -265,6 +363,38 @@ class CachedVideoCacheManager implements IVideoCacheManager {
     }
   }
 
+  /// CRITICAL: Clear all non-visible videos to free up decoder memory
+  Future<void> _clearNonVisibleVideos() async {
+    final urlsToRemove = <String>[];
+
+    // Find all non-visible videos
+    for (final url in _videoControllerCache.keys) {
+      if (!_visibleVideos.contains(url)) {
+        urlsToRemove.add(url);
+      }
+    }
+
+    // Clear them - dispose in parallel for faster cleanup
+    final disposeFutures = <Future<void>>[];
+    for (final url in urlsToRemove) {
+      final controller = _videoControllerCache.remove(url);
+      if (controller != null) {
+        disposeFutures.add(controller.dispose().catchError((e) {
+          debugPrint('⚠️ Error disposing controller for $url: $e');
+        }));
+        _lruQueue.remove(url);
+        debugPrint('🗑️ Emergency: Clearing video from cache: $url');
+      }
+    }
+
+    // Wait for all disposals to complete
+    if (disposeFutures.isNotEmpty) {
+      await Future.wait(disposeFutures);
+    }
+
+    debugPrint('🔥 Emergency cache clear: Removed ${urlsToRemove.length} videos, ${_videoControllerCache.length} remaining');
+  }
+
   void _addToCache(String url, CachedVideoPlayerWrapper controller) {
     _lruQueue.remove(url);
     _lruQueue.addFirst(url);
@@ -273,12 +403,22 @@ class CachedVideoCacheManager implements IVideoCacheManager {
   }
 
   void _evictIfNeeded() {
+    // OPTIMIZATION: More aggressive eviction - evict oldest videos first
     while (_lruQueue.length > _maxCacheSize) {
       final url = _lruQueue.removeLast();
-      if (_visibleVideos.contains(url)) continue;
+
+      // OPTIMIZATION: Never evict visible videos
+      if (_visibleVideos.contains(url)) {
+        // Move visible video to front to prevent re-eviction
+        _lruQueue.addFirst(url);
+        continue;
+      }
 
       final controller = _videoControllerCache.remove(url);
-      controller?.dispose();
+      if (controller != null) {
+        controller.dispose();
+        debugPrint('🗑️ CachedVideoCache: Evicted video from cache: $url');
+      }
     }
   }
 

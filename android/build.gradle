@@ -9,7 +9,7 @@ buildscript {
     }
 
     dependencies {
-        classpath("com.android.tools.build:gradle:8.1.4")
+        classpath("com.android.tools.build:gradle:8.13.1")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version")
     }
 }
@@ -26,7 +26,7 @@ allprojects {
                     if (namespace == null) {
                         namespace project.group
                     }
-                    compileSdkVersion 34
+                    compileSdkVersion 36
                 }
             }
         }
@@ -40,7 +40,7 @@ apply plugin: "kotlin-android"
 android {
     namespace = "com.ism.video_reel.ism_video_reel_player"
 
-    compileSdk = 35
+    compileSdk = 36
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_18
@@ -62,7 +62,7 @@ android {
 
     dependencies {
         testImplementation("org.jetbrains.kotlin:kotlin-test")
-        testImplementation("org.mockito:mockito-core:5.2.0")
+        testImplementation("org.mockito:mockito-core:5.20.0")
     }
 
     testOptions {
