@@ -11,8 +11,7 @@ class IsmLocalDataUseCase extends BaseUseCase {
 
   Future<String> getEmail() async => await repository.getEmail();
 
-  Future<String> getCurrencySymbol() async =>
-      await repository.getCurrencySymbol();
+  Future<String> getCurrencySymbol() async => await repository.getCurrencySymbol();
 
   Future<String> getCurrencyCode() async => await repository.getCurrencyCode();
 
@@ -59,6 +58,10 @@ class IsmLocalDataUseCase extends BaseUseCase {
   void saveLatitude(double value) => repository.saveLatitude(value);
 
   void saveLongitude(double value) => repository.saveLongitude(value);
+
+  Future<String> getTenantId() async => repository.getTenantId();
+
+  void saveTenantId(String value) => repository.saveTenantId(value);
 
   void clearLocalData() {
     repository.clearLocalData();

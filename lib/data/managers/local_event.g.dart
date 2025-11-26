@@ -18,20 +18,23 @@ class LocalEventAdapter extends TypeAdapter<LocalEvent> {
     };
     return LocalEvent(
       id: fields[0] as String,
-      payload: (fields[1] as Map).cast<String, dynamic>(),
-      timestamp: fields[2] as DateTime,
+      eventName: fields[1] as String,
+      payload: (fields[2] as Map).cast<String, dynamic>(),
+      timestamp: fields[3] as DateTime,
     );
   }
 
   @override
   void write(BinaryWriter writer, LocalEvent obj) {
     writer
-      ..writeByte(3)
+      ..writeByte(4)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
-      ..write(obj.payload)
+      ..write(obj.eventName)
       ..writeByte(2)
+      ..write(obj.payload)
+      ..writeByte(3)
       ..write(obj.timestamp);
   }
 
@@ -41,7 +44,5 @@ class LocalEventAdapter extends TypeAdapter<LocalEvent> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is LocalEventAdapter &&
-          runtimeType == other.runtimeType &&
-          typeId == other.typeId;
+      other is LocalEventAdapter && runtimeType == other.runtimeType && typeId == other.typeId;
 }

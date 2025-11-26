@@ -8,6 +8,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/integration/analytics/analytics.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -42,9 +43,11 @@ class IsrVideoReelConfig {
     isrConfigureInjection();
     // ✅ Initialize SDK router
     await _storeHeaderValues(defaultHeaders);
-    await _initializeHive(
+    await _initializeHive();
+    await _initializeRudderStack(
       rudderStackWriteKey: rudderStackWriteKey,
       rudderStackDataPlaneUrl: rudderStackDataPlaneUrl,
+      userId: userInfoClass?.userId ?? '',
     );
     Bloc.observer = IsrAppBlocObserver();
     await _saveUserInformation(userInfoClass: userInfoClass);
@@ -54,21 +57,20 @@ class IsrVideoReelConfig {
   static Future<void> _saveUserInformation({
     UserInfoClass? userInfoClass,
   }) async {
-    final localStorageManager =
-        IsmInjectionUtils.getOtherClass<LocalStorageManager>();
+    final localStorageManager = IsmInjectionUtils.getOtherClass<LocalStorageManager>();
     final userInfoString = jsonEncode(userInfoClass);
     await localStorageManager.saveValue(
         LocalStorageKeys.userInfo, userInfoString, SavedValueDataType.string);
-    await localStorageManager.saveValue(LocalStorageKeys.userId,
-        userInfoClass?.userId, SavedValueDataType.string);
-    await localStorageManager.saveValue(LocalStorageKeys.userName,
-        userInfoClass?.userName, SavedValueDataType.string);
-    await localStorageManager.saveValue(LocalStorageKeys.firstName,
-        userInfoClass?.firstName, SavedValueDataType.string);
-    await localStorageManager.saveValue(LocalStorageKeys.lastName,
-        userInfoClass?.lastName, SavedValueDataType.string);
-    await localStorageManager.saveValue(LocalStorageKeys.profilePic,
-        userInfoClass?.profilePic, SavedValueDataType.string);
+    await localStorageManager.saveValue(
+        LocalStorageKeys.userId, userInfoClass?.userId, SavedValueDataType.string);
+    await localStorageManager.saveValue(
+        LocalStorageKeys.userName, userInfoClass?.userName, SavedValueDataType.string);
+    await localStorageManager.saveValue(
+        LocalStorageKeys.firstName, userInfoClass?.firstName, SavedValueDataType.string);
+    await localStorageManager.saveValue(
+        LocalStorageKeys.lastName, userInfoClass?.lastName, SavedValueDataType.string);
+    await localStorageManager.saveValue(
+        LocalStorageKeys.profilePic, userInfoClass?.profilePic, SavedValueDataType.string);
   }
 
   static void precacheVideos(List<String> mediaUrls) async {
@@ -77,24 +79,29 @@ class IsrVideoReelConfig {
     await MediaCacheFactory.precacheMedia(mediaUrls, highPriority: false);
   }
 
-  static Future<void> _initializeHive({
+  static Future<void> _initializeHive() async {
+    debugPrint('IsrVideoReelConfig: Initializing Hive...');
+    await Hive.initFlutter();
+    debugPrint('IsrVideoReelConfig: Registering LocalEventAdapter...');
+    Hive.registerAdapter(LocalEventAdapter());
+    debugPrint('IsrVideoReelConfig: Hive initialization complete');
+  }
+
+  static Future<void> _initializeRudderStack({
     required String rudderStackWriteKey,
     required String rudderStackDataPlaneUrl,
+    required String userId,
   }) async {
-    await Hive.initFlutter();
-    Hive.registerAdapter(LocalEventAdapter());
-
     // Initialize EventQueueProvider with callback
-    EventQueueProvider.initialize(
+    await EventQueueProvider.initialize(
       rudderStackWriteKey: rudderStackWriteKey,
       rudderStackDataPlaneUrl: rudderStackDataPlaneUrl,
     );
+    RudderStackAnalyticsService().onLogin(userId);
   }
 
-  static Future<void> _storeHeaderValues(
-      Map<String, dynamic> defaultHeaders) async {
-    final localStorageManager =
-        IsmInjectionUtils.getOtherClass<LocalStorageManager>();
+  static Future<void> _storeHeaderValues(Map<String, dynamic> defaultHeaders) async {
+    final localStorageManager = IsmInjectionUtils.getOtherClass<LocalStorageManager>();
     final accessToken = defaultHeaders['Authorization'] as String? ?? '';
     final language = defaultHeaders['lan'] as String? ?? '';
     final city = defaultHeaders['city'] as String? ?? '';
@@ -109,22 +116,19 @@ class IsrVideoReelConfig {
     final longitude = defaultHeaders['longitude'] as double? ?? 0;
     final xTenantId = defaultHeaders['x-tenant-id'] as String? ?? '';
     final xProjectId = defaultHeaders['x-project-id'] as String? ?? '';
-    await localStorageManager.saveValueSecurely(
-        LocalStorageKeys.accessToken, accessToken);
+    await localStorageManager.saveValueSecurely(LocalStorageKeys.accessToken, accessToken);
     await localStorageManager.saveValue(
         LocalStorageKeys.language, language, SavedValueDataType.string);
-    await localStorageManager.saveValue(
-        LocalStorageKeys.city, city, SavedValueDataType.string);
-    await localStorageManager.saveValue(
-        LocalStorageKeys.state, state, SavedValueDataType.string);
+    await localStorageManager.saveValue(LocalStorageKeys.city, city, SavedValueDataType.string);
+    await localStorageManager.saveValue(LocalStorageKeys.state, state, SavedValueDataType.string);
     await localStorageManager.saveValue(
         LocalStorageKeys.country, country, SavedValueDataType.string);
     await localStorageManager.saveValue(
         LocalStorageKeys.ipAddress, ipAddress, SavedValueDataType.string);
     await localStorageManager.saveValue(
         LocalStorageKeys.version, version, SavedValueDataType.string);
-    await localStorageManager.saveValue(LocalStorageKeys.currencySymbol,
-        currencySymbol, SavedValueDataType.string);
+    await localStorageManager.saveValue(
+        LocalStorageKeys.currencySymbol, currencySymbol, SavedValueDataType.string);
     await localStorageManager.saveValue(
         LocalStorageKeys.currencyCode, currencyCode, SavedValueDataType.string);
     await localStorageManager.saveValue(

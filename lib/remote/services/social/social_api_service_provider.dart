@@ -181,9 +181,7 @@ class SocialApiServiceProvider extends SocialApiService {
     };
     return await networkClient.makeRequest(
       SocialApiEndPoints.postFollowUser,
-      followAction == FollowAction.follow
-          ? NetworkRequestType.post
-          : NetworkRequestType.delete,
+      followAction == FollowAction.follow ? NetworkRequestType.post : NetworkRequestType.delete,
       followAction == FollowAction.follow ? map : null,
       followAction == FollowAction.unfollow ? map : null,
       {
@@ -249,11 +247,8 @@ class SocialApiServiceProvider extends SocialApiService {
     final methodType = socialPostAction == SocialPostAction.unSave
         ? NetworkRequestType.delete
         : NetworkRequestType.post;
-    final queryParams = socialPostAction == SocialPostAction.unSave
-        ? {'post_id': postId}
-        : null;
-    final bodyParams =
-        socialPostAction == SocialPostAction.save ? {'post_id': postId} : null;
+    final queryParams = socialPostAction == SocialPostAction.unSave ? {'post_id': postId} : null;
+    final bodyParams = socialPostAction == SocialPostAction.save ? {'post_id': postId} : null;
     return await networkClient.makeRequest(
       SocialApiEndPoints.postSavePost,
       methodType,
@@ -289,12 +284,8 @@ class SocialApiServiceProvider extends SocialApiService {
     required Header header,
   }) async =>
       await networkClient.makeRequest(
-        likeAction == LikeAction.like
-            ? SocialApiEndPoints.postLike
-            : SocialApiEndPoints.postUnLike,
-        likeAction == LikeAction.like
-            ? NetworkRequestType.post
-            : NetworkRequestType.delete,
+        likeAction == LikeAction.like ? SocialApiEndPoints.postLike : SocialApiEndPoints.postUnLike,
+        likeAction == LikeAction.like ? NetworkRequestType.post : NetworkRequestType.delete,
         likeAction == LikeAction.like
             ? {
                 'post_id': postId,
@@ -485,6 +476,8 @@ class SocialApiServiceProvider extends SocialApiService {
           'platform': header.platForm.toString(),
           'latitude': header.latitude.toString(),
           'longitude': header.longitude.toString(),
+          'x-tenant-id': AppConstants.tenantId,
+          'x-project-id': AppConstants.projectId,
         },
         isLoading,
       );
@@ -605,6 +598,8 @@ class SocialApiServiceProvider extends SocialApiService {
           'platform': header.platForm.toString(),
           'latitude': header.latitude.toString(),
           'longitude': header.longitude.toString(),
+          'x-tenant-id': AppConstants.tenantId,
+          'x-project-id': AppConstants.projectId,
         },
         isLoading,
       );
@@ -661,6 +656,8 @@ class SocialApiServiceProvider extends SocialApiService {
           'platform': header.platForm.platformText,
           'latitude': header.latitude.toString(),
           'longitude': header.longitude.toString(),
+          'x-tenant-id': AppConstants.tenantId,
+          'x-project-id': AppConstants.projectId,
         },
         isLoading,
       );
