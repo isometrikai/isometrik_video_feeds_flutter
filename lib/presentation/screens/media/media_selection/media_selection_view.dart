@@ -311,66 +311,66 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
   @override
   Widget build(BuildContext context) => BlocProvider<MediaSelectionBloc>.value(
         value: _bloc,
-        child: BlocListener<MediaSelectionBloc, MediaSelectionState>(
-          listener: (context, state) {
-            if (state is MediaSelectionErrorState) {
-              MediaSelectionUtility.showInSnackBar(state.message, context);
-            } else if (state is MediaSelectionCompletedState) {
-              _handleMediaSelectionComplete(state.selectedMedia);
-            }
-          },
-          child: Scaffold(
-            backgroundColor: widget.mediaSelectionConfig.backgroundColor,
-            appBar: AppBar(
-              backgroundColor: IsrColors.white,
-              elevation: 0,
-              leading: IconButton(
-                icon: widget.mediaSelectionConfig.closeIcon,
-                onPressed: () => Navigator.pop(context),
-              ),
-              title: Text(
-                widget.mediaSelectionConfig.selectMediaTitle,
-                style: TextStyle(
-                  color: widget.mediaSelectionConfig.primaryTextColor,
-                  fontSize: 18.responsiveDimension,
-                  fontFamily: widget.mediaSelectionConfig.primaryFontFamily,
-                  fontWeight: FontWeight.w600,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              centerTitle: true,
+        child: Scaffold(
+          backgroundColor: widget.mediaSelectionConfig.backgroundColor,
+          appBar: AppBar(
+            backgroundColor: IsrColors.white,
+            elevation: 0,
+            leading: IconButton(
+              icon: widget.mediaSelectionConfig.closeIcon,
+              onPressed: () => Navigator.pop(context),
             ),
-            body: SafeArea(
-              child: BlocBuilder<MediaSelectionBloc, MediaSelectionState>(
-                buildWhen: (previous, current) =>
-                    current is MediaSelectionLoadingState ||
-                    current is MediaSelectionPermissionDeniedState ||
-                    current is MediaSelectionLoadedState ||
-                    current is MediaSelectionErrorState,
-                builder: (context, state) {
-                  if (state is MediaSelectionInitialState ||
-                      state is MediaSelectionLoadingState) {
-                    return Center(
-                      child: CircularProgressIndicator(
-                          color: widget.mediaSelectionConfig.primaryColor),
-                    );
-                  } else if (state is MediaSelectionPermissionDeniedState) {
-                    return _buildPermissionDenied();
-                  } else if (state is MediaSelectionLoadedState) {
-                    return _buildBody(state);
-                  } else if (state is MediaSelectionErrorState) {
-                    return Center(
-                      child: Text(
-                        state.message,
-                        style: TextStyle(
-                          color: widget.mediaSelectionConfig.primaryTextColor,
-                        ),
-                      ),
-                    );
-                  }
-                  return const SizedBox.shrink();
-                },
+            title: Text(
+              widget.mediaSelectionConfig.selectMediaTitle,
+              style: TextStyle(
+                color: widget.mediaSelectionConfig.primaryTextColor,
+                fontSize: 18.responsiveDimension,
+                fontFamily: widget.mediaSelectionConfig.primaryFontFamily,
+                fontWeight: FontWeight.w600,
               ),
+              textAlign: TextAlign.center,
+            ),
+            centerTitle: true,
+          ),
+          body: SafeArea(
+            child: BlocConsumer<MediaSelectionBloc, MediaSelectionState>(
+              buildWhen: (previous, current) =>
+                  current is MediaSelectionLoadingState ||
+                  current is MediaSelectionPermissionDeniedState ||
+                  current is MediaSelectionLoadedState,
+              listenWhen: (previous, current) =>
+                  current is MediaSelectionErrorState ||
+                  current is MediaSelectionCompletedState,
+              listener: (context, state) {
+                if (state is MediaSelectionErrorState) {
+                  MediaSelectionUtility.showInSnackBar(state.message, context);
+                } else if (state is MediaSelectionCompletedState) {
+                  _handleMediaSelectionComplete(state.selectedMedia);
+                }
+              },
+              builder: (context, state) {
+                if (state is MediaSelectionInitialState ||
+                    state is MediaSelectionLoadingState) {
+                  return Center(
+                    child: CircularProgressIndicator(
+                        color: widget.mediaSelectionConfig.primaryColor),
+                  );
+                } else if (state is MediaSelectionPermissionDeniedState) {
+                  return _buildPermissionDenied();
+                } else if (state is MediaSelectionLoadedState) {
+                  return _buildBody(state);
+                } else if (state is MediaSelectionErrorState) {
+                  return Center(
+                    child: Text(
+                      state.message,
+                      style: TextStyle(
+                        color: widget.mediaSelectionConfig.primaryTextColor,
+                      ),
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
             ),
           ),
         ),
