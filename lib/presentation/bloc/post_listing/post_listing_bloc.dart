@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/core/core.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
@@ -33,16 +34,29 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
   final FollowUnFollowUserUseCase _followUnFollowUserUseCase;
 
   var _searchPostPage = 1;
+  var _searchTagsPage = 1;
+  var _searchPlacesPage = 1;
+  var _searchAccountsPage = 1;
   final _searchPostLimit = 20;
 
   FutureOr<void> _getHashTagPosts(
       GetHashTagPostEvent event, Emitter<PostListingState> emit) async {
-    emit(PostListingLoadingState(isLoading: true));
+    // Only emit loading state if not pagination
+    if (!event.isFromPagination) {
+      emit(PostListingLoadingState(isLoading: true));
+    }
+
     if (event.tagValue.isEmpty) {
       emit(PostLoadedState(postList: []));
       return;
     }
-    _searchPostPage = event.isFromPagination ? _searchPostPage++ : 1;
+
+    // Fix: Use pre-increment or add 1 explicitly
+    if (event.isFromPagination) {
+      _searchPostPage = _searchPostPage + 1;
+    } else {
+      _searchPostPage = 1;
+    }
 
     final apiResult = await _getTaggedPostUseCase.executeGetTaggedPosts(
       page: _searchPostPage,
@@ -51,10 +65,11 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
       tagValue: event.tagValue,
       tagType: event.tagType,
     );
-    if (apiResult.isSuccess) {
+    if (apiResult.isSuccess && apiResult.data?.data.isEmptyOrNull == false) {
       emit(PostLoadedState(postList: apiResult.data?.data ?? []));
     } else {
-      _searchPostPage = _searchPostPage == 1 ? 1 : _searchPostPage--;
+      // Fix: Decrement properly on error
+      _searchPostPage = _searchPostPage > 1 ? _searchPostPage - 1 : 1;
       emit(PostLoadedState(
           postList: _searchPostPage == 1 ? [] : apiResult.data?.data ?? []));
     }
@@ -62,7 +77,11 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
 
   FutureOr<void> _getSearchResults(
       GetSearchResultsEvent event, Emitter<PostListingState> emit) async {
-    emit(PostListingLoadingState(isLoading: true));
+    // Only emit loading state if not pagination
+    if (!event.isFromPagination) {
+      emit(PostListingLoadingState(isLoading: event.isLoading));
+    }
+
     if (event.searchQuery.isEmpty) {
       emit(SearchResultsLoadedState(results: [], tabType: event.tabType));
       return;
@@ -73,29 +92,55 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
 
       switch (event.tabType) {
         case SearchTabType.posts:
-          results = await _searchPosts(event.searchQuery);
+          results =
+              await _searchPosts(event.searchQuery, event.isFromPagination);
           break;
         case SearchTabType.account:
-          results = await _searchUsers(event.searchQuery);
+          results =
+              await _searchUsers(event.searchQuery, event.isFromPagination);
           break;
         case SearchTabType.tags:
-          results = await _searchTags(event.searchQuery);
+          results =
+              await _searchTags(event.searchQuery, event.isFromPagination);
           break;
         case SearchTabType.places:
-          results = await _searchPlaces(event.searchQuery);
+          results =
+              await _searchPlaces(event.searchQuery, event.isFromPagination);
           break;
       }
 
-      emit(SearchResultsLoadedState(results: results, tabType: event.tabType));
+      // Always emit state, but mark if it's from pagination
+      // The view will handle empty pagination results by not clearing existing data
+      emit(SearchResultsLoadedState(
+        results: results,
+        tabType: event.tabType,
+        isFromPagination: event.isFromPagination,
+      ));
     } catch (e) {
-      emit(SearchResultsLoadedState(results: [], tabType: event.tabType));
+      debugPrint('❌ Error in search: $e');
+      emit(SearchResultsLoadedState(
+        results: [],
+        tabType: event.tabType,
+        isFromPagination: event.isFromPagination,
+      ));
     }
   }
 
-  Future<List<dynamic>> _searchPosts(String query) async {
+  Future<List<dynamic>> _searchPosts(
+      String query, bool isFromPagination) async {
+    // Handle pagination for posts
+    if (isFromPagination) {
+      _searchPostPage = _searchPostPage + 1;
+    } else {
+      _searchPostPage = 1;
+    }
+
+    debugPrint(
+        '📄 Posts: Requesting page $_searchPostPage (pagination: $isFromPagination)');
+
     // Use existing tagged posts functionality for posts search
     final apiResult = await _getTaggedPostUseCase.executeGetTaggedPosts(
-      page: 1,
+      page: _searchPostPage,
       pageLimit: _searchPostLimit,
       isLoading: false,
       tagValue: query,
@@ -103,33 +148,78 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
     );
 
     if (apiResult.isSuccess) {
-      return apiResult.data?.data ?? [];
+      final results = apiResult.data?.data ?? [];
+      debugPrint(
+          '✅ Posts: Page $_searchPostPage returned ${results.length} items');
+      // If pagination returns empty, decrement page and return empty to signal no more data
+      if (isFromPagination && results.isEmpty) {
+        _searchPostPage = _searchPostPage > 1 ? _searchPostPage - 1 : 1;
+        debugPrint('⚠️ Posts: No more data. Staying at page $_searchPostPage');
+      }
+      return results;
+    } else {
+      // Decrement on error
+      debugPrint('❌ Posts: API error on page $_searchPostPage');
+      _searchPostPage = _searchPostPage > 1 ? _searchPostPage - 1 : 1;
     }
     return [];
   }
 
-  Future<List<dynamic>> _searchTags(String query) async {
+  Future<List<dynamic>> _searchTags(String query, bool isFromPagination) async {
+    // Handle pagination for tags
+    if (isFromPagination) {
+      _searchTagsPage = _searchTagsPage + 1;
+    } else {
+      _searchTagsPage = 1;
+    }
+
     final apiResult = await _searchTagUseCase.executeSearchTag(
       isLoading: false,
       limit: _searchPostLimit,
-      page: 1,
+      page: _searchTagsPage,
       searchText: query,
     );
 
     if (apiResult.isSuccess) {
-      return apiResult.data?.data ?? [];
+      final results = apiResult.data?.data ?? [];
+      // If pagination returns empty, decrement page and return empty to signal no more data
+      if (isFromPagination && results.isEmpty) {
+        _searchTagsPage = _searchTagsPage > 1 ? _searchTagsPage - 1 : 1;
+      }
+      return results;
+    } else {
+      // Decrement on error
+      _searchTagsPage = _searchTagsPage > 1 ? _searchTagsPage - 1 : 1;
     }
     return [];
   }
 
-  Future<List<dynamic>> _searchPlaces(String searchQuery) async {
+  Future<List<dynamic>> _searchPlaces(
+      String searchQuery, bool isFromPagination) async {
+    // Note: Google Places API might not support pagination the same way
+    // If it does, implement similar to other methods
+    // For now, keeping it simple
+    if (isFromPagination) {
+      _searchPlacesPage = _searchPlacesPage + 1;
+    } else {
+      _searchPlacesPage = 1;
+    }
+
     final apiResult = await _geocodeSearchAddressUseCase.executeGeocodeSearch(
       isLoading: false,
       searchText: searchQuery,
     );
     if (apiResult.isSuccess) {
       final response = apiResult.data;
-      return response?.results ?? [];
+      final results = response?.results ?? [];
+      // If pagination returns empty, decrement page and return empty to signal no more data
+      if (isFromPagination && results.isEmpty) {
+        _searchPlacesPage = _searchPlacesPage > 1 ? _searchPlacesPage - 1 : 1;
+      }
+      return results;
+    } else {
+      // Decrement on error
+      _searchPlacesPage = _searchPlacesPage > 1 ? _searchPlacesPage - 1 : 1;
     }
     return [];
   }
@@ -147,16 +237,34 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
     }
   }
 
-  Future<List<dynamic>> _searchUsers(String searchQuery) async {
+  Future<List<dynamic>> _searchUsers(
+      String searchQuery, bool isFromPagination) async {
+    // Handle pagination for users
+    if (isFromPagination) {
+      _searchAccountsPage = _searchAccountsPage + 1;
+    } else {
+      _searchAccountsPage = 1;
+    }
+
     final apiResult = await _searchUserUseCase.executeSearchUser(
       isLoading: false,
-      page: 1,
-      limit: 20,
+      page: _searchAccountsPage,
+      limit: _searchPostLimit,
       searchText: searchQuery,
     );
     if (apiResult.isSuccess) {
       final response = apiResult.data;
-      return response?.data ?? [];
+      final results = response?.data ?? [];
+      // If pagination returns empty, decrement page and return empty to signal no more data
+      if (isFromPagination && results.isEmpty) {
+        _searchAccountsPage =
+            _searchAccountsPage > 1 ? _searchAccountsPage - 1 : 1;
+      }
+      return results;
+    } else {
+      // Decrement on error
+      _searchAccountsPage =
+          _searchAccountsPage > 1 ? _searchAccountsPage - 1 : 1;
     }
     return [];
   }

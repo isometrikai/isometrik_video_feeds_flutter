@@ -24,6 +24,7 @@ class AppImage extends StatelessWidget {
     this.placeHolderName,
     this.fadeAnimationEnable,
     this.filterQuality,
+    this.textColor,
   })  : _imageType = ImageType.asset,
         showError = false,
         color = null;
@@ -45,6 +46,7 @@ class AppImage extends StatelessWidget {
     this.placeHolderName,
     this.fadeAnimationEnable,
     this.filterQuality,
+    this.textColor,
   })  : _imageType = ImageType.svg,
         showError = false;
 
@@ -65,6 +67,7 @@ class AppImage extends StatelessWidget {
     this.placeHolderName,
     this.fadeAnimationEnable,
     this.filterQuality,
+    this.textColor,
   })  : _imageType = ImageType.network,
         color = null;
 
@@ -84,6 +87,7 @@ class AppImage extends StatelessWidget {
     this.placeHolderName,
     this.fadeAnimationEnable,
     this.filterQuality,
+    this.textColor,
   })  : _imageType = ImageType.file,
         showError = false,
         color = null;
@@ -105,6 +109,7 @@ class AppImage extends StatelessWidget {
   final BoxFit? fit;
   final bool? fadeAnimationEnable;
   final FilterQuality? filterQuality;
+  final Color? textColor;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -112,18 +117,14 @@ class AppImage extends StatelessWidget {
         width: width ?? dimensions,
         padding: padding,
         decoration: BoxDecoration(
-          borderRadius: isProfileImage
-              ? null
-              : borderRadius ?? BorderRadius.circular(radius ?? 0),
+          borderRadius: isProfileImage ? null : borderRadius ?? BorderRadius.circular(radius ?? 0),
           shape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
           border: border,
         ),
         clipBehavior: Clip.antiAlias,
         child: switch (_imageType) {
-          ImageType.asset =>
-            _Asset(path, fit: fit, height: height, width: width),
-          ImageType.svg =>
-            _Svg(path, fit: fit, color: color, height: height, width: width),
+          ImageType.asset => _Asset(path, fit: fit, height: height, width: width),
+          ImageType.svg => _Svg(path, fit: fit, color: color, height: height, width: width),
           ImageType.file => _File(
               path,
               fit: fit,
@@ -142,6 +143,7 @@ class AppImage extends StatelessWidget {
               borderRadius: borderRadius,
               fadeAnimationEnable: fadeAnimationEnable,
               filterQuality: filterQuality,
+              textColor: textColor,
             ),
         },
       );
@@ -204,6 +206,7 @@ class _Network extends StatelessWidget {
     this.borderRadius,
     this.fadeAnimationEnable = false,
     this.filterQuality,
+    this.textColor,
   });
 
   final String imageUrl;
@@ -217,23 +220,21 @@ class _Network extends StatelessWidget {
   final BorderRadius? borderRadius;
   final bool? fadeAnimationEnable;
   final FilterQuality? filterQuality;
+  final Color? textColor;
 
   @override
   Widget build(BuildContext context) {
     final fullName = name.isStringEmptyOrNull == false ? name : '';
     final words = fullName.split(' ');
-    final initials =
-        words.map((word) => word.isNotEmpty ? word[0] : '').join('');
-    final isOptimizationEnable =
-        imageUrl.contains('https://cdn.trulyfreehome.dev');
+    final initials = words.map((word) => word.isNotEmpty ? word[0] : '').join('');
+    final isOptimizationEnable = imageUrl.contains('https://cdn.trulyfreehome.dev');
 
-    final optimizedImageUrl =
-        AppConstants.isGumletEnable && isOptimizationEnable
-            ? Utility.buildGumletImageUrl(
-                imageUrl: imageUrl.trim().replaceAll(RegExp(r'[",]+$'), ''),
-                width: width,
-                height: height)
-            : imageUrl.trim().replaceAll(RegExp(r'[",]+$'), '');
+    final optimizedImageUrl = AppConstants.isGumletEnable && isOptimizationEnable
+        ? Utility.buildGumletImageUrl(
+            imageUrl: imageUrl.trim().replaceAll(RegExp(r'[",]+$'), ''),
+            width: width,
+            height: height)
+        : imageUrl.trim().replaceAll(RegExp(r'[",]+$'), '');
     // debugPrint('optimizedImageUrl: $optimizedImageUrl');
     return CachedNetworkImage(
       width: width,
@@ -242,12 +243,10 @@ class _Network extends StatelessWidget {
       fit: fit ?? BoxFit.cover,
       alignment: Alignment.center,
       cacheKey: optimizedImageUrl,
-      fadeInDuration: fadeAnimationEnable ?? false
-          ? const Duration(milliseconds: 300)
-          : Duration.zero,
-      fadeOutDuration: fadeAnimationEnable ?? false
-          ? const Duration(milliseconds: 300)
-          : Duration.zero,
+      fadeInDuration:
+          fadeAnimationEnable ?? false ? const Duration(milliseconds: 300) : Duration.zero,
+      fadeOutDuration:
+          fadeAnimationEnable ?? false ? const Duration(milliseconds: 300) : Duration.zero,
       placeholderFadeInDuration: Duration.zero,
       imageBuilder: (_, image) => ClipRRect(
         borderRadius: borderRadius ?? BorderRadius.zero,
@@ -277,7 +276,7 @@ class _Network extends StatelessWidget {
                           child: Text(
                             initials,
                             style: IsrStyles.secondaryText14
-                                .copyWith(fontWeight: FontWeight.w500),
+                                .copyWith(fontWeight: FontWeight.w500, color: textColor),
                             textAlign: TextAlign.center,
                             maxLines: 1,
                           ),
@@ -313,7 +312,7 @@ class _Network extends StatelessWidget {
                           child: Text(
                             initials,
                             style: IsrStyles.secondaryText14
-                                .copyWith(fontWeight: FontWeight.w500),
+                                .copyWith(fontWeight: FontWeight.w500, color: textColor),
                             textAlign: TextAlign.center,
                             maxLines: 1,
                           ),

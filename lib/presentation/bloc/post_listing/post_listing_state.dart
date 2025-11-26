@@ -20,8 +20,10 @@ class SearchResultsLoadedState extends PostListingState {
   SearchResultsLoadedState({
     required this.results,
     required this.tabType,
+    this.isFromPagination = false,
   });
 
   final List<dynamic> results;
   final SearchTabType tabType;
+  final bool isFromPagination;
 }
