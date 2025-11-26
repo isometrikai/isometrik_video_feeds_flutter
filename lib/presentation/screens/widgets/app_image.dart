@@ -269,11 +269,20 @@ class _Network extends StatelessWidget {
               placeHolderName: placeHolderName,
               boxShape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
               child: name.isStringEmptyOrNull == false && isProfileImage
-                  ? Text(
-                      initials,
-                      style: IsrStyles.secondaryText14.copyWith(
-                          fontWeight: FontWeight.w500, color: IsrColors.white),
-                      textAlign: TextAlign.center,
+                  ? Center(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            initials,
+                            style: IsrStyles.secondaryText14
+                                .copyWith(fontWeight: FontWeight.w500),
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                          ),
+                        ),
+                      ),
                     )
                   : null,
             )
@@ -296,11 +305,20 @@ class _Network extends StatelessWidget {
               placeHolderName: placeHolderName,
               boxShape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
               child: name.isStringEmptyOrNull == false && isProfileImage
-                  ? Text(
-                      initials,
-                      style: IsrStyles.secondaryText14.copyWith(
-                          fontWeight: FontWeight.w500, color: IsrColors.white),
-                      textAlign: TextAlign.center,
+                  ? Center(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            initials,
+                            style: IsrStyles.secondaryText14
+                                .copyWith(fontWeight: FontWeight.w500),
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                          ),
+                        ),
+                      ),
                     )
                   : null,
             )

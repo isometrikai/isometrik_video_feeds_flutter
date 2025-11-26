@@ -77,9 +77,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
 
   final _postsByTab = <PostTabAssistData>[];
 
-  PostTabAssistData _getTabAssistData(PostSectionType tab) => _postsByTab
-          .toList()
-          .firstWhere((_) => _.postSectionType == tab, orElse: () {
+  PostTabAssistData _getTabAssistData(PostSectionType tab) =>
+      _postsByTab.toList().firstWhere((_) => _.postSectionType == tab, orElse: () {
         final tabAssist = PostTabAssistData(postSectionType: tab, postList: []);
         _postsByTab.add(tabAssist);
         return tabAssist;
@@ -98,8 +97,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     final userInfoString = await _localDataUseCase.getUserInfo();
     _userInfoClass = userInfoString.isStringEmptyOrNull
         ? null
-        : UserInfoClass.fromJson(
-            jsonDecode(userInfoString) as Map<String, dynamic>);
+        : UserInfoClass.fromJson(jsonDecode(userInfoString) as Map<String, dynamic>);
     // add(LoadPostData(
     //   postSections: event.postSections
     // ));
@@ -116,29 +114,29 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       _postsByTab.addAll(event.postSections);
       for (final postTab in event.postSections) {
         if (postTab.postList.isEmpty) {
-          if (postTab.postId?.trim().isNotEmpty == true &&
-              postTab.postList.isEmpty) {
+          if (postTab.postId?.trim().isNotEmpty == true && postTab.postList.isEmpty) {
             final postIdData = await _getPostDetails(postTab.postId ?? '');
             if (postIdData != null) {
               postTab.postList.add(postIdData);
               add(LoadPostsEvent(
-                  postsByTab: _postsByTab.asMap().map((key, value) =>
-                      MapEntry(value.postSectionType, value.postList))));
+                  postsByTab: _postsByTab
+                      .asMap()
+                      .map((key, value) => MapEntry(value.postSectionType, value.postList))));
             }
           }
           await _callGetTabPost(postTab, false, false, false, null);
         }
         add(LoadPostsEvent(
-            postsByTab: _postsByTab.asMap().map((key, value) =>
-                MapEntry(value.postSectionType, value.postList))));
+            postsByTab: _postsByTab
+                .asMap()
+                .map((key, value) => MapEntry(value.postSectionType, value.postList))));
       }
     } catch (error) {
       emit(SocialPostError(error.toString()));
     }
   }
 
-  FutureOr<void> _getMorePost(
-      GetMorePostEvent event, Emitter<SocialPostState> emit) async {
+  FutureOr<void> _getMorePost(GetMorePostEvent event, Emitter<SocialPostState> emit) async {
     await _callGetTabPost(
       _getTabAssistData(event.postSectionType),
       event.isRefresh,
@@ -148,16 +146,14 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     );
   }
 
-  FutureOr<void> _getTimeLinePost(
-      GetTimeLinePostEvent event, Emitter<SocialPostState> emit) async {
-    await _callGetTabPost(_getTabAssistData(PostSectionType.trending),
-        event.isRefresh, event.isPagination, event.isLoading, event.onComplete);
+  FutureOr<void> _getTimeLinePost(GetTimeLinePostEvent event, Emitter<SocialPostState> emit) async {
+    await _callGetTabPost(_getTabAssistData(PostSectionType.trending), event.isRefresh,
+        event.isPagination, event.isLoading, event.onComplete);
   }
 
-  FutureOr<void> _getTrendingPost(
-      GetTrendingPostEvent event, Emitter<SocialPostState> emit) async {
-    await _callGetTabPost(_getTabAssistData(PostSectionType.trending),
-        event.isRefresh, event.isPagination, event.isLoading, event.onComplete);
+  FutureOr<void> _getTrendingPost(GetTrendingPostEvent event, Emitter<SocialPostState> emit) async {
+    await _callGetTabPost(_getTabAssistData(PostSectionType.trending), event.isRefresh,
+        event.isPagination, event.isLoading, event.onComplete);
   }
 
   Future<void> _callGetTabPost(
@@ -193,8 +189,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     TimeLineData? postIdPostData;
     debugPrint(
         'social_post_bloc => postIdPostData cond: ${(postTabAssistData.postId?.trim().isNotEmpty == true && postTabAssistData.postList.isEmpty)}');
-    if (postTabAssistData.postId?.trim().isNotEmpty == true &&
-        postTabAssistData.postList.isEmpty) {
+    if (postTabAssistData.postId?.trim().isNotEmpty == true && postTabAssistData.postList.isEmpty) {
       postIdPostData = await _getPostDetails(postTabAssistData.postId ?? '',
           onSuccess: postTabAssistData.postList.add);
       debugPrint('social_post_bloc => postIdPostData: ${postIdPostData?.id}');
@@ -261,8 +256,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         break;
       case PostSectionType.otherUserPost:
         if (tabAssistData.userId != null) {
-          apiResult =
-              await _getUserPostDataUseCase.executeGetUserProfilePostData(
+          apiResult = await _getUserPostDataUseCase.executeGetUserProfilePostData(
             isLoading: isLoading,
             page: tabAssistData.currentPage,
             pageSize: tabAssistData.pageSize,
@@ -277,7 +271,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     if (postIdPostData != null) {
       postDataList.add(postIdPostData);
     }
-    if (tabAssistData.postSectionType == PostSectionType.following){
+    if (tabAssistData.postSectionType == PostSectionType.following) {
       apiResult?.data?.data?.forEach((_) => _.isFollowing = true);
     }
     postDataList.addAll(apiResult?.data?.data ?? []);
@@ -305,13 +299,11 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     tabAssistData.isLoadingMore = false;
   }
 
-  FutureOr<void> _savePost(
-      SavePostEvent event, Emitter<SocialPostState> emit) async {
+  FutureOr<void> _savePost(SavePostEvent event, Emitter<SocialPostState> emit) async {
     final apiResult = await _savePostUseCase.executeSavePost(
       isLoading: false,
       postId: event.postId,
-      socialPostAction:
-          event.isSaved ? SocialPostAction.unSave : SocialPostAction.save,
+      socialPostAction: event.isSaved ? SocialPostAction.unSave : SocialPostAction.save,
     );
 
     if (apiResult.isSuccess) {
@@ -322,8 +314,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     }
   }
 
-  FutureOr<void> _getReason(
-      GetReasonEvent event, Emitter<SocialPostState> emit) async {
+  FutureOr<void> _getReason(GetReasonEvent event, Emitter<SocialPostState> emit) async {
     final apiResult = await _getReportReasonsUseCase.executeGetReportReasons(
       isLoading: false,
     );
@@ -336,8 +327,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     }
   }
 
-  FutureOr<void> _reportPost(
-      ReportPostEvent event, Emitter<SocialPostState> emit) async {
+  FutureOr<void> _reportPost(ReportPostEvent event, Emitter<SocialPostState> emit) async {
     final apiResult = await _reportPostUseCase.executeReportPost(
       isLoading: false,
       postId: event.postId,
@@ -353,8 +343,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     }
   }
 
-  FutureOr<void> _likePost(
-      LikePostEvent event, Emitter<SocialPostState> emit) async {
+  FutureOr<void> _likePost(LikePostEvent event, Emitter<SocialPostState> emit) async {
     final apiResult = await _likePostUseCase.executeLikePost(
       isLoading: false,
       postId: event.postId,
@@ -370,8 +359,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     }
   }
 
-  FutureOr<void> _deletePost(
-      DeletePostEvent event, Emitter<SocialPostState> emit) async {
+  FutureOr<void> _deletePost(DeletePostEvent event, Emitter<SocialPostState> emit) async {
     final userId = await _localDataUseCase.getUserId();
     if (userId.isEmptyOrNull) {
       event.onComplete(false);
@@ -384,8 +372,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     event.onComplete(apiResult.isSuccess);
   }
 
-  FutureOr<void> _followUser(
-      FollowUserEvent event, Emitter<SocialPostState> emit) async {
+  FutureOr<void> _followUser(FollowUserEvent event, Emitter<SocialPostState> emit) async {
     // final myUserId = await _localDataUseCase.getUserId();
     final apiResult = await _followPostUseCase.executeFollowUser(
       isLoading: false,
@@ -400,11 +387,11 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       event.onComplete.call(false);
     }
     if (_postsByTab.any((_) => _.postSectionType == PostSectionType.trending)) {
-      await _callGetTabPost(_getTabAssistData(PostSectionType.following), true,
-          false, false, null);
+      await _callGetTabPost(_getTabAssistData(PostSectionType.following), true, false, false, null);
       add(LoadPostsEvent(
-          postsByTab: _postsByTab.asMap().map((key, value) =>
-              MapEntry(value.postSectionType, value.postList))));
+          postsByTab: _postsByTab
+              .asMap()
+              .map((key, value) => MapEntry(value.postSectionType, value.postList))));
     }
   }
 
@@ -429,19 +416,16 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     );
     if (apiResult.isSuccess) {
       totalProductCount = apiResult.data?.count?.toInt() ?? 0;
-      _detailsProductList
-          .addAll(apiResult.data?.data as Iterable<ProductDataModel>);
+      _detailsProductList.addAll(apiResult.data?.data as Iterable<ProductDataModel>);
     } else {
       ErrorHandler.showAppError(appError: apiResult.error);
     }
     emit(SocialProductsLoaded(
-        productList: _detailsProductList,
-        totalProductCount: totalProductCount));
+        productList: _detailsProductList, totalProductCount: totalProductCount));
     _isDataLoading = false;
   }
 
-  FutureOr<void> _getPostComments(
-      GetPostCommentsEvent event, Emitter<SocialPostState> emit) async {
+  FutureOr<void> _getPostComments(GetPostCommentsEvent event, Emitter<SocialPostState> emit) async {
     if (event.isLoading == true) {
       emit(LoadingPostComment());
     }
@@ -458,8 +442,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         event.createdComment?.comment?.isNotEmpty == true &&
         event.createdComment?.parentCommentId?.isNotEmpty != true) {
       final created = event.createdComment!;
-      final alreadyExists = postCommentsList?.firstOrNull?.comment ==
-          event.createdComment?.comment;
+      final alreadyExists = postCommentsList?.firstOrNull?.comment == event.createdComment?.comment;
 
       if (!alreadyExists) {
         // Insert at the beginning only if it doesn't already exist
@@ -496,8 +479,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     ));
   }
 
-  Future<void> _doActionOnComment(
-      CommentActionEvent event, Emitter<SocialPostState> emit) async {
+  Future<void> _doActionOnComment(CommentActionEvent event, Emitter<SocialPostState> emit) async {
     final commentRequest = CommentRequest(
             commentId: event.commentId,
             commentAction: event.commentAction,
@@ -529,8 +511,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       );
 
       if (commentList != null) {
-        if (comment.parentCommentId != null &&
-            comment.parentCommentId!.isNotEmpty) {
+        if (comment.parentCommentId != null && comment.parentCommentId!.isNotEmpty) {
           // Find parent comment
           final parentComment = commentList.firstWhere(
             (element) => element.id == comment?.parentCommentId,
@@ -543,8 +524,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
           // Insert reply at the beginning
           parentComment.childComments!.insert(0, comment);
           parentComment.childCommentCount ??= 0;
-          parentComment.childCommentCount =
-              parentComment.childCommentCount! + 1;
+          parentComment.childCommentCount = parentComment.childCommentCount! + 1;
         } else {
           // Top-level comment → insert at the beginning
           commentList.insert(0, comment);
@@ -561,9 +541,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       Future.delayed(const Duration(seconds: 2), () {
         add(
           GetPostCommentsEvent(
-              postId: event.postId ?? '',
-              isLoading: false,
-              createdComment: comment),
+              postId: event.postId ?? '', isLoading: false, createdComment: comment),
         );
       });
     }
@@ -586,9 +564,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         Future.delayed(const Duration(seconds: 2), () {
           add(
             GetPostCommentsEvent(
-                postId: event.postId ?? '',
-                isLoading: false,
-                createdComment: comment),
+                postId: event.postId ?? '', isLoading: false, createdComment: comment),
           );
         });
       } else if (event.commentAction == CommentAction.report) {
@@ -602,15 +578,11 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
           event.commentId?.trim().isNotEmpty == true) {
         final commentList = event.postCommentList?.toList() ?? [];
         if (event.parentCommentId?.trim().isNotEmpty == true) {
-          debugPrint(
-              'Social_bloc: commetIds => {${commentList.map((e) => e.id).toList()}}');
-          final parentComment = commentList
-              .where((comment) => comment.id == event.parentCommentId)
-              .firstOrNull;
-          parentComment?.childComments
-              ?.removeWhere((comment) => comment.id == event.commentId);
-          parentComment?.childCommentCount =
-              (parentComment.childCommentCount ?? 1) - 1;
+          debugPrint('Social_bloc: commetIds => {${commentList.map((e) => e.id).toList()}}');
+          final parentComment =
+              commentList.where((comment) => comment.id == event.parentCommentId).firstOrNull;
+          parentComment?.childComments?.removeWhere((comment) => comment.id == event.commentId);
+          parentComment?.childCommentCount = (parentComment.childCommentCount ?? 1) - 1;
           if (parentComment?.childComments?.isEmpty == true) {
             parentComment?.showReply = false;
           }
@@ -646,14 +618,11 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     event.onComplete?.call(apiResult.data?.data ?? []);
     if (apiResult.isError) {
       ErrorHandler.showAppError(
-          appError: apiResult.error,
-          isNeedToShowError: true,
-          errorViewType: ErrorViewType.toast);
+          appError: apiResult.error, isNeedToShowError: true, errorViewType: ErrorViewType.toast);
     }
   }
 
-  FutureOr<void> _removeMention(
-      RemoveMentionEvent event, Emitter<SocialPostState> emit) async {
+  FutureOr<void> _removeMention(RemoveMentionEvent event, Emitter<SocialPostState> emit) async {
     final apiResult = await _removeMentionUseCase.executeRemoveMention(
       isLoading: false,
       postId: event.postId,
@@ -661,14 +630,11 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     event.onComplete?.call(apiResult.isSuccess);
     if (apiResult.isError) {
       ErrorHandler.showAppError(
-          appError: apiResult.error,
-          isNeedToShowError: true,
-          errorViewType: ErrorViewType.toast);
+          appError: apiResult.error, isNeedToShowError: true, errorViewType: ErrorViewType.toast);
     }
   }
 
-  FutureOr<void> _loadPosts(
-      LoadPostsEvent event, Emitter<SocialPostState> emit) async {
+  FutureOr<void> _loadPosts(LoadPostsEvent event, Emitter<SocialPostState> emit) async {
     final myUserId = await _localDataUseCase.getUserId();
     emit(SocialPostLoadedState(
       postsByTab: event.postsByTab,
@@ -694,9 +660,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     ));
     if (apiResult.isError) {
       ErrorHandler.showAppError(
-          appError: apiResult.error,
-          isNeedToShowError: true,
-          errorViewType: ErrorViewType.toast);
+          appError: apiResult.error, isNeedToShowError: true, errorViewType: ErrorViewType.toast);
     }
   }
 
@@ -713,11 +677,19 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
 
     if (result.isError && showError) {
       ErrorHandler.showAppError(
-          appError: result.error,
-          isNeedToShowError: true,
-          errorViewType: ErrorViewType.toast);
+          appError: result.error, isNeedToShowError: true, errorViewType: ErrorViewType.toast);
     }
 
     return result.data;
+  }
+
+  void sendAnalyticsEvent(
+      {required String eventName, required Map<String, dynamic> properties}) async {
+    final tenantId = await _localDataUseCase.getTenantId();
+    final finalEventMap = {
+      ...properties,
+      'tenant_id': tenantId,
+    };
+    unawaited(EventQueueProvider.instance.addEvent(eventName, finalEventMap));
   }
 }

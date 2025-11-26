@@ -7,8 +7,7 @@ class IsrLocalStorageRepositoryImpl implements IsrLocalStorageRepository {
 
   final LocalStorageManager _localStorageManager;
 
-  Future<dynamic> getValue(
-      String key, SavedValueDataType saveValueDataType) async {
+  Future<dynamic> getValue(String key, SavedValueDataType saveValueDataType) async {
     final value = await _localStorageManager.getValue(key, saveValueDataType);
     return value == null
         ? null
@@ -26,8 +25,7 @@ class IsrLocalStorageRepositoryImpl implements IsrLocalStorageRepository {
   Future<String> getSecuredValue(String key) async =>
       await _localStorageManager.getSecuredValue(key);
 
-  void saveValue(
-      String key, dynamic value, SavedValueDataType savedValueDataType) {
+  void saveValue(String key, dynamic value, SavedValueDataType savedValueDataType) {
     _localStorageManager.saveValue(key, value, savedValueDataType);
   }
 
@@ -67,69 +65,59 @@ class IsrLocalStorageRepositoryImpl implements IsrLocalStorageRepository {
       await _localStorageManager.getSecuredValue(LocalStorageKeys.email);
 
   @override
-  Future<bool> isLoggedIn() async => await _localStorageManager.getValue(
-      LocalStorageKeys.isLoggedIn, SavedValueDataType.bool) as bool;
+  Future<bool> isLoggedIn() async =>
+      await _localStorageManager.getValue(LocalStorageKeys.isLoggedIn, SavedValueDataType.bool)
+          as bool;
 
   @override
   Future<String> getCurrencyCode() async =>
       await _localStorageManager.getSecuredValue(LocalStorageKeys.currencyCode);
 
   @override
-  Future<String> getCurrencySymbol() async => await _localStorageManager
-      .getSecuredValue(LocalStorageKeys.currencySymbol);
+  Future<String> getCurrencySymbol() async =>
+      await _localStorageManager.getSecuredValue(LocalStorageKeys.currencySymbol);
 
   // Implementations for all keys
   @override
   Future<String> getLanguage() async =>
-      await getValue(LocalStorageKeys.language, SavedValueDataType.string)
-          as String;
+      await getValue(LocalStorageKeys.language, SavedValueDataType.string) as String;
 
   @override
-  Future<String> getAccessToken() async =>
-      await getSecuredValue(LocalStorageKeys.accessToken);
+  Future<String> getAccessToken() async => await getSecuredValue(LocalStorageKeys.accessToken);
 
   @override
-  Future<String> getRefreshToken() async =>
-      await getSecuredValue(LocalStorageKeys.refreshToken);
+  Future<String> getRefreshToken() async => await getSecuredValue(LocalStorageKeys.refreshToken);
 
   @override
-  Future<String> getPhoneNumber() async =>
-      await getSecuredValue(LocalStorageKeys.phoneNumber);
+  Future<String> getPhoneNumber() async => await getSecuredValue(LocalStorageKeys.phoneNumber);
 
   @override
   Future<String> getFirstName() async =>
-      await getValue(LocalStorageKeys.firstName, SavedValueDataType.string)
-          as String;
+      await getValue(LocalStorageKeys.firstName, SavedValueDataType.string) as String;
 
   @override
   Future<String> getLastName() async =>
-      await getValue(LocalStorageKeys.lastName, SavedValueDataType.string)
-          as String;
+      await getValue(LocalStorageKeys.lastName, SavedValueDataType.string) as String;
 
   @override
   Future<String> getProfilePic() async =>
-      await getValue(LocalStorageKeys.profilePic, SavedValueDataType.string)
-          as String;
+      await getValue(LocalStorageKeys.profilePic, SavedValueDataType.string) as String;
 
   @override
   Future<String> getUserInfo() async =>
-      await getValue(LocalStorageKeys.userInfo, SavedValueDataType.string)
-          as String;
+      await getValue(LocalStorageKeys.userInfo, SavedValueDataType.string) as String;
 
   @override
   Future<double> getLatitude() async =>
-      await getValue(LocalStorageKeys.latitude, SavedValueDataType.double)
-          as double;
+      await getValue(LocalStorageKeys.latitude, SavedValueDataType.double) as double;
 
   @override
   Future<double> getLongitude() async =>
-      await getValue(LocalStorageKeys.longitude, SavedValueDataType.double)
-          as double;
+      await getValue(LocalStorageKeys.longitude, SavedValueDataType.double) as double;
 
   @override
   Future<String> getUserName() async =>
-      await getValue(LocalStorageKeys.userName, SavedValueDataType.string)
-          as String;
+      await getValue(LocalStorageKeys.userName, SavedValueDataType.string) as String;
 
   // Implementations for setters
   @override
@@ -141,16 +129,13 @@ class IsrLocalStorageRepositoryImpl implements IsrLocalStorageRepository {
       saveValue(LocalStorageKeys.isLoggedIn, value, SavedValueDataType.bool);
 
   @override
-  void saveAccessToken(String value) =>
-      saveSecuredValue(LocalStorageKeys.accessToken, value);
+  void saveAccessToken(String value) => saveSecuredValue(LocalStorageKeys.accessToken, value);
 
   @override
-  void saveRefreshToken(String value) =>
-      saveSecuredValue(LocalStorageKeys.refreshToken, value);
+  void saveRefreshToken(String value) => saveSecuredValue(LocalStorageKeys.refreshToken, value);
 
   @override
-  void savePhoneNumber(String value) =>
-      saveSecuredValue(LocalStorageKeys.phoneNumber, value);
+  void savePhoneNumber(String value) => saveSecuredValue(LocalStorageKeys.phoneNumber, value);
 
   @override
   void saveFirstName(String value) =>
@@ -177,5 +162,14 @@ class IsrLocalStorageRepositoryImpl implements IsrLocalStorageRepository {
   @override
   void saveLongitude(double value) {
     saveValue(LocalStorageKeys.longitude, value, SavedValueDataType.double);
+  }
+
+  @override
+  Future<String> getTenantId() async =>
+      await getValue(LocalStorageKeys.xTenantId, SavedValueDataType.string) as String;
+
+  @override
+  void saveTenantId(String value) {
+    saveValue(LocalStorageKeys.xTenantId, value, SavedValueDataType.string);
   }
 }

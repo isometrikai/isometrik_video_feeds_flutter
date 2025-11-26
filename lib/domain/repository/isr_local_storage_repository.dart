@@ -64,4 +64,8 @@ abstract class IsrLocalStorageRepository extends BaseRepository {
   void saveLatitude(double value);
 
   void saveLongitude(double value);
+
+  void saveTenantId(String value);
+
+  Future<String> getTenantId();
 }

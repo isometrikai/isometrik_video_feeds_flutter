@@ -20,12 +20,12 @@ class EventQueueProvider {
   }
 
   /// Initialize the event queue with optional callback
-  static void initialize({
+  static Future<void> initialize({
     required String rudderStackWriteKey,
     required String rudderStackDataPlaneUrl,
-  }) {
+  }) async {
     _instance ??= LocalEventQueue();
-    _instance!.init();
+    await _instance!.init();
     if (rudderStackWriteKey.isEmpty || rudderStackDataPlaneUrl.isEmpty) return;
     RudderLogger.init(RudderLogger.VERBOSE);
     final builder = RudderConfigBuilder();
@@ -51,11 +51,20 @@ class LocalEventQueue with WidgetsBindingObserver {
   LocalEventQueue();
 
   static const _boxName = 'local_events';
-  static const _batchSize = 10;
+  static const _batchSize = 1;
 
   Future<void> init() async {
-    if (!Hive.isBoxOpen(_boxName)) {
-      await Hive.openBox<LocalEvent>(_boxName);
+    try {
+      if (!Hive.isBoxOpen(_boxName)) {
+        debugPrint('LocalEventQueue: Opening Hive box: $_boxName');
+        await Hive.openBox<LocalEvent>(_boxName);
+        debugPrint('LocalEventQueue: Hive box opened successfully');
+      } else {
+        debugPrint('LocalEventQueue: Hive box already open');
+      }
+    } catch (e) {
+      debugPrint('LocalEventQueue: Error opening Hive box: $e');
+      rethrow;
     }
 
     // observe app lifecycle
@@ -79,51 +88,83 @@ class LocalEventQueue with WidgetsBindingObserver {
 
   final Uuid _uuid = const Uuid();
 
-  Future<void> addEvent(Map<String, dynamic> payload) async {
-    final box = Hive.box<LocalEvent>(_boxName);
-    final event = LocalEvent(
-      id: _uuid.v4(),
-      payload: payload,
-      timestamp: DateTime.now().toUtc(),
-    );
-    await box.add(event);
-    if (box.length >= _batchSize) {
-      final eventPayLoadList = <Map<String, dynamic>>[];
-      for (final event in box.values.toList()) {
-        eventPayLoadList.add(event.payload);
+  Future<void> addEvent(String eventName, Map<String, dynamic> payload) async {
+    try {
+      // Ensure box is open before accessing
+      if (!Hive.isBoxOpen(_boxName)) {
+        debugPrint('LocalEventQueue.addEvent: Box not open, opening now...');
+        await Hive.openBox<LocalEvent>(_boxName);
+        debugPrint('LocalEventQueue.addEvent: Box opened successfully');
       }
-      if (eventPayLoadList.isNotEmpty) {
-        final rudderProperties = RudderProperty();
-        for (final mapItem in eventPayLoadList) {
-          rudderProperties.putValue(map: mapItem);
+      final box = Hive.box<LocalEvent>(_boxName);
+      final event = LocalEvent(
+        id: _uuid.v4(),
+        eventName: eventName,
+        payload: payload,
+        timestamp: DateTime.now().toUtc(),
+      );
+      await box.add(event);
+      if (box.length >= _batchSize) {
+        final events = box.values.toList();
+
+        // OPTION 1: Send as batch with list of maps
+        // final eventPayLoadList = events
+        //     .map((e) => {
+        //           'event_name': e.eventName,
+        //           'event_id': e.id,
+        //           'timestamp': e.timestamp.toIso8601String(),
+        //           ...e.payload,
+        //         })
+        //     .toList();
+        //
+        // if (eventPayLoadList.isNotEmpty) {
+        //   final rudderProperties = RudderProperty();
+        //   rudderProperties.put('events', eventPayLoadList);
+        //   RudderController.instance.track(
+        //     'Batch Events',
+        //     properties: rudderProperties,
+        //   );
+        // }
+
+        // OPTION 2: Send each event individually (uncomment if you prefer this approach)
+        for (final event in events) {
+          final rudderProperties = RudderProperty();
+          rudderProperties.putValue(map: event.payload);
+          RudderController.instance.track(
+            'Post Viewed',
+            properties: rudderProperties,
+          );
         }
-        RudderController.instance.track(
-          'watch-event',
-          properties: rudderProperties,
-        );
+
+        try {
+          unawaited(flush());
+        } catch (e) {
+          debugPrint(
+            '${runtimeType.toString()} Error in callback: $e, skipping flush',
+          );
+        }
       }
-      try {
-        unawaited(flush());
-      } catch (e) {
-        debugPrint(
-          '${runtimeType.toString()} Error in callback: $e, skipping flush',
-        );
-      }
+    } catch (e, stackTrace) {
+      debugPrint('LocalEventQueue.addEvent: Error adding event: $e');
+      debugPrint('StackTrace: $stackTrace');
+      rethrow;
     }
   }
 
   Future<void> flush() async {
+    // Ensure box is open before accessing
+    if (!Hive.isBoxOpen(_boxName)) {
+      return;
+    }
     final box = Hive.box<LocalEvent>(_boxName);
-    debugPrint(
-        '${runtimeType.toString()} Box length before flushing: ${box.length}');
+    debugPrint('${runtimeType.toString()} Box length before flushing: ${box.length}');
 
     final events = box.values.toList();
 
     if (events.isEmpty) return;
 
     await box.clear();
-    debugPrint(
-        '${runtimeType.toString()} Box length after flushing: ${box.length}');
+    debugPrint('${runtimeType.toString()} Box length after flushing: ${box.length}');
   }
 
   /// cleanup
@@ -150,7 +191,7 @@ extension EventTypeExtension on EventType {
       case EventType.follow:
         return 'follow';
       case EventType.view:
-        return 'view';
+        return 'Post Viewed';
       case EventType.watch:
         return 'watch';
     }
