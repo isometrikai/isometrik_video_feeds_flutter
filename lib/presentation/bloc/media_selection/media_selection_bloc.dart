@@ -269,11 +269,11 @@ class MediaSelectionBloc
     LoadMoreMediaEvent event,
     Emitter<MediaSelectionState> emit,
   ) async {
-    final currentState = state as MediaSelectionLoadedState;
-    if (!currentState.isLoadingMore) {
-      // Don't increment _currentPage here, it's incremented in _onLoadMedia after successful load
-      add(LoadMediaEvent(loadMore: true));
+    if (state is MediaSelectionLoadedState && (state as MediaSelectionLoadedState).isLoadingMore) {
+      return;
     }
+    // Don't increment _currentPage here, it's incremented in _onLoadMedia after successful load
+    add(LoadMediaEvent(loadMore: true));
   }
 
   Future<void> _onSelectAlbum(
