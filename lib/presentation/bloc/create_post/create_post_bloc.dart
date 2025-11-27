@@ -54,7 +54,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   ) : super(CreatePostInitialState()) {
     on<CreatePostInitialEvent>(_initState);
     on<PostCreateEvent>(_createPost);
-    on<PostAttributeNavigationEvent>(_goToPostAttributeView);
+    // on<PostAttributeNavigationEvent>(_goToPostAttributeView);
     on<MediaSourceEvent>(_openMediaSource);
     on<GetProductsEvent>(_getProducts);
     on<GetSocialPostDetailsEvent>(_getPostDetails);
@@ -101,9 +101,10 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   var _coverFileName = '';
 
   FutureOr<void> _initState(
-      CreatePostInitialEvent event, Emitter<CreatePostState> emit) {
+      CreatePostInitialEvent event, Emitter<CreatePostState> emit) async {
     _resetData();
-    emit(CreatePostInitialState());
+    final postAttribution = await preparePostAttribution(newMediaDataList: event.newMediaDataList);
+    emit(PostAttributionUpdatedState(postAttributeClass: postAttribution));
   }
 
   void resetApiCall() {
@@ -718,6 +719,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   /// load post data to edit post
   FutureOr<void> _editPost(
       EditPostEvent event, Emitter<CreatePostState> emit) async {
+    _resetData();
     emit(CreatePostInitialState(isLoading: true));
     _postData = event.postData;
     _mediaDataList.clear();
@@ -746,8 +748,10 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     }
     _isForEdit = true;
     _makePostRequest();
-    emit(MediaSelectedState(
-        mediaDataList: _mediaDataList, isPostButtonEnable: false));
+    // emit(MediaSelectedState(
+    //     mediaDataList: _mediaDataList, isPostButtonEnable: false));
+    final postAttribution = await preparePostAttribution();
+    emit(PostAttributionUpdatedState(postAttributeClass: postAttribution));
   }
 
   String _extractFileName(String url) {
@@ -765,7 +769,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     mediaMentionUserData.clear();
     hashTagDataList.clear();
     locationTagDataList.clear();
-
+    debugPrint('CreatePostBloc: _makePostRequest => ${_postData?.toMap()}');
     final mentionList = _postData?.tags?.mentions ?? [];
     if (mentionList.isListEmptyOrNull == false) {
       for (final mentionItem in mentionList) {
@@ -776,6 +780,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
         }
       }
     }
+    debugPrint('CreatePostBloc: _makePostRequest => mentionedUserData => ${mentionedUserData.map((e) => e.toJson())}');
+    debugPrint('CreatePostBloc: _makePostRequest => mediaMentionUserData => ${mediaMentionUserData.map((e) => e.toJson())}');
     hashTagDataList = _postData?.tags?.hashtags ?? [];
     locationTagDataList = _postData?.tags?.places ?? [];
 
@@ -1350,18 +1356,19 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     return newMediaData;
   }
 
-  FutureOr<void> _goToPostAttributeView(
-      PostAttributeNavigationEvent event, Emitter<CreatePostState> emit) async {
+  FutureOr<PostAttributeClass?> preparePostAttribution({
+    List<MediaData>? newMediaDataList,
+  }) async {
     debugPrint('=== _goToPostAttributeView START ===');
     debugPrint('mentionedUserData count: ${mentionedUserData.length}');
     debugPrint('mediaMentionUserData count: ${mediaMentionUserData.length}');
     debugPrint('hashTagDataList count: ${hashTagDataList.length}');
     debugPrint('locationTagDataList count: ${locationTagDataList.length}');
-    if (event.newMediaDataList?.isNotEmpty == true) {
+    if (newMediaDataList?.isNotEmpty == true) {
       final newMedia = <MediaData>[];
-      for (var i = 0; i < (event.newMediaDataList?.length ?? 0); i++) {
+      for (var i = 0; i < (newMediaDataList?.length ?? 0); i++) {
         final processedMedia =
-            await _processMediaData(event.newMediaDataList![i], i);
+            await _processMediaData(newMediaDataList![i], i);
         if (processedMedia != null) {
           newMedia.add(processedMedia);
         }
@@ -1376,7 +1383,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     }
 
     if (_mediaDataList.isEmpty) {
-      return;
+      return null;
     }
     await _createMediaUrls();
     await _createCoverUrl();
@@ -1400,27 +1407,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     _postAttributeClass.mediaDataList = _mediaDataList;
     _postAttributeClass.linkedProducts = linkedProducts;
     _postAttributeClass.createPostRequest = _createPostRequest;
-
-    await IsrAppNavigator.goToPostAttributionView(event.context,
-        postAttributeClass: _postAttributeClass,
-        isEditMode: _isForEdit,
-        onTagProduct: event.onTagProduct);
-
-    // if (resultPostAttributeClass != null) {
-    //   _postAttributeClass = resultPostAttributeClass;
-    //   // Update the local data with the returned data
-    //   _updateLocalDataFromPostAttribute();
-    //
-    //   // Sync current linked products to the returned PostAttributeClass
-    //   _postAttributeClass.linkedProducts = linkedProducts;
-    //
-    //   // Emit state to notify UI about the updated mentioned users, hashtags and location tags
-    //   emit(MentionedUsersUpdatedState(
-    //     mentionedUsers: mentionedUserData,
-    //     hashTags: hashTagDataList,
-    //     locationTags: locationTagDataList,
-    //   ));
-    // }
+    return _postAttributeClass;
   }
 
   void _updateLocalDataFromPostAttribute() {
