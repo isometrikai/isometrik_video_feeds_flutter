@@ -3,9 +3,9 @@ part of 'create_post_bloc.dart';
 abstract class CreatePostEvent {}
 
 class CreatePostInitialEvent extends CreatePostEvent {
-  CreatePostInitialEvent({this.isLoading = false});
+  CreatePostInitialEvent({this.newMediaDataList});
 
-  final bool? isLoading;
+  final List<MediaData>? newMediaDataList;
 }
 
 class PostCreateEvent extends CreatePostEvent {

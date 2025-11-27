@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -10,20 +11,24 @@ import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/create_post/user_mention_text_field.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
+import 'package:lottie/lottie.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 class PostAttributeView extends StatefulWidget {
-  const PostAttributeView(
-      {super.key,
-      required this.postAttributeClass,
-      required this.isEditMode,
-      this.onTagProduct});
+  const PostAttributeView({
+    super.key,
+    required this.isEditMode,
+    this.onTagProduct,
+    this.postData,
+    this.newMediaDataList,
+  });
 
-  final PostAttributeClass? postAttributeClass;
   final bool? isEditMode;
+  final List<MediaData>? newMediaDataList;
   final Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
       onTagProduct;
+  final TimeLineData? postData;
 
   @override
   State<PostAttributeView> createState() => _PostAttributeViewState();
@@ -55,20 +60,32 @@ class _PostAttributeViewState extends State<PostAttributeView>
   var _isEditMode = false;
   DateTime? _selectedDate;
 
+  bool _isDialogOpen = false;
+
   // Schedule post variables - sync with bloc
   CreatePostBloc get _createPostBloc =>
-      BlocProvider.of<CreatePostBloc>(context);
+      context.getOrCreateBloc();
+  UploadProgressCubit get _progressCubit =>
+      context.getOrCreateBloc();
 
   @override
   void initState() {
     WidgetsBinding.instance.addObserver(this);
-    _onStartInit();
+    _isEditMode = widget.isEditMode ?? false;
+    final editData = widget.postData;
+    if (_isEditMode && editData != null) {
+      _createPostBloc.add(EditPostEvent(postData: editData));
+    } else if (!_isEditMode && widget.newMediaDataList?.isNotEmpty == true) {
+      _createPostBloc.add(
+          CreatePostInitialEvent(newMediaDataList: widget.newMediaDataList));
+    } else {
+      Navigator.pop(context);
+    }
     super.initState();
   }
 
-  void _onStartInit() {
-    _isEditMode = widget.isEditMode ?? false;
-    _postAttributeClass = widget.postAttributeClass;
+  void _prepareData({PostAttributeClass? postAttributeClass}) {
+    _postAttributeClass = postAttributeClass;
     _mediaDataList = _postAttributeClass?.mediaDataList ?? [];
 
     // Load existing linked products
@@ -76,19 +93,19 @@ class _PostAttributeViewState extends State<PostAttributeView>
     _linkedProducts.addAll(_postAttributeClass?.linkedProducts ?? []);
 
     // Load existing description and mentions
-    final createPostBloc = BlocProvider.of<CreatePostBloc>(context);
-    _descriptionController.text = createPostBloc.descriptionText;
+
+    _descriptionController.text = _createPostBloc.descriptionText;
 
     // Load mentioned users and hashtags from bloc
     _mentionedUsers.clear();
-    _mentionedUsers.addAll(createPostBloc.mentionedUserData);
+    _mentionedUsers.addAll(_postAttributeClass?.mentionedUserList ?? []);
 
     _hashTags.clear();
-    _hashTags.addAll(createPostBloc.hashTagDataList);
+    _hashTags.addAll(_createPostBloc.hashTagDataList);
 
     // Set description in PostAttributeClass if not already set
     _postAttributeClass?.createPostRequest?.caption ??=
-        createPostBloc.descriptionText;
+        _createPostBloc.descriptionText;
 
     // Set default values for new posts
     _postAttributeClass?.allowComment ??= true;
@@ -477,128 +494,145 @@ class _PostAttributeViewState extends State<PostAttributeView>
       _updatePostButtonState();
     });
 
-    return Scaffold(
+    return BlocListener<CreatePostBloc, CreatePostState>(
+      listenWhen: (previousState, currentState) =>
+          currentState is PostCreatedState ||
+          currentState is ShowProgressDialogState ||
+          currentState is PostAttributionUpdatedState,
+      listener: (context, state) {
+        if (state is PostAttributionUpdatedState && state.postAttributeClass != _postAttributeClass){
+          setState(() {
+            _prepareData(postAttributeClass: state.postAttributeClass);
+          });
+        }
+        if (state is PostCreatedState) {
+          Utility.showBottomSheet(
+            child: _buildSuccessBottomSheet(
+              onTapBack: () {
+                Navigator.pop(context, state.postDataModel);
+                if (widget.isEditMode != true) {
+                  Navigator.pop(context, state.postDataModel);
+                  Navigator.pop(context, state.postDataModel);
+                }
+              },
+              title: state.postSuccessTitle ?? '',
+              message: state.postSuccessMessage ?? '',
+            ),
+            isDismissible: false,
+          );
+          _doMediaCaching(state.mediaDataList);
+          Future.delayed(const Duration(seconds: 2), () async {
+            Navigator.pop(context);
+            Navigator.pop(context, state.postDataModel);
+            if (widget.isEditMode != true) {
+              Navigator.pop(context, state.postDataModel);
+              Navigator.pop(context, state.postDataModel);
+            }
+          });
+        }
+        if (state is ShowProgressDialogState) {
+          if (!_isDialogOpen) {
+            _isDialogOpen = true;
+            _showProgressDialog(state.title ?? '', state.subTitle ?? '');
+          } else {
+            if (state.isAllFilesUploaded) {
+              // Show success animation
+              // _progressCubit.showSuccess();
+              // Dismiss after 3 seconds
+              Future.delayed(const Duration(milliseconds: 300), () {
+                if (_isDialogOpen) {
+                  _isDialogOpen = false;
+                  Navigator.pop(context);
+                }
+              });
+            }
+          }
+          // Update all cubit state values
+          _progressCubit.updateProgress(state.progress ?? 0);
+          _progressCubit.updateTitle(
+              state.title ?? IsrTranslationFile.uploadingMediaFiles);
+          _progressCubit.updateSubtitle(state.subTitle ?? '');
+        }
+      },
+      child: _buildPage(),
+    );
+  }
+
+  Widget _buildPage() => Scaffold(
+    backgroundColor: Colors.white,
+    appBar: const IsmCustomAppBarWidget(
       backgroundColor: Colors.white,
-      appBar: const IsmCustomAppBarWidget(
-        backgroundColor: Colors.white,
-        titleText: IsrTranslationFile.newPost,
-        centerTitle: true,
-      ),
-      body: Column(
-        children: [
-          // Scrollable content
-          Expanded(
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              child: Column(
-                children: [
-                  // Media Preview Section
-                  if (_mediaDataList.isNotEmpty)
-                    Container(
-                      height: 280
-                          .responsiveDimension, // Increased height for reels-like aspect ratio
-                      width: double.infinity,
-                      padding: EdgeInsetsGeometry.symmetric(
-                          horizontal: 5.responsiveDimension),
-                      child: Center(
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: _mediaDataList.length,
-                          physics: const BouncingScrollPhysics(),
-                          shrinkWrap: true,
-                          itemBuilder: (context, index) {
-                            final media = _mediaDataList[index];
-                            return Container(
-                              margin: IsrDimens.edgeInsetsAll(
-                                  7.responsiveDimension),
-                              child: AspectRatio(
-                                aspectRatio: 9 / 16,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(8),
-                                      color: IsrColors.blackColor),
-                                  child: ClipRRect(
+      titleText: IsrTranslationFile.newPost,
+      centerTitle: true,
+    ),
+    body: Column(
+      children: [
+        // Scrollable content
+        Expanded(
+          child: SingleChildScrollView(
+            controller: _scrollController,
+            child: Column(
+              children: [
+                // Media Preview Section
+                if (_mediaDataList.isNotEmpty)
+                  Container(
+                    height: 280
+                        .responsiveDimension, // Increased height for reels-like aspect ratio
+                    width: double.infinity,
+                    padding: EdgeInsetsGeometry.symmetric(
+                        horizontal: 5.responsiveDimension),
+                    child: Center(
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _mediaDataList.length,
+                        physics: const BouncingScrollPhysics(),
+                        shrinkWrap: true,
+                        itemBuilder: (context, index) {
+                          final media = _mediaDataList[index];
+                          return Container(
+                            margin: IsrDimens.edgeInsetsAll(
+                                7.responsiveDimension),
+                            child: AspectRatio(
+                              aspectRatio: 9 / 16,
+                              child: Container(
+                                decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(8),
-                                    child: media.mediaType?.mediaType ==
-                                            MediaType.video
-                                        ? _buildVideoPlayer(media)
-                                        : _buildImage(media),
-                                  ),
+                                    color: IsrColors.blackColor),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: media.mediaType?.mediaType ==
+                                      MediaType.video
+                                      ? _buildVideoPlayer(media)
+                                      : _buildImage(media),
                                 ),
                               ),
-                            );
-                          },
-                        ),
+                            ),
+                          );
+                        },
                       ),
                     ),
+                  ),
 
-                  // Caption input
-                  _buildCaptionInput(),
-                  10.verticalSpace,
+                // Caption input
+                _buildCaptionInput(),
+                10.verticalSpace,
 
-                  // Options List
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Link Products
-                      if (widget.onTagProduct != null)
-                        _buildOptionTile(
-                          icon: AssetConstants.icCartIcon,
-                          title: IsrTranslationFile.linkProducts,
-                          onTap: _getLinkedProducts,
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (_linkedProducts.isNotEmpty) ...[
-                                Text(
-                                  '${_linkedProducts.length} ${IsrTranslationFile.product}${_linkedProducts.length > 1 ? 's' : ''}',
-                                  style: IsrStyles.primaryText14,
-                                ),
-                                8.horizontalSpace,
-                              ],
-                              Icon(
-                                Icons.chevron_right,
-                                color: '333333'.toColor(),
-                                size: 20.responsiveDimension,
-                              ),
-                            ],
-                          ),
-                        ),
-
-                      // Tag People
+                // Options List
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Link Products
+                    if (widget.onTagProduct != null)
                       _buildOptionTile(
-                        icon: AssetConstants.icTagUser,
-                        title: IsrTranslationFile.tagPeople,
-                        onTap: () async {
-                          final mentionedDataList = _mentionedUsers
-                              .where((element) => element.mediaPosition != null)
-                              .toList();
-                          final mediaDataList =
-                              _postAttributeClass?.mediaDataList ?? [];
-                          final result =
-                              await IsrAppNavigator.goToTagPeopleScreen(
-                            context,
-                            mentionDataList: _mentionedUsers,
-                            mediaDataList: mediaDataList,
-                          );
-                          if (result.isEmptyOrNull == false) {
-                            for (var mentionData
-                                in result as Iterable<MentionData>) {
-                              if (!_mentionedUsers.any((element) =>
-                                  element.userId == mentionData.userId)) {
-                                _mentionedUsers.add(mentionData);
-                              }
-                            }
-                            setState(() {});
-                            _updatePostButtonState();
-                          }
-                        },
+                        icon: AssetConstants.icCartIcon,
+                        title: IsrTranslationFile.linkProducts,
+                        onTap: _getLinkedProducts,
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            if (_getTaggedUsersCount() > 0) ...[
+                            if (_linkedProducts.isNotEmpty) ...[
                               Text(
-                                '${_getTaggedUsersCount()} ${IsrTranslationFile.people}',
+                                '${_linkedProducts.length} ${IsrTranslationFile.product}${_linkedProducts.length > 1 ? 's' : ''}',
                                 style: IsrStyles.primaryText14,
                               ),
                               8.horizontalSpace,
@@ -612,75 +646,211 @@ class _PostAttributeViewState extends State<PostAttributeView>
                         ),
                       ),
 
-                      // Add Location
-                      _buildLocationTile(),
-
-                      // Allow Comments
-                      _buildSwitchTile(
-                        icon: AssetConstants.icAllowComment,
-                        title: IsrTranslationFile.allowComments,
-                        value: _postAttributeClass?.allowComment == true,
-                        onChanged: (value) {
-                          setState(() {
-                            _postAttributeClass?.allowComment = value;
-                          });
+                    // Tag People
+                    _buildOptionTile(
+                      icon: AssetConstants.icTagUser,
+                      title: IsrTranslationFile.tagPeople,
+                      onTap: () async {
+                        final mentionedDataList = _mentionedUsers
+                            .where((element) => element.mediaPosition != null)
+                            .toList();
+                        final mediaDataList =
+                            _postAttributeClass?.mediaDataList ?? [];
+                        final result =
+                        await IsrAppNavigator.goToTagPeopleScreen(
+                          context,
+                          mentionDataList: _mentionedUsers,
+                          mediaDataList: mediaDataList,
+                        );
+                        if (result.isEmptyOrNull == false) {
+                          for (var mentionData
+                          in result as Iterable<MentionData>) {
+                            if (!_mentionedUsers.any((element) =>
+                            element.userId == mentionData.userId)) {
+                              _mentionedUsers.add(mentionData);
+                            }
+                          }
+                          setState(() {});
                           _updatePostButtonState();
-                        },
+                        }
+                      },
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (_getTaggedUsersCount() > 0) ...[
+                            Text(
+                              '${_getTaggedUsersCount()} ${IsrTranslationFile.people}',
+                              style: IsrStyles.primaryText14,
+                            ),
+                            8.horizontalSpace,
+                          ],
+                          Icon(
+                            Icons.chevron_right,
+                            color: '333333'.toColor(),
+                            size: 20.responsiveDimension,
+                          ),
+                        ],
                       ),
+                    ),
 
-                      // Allow Save
-                      _buildSwitchTile(
-                        icon: AssetConstants.icAllowSave,
-                        title: IsrTranslationFile.allowSave,
-                        value: _postAttributeClass?.allowSave == true,
-                        onChanged: (value) {
-                          setState(() {
-                            _postAttributeClass?.allowSave = value;
-                          });
-                          _updatePostButtonState();
-                        },
-                      ),
+                    // Add Location
+                    _buildLocationTile(),
 
-                      // Schedule Post (only if not in edit mode)
-                      if (!_isEditMode) _buildSchedulePostTile(),
-                    ],
-                  ),
+                    // Allow Comments
+                    _buildSwitchTile(
+                      icon: AssetConstants.icAllowComment,
+                      title: IsrTranslationFile.allowComments,
+                      value: _postAttributeClass?.allowComment == true,
+                      onChanged: (value) {
+                        setState(() {
+                          _postAttributeClass?.allowComment = value;
+                        });
+                        _updatePostButtonState();
+                      },
+                    ),
 
-                  // Bottom padding for scroll
-                  30.verticalSpace,
-                ],
-              ),
-            ),
-          ),
+                    // Allow Save
+                    _buildSwitchTile(
+                      icon: AssetConstants.icAllowSave,
+                      title: IsrTranslationFile.allowSave,
+                      value: _postAttributeClass?.allowSave == true,
+                      onChanged: (value) {
+                        setState(() {
+                          _postAttributeClass?.allowSave = value;
+                        });
+                        _updatePostButtonState();
+                      },
+                    ),
 
-          // Fixed Post Button at bottom
-          Container(
-            padding: IsrDimens.edgeInsetsAll(20.responsiveDimension),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withValues(alpha: 0.1),
-                  spreadRadius: 1,
-                  blurRadius: 5,
-                  offset: const Offset(0, -1),
+                    // Schedule Post (only if not in edit mode)
+                    if (!_isEditMode) _buildSchedulePostTile(),
+                  ],
                 ),
+
+                // Bottom padding for scroll
+                30.verticalSpace,
               ],
             ),
-            child: SafeArea(
-              child: AppButton(
-                title: IsrTranslationFile.post,
-                isDisable: !_isPostButtonEnabled,
-                onPress: _isPostButtonEnabled ? _createPost : null,
-                borderRadius: 25.responsiveDimension,
-                height: 44.responsiveDimension,
+          ),
+        ),
+
+        // Fixed Post Button at bottom
+        Container(
+          padding: IsrDimens.edgeInsetsAll(20.responsiveDimension),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withValues(alpha: 0.1),
+                spreadRadius: 1,
+                blurRadius: 5,
+                offset: const Offset(0, -1),
               ),
+            ],
+          ),
+          child: SafeArea(
+            child: AppButton(
+              title: IsrTranslationFile.post,
+              isDisable: !_isPostButtonEnabled,
+              onPress: _isPostButtonEnabled ? _createPost : null,
+              borderRadius: 25.responsiveDimension,
+              height: 44.responsiveDimension,
             ),
           ),
-        ],
-      ),
-    );
+        ),
+      ],
+    ),
+  );
+
+  void _showProgressDialog(String title, String message) async {
+    await Utility.showBottomSheet(
+        child: BlocProvider(
+          create: (context) => _progressCubit,
+          child: UploadProgressBottomSheet(message: message),
+        ),
+        isDismissible: false);
+    _isDialogOpen = false;
   }
+
+  void _doMediaCaching(List<MediaData>? mediaDataList) async {
+    if (mediaDataList.isEmptyOrNull) return;
+    final urls = <String>[];
+    for (var media in mediaDataList!) {
+      if (media.url.isEmptyOrNull == false) {
+        urls.add(media.url!);
+      }
+      if (media.previewUrl.isEmptyOrNull == false) {
+        urls.add(media.previewUrl!);
+      }
+    }
+    if (!mounted) return;
+
+    // Use compute for background processing if needed
+    await compute((List<String> urls) => urls, urls).then((processedUrls) {
+      if (!mounted) return;
+      Utility.preCacheImages(urls, context);
+    });
+  }
+
+  Widget _buildSuccessBottomSheet({
+    required Function() onTapBack,
+    required String title,
+    required String message,
+  }) =>
+      Container(
+        width: IsrDimens.getScreenWidth(context),
+        padding: IsrDimens.edgeInsetsAll(IsrDimens.sixteen),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Positioned(
+              top: 0,
+              right: 0,
+              child: TapHandler(
+                onTap: () {
+                  Navigator.pop(context);
+                  onTapBack();
+                },
+                child: const AppImage.svg(
+                  AssetConstants.icCrossIcon,
+                ),
+              ),
+            ),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Lottie.asset(
+                  AssetConstants.postUploadedAnimation,
+                  animate: true,
+                  height: IsrDimens.seventy,
+                  width: IsrDimens.seventy,
+                  repeat: false,
+                ),
+                24.verticalSpace,
+                Text(
+                  message,
+                  style: IsrStyles.primaryText16.copyWith(
+                    fontWeight: FontWeight.w700,
+                    fontSize: IsrDimens.eighteen,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                8.verticalSpace,
+                Text(
+                  IsrTranslationFile.yourPostHasBeenSuccessfullyPosted,
+                  style: IsrStyles.primaryText14.copyWith(
+                    color: Colors.grey,
+                    fontSize: IsrDimens.fifteen,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                16.verticalSpace,
+              ],
+            ),
+          ],
+        ),
+      );
 
   /// Build caption input field
   Widget _buildCaptionInput() => Container(
