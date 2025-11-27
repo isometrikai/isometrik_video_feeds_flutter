@@ -103,17 +103,6 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
           isr.TabDataModel(
-            postSectionType: isr.PostSectionType.trending,
-            title: TranslationFile.singleTrending,
-            reelsDataList: [],
-            postId: 'post_ab8fd4f9c562', //hardCoded post id
-            startingPostIndex: 0,
-            onTapCartIcon: (productIds, postId, userId) {
-              debugPrint('productIds: $productIds');
-              debugPrint('postId: $postId');
-            },
-          ),
-          isr.TabDataModel(
             postSectionType: isr.PostSectionType.otherUserPost,
             title: TranslationFile.others,
             reelsDataList: [],

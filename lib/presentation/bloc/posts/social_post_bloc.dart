@@ -386,7 +386,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       ErrorHandler.showAppError(appError: apiResult.error);
       event.onComplete.call(false);
     }
-    if (_postsByTab.any((_) => _.postSectionType == PostSectionType.trending)) {
+    if (_postsByTab.any((_) => _.postSectionType == PostSectionType.following)) {
       await _callGetTabPost(_getTabAssistData(PostSectionType.following), true, false, false, null);
       add(LoadPostsEvent(
           postsByTab: _postsByTab
@@ -635,6 +635,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   }
 
   FutureOr<void> _loadPosts(LoadPostsEvent event, Emitter<SocialPostState> emit) async {
+    event.postsByTab.forEach((tab, posts) => debugPrint('social_post_bloc => _loadPosts: $tab , postcount: ${posts.length}'));
     final myUserId = await _localDataUseCase.getUserId();
     emit(SocialPostLoadedState(
       postsByTab: event.postsByTab,
