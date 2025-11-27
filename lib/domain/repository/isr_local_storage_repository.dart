@@ -68,4 +68,8 @@ abstract class IsrLocalStorageRepository extends BaseRepository {
   void saveTenantId(String value);
 
   Future<String> getTenantId();
+
+  void saveProjectId(String value);
+
+  Future<String> getProjectId();
 }

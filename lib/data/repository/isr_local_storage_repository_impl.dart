@@ -172,4 +172,13 @@ class IsrLocalStorageRepositoryImpl implements IsrLocalStorageRepository {
   void saveTenantId(String value) {
     saveValue(LocalStorageKeys.xTenantId, value, SavedValueDataType.string);
   }
+
+  @override
+  Future<String> getProjectId() async =>
+      await getValue(LocalStorageKeys.xProjectId, SavedValueDataType.string) as String;
+
+  @override
+  void saveProjectId(String value) {
+    saveValue(LocalStorageKeys.xProjectId, value, SavedValueDataType.string);
+  }
 }
