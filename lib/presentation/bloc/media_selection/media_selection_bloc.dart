@@ -5,14 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_thumbnail_video/video_thumbnail.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection_config.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_selection/model/media_asset_data.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
 import 'package:video_compress/video_compress.dart';
 
-import '../../screens/media/media_selection/media_selection_config.dart';
-import '../../screens/media/media_selection/model/media_asset_data.dart';
-
 part 'media_selection_event.dart';
+
 part 'media_selection_state.dart';
 
 class MediaSelectionBloc
@@ -269,12 +269,10 @@ class MediaSelectionBloc
     LoadMoreMediaEvent event,
     Emitter<MediaSelectionState> emit,
   ) async {
-    if (state is MediaSelectionLoadedState) {
-      final currentState = state as MediaSelectionLoadedState;
-      if (!currentState.isLoadingMore) {
-        // Don't increment _currentPage here, it's incremented in _onLoadMedia after successful load
-        add(LoadMediaEvent(loadMore: true));
-      }
+    final currentState = state as MediaSelectionLoadedState;
+    if (!currentState.isLoadingMore) {
+      // Don't increment _currentPage here, it's incremented in _onLoadMedia after successful load
+      add(LoadMediaEvent(loadMore: true));
     }
   }
 
@@ -372,17 +370,16 @@ class MediaSelectionBloc
     DeselectMediaEvent event,
     Emitter<MediaSelectionState> emit,
   ) async {
-    if (state is MediaSelectionLoadedState) {
-      _selectedMedia.remove(event.mediaData);
-      emit(MediaSelectionLoadedState(
-        media: List.from(_media),
-        albums: _albums,
-        currentAlbum: _currentAlbum,
-        selectedMedia: List.from(_selectedMedia),
-        isMultiSelectMode: _isMultiSelectMode,
-        hasMore: _hasMore,
-      ));
-    }
+    // If we're in an error state, restore to loaded state first
+    _selectedMedia.remove(event.mediaData);
+    emit(MediaSelectionLoadedState(
+      media: List.from(_media),
+      albums: _albums,
+      currentAlbum: _currentAlbum,
+      selectedMedia: List.from(_selectedMedia),
+      isMultiSelectMode: _isMultiSelectMode,
+      hasMore: _hasMore,
+    ));
   }
 
   Future<void> _onToggleSelectMode(
@@ -392,24 +389,21 @@ class MediaSelectionBloc
     if (_config == null || !_config!.isMultiSelect) {
       return;
     }
-
-    if (state is MediaSelectionLoadedState) {
-      _isMultiSelectMode = !_isMultiSelectMode;
-      if (!_isMultiSelectMode && _selectedMedia.length > 1) {
-        final lastMedia = _selectedMedia.last;
-        _selectedMedia.clear();
-        _selectedMedia.add(lastMedia);
-      }
-
-      emit(MediaSelectionLoadedState(
-        media: List.from(_media),
-        albums: _albums,
-        currentAlbum: _currentAlbum,
-        selectedMedia: List.from(_selectedMedia),
-        isMultiSelectMode: _isMultiSelectMode,
-        hasMore: _hasMore,
-      ));
+    _isMultiSelectMode = !_isMultiSelectMode;
+    if (!_isMultiSelectMode && _selectedMedia.length > 1) {
+      final lastMedia = _selectedMedia.last;
+      _selectedMedia.clear();
+      _selectedMedia.add(lastMedia);
     }
+
+    emit(MediaSelectionLoadedState(
+      media: List.from(_media),
+      albums: _albums,
+      currentAlbum: _currentAlbum,
+      selectedMedia: List.from(_selectedMedia),
+      isMultiSelectMode: _isMultiSelectMode,
+      hasMore: _hasMore,
+    ));
   }
 
   Future<void> _onCaptureMedia(

@@ -48,7 +48,7 @@ class _MediaEditViewState extends State<MediaEditView> {
   @override
   void initState() {
     super.initState();
-    _bloc = MediaEditBloc();
+    _bloc = context.getOrCreateBloc();
     _bloc.add(MediaEditInitialEvent(mediaDataList: widget.mediaDataList));
     // Force plugin registration
     if (Platform.isAndroid || Platform.isIOS) {
@@ -759,7 +759,7 @@ class _MediaEditViewState extends State<MediaEditView> {
             ),
 
             // Add more media button
-            if (widget.addMoreMedia != null)
+            if (widget.addMoreMedia != null && state.mediaEditItems.length < AppConstants.totalMediaLimit)
               GestureDetector(
                 key: const ValueKey('add_more_media'),
                 onTap: () => _addMoreMedia(state),
