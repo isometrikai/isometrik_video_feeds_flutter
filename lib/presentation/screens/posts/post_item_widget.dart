@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -426,9 +427,11 @@ class _PostItemWidgetState extends State<PostItemWidget>
 
     final backgroundUrls = <String>[];
 
-    // Preload posts 5-10 positions away (low priority)
+    // OPTIMIZATION: Platform-specific background preloading
+    // Android: Only preload 5-7 positions away (conservative)
+    // iOS: Preload 5-10 positions away (more aggressive)
     final startIndex = 5;
-    final endIndex = math.min(_reelsDataList.length - 1, 10);
+    final endIndex = math.min(_reelsDataList.length - 1, Platform.isAndroid ? 7 : 10);
 
     for (var i = startIndex; i <= endIndex; i++) {
       final post = _reelsDataList[i];
@@ -466,41 +469,46 @@ class _PostItemWidgetState extends State<PostItemWidget>
           '🎯 MainWidget: Page changed to index $index (@${reelsData.userName})');
     }
 
-    // OPTIMIZATION: Only cache current post + 1 ahead/behind to reduce memory pressure
-    final startIndex = math.max(0, index - 1); // Only 1 behind
-    final endIndex =
-        math.min(_reelsDataList.length - 1, index + 1); // Only 1 ahead
+    // OPTIMIZATION: Platform-specific preloading to avoid Android memory issues
+    // Android: ONLY 1 ahead (very conservative to prevent NO_MEMORY decoder errors)
+    // iOS: 3 ahead (more aggressive for smoother experience)
+    final preloadCount = Platform.isAndroid ? 1 : 3;
+    final startIndex = math.max(0, index - 1); // 1 behind
+    final endIndex = math.min(_reelsDataList.length - 1, index + preloadCount);
 
     // Collect media URLs for current post only (high priority)
     final currentPostMedia = <String>[];
+    final currentPostThumbnails = <String>[];
 
     // Process current post with high priority
     for (var mediaItem in reelsData.mediaMetaDataList) {
       if (mediaItem.mediaUrl.isEmpty) continue;
 
       if (mediaItem.mediaType == MediaType.video.value) {
-        // Video - cache both video and thumbnail
-        currentPostMedia.add(mediaItem.mediaUrl);
+        // Video - cache thumbnail first (highest priority), then video
         if (mediaItem.thumbnailUrl.isNotEmpty) {
-          currentPostMedia.add(mediaItem.thumbnailUrl);
+          currentPostThumbnails.add(mediaItem.thumbnailUrl);
         }
+        currentPostMedia.add(mediaItem.mediaUrl);
       } else {
-        // Image
+        // Image - high priority
         currentPostMedia.add(mediaItem.mediaUrl);
       }
     }
 
-    // Cache current post with high priority (NON-BLOCKING)
-    if (currentPostMedia.isNotEmpty) {
-      // Use unawaited to prevent blocking the UI thread
-      unawaited(MediaCacheFactory.precacheMedia(currentPostMedia,
+    // OPTIMIZATION: Load thumbnails FIRST (instant display), then videos
+    if (currentPostThumbnails.isNotEmpty) {
+      unawaited(MediaCacheFactory.precacheMedia(currentPostThumbnails,
           highPriority: true));
-
-      // Preload critical images in background
-      // unawaited(_preloadCriticalImages(reelsData));
     }
 
-    // Background cache nearby posts (non-blocking)
+    // Cache current post videos/images with high priority (NON-BLOCKING)
+    if (currentPostMedia.isNotEmpty) {
+      unawaited(MediaCacheFactory.precacheMedia(currentPostMedia,
+          highPriority: true));
+    }
+
+    // Background cache nearby posts (non-blocking) - now includes 3 posts ahead
     unawaited(_cacheNearbyPosts(startIndex, endIndex, index));
   }
 
