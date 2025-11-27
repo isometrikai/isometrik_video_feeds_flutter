@@ -4,6 +4,8 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:hive/hive.dart';
 import 'package:ism_video_reel_player/data/data.dart';
+import 'package:ism_video_reel_player/di/di.dart';
+import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:rudder_sdk_flutter/RudderController.dart';
 import 'package:rudder_sdk_flutter_platform_interface/platform.dart';
 import 'package:uuid/uuid.dart';
@@ -24,6 +26,10 @@ class EventQueueProvider {
     required String rudderStackWriteKey,
     required String rudderStackDataPlaneUrl,
   }) async {
+    final localDataUseCase = IsmInjectionUtils.getUseCase<IsmLocalDataUseCase>();
+    final tenantId = await localDataUseCase.getTenantId();
+    final projectId = await localDataUseCase.getProjectId();
+    final userId = await localDataUseCase.getUserId();
     _instance ??= LocalEventQueue();
     await _instance!.init();
     if (rudderStackWriteKey.isEmpty || rudderStackDataPlaneUrl.isEmpty) return;
@@ -37,10 +43,17 @@ class EventQueueProvider {
       trackLifecycleEvents: true,
     );
     builder.withMobileConfig(mobileConfig);
+    final rudderOptions = RudderOption();
+    rudderOptions.customContexts = {
+      'project': {'id': projectId},
+      'tenant': {'id': tenantId},
+    };
     RudderController.instance.initialize(
       rudderStackWriteKey,
       config: builder.build(),
+      options: rudderOptions,
     );
+    RudderController.instance.identify(userId);
   }
 
   /// Check if the event queue is initialized
@@ -130,9 +143,12 @@ class LocalEventQueue with WidgetsBindingObserver {
         for (final event in events) {
           final rudderProperties = RudderProperty();
           rudderProperties.putValue(map: event.payload);
+          final options = RudderOption();
+          options.putExternalId('userId', 'temp_userId');
           RudderController.instance.track(
             event.eventName,
             properties: rudderProperties,
+            options: options,
           );
         }
 

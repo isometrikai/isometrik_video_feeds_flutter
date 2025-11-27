@@ -36,7 +36,7 @@ Future<void> _initializeReelsSdk() async {
       lastName: lastName,
     ),
     rudderStackDataPlaneUrl: 'https://houseofappobxa.dataplane.rudderstack.com',
-    rudderStackWriteKey: '35TS07WtENT85K4N0uZNNov7W1Q',
+    rudderStackWriteKey: '360M58NTcDMelJWL0b5F4hYE4av',
     googleServiceJsonPath: AssetConstants.googleServiceJson,
     getCurrentBuildContext: () => exNavigatorKey.currentContext,
     defaultHeaders: {

@@ -188,7 +188,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
 
     TimeLineData? postIdPostData;
     debugPrint(
-        'social_post_bloc => postIdPostData cond: ${(postTabAssistData.postId?.trim().isNotEmpty == true && postTabAssistData.postList.isEmpty)}');
+        'social_post_bloc => postIdPostData cond: ${postTabAssistData.postId?.trim().isNotEmpty == true && postTabAssistData.postList.isEmpty}');
     if (postTabAssistData.postId?.trim().isNotEmpty == true && postTabAssistData.postList.isEmpty) {
       postIdPostData = await _getPostDetails(postTabAssistData.postId ?? '',
           onSuccess: postTabAssistData.postList.add);
@@ -635,7 +635,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   }
 
   FutureOr<void> _loadPosts(LoadPostsEvent event, Emitter<SocialPostState> emit) async {
-    event.postsByTab.forEach((tab, posts) => debugPrint('social_post_bloc => _loadPosts: $tab , postcount: ${posts.length}'));
+    event.postsByTab.forEach((tab, posts) =>
+        debugPrint('social_post_bloc => _loadPosts: $tab , postcount: ${posts.length}'));
     final myUserId = await _localDataUseCase.getUserId();
     emit(SocialPostLoadedState(
       postsByTab: event.postsByTab,
@@ -684,12 +685,12 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     return result.data;
   }
 
-  void sendAnalyticsEvent(
-      {required String eventName, required Map<String, dynamic> properties}) async {
-    final tenantId = await _localDataUseCase.getTenantId();
+  void sendAnalyticsEvent({
+    required String eventName,
+    required Map<String, dynamic> properties,
+  }) async {
     final finalEventMap = {
       ...properties,
-      'tenant_id': tenantId,
     };
     unawaited(EventQueueProvider.instance.addEvent(eventName, finalEventMap));
   }
