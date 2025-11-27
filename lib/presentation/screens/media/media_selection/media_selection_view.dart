@@ -3,15 +3,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:photo_manager/photo_manager.dart' as pm;
-import 'package:video_compress/video_compress.dart';
-import 'package:ism_video_reel_player/di/di.dart';
-import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_selection/widgets/media_selection_widgets.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
-import 'media_selection.dart';
-import 'widgets/media_selection_widgets.dart';
+import 'package:photo_manager/photo_manager.dart' as pm;
+import 'package:video_compress/video_compress.dart';
 
 class MediaSelectionView extends StatefulWidget {
   const MediaSelectionView({
@@ -39,7 +37,7 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
   @override
   void initState() {
     super.initState();
-    _bloc = MediaSelectionBloc();
+    _bloc = context.getOrCreateBloc();
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
     _bloc.add(MediaSelectionInitialEvent(
@@ -339,7 +337,7 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
                   current is MediaSelectionPermissionDeniedState ||
                   current is MediaSelectionLoadedState,
               listenWhen: (previous, current) =>
-                  current is MediaSelectionErrorState ||
+                  current is MediaSelectionErrorState && (previous is! MediaSelectionErrorState || previous.message != current.message) ||
                   current is MediaSelectionCompletedState,
               listener: (context, state) {
                 if (state is MediaSelectionErrorState) {
@@ -537,7 +535,8 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
                             _buildAlbumMenuItem(album, state.currentAlbum))
                         .toList(),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12.responsiveDimension),
+                      borderRadius:
+                          BorderRadius.circular(12.responsiveDimension),
                     ),
                     elevation: 8,
                     child: Container(

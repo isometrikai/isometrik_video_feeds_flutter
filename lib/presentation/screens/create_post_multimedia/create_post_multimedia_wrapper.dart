@@ -105,19 +105,23 @@ class _CreatePostMultimediaWrapperState
         .where((item) => item.mediaType == me.EditMediaType.image)
         .length;
 
+    final imageLimit = AppConstants.imageMediaLimit - presentImageCount;
+    final videoLimit = AppConstants.videoMediaLimit - presentVideoCount;
+    final mediaLimit = AppConstants.totalMediaLimit - (presentImageCount + presentVideoCount);
+
+
     final res = await Navigator.push<List<ms.MediaAssetData>>(
       context,
       MaterialPageRoute(
         builder: (context) => ms.MediaSelectionView(
           mediaSelectionConfig: mediaSelectionConfig.copyWith(
-            mediaListType: ms.MediaListType.imageVideo,
-            isMultiSelect: true,
-            selectMediaTitle: IsrTranslationFile.addCover,
-            imageMediaLimit: AppConstants.imageMediaLimit - presentImageCount,
-            videoMediaLimit: AppConstants.videoMediaLimit - presentVideoCount,
-            mediaLimit: AppConstants.totalMediaLimit -
-                (presentImageCount + presentVideoCount),
+            mediaListType: (videoLimit > 0 && imageLimit > 0) ? ms.MediaListType.imageVideo : (videoLimit > 0) ? ms.MediaListType.video : ms.MediaListType.image,
+            isMultiSelect: mediaLimit > 1,
+            imageMediaLimit: imageLimit,
+            videoMediaLimit: videoLimit,
+            mediaLimit: mediaLimit,
           ),
+          onCaptureMedia: _captureMedia,
         ),
       ),
     );
@@ -133,6 +137,7 @@ class _CreatePostMultimediaWrapperState
               mediaListType: ms.MediaListType.image,
               isMultiSelect: false,
               selectMediaTitle: IsrTranslationFile.addCover),
+          onCaptureMedia: _captureMedia,
         ),
       ),
     );

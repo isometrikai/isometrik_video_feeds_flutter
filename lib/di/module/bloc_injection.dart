@@ -90,5 +90,17 @@ class BlocInjection {
         IsmInjectionUtils.getUseCase<CommentActionUseCase>(),
       ),
     );
+
+    IsmInjectionUtils.registerBloc<MediaSelectionBloc>(
+          MediaSelectionBloc.new,
+    );
+
+    IsmInjectionUtils.registerBloc<MediaEditBloc>(
+      MediaEditBloc.new,
+    );
+
+    IsmInjectionUtils.registerBloc<CameraBloc>(
+      CameraBloc.new,
+    );
   }
 }

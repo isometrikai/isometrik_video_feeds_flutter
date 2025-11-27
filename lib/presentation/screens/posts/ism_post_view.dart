@@ -351,7 +351,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         },
         onTapComment: (totalCommentsCount) async {
           final result = await _handleCommentAction(
-              postData.id ?? '', totalCommentsCount, tabData.postSectionType);
+              postData.id ?? '', totalCommentsCount, tabData);
           return result;
         },
         onTapShare: (tabData.onShareClick == null)
@@ -621,7 +621,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   }
 
   Future<int> _handleCommentAction(
-      String postId, int totalCommentsCount, PostSectionType postSectionType) async {
+      String postId, int totalCommentsCount, TabDataModel tabData) async {
     final completer = Completer<int>();
 
     final result = await Utility.showBottomSheet<int>(
@@ -636,10 +636,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           totalCommentsCount: totalCommentsCount,
           onTapProfile: (userId) {
             context.pop(totalCommentsCount);
+            tabData.onTapUserProfile?.call(userId);
           },
           onTapHasTag: (hashTag) {
             context.pop(totalCommentsCount);
-            _redirectToHashtag(hashTag, postSectionType, null);
+            _redirectToHashtag(hashTag, tabData.postSectionType, null);
           },
         ),
       ),
