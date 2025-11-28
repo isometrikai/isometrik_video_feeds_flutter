@@ -32,6 +32,7 @@ class IsrVideoReelConfig {
     BuildContext? Function()? getCurrentBuildContext,
   }) async {
     if (isSdkInitialize) {
+      await _storeHeaderValues(defaultHeaders);
       await _saveUserInformation(userInfoClass: userInfoClass);
       return;
     }
