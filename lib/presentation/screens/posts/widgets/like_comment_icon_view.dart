@@ -8,12 +8,14 @@ class LikeCommentIconView extends StatefulWidget {
   const LikeCommentIconView({
     super.key,
     required this.postId,
+    required this.userId,
     required this.commentId,
     required this.isLiked,
     required this.onLikeDisLikeComment,
   });
 
   final String postId;
+  final String userId;
   final String commentId;
   final bool isLiked;
   final Function(bool isLiked) onLikeDisLikeComment;
@@ -33,8 +35,7 @@ class _LikeCommentIconViewState extends State<LikeCommentIconView> {
   }
 
   @override
-  Widget build(BuildContext context) =>
-      BlocConsumer<CommentActionCubit, CommentActionState>(
+  Widget build(BuildContext context) => BlocConsumer<CommentActionCubit, CommentActionState>(
         listenWhen: (previous, current) {
           if (current is CommentActionedState) {
             if (current.commentId == widget.commentId) {
@@ -50,17 +51,14 @@ class _LikeCommentIconViewState extends State<LikeCommentIconView> {
           return false;
         },
         listener: (context, state) {
-          if (state is CommentActionErrorState &&
-              state.commentId == widget.commentId) {
-            Utility.showInSnackBar(state.errorMsg, context,
-                isSuccessIcon: true);
+          if (state is CommentActionErrorState && state.commentId == widget.commentId) {
+            Utility.showInSnackBar(state.errorMsg, context, isSuccessIcon: true);
           }
         },
         buildWhen: (previous, current) {
           if (current is CommentActionedState) {
             if (current.commentId == widget.commentId) {
-              widget.onLikeDisLikeComment(
-                  current.commentAction == CommentAction.like);
+              widget.onLikeDisLikeComment(current.commentAction == CommentAction.like);
               return true;
             }
           } else if (current is CommentActionLoadingState) {
@@ -103,6 +101,7 @@ class _LikeCommentIconViewState extends State<LikeCommentIconView> {
                           : CommentAction.like,
                       widget.commentId,
                       widget.postId,
+                      widget.userId,
                     );
               },
               child: AppImage.svg(

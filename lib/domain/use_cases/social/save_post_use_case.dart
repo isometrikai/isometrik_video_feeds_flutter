@@ -19,7 +19,9 @@ class SavePostUseCase extends BaseUseCase {
           socialPostAction: socialPostAction,
         );
         return ApiResult(
-            data: response.responseCode == 200 ? response.data : null);
+            data: response.responseCode == 200 || response.responseCode == 201
+                ? response.data
+                : null);
       });
 
   Future<ApiResult<TimelineResponse?>> executeGetProfileSavedPostData({

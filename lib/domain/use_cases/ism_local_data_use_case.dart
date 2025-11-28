@@ -67,6 +67,18 @@ class IsmLocalDataUseCase extends BaseUseCase {
 
   void saveProjectId(String value) => repository.saveProjectId(value);
 
+  Future<String> getCountry() async => repository.getCountry();
+
+  void saveCountry(String value) => repository.saveCountry(value);
+
+  Future<String> getState() async => repository.getState();
+
+  void saveState(String value) => repository.saveState(value);
+
+  Future<String> getCity() async => repository.getCity();
+
+  void saveCity(String value) => repository.saveCity(value);
+
   void clearLocalData() {
     repository.clearLocalData();
   }

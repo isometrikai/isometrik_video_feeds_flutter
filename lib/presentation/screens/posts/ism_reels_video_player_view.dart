@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/data/data.dart';
-import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
@@ -955,7 +954,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                     onTap: () async {
                                       if (_reelData.onTapUserProfile != null) {
                                         _pauseForNavigation();
-                                        await _reelData.onTapUserProfile!(false);
+                                        await _reelData.onTapUserProfile?.call(false);
                                         _resumeAfterNavigation();
                                       }
                                     },
@@ -1172,6 +1171,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     try {
       await widget.onPressFollowButton!();
+      _logFollowEvent(
+          _reelData, _reelData.isFollow == true ? FollowAction.follow : FollowAction.unfollow);
     } finally {
       _isFollowLoading.value = false;
     }
@@ -1183,6 +1184,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     try {
       await widget.onPressSaveButton!();
+      _logSaveEvent(_reelData, _reelData.isSavedPost == true ? SaveAction.save : SaveAction.unsave);
     } finally {
       _isSaveLoading.value = false;
     }
@@ -1192,16 +1194,43 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (widget.onPressLikeButton == null || _isLikeLoading.value) return;
     _isLikeLoading.value = true;
     try {
-      final wasLiked = _reelData.isLiked == true;
       await widget.onPressLikeButton!();
-      // Only show animation if it was not liked before and is now liked
-      if (!wasLiked && _reelData.isLiked == true) {
-        _triggerLikeAnimation();
-      }
-      // If already liked, just do dislike (no animation)
+      _logLikeEvent(_reelData, _reelData.isLiked == true ? LikeAction.like : LikeAction.unlike);
     } finally {
       _isLikeLoading.value = false;
     }
+  }
+
+  void _logFollowEvent(ReelsData reelsData, FollowAction followAction) {
+    final eventMap = <String, dynamic>{
+      'view_source': 'feed',
+      'category': EventCategory.socialGraph.value,
+    };
+    sendAnalyticsEvent(
+        followAction == FollowAction.follow
+            ? EventType.userFollowed.value
+            : EventType.userUnFollowed.value,
+        eventMap);
+  }
+
+  void _logLikeEvent(ReelsData reelsData, LikeAction likeAction) {
+    final eventMap = <String, dynamic>{
+      'view_source': 'feed',
+      'category': EventCategory.postEngagement.value,
+    };
+    sendAnalyticsEvent(
+        likeAction == LikeAction.unlike ? EventType.postUnliked.value : EventType.postLiked.value,
+        eventMap);
+  }
+
+  void _logSaveEvent(ReelsData reelsData, SaveAction saveAction) {
+    final eventMap = <String, dynamic>{
+      'view_source': 'feed',
+      'category': EventCategory.postEngagement.value,
+    };
+    sendAnalyticsEvent(
+        saveAction == SaveAction.save ? EventType.postSaved.value : EventType.postHidden.value,
+        eventMap);
   }
 
   void _triggerLikeAnimation() {
@@ -1474,86 +1503,51 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       _isMuted = !_isMuted;
       _globalMuteState = _isMuted; // Update global mute state
     });
+    _logMuteAndUnMuteEvent();
     // Volume change is handled by VideoPlayerWidget via didUpdateWidget
     _triggerMuteAnimation();
+  }
+
+  void _logMuteAndUnMuteEvent() {
+    final eventMap = <String, dynamic>{
+      'view_source': 'feed',
+      'sound_enable': _isMuted == false,
+      'category': EventCategory.videoEngagement.value,
+    };
+    sendAnalyticsEvent(EventType.videoSoundToggled.value, eventMap);
   }
 
   /// log image post event
   void _logImagePostEvent() {
     if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kPictureType) {
-      sendAnalyticsEvent({
-        'media_url': _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl,
-      });
+      sendAnalyticsEvent(EventType.postViewed.value, {});
     }
   }
 
   /// Implementation of PostHelperCallBacks interface
   /// This method is called by VideoPlayerWidget to send analytics events
   @override
-  void sendAnalyticsEvent(Map<String, dynamic> analyticsData) async {
-    final socialPostBloc = IsmInjectionUtils.getOtherClass<SocialPostBloc>();
+  void sendAnalyticsEvent(String eventName, Map<String, dynamic> analyticsData) async {
     try {
-      // Get device info from dependency injection
-      final deviceInfoManager = IsmInjectionUtils.getOtherClass<DeviceInfoManager>();
-
       // Prepare analytics event in the required format: "Post Viewed"
       final postViewedEvent = {
-        'event': 'Post Viewed',
         'post_id': _reelData.postId ?? '',
+        'post_author_id': _reelData.userId ?? '',
         'post_type': _reelData.mediaMetaDataList.length > 1
             ? 'carousel'
             : _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kVideoType
                 ? 'video'
                 : 'image',
-        'dwell_time': analyticsData['view_duration'] ?? 0,
         'timestamp': DateTime.now().toIso8601String(),
       };
+      final finalAnalyticsDataMap = {
+        ...postViewedEvent,
+        ...analyticsData,
+      };
 
-      // Old data structure (commented out)
-      // final postViewedEvent = {
-      //   // Post information
-      //   'post_id': _reelData.postId ?? '',
-      //   'post_title': _reelData.description ?? '',
-      //
-      //   // Video/Media watch metrics
-      //   'duration_watched': analyticsData['view_duration'] ?? 0, // seconds
-      //   'total_duration': analyticsData['total_duration'] ?? 0, // seconds
-      //   'completion_rate':
-      //       analyticsData['view_completion_rate'] ?? 0, // percentage
-      //
-      //   // Device information
-      //   'platform': Platform.isIOS ? 'iOS' : 'Android',
-      //   'device_model': deviceInfoManager.deviceModel ?? 'Unknown',
-      //   'app_version': appVersion,
-      //
-      //   // Content information
-      //   'category': 'General', // Customize based on your data
-      //   'content_type':
-      //       _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType ==
-      //               kVideoType
-      //           ? 'video'
-      //           : 'image',
-      //
-      //   // User information
-      //   'user_id': widget.loggedInUserId ?? '', // Logged in user (viewer)
-      //   'creator_user_id': _reelData.userId ?? '', // Post creator
-      //   'creator_user_name': _reelData.userName ?? '',
-      //
-      //   // Geolocation (customize as needed)
-      //   'location': 'US', // Add your location logic here
-      //
-      //   // Additional metadata
-      //   'view_source': analyticsData['view_source'] ?? 'feed',
-      //   'media_url': analyticsData['media_url'] ?? '',
-      //   'timestamp': DateTime.now().toIso8601String(),
-      // };
-
-      debugPrint('📊 Post Viewed Event: ${jsonEncode(postViewedEvent)}');
-
-      socialPostBloc.sendAnalyticsEvent(
-        eventName: EventType.view.value,
-        properties: postViewedEvent.removeEmptyValues(),
-      );
+      debugPrint('📊 Post Viewed Event: ${jsonEncode(finalAnalyticsDataMap)}');
+      unawaited(EventQueueProvider.instance
+          .addEvent(eventName, finalAnalyticsDataMap.removeEmptyValues()));
     } catch (e) {
       debugPrint('❌ Error sending analytics event: $e');
       return null;

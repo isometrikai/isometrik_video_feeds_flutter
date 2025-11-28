@@ -96,6 +96,7 @@ class IsrVideoReelConfig {
     await EventQueueProvider.initialize(
       rudderStackWriteKey: rudderStackWriteKey,
       rudderStackDataPlaneUrl: rudderStackDataPlaneUrl,
+      userId: userId,
     );
     RudderStackAnalyticsService().onLogin(userId);
   }

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -33,8 +34,7 @@ class VideoPlayerWidget extends StatefulWidget {
   State<VideoPlayerWidget> createState() => _VideoPlayerWidgetState();
 
   // Static method to access state from GlobalKey
-  static _VideoPlayerWidgetState? of(GlobalKey key) =>
-      key.currentState as _VideoPlayerWidgetState?;
+  static _VideoPlayerWidgetState? of(GlobalKey key) => key.currentState as _VideoPlayerWidgetState?;
 }
 
 class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
@@ -44,10 +44,14 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   bool _isVisible = false;
   bool _isDisposed = false;
   bool _hasCompleted = false; // Track if video has already completed
-  bool _isManuallyPaused =
-      false; // Track if video was manually paused (e.g., long press)
+  bool _isManuallyPaused = false; // Track if video was manually paused (e.g., long press)
   bool _hasLoggedWatchEvent = false; // Track if watch event has been logged
   Duration _maxWatchPosition = Duration.zero; // Track maximum watch position
+
+  // Track video start and progress milestones
+  bool _hasLoggedVideoStarted = false;
+  final Set<int> _loggedProgressMilestones =
+      {}; // Track which milestones (25, 50, 75, 100) have been logged
 
   @override
   void initState() {
@@ -62,12 +66,11 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
     try {
       // OPTIMIZATION: Try to get already cached and initialized controller first
-      _videoPlayerController = widget.videoCacheManager
-          .getCachedMedia(widget.mediaUrl) as IVideoPlayerController?;
+      _videoPlayerController =
+          widget.videoCacheManager.getCachedMedia(widget.mediaUrl) as IVideoPlayerController?;
 
       // If controller exists and is already initialized, use it directly
-      if (_videoPlayerController != null &&
-          _videoPlayerController!.isInitialized) {
+      if (_videoPlayerController != null && _videoPlayerController!.isInitialized) {
         debugPrint(
             '✅ VideoPlayerWidget: Using cached initialized controller for: ${widget.mediaUrl}');
         await _setupVideoController();
@@ -83,17 +86,14 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       // OPTIMIZATION: If no cached controller, trigger precaching ONCE
       // precacheMedia will handle initialization internally
       if (_videoPlayerController == null) {
-        debugPrint(
-            '🔄 VideoPlayerWidget: Precaching video for: ${widget.mediaUrl}');
-        await MediaCacheFactory.precacheMedia([widget.mediaUrl],
-            highPriority: true);
-        _videoPlayerController = widget.videoCacheManager
-            .getCachedMedia(widget.mediaUrl) as IVideoPlayerController?;
+        debugPrint('🔄 VideoPlayerWidget: Precaching video for: ${widget.mediaUrl}');
+        await MediaCacheFactory.precacheMedia([widget.mediaUrl], highPriority: true);
+        _videoPlayerController =
+            widget.videoCacheManager.getCachedMedia(widget.mediaUrl) as IVideoPlayerController?;
       }
 
       // Setup only if controller is now initialized
-      if (_videoPlayerController != null &&
-          _videoPlayerController!.isInitialized) {
+      if (_videoPlayerController != null && _videoPlayerController!.isInitialized) {
         await _setupVideoController();
         if (mounted) {
           setState(() {
@@ -102,8 +102,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           _checkInitialVisibility();
         }
       } else {
-        debugPrint(
-            '⚠️ VideoPlayerWidget: Failed to initialize video: ${widget.mediaUrl}');
+        debugPrint('⚠️ VideoPlayerWidget: Failed to initialize video: ${widget.mediaUrl}');
       }
     } catch (e) {
       debugPrint('❌ VideoPlayerWidget: Error initializing video: $e');
@@ -113,8 +112,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   }
 
   Future<void> _setupVideoController() async {
-    if (_videoPlayerController == null ||
-        !_videoPlayerController!.isInitialized) return;
+    if (_videoPlayerController == null || !_videoPlayerController!.isInitialized) return;
 
     try {
       // Set looping to false so video can complete
@@ -127,6 +125,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       _isManuallyPaused = false;
       _hasLoggedWatchEvent = false;
       _maxWatchPosition = Duration.zero;
+      _hasLoggedVideoStarted = false;
+      _loggedProgressMilestones.clear();
 
       // Add listener for video completion
       _videoPlayerController!.addListener(_handlePlaybackProgress);
@@ -142,9 +142,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   }
 
   void _handlePlaybackProgress() {
-    if (_isDisposed ||
-        _videoPlayerController == null ||
-        !_videoPlayerController!.isInitialized) {
+    if (_isDisposed || _videoPlayerController == null || !_videoPlayerController!.isInitialized) {
       return;
     }
 
@@ -156,7 +154,29 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       _maxWatchPosition = position;
     }
 
-    // Check if video has completed (with small threshold to account for timing)
+    // 1. Log "Video Started" event when video actually starts playing (position > 0)
+    if (!_hasLoggedVideoStarted &&
+        position.inMilliseconds > 0 &&
+        widget.postHelperCallBacks != null) {
+      _hasLoggedVideoStarted = true;
+      _logVideoStartedEvent();
+    }
+
+    // 2. Log "Video Progress" events at 25%, 50%, 75%, 100% milestones
+    if (duration.inMilliseconds > 0 && widget.postHelperCallBacks != null) {
+      final progressPercentage = (position.inMilliseconds / duration.inMilliseconds * 100).toInt();
+
+      // Check and log each milestone once
+      final milestones = [25, 50, 75, 100];
+      for (final milestone in milestones) {
+        if (progressPercentage >= milestone && !_loggedProgressMilestones.contains(milestone)) {
+          _loggedProgressMilestones.add(milestone);
+          _logVideoProgressEvent(milestone, position, duration);
+        }
+      }
+    }
+
+    // 3. Check if video has completed (with small threshold to account for timing)
     if (duration.inMilliseconds > 0 &&
         position.inMilliseconds >= duration.inMilliseconds - 100 &&
         !_hasCompleted) {
@@ -164,7 +184,61 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       // Video completed - notify callback
       widget.onVideoCompleted?.call();
       // Log watch event when video completes
-      _logWatchEventIfNeeded();
+      // _logWatchEventIfNeeded();
+    }
+  }
+
+  /// Log "Video Started" event when playback begins
+  void _logVideoStartedEvent() {
+    try {
+      final duration = _videoPlayerController!.duration;
+      final watchedSeconds = _maxWatchPosition.inSeconds;
+      final totalSeconds = duration.inSeconds;
+
+      // Only log if user watched for at least 1 second
+      if (watchedSeconds < 1) {
+        return;
+      }
+
+      final eventMap = <String, dynamic>{
+        'view_source': 'feed',
+        'status': _videoPlayerController?.isPlaying == true ? 'playing' : 'paused',
+        'dwell_time': watchedSeconds,
+        'total_duration': totalSeconds,
+        'category': EventCategory.videoEngagement.value,
+      };
+
+      widget.postHelperCallBacks?.sendAnalyticsEvent(
+        _videoPlayerController?.isPlaying == true
+            ? EventType.videoStarted.value
+            : EventType.videoPaused.value,
+        eventMap,
+      );
+
+      debugPrint('📹 Video Started - Duration: ${duration.inSeconds}s');
+    } catch (e) {
+      debugPrint('❌ Error logging Video Started event: $e');
+    }
+  }
+
+  /// Log "Video Progress" event at specific milestones (25%, 50%, 75%, 100%)
+  void _logVideoProgressEvent(int milestone, Duration position, Duration duration) {
+    try {
+      final eventMap = <String, dynamic>{
+        'progress_milestone': milestone, // 25, 50, 75, or 100
+        'current_position': position.inSeconds,
+        'video_duration': duration.inSeconds,
+        'category': EventCategory.videoEngagement.value,
+      };
+
+      widget.postHelperCallBacks?.sendAnalyticsEvent(
+        EventType.videoProgress.value,
+        eventMap,
+      );
+
+      debugPrint('📹 Video Progress - $milestone% reached at ${position.inSeconds}s');
+    } catch (e) {
+      debugPrint('❌ Error logging Video Progress event: $e');
     }
   }
 
@@ -180,11 +254,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     }
 
     // Control playback based on visibility (only if not manually paused)
-    if (_videoPlayerController != null &&
-        _videoPlayerController!.isInitialized) {
-      if (_isVisible &&
-          !_videoPlayerController!.isPlaying &&
-          !_isManuallyPaused) {
+    if (_videoPlayerController != null && _videoPlayerController!.isInitialized) {
+      if (_isVisible && !_videoPlayerController!.isPlaying && !_isManuallyPaused) {
         // Video is visible - play it (only if not manually paused)
         _videoPlayerController!.play();
         widget.videoCacheManager.markAsVisible(widget.mediaUrl);
@@ -203,6 +274,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         _videoPlayerController!.isPlaying) {
       _isManuallyPaused = true;
       _videoPlayerController!.pause();
+      _logVideoStartedEvent();
     }
   }
 
@@ -215,6 +287,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       if (_isVisible) {
         _videoPlayerController!.play();
       }
+      _logVideoStartedEvent();
     }
   }
 
@@ -261,8 +334,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     _isDisposed = true;
     // Log watch event when widget is disposed (user navigates away)
     _logWatchEventIfNeeded();
-    if (_videoPlayerController != null &&
-        _videoPlayerController!.isInitialized) {
+    if (_videoPlayerController != null && _videoPlayerController!.isInitialized) {
       _videoPlayerController!.removeListener(_handlePlaybackProgress);
       _videoPlayerController!.pause();
       widget.videoCacheManager.markAsNotVisible(widget.mediaUrl);
@@ -292,23 +364,22 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         }
 
         // Calculate completion rate as percentage
-        final completionRate = totalSeconds > 0
-            ? ((watchedSeconds / totalSeconds) * 100).toInt()
-            : 0;
+        final completionRate =
+            totalSeconds > 0 ? ((watchedSeconds / totalSeconds) * 100).toInt() : 0;
 
         final eventMap = <String, dynamic>{
-          'media_url': widget.mediaUrl,
           'view_source': 'feed',
           'view_completion_rate': completionRate,
-          'view_duration': watchedSeconds,
+          'dwell_time': watchedSeconds,
           'total_duration': totalSeconds,
+          'category': EventCategory.postEngagement.value,
         };
 
         // Mark as logged to prevent duplicate logging
         _hasLoggedWatchEvent = true;
 
         // Call the callback to send analytics
-        widget.postHelperCallBacks?.sendAnalyticsEvent(eventMap);
+        widget.postHelperCallBacks?.sendAnalyticsEvent(EventType.postViewed.value, eventMap);
       } catch (e) {
         debugPrint('❌ Error logging watch event: $e');
       }
@@ -344,8 +415,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                               color: Colors.black,
                               child: Center(
                                 child: RepaintBoundary(
-                                  child: _videoPlayerController!
-                                      .buildVideoPlayerWidget(),
+                                  child: _videoPlayerController!.buildVideoPlayerWidget(),
                                 ),
                               ),
                             ),
@@ -379,8 +449,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     FilterQuality filterQuality = FilterQuality.high,
     bool showError = false,
   }) {
-    final isLocalUrl =
-        imageUrl.isStringEmptyOrNull == false && Utility.isLocalUrl(imageUrl);
+    final isLocalUrl = imageUrl.isStringEmptyOrNull == false && Utility.isLocalUrl(imageUrl);
     return isLocalUrl
         ? AppImage.file(
             imageUrl,
