@@ -181,4 +181,31 @@ class IsrLocalStorageRepositoryImpl implements IsrLocalStorageRepository {
   void saveProjectId(String value) {
     saveValue(LocalStorageKeys.xProjectId, value, SavedValueDataType.string);
   }
+
+  @override
+  Future<String> getCity() async =>
+      await getValue(LocalStorageKeys.city, SavedValueDataType.string) as String;
+
+  @override
+  Future<String> getCountry() async =>
+      await getValue(LocalStorageKeys.country, SavedValueDataType.string) as String;
+
+  @override
+  Future<String> getState() async =>
+      await getValue(LocalStorageKeys.state, SavedValueDataType.string) as String;
+
+  @override
+  void saveCity(String value) {
+    saveValue(LocalStorageKeys.city, value, SavedValueDataType.string);
+  }
+
+  @override
+  void saveCountry(String value) {
+    saveValue(LocalStorageKeys.country, value, SavedValueDataType.string);
+  }
+
+  @override
+  void saveState(String value) {
+    saveValue(LocalStorageKeys.state, value, SavedValueDataType.string);
+  }
 }

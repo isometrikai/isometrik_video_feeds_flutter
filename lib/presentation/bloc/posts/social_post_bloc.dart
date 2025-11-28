@@ -551,6 +551,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     );
     if (apiResult.isSuccess) {
       if (event.commentAction == CommentAction.comment) {
+        _sendAnalyticsEvent(EventType.commentCreated.value, event.commentId ?? '',
+            event.postId ?? '', event.userId ?? '');
         comment?.status = IsrTranslationFile.inReview;
         if (commentList != null) {
           emit(
@@ -685,13 +687,30 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     return result.data;
   }
 
-  void sendAnalyticsEvent({
-    required String eventName,
-    required Map<String, dynamic> properties,
-  }) async {
-    final finalEventMap = {
-      ...properties,
-    };
-    unawaited(EventQueueProvider.instance.addEvent(eventName, finalEventMap));
+  void _sendAnalyticsEvent(
+    String eventName,
+    String commentId,
+    String postId,
+    String userId,
+  ) async {
+    try {
+      // Prepare analytics event in the required format: "Post Viewed"
+      final postViewedEvent = {
+        'post_id': postId,
+        'comment_id': commentId,
+        'post_author_id': userId,
+        'timestamp': DateTime.now().toIso8601String(),
+      };
+      final finalAnalyticsDataMap = {
+        ...postViewedEvent,
+      };
+
+      debugPrint('📊 Post Viewed Event: ${jsonEncode(finalAnalyticsDataMap)}');
+      unawaited(EventQueueProvider.instance
+          .addEvent(eventName, finalAnalyticsDataMap.removeEmptyValues()));
+    } catch (e) {
+      debugPrint('❌ Error sending analytics event: $e');
+      return null;
+    }
   }
 }

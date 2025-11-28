@@ -91,6 +91,11 @@ enum LikeAction {
   unlike,
 }
 
+enum SaveAction {
+  save,
+  unsave,
+}
+
 enum CommentAction {
   like,
   dislike,

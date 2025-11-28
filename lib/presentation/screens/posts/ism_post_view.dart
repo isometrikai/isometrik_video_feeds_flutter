@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
@@ -307,8 +308,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         onTapPlace: (placeList) {
           if (placeList.isListEmptyOrNull) return;
           if (placeList.length == 1) {
-            _goToPlaceDetailsView(
-                tabData.postSectionType, placeList.first, TagType.place, tabData.onTapUserProfile);
+            _goToPlaceDetailsView(tabData.postSectionType, placeList.first, TagType.place,
+                tabData.onTapUserProfile, postData.id ?? '');
           } else {
             // _showPlaceList(placeList, postSectionType);
           }
@@ -318,7 +319,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           if (mentionList.length == 1) {
             final mention = mentionList.first;
             if (mention.tag.isStringEmptyOrNull == false) {
-              _redirectToHashtag(mention.tag, tabData.postSectionType, tabData.onTapUserProfile);
+              _redirectToHashtag(mention.tag, tabData.postSectionType, tabData.onTapUserProfile,
+                  postData.id ?? '');
               return null;
             } else {
               tabData.onTapUserProfile?.call(mention.userId);
@@ -348,10 +350,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         description: postData.caption ?? '',
         onTapUserProfile: (isSelfProfile) {
           tabData.onTapUserProfile?.call(postData.user?.id);
+          _logProfileEvent(postData.user?.id ?? '', postData.id ?? '');
         },
         onTapComment: (totalCommentsCount) async {
-          final result = await _handleCommentAction(
-              postData.id ?? '', totalCommentsCount, tabData);
+          final result = await _handleCommentAction(postData.id ?? '', totalCommentsCount, tabData);
           return result;
         },
         onTapShare: (tabData.onShareClick == null)
@@ -404,6 +406,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     PlaceMetaData placeMetaData,
     TagType place,
     Function(String)? onTapProfilePicture,
+    String postId,
   ) async {
     var lat = 0.0;
     var long = 0.0;
@@ -434,6 +437,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         onTapProfilePicture: (userId) {
           if (onTapProfilePicture != null) {
             onTapProfilePicture.call(userId);
+            _logProfileEvent(userId, postId);
           }
         },
       );
@@ -637,10 +641,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           onTapProfile: (userId) {
             context.pop(totalCommentsCount);
             tabData.onTapUserProfile?.call(userId);
+            _logProfileEvent(userId, postId);
           },
           onTapHasTag: (hashTag) {
             context.pop(totalCommentsCount);
-            _redirectToHashtag(hashTag, tabData.postSectionType, null);
+            _redirectToHashtag(hashTag, tabData.postSectionType, null, postId);
           },
         ),
       ),
@@ -656,8 +661,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     String? tag,
     PostSectionType postSectionType,
     Function(String)? onTapProfilePicture,
+    String postId,
   ) {
-    _goToPostListingView(postSectionType, tag ?? '', TagType.hashtag, onTapProfilePicture);
+    _goToPostListingView(postSectionType, tag ?? '', TagType.hashtag, onTapProfilePicture, postId);
   }
 
   void _goToPostListingView(
@@ -665,13 +671,19 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     String tagValue,
     TagType tagType,
     Function(String)? onTapProfilePicture,
+    String postId,
   ) async {
     // ✅ Navigation now works because we wrap PostListingView with BlocProvider during navigation
     IsrAppNavigator.navigateToPostListing(
       context,
       tagValue: tagValue,
       tagType: tagType,
-      onTapProfilePicture: onTapProfilePicture,
+      onTapProfilePicture: (userId) {
+        if (onTapProfilePicture != null) {
+          onTapProfilePicture.call(userId);
+          _logProfileEvent(userId, postId);
+        }
+      },
     );
   }
 
@@ -689,6 +701,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         onTapUserProfile: (userId) {
           context.pop();
           _tabDataModelList[_currentIndex].onTapUserProfile?.call(userId);
+          _logProfileEvent(userId, postData.id ?? '');
         },
       ),
     );
@@ -741,6 +754,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                   if (success) {
                     Utility.showInSnackBar(IsrTranslationFile.postReportedSuccessfully, context,
                         isSuccessIcon: true);
+                    _logReportEvent(postDataModel);
                   }
                   completer.complete(success);
                 },
@@ -1000,5 +1014,30 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     final postDataString = await IsrAppNavigator.goToEditPostView(context,
         postData: postDataModel, onTagProduct: widget.onTagProduct);
     return postDataString;
+  }
+
+  void _logReportEvent(TimeLineData postDataModel) async {
+    final postReportEvent = {
+      'post_id': postDataModel.id ?? '',
+      'post_author_id': postDataModel.userId ?? '',
+      'post_type': postDataModel.media?.first.mediaType,
+      'category': EventCategory.postEngagement.value,
+      'timestamp': DateTime.now().toIso8601String(),
+    };
+
+    unawaited(EventQueueProvider.instance
+        .addEvent(EventType.postReported.value, postReportEvent.removeEmptyValues()));
+  }
+
+  void _logProfileEvent(String userId, String postId) {
+    final profileEvent = {
+      'post_id': postId,
+      'user_id': userId,
+      'category': EventCategory.socialGraph.value,
+      'timestamp': DateTime.now().toIso8601String(),
+    };
+
+    unawaited(EventQueueProvider.instance
+        .addEvent(EventType.profileViewed.value, profileEvent.removeEmptyValues()));
   }
 }

@@ -37,11 +37,23 @@ class DeviceInfoManager {
   /// Device is a type of 1 for Android and 2 for iOS
   String get deviceTypeCode => Platform.isAndroid ? '1' : '2';
 
+  /// Device type as string (mobile)
+  String get deviceType => 'mobile';
+
   //app store type 1 for PLAY_STORE and 2 for APP_STORE
   int get appStoreType => Platform.isAndroid ? 1 : 2;
 
   /// Device OS
-  String get deviceOs => Platform.isAndroid ? 'ANDROID' : 'IOS';
+  String get deviceOs => Platform.isAndroid ? 'android' : 'ios';
+
+  /// Device OS version
+  String get deviceOsVersion => Platform.isAndroid
+      ? androidDeviceInfo?.version.release ?? ''
+      : iosDeviceInfo?.systemVersion ?? '';
+
+  /// Device manufacturer
+  String get deviceManufacturer =>
+      Platform.isAndroid ? androidDeviceInfo?.manufacturer ?? '' : 'Apple';
 
   String get appVersion => androidDeviceInfo?.version.release ?? '';
 }
