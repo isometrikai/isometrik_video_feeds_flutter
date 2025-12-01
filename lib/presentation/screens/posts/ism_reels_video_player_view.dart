@@ -1538,7 +1538,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             : _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kVideoType
                 ? 'video'
                 : 'image',
+        'media_count': _reelData.mediaMetaDataList.length,
         'timestamp': DateTime.now().toIso8601String(),
+        'hashtags': _reelData.tags?.hashtags?.isEmptyOrNull == false
+            ? _reelData.tags!.hashtags!.map((tag) => tag.tag).toList()
+            : [],
       };
       final finalAnalyticsDataMap = {
         ...postViewedEvent,
