@@ -79,6 +79,7 @@ class EventQueueProvider {
         'device_manufacturer': deviceInfoManager.deviceManufacturer,
       }
     };
+
     if (userId.isEmptyOrNull == false) {
       RudderController.instance.putAnonymousId(userId);
     }
