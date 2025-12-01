@@ -3,10 +3,15 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  audioplayers_windows
   connectivity_plus
   file_selector_windows
+  flutter_inappwebview_windows
   flutter_secure_storage_windows
+  geolocator_windows
   ism_video_reel_player
+  permission_handler_windows
+  pro_video_editor
   url_launcher_windows
 )
 

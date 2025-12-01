@@ -88,40 +88,55 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     // final userId = await _localDataUseCase.getUserId();
     try {
       emit(HomeLoading(isLoading: true));
-      await _initializeReelsSdk();
-      await Future.wait([
-        _callGetForYouPost(true, false, false, null),
-        _callGetTrendingPost(true, false, false, null),
-        _callGetTimeLinePost(true, false, false, null),
-      ]);
-      add(LoadPostsEvent(
-          timeLinePostList: _timeLinePostList,
-          trendingPosts: _trendingPostList,
-          forYouPosts: _forYouPostList));
+      // await _initializeReelsSdk();
+      // await Future.wait([
+      //   _callGetForYouPost(true, false, false, null),
+      //   _callGetTrendingPost(true, false, false, null),
+      //   _callGetTimeLinePost(true, false, false, null),
+      // ]);
+      add(LoadPostsEvent(timeLinePostList: [], trendingPosts: [], forYouPosts: []));
     } catch (error) {
       emit(HomeError(error.toString()));
     }
   }
 
   Future<void> _initializeReelsSdk() async {
-    final accessToken = await _localDataUseCase.getAccessToken();
     final userId = await _localDataUseCase.getUserId();
     final userName = await _localDataUseCase.getFirstName();
     final firstName = await _localDataUseCase.getFirstName();
     final lastName = await _localDataUseCase.getLastName();
+    final appVersion = await Utility.getAppVersion();
+    final accessToken = await _localDataUseCase.getAccessToken();
     await isr.IsrVideoReelConfig.initializeSdk(
       baseUrl: AppUrl.appBaseUrl,
-      postInfo: isr.PostInfoClass(
-        accessToken: accessToken,
-        userInformation: isr.UserInfoClass(
-          userId: userId,
-          userName: userName,
-          firstName: firstName,
-          lastName: lastName,
-        ),
+      userInfoClass: isr.UserInfoClass(
+        userId: userId,
+        userName: userName,
+        firstName: firstName,
+        lastName: lastName,
       ),
-      // Optional: Provide callback to receive events before flushing
-      onBeforeFlushCallback: handleEventsBeforeFlush,
+      googleServiceJsonPath: AssetConstants.googleServiceJson,
+      getCurrentBuildContext: () => exNavigatorKey.currentContext,
+      rudderStackDataPlaneUrl: 'https://houseofappobxa.dataplane.rudderstack.com',
+      rudderStackWriteKey: '35TS07WtENT85K4N0uZNNov7W1Q',
+      defaultHeaders: {
+        'Authorization': accessToken,
+        'Accept': 'application/json',
+        'Content-Type': AppConstants.headerContentType,
+        'lan': 'en',
+        'city': 'Bengaluru',
+        'state': 'karnataka',
+        'country': 'India',
+        'ipaddress': '192.168.1.1',
+        'version': appVersion,
+        'currencySymbol': '\$',
+        'currencyCode': 'USD',
+        'platform': Utility.platFormType().platformText,
+        'latitude': DefaultValues.defaultLatitude,
+        'longitude': DefaultValues.defaultLongitude,
+        'x-tenant-id': AppConstants.tenantId,
+        'x-project-id': AppConstants.projectId,
+      },
     );
   }
 
@@ -563,9 +578,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   FutureOr<void> _loadPosts(LoadPostsEvent event, Emitter<HomeState> emit) async {
     final myUserId = await _localDataUseCase.getUserId();
     emit(HomeLoaded(
-      timeLinePosts: event.timeLinePostList,
-      trendingPosts: event.trendingPosts,
-      forYouPosts: event.forYouPosts,
+      timeLinePosts: _timeLinePostList,
+      trendingPosts: _trendingPostList,
+      forYouPosts: _forYouPostList,
       userId: myUserId,
     ));
   }

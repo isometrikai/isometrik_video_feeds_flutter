@@ -1,4 +1,4 @@
-import 'package:ism_video_reel_player/domain/base_repository.dart';
+import 'package:ism_video_reel_player/domain/repository/base_repository.dart';
 
 abstract class IsrLocalStorageRepository extends BaseRepository {
   Future<String> getUserId();
@@ -37,6 +37,12 @@ abstract class IsrLocalStorageRepository extends BaseRepository {
 
   Future<String> getUserInfo();
 
+  Future<String> getUserName();
+
+  Future<double> getLatitude();
+
+  Future<double> getLongitude();
+
   void saveLanguage(String value);
 
   void saveIsLoggedIn(bool value);
@@ -54,4 +60,28 @@ abstract class IsrLocalStorageRepository extends BaseRepository {
   void saveLastName(String value);
 
   void saveProfilePic(String value);
+
+  void saveLatitude(double value);
+
+  void saveLongitude(double value);
+
+  void saveTenantId(String value);
+
+  Future<String> getTenantId();
+
+  void saveProjectId(String value);
+
+  Future<String> getProjectId();
+
+  void saveCountry(String value);
+
+  Future<String> getCountry();
+
+  void saveState(String value);
+
+  Future<String> getState();
+
+  void saveCity(String value);
+
+  Future<String> getCity();
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/res/res.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 
 class PostPlaceHolderView extends StatelessWidget {
   const PostPlaceHolderView({
@@ -23,7 +24,8 @@ class PostPlaceHolderView extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: Colors.white.changeOpacity(0.3),
               ),
-              child: const AppImage.svg(AssetConstants.icAddFollowerPlaceHolder),
+              child:
+                  const AppImage.svg(AssetConstants.icAddFollowerPlaceHolder),
             ),
             IsrDimens.boxHeight(IsrDimens.ten),
             Text(

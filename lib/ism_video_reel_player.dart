@@ -8,11 +8,17 @@ export 'data/data.dart';
 export 'di/di.dart';
 // Domain exports
 export 'domain/domain.dart';
+export 'domain/models/user_info_class.dart';
 // Config exports
 export 'isr_video_reel_config.dart';
 // Presentation exports
 export 'presentation/presentation.dart';
-export 'utils/isr_utils.dart';
+//remote
+export 'remote/remote.dart';
+// page navigator
+export 'utils/navigator/navigator.dart';
+// enum
+export 'utils/enums.dart';
 
 class IsmVideoReelPlayer {
   Future<String?> getPlatformVersion() =>

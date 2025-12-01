@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
-import 'package:ism_video_reel_player/utils/isr_utils.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 
 class AppImage extends StatelessWidget {
   const AppImage.asset(
@@ -24,6 +24,7 @@ class AppImage extends StatelessWidget {
     this.placeHolderName,
     this.fadeAnimationEnable,
     this.filterQuality,
+    this.textColor,
   })  : _imageType = ImageType.asset,
         showError = false,
         color = null;
@@ -45,6 +46,7 @@ class AppImage extends StatelessWidget {
     this.placeHolderName,
     this.fadeAnimationEnable,
     this.filterQuality,
+    this.textColor,
   })  : _imageType = ImageType.svg,
         showError = false;
 
@@ -65,6 +67,7 @@ class AppImage extends StatelessWidget {
     this.placeHolderName,
     this.fadeAnimationEnable,
     this.filterQuality,
+    this.textColor,
   })  : _imageType = ImageType.network,
         color = null;
 
@@ -84,6 +87,7 @@ class AppImage extends StatelessWidget {
     this.placeHolderName,
     this.fadeAnimationEnable,
     this.filterQuality,
+    this.textColor,
   })  : _imageType = ImageType.file,
         showError = false,
         color = null;
@@ -105,6 +109,7 @@ class AppImage extends StatelessWidget {
   final BoxFit? fit;
   final bool? fadeAnimationEnable;
   final FilterQuality? filterQuality;
+  final Color? textColor;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -138,6 +143,7 @@ class AppImage extends StatelessWidget {
               borderRadius: borderRadius,
               fadeAnimationEnable: fadeAnimationEnable,
               filterQuality: filterQuality,
+              textColor: textColor,
             ),
         },
       );
@@ -200,6 +206,7 @@ class _Network extends StatelessWidget {
     this.borderRadius,
     this.fadeAnimationEnable = false,
     this.filterQuality,
+    this.textColor,
   });
 
   final String imageUrl;
@@ -213,6 +220,7 @@ class _Network extends StatelessWidget {
   final BorderRadius? borderRadius;
   final bool? fadeAnimationEnable;
   final FilterQuality? filterQuality;
+  final Color? textColor;
 
   @override
   Widget build(BuildContext context) {
@@ -221,8 +229,8 @@ class _Network extends StatelessWidget {
     final initials = words.map((word) => word.isNotEmpty ? word[0] : '').join('');
     final isOptimizationEnable = imageUrl.contains('https://cdn.trulyfreehome.dev');
 
-    final optimizedImageUrl = IsmAppConstants.isGumletEnable && isOptimizationEnable
-        ? IsrVideoReelUtility.buildGumletImageUrl(
+    final optimizedImageUrl = AppConstants.isGumletEnable && isOptimizationEnable
+        ? Utility.buildGumletImageUrl(
             imageUrl: imageUrl.trim().replaceAll(RegExp(r'[",]+$'), ''),
             width: width,
             height: height)
@@ -254,18 +262,26 @@ class _Network extends StatelessWidget {
       ),
       placeholder: (context, url) => showError
           ? ImagePlaceHolder(
-              borderRadius: borderRadius,
-              placeHolderName: placeHolderName,
               width: width,
               height: height,
-              boxFit: fit ?? BoxFit.contain,
+              borderRadius: borderRadius,
+              placeHolderName: placeHolderName,
               boxShape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
               child: name.isStringEmptyOrNull == false && isProfileImage
-                  ? Text(
-                      initials,
-                      style: IsrStyles.secondaryText14
-                          .copyWith(fontWeight: FontWeight.w500, color: IsrColors.white),
-                      textAlign: TextAlign.center,
+                  ? Center(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            initials,
+                            style: IsrStyles.secondaryText14
+                                .copyWith(fontWeight: FontWeight.w500, color: textColor),
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                          ),
+                        ),
+                      ),
                     )
                   : null,
             )
@@ -288,11 +304,20 @@ class _Network extends StatelessWidget {
               placeHolderName: placeHolderName,
               boxShape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
               child: name.isStringEmptyOrNull == false && isProfileImage
-                  ? Text(
-                      initials,
-                      style: IsrStyles.secondaryText14
-                          .copyWith(fontWeight: FontWeight.w500, color: IsrColors.white),
-                      textAlign: TextAlign.center,
+                  ? Center(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            initials,
+                            style: IsrStyles.secondaryText14
+                                .copyWith(fontWeight: FontWeight.w500, color: textColor),
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                          ),
+                        ),
+                      ),
                     )
                   : null,
             )

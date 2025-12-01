@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 
 // class TabDataModel {
@@ -50,16 +51,79 @@ class TabDataModel {
   TabDataModel({
     required this.title,
     required this.reelsDataList,
-    this.onLoadMore,
-    this.onRefresh,
     this.startingPostIndex = 0,
-    this.postSectionType = PostSectionType.following,
+    required this.postSectionType,
+    this.onTapCartIcon,
+    this.placeHolderWidget,
+    this.onTapUserProfile,
+    this.onPressSave,
+    this.overlayPadding,
+    this.onDeletePostSuccess,
+    this.userId,
+    this.postId,
+    this.tagValue,
+    this.tagType,
+    this.onShareClick,
   });
 
   final String title;
-  final List<ReelsData> reelsDataList;
-  final Future<List<ReelsData>> Function()? onLoadMore;
-  final Future<bool> Function()? onRefresh;
+  List<TimeLineData> reelsDataList;
+  final Function(List<String> productIds, String postId, String userId)?
+      onTapCartIcon;
   final int? startingPostIndex;
-  final PostSectionType? postSectionType;
+  final PostSectionType postSectionType;
+  final Function(String postId, bool isPostEmpty)? onDeletePostSuccess;
+  Widget? placeHolderWidget;
+  String? userId;
+  String? postId;
+  String? tagValue;
+  TagType? tagType;
+  void Function(String? userId)? onTapUserProfile;
+  final Future<bool> Function(bool isSavedPost, TimeLineData postData)?
+      onPressSave;
+  final Future<void> Function(TimeLineData postData)? onShareClick;
+  final EdgeInsetsGeometry? overlayPadding;
+
+  //to maintain state
+  // int? currentIndex; //to maintain post position
+  // String? currentPostId; //to maintain post position
+
+  // -------------------------------------------------------
+  //                      COPY WITH
+  // -------------------------------------------------------
+  TabDataModel copyWith({
+    String? title,
+    List<TimeLineData>? reelsDataList,
+    Function(List<String> productIds, String postId, String userId)?
+        onTapCartIcon,
+    int? startingPostIndex,
+    PostSectionType? postSectionType,
+    Function(String postId, bool isPostEmpty)? onDeletePostSuccess,
+    Widget? placeHolderWidget,
+    String? userId,
+    String? postId,
+    String? tagValue,
+    TagType? tagType,
+    void Function(String? userId)? onTapUserProfile,
+    Future<bool> Function(bool isSavedPost, TimeLineData postData)? onPressSave,
+    EdgeInsetsGeometry? overlayPadding,
+    Future<void> Function(TimeLineData postData)? onShareClick,
+  }) =>
+      TabDataModel(
+        title: title ?? this.title,
+        reelsDataList: reelsDataList ?? this.reelsDataList,
+        startingPostIndex: startingPostIndex ?? this.startingPostIndex,
+        postSectionType: postSectionType ?? this.postSectionType,
+        onTapCartIcon: onTapCartIcon ?? this.onTapCartIcon,
+        placeHolderWidget: placeHolderWidget ?? this.placeHolderWidget,
+        onTapUserProfile: onTapUserProfile ?? this.onTapUserProfile,
+        onPressSave: onPressSave ?? this.onPressSave,
+        overlayPadding: overlayPadding ?? this.overlayPadding,
+        onDeletePostSuccess: onDeletePostSuccess ?? this.onDeletePostSuccess,
+        userId: userId ?? this.userId,
+        postId: postId ?? this.postId,
+        tagValue: tagValue ?? this.tagValue,
+        tagType: tagType ?? this.tagType,
+        onShareClick: onShareClick ?? this.onShareClick,
+      );
 }

@@ -4,6 +4,7 @@ import 'dart:collection';
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 
 /// Cache manager implementation for images
 class ImageCacheManager implements IMediaCacheManager {
@@ -34,7 +35,7 @@ class ImageCacheManager implements IMediaCacheManager {
 
       // Only process actual image URLs, skip video URLs
       final mediaType = MediaTypeUtil.getMediaType(url);
-      if (mediaType != MediaType.image) {
+      if (mediaType != MediaType.photo) {
         debugPrint(
             '⚠️ Skipping non-image URL in precacheMedia: $url (type: $mediaType)');
         continue;
@@ -76,7 +77,7 @@ class ImageCacheManager implements IMediaCacheManager {
 
     // Validate that this is actually an image URL
     final mediaType = MediaTypeUtil.getMediaType(cleanUrl);
-    if (mediaType != MediaType.image) {
+    if (mediaType != MediaType.photo) {
       debugPrint(
           '⚠️ Attempted to cache non-image URL: $cleanUrl (type: $mediaType)');
       return;

@@ -9,8 +9,8 @@ class UseCaseInjection {
   static void inject() {
     // Register use cases with their respective repositories
 
-    InjectionUtils.registerUseCase<LocalDataUseCase>(
-        () => LocalDataUseCase(InjectionUtils.getRepo<LocalStorageRepository>()));
+    InjectionUtils.registerUseCase<LocalDataUseCase>(() =>
+        LocalDataUseCase(InjectionUtils.getRepo<LocalStorageRepository>()));
 
     /// Auth UseCase
     InjectionUtils.registerUseCase<LoginUseCase>(
@@ -25,10 +25,10 @@ class UseCaseInjection {
     /// Social Repository UseCase
     InjectionUtils.registerUseCase<CreatePostUseCase>(
         () => CreatePostUseCase(InjectionUtils.getRepo<SocialRepository>()));
-    InjectionUtils.registerUseCase<GetFollowingPostUseCase>(
-        () => GetFollowingPostUseCase(InjectionUtils.getRepo<PostRepository>()));
-    InjectionUtils.registerUseCase<GetTrendingPostUseCase>(
-        () => GetTrendingPostUseCase(InjectionUtils.getRepo<SocialRepository>()));
+    InjectionUtils.registerUseCase<GetFollowingPostUseCase>(() =>
+        GetFollowingPostUseCase(InjectionUtils.getRepo<SocialRepository>()));
+    InjectionUtils.registerUseCase<GetTrendingPostUseCase>(() =>
+        GetTrendingPostUseCase(InjectionUtils.getRepo<SocialRepository>()));
     InjectionUtils.registerUseCase<GetForYouPostUseCase>(
         () => GetForYouPostUseCase(InjectionUtils.getRepo<SocialRepository>()));
     InjectionUtils.registerUseCase<FollowPostUseCase>(
@@ -39,36 +39,40 @@ class UseCaseInjection {
         () => LikePostUseCase(InjectionUtils.getRepo<SocialRepository>()));
     InjectionUtils.registerUseCase<ReportPostUseCase>(
         () => ReportPostUseCase(InjectionUtils.getRepo<SocialRepository>()));
-    InjectionUtils.registerUseCase<GetReportReasonsUseCase>(
-        () => GetReportReasonsUseCase(InjectionUtils.getRepo<SocialRepository>()));
+    InjectionUtils.registerUseCase<GetReportReasonsUseCase>(() =>
+        GetReportReasonsUseCase(InjectionUtils.getRepo<SocialRepository>()));
     InjectionUtils.registerUseCase<GetCloudDetailsUseCase>(
         () => GetCloudDetailsUseCase(InjectionUtils.getRepo<PostRepository>()));
-    InjectionUtils.registerUseCase<GetTimelinePostUseCase>(
-        () => GetTimelinePostUseCase(InjectionUtils.getRepo<SocialRepository>()));
+    InjectionUtils.registerUseCase<GetTimelinePostUseCase>(() =>
+        GetTimelinePostUseCase(InjectionUtils.getRepo<SocialRepository>()));
 
-    InjectionUtils.registerUseCase<GetPostDetailsUseCase>(
-        () => GetPostDetailsUseCase(InjectionUtils.getRepo<SocialRepository>()));
-    InjectionUtils.registerUseCase<GoogleCloudStorageUploaderUseCase>(
-        () => GoogleCloudStorageUploaderUseCase(InjectionUtils.getRepo<SocialRepository>()));
+    InjectionUtils.registerUseCase<GetPostDetailsUseCase>(() =>
+        GetPostDetailsUseCase(InjectionUtils.getRepo<SocialRepository>()));
+    InjectionUtils.registerUseCase<GoogleCloudStorageUploaderUseCase>(() =>
+        GoogleCloudStorageUploaderUseCase(
+            InjectionUtils.getRepo<SocialRepository>()));
     InjectionUtils.registerUseCase<CommentActionUseCase>(
         () => CommentActionUseCase(InjectionUtils.getRepo<SocialRepository>()));
-    InjectionUtils.registerUseCase<GetPostCommentUseCase>(
-        () => GetPostCommentUseCase(InjectionUtils.getRepo<SocialRepository>()));
-    InjectionUtils.registerUseCase<MediaProcessingUseCase>(
-        () => MediaProcessingUseCase(InjectionUtils.getRepo<SocialRepository>()));
+    InjectionUtils.registerUseCase<GetPostCommentUseCase>(() =>
+        GetPostCommentUseCase(InjectionUtils.getRepo<SocialRepository>()));
+    InjectionUtils.registerUseCase<MediaProcessingUseCase>(() =>
+        MediaProcessingUseCase(InjectionUtils.getRepo<SocialRepository>()));
     InjectionUtils.registerUseCase<SearchUserUseCase>(
         () => SearchUserUseCase(InjectionUtils.getRepo<SocialRepository>()));
     InjectionUtils.registerUseCase<SearchTagUseCase>(
         () => SearchTagUseCase(InjectionUtils.getRepo<SocialRepository>()));
 
     // Google Repository use cases
-    InjectionUtils.registerUseCase<GetAddressFromPinCodeUseCase>(
-        () => GetAddressFromPinCodeUseCase(InjectionUtils.getRepo<GoogleRepository>()));
-    InjectionUtils.registerUseCase<GetAddressFromLatLongUseCase>(
-        () => GetAddressFromLatLongUseCase(InjectionUtils.getRepo<GoogleRepository>()));
-    InjectionUtils.registerUseCase<GeocodeSearchAddressUseCase>(
-        () => GeocodeSearchAddressUseCase(InjectionUtils.getRepo<GoogleRepository>()));
-    InjectionUtils.registerUseCase<GetPlaceDetailsUseCase>(
-        () => GetPlaceDetailsUseCase(InjectionUtils.getRepo<GoogleRepository>()));
+    InjectionUtils.registerUseCase<GetAddressFromPinCodeUseCase>(() =>
+        GetAddressFromPinCodeUseCase(
+            InjectionUtils.getRepo<GoogleRepository>()));
+    InjectionUtils.registerUseCase<GetAddressFromLatLongUseCase>(() =>
+        GetAddressFromLatLongUseCase(
+            InjectionUtils.getRepo<GoogleRepository>()));
+    InjectionUtils.registerUseCase<GeocodeSearchAddressUseCase>(() =>
+        GeocodeSearchAddressUseCase(
+            InjectionUtils.getRepo<GoogleRepository>()));
+    InjectionUtils.registerUseCase<GetPlaceDetailsUseCase>(() =>
+        GetPlaceDetailsUseCase(InjectionUtils.getRepo<GoogleRepository>()));
   }
 }

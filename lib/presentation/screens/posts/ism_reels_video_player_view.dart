@@ -5,11 +5,12 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/video_player_widget.dart';
 import 'package:ism_video_reel_player/res/res.dart';
-import 'package:ism_video_reel_player/utils/isr_utils.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:lottie/lottie.dart';
-import 'package:visibility_detector/visibility_detector.dart';
 
 /// Custom Reels Player for both Video and Photo content with carousel support
 class IsmReelsVideoPlayerView extends StatefulWidget {
@@ -22,10 +23,11 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
     this.onPressFollowButton,
     this.onPressLikeButton,
     this.onPressSaveButton,
-    this.onDoubleTap,
     this.loggedInUserId,
     this.onVideoCompleted,
     this.onTapMentionTag,
+    this.onTapCartIcon,
+    this.overlayPadding,
   });
 
   final VideoCacheManager? videoCacheManager;
@@ -35,17 +37,19 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
   final Future<void> Function()? onPressFollowButton;
   final Future<void> Function()? onPressLikeButton;
   final Future<void> Function()? onPressSaveButton;
-  final Future<void> Function()? onDoubleTap;
   final String? loggedInUserId;
   final VoidCallback? onVideoCompleted;
   final Function(List<MentionMetaData>)? onTapMentionTag;
+  final Function(String)? onTapCartIcon;
+  final EdgeInsetsGeometry? overlayPadding;
 
   @override
   State<IsmReelsVideoPlayerView> createState() => _IsmReelsVideoPlayerViewState();
 }
 
 class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
-    with SingleTickerProviderStateMixin, WidgetsBindingObserver, RouteAware {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver, RouteAware
+    implements PostHelperCallBacks {
   // Use MediaCacheFactory instead of direct VideoCacheManager
   VideoCacheManager get _videoCacheManager => widget.videoCacheManager ?? VideoCacheManager();
 
@@ -59,30 +63,32 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   TapGestureRecognizer? _tapGestureRecognizer;
 
-  IVideoPlayerController? _videoPlayerController;
-  IVideoPlayerController?
-      _lastSetupController; // Track last setup controller to prevent duplicate setup
+  // GlobalKeys to control video players for long press pause/play
+  // For single video, use _currentVideoPlayerKey
+  // For carousel, use _videoPlayerKeys map
+  final GlobalKey _currentVideoPlayerKey = GlobalKey();
+  final Map<int, GlobalKey> _videoPlayerKeys = {};
 
-  // Watch event tracking - log only once per video
-  Duration _maxWatchPosition = Duration.zero;
-  bool _hasLoggedWatchEvent = false;
-
-  var _isPlaying = true;
-  var _isPlayPauseActioned = false;
-  var _isDisposed = false;
+  // Get the key for the current video player
+  GlobalKey _getCurrentVideoPlayerKey() {
+    if (_hasMultipleMedia) {
+      final currentIndex = _currentPageNotifier.value;
+      _videoPlayerKeys[currentIndex] ??= GlobalKey();
+      return _videoPlayerKeys[currentIndex]!;
+    } else {
+      return _currentVideoPlayerKey;
+    }
+  }
 
   final ValueNotifier<bool> _isFollowLoading = ValueNotifier(false);
   final ValueNotifier<bool> _isExpandedDescription = ValueNotifier(false);
   final ValueNotifier<bool> _isSaveLoading = ValueNotifier(false);
   final ValueNotifier<bool> _isLikeLoading = ValueNotifier(false);
-  final ValueNotifier<bool> _isVideoPlaying = ValueNotifier(true); // For reducing rebuilds
 
   // Audio state management
   static bool _globalMuteState = false; // Global mute state that persists across all videos
   bool _isMuted = false;
-  bool _isAudioOperationInProgress = false;
   Timer? _audioDebounceTimer;
-  double? _lastSetVolume; // Track last set volume to prevent redundant operations
   final _maxLengthToShow = 50;
   late ReelsData _reelData;
 
@@ -103,22 +109,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   Timer? _muteAnimationTimer;
   double _muteIconScale = 1.0;
 
-  // Track if video has completed one full cycle for auto-advance
-  bool _hasCompletedOneCycle = false;
-
-  // Throttle visibility changes to prevent rapid state changes
-  DateTime? _lastVisibilityChange;
-  static const Duration _visibilityThrottleDuration = Duration(milliseconds: 300);
-
-  // Video state management
-  bool _isVideoInitializing = false;
-
-  // Device performance management
-  bool _isLowEndDevice = false;
-
-  // Track navigation state to prevent background initialization
-  bool _hasNavigatedAway = false;
-
   @override
   void initState() {
     _onStartInit();
@@ -129,74 +119,25 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // _detectDevicePerformance();
-  }
-
-  /// Detects device performance capabilities to optimize video playback
-  void _detectDevicePerformance() {
-    // Check device memory and performance characteristics
-    final mediaQuery = MediaQuery.of(context);
-    final screenSize = mediaQuery.size;
-    final devicePixelRatio = mediaQuery.devicePixelRatio;
-
-    // Detect low-end devices based on screen size and pixel ratio
-    _isLowEndDevice = screenSize.width < 400 || devicePixelRatio < 2.0;
-
-    // Platform-specific optimizations
-    final platform = Theme.of(context).platform;
-    if (platform == TargetPlatform.android) {
-      // Android-specific optimizations
-      debugPrint('🤖 Android device detected - applying Android optimizations');
-    } else if (platform == TargetPlatform.iOS) {
-      // iOS-specific optimizations
-      debugPrint('🍎 iOS device detected - applying iOS optimizations');
-    }
-
-    debugPrint('📱 Device Performance: ${_isLowEndDevice ? "Low-end" : "High-end"}');
-    debugPrint('📱 Screen: ${screenSize.width}x${screenSize.height}, DPR: $devicePixelRatio');
+    // Capture the BuildContext for SDK use
+    IsrVideoReelConfig.buildContext = context;
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
-      if (_isPlaying) {
-        _togglePlayPause();
-      }
-    } else if (state == AppLifecycleState.resumed) {
-      if (!_isPlaying) {
-        _togglePlayPause();
-      }
-    }
+    // Lifecycle is handled by individual VideoPlayerWidgets
   }
 
   // RouteAware methods for navigation detection
   @override
   void didPopNext() {
-    // User navigated back to this screen
-    debugPrint('🔄 Video player: User navigated back to reel screen');
-    _hasNavigatedAway = false; // Reset navigation state
-    if (!_isPlaying && _controllerReady) {
-      _videoPlayerController?.play();
-      _isPlaying = true;
-      mountUpdate();
-    }
+    // Navigation is handled by individual VideoPlayerWidgets
   }
 
   @override
   void didPushNext() {
-    // User navigated away from this screen
-    debugPrint('⏸️ Video player: User navigated away from reel screen - pausing video');
-    _hasNavigatedAway = true; // Set navigation state
-    if (_isPlaying && _controllerReady) {
-      _videoPlayerController?.pause();
-      _isPlaying = false;
-      mountUpdate();
-    }
+    // Navigation is handled by individual VideoPlayerWidgets
   }
-
-  /// Returns true if the video controller is ready for playback.
-  bool get _controllerReady =>
-      _videoPlayerController != null && !_isDisposed && _videoPlayerController!.isInitialized;
 
   /// Returns true if the current post has multiple media items (carousel).
   bool get _hasMultipleMedia => _reelData.mediaMetaDataList.length > 1;
@@ -214,13 +155,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _pageMentionMetaDataList = _mentionedMetaDataList
         .where((mention) => mention.mediaPosition?.position == _currentPageNotifier.value + 1)
         .toList();
-    // _mentionedDataList = _reelData.mentions
-    //     .where((mentionData) => mentionData.textPosition != null)
-    //     .toList();
-    // _taggedDataList = _reelData.tagDataList
-    //         ?.where((mentionData) => mentionData.textPosition != null)
-    //         .toList() ??
-    //     [];
     _mentionedDataList = _reelData.mentions;
     _taggedDataList = _reelData.tagDataList ?? [];
     _postDescription = _reelData.description ?? '';
@@ -232,20 +166,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     // Initialize PageController for carousel
     _pageController = PageController(initialPage: 0);
 
-    debugPrint(
-        'IsmReelsVideoPlayerView ...Post by ...${_reelData.userName}\n Post url ${_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl}');
-
-    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kVideoType) {
-      // OPTIMIZATION: Don't block widget initialization - load video in background
-      unawaited(_initializeVideoPlayer().then((_) {
-        if (mounted) {
-          mountUpdate();
-        }
-      }));
-
-      // Preload next videos for smoother experience
-      _preloadNextVideos();
-    }
+    // Preload next videos for smoother experience
+    _preloadNextVideos();
   }
 
   /// Method For Update The Tree Carefully
@@ -279,17 +201,26 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (nextVideos.isNotEmpty) {
       // Preload videos and thumbnails together (non-blocking)
       final allMedia = [...nextVideos, ...nextThumbnails];
-      unawaited(MediaCacheFactory.precacheMedia(allMedia, highPriority: false).then((_) {
+      MediaCacheFactory.precacheMedia(allMedia, highPriority: false).then((_) {
         debugPrint(
             '✅ VideoPlayer: Successfully preloaded ${nextVideos.length} videos and ${nextThumbnails.length} thumbnails');
       }).catchError((error) {
         debugPrint('❌ VideoPlayer: Error preloading next media: $error');
-      }));
+      });
     }
   }
 
   // Handle page change in carousel
   void _onPageChanged(int index) async {
+    // Ensure PageController is in sync with the index
+    if (_pageController != null && _pageController!.hasClients) {
+      final currentPage = _pageController!.page?.round() ?? _currentPageNotifier.value;
+      if (currentPage != index) {
+        // PageController is out of sync, jump to correct page
+        _pageController!.jumpToPage(index);
+      }
+    }
+
     if (_currentPageNotifier.value == index) return;
 
     // Hide mentions when changing pages
@@ -297,322 +228,27 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       _mentionsVisible = false;
     }
 
-    // Pause current video if playing
-    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kVideoType) {
-      await _videoPlayerController?.pause();
-      _disposeCurrentVideoController();
-    }
-
+    // Update current page notifier
     _currentPageNotifier.value = index;
 
     _pageMentionMetaDataList = _mentionedMetaDataList
         .where((mention) => mention.mediaPosition?.position == _currentPageNotifier.value + 1)
         .toList();
-    _isPlaying = true;
-    _isPlayPauseActioned = false;
 
-    // Reset completion flag and progress tracking when changing pages
-    _hasCompletedOneCycle = false;
-    _lastProgressSecond = -1;
-
-    // Reset watch event tracking for the new video
-    _maxWatchPosition = Duration.zero;
-    _hasLoggedWatchEvent = false;
-    // mountUpdate();
-
-    // Initialize new video if needed
-    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kVideoType) {
-      // Parent widget (PostItemWidget) handles caching
-
-      await _initializeVideoPlayer();
-      mountUpdate();
-    }
-  }
-
-  /// Dispose the current video controller
-  void _disposeCurrentVideoController() {
-    if (_videoPlayerController != null &&
-        _reelData.mediaMetaDataList.isNotEmpty &&
-        _currentPageNotifier.value < _reelData.mediaMetaDataList.length &&
-        !_videoCacheManager
-            .isMediaCached(_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl)) {
-      _videoPlayerController?.dispose();
-    }
-    _videoPlayerController = null;
-    // Reset tracking when disposing controller
-    _lastSetupController = null;
-    _lastSetVolume = null;
-  }
-
-  /// Initializes the video player controller for the current video.
-  /// - Uses the cached controller if available and initialized.
-  /// - If pre-caching is in progress, waits for the same initialization future.
-  /// - Only creates a new controller if not cached or initializing.
-  Future<void> _initializeVideoPlayer() async {
-    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl.isStringEmptyOrNull !=
-        false) {
-      return;
-    }
-
-    // Check if widget is disposed or not mounted (but allow initialization if user navigated away)
-    if (_isDisposed || !mounted) {
-      debugPrint('⚠️ Video initialization cancelled - widget disposed or not mounted');
-      return;
-    }
-
-    // Prevent multiple initialization attempts
-    if (_isVideoInitializing) {
-      debugPrint('🔄 Video initialization already in progress, skipping...');
-      return;
-    }
-
-    _isVideoInitializing = true;
-
-    final videoUrl = _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl;
-    debugPrint('IsmReelsVideoPlayerView....initializeVideoPlayer video url $videoUrl');
-
-    try {
-      // First try to get cached controller
-      _videoPlayerController =
-          _videoCacheManager.getCachedMedia(videoUrl) as IVideoPlayerController?;
-
-      if (_videoPlayerController != null) {
-        debugPrint('IsmReelsVideoPlayerView....Using cached video controller for $videoUrl');
-        if (_videoPlayerController!.isInitialized) {
-          // Check if this is the same controller we already set up
-          final isSameController = _lastSetupController == _videoPlayerController;
-          debugPrint('🎬 Cached controller ${isSameController ? "already set up" : "needs setup"}');
-
-          await _setupVideoController();
-          return;
-        } else {
-          // If controller exists but not initialized, dispose and recreate
-          debugPrint('⚠️ Cached controller not initialized, disposing and recreating');
-          await _videoPlayerController!.dispose();
-          _videoPlayerController = null;
-          _lastSetupController = null;
-        }
-      }
-
-      // OPTIMIZATION: Reduce retry attempts from 5 to 3 for faster failure detection
-      if (_videoCacheManager.isMediaInitializing(videoUrl)) {
-        debugPrint('IsmReelsVideoPlayerView....Video is being initialized, waiting...');
-        // Wait for initialization with reduced timeout (600ms total instead of 1000ms)
-        for (var i = 0; i < 3; i++) {
-          if (!mounted || _isDisposed) {
-            return;
-          }
-
-          _videoPlayerController =
-              _videoCacheManager.getCachedMedia(videoUrl) as IVideoPlayerController?;
-          if (_videoPlayerController != null && _videoPlayerController!.isInitialized) {
-            debugPrint('IsmReelsVideoPlayerView....Found initialized controller after waiting');
-            // Check if widget is still valid before setting up controller
-            if (!mounted || _isDisposed) {
-              debugPrint('⚠️ Video setup cancelled - widget disposed or not mounted');
-              return;
-            }
-            await _setupVideoController();
-            return;
-          }
-        }
-      }
-
-      // If still not available, initialize normally (fallback)
-      await _initializeVideoControllerNormally(videoUrl);
-
-      // Check if widget is still valid before final setup
-      if (!mounted || _isDisposed) {
-        return;
-      }
-
-      // Only setup if we have a valid controller
-      if (_videoPlayerController != null) {
-        await _setupVideoController();
-      }
-    } catch (e) {
-      debugPrint(
-          'IsmReelsVideoPlayerView...catch video url ${_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl}');
-      IsrVideoReelUtility.debugCatchLog(error: e);
-    } finally {
-      _isVideoInitializing = false;
-    }
-  }
-
-  /// Fallback initialization method for video controller.
-  /// Only used if not cached or pre-caching is not in progress.
-  Future<void> _initializeVideoControllerNormally(String videoUrl) async {
-    debugPrint('IsmReelsVideoPlayerView....Initializing video controller normally $videoUrl');
-
-    // Check if widget is still valid before starting normal initialization
-    if (_isDisposed || !mounted) {
-      debugPrint('⚠️ Normal video initialization cancelled - widget disposed or not mounted');
-      return;
-    }
-
-    var mediaUrl = videoUrl;
-    if (mediaUrl.startsWith('http:')) {
-      mediaUrl = mediaUrl.replaceFirst('http:', 'https:');
-    }
-
-    // Try to get from cache first
-    _videoPlayerController = _videoCacheManager.getCachedMedia(mediaUrl) as IVideoPlayerController?;
-
-    if (_videoPlayerController == null) {
-      // If not in cache, trigger precaching which will create a new controller
-      await MediaCacheFactory.precacheMedia([mediaUrl], highPriority: true);
-
-      // Check again after precaching
-      if (_isDisposed || !mounted) {
-        debugPrint(
-            '⚠️ Video initialization cancelled after precaching - widget disposed or not mounted');
-        return;
-      }
-
-      _videoPlayerController =
-          _videoCacheManager.getCachedMedia(mediaUrl) as IVideoPlayerController?;
-
-      if (_videoPlayerController == null) return;
-    }
-
-    // Final check before setup
-    if (_isDisposed || !mounted) {
-      debugPrint(
-          '⚠️ Video setup cancelled in normal initialization - widget disposed or not mounted');
-      return;
-    }
-
-    await _setupVideoController();
-  }
-
-  /// Sets up the video controller for playback, looping, and volume.
-  Future<void> _setupVideoController() async {
-    debugPrint('_setupVideoController....setup video controller');
-    if (_isDisposed || !mounted) return;
-
-    try {
-      if (_videoPlayerController == null) {
-        return;
-      }
-
-      // CRITICAL: Prevent duplicate setup on the same controller instance
-      // This is the main cause of audio flickering
-      if (_lastSetupController == _videoPlayerController) {
-        return;
-      }
-
-      // Make sure controller is initialized
-      if (!_videoPlayerController!.isInitialized) {
-        debugPrint('🔄 Initializing video controller in setup');
-        await _videoPlayerController!.initialize();
-      }
-
-      // Remove existing listener to prevent memory leaks
-      _videoPlayerController!.removeListener(_handlePlaybackProgress);
-
-      // OPTIMIZATION: Parallelize independent operations for faster setup
-      // Set volume and looping can be done in parallel
-      _isMuted = _globalMuteState;
-      final targetVolume = _isMuted ? 0.0 : 1.0;
-
-      // Execute setup operations in parallel
-      await Future.wait([
-        _videoPlayerController!.setLooping(true),
-        if (_lastSetVolume != targetVolume) _setVolumeSafely(targetVolume),
-        _videoPlayerController!.seekTo(Duration.zero),
-      ], eagerError: true);
-
-      // Reset completion flag for new video
-      _hasCompletedOneCycle = false;
-
-      // Add listener after setup
-      _videoPlayerController!.addListener(_handlePlaybackProgress);
-
-      // Start playback only if not already playing and controller is ready
-      if (!_videoPlayerController!.isPlaying && _videoPlayerController!.isInitialized) {
-        // Critical check: Don't start playback if user has navigated away
-        if (_hasNavigatedAway) {
-          return;
-        }
-
-        // OPTIMIZATION: Start playback without blocking - let it happen in background
-        unawaited(_videoPlayerController!.play().then((_) {
-          debugPrint('✅ Video playback started successfully');
-
-          // Retry mechanism without blocking
-          Future.delayed(const Duration(milliseconds: 100), () {
-            if (!_hasNavigatedAway &&
-                _videoPlayerController != null &&
-                !_videoPlayerController!.isPlaying &&
-                !_isDisposed &&
-                mounted) {
-              debugPrint('🔄 Retrying video playback...');
-              unawaited(_videoPlayerController!.play());
-            }
-          });
-        }).catchError((e) {
-          debugPrint('❌ Error starting video playback: $e');
-        }));
-      }
-
-      debugPrint('✅ Video controller setup complete');
-
-      // Mark this controller as set up to prevent duplicate setup calls
-      _lastSetupController = _videoPlayerController;
-    } catch (e) {
-      debugPrint('❌ Error in setupVideoController: $e');
-      // Clean up on error
-      _videoPlayerController?.removeListener(_handlePlaybackProgress);
-      // Don't mark as setup since it failed
-      _lastSetupController = null;
-    }
+    mountUpdate();
   }
 
   /// Disposes the current video controller if not cached, and cleans up state.
   @override
   void dispose() {
-    // Log watch event before disposing (if not already logged)
-    _logWatchEventIfNeeded();
-
     WidgetsBinding.instance.removeObserver(this);
-    _isDisposed = true;
     _tapGestureRecognizer?.dispose();
     _pageController?.dispose();
     _likeAnimationTimer?.cancel();
     _muteAnimationTimer?.cancel();
-    _completionDebounceTimer?.cancel();
     _audioDebounceTimer?.cancel();
-
-    // Reset audio and controller operation state
-    _isAudioOperationInProgress = false;
-    _lastSetVolume = null;
-    _lastSetupController = null;
-
-    // Mark video as not visible for cache manager
-    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl.isStringEmptyOrNull ==
-        false) {
-      _videoCacheManager
-          .markAsNotVisible(_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl);
-    }
-    // Dispose controller if not cached with proper cleanup
-    if (_videoPlayerController != null) {
-      try {
-        _videoPlayerController!.removeListener(_handlePlaybackProgress);
-        _videoPlayerController!.pause();
-
-        // Only dispose if not cached to prevent memory leaks
-        if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl.isStringEmptyOrNull ==
-                false &&
-            !_videoCacheManager
-                .isMediaCached(_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl)) {
-          _videoPlayerController!.dispose();
-        }
-      } catch (e) {
-        debugPrint('⚠️ Error disposing video controller: $e');
-      }
-    }
-
-    _videoPlayerController = null;
+    // Analytics logging is now handled by VideoPlayerWidget
+    _logImagePostEvent();
     super.dispose();
   }
 
@@ -624,8 +260,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     FilterQuality filterQuality = FilterQuality.high,
     bool showError = false,
   }) {
-    final isLocalUrl =
-        imageUrl.isStringEmptyOrNull == false && IsrVideoReelUtility.isLocalUrl(imageUrl);
+    final isLocalUrl = imageUrl.isStringEmptyOrNull == false && Utility.isLocalUrl(imageUrl);
     return isLocalUrl
         ? AppImage.file(
             imageUrl,
@@ -668,8 +303,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           onTap: _toggleMuteAndUnMute,
           onDoubleTap: () async {
             _triggerLikeAnimation(); // Always show animation
-            if (_reelData.isLiked != true && widget.onDoubleTap != null) {
-              await widget.onDoubleTap!();
+            if (_reelData.isLiked != true) {
+              await _callLikeFunction();
             }
           },
           child: mediaWidget,
@@ -732,296 +367,24 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
   }
 
-  Widget _buildVideoContent() => Stack(
-        fit: StackFit.expand,
-        alignment: Alignment.center,
-        children: [
-          if (_controllerReady) ...[
-            // Video is ready, show the player
-            RepaintBoundary(
-              child: FittedBox(
-                fit: BoxFit.cover,
-                child: SizedBox(
-                  child: Builder(
-                    builder: (context) {
-                      final controller = _videoPlayerController;
-                      if (controller == null) {
-                        return const SizedBox.shrink();
-                      }
-                      final size = controller.videoSize;
-                      final aspect = controller.aspectRatio;
-                      return SizedBox(
-                        height: size.height,
-                        width: size.width,
-                        child: AspectRatio(
-                          aspectRatio: aspect,
-                          child: _buildVideoPlayerWidget(controller),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-            ),
-          ] else ...[
-            // Video is not ready, show a thumbnail
-            _getImageWidget(
-              imageUrl: _reelData.mediaMetaDataList[_currentPageNotifier.value].thumbnailUrl,
-              width: IsrDimens.getScreenWidth(context),
-              height: IsrDimens.getScreenHeight(context),
-              fit: BoxFit.cover,
-              filterQuality: FilterQuality.low,
-              showError: false,
-            ),
-          ]
-        ],
-      );
-
-  Widget _buildCarousalVideoContent() => Container(
-        width: IsrDimens.getScreenWidth(context),
-        height: IsrDimens.getScreenHeight(context),
-        color: Colors.black, // Black background like Instagram
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            if (_controllerReady) ...[
-              Center(
-                child: RepaintBoundary(
-                  child: AspectRatio(
-                    aspectRatio: _videoPlayerController!.aspectRatio,
-                    child: _buildVideoPlayerWidget(_videoPlayerController!),
-                  ),
-                ),
-              ),
-            ] else ...[
-              Center(
-                child: _getImageWidget(
-                  imageUrl: _reelData.mediaMetaDataList[_currentPageNotifier.value].thumbnailUrl,
-                  width: IsrDimens.getScreenWidth(context),
-                  height: IsrDimens.getScreenHeight(context),
-                  fit: BoxFit.contain,
-                  filterQuality: FilterQuality.low,
-                  showError: false,
-                ),
-              ),
-            ]
-          ],
-        ),
-      );
-
-  // New methods for mentions functionality
-  List<Widget> _buildMentionsOverlay() => _pageMentionMetaDataList
-      .map<Widget>((mention) => Positioned(
-            left: ((mention.mediaPosition?.x ?? 0) / 100 * IsrDimens.getScreenWidth(context)) - 60,
-            top: ((mention.mediaPosition?.y ?? 0) / 100 * IsrDimens.getScreenHeight(context)) - 30,
-            child: _buildMentionTag(mention),
-          ))
-      .toList();
-
-  Widget _buildMentionsOverlayWithCenterArea() {
-    final screenWidth = IsrDimens.getScreenWidth(context);
-    final screenHeight = IsrDimens.getScreenHeight(context);
-
-    // Define center area dimensions (adjust as needed)
-    final centerAreaWidth = screenWidth * 0.6; // 60% of screen width
-    final centerAreaHeight = screenHeight * 0.6; // 60% of screen height
-    final centerAreaLeft = (screenWidth - centerAreaWidth) / 2;
-    final centerAreaTop = (screenHeight - centerAreaHeight) / 2;
-
-    return Stack(
-      children: [
-        // Top area - captures taps
-        Positioned(
-          left: 0,
-          top: 0,
-          right: 0,
-          height: centerAreaTop,
-          child: GestureDetector(
-            onTap: _toggleMentions,
-            child: Container(color: Colors.transparent),
-          ),
-        ),
-
-        // Bottom area - captures taps
-        Positioned(
-          left: 0,
-          top: centerAreaTop + centerAreaHeight,
-          right: 0,
-          bottom: 0,
-          child: GestureDetector(
-            onTap: _toggleMentions,
-            child: Container(color: Colors.transparent),
-          ),
-        ),
-
-        // Left area - captures taps
-        Positioned(
-          left: 0,
-          top: centerAreaTop,
-          width: centerAreaLeft,
-          height: centerAreaHeight,
-          child: GestureDetector(
-            onTap: _toggleMentions,
-            child: Container(color: Colors.transparent),
-          ),
-        ),
-
-        // Right area - captures taps
-        Positioned(
-          left: centerAreaLeft + centerAreaWidth,
-          top: centerAreaTop,
-          right: 0,
-          height: centerAreaHeight,
-          child: GestureDetector(
-            onTap: _toggleMentions,
-            child: Container(color: Colors.transparent),
-          ),
-        ),
-
-        // Center area - allows tap-through to mention tags
-        Positioned(
-          left: centerAreaLeft,
-          top: centerAreaTop,
-          width: centerAreaWidth,
-          height: centerAreaHeight,
-          child: IgnorePointer(
-            child: Container(color: Colors.transparent),
-          ),
-        ),
-
-        // Mention tags overlay
-        ..._buildMentionsOverlay(),
-      ],
+  Widget _buildVideoContent() {
+    final media = _reelData.mediaMetaDataList[_currentPageNotifier.value];
+    return VideoPlayerWidget(
+      key: _currentVideoPlayerKey,
+      mediaUrl: media.mediaUrl,
+      thumbnailUrl: media.thumbnailUrl,
+      videoCacheManager: _videoCacheManager,
+      isMuted: _isMuted,
+      onVisibilityChanged: (isVisible) {
+        // Visibility is handled internally by VideoPlayerWidget
+      },
+      onVideoCompleted: () {
+        // For single video, notify parent to move to next post
+        widget.onVideoCompleted?.call();
+      },
+      postHelperCallBacks: this,
     );
   }
-
-  Widget _buildMentionTag(MentionMetaData mention) => AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.elasticOut,
-        child: GestureDetector(
-          onTap: () => _showMentionDetails(mention),
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 140),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // User Tag
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF667eea), Color(0xFF764ba2)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white, width: 2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.changeOpacity(0.4),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      AppImage.network(
-                        height: 30.responsiveDimension,
-                        width: 30.responsiveDimension,
-                        mention.avatarUrl ?? '',
-                        isProfileImage: true,
-                        name: mention.username ?? '',
-                      ),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          '@${mention.username}',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            shadows: [
-                              Shadow(
-                                offset: const Offset(0, 1),
-                                blurRadius: 2,
-                                color: Colors.black.changeOpacity(0.5),
-                              ),
-                            ],
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Pointer triangle
-                CustomPaint(
-                  painter: TrianglePainter(
-                    color: Colors.white,
-                  ),
-                  size: const Size(12, 8),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-
-  Widget _buildMentionsToggleButton() => GestureDetector(
-        onTap: () {
-          setState(() {
-            _mentionsVisible = !_mentionsVisible;
-          });
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color:
-                _mentionsVisible ? Colors.blue.changeOpacity(0.9) : Colors.black.changeOpacity(0.6),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: Colors.white.changeOpacity(0.3),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.changeOpacity(0.3),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                _mentionsVisible ? Icons.person_pin : Icons.person_pin_circle_outlined,
-                color: Colors.white,
-                size: 16,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '${_pageMentionMetaDataList.length}',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  shadows: [
-                    Shadow(
-                      offset: const Offset(0, 1),
-                      blurRadius: 2,
-                      color: Colors.black.changeOpacity(0.5),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
 
   void _toggleMentions() {
     if (_pageMentionMetaDataList.isListEmptyOrNull == false) {
@@ -1052,112 +415,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
   }
 
-  void _showMentionDetails(MentionMetaData mention) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle bar
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // User avatar
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF667eea), Color(0xFF764ba2)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 3),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.changeOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Center(
-                child: Text(
-                  mention.username![0].toUpperCase(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Username
-            Text(
-              '@${mention.username}',
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            // Action buttons
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      Navigator.pop(context);
-                      _callOnTapMentionData([mention]);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF667eea),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                      elevation: 2,
-                    ),
-                    child: const Text(
-                      'View Profile',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: MediaQuery.of(context).padding.bottom),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildMediaIndicators(int currentPage) {
     if (!_hasMultipleMedia) return const SizedBox.shrink();
 
@@ -1168,8 +425,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           _reelData.mediaMetaDataList.length,
           (index) => Container(
             margin: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.two),
-            width: IsrDimens.six,
-            height: IsrDimens.six,
+            width: IsrDimens.ten,
+            height: IsrDimens.ten,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: index == currentPage ? IsrColors.white : IsrColors.white.changeOpacity(0.4),
@@ -1293,19 +550,17 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   void _togglePlayPause() {
-    if (_reelData.showBlur == true ||
-        _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kPictureType) {
-      return;
-    }
-    if (!_controllerReady) return;
-    if (_isPlaying) {
-      _videoPlayerController?.pause();
-    } else {
-      _videoPlayerController?.play();
-    }
-    _isPlaying = !_isPlaying;
-    _isPlayPauseActioned = !_isPlayPauseActioned;
-    mountUpdate();
+    // Pause video on long press start
+    final key = _getCurrentVideoPlayerKey();
+    final videoPlayerState = VideoPlayerWidget.of(key);
+    videoPlayerState?.pause();
+  }
+
+  void _resumePlayback() {
+    // Resume video on long press release
+    final key = _getCurrentVideoPlayerKey();
+    final videoPlayerState = VideoPlayerWidget.of(key);
+    videoPlayerState?.play();
   }
 
   @override
@@ -1315,198 +570,135 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           // Only the main GestureDetector as child of the outer Stack
           GestureDetector(
             onTap: _toggleMuteAndUnMute,
-            onLongPress: _togglePlayPause,
+            onLongPressStart: (_) => _togglePlayPause(),
             onDoubleTap: () async {
               _triggerLikeAnimation(); // Always show animation
-              if (_reelData.isLiked != true && widget.onDoubleTap != null) {
-                await widget.onDoubleTap!();
+              if (_reelData.isLiked != true) {
+                await _callLikeFunction();
               }
             },
-            onLongPressEnd: (_) => _togglePlayPause(),
-            child: VisibilityDetector(
-              key: Key(_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl),
-              onVisibilityChanged: (info) {
-                if (_isDisposed) return;
-                if (_reelData.showBlur == true ||
-                    _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType ==
-                        kPictureType) {
-                  return;
-                }
-
-                // Throttle visibility changes to prevent audio flickering from rapid state changes
-                final now = DateTime.now();
-                if (_lastVisibilityChange != null &&
-                    now.difference(_lastVisibilityChange!) < _visibilityThrottleDuration) {
-                  debugPrint('⚠️ Visibility change throttled (too frequent)');
-                  return;
-                }
-                _lastVisibilityChange = now;
-
-                // Video is visible - play it
-                if (info.visibleFraction > 0.7) {
-                  debugPrint('▶️ Video visible (${info.visibleFraction}) - attempting playback');
-                  // Mark video as visible in cache manager
-                  _videoCacheManager.markAsVisible(
-                      _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl);
-
-                  // Don't auto-play if user has navigated to another screen
-                  if (_controllerReady &&
-                      !_videoPlayerController!.isPlaying &&
-                      !_hasNavigatedAway) {
-                    // OPTIMIZATION: Use unawaited to prevent blocking scrolling
-                    // Play video without blocking the UI thread
-                    unawaited(_videoPlayerController?.play().then((_) {
-                      _isPlaying = true;
-                      _isVideoPlaying.value = true;
-                      debugPrint('✅ Video playback started');
-                    }).catchError((e) {
-                      debugPrint('❌ Error starting playback: $e');
-                    }));
-                  }
-                } else {
-                  // Video is not visible - pause it
-                  debugPrint('⏸️ Video not visible (${info.visibleFraction}) - pausing');
-                  // Mark video as not visible in cache manager
-                  _videoCacheManager.markAsNotVisible(
-                      _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl);
-
-                  if (_controllerReady && _videoPlayerController!.isPlaying) {
-                    // OPTIMIZATION: Use unawaited to prevent blocking scrolling
-                    unawaited(_videoPlayerController?.pause().then((_) {
-                      _isPlaying = false;
-                      _isPlayPauseActioned = false;
-                      _isVideoPlaying.value = false;
-                      debugPrint('✅ Video paused');
-                    }).catchError((e) {
-                      debugPrint('❌ Error pausing video: $e');
-                    }));
-                  }
-                }
-              },
-              child: Stack(
-                fit: StackFit.expand,
-                alignment: Alignment.center,
-                children: [
-                  _buildMediaContent(),
-                  if (_showLikeAnimation)
-                    Center(
-                      child: Lottie.asset(
-                        AssetConstants.heartAnimation,
-                        width: 250,
-                        height: 250,
-                        repeat: false,
-                      ),
+            onLongPressEnd: (_) => _resumePlayback(),
+            child: Stack(
+              fit: StackFit.expand,
+              alignment: Alignment.center,
+              children: [
+                _buildMediaContent(),
+                if (_showLikeAnimation)
+                  Center(
+                    child: Lottie.asset(
+                      AssetConstants.heartAnimation,
+                      width: 250,
+                      height: 250,
+                      repeat: false,
                     ),
-                  if (_showMuteAnimation &&
-                      _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType ==
-                          kVideoType)
-                    Center(
-                      child: AnimatedScale(
-                        scale: _muteIconScale,
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.elasticOut,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.black.changeOpacity(0.3),
-                            shape: BoxShape.circle,
-                          ),
-                          padding: const EdgeInsets.all(24),
-                          child: AppImage.svg(
-                            _isMuted
-                                ? AssetConstants.muteRoundedSvg
-                                : AssetConstants.unMuteRoundedSvg,
-                            width: 70,
-                            height: 70,
-                          ),
-                        ),
-                      ),
-                    ),
-                  // Move overlays here so they don't block taps
-                  // OPTIMIZATION: Wrap gradient in RepaintBoundary for better scrolling
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    child: RepaintBoundary(
+                  ),
+                if (_showMuteAnimation &&
+                    _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kVideoType)
+                  Center(
+                    child: AnimatedScale(
+                      scale: _muteIconScale,
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.elasticOut,
                       child: Container(
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.center,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withValues(alpha: 0.3),
-                              Colors.black.withValues(alpha: 0.6),
-                            ],
-                            stops: const [0.0, 0.5, 1.0],
-                          ),
+                          color: Colors.black.changeOpacity(0.3),
+                          shape: BoxShape.circle,
+                        ),
+                        padding: const EdgeInsets.all(24),
+                        child: AppImage.svg(
+                          _isMuted
+                              ? AssetConstants.muteRoundedSvg
+                              : AssetConstants.unMuteRoundedSvg,
+                          width: 70,
+                          height: 70,
                         ),
                       ),
                     ),
                   ),
-                  // OPTIMIZATION: Separate RepaintBoundary for content overlay
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    child: RepaintBoundary(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withValues(alpha: 0.1),
-                              Colors.black.withValues(alpha: 0.3),
-                              Colors.black.withValues(alpha: 0.6),
-                            ],
-                            stops: const [0.0, 0.3, 0.7, 1.0],
-                          ),
-                        ),
-                        padding: _reelData.overlayPadding,
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          mainAxisSize: MainAxisSize.max,
-                          children: [
-                            Expanded(
-                              child: SingleChildScrollView(
-                                child: _reelData.footerWidget?.child ??
-                                    _buildBottomSectionWithoutOverlay(),
-                              ),
-                            ),
-                            _reelData.actionWidget?.child ?? _buildRightSideActions(),
+                // Move overlays here so they don't block taps
+                // OPTIMIZATION: Wrap gradient in RepaintBoundary for better scrolling
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: RepaintBoundary(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.center,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.3),
+                            Colors.black.withValues(alpha: 0.6),
                           ],
+                          stops: const [0.0, 0.5, 1.0],
                         ),
                       ),
                     ),
                   ),
-                  // Persistent mute icon indicator in top-right (placed last to be on top)
-                  if (_isMuted &&
-                      _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType ==
-                          kVideoType)
-                    Positioned(
-                      top: IsrDimens.sixty + IsrDimens.ten,
-                      right: IsrDimens.sixteen,
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: _toggleMuteAndUnMute,
-                        child: Container(
-                          padding: EdgeInsets.all(IsrDimens.eight),
-                          decoration: BoxDecoration(
-                            color: Colors.black.changeOpacity(0.5),
-                            shape: BoxShape.circle,
-                          ),
-                          child: AppImage.svg(
-                            AssetConstants.muteRoundedSvg,
-                            width: IsrDimens.twenty,
-                            height: IsrDimens.twenty,
-                          ),
+                ),
+                // OPTIMIZATION: Separate RepaintBoundary for content overlay
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: RepaintBoundary(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.1),
+                            Colors.black.withValues(alpha: 0.3),
+                            Colors.black.withValues(alpha: 0.6),
+                          ],
+                          stops: const [0.0, 0.3, 0.7, 1.0],
                         ),
                       ),
+                      padding: widget.overlayPadding,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisSize: MainAxisSize.max,
+                        children: [
+                          Expanded(
+                            child: SingleChildScrollView(
+                              child: _reelData.footerWidget?.child ??
+                                  _buildBottomSectionWithoutOverlay(),
+                            ),
+                          ),
+                          _reelData.actionWidget?.child ?? _buildRightSideActions(),
+                        ],
+                      ),
                     ),
-                ],
-              ),
+                  ),
+                ),
+                // Persistent mute icon indicator in top-right (placed last to be on top)
+                // if (_isMuted &&
+                //     _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kVideoType)
+                //   Positioned(
+                //     top: IsrDimens.oneHundredForty,
+                //     right: IsrDimens.sixteen,
+                //     child: GestureDetector(
+                //       behavior: HitTestBehavior.opaque,
+                //       onTap: _toggleMuteAndUnMute,
+                //       child: Container(
+                //         padding: EdgeInsets.all(IsrDimens.eight),
+                //         decoration: BoxDecoration(
+                //           color: Colors.black.changeOpacity(0.5),
+                //           shape: BoxShape.circle,
+                //         ),
+                //         child: AppImage.svg(
+                //           AssetConstants.muteRoundedSvg,
+                //           width: IsrDimens.twenty,
+                //           height: IsrDimens.twenty,
+                //         ),
+                //       ),
+                //     ),
+                //   ),
+              ],
             ),
           ),
         ],
@@ -1548,6 +740,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       width: IsrDimens.thirtyFive,
                       height: IsrDimens.thirtyFive,
                       isProfileImage: true,
+                      textColor: IsrColors.white,
                       name: '${_reelData.firstName ?? ''} ${_reelData.lastName ?? ''}',
                     ),
                   ),
@@ -1675,6 +868,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               label ?? '',
               style: IsrStyles.white12.copyWith(
                 fontWeight: FontWeight.w500,
+                decoration: TextDecoration.none,
               ),
             ),
           ],
@@ -1691,9 +885,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             if ((_reelData.productCount ?? 0) > 0) ...[
               TapHandler(
                 onTap: () {
-                  if (_reelData.onTapCartIcon != null) {
+                  if (widget.onTapCartIcon != null) {
                     _pauseForNavigation();
-                    _reelData.onTapCartIcon!();
+                    widget.onTapCartIcon?.call(_reelData.postId ?? '');
                     _resumeAfterNavigation();
                   }
                 },
@@ -1760,7 +954,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                     onTap: () async {
                                       if (_reelData.onTapUserProfile != null) {
                                         _pauseForNavigation();
-                                        await _reelData.onTapUserProfile!(false);
+                                        await _reelData.onTapUserProfile?.call(false);
                                         _resumeAfterNavigation();
                                       }
                                     },
@@ -1824,7 +1018,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                       TextSpan(
                                         text: value ? ' ' : ' ... ',
                                         style:
-                                        IsrStyles.white14.copyWith(fontWeight: FontWeight.w700),
+                                            IsrStyles.white14.copyWith(fontWeight: FontWeight.w700),
                                         recognizer: TapGestureRecognizer()
                                           ..onTap = () {
                                             // _isExpandedDescription.value =
@@ -1886,6 +1080,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           IsrTranslationFile.creatorEarnsCommission,
           style: IsrStyles.white10.copyWith(
             color: IsrColors.colorF4F4F4,
+            decoration: TextDecoration.none,
           ),
         ),
       );
@@ -1976,6 +1171,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     try {
       await widget.onPressFollowButton!();
+      _logFollowEvent(
+          _reelData, _reelData.isFollow == true ? FollowAction.follow : FollowAction.unfollow);
     } finally {
       _isFollowLoading.value = false;
     }
@@ -1987,6 +1184,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     try {
       await widget.onPressSaveButton!();
+      _logSaveEvent(_reelData, _reelData.isSavedPost == true ? SaveAction.save : SaveAction.unsave);
     } finally {
       _isSaveLoading.value = false;
     }
@@ -1996,16 +1194,43 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (widget.onPressLikeButton == null || _isLikeLoading.value) return;
     _isLikeLoading.value = true;
     try {
-      final wasLiked = _reelData.isLiked == true;
       await widget.onPressLikeButton!();
-      // Only show animation if it was not liked before and is now liked
-      if (!wasLiked && _reelData.isLiked == true) {
-        _triggerLikeAnimation();
-      }
-      // If already liked, just do dislike (no animation)
+      _logLikeEvent(_reelData, _reelData.isLiked == true ? LikeAction.like : LikeAction.unlike);
     } finally {
       _isLikeLoading.value = false;
     }
+  }
+
+  void _logFollowEvent(ReelsData reelsData, FollowAction followAction) {
+    final eventMap = <String, dynamic>{
+      'view_source': 'feed',
+      'category': EventCategory.socialGraph.value,
+    };
+    sendAnalyticsEvent(
+        followAction == FollowAction.follow
+            ? EventType.userFollowed.value
+            : EventType.userUnFollowed.value,
+        eventMap);
+  }
+
+  void _logLikeEvent(ReelsData reelsData, LikeAction likeAction) {
+    final eventMap = <String, dynamic>{
+      'view_source': 'feed',
+      'category': EventCategory.postEngagement.value,
+    };
+    sendAnalyticsEvent(
+        likeAction == LikeAction.unlike ? EventType.postUnliked.value : EventType.postLiked.value,
+        eventMap);
+  }
+
+  void _logSaveEvent(ReelsData reelsData, SaveAction saveAction) {
+    final eventMap = <String, dynamic>{
+      'view_source': 'feed',
+      'category': EventCategory.postEngagement.value,
+    };
+    sendAnalyticsEvent(
+        saveAction == SaveAction.save ? EventType.postSaved.value : EventType.postHidden.value,
+        eventMap);
   }
 
   void _triggerLikeAnimation() {
@@ -2100,6 +1325,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             text: matchedText,
             style: defaultStyle.copyWith(
               fontWeight: FontWeight.w800,
+              decoration: TextDecoration.none,
             ),
             recognizer: TapGestureRecognizer()
               ..onTap = () {
@@ -2126,6 +1352,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             text: matchedText,
             style: defaultStyle.copyWith(
               fontWeight: FontWeight.w800,
+              decoration: TextDecoration.none,
             ),
             recognizer: TapGestureRecognizer()
               ..onTap = () {
@@ -2136,7 +1363,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           if (matchedText.isNotEmpty) {
             spans.add(TextSpan(
               text: matchedText,
-              style: defaultStyle.copyWith(fontWeight: FontWeight.w800),
+              style: defaultStyle.copyWith(
+                fontWeight: FontWeight.w800,
+                decoration: TextDecoration.none,
+              ),
             ));
           }
         }
@@ -2189,24 +1419,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   /// Pauses video when navigating away from reel screen
   void _pauseForNavigation() {
-    debugPrint('⏸️⏸️⏸️ Pausing video for in-app navigation');
-    if (_isPlaying && _controllerReady) {
-      _videoPlayerController?.pause();
-      _isPlaying = false;
-      _hasNavigatedAway = true;
-      mountUpdate();
-    }
+    // Navigation is handled by individual VideoPlayerWidgets
   }
 
   /// Resumes video when returning to reel screen
   void _resumeAfterNavigation() {
-    debugPrint('▶️▶️▶️ Resuming video after in-app navigation');
-    _hasNavigatedAway = false;
-    if (!_isPlaying && _controllerReady && mounted) {
-      _videoPlayerController?.play();
-      _isPlaying = true;
-      mountUpdate();
-    }
+    // Navigation is handled by individual VideoPlayerWidgets
   }
 
   Widget _buildPageView(int index) {
@@ -2222,26 +1440,49 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         ),
       );
     } else {
-      // Video content - only show video player for current index
-      if (index == _currentPageNotifier.value) {
-        return SizedBox(
-          key: ValueKey('media_$index'), // Consistent key
+      // Video content - use VideoPlayerWidget with visibility detection for each video
+      // Each video manages its own controller through the VideoPlayerWidget
+      // Get or create key for this video player
+      _videoPlayerKeys[index] ??= GlobalKey();
 
-          child: _buildCarousalVideoContent(),
-        );
-      } else {
-        return SizedBox(
-          key: ValueKey('media_$index'), // Consistent key
-          child: _getImageWidget(
-            imageUrl: media.thumbnailUrl,
-            width: IsrDimens.getScreenWidth(context),
-            height: IsrDimens.getScreenHeight(context),
-            fit: BoxFit.cover,
-            filterQuality: FilterQuality.low,
-            showError: false,
-          ),
-        );
-      }
+      return SizedBox(
+        key: ValueKey('media_$index'), // Consistent key
+        child: VideoPlayerWidget(
+          key: _videoPlayerKeys[index],
+          mediaUrl: media.mediaUrl,
+          thumbnailUrl: media.thumbnailUrl,
+          videoCacheManager: _videoCacheManager,
+          isMuted: _isMuted,
+          onVisibilityChanged: (isVisible) {
+            // Visibility is handled internally by VideoPlayerWidget
+          },
+          onVideoCompleted: () {
+            // Handle video completion for carousel
+            if (_hasMultipleMedia) {
+              // If there's a next media item in the carousel, move to it
+              if (index < _reelData.mediaMetaDataList.length - 1) {
+                final nextIndex = index + 1;
+                _pageController?.animateToPage(
+                  nextIndex,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
+              } else {
+                // No more media in carousel, notify parent to move to next post and move to first media
+                widget.onVideoCompleted?.call();
+                _pageController?.animateToPage(
+                  0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
+              }
+            } else {
+              // Single video, notify parent to move to next post
+              widget.onVideoCompleted?.call();
+            }
+          },
+        ),
+      );
     }
   }
 
@@ -2258,176 +1499,58 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   void _performMuteToggle() {
-    // Prevent multiple audio operations at once
-    if (_isAudioOperationInProgress) {
-      debugPrint('⚠️ Audio operation already in progress, skipping toggle');
-      return;
-    }
-
     setState(() {
       _isMuted = !_isMuted;
       _globalMuteState = _isMuted; // Update global mute state
     });
-
-    // Set volume with safe method to prevent flickering
-    final targetVolume = _isMuted ? 0.0 : 1.0;
-    _setVolumeSafely(targetVolume);
+    _logMuteAndUnMuteEvent();
+    // Volume change is handled by VideoPlayerWidget via didUpdateWidget
     _triggerMuteAnimation();
   }
 
-  /// Sets volume safely with proper synchronization and error handling
-  Future<void> _setVolumeSafely(double volume) async {
-    // Prevent multiple simultaneous volume operations
-    if (_isAudioOperationInProgress) {
-      debugPrint('⚠️ Audio operation in progress, queuing volume change');
-      // Wait a bit and retry
-      await Future.delayed(const Duration(milliseconds: 100));
-      if (_isAudioOperationInProgress) {
-        debugPrint('⚠️ Still in progress, skipping volume change');
-        return;
-      }
-    }
-
-    _isAudioOperationInProgress = true;
-
-    try {
-      if (_videoPlayerController != null &&
-          _videoPlayerController!.isInitialized &&
-          !_isDisposed &&
-          mounted) {
-        // Only set if volume actually needs to change
-        if (_lastSetVolume != volume) {
-          await _videoPlayerController!.setVolume(volume);
-          _lastSetVolume = volume;
-          debugPrint('🔊 Volume successfully set to: $volume');
-        } else {
-          debugPrint('🔊 Volume already at: $volume, skipping');
-        }
-      }
-    } catch (e) {
-      debugPrint('⚠️ Error setting volume: $e');
-      _lastSetVolume = null; // Reset on error to allow retry
-    } finally {
-      _isAudioOperationInProgress = false;
-    }
-  }
-
-  /// Helper method to build the video player widget
-  Widget _buildVideoPlayerWidget(IVideoPlayerController controller) => Container(
-        color: Colors.black,
-        child: Center(
-          child: RepaintBoundary(
-            child: controller.buildVideoPlayerWidget(),
-          ),
-        ),
-      );
-
-  int _lastProgressSecond = -1;
-  Timer? _completionDebounceTimer;
-
-  void _handlePlaybackProgress() {
-    if (!mounted || _videoPlayerController == null || !_videoPlayerController!.isInitialized) {
-      return;
-    }
-
-    final position = _videoPlayerController!.position;
-    final duration = _videoPlayerController!.duration;
-    final total = duration.inSeconds;
-    final progress = position.inSeconds;
-
-    // Throttle progress updates to reduce CPU usage - only process once per second
-    if (progress == _lastProgressSecond) {
-      return;
-    }
-    _lastProgressSecond = progress;
-
-    // Track the maximum watch position reached (for later logging)
-    if (position > _maxWatchPosition) {
-      _maxWatchPosition = position;
-    }
-
-    if (total == progress) {
-      _hasCompletedOneCycle = true;
-      // Handle video completion - check if we should move to next video or next post
-      _handleVideoCompletion();
-    }
-  }
-
-  /// Handles video completion logic - either move to next video in carousel or next post
-  void _handleVideoCompletion() {
-    // Debounce completion calls to prevent excessive processing
-    _completionDebounceTimer?.cancel();
-    _completionDebounceTimer = Timer(const Duration(milliseconds: 100), _processVideoCompletion);
-  }
-
-  void _processVideoCompletion() {
-    debugPrint('🎬 _handleVideoCompletion called - disposed: $_isDisposed, mounted: $mounted');
-
-    if (_isDisposed || !mounted) {
-      debugPrint('🎬 _handleVideoCompletion: Early return due to disposed or not mounted');
-      return;
-    }
-
-    debugPrint(
-        '🎬 _handleVideoCompletion: Has multiple media: $_hasMultipleMedia, current page: ${_currentPageNotifier.value}, total media: ${_reelData.mediaMetaDataList.length}');
-
-    // Check if we have multiple media items (carousel)
-    if (_hasMultipleMedia) {
-      // If there's a next media item in the carousel, move to it
-      if (_currentPageNotifier.value < _reelData.mediaMetaDataList.length - 1) {
-        final nextIndex = _currentPageNotifier.value + 1;
-        debugPrint('🎬 Video completed, moving to next media in carousel: $nextIndex');
-        _pageController?.animateToPage(
-          nextIndex,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        );
-        return;
-      } else {
-        debugPrint('🎬 Video completed, no more media in carousel');
-      }
-    }
-
-    // If no next media in carousel or single video, notify parent to move to next post
-    debugPrint(
-        '🎬 Video completed, notifying parent to move to next post. Callback available: ${widget.onVideoCompleted != null}');
-    widget.onVideoCompleted?.call();
-  }
-
-  /// Log watch event only once per video when user leaves or video completes
-  void _logWatchEventIfNeeded() async {
+  void _logMuteAndUnMuteEvent() {
     final eventMap = <String, dynamic>{
-      'post_id': widget.reelsData?.postId,
       'view_source': 'feed',
+      'sound_enable': _isMuted == false,
+      'category': EventCategory.videoEngagement.value,
     };
+    sendAnalyticsEvent(EventType.videoSoundToggled.value, eventMap);
+  }
 
-    // Only log if:
-    // 1. Not already logged for this video
-    // 2. User watched for at least 1 second
-    if (_hasLoggedWatchEvent == false &&
-        _videoPlayerController != null &&
-        _videoPlayerController!.isInitialized) {
-      try {
-        final duration = _videoPlayerController!.duration;
-        final watchedSeconds = _maxWatchPosition.inSeconds;
-        final totalSeconds = duration.inSeconds;
-
-        // Calculate completion rate as percentage
-        final completionRate = totalSeconds > 0 ? ((watchedSeconds / totalSeconds) * 100) : 0;
-
-        eventMap.addAll({
-          'view_completion_rate': completionRate.toInt(),
-          'view_duration': watchedSeconds,
-          // 'total_duration': totalSeconds,
-        });
-
-        // Mark as logged to prevent duplicate logging
-        _hasLoggedWatchEvent = true;
-      } catch (e) {
-        debugPrint('❌ Error logging watch event: $e');
-      }
+  /// log image post event
+  void _logImagePostEvent() {
+    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kPictureType) {
+      sendAnalyticsEvent(EventType.postViewed.value, {});
     }
-    debugPrint('Logging watch event - Post: ${jsonEncode(eventMap)}');
-    unawaited(EventQueueProvider.instance.addEvent(eventMap));
+  }
+
+  /// Implementation of PostHelperCallBacks interface
+  /// This method is called by VideoPlayerWidget to send analytics events
+  @override
+  void sendAnalyticsEvent(String eventName, Map<String, dynamic> analyticsData) async {
+    try {
+      // Prepare analytics event in the required format: "Post Viewed"
+      final postViewedEvent = {
+        'post_id': _reelData.postId ?? '',
+        'post_author_id': _reelData.userId ?? '',
+        'post_type': _reelData.mediaMetaDataList.length > 1
+            ? 'carousel'
+            : _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kVideoType
+                ? 'video'
+                : 'image',
+        'timestamp': DateTime.now().toIso8601String(),
+      };
+      final finalAnalyticsDataMap = {
+        ...postViewedEvent,
+        ...analyticsData,
+      };
+
+      debugPrint('📊 Post Viewed Event: ${jsonEncode(finalAnalyticsDataMap)}');
+      unawaited(EventQueueProvider.instance
+          .addEvent(eventName, finalAnalyticsDataMap.removeEmptyValues()));
+    } catch (e) {
+      debugPrint('❌ Error sending analytics event: $e');
+      return null;
+    }
   }
 }

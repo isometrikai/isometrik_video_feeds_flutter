@@ -1,14 +1,13 @@
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
-import 'package:ism_video_reel_player/utils/isr_utils.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 
 class IsrLocalStorageRepositoryImpl implements IsrLocalStorageRepository {
   IsrLocalStorageRepositoryImpl(this._localStorageManager);
 
-  final IsrLocalStorageManager _localStorageManager;
+  final LocalStorageManager _localStorageManager;
 
-  Future<dynamic> getValue(
-      String key, SavedValueDataType saveValueDataType) async {
+  Future<dynamic> getValue(String key, SavedValueDataType saveValueDataType) async {
     final value = await _localStorageManager.getValue(key, saveValueDataType);
     return value == null
         ? null
@@ -26,8 +25,7 @@ class IsrLocalStorageRepositoryImpl implements IsrLocalStorageRepository {
   Future<String> getSecuredValue(String key) async =>
       await _localStorageManager.getSecuredValue(key);
 
-  void saveValue(
-      String key, dynamic value, SavedValueDataType savedValueDataType) {
+  void saveValue(String key, dynamic value, SavedValueDataType savedValueDataType) {
     _localStorageManager.saveValue(key, value, savedValueDataType);
   }
 
@@ -60,97 +58,154 @@ class IsrLocalStorageRepositoryImpl implements IsrLocalStorageRepository {
 
   @override
   Future<String> getUserId() async =>
-      await _localStorageManager.getSecuredValue(IsrLocalStorageKeys.userId);
+      await _localStorageManager.getSecuredValue(LocalStorageKeys.userId);
 
   @override
   Future<String> getEmail() async =>
-      await _localStorageManager.getSecuredValue(IsrLocalStorageKeys.email);
+      await _localStorageManager.getSecuredValue(LocalStorageKeys.email);
 
   @override
-  Future<bool> isLoggedIn() async => await _localStorageManager.getValue(
-      IsrLocalStorageKeys.isLoggedIn, SavedValueDataType.bool) as bool;
+  Future<bool> isLoggedIn() async =>
+      await _localStorageManager.getValue(LocalStorageKeys.isLoggedIn, SavedValueDataType.bool)
+          as bool;
 
   @override
-  Future<String> getCurrencyCode() async => await _localStorageManager
-      .getSecuredValue(IsrLocalStorageKeys.currencyCode);
+  Future<String> getCurrencyCode() async =>
+      await _localStorageManager.getSecuredValue(LocalStorageKeys.currencyCode);
 
   @override
-  Future<String> getCurrencySymbol() async => await _localStorageManager
-      .getSecuredValue(IsrLocalStorageKeys.currencySymbol);
+  Future<String> getCurrencySymbol() async =>
+      await _localStorageManager.getSecuredValue(LocalStorageKeys.currencySymbol);
 
   // Implementations for all keys
   @override
   Future<String> getLanguage() async =>
-      await getValue(IsrLocalStorageKeys.language, SavedValueDataType.string)
-          as String;
+      await getValue(LocalStorageKeys.language, SavedValueDataType.string) as String;
 
   @override
-  Future<String> getAccessToken() async =>
-      await getSecuredValue(IsrLocalStorageKeys.accessToken);
+  Future<String> getAccessToken() async => await getSecuredValue(LocalStorageKeys.accessToken);
 
   @override
-  Future<String> getRefreshToken() async =>
-      await getSecuredValue(IsrLocalStorageKeys.refreshToken);
+  Future<String> getRefreshToken() async => await getSecuredValue(LocalStorageKeys.refreshToken);
 
   @override
-  Future<String> getPhoneNumber() async =>
-      await getSecuredValue(IsrLocalStorageKeys.phoneNumber);
+  Future<String> getPhoneNumber() async => await getSecuredValue(LocalStorageKeys.phoneNumber);
 
   @override
   Future<String> getFirstName() async =>
-      await getValue(IsrLocalStorageKeys.firstName, SavedValueDataType.string)
-          as String;
+      await getValue(LocalStorageKeys.firstName, SavedValueDataType.string) as String;
 
   @override
   Future<String> getLastName() async =>
-      await getValue(IsrLocalStorageKeys.lastName, SavedValueDataType.string)
-          as String;
+      await getValue(LocalStorageKeys.lastName, SavedValueDataType.string) as String;
 
   @override
   Future<String> getProfilePic() async =>
-      await getValue(IsrLocalStorageKeys.profilePic, SavedValueDataType.string)
-          as String;
+      await getValue(LocalStorageKeys.profilePic, SavedValueDataType.string) as String;
 
   @override
   Future<String> getUserInfo() async =>
-      await getValue(IsrLocalStorageKeys.userInfo, SavedValueDataType.string)
-          as String;
+      await getValue(LocalStorageKeys.userInfo, SavedValueDataType.string) as String;
+
+  @override
+  Future<double> getLatitude() async =>
+      await getValue(LocalStorageKeys.latitude, SavedValueDataType.double) as double;
+
+  @override
+  Future<double> getLongitude() async =>
+      await getValue(LocalStorageKeys.longitude, SavedValueDataType.double) as double;
+
+  @override
+  Future<String> getUserName() async =>
+      await getValue(LocalStorageKeys.userName, SavedValueDataType.string) as String;
 
   // Implementations for setters
   @override
   void saveLanguage(String value) =>
-      saveValue(IsrLocalStorageKeys.language, value, SavedValueDataType.string);
+      saveValue(LocalStorageKeys.language, value, SavedValueDataType.string);
 
   @override
   void saveIsLoggedIn(bool value) =>
-      saveValue(IsrLocalStorageKeys.isLoggedIn, value, SavedValueDataType.bool);
+      saveValue(LocalStorageKeys.isLoggedIn, value, SavedValueDataType.bool);
 
   @override
-  void saveAccessToken(String value) =>
-      saveSecuredValue(IsrLocalStorageKeys.accessToken, value);
+  void saveAccessToken(String value) => saveSecuredValue(LocalStorageKeys.accessToken, value);
 
   @override
-  void saveRefreshToken(String value) =>
-      saveSecuredValue(IsrLocalStorageKeys.refreshToken, value);
+  void saveRefreshToken(String value) => saveSecuredValue(LocalStorageKeys.refreshToken, value);
 
   @override
-  void savePhoneNumber(String value) =>
-      saveSecuredValue(IsrLocalStorageKeys.phoneNumber, value);
+  void savePhoneNumber(String value) => saveSecuredValue(LocalStorageKeys.phoneNumber, value);
 
   @override
-  void saveFirstName(String value) => saveValue(
-      IsrLocalStorageKeys.firstName, value, SavedValueDataType.string);
+  void saveFirstName(String value) =>
+      saveValue(LocalStorageKeys.firstName, value, SavedValueDataType.string);
 
   @override
   void saveLastName(String value) =>
-      saveValue(IsrLocalStorageKeys.lastName, value, SavedValueDataType.string);
+      saveValue(LocalStorageKeys.lastName, value, SavedValueDataType.string);
 
   @override
-  void saveProfilePic(String value) => saveValue(
-      IsrLocalStorageKeys.profilePic, value, SavedValueDataType.string);
+  void saveProfilePic(String value) =>
+      saveValue(LocalStorageKeys.profilePic, value, SavedValueDataType.string);
 
   @override
   void saveEmail(String value) {
-    saveValue(IsrLocalStorageKeys.email, value, SavedValueDataType.string);
+    saveValue(LocalStorageKeys.email, value, SavedValueDataType.string);
+  }
+
+  @override
+  void saveLatitude(double value) {
+    saveValue(LocalStorageKeys.latitude, value, SavedValueDataType.double);
+  }
+
+  @override
+  void saveLongitude(double value) {
+    saveValue(LocalStorageKeys.longitude, value, SavedValueDataType.double);
+  }
+
+  @override
+  Future<String> getTenantId() async =>
+      await getValue(LocalStorageKeys.xTenantId, SavedValueDataType.string) as String;
+
+  @override
+  void saveTenantId(String value) {
+    saveValue(LocalStorageKeys.xTenantId, value, SavedValueDataType.string);
+  }
+
+  @override
+  Future<String> getProjectId() async =>
+      await getValue(LocalStorageKeys.xProjectId, SavedValueDataType.string) as String;
+
+  @override
+  void saveProjectId(String value) {
+    saveValue(LocalStorageKeys.xProjectId, value, SavedValueDataType.string);
+  }
+
+  @override
+  Future<String> getCity() async =>
+      await getValue(LocalStorageKeys.city, SavedValueDataType.string) as String;
+
+  @override
+  Future<String> getCountry() async =>
+      await getValue(LocalStorageKeys.country, SavedValueDataType.string) as String;
+
+  @override
+  Future<String> getState() async =>
+      await getValue(LocalStorageKeys.state, SavedValueDataType.string) as String;
+
+  @override
+  void saveCity(String value) {
+    saveValue(LocalStorageKeys.city, value, SavedValueDataType.string);
+  }
+
+  @override
+  void saveCountry(String value) {
+    saveValue(LocalStorageKeys.country, value, SavedValueDataType.string);
+  }
+
+  @override
+  void saveState(String value) {
+    saveValue(LocalStorageKeys.state, value, SavedValueDataType.string);
   }
 }

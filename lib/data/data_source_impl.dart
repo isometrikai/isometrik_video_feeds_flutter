@@ -1,38 +1,38 @@
 import 'package:ism_video_reel_player/data/data.dart';
-import 'package:ism_video_reel_player/utils/isr_utils.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 
 class DataSourceImpl extends DataSource {
   DataSourceImpl(
     this._localStorageManager,
   );
 
-  final IsrLocalStorageManager _localStorageManager;
+  final LocalStorageManager _localStorageManager;
   late Header header;
 
   @override
   Future<Header> getHeader() async => await initializeHeader();
 
   @override
-  IsrLocalStorageManager getStorageManager() => _localStorageManager;
+  LocalStorageManager getStorageManager() => _localStorageManager;
 
   Future<Header> initializeHeader() async {
     final language = await _localStorageManager.getValue(
-        IsrLocalStorageKeys.language, SavedValueDataType.string) as String;
+        LocalStorageKeys.language, SavedValueDataType.string) as String;
 
     final accessToken = await _localStorageManager
-        .getSecuredValue(IsrLocalStorageKeys.accessToken);
+        .getSecuredValue(LocalStorageKeys.accessToken);
 
     final refreshToken = await _localStorageManager
-        .getSecuredValue(IsrLocalStorageKeys.refreshToken);
+        .getSecuredValue(LocalStorageKeys.refreshToken);
 
     final latitude = await _localStorageManager.getValue(
-        IsrLocalStorageKeys.latitude, SavedValueDataType.double) as double;
+        LocalStorageKeys.latitude, SavedValueDataType.double) as double;
 
     final longitude = await _localStorageManager.getValue(
-        IsrLocalStorageKeys.longitude, SavedValueDataType.double) as double;
+        LocalStorageKeys.longitude, SavedValueDataType.double) as double;
 
     final ipAddress = await _localStorageManager.getValue(
-        IsrLocalStorageKeys.userIP, SavedValueDataType.string) as String;
+        LocalStorageKeys.ipAddress, SavedValueDataType.string) as String;
 
     final city = '';
 
@@ -46,16 +46,21 @@ class DataSourceImpl extends DataSource {
 
     final country = '';
 
-    final platForm = IsrVideoReelUtility.platFormType();
+    final platForm = Utility.platFormType();
 
     final timeZone = '';
 
     final currencySymbol = await _localStorageManager.getValue(
-            IsrLocalStorageKeys.currencySymbol, SavedValueDataType.string)
-        as String;
+        LocalStorageKeys.currencySymbol, SavedValueDataType.string) as String;
 
     final currencyCode = await _localStorageManager.getValue(
-        IsrLocalStorageKeys.currencyCode, SavedValueDataType.string) as String;
+        LocalStorageKeys.currencyCode, SavedValueDataType.string) as String;
+
+    final xTenantId = await _localStorageManager.getValue(
+        LocalStorageKeys.xTenantId, SavedValueDataType.string) as String;
+
+    final xProjectId = await _localStorageManager.getValue(
+        LocalStorageKeys.xProjectId, SavedValueDataType.string) as String;
 
     return Header(
       accessToken: accessToken,
@@ -74,6 +79,8 @@ class DataSourceImpl extends DataSource {
       timeZone: timeZone,
       currencySymbol: currencySymbol,
       currencyCode: currencyCode,
+      xTenantId: xTenantId,
+      xProjectId: xProjectId,
     );
   }
 }

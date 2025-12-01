@@ -6,6 +6,7 @@ part 'local_event.g.dart'; // MUST match the file name
 class LocalEvent {
   LocalEvent({
     required this.id,
+    required this.eventName,
     required this.payload,
     required this.timestamp,
   });
@@ -14,8 +15,11 @@ class LocalEvent {
   String id; // unique identifier (UUID)
 
   @HiveField(1)
-  Map<String, dynamic> payload; // flexible event data
+  String eventName; // event name
 
   @HiveField(2)
+  Map<String, dynamic> payload; // flexible event data
+
+  @HiveField(3)
   DateTime timestamp;
 }

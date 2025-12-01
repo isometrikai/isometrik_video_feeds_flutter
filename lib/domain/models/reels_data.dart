@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 
 class ReelsData {
   ReelsData({
@@ -17,7 +18,6 @@ class ReelsData {
     this.likesCount,
     this.onPressSave,
     this.onPressLike,
-    this.onDoubleTap,
     this.onPressFollow,
     this.onRefresh,
     this.onTapCartIcon,
@@ -46,6 +46,7 @@ class ReelsData {
     this.onTapMentionTag,
     this.onTapPlace,
     this.placeDataList,
+    this.tags,
   });
 
   final String? postId;
@@ -68,7 +69,6 @@ class ReelsData {
 
   final Future<bool> Function(bool isSavedPost)? onPressSave;
   final Future<bool> Function(bool)? onPressLike;
-  final Future<bool> Function(bool)? onDoubleTap;
   final Future<bool> Function(String, bool)? onPressFollow;
   final Future<bool> Function()? onRefresh;
   final Future<ReelsData?> Function()? onCreatePost;
@@ -92,8 +92,10 @@ class ReelsData {
   List<MentionMetaData> mentions;
   final List<MentionMetaData>? tagDataList;
   final List<PlaceMetaData>? placeDataList;
-  final Future<List<MentionMetaData>?> Function(List<MentionMetaData>)? onTapMentionTag;
+  final Future<List<MentionMetaData>?> Function(List<MentionMetaData>)?
+      onTapMentionTag;
   final Function(List<PlaceMetaData>)? onTapPlace;
+  final Tags? tags;
 }
 
 class MediaMetaData {
@@ -119,7 +121,8 @@ class MentionMetaData {
     this.mediaPosition,
   });
 
-  factory MentionMetaData.fromJson(Map<String, dynamic> json) => MentionMetaData(
+  factory MentionMetaData.fromJson(Map<String, dynamic> json) =>
+      MentionMetaData(
         userId: json['user_id'] as String? ?? '',
         username: json['username'] as String? ?? '',
         tag: json['tag'] as String? ?? '',
@@ -127,10 +130,12 @@ class MentionMetaData {
         avatarUrl: json['avatarUrl'] as String? ?? '',
         textPosition: json['text_position'] == null
             ? null
-            : MentionPosition.fromJson(json['text_position'] as Map<String, dynamic>),
+            : MentionPosition.fromJson(
+                json['text_position'] as Map<String, dynamic>),
         mediaPosition: json['media_position'] == null
             ? null
-            : MediaPosition.fromJson(json['media_position'] as Map<String, dynamic>),
+            : MediaPosition.fromJson(
+                json['media_position'] as Map<String, dynamic>),
       );
   String? userId;
   String? username;
@@ -155,7 +160,8 @@ class MentionPosition {
     required this.end,
   });
 
-  factory MentionPosition.fromJson(Map<String, dynamic> json) => MentionPosition(
+  factory MentionPosition.fromJson(Map<String, dynamic> json) =>
+      MentionPosition(
         start: json['start'] as num? ?? 0,
         end: json['end'] as num? ?? 0,
       );
@@ -165,29 +171,6 @@ class MentionPosition {
   Map<String, dynamic> toJson() => {
         'start': start,
         'end': end,
-      };
-}
-
-class MediaPosition {
-  MediaPosition({
-    required this.position,
-    required this.x,
-    required this.y,
-  });
-
-  factory MediaPosition.fromJson(Map<String, dynamic> json) => MediaPosition(
-        position: json['position'] as num? ?? 0,
-        x: json['x'] as num? ?? 0,
-        y: json['y'] as num? ?? 0,
-      );
-  num? position;
-  num? x;
-  num? y;
-
-  Map<String, dynamic> toJson() => {
-        'position': position,
-        'x': x,
-        'y': y,
       };
 }
 
@@ -234,7 +217,8 @@ class PlaceMetaData {
         city: json['city'] as String? ?? '',
         coordinates: json['coordinates'] == null
             ? []
-            : List<double>.from((json['coordinates'] as List).map((x) => x?.toDouble())),
+            : List<double>.from(
+                (json['coordinates'] as List).map((x) => x?.toDouble())),
         country: json['country'] as String? ?? '',
         description: json['description'] as String? ?? '',
         placeId: json['place_id'] as String? ?? '',
@@ -257,7 +241,9 @@ class PlaceMetaData {
   Map<String, dynamic> toJson() => {
         'address': address,
         'city': city,
-        'coordinates': coordinates == null ? [] : List<dynamic>.from(coordinates!.map((x) => x)),
+        'coordinates': coordinates == null
+            ? []
+            : List<dynamic>.from(coordinates!.map((x) => x)),
         'country': country,
         'description': description,
         'place_id': placeId,
@@ -266,4 +252,16 @@ class PlaceMetaData {
         'postal_code': postalCode,
         'state': state,
       };
+}
+
+enum PostSectionType {
+  forYou,
+  following,
+  trending,
+  myPost,
+  otherUserPost,
+  savedPost,
+  myTaggedPost,
+  tagPost,
+  singlePost,
 }

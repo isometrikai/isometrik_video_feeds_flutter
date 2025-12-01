@@ -1,19 +1,19 @@
+import 'package:ism_video_reel_player/core/core.dart';
 import 'package:ism_video_reel_player/data/data.dart';
-import 'package:ism_video_reel_player/ism_video_reel_player.dart';
+import 'package:ism_video_reel_player/di/di.dart';
 
 class AppModuleInjection {
   static void inject() {
-    IsmInjectionUtils.registerOtherClass<IsrSharedPreferencesManager>(
-        IsrSharedPreferencesManager.new);
-    IsmInjectionUtils.registerOtherClass<IsrLocalStorageManager>(() =>
-        IsrLocalStorageManager(
-            IsmInjectionUtils.getOtherClass<IsrSharedPreferencesManager>()));
-    IsmInjectionUtils.registerOtherClass<DataSource>(() => DataSourceImpl(
-        IsmInjectionUtils.getOtherClass<IsrLocalStorageManager>()));
-    IsmInjectionUtils.registerOtherClass<IsrNavigationService>(
-        () => IsrNavigationServiceImpl(ismNavigatorKey));
-    IsmInjectionUtils.registerOtherClass<IsrRouteManagement>(() =>
-        IsrRouteManagement(
-            IsmInjectionUtils.getOtherClass<IsrNavigationService>()));
+    IsmInjectionUtils.registerOtherClass<DeviceInfoManager>(
+        DeviceInfoManager.new);
+    IsmInjectionUtils.registerOtherClass<SharedPreferencesManager>(
+        SharedPreferencesManager.new);
+    IsmInjectionUtils.registerOtherClass<LocalStorageManager>(() =>
+        LocalStorageManager(
+            IsmInjectionUtils.getOtherClass<SharedPreferencesManager>()));
+    IsmInjectionUtils.registerOtherClass<DataSource>(() =>
+        DataSourceImpl(IsmInjectionUtils.getOtherClass<LocalStorageManager>()));
+    IsmInjectionUtils.registerOtherClass<LocationManager>(() => LocationManager(
+        IsmInjectionUtils.getOtherClass<LocalStorageManager>()));
   }
 }

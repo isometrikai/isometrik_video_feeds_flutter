@@ -1,10 +1,11 @@
 import 'package:flutter/foundation.dart';
-import 'package:ism_video_reel_player/ism_video_reel_player.dart';
+import 'package:ism_video_reel_player/presentation/presentation.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 
 /// Factory class to create and manage media cache instances
 class MediaCacheFactory {
   static final Map<MediaType, IMediaCacheManager> _cacheManagers = {
-    MediaType.image: ImageCacheManager(),
+    MediaType.photo: ImageCacheManager(),
     MediaType.video: VideoCacheManager(),
   };
 

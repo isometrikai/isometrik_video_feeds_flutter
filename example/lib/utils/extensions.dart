@@ -62,20 +62,20 @@ extension ColorExtension on String {
   Color get toHexColor => Color(int.parse('0xFF$this'));
 }
 
+extension MediaTypeExtensionOnString on String {
+  MediaType get mediaType => switch (this) {
+        'photo' || 'image' => MediaType.photo,
+        'video' => MediaType.video,
+        String() => MediaType.both,
+      };
+}
+
 extension PlatformExtension on num {
   String get platformText => switch (this) {
         1 => 'android',
         2 => 'ios',
         int() => 'android',
         double() => 'android',
-      };
-}
-
-extension MediaTypeExtensionOnString on String {
-  MediaType get mediaType => switch (this) {
-        'photo' => MediaType.photo,
-        'video' => MediaType.video,
-        String() => MediaType.both,
       };
 }
 

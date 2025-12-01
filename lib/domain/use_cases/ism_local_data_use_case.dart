@@ -7,10 +7,11 @@ class IsmLocalDataUseCase extends BaseUseCase {
 
   Future<String> getUserId() async => await repository.getUserId();
 
+  Future<String> getUserName() async => await repository.getUserName();
+
   Future<String> getEmail() async => await repository.getEmail();
 
-  Future<String> getCurrencySymbol() async =>
-      await repository.getCurrencySymbol();
+  Future<String> getCurrencySymbol() async => await repository.getCurrencySymbol();
 
   Future<String> getCurrencyCode() async => await repository.getCurrencyCode();
 
@@ -32,6 +33,10 @@ class IsmLocalDataUseCase extends BaseUseCase {
 
   Future<String> getUserInfo() async => await repository.getUserInfo();
 
+  Future<double> getLatitude() async => await repository.getLatitude();
+
+  Future<double> getLongitude() async => await repository.getLongitude();
+
   void saveLanguage(String value) => repository.saveLanguage(value);
 
   void saveIsLoggedIn(bool value) => repository.saveIsLoggedIn(value);
@@ -49,6 +54,30 @@ class IsmLocalDataUseCase extends BaseUseCase {
   void saveLastName(String value) => repository.saveLastName(value);
 
   void saveProfilePic(String value) => repository.saveProfilePic(value);
+
+  void saveLatitude(double value) => repository.saveLatitude(value);
+
+  void saveLongitude(double value) => repository.saveLongitude(value);
+
+  Future<String> getTenantId() async => repository.getTenantId();
+
+  void saveTenantId(String value) => repository.saveTenantId(value);
+
+  Future<String> getProjectId() async => repository.getProjectId();
+
+  void saveProjectId(String value) => repository.saveProjectId(value);
+
+  Future<String> getCountry() async => repository.getCountry();
+
+  void saveCountry(String value) => repository.saveCountry(value);
+
+  Future<String> getState() async => repository.getState();
+
+  void saveState(String value) => repository.saveState(value);
+
+  Future<String> getCity() async => repository.getCity();
+
+  void saveCity(String value) => repository.saveCity(value);
 
   void clearLocalData() {
     repository.clearLocalData();

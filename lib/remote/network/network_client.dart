@@ -7,16 +7,16 @@ import 'package:ism_video_reel_player/core/core.dart';
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/res/res.dart';
-import 'package:ism_video_reel_player/utils/isr_utils.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 
 /// handles network call for all the APIs and handle the error status codes
-class NetworkClient with IsrAppMixin {
+class NetworkClient with AppMixin {
   NetworkClient({
     required this.baseUrl,
   });
 
   final String baseUrl;
-  final localStorageManager = isrGetIt<IsrLocalStorageManager>();
+  final localStorageManager = isrGetIt<LocalStorageManager>();
 
   final networkClient = http.Client();
 
@@ -24,15 +24,17 @@ class NetworkClient with IsrAppMixin {
   var responseCode = 200;
 
   /// Method to make all the requests inside the app like GET, POST, PUT, Delete
+  /// Method to make all the requests inside the app like GET, POST, PUT, Delete
   Future<ResponseModel> makeRequest(
     String apiUrl,
     NetworkRequestType request,
     dynamic data,
     Map<String, dynamic>? queryParameters,
     Map<String, String>? headers,
-    bool isLoading,
-  ) async {
-    final isNetworkAvailable = await IsrVideoReelUtility.isNetworkAvailable;
+    bool isLoading, {
+    List<String>? pathSegments,
+  }) async {
+    final isNetworkAvailable = await Utility.isNetworkAvailable;
     if (isNetworkAvailable) {
       while (_isRefreshing) {
         await Future.delayed(const Duration(milliseconds: 50));
@@ -44,6 +46,7 @@ class NetworkClient with IsrAppMixin {
         queryParameters,
         isLoading,
         headers,
+        pathSegments,
       );
       if (responseModel.statusCode == 406) {
         _isRefreshing = true;
@@ -62,15 +65,17 @@ class NetworkClient with IsrAppMixin {
           queryParameters,
           isLoading,
           headers,
+          pathSegments,
         );
         _isRefreshing = false;
       }
       return responseModel;
     } else {
-      throw NetworkError(IsrTranslationFile.noInternet);
+      throw AppError(IsrTranslationFile.noInternet, statusCode: 1000);
     }
   }
 
+  /// Method to make all the requests inside the app like GET, POST, PUT, Delete
   /// Method to make all the requests inside the app like GET, POST, PUT, Delete
   Future<ResponseModel> makeFinalRequest(
     String url,
@@ -79,8 +84,9 @@ class NetworkClient with IsrAppMixin {
     Map<String, dynamic>? queryParameters,
     bool isLoading,
     Map<String, String>? headers,
+    List<String>? pathSegments,
   ) async {
-    if (!(await IsrVideoReelUtility.isNetworkAvailable)) {
+    if (!(await Utility.isNetworkAvailable)) {
       return const ResponseModel(
         data: '{"message": "No internet"}',
         hasError: true,
@@ -88,16 +94,25 @@ class NetworkClient with IsrAppMixin {
       );
     }
 
-    var uri = baseUrl + url;
-    final finalUrl = Uri.parse(uri).replace(queryParameters: queryParameters);
+    final uri = baseUrl + url;
+    var finalUrl = Uri.parse(uri);
+    finalUrl = Uri.parse(uri).replace(
+      pathSegments: [
+        ...finalUrl.pathSegments, // keep existing segments
+        if (pathSegments != null) ...pathSegments, // append new segments
+      ],
+      queryParameters: queryParameters,
+    );
 
-    if (isLoading) IsrVideoReelUtility.showLoader();
+    if (isLoading) Utility.showLoader();
 
     try {
       final response = await getFinalResponse(finalUrl, headers, data, request);
-      if (isLoading) IsrVideoReelUtility.closeProgressDialog();
+      if (isLoading) Utility.closeProgressDialog();
       final res = returnResponse(response);
-      _logRequest(response, data, finalUrl, headers, res);
+
+      logRequest(this, response, data, finalUrl, headers, res, 0);
+
       if (res.hasError) {
         return _proceedWithErrorResponse(res, response);
       }
@@ -105,8 +120,8 @@ class NetworkClient with IsrAppMixin {
     } on TimeoutException {
       throw TimeoutError(IsrTranslationFile.timeoutError);
     } catch (error, stackTrace) {
-      if (isLoading) IsrVideoReelUtility.closeProgressDialog();
-      IsrVideoReelUtility.debugCatchLog(error: error, stackTrace: stackTrace);
+      if (isLoading) Utility.closeProgressDialog();
+      Utility.debugCatchLog(error: error, stackTrace: stackTrace);
       if (error is AppError) {
         rethrow;
       }
@@ -114,8 +129,9 @@ class NetworkClient with IsrAppMixin {
     }
   }
 
-  ResponseModel _proceedWithErrorResponse(ResponseModel res, http.Response response) {
-    final message = IsrVideoReelUtility.getErrorMessage(res);
+  ResponseModel _proceedWithErrorResponse(
+      ResponseModel res, http.Response response) {
+    final message = Utility.getErrorMessage(res);
     if (res.statusCode == 401) {
       return res;
     } else {
@@ -127,8 +143,8 @@ class NetworkClient with IsrAppMixin {
     }
   }
 
-  void _logRequest(http.Response response, dynamic data, Uri finalUrl, Map<String, String>? headers,
-      ResponseModel res) {
+  void _logRequest(http.Response response, dynamic data, Uri finalUrl,
+      Map<String, String>? headers, ResponseModel res) {
     printLog(
       this,
       '\nMethod: ${response.request?.method}\nURL: ${response.request?.url}\nBody: ${jsonEncode(data)}\nQuery Params: ${finalUrl.queryParameters}\nHeaders: $headers\nResponse:\nStatus Code: ${res.statusCode}\nResponse Data: ${res.data}',
@@ -214,9 +230,9 @@ class NetworkClient with IsrAppMixin {
     List<http.MultipartFile>? multipartFiles,
     Map<String, String> headers,
   ) async {
-    if (await IsrVideoReelUtility.isNetworkAvailable) {
+    if (await Utility.isNetworkAvailable) {
       var uri = baseUrl + apiUrl;
-      if (isLoading) IsrVideoReelUtility.showLoader();
+      if (isLoading) Utility.showLoader();
       final finalUrl = Uri.parse(uri).replace(queryParameters: queryParameters);
       var request = http.MultipartRequest('POST', finalUrl);
       if (multipartFiles != null && multipartFiles.isNotEmpty) {
@@ -229,7 +245,7 @@ class NetworkClient with IsrAppMixin {
 
       final streamedResponse = await request.send();
       var response = await http.Response.fromStream(streamedResponse);
-      if (isLoading) IsrVideoReelUtility.closeProgressDialog();
+      if (isLoading) Utility.closeProgressDialog();
       var res = returnResponse(response);
       if (multipartFiles != null && multipartFiles.isNotEmpty) {
         printLog(
@@ -248,7 +264,10 @@ class NetworkClient with IsrAppMixin {
   }
 
   Future<http.Response> getFinalResponse(
-      Uri finalUrl, Map<String, String>? headers, data, NetworkRequestType requestType) async {
+      Uri finalUrl,
+      Map<String, String>? headers,
+      data,
+      NetworkRequestType requestType) async {
     switch (requestType) {
       case NetworkRequestType.get:
         return await http.Client()
@@ -256,7 +275,7 @@ class NetworkClient with IsrAppMixin {
               finalUrl,
               headers: headers,
             )
-            .timeout(IsmAppConstants.timeOutDuration);
+            .timeout(AppConstants.timeOutDuration);
       case NetworkRequestType.post:
         return await http.Client()
             .post(
@@ -264,7 +283,7 @@ class NetworkClient with IsrAppMixin {
               body: jsonEncode(data),
               headers: headers,
             )
-            .timeout(IsmAppConstants.timeOutDuration);
+            .timeout(AppConstants.timeOutDuration);
       case NetworkRequestType.put:
         return await http.Client()
             .put(
@@ -272,7 +291,7 @@ class NetworkClient with IsrAppMixin {
               body: jsonEncode(data),
               headers: headers,
             )
-            .timeout(IsmAppConstants.timeOutDuration);
+            .timeout(AppConstants.timeOutDuration);
       case NetworkRequestType.patch:
         return await http.Client()
             .patch(
@@ -280,7 +299,7 @@ class NetworkClient with IsrAppMixin {
               body: jsonEncode(data),
               headers: headers,
             )
-            .timeout(IsmAppConstants.timeOutDuration);
+            .timeout(AppConstants.timeOutDuration);
       case NetworkRequestType.delete:
         return await http.Client()
             .delete(
@@ -288,7 +307,7 @@ class NetworkClient with IsrAppMixin {
               body: jsonEncode(data),
               headers: headers,
             )
-            .timeout(IsmAppConstants.timeOutDuration);
+            .timeout(AppConstants.timeOutDuration);
     }
   }
 }

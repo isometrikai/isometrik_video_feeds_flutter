@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ism_video_reel_player/utils/isr_utils.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 
 class TrianglePainter extends CustomPainter {
   TrianglePainter({this.color = Colors.white});

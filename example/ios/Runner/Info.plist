@@ -62,5 +62,21 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>GMSApiKey</key>
+    	<string>AIzaSyAfY6OQ_lzhSPDw_N1sIN5wale3pq4YPcI</string>
+    <!-- Photo Library Access -->
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>We need access to your photo library to let you select and share photos/videos</string>
+
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>We need access to save photos/videos to your photo library</string>
+
+    <!-- Camera Access (if you're using camera) -->
+    <key>NSCameraUsageDescription</key>
+    <string>We need access to your camera to take photos and videos</string>
+
+    <!-- Microphone Access (if recording video with audio) -->
+    <key>NSMicrophoneUsageDescription</key>
+    <string>We need access to your microphone to record audio with videos</string>
 </dict>
 </plist>

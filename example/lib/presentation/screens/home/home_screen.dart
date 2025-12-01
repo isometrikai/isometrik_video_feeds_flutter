@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart' as isr;
 import 'package:ism_video_reel_player_example/di/di.dart';
@@ -21,7 +20,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final _homeBloc = InjectionUtils.getBloc<HomeBloc>();
   var _isLikeLoading = false;
-  var _myUserId = '';
+  final _myUserId = '';
 
   @override
   void initState() {
@@ -30,7 +29,95 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) => isr.IsmPostView(
+        tabDataModelList: [
+          isr.TabDataModel(
+            postSectionType: isr.PostSectionType.forYou,
+            title: TranslationFile.forYou,
+            reelsDataList: [],
+            startingPostIndex: 0,
+            onTapCartIcon: (productIds, postId, userId) {
+              debugPrint('productIds: $productIds');
+              debugPrint('postId: $postId');
+            },
+          ),
+          isr.TabDataModel(
+            postSectionType: isr.PostSectionType.following,
+            title: TranslationFile.following,
+            reelsDataList: [],
+            startingPostIndex: 0,
+            onTapCartIcon: (productIds, postId, userId) {
+              debugPrint('productIds: $productIds');
+              debugPrint('postId: $postId');
+            },
+          ),
+          isr.TabDataModel(
+            postSectionType: isr.PostSectionType.trending,
+            title: TranslationFile.trending,
+            reelsDataList: [],
+            startingPostIndex: 0,
+            onTapCartIcon: (productIds, postId, userId) {
+              debugPrint('productIds: $productIds');
+              debugPrint('postId: $postId');
+            },
+          ),
+          isr.TabDataModel(
+            postSectionType: isr.PostSectionType.myPost,
+            title: TranslationFile.myPost,
+            reelsDataList: [],
+            startingPostIndex: 0,
+            onTapCartIcon: (productIds, postId, userId) {
+              debugPrint('productIds: $productIds');
+              debugPrint('postId: $postId');
+            },
+          ),
+          isr.TabDataModel(
+            postSectionType: isr.PostSectionType.savedPost,
+            title: TranslationFile.saved,
+            reelsDataList: [],
+            startingPostIndex: 0,
+            onTapCartIcon: (productIds, postId, userId) {
+              debugPrint('productIds: $productIds');
+              debugPrint('postId: $postId');
+            },
+          ),
+          isr.TabDataModel(
+            postSectionType: isr.PostSectionType.myTaggedPost,
+            title: TranslationFile.tagged,
+            reelsDataList: [],
+            startingPostIndex: 0,
+            onTapCartIcon: (productIds, postId, userId) {
+              debugPrint('productIds: $productIds');
+              debugPrint('postId: $postId');
+            },
+          ),
+          isr.TabDataModel(
+            postSectionType: isr.PostSectionType.singlePost,
+            title: TranslationFile.single,
+            reelsDataList: [],
+            postId: 'post_ab8fd4f9c562', //hardCoded post id
+            startingPostIndex: 0,
+            onTapCartIcon: (productIds, postId, userId) {
+              debugPrint('productIds: $productIds');
+              debugPrint('postId: $postId');
+            },
+          ),
+          isr.TabDataModel(
+            postSectionType: isr.PostSectionType.otherUserPost,
+            title: TranslationFile.others,
+            reelsDataList: [],
+            userId:
+                '67c69bb7e0295f209db1d0e9', //hardCoded userId of user asjadibrahim10215
+            startingPostIndex: 0,
+            onTapCartIcon: (productIds, postId, userId) {
+              debugPrint('productIds: $productIds');
+              debugPrint('postId: $postId');
+            },
+          ),
+        ], // ✅ Already working!
+      );
+
+  /*Scaffold(
         resizeToAvoidBottomInset: false,
         backgroundColor: AppColors.grey.shade100,
         body: BlocBuilder<HomeBloc, HomeState>(
@@ -69,7 +156,7 @@ class _HomeScreenState extends State<HomeScreen> {
             return const SizedBox.shrink();
           },
         ),
-      );
+      );*/
 
   /// Creates a tab for timeline posts when navigating from other screens
   isr.TabDataModel _buildForYouTab(
@@ -115,12 +202,13 @@ class _HomeScreenState extends State<HomeScreen> {
       isr.TabDataModel(
         postSectionType: postTabType.toPostSectionType(),
         title: title,
-        reelsDataList: timeLinePosts.map(_getReelData).toList(),
-        onLoadMore: () async => await _handleLoadMore(postTabType),
+        reelsDataList: timeLinePosts
+            .map((_) => isr.TimeLineData.fromMap(_.toMap()))
+            .toList(),
         startingPostIndex: startPostIndex,
-        onRefresh: () async {
-          final result = await _handlePostRefresh(postTabType);
-          return result;
+        onTapCartIcon: (productIds, postId, userId) {
+          debugPrint('productIds: $productIds');
+          debugPrint('postId: $postId');
         },
       );
 
@@ -179,13 +267,16 @@ class _HomeScreenState extends State<HomeScreen> {
           isFollowButtonVisible: true,
           isUnFollowButtonVisible: true,
         ),
-        mentions: postData.tags != null && postData.tags?.mentions.isEmptyOrNull == false
+        mentions: postData.tags != null &&
+                postData.tags?.mentions.isEmptyOrNull == false
             ? (postData.tags?.mentions?.map(_getMentionMetaData).toList() ?? [])
             : [],
-        tagDataList: postData.tags != null && postData.tags?.hashtags.isEmptyOrNull == false
+        tagDataList: postData.tags != null &&
+                postData.tags?.hashtags.isEmptyOrNull == false
             ? postData.tags?.hashtags?.map(_getMentionMetaData).toList()
             : null,
-        placeDataList: postData.tags != null && postData.tags?.places.isEmptyOrNull == false
+        placeDataList: postData.tags != null &&
+                postData.tags?.places.isEmptyOrNull == false
             ? postData.tags?.places?.map(_getPlaceMetaData).toList()
             : null,
         onTapMentionTag: (mentionList) async {
@@ -194,7 +285,8 @@ class _HomeScreenState extends State<HomeScreen> {
         },
         postId: postData.id,
         onCreatePost: () async => await _handleCreatePost(),
-        mediaMetaDataList: postData.media?.map(_getMediaMetaData).toList() ?? [],
+        mediaMetaDataList:
+            postData.media?.map(_getMediaMetaData).toList() ?? [],
         // actionWidget: _buildActionButtons(postData),
         // footerWidget: _buildFooter(postData),
         userId: postData.user?.id ?? '',
@@ -214,7 +306,8 @@ class _HomeScreenState extends State<HomeScreen> {
           debugPrint('onTapUserProfile: $isSelfProfile');
         },
         onTapComment: (totalCommentsCount) async {
-          final result = await _handleCommentAction(postData.id ?? '', totalCommentsCount);
+          final result =
+              await _handleCommentAction(postData.id ?? '', totalCommentsCount);
           return result;
         },
         onPressMoreButton: () async {
@@ -222,7 +315,6 @@ class _HomeScreenState extends State<HomeScreen> {
           return result;
         },
         onPressLike: (isLiked) async => _handleLikeAction(isLiked, postData),
-        onDoubleTap: (isLiked) async => _handleLikeAction(isLiked, postData),
         onPressSave: (isSavedPost) async {
           try {
             final completer = Completer<bool>();
@@ -246,7 +338,8 @@ class _HomeScreenState extends State<HomeScreen> {
               onComplete: (success) {
                 completer.complete(success);
               },
-              followAction: isFollow ? FollowAction.unfollow : FollowAction.follow,
+              followAction:
+                  isFollow ? FollowAction.unfollow : FollowAction.follow,
             ));
             return await completer.future;
           } catch (e) {
@@ -271,7 +364,8 @@ class _HomeScreenState extends State<HomeScreen> {
               reason: reason,
               onComplete: (success) {
                 if (success) {
-                  Utility.showToastMessage(TranslationFile.postReportedSuccessfully);
+                  Utility.showToastMessage(
+                      TranslationFile.postReportedSuccessfully);
                 }
                 completer.complete(success);
               },
@@ -288,7 +382,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 postId: postDataModel.id ?? '',
                 onComplete: (success) {
                   if (success) {
-                    Utility.showToastMessage(TranslationFile.postDeletedSuccessfully);
+                    Utility.showToastMessage(
+                        TranslationFile.postDeletedSuccessfully);
                   }
                   completer.complete(success);
                 },
@@ -300,7 +395,8 @@ class _HomeScreenState extends State<HomeScreen> {
         },
         isSelfProfile: postDataModel.user?.id == _myUserId,
         onEditPost: () async {
-          final postDataString = await _showEditPostDialog(context, postDataModel);
+          final postDataString =
+              await _showEditPostDialog(context, postDataModel);
           return postDataString ?? '';
         },
       );
@@ -323,7 +419,8 @@ class _HomeScreenState extends State<HomeScreen> {
         onPressReport: ({String message = '', String reason = ''}) async {
           try {
             if (onPressReport != null) {
-              final isReported = await onPressReport(message: message, reason: reason);
+              final isReported =
+                  await onPressReport(message: message, reason: reason);
               completer.complete(isReported);
               return isReported;
             }
@@ -345,8 +442,8 @@ class _HomeScreenState extends State<HomeScreen> {
           if (onEditPost != null) {
             final postDataString = await onEditPost();
             if (postDataString.isEmptyOrNull == false) {
-              final postData =
-                  TimeLineData.fromMap(jsonDecode(postDataString) as Map<String, dynamic>);
+              final postData = TimeLineData.fromMap(
+                  jsonDecode(postDataString) as Map<String, dynamic>);
               final reelData = _getReelData(postData);
               completer.complete(reelData);
             }
@@ -363,7 +460,8 @@ class _HomeScreenState extends State<HomeScreen> {
         context: context,
         barrierDismissible: false,
         builder: (context) => Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           backgroundColor: Colors.white,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
@@ -373,7 +471,8 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Text(
                   TranslationFile.deletePost,
-                  style: Styles.primaryText18.copyWith(fontWeight: FontWeight.w700),
+                  style: Styles.primaryText18
+                      .copyWith(fontWeight: FontWeight.w700),
                 ),
                 16.verticalSpace,
                 Text(
@@ -407,12 +506,14 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
 
-  Future<String?> _showEditPostDialog(BuildContext context, TimeLineData postDataModel) =>
+  Future<String?> _showEditPostDialog(
+          BuildContext context, TimeLineData postDataModel) =>
       showDialog<String>(
         context: context,
         barrierDismissible: false,
         builder: (context) => Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           backgroundColor: Colors.white,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
@@ -422,7 +523,8 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Text(
                   TranslationFile.editPost,
-                  style: Styles.primaryText18.copyWith(fontWeight: FontWeight.w700),
+                  style: Styles.primaryText18
+                      .copyWith(fontWeight: FontWeight.w700),
                 ),
                 16.verticalSpace,
                 Text(
@@ -439,7 +541,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       title: TranslationFile.yes,
                       width: 102.scaledValue,
                       onPress: () async {
-                        final postDataString = await _handleEditPost(postDataModel);
+                        final postDataString =
+                            await _handleEditPost(postDataModel);
                         Navigator.of(context).pop(postDataString ?? '');
                       },
                       backgroundColor: '006CD8'.toHexColor,
@@ -460,16 +563,18 @@ class _HomeScreenState extends State<HomeScreen> {
       );
 
   Future<String?> _handleEditPost(TimeLineData postDataModel) async {
-    final postDataString =
-        await InjectionUtils.getRouteManagement().goToCreatePostView(postData: postDataModel);
+    final postDataString = await InjectionUtils.getRouteManagement()
+        .goToCreatePostView(postData: postDataModel);
     return postDataString;
   }
 
-  Future<List<ProductDataModel>> _handleCartAction(TimeLineData postData) async {
+  Future<List<ProductDataModel>> _handleCartAction(
+      TimeLineData postData) async {
     var featuredProductList = <ProductDataModel>[];
     try {
       final productIds = <String>[];
-      final socialProductList = postData.tags?.products ?? <SocialProductData>[];
+      final socialProductList =
+          postData.tags?.products ?? <SocialProductData>[];
       for (final productItem in socialProductList) {
         productIds.add(productItem.id ?? '');
       }
@@ -493,7 +598,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return featuredProductList;
   }
 
-  isr.ReelsWidgetBuilder buildFooter(TimeLineData postData) => isr.ReelsWidgetBuilder(
+  isr.ReelsWidgetBuilder buildFooter(TimeLineData postData) =>
+      isr.ReelsWidgetBuilder(
         alignment: Alignment.bottomLeft,
         child: Padding(
           padding: const EdgeInsets.all(8.0),
@@ -516,10 +622,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   decoration: BoxDecoration(
                     color: Colors.white, // Set to white for the background
-                    borderRadius: BorderRadius.circular(Dimens.ten), // Rounded corners
+                    borderRadius:
+                        BorderRadius.circular(Dimens.ten), // Rounded corners
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.changeOpacity(0.1), // Light shadow
+                        color: Colors.black.applyOpacity(0.1), // Light shadow
                         spreadRadius: 1,
                         blurRadius: 4,
                         offset: const Offset(0, 2), // Shadow offset
@@ -536,12 +643,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           Text(
                             'Shop',
-                            style: Styles.primaryText12.copyWith(fontWeight: FontWeight.w700),
+                            style: Styles.primaryText12
+                                .copyWith(fontWeight: FontWeight.w700),
                           ),
                           Dimens.boxHeight(Dimens.four),
                           Text(
                             '3 products',
-                            style: Styles.primaryText10.copyWith(fontWeight: FontWeight.w500),
+                            style: Styles.primaryText10
+                                .copyWith(fontWeight: FontWeight.w500),
                           ),
                         ],
                       ),
@@ -687,7 +796,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 'Read More',
                                 // !_isExpandedDescription ? 'Read More' : 'Read Less',
                                 style: Styles.white14.copyWith(
-                                  color: AppColors.appColor.changeOpacity(0.6),
+                                  color: AppColors.appColor.applyOpacity(0.6),
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -707,7 +816,8 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
 
-  isr.ReelsWidgetBuilder buildActionButtons(TimeLineData postData) => isr.ReelsWidgetBuilder(
+  isr.ReelsWidgetBuilder buildActionButtons(TimeLineData postData) =>
+      isr.ReelsWidgetBuilder(
         alignment: Alignment.bottomRight,
         child: Padding(
           padding: Dimens.edgeInsetsAll(8),
@@ -728,7 +838,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: BorderRadius.circular(Dimens.thirty),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.changeOpacity(0.2),
+                        color: Colors.black.applyOpacity(0.2),
                         spreadRadius: 2,
                         blurRadius: 5,
                         offset: const Offset(0, 2),
@@ -857,12 +967,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     height: Dimens.twentyFour,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                          Theme.of(context).primaryColor),
                     ),
                   )
                 : AppImage.svg(icon),
           ),
-          if (label.isStringEmptyOrNull == false) ...[
+          if (label.isEmptyOrNull == false) ...[
             Dimens.boxHeight(Dimens.four),
             Text(
               label ?? '',
@@ -874,7 +985,8 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       );
 
-  Future<void> _callLikeFunction(TimeLineData postData, StateSetter setState) async {
+  Future<void> _callLikeFunction(
+      TimeLineData postData, StateSetter setState) async {
     _isLikeLoading = true;
     setState.call(() {});
     var success = false;
@@ -885,7 +997,8 @@ class _HomeScreenState extends State<HomeScreen> {
         _homeBloc.add(LikePostEvent(
             postId: postData.id ?? '',
             userId: postData.user?.id ?? '',
-            likeAction: postData.isLiked == true ? LikeAction.unlike : LikeAction.like,
+            likeAction:
+                postData.isLiked == true ? LikeAction.unlike : LikeAction.like,
             onComplete: (success) {
               completer.complete(success);
             }));
@@ -903,7 +1016,8 @@ class _HomeScreenState extends State<HomeScreen> {
         if (postData.isLiked == true) {
           postData.engagementMetrics?.likeTypes?.like = currentCount + 1;
         } else {
-          postData.engagementMetrics?.likeTypes?.like = (currentCount > 0) ? currentCount - 1 : 0;
+          postData.engagementMetrics?.likeTypes?.like =
+              (currentCount > 0) ? currentCount - 1 : 0;
         }
       }
       setState.call(() {});
@@ -916,10 +1030,11 @@ class _HomeScreenState extends State<HomeScreen> {
   // Interaction handlers
   Future<isr.ReelsData?> _handleCreatePost() async {
     final completer = Completer<isr.ReelsData>();
-    final postDataModelString = await InjectionUtils.getRouteManagement().goToCreatePostView();
-    if (postDataModelString.isStringEmptyOrNull == false) {
-      final postDataModel =
-          TimeLineData.fromMap(jsonDecode(postDataModelString!) as Map<String, dynamic>);
+    final postDataModelString =
+        await InjectionUtils.getRouteManagement().goToCreatePostView();
+    if (postDataModelString.isEmptyOrNull == false) {
+      final postDataModel = TimeLineData.fromMap(
+          jsonDecode(postDataModelString!) as Map<String, dynamic>);
       final reelsData = _getReelData(postDataModel);
       completer.complete(reelsData);
     }
@@ -927,7 +1042,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   /// Handles comment action
-  Future<int> _handleCommentAction(String postId, int totalCommentsCount) async {
+  Future<int> _handleCommentAction(
+      String postId, int totalCommentsCount) async {
     final completer = Completer<int>();
 
     final result = await Utility.showBottomSheet<int>(
@@ -952,7 +1068,8 @@ class _HomeScreenState extends State<HomeScreen> {
         thumbnailUrl: mediaData.previewUrl ?? '',
       );
 
-  isr.MentionMetaData _getMentionMetaData(MentionData mentionData) => isr.MentionMetaData(
+  isr.MentionMetaData _getMentionMetaData(MentionData mentionData) =>
+      isr.MentionMetaData(
         userId: mentionData.userId,
         username: mentionData.username,
         name: mentionData.name,
@@ -973,7 +1090,8 @@ class _HomeScreenState extends State<HomeScreen> {
             : null,
       );
 
-  isr.PlaceMetaData _getPlaceMetaData(TaggedPlace placeData) => isr.PlaceMetaData(
+  isr.PlaceMetaData _getPlaceMetaData(TaggedPlace placeData) =>
+      isr.PlaceMetaData(
         address: placeData.address,
         city: placeData.city,
         coordinates: placeData.coordinates,
@@ -1006,8 +1124,10 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 extension on PostTabType {
-  isr.PostSectionType? toPostSectionType() {
+  isr.PostSectionType toPostSectionType() {
     switch (this) {
+      case PostTabType.forYou:
+        return isr.PostSectionType.forYou;
       case PostTabType.following:
         return isr.PostSectionType.following;
       default:

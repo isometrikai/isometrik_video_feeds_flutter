@@ -7,21 +7,21 @@ abstract class IsrStyles {
   static TextStyle primaryText10 = TextStyle(
     color: IsrColors.primaryTextColor,
     fontSize: IsrDimens.ten,
-    fontFamily: IsmAppConstants.primaryFontFamily,
+    fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );
 
   static TextStyle primaryText12 = TextStyle(
     color: IsrColors.primaryTextColor,
     fontSize: IsrDimens.twelve,
-    fontFamily: IsmAppConstants.primaryFontFamily,
+    fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );
 
   static TextStyle primaryText14 = TextStyle(
     color: IsrColors.primaryTextColor,
     fontSize: IsrDimens.fourteen,
-    fontFamily: IsmAppConstants.primaryFontFamily,
+    fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );
 
@@ -29,104 +29,118 @@ abstract class IsrStyles {
     color: IsrColors.primaryTextColor,
     fontSize: IsrDimens.fourteen,
     fontWeight: FontWeight.bold,
-    fontFamily: IsmAppConstants.primaryFontFamily,
+    fontFamily: AppConstants.primaryFontFamily,
   );
 
   static TextStyle primaryText16 = TextStyle(
     color: IsrColors.primaryTextColor,
     fontSize: IsrDimens.sixteen,
-    fontFamily: IsmAppConstants.primaryFontFamily,
+    fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );
 
   static TextStyle primaryText16Bold = TextStyle(
     color: IsrColors.primaryTextColor,
     fontSize: IsrDimens.sixteen,
-    fontFamily: IsmAppConstants.primaryFontFamily,
+    fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.bold,
   );
 
   static TextStyle primaryText18 = TextStyle(
     color: IsrColors.primaryTextColor,
     fontSize: IsrDimens.eighteen,
-    fontFamily: IsmAppConstants.primaryFontFamily,
+    fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
+  );
+
+  static TextStyle primaryText20 = TextStyle(
+    color: IsrColors.primaryTextColor,
+    fontSize: IsrDimens.twenty,
+    fontFamily: AppConstants.primaryFontFamily,
+    fontWeight: FontWeight.w400,
+  );
+
+  static TextStyle primaryText20Bold = TextStyle(
+    color: IsrColors.primaryTextColor,
+    fontSize: IsrDimens.twenty,
+    fontFamily: AppConstants.primaryFontFamily,
+    fontWeight: FontWeight.bold,
   );
 
   static TextStyle secondaryText10 = TextStyle(
     color: IsrColors.secondaryTextColor,
     fontSize: IsrDimens.ten,
-    fontFamily: IsmAppConstants.primaryFontFamily,
+    fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );
 
   static TextStyle secondaryText8 = TextStyle(
     color: IsrColors.secondaryTextColor,
     fontSize: IsrDimens.eight,
-    fontFamily: IsmAppConstants.primaryFontFamily,
+    fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );
 
   static TextStyle secondaryText12 = TextStyle(
     color: IsrColors.secondaryTextColor,
     fontSize: IsrDimens.twelve,
-    fontFamily: IsmAppConstants.primaryFontFamily,
+    fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );
 
   static TextStyle secondaryText14 = TextStyle(
     color: IsrColors.secondaryTextColor,
     fontSize: IsrDimens.fourteen,
-    fontFamily: IsmAppConstants.primaryFontFamily,
+    fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );
 
   static TextStyle secondaryText16 = TextStyle(
     color: IsrColors.secondaryTextColor,
     fontSize: IsrDimens.sixteen,
-    fontFamily: IsmAppConstants.primaryFontFamily,
+    fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );
 
   static TextStyle secondaryText18 = TextStyle(
     color: IsrColors.secondaryTextColor,
     fontSize: IsrDimens.eighteen,
-    fontFamily: IsmAppConstants.primaryFontFamily,
+    fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );
 
   static TextStyle secondaryText20 = TextStyle(
     color: IsrColors.secondaryTextColor,
     fontSize: IsrDimens.twenty,
-    fontFamily: IsmAppConstants.primaryFontFamily,
+    fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );
 
   static TextStyle white10 = TextStyle(
     color: IsrColors.white,
     fontSize: IsrDimens.ten,
-    fontFamily: IsmAppConstants.primaryFontFamily,
+    fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );
 
   static TextStyle white12 = TextStyle(
     color: IsrColors.white,
     fontSize: IsrDimens.twelve,
-    fontFamily: IsmAppConstants.primaryFontFamily,
+    fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );
 
   static TextStyle white14 = TextStyle(
     color: IsrColors.white,
     fontSize: IsrDimens.fourteen,
-    fontFamily: IsmAppConstants.primaryFontFamily,
+    fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );
 
   static TextStyle white16 = TextStyle(
     color: IsrColors.white,
     fontSize: IsrDimens.sixteen,
-    fontFamily: IsmAppConstants.primaryFontFamily,
+    fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );
 
@@ -141,7 +155,7 @@ abstract class IsrStyles {
         color: color ?? IsrColors.primaryTextColor,
         fontSize: fontSize ?? IsrDimens.sixteen,
         fontWeight: fontWeight ?? FontWeight.w400,
-        fontFamily: fontFamily ?? IsmAppConstants.primaryFontFamily,
+        fontFamily: fontFamily ?? AppConstants.primaryFontFamily,
         decoration: underline,
       );
 
@@ -149,14 +163,14 @@ abstract class IsrStyles {
   static TextStyle appButtonStyle = TextStyle(
     color: IsrColors.buttonTextColor,
     fontSize: IsrDimens.fourteen,
-    fontFamily: IsmAppConstants.primaryFontFamily,
+    fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );
 
   static TextStyle appButtonDisableStyle = TextStyle(
     color: IsrColors.buttonTextColor,
     fontSize: IsrDimens.fourteen,
-    fontFamily: IsmAppConstants.primaryFontFamily,
+    fontFamily: AppConstants.primaryFontFamily,
     fontWeight: FontWeight.w400,
   );
 }

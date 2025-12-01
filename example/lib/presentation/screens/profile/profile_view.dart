@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ism_video_reel_player/ism_video_reel_player.dart' as isr;
 import 'package:ism_video_reel_player_example/di/di.dart';
 import 'package:ism_video_reel_player_example/presentation/presentation.dart';
 
@@ -26,6 +27,16 @@ class _ProfileViewState extends State<ProfileView> {
                 title: const Text('View Profile'),
                 onTap: () {
                   // Handle view profile action
+                },
+              ),
+              const Divider(),
+
+              // creat post Tile
+              ListTile(
+                leading: const Icon(Icons.add),
+                title: const Text('Create Post'),
+                onTap: () {
+                  _createPost(context);
                 },
               ),
               const Divider(),
@@ -62,6 +73,10 @@ class _ProfileViewState extends State<ProfileView> {
               ),
             ],
           ));
+
+  void _createPost(BuildContext context) {
+    isr.IsrAppNavigator.goToCreatePostView(context);
+  }
 
   void _showLogoutConfirmation(BuildContext context) {
     showDialog(

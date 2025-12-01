@@ -16,5 +16,5 @@ abstract class BaseUseCase {
 
   // Define the handleError method here or import it from your error handler
   AppError handleError(Object e, StackTrace stackTrace) =>
-      IsmErrorHandler.handleError(e, stackTrace);
+      ErrorHandler.handleError(e, stackTrace);
 }
