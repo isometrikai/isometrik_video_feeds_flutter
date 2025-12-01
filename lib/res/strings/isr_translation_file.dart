@@ -59,6 +59,7 @@ class IsrTranslationFile {
   static const writeDescription = 'Write a description';
   static const cover = 'Cover';
   static const editCover = 'Edit Cover';
+  static const changeCover = 'Change Cover';
   static const addCover = 'Add Cover';
   static const whenToPost = 'When to post';
   static const now = 'Now';

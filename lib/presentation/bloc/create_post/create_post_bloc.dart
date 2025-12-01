@@ -55,6 +55,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     on<CreatePostInitialEvent>(_initState);
     on<PostCreateEvent>(_createPost);
     // on<PostAttributeNavigationEvent>(_goToPostAttributeView);
+    on<ChangeCoverImageEvent>(_changeCoverImage);
     on<MediaSourceEvent>(_openMediaSource);
     on<GetProductsEvent>(_getProducts);
     on<GetSocialPostDetailsEvent>(_getPostDetails);
@@ -534,7 +535,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       final isMediaChanged = _isMediaChanged();
       if (!_isForEdit || isMediaChanged) {
         add(MediaUploadEvent(
-            mediaDataList: _mediaDataList, postId: createPostData?.id ?? ''));
+            mediaDataList: _mediaDataList, postId: (event.isForEdit == true) ? _postData?.id ?? '' : createPostData?.id ?? ''));
       } else {
         if (_isForEdit) {
           _updatePostData();
@@ -866,15 +867,20 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   FutureOr<void> _uploadMedia(
       MediaUploadEvent event, Emitter<CreatePostState> emit) async {
     _removeDuplicateMedia(_mediaDataList);
+    final uploadingMedia = _mediaDataList.where((mediaData) =>
+    mediaData.localPath.isEmptyOrNull == false &&
+        Utility.isLocalUrl(mediaData.localPath ?? '')).toList();
+    final uploadingCover = _createPostRequest.previews?.where((mediaData) =>
+    mediaData.localFilePath.isEmptyOrNull == false &&
+        Utility.isLocalUrl(mediaData.localFilePath ?? '')).toList() ?? [];
 
     // Calculate total files including cover media if present
-    final hasCoverMedia =
-        _createPostRequest.previews.isListEmptyOrNull == false;
+    final hasCoverMedia = uploadingCover.isNotEmpty;
 
-    if (_mediaDataList.isListEmptyOrNull == false) {
+    if (uploadingMedia.isListEmptyOrNull == false) {
       // Create a copy to avoid concurrent modification during iteration
-      final mediaListLength = _mediaDataList.length;
-      final filesToUpload = _mediaDataList
+      final mediaListLength = uploadingMedia.length;
+      final filesToUpload = uploadingMedia
           .where((media) =>
               media.localPath.isEmptyOrNull == false &&
               Utility.isLocalUrl(media.localPath ?? ''))
@@ -1124,7 +1130,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     }
 
     // return;
-    final isMediaChanged = _isMediaChanged();
+    final isMediaChanged = _isMediaChanged(includeCoverChange: false);
     if (isMediaChanged) {
       add(MediaProcessingEvent(postId: event.postId));
     } else {
@@ -1150,12 +1156,15 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     }
   }
 
-  bool _isMediaChanged() {
+  bool _isMediaChanged({bool includeCoverChange = true}) {
     // Create a copy to avoid concurrent modification during iteration
     final mediaListCopy = List<MediaData>.from(_mediaDataList);
-    return mediaListCopy.any((mediaData) =>
+    final mediaChanged = mediaListCopy.any((mediaData) =>
         mediaData.localPath.isEmptyOrNull == false &&
         Utility.isLocalUrl(mediaData.localPath ?? ''));
+    // Create a copy to avoid concurrent modification during iteration
+    final coverChanged = Utility.isLocalUrl(_coverImage);
+    return mediaChanged || (includeCoverChange && coverChanged);
   }
 
   FutureOr<void> _processMedia(
@@ -1228,26 +1237,42 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     }
   }
 
+  FutureOr<void> _changeCoverImage(
+      ChangeCoverImageEvent event, Emitter<CreatePostState> emit) async {
+    _coverImage = event.coverImage.path;
+    _coverImageExtension = _getFileExtension(_coverImage);
+    _coverFileName = _getFileName(_coverImage, 'thumbnail');
+    await _createCoverUrl();
+    event.onComplete?.call();
+  }
+
   Future<void> _createCoverUrl() async {
-    final userId = await _localDataUseCase.getUserId();
-    debugPrint('cover file : $_coverImage');
-    debugPrint('cover image extension : $_coverImageExtension');
-    debugPrint('cover file name : $_coverFileName');
-    final finalFileName =
-        '${_coverFileName}_${0}_${DateTime.now().millisecondsSinceEpoch}';
-    final normalizedFolder =
-        '${AppConstants.tenantId}/${AppConstants.projectId}/user_$userId/posts/$finalFileName$_coverImageExtension';
-    final uploadUrl = '${AppUrl.gumletUrl}/$normalizedFolder';
-    _createPostRequest.previews = [
-      PreviewMedia(
-        mediaType: MediaType.photo.mediaTypeString,
-        url: uploadUrl,
-        fileName: finalFileName,
-        localFilePath: _coverImage,
-        position: 1,
-      )
-    ];
-    debugPrint('create post request : ${_createPostRequest.toJson()}');
+    if (_coverImage.trim().isNotEmpty) {
+      final userId = await _localDataUseCase.getUserId();
+      debugPrint('cover file : $_coverImage');
+      debugPrint('cover image extension : $_coverImageExtension');
+      debugPrint('cover file name : $_coverFileName');
+      final finalFileName =
+          '${_coverFileName}_${0}_${DateTime
+          .now()
+          .millisecondsSinceEpoch}';
+      final normalizedFolder =
+          '${AppConstants.tenantId}/${AppConstants
+          .projectId}/user_$userId/posts/$finalFileName$_coverImageExtension';
+      final uploadUrl = '${AppUrl.gumletUrl}/$normalizedFolder';
+      _createPostRequest.previews = [
+        PreviewMedia(
+          mediaType: MediaType.photo.mediaTypeString,
+          url: uploadUrl,
+          fileName: finalFileName,
+          localFilePath: _coverImage,
+          position: 1,
+        )
+      ];
+      debugPrint('create post request : ${_createPostRequest.toJson()}');
+    } else {
+      _createPostRequest.previews = _postData?.previews;
+    }
   }
 
   Future<void> _createPostData(String postId) async {

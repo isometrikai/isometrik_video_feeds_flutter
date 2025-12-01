@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ffi';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -9,6 +10,12 @@ import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/create_post/user_mention_text_field.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart'
+as mc;
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit.dart'
+as me;
+import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart'
+as ms;
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:lottie/lottie.dart';
@@ -364,6 +371,12 @@ class _PostAttributeViewState extends State<PostAttributeView>
       return true;
     }
 
+    // check for coverImage change
+    if (Utility.isLocalUrl(_postAttributeClass?.createPostRequest?.previews?.firstOrNull?.localFilePath ?? '')){
+      debugPrint('Changes detected in preview data');
+      return true;
+    }
+
     // Check settings changes
     if (original.allowComment != current.allowComment ||
         original.allowSave != current.allowSave) {
@@ -573,42 +586,108 @@ class _PostAttributeViewState extends State<PostAttributeView>
             controller: _scrollController,
             child: Column(
               children: [
+                // // Media Preview Section
+                // if (_mediaDataList.isNotEmpty)
+                //   Container(
+                //     height: 280
+                //         .responsiveDimension, // Increased height for reels-like aspect ratio
+                //     width: double.infinity,
+                //     padding: EdgeInsetsGeometry.symmetric(
+                //         horizontal: 5.responsiveDimension),
+                //     child: Center(
+                //       child: ListView.builder(
+                //         scrollDirection: Axis.horizontal,
+                //         itemCount: _mediaDataList.length,
+                //         physics: const BouncingScrollPhysics(),
+                //         shrinkWrap: true,
+                //         itemBuilder: (context, index) {
+                //           final media = _mediaDataList[index];
+                //           return Container(
+                //             margin: IsrDimens.edgeInsetsAll(
+                //                 7.responsiveDimension),
+                //             child: AspectRatio(
+                //               aspectRatio: 9 / 16,
+                //               child: Container(
+                //                 decoration: BoxDecoration(
+                //                     borderRadius: BorderRadius.circular(8),
+                //                     color: IsrColors.blackColor),
+                //                 child: ClipRRect(
+                //                   borderRadius: BorderRadius.circular(8),
+                //                   child: media.mediaType?.mediaType ==
+                //                       MediaType.video
+                //                       ? _buildVideoPlayer(media)
+                //                       : _buildImage(media.localPath?.takeIf((_) => _.isNotEmpty) ?? media.url ?? ''),
+                //                 ),
+                //               ),
+                //             ),
+                //           );
+                //         },
+                //       ),
+                //     ),
+                //   ),
+
                 // Media Preview Section
                 if (_mediaDataList.isNotEmpty)
                   Container(
-                    height: 280
+                    height: 220
                         .responsiveDimension, // Increased height for reels-like aspect ratio
                     width: double.infinity,
                     padding: EdgeInsetsGeometry.symmetric(
                         horizontal: 5.responsiveDimension),
                     child: Center(
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: _mediaDataList.length,
-                        physics: const BouncingScrollPhysics(),
-                        shrinkWrap: true,
-                        itemBuilder: (context, index) {
-                          final media = _mediaDataList[index];
-                          return Container(
-                            margin: IsrDimens.edgeInsetsAll(
-                                7.responsiveDimension),
-                            child: AspectRatio(
-                              aspectRatio: 9 / 16,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(8),
-                                    color: IsrColors.blackColor),
-                                child: ClipRRect(
+                      child: GestureDetector(
+                        onTap: _changeCover,
+                        child: Container(
+                          margin: IsrDimens.edgeInsetsAll(
+                              7.responsiveDimension),
+                          child: AspectRatio(
+                            aspectRatio: 9 / 16,
+                            child: Container(
+                              decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(8),
-                                  child: media.mediaType?.mediaType ==
-                                      MediaType.video
-                                      ? _buildVideoPlayer(media)
-                                      : _buildImage(media),
-                                ),
-                              ),
+                                  color: IsrColors.blackColor),
+                              child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Stack(
+                                      children: [
+                                        _buildImage(_postAttributeClass
+                                                ?.createPostRequest
+                                                ?.previews
+                                                ?.firstOrNull
+                                                ?.localFilePath ??
+                                            _postAttributeClass
+                                                ?.createPostRequest
+                                                ?.previews
+                                                ?.firstOrNull
+                                                ?.url ??
+                                            ''),
+                                        Positioned(
+                                          left: 0,
+                                          right: 0,
+                                          bottom: 0,
+                                          child: Container(
+                                            width: double.infinity,
+                                            height: 28.responsiveDimension,
+                                            color: IsrColors.black
+                                                .withValues(alpha: 0.3),
+                                            child: Center(
+                                              child: Text(
+                                                IsrTranslationFile.changeCover,
+                                                style: IsrStyles.primaryText12
+                                                    .copyWith(
+                                                  color: IsrColors.white,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        )
+                                      ],
+                                    ),
+                                  ),
                             ),
-                          );
-                        },
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -1619,6 +1698,66 @@ class _PostAttributeViewState extends State<PostAttributeView>
         ),
       );
 
+  void _changeCover() async {
+    final coverPic = await _pickCoverPic();
+    if (coverPic != null && Utility.isLocalUrl(coverPic)) {
+      _createPostBloc.add(ChangeCoverImageEvent(
+          coverImage: File(coverPic),
+          onComplete: () {
+            setState(() {
+              _updatePostButtonState();
+            });
+          }));
+    }
+  }
+
+  Future<String?> _pickCoverPic() async {
+    final res = await Navigator.push<List<ms.MediaAssetData>>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ms.MediaSelectionView(
+          mediaSelectionConfig: mediaSelectionConfig.copyWith(
+              mediaListType: ms.MediaListType.image,
+              isMultiSelect: false,
+              selectMediaTitle: IsrTranslationFile.addCover),
+          onCaptureMedia: _captureMedia,
+        ),
+      ),
+    );
+    return res?.first.localPath;
+  }
+
+  final mediaSelectionConfig = ms.MediaSelectionConfig(
+    isMultiSelect: true,
+    imageMediaLimit: AppConstants.imageMediaLimit,
+    videoMediaLimit: AppConstants.videoMediaLimit,
+    mediaLimit: AppConstants.totalMediaLimit,
+    singleSelectModeIcon:
+    const AppImage.svg(AssetConstants.icMediaSelectSingle),
+    multiSelectModeIcon:
+    const AppImage.svg(AssetConstants.icMediaSelectMultiple),
+    doneButtonText: IsrTranslationFile.next,
+    selectMediaTitle: IsrTranslationFile.newReel,
+    primaryColor: IsrColors.appColor,
+    primaryTextColor: IsrColors.primaryTextColor,
+    backgroundColor: Colors.white,
+    appBarColor: Colors.white,
+    primaryFontFamily: AppConstants.primaryFontFamily,
+    mediaListType: ms.MediaListType.imageVideo,
+  );
+
+  Future<String?> _captureMedia() async => await Navigator.push<String?>(
+    context,
+    MaterialPageRoute(
+      builder: (context) => mc.CameraCaptureView(
+        onPickMedia: () async {
+          Navigator.pop(context);
+          return null;
+        },
+      ),
+    ),
+  );
+
   // Helper method to build switch tiles
   Widget _buildSwitchTile({
     required String icon,
@@ -1660,14 +1799,18 @@ class _PostAttributeViewState extends State<PostAttributeView>
         ),
       );
 
-  Widget _buildImage(MediaData media) =>
-      Utility.isLocalUrl(media.localPath ?? '')
+  Widget _buildImage(String url) =>
+      Utility.isLocalUrl(url ?? '')
           ? AppImage.file(
-              media.localPath ?? '',
+              url ?? '',
               fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
             )
           : AppImage.network(
-              media.url ?? '',
+              url ?? '',
               fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
             );
 }

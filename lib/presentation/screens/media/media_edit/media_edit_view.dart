@@ -490,11 +490,11 @@ class _MediaEditViewState extends State<MediaEditView> {
           label: 'Edit',
           onTap: () => _navigateToVideoEdit(state),
         ),
-        _buildSectionButton(
-          icon: Icons.image,
-          label: 'Cover',
-          onTap: () => _navigateToCoverPhoto(state),
-        ),
+        // _buildSectionButton(
+        //   icon: Icons.image,
+        //   label: 'Cover',
+        //   onTap: () => _navigateToCoverPhoto(state),
+        // ),
       ];
     } else {
       // Image buttons: Text, Filter, Edit

@@ -86,3 +86,10 @@ class RemoveMediaEvent extends CreatePostEvent {
 
   final MediaData mediaData;
 }
+
+class ChangeCoverImageEvent extends CreatePostEvent {
+  ChangeCoverImageEvent({required this.coverImage, this.onComplete});
+
+  final File coverImage;
+  final VoidCallback? onComplete;
+}
