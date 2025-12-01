@@ -368,10 +368,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
             totalSeconds > 0 ? ((watchedSeconds / totalSeconds) * 100).toInt() : 0;
 
         final eventMap = <String, dynamic>{
-          'view_source': 'feed',
-          'view_completion_rate': completionRate,
+          // 'view_source': 'feed',
+          // 'view_completion_rate': completionRate,
           'dwell_time': watchedSeconds,
-          'total_duration': totalSeconds,
+          // 'total_duration': totalSeconds,
           'category': EventCategory.postEngagement.value,
         };
 

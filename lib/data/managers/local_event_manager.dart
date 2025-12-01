@@ -28,19 +28,19 @@ class EventQueueProvider {
     required String rudderStackDataPlaneUrl,
     required String userId,
   }) async {
-    final localDataUseCase = IsmInjectionUtils.getUseCase<IsmLocalDataUseCase>();
-    final deviceInfoManager = IsmInjectionUtils.getOtherClass<DeviceInfoManager>();
+    final localDataUseCase =
+        IsmInjectionUtils.getUseCase<IsmLocalDataUseCase>();
+    final deviceInfoManager =
+        IsmInjectionUtils.getOtherClass<DeviceInfoManager>();
 
     // Fetch all required data
     final tenantId = await localDataUseCase.getTenantId();
     final projectId = await localDataUseCase.getProjectId();
-    final language = await localDataUseCase.getLanguage();
     final latitude = await localDataUseCase.getLatitude();
     final longitude = await localDataUseCase.getLongitude();
     final country = await localDataUseCase.getCountry();
     final state = await localDataUseCase.getState();
     final city = await localDataUseCase.getCity();
-    final appVersion = await Utility.getAppVersion();
 
     _instance ??= LocalEventQueue();
     await _instance!.init();
@@ -58,26 +58,28 @@ class EventQueueProvider {
     final rudderOptions = RudderOption();
 
     rudderOptions.customContexts = {
-      'context': {
+      'workspace': {
         'tenant_id': tenantId,
         'project_id': projectId,
-        'user_id': userId,
-        'location': city,
+      },
+      'device': {
+        'id': deviceInfoManager.deviceId ?? '',
+        'manufacturer': deviceInfoManager.deviceManufacturer,
+        'model': deviceInfoManager.deviceModel ?? '',
+        'os': deviceInfoManager.deviceOs,
+        'os_version': deviceInfoManager.deviceOsVersion,
+        'type': deviceInfoManager.deviceType,
+        'name':
+            '${deviceInfoManager.deviceManufacturer} ${deviceInfoManager.deviceModel}',
+      },
+      'location': {
+        'city': city,
+        'state': state,
+        'country': country,
         'latitude': latitude,
         'longitude': longitude,
-        'city': city,
-        'country': country,
-        'state': state,
-        'version': appVersion,
-        'language': language,
         'timezone': DateTime.now().timeZoneName,
-        'device_id': deviceInfoManager.deviceId ?? '',
-        'device_type': deviceInfoManager.deviceType,
-        'device_os': deviceInfoManager.deviceOs,
-        'device_os_version': deviceInfoManager.deviceOsVersion,
-        'device_model': deviceInfoManager.deviceModel ?? '',
-        'device_manufacturer': deviceInfoManager.deviceManufacturer,
-      }
+      },
     };
 
     if (userId.isEmptyOrNull == false) {
@@ -186,14 +188,16 @@ class LocalEventQueue with WidgetsBindingObserver {
       return;
     }
     final box = Hive.box<LocalEvent>(_boxName);
-    debugPrint('${runtimeType.toString()} Box length before flushing: ${box.length}');
+    debugPrint(
+        '${runtimeType.toString()} Box length before flushing: ${box.length}');
 
     final events = box.values.toList();
 
     if (events.isEmpty) return;
 
     await box.clear();
-    debugPrint('${runtimeType.toString()} Box length after flushing: ${box.length}');
+    debugPrint(
+        '${runtimeType.toString()} Box length after flushing: ${box.length}');
   }
 
   /// cleanup
