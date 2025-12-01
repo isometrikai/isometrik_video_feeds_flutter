@@ -182,18 +182,14 @@ class IsrAppNavigator {
   }) async {
     final page = MultiBlocProvider(
       providers: [
-        BlocProvider<CreatePostBloc>(
-          create: (_) => IsmInjectionUtils.getBloc<CreatePostBloc>(),
-        ),
-        BlocProvider<SearchUserBloc>(
-          create: (_) => IsmInjectionUtils.getBloc<SearchUserBloc>(),
-        ),
-        BlocProvider<UploadProgressCubit>(
-          create: (_) => IsmInjectionUtils.getBloc<UploadProgressCubit>(),
-        ),
+        BlocProvider.value(value: context.getOrCreateBloc<CreatePostBloc>()),
+        BlocProvider.value(value: context.getOrCreateBloc<SearchUserBloc>()),
+        BlocProvider.value(
+            value: context.getOrCreateBloc<UploadProgressCubit>()),
       ],
-      child: CreatePostView(
+      child: PostAttributeView(
         postData: postData,
+        isEditMode: true,
         onTagProduct: onTagProduct,
       ),
     );
@@ -205,12 +201,11 @@ class IsrAppNavigator {
     return result;
   }
 
-  static Future<String?> goToPostAttributionView(
+  static Future<String?> goToCreatePostAttributionView(
     BuildContext context, {
-    PostAttributeClass? postAttributeClass,
-    bool isEditMode = false,
     Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
         onTagProduct,
+    List<MediaData>? newMediaDataList,
     TransitionType? transitionType,
   }) async {
     final page = MultiBlocProvider(
@@ -221,8 +216,8 @@ class IsrAppNavigator {
             value: context.getOrCreateBloc<UploadProgressCubit>()),
       ],
       child: PostAttributeView(
-        postAttributeClass: postAttributeClass,
-        isEditMode: isEditMode,
+        newMediaDataList: newMediaDataList,
+        isEditMode: false,
         onTagProduct: onTagProduct,
       ),
     );

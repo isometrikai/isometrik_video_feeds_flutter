@@ -123,3 +123,11 @@ class MentionedUsersUpdatedState extends CreatePostState {
   final List<MentionData> hashTags;
   final List<TaggedPlace> locationTags;
 }
+
+class PostAttributionUpdatedState extends CreatePostState {
+  PostAttributionUpdatedState({
+    this.postAttributeClass,
+  });
+
+  final PostAttributeClass? postAttributeClass;
+}

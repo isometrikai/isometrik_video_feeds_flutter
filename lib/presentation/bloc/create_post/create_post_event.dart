@@ -3,9 +3,9 @@ part of 'create_post_bloc.dart';
 abstract class CreatePostEvent {}
 
 class CreatePostInitialEvent extends CreatePostEvent {
-  CreatePostInitialEvent({this.isLoading = false});
+  CreatePostInitialEvent({this.newMediaDataList});
 
-  final bool? isLoading;
+  final List<MediaData>? newMediaDataList;
 }
 
 class PostCreateEvent extends CreatePostEvent {
@@ -85,4 +85,11 @@ class RemoveMediaEvent extends CreatePostEvent {
   RemoveMediaEvent({required this.mediaData});
 
   final MediaData mediaData;
+}
+
+class ChangeCoverImageEvent extends CreatePostEvent {
+  ChangeCoverImageEvent({required this.coverImage, this.onComplete});
+
+  final File coverImage;
+  final VoidCallback? onComplete;
 }
