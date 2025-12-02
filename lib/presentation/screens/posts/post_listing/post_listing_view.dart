@@ -245,11 +245,13 @@ class _PostListingViewState extends State<PostListingView> {
   Widget build(BuildContext context) => Scaffold(
         backgroundColor: IsrColors.white,
         appBar: _buildAppBar(),
-        body: Column(
-          children: [
-            _buildTabNavigation(),
-            Expanded(child: _buildBody()),
-          ],
+        body: SafeArea(
+          child: Column(
+            children: [
+              _buildTabNavigation(),
+              Expanded(child: _buildBody()),
+            ],
+          ),
         ),
       );
 
@@ -657,6 +659,7 @@ class _PostListingViewState extends State<PostListingView> {
                 width: 20.responsiveDimension,
                 name: post.user?.fullName ?? '',
                 isProfileImage: true,
+                textColor: IsrColors.white,
               ),
               IsrDimens.eight.responsiveHorizontalSpace,
               Expanded(

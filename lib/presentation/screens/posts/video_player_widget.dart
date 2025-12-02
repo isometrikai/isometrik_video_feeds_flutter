@@ -116,7 +116,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
     try {
       // Set looping to false so video can complete
-      await _videoPlayerController!.setLooping(false);
+      await _videoPlayerController!.setLooping(true);
       await _videoPlayerController!.setVolume(widget.isMuted ? 0.0 : 1.0);
       await _videoPlayerController!.seekTo(Duration.zero);
 

@@ -30,8 +30,7 @@ class CachedVideoPlayerWrapper implements IVideoPlayerController {
         if (_controller.value.hasError && !_hasLoggedError) {
           _hasLoggedError = true;
           debugPrint('❌ Video playback error detected during runtime');
-          debugPrint(
-              '❌ Error description: ${_controller.value.errorDescription}');
+          debugPrint('❌ Error description: ${_controller.value.errorDescription}');
           debugPrint('❌ Video size: ${_controller.value.size}');
           debugPrint('❌ Position: ${_controller.value.position}');
           debugPrint('❌ Duration: ${_controller.value.duration}');
@@ -43,8 +42,7 @@ class CachedVideoPlayerWrapper implements IVideoPlayerController {
             _controller.value.size == Size.zero &&
             !_hasLoggedError) {
           _hasLoggedError = true;
-          debugPrint(
-              '⚠️ Video size became zero during playback - possible decoder failure');
+          debugPrint('⚠️ Video size became zero during playback - possible decoder failure');
           debugPrint('⚠️ This may cause green blocks or corrupted frames');
         }
       }
@@ -57,7 +55,7 @@ class CachedVideoPlayerWrapper implements IVideoPlayerController {
   @override
   Future<void> setLooping(bool looping) async {
     await _player.initialize();
-    await _controller.setLooping(looping);
+    await _controller.setLooping(true);
   }
 
   @override
@@ -145,12 +143,10 @@ class CachedVideoPlayerWrapper implements IVideoPlayerController {
 class CachedVideoCacheManager implements IVideoCacheManager {
   factory CachedVideoCacheManager() => _instance;
   CachedVideoCacheManager._internal();
-  static final CachedVideoCacheManager _instance =
-      CachedVideoCacheManager._internal();
+  static final CachedVideoCacheManager _instance = CachedVideoCacheManager._internal();
 
   final Map<String, CachedVideoPlayerWrapper> _videoControllerCache = {};
-  final Map<String, Future<CachedVideoPlayerWrapper?>> _initializationCache =
-      {};
+  final Map<String, Future<CachedVideoPlayerWrapper?>> _initializationCache = {};
   final Queue<String> _lruQueue = Queue<String>();
   final Set<String> _visibleVideos = <String>{};
 
@@ -177,14 +173,11 @@ class CachedVideoCacheManager implements IVideoCacheManager {
     // For HLS streams, add specific headers and format hint
     final isHls = url.toLowerCase().endsWith('.m3u8');
     final headers = {
-      'User-Agent':
-          'AppleCoreMedia/1.0.0.19G82 (iPhone; U; CPU OS 15_6_1 like Mac OS X; en_us)',
+      'User-Agent': 'AppleCoreMedia/1.0.0.19G82 (iPhone; U; CPU OS 15_6_1 like Mac OS X; en_us)',
       'Accept': '*/*',
       'Accept-Language': 'en-US,en;q=0.9',
       'Accept-Encoding': 'gzip, deflate, br',
-      if (isHls)
-        'X-Playback-Session-Id':
-            DateTime.now().millisecondsSinceEpoch.toString(),
+      if (isHls) 'X-Playback-Session-Id': DateTime.now().millisecondsSinceEpoch.toString(),
     };
 
     return CachedVideoPlayerPlus.networkUrl(
@@ -194,8 +187,7 @@ class CachedVideoCacheManager implements IVideoCacheManager {
     );
   }
 
-  Future<CachedVideoPlayerWrapper?> _initializeVideoController(
-      String url) async {
+  Future<CachedVideoPlayerWrapper?> _initializeVideoController(String url) async {
     // If already initializing, wait for existing initialization
     if (_initializationCache.containsKey(url)) {
       return _initializationCache[url];
@@ -203,7 +195,8 @@ class CachedVideoCacheManager implements IVideoCacheManager {
 
     // ANDROID FIX: Clear stuck initializations if cache is getting full
     if (Platform.isAndroid && _initializationCache.length > 2) {
-      debugPrint('⚠️ Too many concurrent initializations (${_initializationCache.length}), clearing cache');
+      debugPrint(
+          '⚠️ Too many concurrent initializations (${_initializationCache.length}), clearing cache');
       await _clearNonVisibleVideos();
 
       // Give system time to release resources
@@ -227,8 +220,7 @@ class CachedVideoCacheManager implements IVideoCacheManager {
     }
   }
 
-  Future<CachedVideoPlayerWrapper?> _createAndInitializeController(
-      String url) async {
+  Future<CachedVideoPlayerWrapper?> _createAndInitializeController(String url) async {
     try {
       // CRITICAL: Proactive cache management for Android BEFORE initialization
       if (Platform.isAndroid) {
@@ -244,7 +236,8 @@ class CachedVideoCacheManager implements IVideoCacheManager {
         // Add small delay between initializations to prevent decoder overload
         if (_memoryErrorCount > 0) {
           final delay = 500 * _memoryErrorCount.clamp(1, 3);
-          debugPrint('⏳ Adding ${delay}ms delay before initialization (error count: $_memoryErrorCount)');
+          debugPrint(
+              '⏳ Adding ${delay}ms delay before initialization (error count: $_memoryErrorCount)');
           await Future.delayed(Duration(milliseconds: delay));
         }
       }
@@ -270,11 +263,11 @@ class CachedVideoCacheManager implements IVideoCacheManager {
         final errorMsg = e.toString().toLowerCase();
         final isMemoryError = Platform.isAndroid &&
             (errorMsg.contains('no_memory') ||
-             errorMsg.contains('0xfffffff4') ||
-             errorMsg.contains('decoder init failed') ||
-             errorMsg.contains('mediacodec') ||
-             errorMsg.contains('videoerror') ||
-             errorMsg.contains('exoplaybackexception'));
+                errorMsg.contains('0xfffffff4') ||
+                errorMsg.contains('decoder init failed') ||
+                errorMsg.contains('mediacodec') ||
+                errorMsg.contains('videoerror') ||
+                errorMsg.contains('exoplaybackexception'));
 
         if (isMemoryError) {
           _memoryErrorCount++;
@@ -355,8 +348,7 @@ class CachedVideoCacheManager implements IVideoCacheManager {
       await wrapper.setVolume(1.0);
       return wrapper;
     } catch (e, stackTrace) {
-      debugPrint(
-          '❌ CachedVideoPlayer Error creating video controller for URL: $url');
+      debugPrint('❌ CachedVideoPlayer Error creating video controller for URL: $url');
       debugPrint('❌ CachedVideoPlayer Error details: $e');
       debugPrint('❌ CachedVideoPlayer Stack trace: $stackTrace');
       return null;
@@ -392,7 +384,8 @@ class CachedVideoCacheManager implements IVideoCacheManager {
       await Future.wait(disposeFutures);
     }
 
-    debugPrint('🔥 Emergency cache clear: Removed ${urlsToRemove.length} videos, ${_videoControllerCache.length} remaining');
+    debugPrint(
+        '🔥 Emergency cache clear: Removed ${urlsToRemove.length} videos, ${_videoControllerCache.length} remaining');
   }
 
   void _addToCache(String url, CachedVideoPlayerWrapper controller) {
@@ -423,8 +416,7 @@ class CachedVideoCacheManager implements IVideoCacheManager {
   }
 
   @override
-  Future<void> precacheVideos(List<String> videoUrls,
-      {bool highPriority = false}) async {
+  Future<void> precacheVideos(List<String> videoUrls, {bool highPriority = false}) async {
     final futures = <Future<void>>[];
 
     for (final url in videoUrls) {
@@ -492,9 +484,8 @@ class CachedVideoCacheManager implements IVideoCacheManager {
   @override
   void clearControllersOutsideRange(List<String> activeUrls) {
     final urlsToKeep = Set<String>.from(activeUrls);
-    final urlsToRemove = _videoControllerCache.keys
-        .where((url) => !urlsToKeep.contains(url))
-        .toList();
+    final urlsToRemove =
+        _videoControllerCache.keys.where((url) => !urlsToKeep.contains(url)).toList();
 
     for (final url in urlsToRemove) {
       clearVideo(url);
