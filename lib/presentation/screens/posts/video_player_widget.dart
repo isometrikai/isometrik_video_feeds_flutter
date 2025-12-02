@@ -132,9 +132,13 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       _videoPlayerController!.addListener(_handlePlaybackProgress);
 
       // If widget is visible when initialized, start playing immediately
+      debugPrint('VideoPlayerWidget:- url: ${widget.mediaUrl} - isVisible: ${_isVisible}');
       if (_isVisible) {
         await _videoPlayerController!.play();
         widget.videoCacheManager.markAsVisible(widget.mediaUrl);
+      } else {
+        await _videoPlayerController!.pause();
+        widget.videoCacheManager.markAsNotVisible(widget.mediaUrl);
       }
     } catch (e) {
       debugPrint('❌ VideoPlayerWidget: Error setting up controller: $e');
@@ -247,6 +251,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
     final wasVisible = _isVisible;
     _isVisible = info.visibleFraction > 0.9;
+    debugPrint('VideoPlayerWidget:- url: ${widget.mediaUrl} - VisibilityFraction: ${info.visibleFraction}');
+
 
     // Only notify if visibility state actually changed
     if (wasVisible != _isVisible) {
@@ -266,6 +272,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       }
     }
   }
+
 
   // Public methods to control playback
   void pause() {
@@ -294,21 +301,13 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   // Check initial visibility after first frame
   void _checkInitialVisibility() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_isDisposed || !mounted) return;
+      if (!mounted) return;
 
-      // Assume video is visible when first built (will be corrected by visibility detector)
-      // This ensures video starts playing immediately on load
-      if (_isInitialized &&
-          _videoPlayerController != null &&
-          _videoPlayerController!.isInitialized &&
-          !_videoPlayerController!.isPlaying &&
-          !_isManuallyPaused) {
-        _isVisible = true; // Assume visible initially
-        _videoPlayerController!.play();
-        widget.videoCacheManager.markAsVisible(widget.mediaUrl);
-      }
+      // 🔥 Force visibility recalculation immediately
+      VisibilityDetectorController.instance.notifyNow();
     });
   }
+
 
   @override
   void didUpdateWidget(VideoPlayerWidget oldWidget) {
