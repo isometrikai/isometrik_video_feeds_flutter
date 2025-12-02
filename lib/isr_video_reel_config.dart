@@ -1,4 +1,5 @@
 // sdk_config.dart
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/services.dart';
@@ -143,5 +144,9 @@ class IsrVideoReelConfig {
         LocalStorageKeys.xTenantId, xTenantId, SavedValueDataType.string);
     await localStorageManager.saveValue(
         LocalStorageKeys.xProjectId, xProjectId, SavedValueDataType.string);
+  }
+
+  static void logEvent(String eventName, Map<String, dynamic> eventData) async {
+    unawaited(EventQueueProvider.instance.addEvent(eventName, eventData.removeEmptyValues()));
   }
 }

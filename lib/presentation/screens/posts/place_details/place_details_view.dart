@@ -59,8 +59,8 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
       if (!mounted || !_scrollController.hasClients) return;
 
       // Check if scrolled to 65% of the content
-      final scrollPercentage = _scrollController.position.pixels /
-          _scrollController.position.maxScrollExtent;
+      final scrollPercentage =
+          _scrollController.position.pixels / _scrollController.position.maxScrollExtent;
 
       // Trigger pagination at 65% scroll
       if (scrollPercentage >= 0.65 && !_isLoadingMore && _hasMoreData) {
@@ -134,19 +134,47 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-        backgroundColor: Colors.white,
-        body: Column(
-          children: [
-            // Map Section
-            Expanded(
-              flex: 2,
-              child: Stack(
-                children: [
-                  // Google Map
-                  if (_initialCameraPosition != null)
-                    GoogleMap(
-                      initialCameraPosition: _initialCameraPosition!,
+  Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final mapHeight = screenHeight * 0.35; // 35% of screen height for map
+
+    return Scaffold(
+      body: Stack(
+        children: [
+          // Scrollable Content
+          BlocConsumer<PlaceDetailsBloc, PlaceDetailsState>(
+            bloc: _placeDetailsBloc,
+            listener: (context, state) {
+              // Reset loading flag when pagination completes
+              if (!mounted) return;
+
+              if (state is PlacePostsLoadedState || state is PlaceDetailsErrorState) {
+                if (_isLoadingMore) {
+                  setState(() {
+                    _isLoadingMore = false;
+                  });
+                }
+                if (state is PlacePostsLoadedState) {
+                  _hasMoreData = state.hasMoreData;
+                  _postsList.clear();
+                  _postsList.addAll(state.posts);
+                }
+              }
+            },
+            builder: (context, state) => CustomScrollView(
+              controller: _scrollController,
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                // Map Section as Sliver
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: mapHeight,
+                    child: GoogleMap(
+                      initialCameraPosition: _initialCameraPosition ??
+                          const CameraPosition(
+                            target: LatLng(12.9716, 77.5946),
+                            zoom: 15.0,
+                          ),
                       markers: _markers,
                       onMapCreated: (GoogleMapController controller) {
                         if (!_mapController.isCompleted) {
@@ -158,157 +186,139 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
                       myLocationButtonEnabled: false,
                       zoomControlsEnabled: false,
                       mapToolbarEnabled: false,
-                    )
-                  else
-                    Container(
-                      color: Colors.grey[200],
-                      child: const Center(
-                        child: CircularProgressIndicator(),
-                      ),
-                    ),
-
-                  // Back Button
-                  Positioned(
-                    top: MediaQuery.of(context).padding.top +
-                        10.responsiveDimension,
-                    left: 16.responsiveDimension,
-                    child: GestureDetector(
-                      onTap: () => context.pop(),
-                      child: Container(
-                        width: 40.responsiveDimension,
-                        height: 40.responsiveDimension,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.applyOpacity(0.1),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          Icons.arrow_back,
-                          color: Colors.black,
-                          size: 20.responsiveDimension,
-                        ),
-                      ),
                     ),
                   ),
+                ),
 
-                  // Open in Google Maps Button
-                  Positioned(
-                    top: MediaQuery.of(context).padding.top +
-                        10.responsiveDimension,
-                    right: 16.responsiveDimension,
-                    child: GestureDetector(
-                      onTap: () {
-                        final lat = widget.latitude ?? 12.9716;
-                        final lng = widget.longitude ?? 77.5946;
-                        final placeName = widget.placeName ?? 'Location';
-                        openGoogleMaps(lat, lng, placeName);
-                      },
-                      child: Container(
-                        width: 40.responsiveDimension,
-                        height: 40.responsiveDimension,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.applyOpacity(0.1),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          Icons.directions,
-                          color: const Color(0xFF1976D2),
-                          size: 20.responsiveDimension,
-                        ),
-                      ),
+                // Section Header as Sliver
+                SliverToBoxAdapter(
+                  child: Container(
+                    color: Colors.white,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 16.responsiveDimension,
+                      vertical: 12.responsiveDimension,
                     ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Posts Section
-            Expanded(
-              flex: 3,
-              child: Container(
-                color: Colors.white,
-                child: Column(
-                  children: [
-                    // Section Header
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 16.responsiveDimension,
-                        vertical: 12.responsiveDimension,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            widget.placeName.isEmptyOrNull == false
-                                ? (widget.placeName ?? '')
-                                : 'India - Bengaluru',
-                            style: TextStyle(
-                              fontSize: 16.responsiveDimension,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
-                            ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          widget.placeName.isEmptyOrNull == false
+                              ? (widget.placeName ?? '')
+                              : 'India - Bengaluru',
+                          style: TextStyle(
+                            fontSize: 16.responsiveDimension,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
+                  ),
+                ),
 
-                    // Posts Grid with BlocConsumer
-                    Expanded(
-                      child: BlocConsumer<PlaceDetailsBloc, PlaceDetailsState>(
-                        bloc: _placeDetailsBloc,
-                        listener: (context, state) {
-                          // Reset loading flag when pagination completes
-                          if (!mounted) return;
+                // Posts Grid Section
+                _buildPostsContent(state),
+              ],
+            ),
+          ),
 
-                          if (state is PlacePostsLoadedState ||
-                              state is PlaceDetailsErrorState) {
-                            if (_isLoadingMore) {
-                              setState(() {
-                                _isLoadingMore = false;
-                              });
-                            }
-                            if (state is PlacePostsLoadedState) {
-                              _hasMoreData = state.hasMoreData;
-                              _postsList.clear();
-                              _postsList.addAll(state.posts);
-                            }
-                          }
-                        },
-                        builder: (context, state) {
-                          if (state is PlaceDetailsLoadingState &&
-                              state.isLoading) {
-                            return const Center(
-                              child: CircularProgressIndicator(),
-                            );
-                          } else if (state is PlaceDetailsErrorState) {
-                            return _buildErrorState(state.error);
-                          }
-                          if (_postsList.isEmptyOrNull) {
-                            return _buildEmptyState();
-                          } else {
-                            return _buildPostsGrid(_postsList);
-                          }
-                        },
-                      ),
+          // Fixed Back Button - Always visible
+          Positioned(
+            top: 50.responsiveDimension,
+            left: 16.responsiveDimension,
+            child: GestureDetector(
+              onTap: () => context.pop(),
+              child: Container(
+                width: 40.responsiveDimension,
+                height: 40.responsiveDimension,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.applyOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
+                child: Icon(
+                  Icons.arrow_back,
+                  color: Colors.black,
+                  size: 20.responsiveDimension,
+                ),
               ),
             ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPostsContent(PlaceDetailsState state) {
+    if (state is PlaceDetailsLoadingState && state.isLoading) {
+      return const SliverFillRemaining(
+        child: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    } else if (state is PlaceDetailsErrorState) {
+      return SliverFillRemaining(
+        child: _buildErrorState(state.error),
+      );
+    }
+    if (_postsList.isEmptyOrNull) {
+      return SliverFillRemaining(
+        child: _buildEmptyState(),
+      );
+    } else {
+      return _buildPostsSliverGrid(_postsList);
+    }
+  }
+
+  Widget _buildPostsSliverGrid(List<TimeLineData> postList) => SliverPadding(
+        padding: IsrDimens.edgeInsetsAll(IsrDimens.eight),
+        sliver: SliverGrid(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: IsrDimens.four,
+            mainAxisSpacing: IsrDimens.four,
+            childAspectRatio: 0.75,
+          ),
+          delegate: SliverChildBuilderDelegate(
+            (context, index) {
+              if (index == postList.length) {
+                return _isLoadingMore
+                    ? const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    : const SizedBox.shrink();
+              }
+
+              final post = postList[index];
+              return TapHandler(
+                key: ValueKey('post_${post.id}'),
+                onTap: () {
+                  IsrAppNavigator.navigateToReelsPlayer(
+                    context,
+                    postDataList: postList,
+                    startingPostIndex: index,
+                    postSectionType: PostSectionType.tagPost,
+                    tagValue: widget.placeId,
+                    tagType: TagType.place,
+                    onTapProfilePicture: widget.onTapProfilePicture,
+                  );
+                },
+                child: _buildPostCard(post, index),
+              );
+            },
+            childCount: postList.length + (_isLoadingMore ? 1 : 0),
+            addAutomaticKeepAlives: true,
+            addRepaintBoundaries: true,
+          ),
         ),
       );
 
@@ -343,56 +353,6 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
         ),
       );
 
-  Widget _buildPostsGrid(List<TimeLineData> postList) => CustomScrollView(
-        controller: _scrollController,
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          SliverPadding(
-            padding: IsrDimens.edgeInsetsAll(IsrDimens.eight),
-            sliver: SliverGrid(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: IsrDimens.four,
-                mainAxisSpacing: IsrDimens.four,
-                childAspectRatio: 0.75,
-              ),
-              delegate: SliverChildBuilderDelegate((context, index) {
-                if (index == postList.length) {
-                  return _isLoadingMore
-                      ? const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(16.0),
-                            child: CircularProgressIndicator(),
-                          ),
-                        )
-                      : const SizedBox.shrink();
-                }
-
-                final post = postList[index];
-                return TapHandler(
-                  key: ValueKey('post_${post.id}'),
-                  onTap: () {
-                    IsrAppNavigator.navigateToReelsPlayer(
-                      context,
-                      postDataList: postList,
-                      startingPostIndex: index,
-                      postSectionType: PostSectionType.tagPost,
-                      tagValue: widget.placeId,
-                      tagType: TagType.place,
-                      onTapProfilePicture: widget.onTapProfilePicture,
-                    );
-                  },
-                  child: _buildPostCard(post, index),
-                );
-              },
-                  childCount: postList.length + (_isLoadingMore ? 1 : 0),
-                  addAutomaticKeepAlives: true,
-                  addRepaintBoundaries: true),
-            ),
-          ),
-        ],
-      );
-
   Widget _buildPostCard(TimeLineData post, int index) => Container(
         decoration: BoxDecoration(
           color: IsrColors.white,
@@ -404,10 +364,8 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
             children: [
               _buildPostImage(post),
               _buildUserProfileOverlay(post),
-              if (post.tags?.products?.isListEmptyOrNull == false)
-                _buildShopButtonOverlay(post),
-              if (post.media?.first.mediaType?.mediaType == MediaType.video)
-                _buildVideoIcon(),
+              if (post.tags?.products?.isListEmptyOrNull == false) _buildShopButtonOverlay(post),
+              if (post.media?.first.mediaType?.mediaType == MediaType.video) _buildVideoIcon(),
             ],
           ),
         ),
@@ -458,9 +416,8 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
               CircleAvatar(
                 radius: IsrDimens.twelve,
                 backgroundColor: IsrColors.colorF5F5F5,
-                backgroundImage: post.user?.avatarUrl != null
-                    ? NetworkImage(post.user!.avatarUrl!)
-                    : null,
+                backgroundImage:
+                    post.user?.avatarUrl != null ? NetworkImage(post.user!.avatarUrl!) : null,
                 child: post.user?.avatarUrl == null
                     ? Icon(
                         Icons.person,
@@ -607,8 +564,7 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
 
   /// Returns true if the map was opened successfully, false otherwise
   /// First tries to open Google Maps app, then falls back to webview
-  Future<bool> openGoogleMaps(
-      double latitude, double longitude, String placeName) async {
+  Future<bool> openGoogleMaps(double latitude, double longitude, String placeName) async {
     try {
       // URL encode the place name for safe URL usage
       final encodedPlaceName = Uri.encodeComponent(placeName);
@@ -643,8 +599,7 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
       }
 
       // Fallback to webview if app is not installed
-      final googleMapsUrl =
-          'https://www.google.com/maps/search/?api=1&query=$encodedPlaceName';
+      final googleMapsUrl = 'https://www.google.com/maps/search/?api=1&query=$encodedPlaceName';
       final webUri = Uri.parse(googleMapsUrl);
 
       if (await canLaunchUrl(webUri)) {

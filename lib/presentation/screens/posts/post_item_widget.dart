@@ -248,7 +248,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                       videoCacheManager: _videoCacheManager,
                       // Add refresh count to force rebuild
                       key: ValueKey('${reelsData.postId}_${_refreshCounts[index] ?? 0}'),
-                      onVideoCompleted: () => _handleVideoCompletion(index),
+                      // onVideoCompleted: () => _handleVideoCompletion(index),
                       onPressMoreButton: () async {
                         if (reelsData.onPressMoreButton == null) return;
                         final result = await reelsData.onPressMoreButton!.call();

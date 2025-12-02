@@ -344,7 +344,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         commentCount: postData.engagementMetrics?.comments?.toInt() ?? 0,
         isFollow: postData.isFollowing == true,
         isLiked: postData.isLiked,
-        isSavedPost: false,
+        isSavedPost: postData.isSaved,
         isVerifiedUser: false,
         productCount: postData.tags?.products?.length ?? 0,
         description: postData.caption ?? '',
