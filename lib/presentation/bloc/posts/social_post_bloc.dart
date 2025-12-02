@@ -50,6 +50,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     on<GetPostInsightDetailsEvent>(_getPostInsightDetails);
     on<GetMentionedUserEvent>(_getMentionedUser);
     on<RemoveMentionEvent>(_removeMention);
+    on<PlayPauseVideoEvent>(_playPauseVideo);
   }
 
   final IsmLocalDataUseCase _localDataUseCase;
@@ -622,6 +623,10 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       ErrorHandler.showAppError(
           appError: apiResult.error, isNeedToShowError: true, errorViewType: ErrorViewType.toast);
     }
+  }
+
+  FutureOr<void> _playPauseVideo(PlayPauseVideoEvent event, Emitter<SocialPostState> emit) async {
+    emit(PlayPauseVideoState(play: event.play));
   }
 
   FutureOr<void> _removeMention(RemoveMentionEvent event, Emitter<SocialPostState> emit) async {
