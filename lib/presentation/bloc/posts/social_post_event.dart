@@ -294,3 +294,8 @@ class GetSavedSoundsEvent extends SocialPostEvent {
   final int skip;
   final int limit;
 }
+
+class PlayPauseVideoEvent extends SocialPostEvent {
+  PlayPauseVideoEvent({required this.play});
+  bool play;
+}

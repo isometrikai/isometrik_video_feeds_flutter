@@ -353,23 +353,34 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           _logProfileEvent(postData.user?.id ?? '', postData.id ?? '');
         },
         onTapComment: (totalCommentsCount) async {
+          _socialPostBloc.add(PlayPauseVideoEvent(play: false));
           final result = await _handleCommentAction(postData.id ?? '', totalCommentsCount, tabData);
+          _socialPostBloc.add(PlayPauseVideoEvent(play: true));
           return result;
         },
         onTapShare: (tabData.onShareClick == null)
             ? null
             : () {
+          _socialPostBloc.add(PlayPauseVideoEvent(play: false));
                 tabData.onShareClick?.call(postData);
+          _socialPostBloc.add(PlayPauseVideoEvent(play: true));
               },
         onPressMoreButton: () async {
+          _socialPostBloc.add(PlayPauseVideoEvent(play: false));
+          debugPrint('more -> opened');
           final result = await _handleMoreOptions(postData, tabData);
+          debugPrint('more -> closed');
+          _socialPostBloc.add(PlayPauseVideoEvent(play: true));
           return result;
         },
         onPressLike: (isLiked) async => _handleLikeAction(isLiked, postData),
         onPressSave: (isSavedPost) async {
           try {
             if (tabData.onPressSave != null) {
-              return tabData.onPressSave?.call(isSavedPost, postData) ?? isSavedPost;
+              _socialPostBloc.add(PlayPauseVideoEvent(play: false));
+              final res = await tabData.onPressSave?.call(isSavedPost, postData) ?? isSavedPost;
+              _socialPostBloc.add(PlayPauseVideoEvent(play: true));
+              return res;
             }
             final completer = Completer<bool>();
             _socialPostBloc.add(SavePostEvent(
@@ -819,14 +830,17 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     required TabDataModel tabData,
   }) async {
     final completer = Completer<dynamic>();
-    await Utility.showBottomSheet(
+    final result = await Utility.showBottomSheet<dynamic>(
       isDismissible: true,
       child: MoreOptionsBottomSheet(
         onPressReport: ({String message = '', String reason = ''}) async {
           try {
             if (onPressReport != null) {
-              final isReported = await onPressReport(message: message, reason: reason);
-              completer.complete(isReported);
+              final isReported =
+              await onPressReport(message: message, reason: reason);
+              if (!completer.isCompleted) {
+                completer.complete(isReported);
+              }
               return isReported;
             }
             return false;
@@ -847,10 +861,12 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           if (onEditPost != null) {
             final postDataString = await onEditPost();
             if (postDataString.isStringEmptyOrNull == false) {
-              final postData =
-                  TimeLineData.fromMap(jsonDecode(postDataString) as Map<String, dynamic>);
+              final postData = TimeLineData.fromMap(
+                  jsonDecode(postDataString) as Map<String, dynamic>);
               final reelData = _getReelData(postData, tabData);
-              completer.complete(reelData);
+              if (!completer.isCompleted) {
+                completer.complete(reelData);
+              }
             }
             return postDataString;
           }
@@ -859,6 +875,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         onShowPostInsight: onShowPostInsight,
       ),
     );
+    // If the bottom sheet was dismissed without any action, complete the completer with null
+    if (!completer.isCompleted) {
+      completer.complete(result);
+    }
     return completer.future;
   }
 

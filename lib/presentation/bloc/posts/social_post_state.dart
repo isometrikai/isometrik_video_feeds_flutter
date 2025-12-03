@@ -78,3 +78,8 @@ class PostInsightDetails extends SocialPostState {
   String? postId;
   TimeLineData? postData;
 }
+
+class PlayPauseVideoState extends SocialPostState {
+  PlayPauseVideoState({required this.play});
+  bool play;
+}

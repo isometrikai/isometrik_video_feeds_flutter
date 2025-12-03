@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -132,9 +133,13 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       _videoPlayerController!.addListener(_handlePlaybackProgress);
 
       // If widget is visible when initialized, start playing immediately
+      debugPrint('VideoPlayerWidget:- url: ${widget.mediaUrl} - isVisible: ${_isVisible}');
       if (_isVisible) {
         await _videoPlayerController!.play();
         widget.videoCacheManager.markAsVisible(widget.mediaUrl);
+      } else {
+        await _videoPlayerController!.pause();
+        widget.videoCacheManager.markAsNotVisible(widget.mediaUrl);
       }
     } catch (e) {
       debugPrint('❌ VideoPlayerWidget: Error setting up controller: $e');
@@ -247,6 +252,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
     final wasVisible = _isVisible;
     _isVisible = info.visibleFraction > 0.9;
+    debugPrint('VideoPlayerWidget:- url: ${widget.mediaUrl} - VisibilityFraction: ${info.visibleFraction}');
+
 
     // Only notify if visibility state actually changed
     if (wasVisible != _isVisible) {
@@ -266,6 +273,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       }
     }
   }
+
 
   // Public methods to control playback
   void pause() {
@@ -294,21 +302,13 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   // Check initial visibility after first frame
   void _checkInitialVisibility() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_isDisposed || !mounted) return;
+      if (!mounted) return;
 
-      // Assume video is visible when first built (will be corrected by visibility detector)
-      // This ensures video starts playing immediately on load
-      if (_isInitialized &&
-          _videoPlayerController != null &&
-          _videoPlayerController!.isInitialized &&
-          !_videoPlayerController!.isPlaying &&
-          !_isManuallyPaused) {
-        _isVisible = true; // Assume visible initially
-        _videoPlayerController!.play();
-        widget.videoCacheManager.markAsVisible(widget.mediaUrl);
-      }
+      // 🔥 Force visibility recalculation immediately
+      VisibilityDetectorController.instance.notifyNow();
     });
   }
+
 
   @override
   void didUpdateWidget(VideoPlayerWidget oldWidget) {
@@ -390,54 +390,69 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   Widget build(BuildContext context) => VisibilityDetector(
         key: Key('video_player_${widget.mediaUrl}'),
         onVisibilityChanged: _handleVisibilityChanged,
-        child: Stack(
-          fit: StackFit.expand,
-          alignment: Alignment.center,
-          children: [
-            if (_isInitialized &&
-                _videoPlayerController != null &&
-                _videoPlayerController!.isInitialized) ...[
-              // Video is ready, show the player
-              RepaintBoundary(
-                child: FittedBox(
-                  fit: BoxFit.cover,
-                  child: SizedBox(
-                    child: Builder(
-                      builder: (context) {
-                        final size = _videoPlayerController!.videoSize;
-                        final aspect = _videoPlayerController!.aspectRatio;
-                        return SizedBox(
-                          height: size.height,
-                          width: size.width,
-                          child: AspectRatio(
-                            aspectRatio: aspect,
-                            child: Container(
-                              color: Colors.black,
-                              child: Center(
-                                child: RepaintBoundary(
-                                  child: _videoPlayerController!.buildVideoPlayerWidget(),
+        child: BlocListener<SocialPostBloc, SocialPostState>(
+            listenWhen: (previous, current) => current is PlayPauseVideoState,
+          listener: (context, state) {
+            if (state is PlayPauseVideoState) {
+              if (state.play) {
+                if (_isVisible && mounted && _isManuallyPaused) {
+                  play();
+                }
+              } else {
+                pause();
+              }
+            }
+          },
+          child: Stack(
+            fit: StackFit.expand,
+            alignment: Alignment.center,
+            children: [
+              if (_isInitialized &&
+                  _videoPlayerController != null &&
+                  _videoPlayerController!.isInitialized) ...[
+                // Video is ready, show the player
+                RepaintBoundary(
+                  child: FittedBox(
+                    fit: BoxFit.cover,
+                    child: SizedBox(
+                      child: Builder(
+                        builder: (context) {
+                          final size = _videoPlayerController!.videoSize;
+                          final aspect = _videoPlayerController!.aspectRatio;
+                          return SizedBox(
+                            height: size.height,
+                            width: size.width,
+                            child: AspectRatio(
+                              aspectRatio: aspect,
+                              child: Container(
+                                color: Colors.black,
+                                child: Center(
+                                  child: RepaintBoundary(
+                                    child: _videoPlayerController!
+                                        .buildVideoPlayerWidget(),
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        );
-                      },
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ] else ...[
-              // Video is not ready, show thumbnail
-              _getImageWidget(
-                imageUrl: widget.thumbnailUrl,
-                width: IsrDimens.getScreenWidth(context),
-                height: IsrDimens.getScreenHeight(context),
-                fit: BoxFit.cover,
-                filterQuality: FilterQuality.low,
-                showError: false,
-              ),
-            ]
-          ],
+              ] else ...[
+                // Video is not ready, show thumbnail
+                _getImageWidget(
+                  imageUrl: widget.thumbnailUrl,
+                  width: IsrDimens.getScreenWidth(context),
+                  height: IsrDimens.getScreenHeight(context),
+                  fit: BoxFit.cover,
+                  filterQuality: FilterQuality.low,
+                  showError: false,
+                ),
+              ]
+            ],
+          ),
         ),
       );
 

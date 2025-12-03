@@ -104,7 +104,9 @@ class _SearchUserViewState extends State<SearchUserView> with TickerProviderStat
           searchText: query,
           onComplete: (userList) {
             completer.complete();
-            _setResult(userList);
+            if (query == _currentSearchText) {
+              _setResult(userList);
+            }
           },
         ),
       );
