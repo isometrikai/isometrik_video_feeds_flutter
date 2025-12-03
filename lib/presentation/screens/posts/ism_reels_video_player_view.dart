@@ -1094,6 +1094,74 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     // Hide if it's self profile
     if (_reelData.isSelfProfile == true) return const SizedBox.shrink();
 
+    return FollowActionWidget(
+      postId: _reelData.postId ?? '',
+      userId: _reelData.userId ?? '',
+      builder: (isLoading, isFollowing, onTap) {
+        _reelData.isFollow = isFollowing;
+        if (isLoading) {
+          return SizedBox(
+            width: IsrDimens.sixty,
+            height: IsrDimens.twentyFour,
+            child: Center(
+              child: SizedBox(
+                width: IsrDimens.sixteen,
+                height: IsrDimens.sixteen,
+                child: const CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          );
+        } else if (!isFollowing && _reelData.postSetting?.isUnFollowButtonVisible == true) {
+          return Container(
+            height: IsrDimens.twentyFour,
+            decoration: BoxDecoration(
+              color: Theme.of(context).primaryColor,
+              borderRadius: BorderRadius.circular(IsrDimens.twenty),
+            ),
+            child: MaterialButton(
+              minWidth: IsrDimens.sixty,
+              height: IsrDimens.twentyFour,
+              padding: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twelve),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(IsrDimens.twenty)),
+              onPressed: onTap,
+              child: Text(
+                IsrTranslationFile.follow,
+                style: IsrStyles.white12.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          );
+        } else if (isFollowing && _reelData.postSetting?.isFollowButtonVisible == true) {
+          return Container(
+            height: IsrDimens.twentyFour,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(IsrDimens.twenty),
+            ),
+            child: MaterialButton(
+              minWidth: IsrDimens.sixty,
+              height: IsrDimens.twentyFour,
+              padding: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twelve),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(IsrDimens.twenty),
+              ),
+              onPressed: onTap,
+              // <-- your unfollow logic
+              child: Text(
+                IsrTranslationFile.following,
+                style: IsrStyles.primaryText12.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          );
+        }
+        return const SizedBox.shrink();
+      },
+    );
+
     // FOLLOW button
     if (_reelData.postSetting?.isFollowButtonVisible == true && _reelData.isFollow == false) {
       return ValueListenableBuilder<bool>(

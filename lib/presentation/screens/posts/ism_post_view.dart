@@ -51,6 +51,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   List<TabDataModel> _tabDataModelList = [];
   VideoCacheManager? _videoCacheManager;
   late SocialPostBloc _socialPostBloc; // Will be initialized from context
+  late IsmSocialActionCubit _socialActionCubit;
   var _currentPostSectionType = PostSectionType.forYou;
 
   @override
@@ -90,6 +91,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       isrConfigureInjection();
       _socialPostBloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
     }
+    _socialActionCubit = context.getOrCreateBloc();
 
     _tabsVisibilityNotifier.value = _tabDataModelList.length > 1;
 

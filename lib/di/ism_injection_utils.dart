@@ -20,6 +20,13 @@ class IsmInjectionUtils {
     isrGetIt.registerFactory<T>(factoryFunc);
   }
 
+  // Generic function to register a Bloc
+  static void registerSingletonBloc<T extends BlocBase<Object>>(
+      T Function() factoryFunc) {
+    unRegister<T>();
+    isrGetIt.registerLazySingleton<T>(factoryFunc);
+  }
+
   // Generic function to register a UseCase
   static void registerUseCase<T extends BaseUseCase>(T Function() factoryFunc) {
     unRegister<T>();

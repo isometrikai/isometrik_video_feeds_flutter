@@ -71,6 +71,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   final RemoveMentionUseCase _removeMentionUseCase;
   final GetTaggedPostsUseCase _getTaggedPostsUseCase;
   final GetUserPostDataUseCase _getUserPostDataUseCase;
+  IsmSocialActionCubit get _socialActionCubit => IsmInjectionUtils.getBloc();
+
 
   UserInfoClass? _userInfoClass;
   var reelsPageTrendingController = PageController();
@@ -131,6 +133,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
             postsByTab: _postsByTab
                 .asMap()
                 .map((key, value) => MapEntry(value.postSectionType, value.postList))));
+        _socialActionCubit.updatePostList(postTab.postList);
       }
     } catch (error) {
       emit(SocialPostError(error.toString()));
@@ -277,6 +280,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     }
     postDataList.addAll(apiResult?.data?.data ?? []);
     if (postDataList.isNotEmpty) {
+      _socialActionCubit.updatePostList(postDataList);
       if (postDataList.length < tabAssistData.pageSize) {
         tabAssistData.hasMoreData = false;
       }
@@ -682,6 +686,11 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
 
     if (result.isSuccess && onSuccess != null) {
       result.data?.let(onSuccess);
+    }
+
+    if (result.data != null && result.data is TimeLineData) {
+      final timeLineData = result.data as TimeLineData;
+      _socialActionCubit.updatePostList([timeLineData]);
     }
 
     if (result.isError && showError) {
