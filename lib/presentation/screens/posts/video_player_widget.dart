@@ -133,7 +133,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       _videoPlayerController!.addListener(_handlePlaybackProgress);
 
       // If widget is visible when initialized, start playing immediately
-      debugPrint('VideoPlayerWidget:- url: ${widget.mediaUrl} - isVisible: ${_isVisible}');
+      debugPrint('VideoPlayerWidget:- url: ${widget.mediaUrl} - isVisible: $_isVisible');
       if (_isVisible) {
         await _videoPlayerController!.play();
         widget.videoCacheManager.markAsVisible(widget.mediaUrl);
@@ -176,7 +176,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       for (final milestone in milestones) {
         if (progressPercentage >= milestone && !_loggedProgressMilestones.contains(milestone)) {
           _loggedProgressMilestones.add(milestone);
-          _logVideoProgressEvent(milestone, position, duration);
+          // _logVideoProgressEvent(milestone, position, duration);
         }
       }
     }
@@ -252,8 +252,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
     final wasVisible = _isVisible;
     _isVisible = info.visibleFraction > 0.9;
-    debugPrint('VideoPlayerWidget:- url: ${widget.mediaUrl} - VisibilityFraction: ${info.visibleFraction}');
-
+    debugPrint(
+        'VideoPlayerWidget:- url: ${widget.mediaUrl} - VisibilityFraction: ${info.visibleFraction}');
 
     // Only notify if visibility state actually changed
     if (wasVisible != _isVisible) {
@@ -273,7 +273,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       }
     }
   }
-
 
   // Public methods to control playback
   void pause() {
@@ -308,7 +307,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       VisibilityDetectorController.instance.notifyNow();
     });
   }
-
 
   @override
   void didUpdateWidget(VideoPlayerWidget oldWidget) {
@@ -347,7 +345,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   void _logWatchEventIfNeeded() async {
     // Only log if:
     // 1. Not already logged for this video
-    // 2. User watched for at least 1 second
+    // 2. User watched at least 25% of the video
     // 3. postHelperCallBacks is provided
     if (_hasLoggedWatchEvent == false &&
         widget.postHelperCallBacks != null &&
@@ -358,14 +356,14 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         final watchedSeconds = _maxWatchPosition.inSeconds;
         final totalSeconds = duration.inSeconds;
 
-        // Only log if user watched for at least 1 second
-        if (watchedSeconds < 1) {
-          return;
-        }
-
         // Calculate completion rate as percentage
         final completionRate =
             totalSeconds > 0 ? ((watchedSeconds / totalSeconds) * 100).toInt() : 0;
+
+        // Only log if user watched at least 25% of the video
+        if (completionRate < 25) {
+          return;
+        }
 
         final eventMap = <String, dynamic>{
           // 'view_source': 'feed',
@@ -391,7 +389,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         key: Key('video_player_${widget.mediaUrl}'),
         onVisibilityChanged: _handleVisibilityChanged,
         child: BlocListener<SocialPostBloc, SocialPostState>(
-            listenWhen: (previous, current) => current is PlayPauseVideoState,
+          listenWhen: (previous, current) => current is PlayPauseVideoState,
           listener: (context, state) {
             if (state is PlayPauseVideoState) {
               if (state.play) {
@@ -428,8 +426,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                                 color: Colors.black,
                                 child: Center(
                                   child: RepaintBoundary(
-                                    child: _videoPlayerController!
-                                        .buildVideoPlayerWidget(),
+                                    child: _videoPlayerController!.buildVideoPlayerWidget(),
                                   ),
                                 ),
                               ),

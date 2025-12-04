@@ -26,14 +26,12 @@ class EventQueueProvider {
   static Future<void> initialize({
     required String rudderStackWriteKey,
     required String rudderStackDataPlaneUrl,
-    required String userId,
   }) async {
-    final localDataUseCase =
-        IsmInjectionUtils.getUseCase<IsmLocalDataUseCase>();
-    final deviceInfoManager =
-        IsmInjectionUtils.getOtherClass<DeviceInfoManager>();
+    final localDataUseCase = IsmInjectionUtils.getUseCase<IsmLocalDataUseCase>();
+    final deviceInfoManager = IsmInjectionUtils.getOtherClass<DeviceInfoManager>();
 
     // Fetch all required data
+    final userId = await localDataUseCase.getUserId();
     final tenantId = await localDataUseCase.getTenantId();
     final projectId = await localDataUseCase.getProjectId();
     final latitude = await localDataUseCase.getLatitude();
@@ -41,6 +39,13 @@ class EventQueueProvider {
     final country = await localDataUseCase.getCountry();
     final state = await localDataUseCase.getState();
     final city = await localDataUseCase.getCity();
+    final firstName = await localDataUseCase.getFirstName();
+    final lastName = await localDataUseCase.getLastName();
+    final userName = await localDataUseCase.getUserName();
+    final emailAddress = await localDataUseCase.getEmail();
+    final profilePic = await localDataUseCase.getProfilePic();
+    final phoneNumber = await localDataUseCase.getPhoneNumber();
+    final dialCode = await localDataUseCase.getDialCode();
 
     _instance ??= LocalEventQueue();
     await _instance!.init();
@@ -69,8 +74,7 @@ class EventQueueProvider {
         'os': deviceInfoManager.deviceOs,
         'os_version': deviceInfoManager.deviceOsVersion,
         'type': deviceInfoManager.deviceType,
-        'name':
-            '${deviceInfoManager.deviceManufacturer} ${deviceInfoManager.deviceModel}',
+        'name': '${deviceInfoManager.deviceManufacturer} ${deviceInfoManager.deviceModel}',
       },
       'location': {
         'city': city,
@@ -90,7 +94,15 @@ class EventQueueProvider {
       config: builder.build(),
       options: rudderOptions,
     );
-    RudderController.instance.identify(userId);
+    final rudderTraits = RudderTraits();
+    rudderTraits.put('first_name', firstName);
+    rudderTraits.put('last_name', lastName);
+    rudderTraits.put('user_name', userName);
+    rudderTraits.put('profile_pic', profilePic);
+    rudderTraits.put('dialCode', dialCode);
+    rudderTraits.put('phoneNumber', phoneNumber);
+    rudderTraits.putEmail(emailAddress);
+    RudderController.instance.identify(userId, traits: rudderTraits);
   }
 
   /// Check if the event queue is initialized
@@ -188,16 +200,14 @@ class LocalEventQueue with WidgetsBindingObserver {
       return;
     }
     final box = Hive.box<LocalEvent>(_boxName);
-    debugPrint(
-        '${runtimeType.toString()} Box length before flushing: ${box.length}');
+    debugPrint('${runtimeType.toString()} Box length before flushing: ${box.length}');
 
     final events = box.values.toList();
 
     if (events.isEmpty) return;
 
     await box.clear();
-    debugPrint(
-        '${runtimeType.toString()} Box length after flushing: ${box.length}');
+    debugPrint('${runtimeType.toString()} Box length after flushing: ${box.length}');
   }
 
   /// cleanup

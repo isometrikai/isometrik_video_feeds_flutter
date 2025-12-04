@@ -113,6 +113,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   Timer? _muteAnimationTimer;
   double _muteIconScale = 1.0;
 
+  // Image view tracking
+  Timer? _imageViewTimer;
+  bool _hasLoggedImageViewEvent = false;
+
   @override
   void initState() {
     _onStartInit();
@@ -172,6 +176,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     // Preload next videos for smoother experience
     _preloadNextVideos();
+
+    // Start image view timer only if current media is an image
+    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kPictureType) {
+      _startImageViewTimer();
+    }
   }
 
   /// Method For Update The Tree Carefully
@@ -239,6 +248,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         .where((mention) => mention.mediaPosition?.position == _currentPageNotifier.value + 1)
         .toList();
 
+    // Restart image view timer only if new page is an image
+    if (_reelData.mediaMetaDataList[index].mediaType == kPictureType) {
+      _startImageViewTimer();
+    }
+
     mountUpdate();
   }
 
@@ -251,6 +265,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _likeAnimationTimer?.cancel();
     _muteAnimationTimer?.cancel();
     _audioDebounceTimer?.cancel();
+    _imageViewTimer?.cancel();
     // Analytics logging is now handled by VideoPlayerWidget
     _logImagePostEvent();
     super.dispose();
@@ -1308,9 +1323,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       'view_source': 'feed',
       'category': EventCategory.postEngagement.value,
     };
-    sendAnalyticsEvent(
-        saveAction == SaveAction.save ? EventType.postSaved.value : EventType.postHidden.value,
-        eventMap);
+    if (saveAction == SaveAction.save) {
+      sendAnalyticsEvent(EventType.postSaved.value, eventMap);
+    }
   }
 
   void _triggerLikeAnimation() {
@@ -1598,9 +1613,23 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     sendAnalyticsEvent(EventType.videoSoundToggled.value, eventMap);
   }
 
-  /// log image post event
-  void _logImagePostEvent() {
+  /// Starts the image view timer if current media is an image
+  void _startImageViewTimer() {
+    // Cancel any existing timer
+    _imageViewTimer?.cancel();
+
+    // Only start timer for image posts
     if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kPictureType) {
+      _imageViewTimer = Timer(const Duration(seconds: 2), () {
+        _hasLoggedImageViewEvent = true;
+      });
+    }
+  }
+
+  /// log image post event if user has watched for at least 2 seconds
+  void _logImagePostEvent() {
+    if (_hasLoggedImageViewEvent &&
+        _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kPictureType) {
       sendAnalyticsEvent(EventType.postViewed.value, {});
     }
   }

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -23,8 +22,7 @@ class CameraCaptureView extends StatefulWidget {
   State<CameraCaptureView> createState() => _CameraCaptureViewState();
 }
 
-class _CameraCaptureViewState extends State<CameraCaptureView>
-    with WidgetsBindingObserver {
+class _CameraCaptureViewState extends State<CameraCaptureView> with WidgetsBindingObserver {
   late final CameraBloc _cameraBloc; //IsmInjectionUtils.getBloc<CameraBloc>();
   final _imagePicker = ImagePicker();
 
@@ -39,9 +37,7 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
   Future<void> _initializeCameraWithRetry() async {
     _cameraBloc.add(CameraInitializeEvent());
     _cameraBloc.add(CameraSetMediaTypeEvent(
-        mediaType: widget.mediaType == MediaType.both
-            ? MediaType.photo
-            : widget.mediaType));
+        mediaType: widget.mediaType == MediaType.both ? MediaType.photo : widget.mediaType));
     _cameraBloc.add(CameraSetDurationEvent(duration: 60));
   }
 
@@ -61,8 +57,7 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
       return;
     }
 
-    if (state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.paused) {
+    if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
     } else if (state == AppLifecycleState.resumed) {
       if (controller.value.hasError || !controller.value.isInitialized) {
         _cameraBloc.add(CameraInitializeEvent());
@@ -174,9 +169,8 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
             ),
             onPressed: () => Navigator.pop(context),
           ),
-          actions: (_cameraBloc.selectedMediaType == MediaType.video)
-              ? _buildDurationSelection()
-              : [],
+          actions:
+              (_cameraBloc.selectedMediaType == MediaType.video) ? _buildDurationSelection() : [],
         ),
         body: SafeArea(
           child: Column(
@@ -205,8 +199,7 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
                   ],
                 ),
               ),
-              if (_cameraBloc.recordedVideoPath == null ||
-                  _cameraBloc.isRecording) ...[
+              if (_cameraBloc.recordedVideoPath == null || _cameraBloc.isRecording) ...[
                 _buildModeSelection(),
               ],
             ],
@@ -243,8 +236,7 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
 
   Widget _buildBottomControls() => SafeArea(
         child: Padding(
-          padding:
-              IsrDimens.edgeInsetsAll(IsrDimens.sixteen).copyWith(bottom: 0),
+          padding: IsrDimens.edgeInsetsAll(IsrDimens.sixteen).copyWith(bottom: 0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -260,8 +252,7 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
-                        if (_cameraBloc.recordedVideoPath != null &&
-                            !_cameraBloc.isRecording) ...[
+                        if (_cameraBloc.recordedVideoPath != null && !_cameraBloc.isRecording) ...[
                           _buildDiscardButton(),
                           16.responsiveVerticalSpace,
                         ],
@@ -274,8 +265,7 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        _cameraBloc.recordedVideoPath != null &&
-                                !_cameraBloc.isRecording
+                        _cameraBloc.recordedVideoPath != null && !_cameraBloc.isRecording
                             ? _buildRetakeButton()
                             : _buildCameraSwitchButton(),
                       ],
@@ -312,9 +302,7 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
     return InkWell(
       onTap: () {
         final controller = _cameraBloc.cameraController;
-        if (controller != null &&
-            controller.value.isInitialized &&
-            !controller.value.hasError) {
+        if (controller != null && controller.value.isInitialized && !controller.value.hasError) {
           _cameraBloc.add(CameraSetZoomEvent(zoomLevel: zoomLevel));
         } else {
           Utility.showToastMessage('Camera not ready');
@@ -343,9 +331,7 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
   Widget _buildFlashButton() => GestureDetector(
         onTap: () {
           final controller = _cameraBloc.cameraController;
-          if (controller != null &&
-              controller.value.isInitialized &&
-              !controller.value.hasError) {
+          if (controller != null && controller.value.isInitialized && !controller.value.hasError) {
             _cameraBloc.add(CameraToggleFlashEvent());
           } else {
             Utility.showToastMessage('Camera not ready');
@@ -369,9 +355,8 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
     final isRecording = _cameraBloc.isRecording;
     final hasRecordedVideo = _cameraBloc.recordedVideoPath != null;
     final controller = _cameraBloc.cameraController;
-    final isControllerReady = controller != null &&
-        controller.value.isInitialized &&
-        !controller.value.hasError;
+    final isControllerReady =
+        controller != null && controller.value.isInitialized && !controller.value.hasError;
 
     return GestureDetector(
         onTap: () {
@@ -426,9 +411,7 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
   Widget _buildCameraSwitchButton() => GestureDetector(
         onTap: () {
           final controller = _cameraBloc.cameraController;
-          if (controller != null &&
-              controller.value.isInitialized &&
-              !controller.value.hasError) {
+          if (controller != null && controller.value.isInitialized && !controller.value.hasError) {
             _cameraBloc.add(CameraSwitchCameraEvent());
           } else {
             Utility.showToastMessage('Camera not ready');
@@ -465,8 +448,7 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
       );
 
   Widget _buildModeButton(String label, IconData icon, MediaType? mediaType) {
-    final isSelected =
-        mediaType == null ? false : _cameraBloc.selectedMediaType == mediaType;
+    final isSelected = mediaType == null ? false : _cameraBloc.selectedMediaType == mediaType;
 
     return GestureDetector(
       onTap: () {
@@ -574,8 +556,7 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
 
     // Auto-play the video when preview is shown
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (state.videoController.value.isInitialized &&
-          !state.videoController.value.isPlaying) {
+      if (state.videoController.value.isInitialized && !state.videoController.value.isPlaying) {
         state.videoController.play();
       }
     });
@@ -709,8 +690,8 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
       );
 
       if (image != null) {
-        _cameraBloc.add(CameraSetExternalMediaEvent(
-            mediaPath: image.path, mediaType: MediaType.photo));
+        _cameraBloc
+            .add(CameraSetExternalMediaEvent(mediaPath: image.path, mediaType: MediaType.photo));
         _onCompleteCapture(image.path, MediaType.photo);
       }
     } catch (e) {
@@ -726,8 +707,8 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
       );
 
       if (video != null) {
-        _cameraBloc.add(CameraSetExternalMediaEvent(
-            mediaPath: video.path, mediaType: MediaType.video));
+        _cameraBloc
+            .add(CameraSetExternalMediaEvent(mediaPath: video.path, mediaType: MediaType.video));
         _onCompleteCapture(video.path, MediaType.video);
       }
     } catch (e) {

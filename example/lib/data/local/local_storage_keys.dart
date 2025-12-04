@@ -20,5 +20,6 @@ class LocalStorageKeys {
   static const String lastName = 'lastName';
   static const String profilePic = 'profilePic';
   static const String phoneNumber = 'phoneNumber';
+  static const String dialCode = 'dialCode';
   static const String isFirstTimeVisit = 'isFirstTimeVisit';
 }
