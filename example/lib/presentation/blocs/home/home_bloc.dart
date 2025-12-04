@@ -105,6 +105,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     final userName = await _localDataUseCase.getFirstName();
     final firstName = await _localDataUseCase.getFirstName();
     final lastName = await _localDataUseCase.getLastName();
+    final profilePic = await _localDataUseCase.getProfilePic();
+    final email = await _localDataUseCase.getEmail();
     final appVersion = await Utility.getAppVersion();
     final accessToken = await _localDataUseCase.getAccessToken();
     await isr.IsrVideoReelConfig.initializeSdk(
@@ -114,6 +116,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         userName: userName,
         firstName: firstName,
         lastName: lastName,
+        profilePic: profilePic,
+        email: email,
       ),
       googleServiceJsonPath: AssetConstants.googleServiceJson,
       getCurrentBuildContext: () => exNavigatorKey.currentContext,

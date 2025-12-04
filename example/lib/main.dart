@@ -26,6 +26,10 @@ Future<void> _initializeReelsSdk() async {
   final userName = await _localDataUseCase.getFirstName();
   final firstName = await _localDataUseCase.getFirstName();
   final lastName = await _localDataUseCase.getLastName();
+  final profilePic = await _localDataUseCase.getProfilePic();
+  final email = await _localDataUseCase.getEmail();
+  final dialCode = await _localDataUseCase.getDialCode();
+  final mobileNumber = await _localDataUseCase.getPhoneNumber();
   final appVersion = await Utility.getAppVersion();
   await isr.IsrVideoReelConfig.initializeSdk(
     baseUrl: AppUrl.appBaseUrl,
@@ -34,6 +38,10 @@ Future<void> _initializeReelsSdk() async {
       userName: userName,
       firstName: firstName,
       lastName: lastName,
+      profilePic: profilePic,
+      email: email,
+      dialCode: dialCode,
+      mobileNumber: mobileNumber,
     ),
     rudderStackDataPlaneUrl: 'https://houseofappobxa.dataplane.rudderstack.com',
     rudderStackWriteKey: '360M58NTcDMelJWL0b5F4hYE4av',
@@ -64,17 +72,29 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => MultiBlocProvider(
         providers: [
-          BlocProvider(create: (context) => InjectionUtils.getBloc<SplashBloc>()),
-          BlocProvider(create: (context) => InjectionUtils.getBloc<LandingBloc>()),
+          BlocProvider(
+              create: (context) => InjectionUtils.getBloc<SplashBloc>()),
+          BlocProvider(
+              create: (context) => InjectionUtils.getBloc<LandingBloc>()),
           BlocProvider(create: (context) => InjectionUtils.getBloc<AuthBloc>()),
           BlocProvider(create: (context) => InjectionUtils.getBloc<HomeBloc>()),
-          BlocProvider(create: (context) => InjectionUtils.getBloc<CreatePostBloc>()),
-          BlocProvider(create: (context) => InjectionUtils.getBloc<NavItemCubit>()),
-          BlocProvider(create: (context) => InjectionUtils.getBloc<ProfileBloc>()),
-          BlocProvider(create: (context) => InjectionUtils.getBloc<UploadProgressCubit>()),
-          BlocProvider(create: (context) => InjectionUtils.getBloc<CommentActionCubit>()),
-          BlocProvider(create: (context) => InjectionUtils.getBloc<SearchUserBloc>()),
-          BlocProvider(create: (context) => InjectionUtils.getBloc<SearchLocationBloc>()),
+          BlocProvider(
+              create: (context) => InjectionUtils.getBloc<CreatePostBloc>()),
+          BlocProvider(
+              create: (context) => InjectionUtils.getBloc<NavItemCubit>()),
+          BlocProvider(
+              create: (context) => InjectionUtils.getBloc<ProfileBloc>()),
+          BlocProvider(
+              create: (context) =>
+                  InjectionUtils.getBloc<UploadProgressCubit>()),
+          BlocProvider(
+              create: (context) =>
+                  InjectionUtils.getBloc<CommentActionCubit>()),
+          BlocProvider(
+              create: (context) => InjectionUtils.getBloc<SearchUserBloc>()),
+          BlocProvider(
+              create: (context) =>
+                  InjectionUtils.getBloc<SearchLocationBloc>()),
           ...isr.IsrVideoReelConfig.getIsmSingletonBlocProviders(),
         ],
         child: ScreenUtilInit(

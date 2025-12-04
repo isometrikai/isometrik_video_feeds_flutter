@@ -92,6 +92,10 @@ class IsrLocalStorageRepositoryImpl implements IsrLocalStorageRepository {
   Future<String> getPhoneNumber() async => await getSecuredValue(LocalStorageKeys.phoneNumber);
 
   @override
+  Future<String> getDialCode() async =>
+      await getValue(LocalStorageKeys.dialCode, SavedValueDataType.string) as String;
+
+  @override
   Future<String> getFirstName() async =>
       await getValue(LocalStorageKeys.firstName, SavedValueDataType.string) as String;
 
@@ -136,6 +140,10 @@ class IsrLocalStorageRepositoryImpl implements IsrLocalStorageRepository {
 
   @override
   void savePhoneNumber(String value) => saveSecuredValue(LocalStorageKeys.phoneNumber, value);
+
+  @override
+  void saveDialCode(String value) =>
+      saveValue(LocalStorageKeys.dialCode, value, SavedValueDataType.string);
 
   @override
   void saveFirstName(String value) =>

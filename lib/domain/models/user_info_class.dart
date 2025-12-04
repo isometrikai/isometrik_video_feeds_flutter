@@ -7,6 +7,9 @@ class UserInfoClass {
         lastName: json['lastName'] as String?,
         userId: json['userId'] as String?,
         profilePic: json['profilePic'] as String?,
+        email: json['email'] as String?,
+        dialCode: json['dialCode'] as String?,
+        mobileNumber: json['mobileNumber'] as String?,
       );
 
   UserInfoClass({
@@ -15,6 +18,9 @@ class UserInfoClass {
     this.lastName,
     this.userId,
     this.profilePic,
+    this.email,
+    this.dialCode,
+    this.mobileNumber,
   });
 
   final String? userName;
@@ -22,6 +28,9 @@ class UserInfoClass {
   final String? lastName;
   final String? userId;
   final String? profilePic;
+  final String? email;
+  final String? dialCode;
+  final String? mobileNumber;
 
   Map<String, dynamic> toJson() => {
         'userName': userName,
@@ -29,6 +38,9 @@ class UserInfoClass {
         'lastName': lastName,
         'userId': userId,
         'profilePic': profilePic,
+        'email': email,
+        'dialCode': dialCode,
+        'mobileNumber': mobileNumber,
       };
 
   @override

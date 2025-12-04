@@ -9,7 +9,6 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
-import 'package:ism_video_reel_player/integration/analytics/analytics.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -46,13 +45,12 @@ class IsrVideoReelConfig {
     // ✅ Initialize SDK router
     await _storeHeaderValues(defaultHeaders);
     await _initializeHive();
+    Bloc.observer = IsrAppBlocObserver();
+    await _saveUserInformation(userInfoClass: userInfoClass);
     await _initializeRudderStack(
       rudderStackWriteKey: rudderStackWriteKey,
       rudderStackDataPlaneUrl: rudderStackDataPlaneUrl,
-      userId: userInfoClass?.userId ?? '',
     );
-    Bloc.observer = IsrAppBlocObserver();
-    await _saveUserInformation(userInfoClass: userInfoClass);
     isSdkInitialize = true;
   }
 
@@ -73,6 +71,12 @@ class IsrVideoReelConfig {
         LocalStorageKeys.lastName, userInfoClass?.lastName, SavedValueDataType.string);
     await localStorageManager.saveValue(
         LocalStorageKeys.profilePic, userInfoClass?.profilePic, SavedValueDataType.string);
+    await localStorageManager.saveValue(
+        LocalStorageKeys.email, userInfoClass?.email, SavedValueDataType.string);
+    await localStorageManager.saveValue(
+        LocalStorageKeys.phoneNumber, userInfoClass?.mobileNumber, SavedValueDataType.string);
+    await localStorageManager.saveValue(
+        LocalStorageKeys.dialCode, userInfoClass?.dialCode, SavedValueDataType.string);
   }
 
   static void precacheVideos(List<String> mediaUrls) async {
@@ -92,15 +96,12 @@ class IsrVideoReelConfig {
   static Future<void> _initializeRudderStack({
     required String rudderStackWriteKey,
     required String rudderStackDataPlaneUrl,
-    required String userId,
   }) async {
     // Initialize EventQueueProvider with callback
     await EventQueueProvider.initialize(
       rudderStackWriteKey: rudderStackWriteKey,
       rudderStackDataPlaneUrl: rudderStackDataPlaneUrl,
-      userId: userId,
     );
-    RudderStackAnalyticsService().onLogin(userId);
   }
 
   static Future<void> _storeHeaderValues(Map<String, dynamic> defaultHeaders) async {

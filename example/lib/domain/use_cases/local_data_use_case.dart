@@ -24,6 +24,8 @@ class LocalDataUseCase extends BaseUseCase {
 
   Future<String> getPhoneNumber() async => await repository.getPhoneNumber();
 
+  Future<String> getDialCode() async => await repository.getDialCode();
+
   Future<String> getFirstName() async => await repository.getFirstName();
 
   Future<String> getLastName() async => await repository.getLastName();
@@ -43,6 +45,8 @@ class LocalDataUseCase extends BaseUseCase {
   void saveRefreshToken(String value) => repository.saveRefreshToken(value);
 
   void savePhoneNumber(String value) => repository.savePhoneNumber(value);
+
+  void saveDialCode(String value) => repository.saveDialCode(value);
 
   void saveFirstName(String value) => repository.saveFirstName(value);
 

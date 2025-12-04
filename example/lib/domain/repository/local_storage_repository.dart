@@ -29,6 +29,8 @@ abstract class LocalStorageRepository extends BaseRepository {
 
   Future<String> getPhoneNumber();
 
+  Future<String> getDialCode();
+
   Future<String> getFirstName();
 
   Future<String> getLastName();
@@ -46,6 +48,8 @@ abstract class LocalStorageRepository extends BaseRepository {
   void saveRefreshToken(String value);
 
   void savePhoneNumber(String value);
+
+  void saveDialCode(String value);
 
   void saveEmail(String value);
 

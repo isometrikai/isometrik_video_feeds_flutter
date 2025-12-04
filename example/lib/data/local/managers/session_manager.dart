@@ -17,6 +17,7 @@ class SessionManager {
     saveLastName(data?.lastName ?? '');
     saveFullName('${data?.firstName ?? ''} ${data?.lastName ?? ''}');
     savePhoneNumber(data?.mobile ?? '');
+    saveDialCode(data?.countryCode ?? '');
     saveCountryId(DefaultValues.defaultCountryId);
     saveEmail(data?.email ?? '');
     saveProfilePic(data?.profilePic ?? '');
@@ -83,6 +84,14 @@ class SessionManager {
 
   Future<String> getPhoneNumber() async =>
       await _localStorageManager.getSecuredValue(LocalStorageKeys.phoneNumber);
+
+  void saveDialCode(String dialCode) {
+    _localStorageManager.saveValue(
+        LocalStorageKeys.dialCode, dialCode, SavedValueDataType.string);
+  }
+
+  Future<String> getDialCode() async => await _localStorageManager.getValue(
+      LocalStorageKeys.dialCode, SavedValueDataType.string) as String;
 
   void saveCountryId(String countryId) {
     _localStorageManager.saveValue(
