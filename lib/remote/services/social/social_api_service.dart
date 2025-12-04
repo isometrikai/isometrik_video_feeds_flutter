@@ -60,7 +60,6 @@ abstract class SocialApiService extends BaseService {
   Future<ResponseModel> likePost({
     required bool isLoading,
     required String postId,
-    required String userId,
     required LikeAction likeAction,
     required Header header,
   });

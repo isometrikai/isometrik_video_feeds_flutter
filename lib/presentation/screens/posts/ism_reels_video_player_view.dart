@@ -8,6 +8,7 @@ import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/video_player_widget.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/like_action_widget.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:lottie/lottie.dart';
@@ -27,7 +28,8 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
     this.onVideoCompleted,
     this.onTapMentionTag,
     this.onTapCartIcon,
-    this.overlayPadding,
+    required this.index,
+    required this.reelsConfig,
   });
 
   final VideoCacheManager? videoCacheManager;
@@ -41,7 +43,9 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
   final VoidCallback? onVideoCompleted;
   final Function(List<MentionMetaData>)? onTapMentionTag;
   final Function(String)? onTapCartIcon;
-  final EdgeInsetsGeometry? overlayPadding;
+  final int index;
+  final ReelsConfig reelsConfig;
+
 
   @override
   State<IsmReelsVideoPlayerView> createState() => _IsmReelsVideoPlayerViewState();
@@ -512,7 +516,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     return TapHandler(
       onTap: () async {
         _pauseForNavigation();
-        await _reelData.onTapPlace?.call(placeList);
+        await widget.reelsConfig.onTapPlace?.call(_reelData, placeList);
         _resumeAfterNavigation();
       },
       child: Row(
@@ -658,18 +662,19 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                           stops: const [0.0, 0.3, 0.7, 1.0],
                         ),
                       ),
-                      padding: widget.overlayPadding,
+                      padding: widget.reelsConfig.overlayPadding,
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         mainAxisSize: MainAxisSize.max,
                         children: [
                           Expanded(
                             child: SingleChildScrollView(
-                              child: _reelData.footerWidget?.child ??
+                              child: widget.reelsConfig.footerWidget?.call(_reelData).child ??
                                   _buildBottomSectionWithoutOverlay(),
                             ),
                           ),
-                          _reelData.actionWidget?.child ?? _buildRightSideActions(),
+                          widget.reelsConfig.actionWidget?.call(_reelData).child ??
+                              _buildRightSideActions(),
                         ],
                       ),
                     ),
@@ -716,9 +721,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 TapHandler(
                   borderRadius: IsrDimens.thirty,
                   onTap: () async {
-                    if (_reelData.onTapUserProfile != null) {
+                    if (widget.reelsConfig.onTapUserProfile != null) {
                       _pauseForNavigation();
-                      await _reelData.onTapUserProfile!(true);
+                      await widget.reelsConfig.onTapUserProfile!(_reelData);
                       _resumeAfterNavigation();
                     }
                   },
@@ -775,16 +780,23 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 ),
               ],
               if (_reelData.postSetting?.isLikeButtonVisible == true)
-                ValueListenableBuilder(
-                    valueListenable: _isLikeLoading,
-                    builder: (context, value, child) => _buildActionButton(
-                          icon: _reelData.isLiked == true
-                              ? AssetConstants.icLikeSelected
-                              : AssetConstants.icLikeUnSelected,
-                          label: _reelData.likesCount.toString(),
-                          onTap: _callLikeFunction,
-                          isLoading: value,
-                        )),
+                LikeActionWidget(
+                  // key: ValueKey('post_like_${_reelData.postId}'),
+                  postId: _reelData.postId ?? '',
+                  builder: (bool isLoading, bool isLiked, int likeCount, void Function() onTap) {
+                    _reelData.isLiked = isLiked;
+                    _reelData.likesCount = likeCount;
+                    _isLikeLoading.value = isLoading;
+                    return _buildActionButton(
+                      icon: isLiked == true
+                          ? AssetConstants.icLikeSelected
+                          : AssetConstants.icLikeUnSelected,
+                      label: likeCount.toString(),
+                      onTap: onTap,
+                      isLoading: isLoading,
+                    );
+                  },
+                ),
               if (_reelData.postSetting?.isCommentButtonVisible == true)
                 StatefulBuilder(
                   builder: (context, setBuilderState) => _buildActionButton(
@@ -800,9 +812,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   icon: AssetConstants.icShareIcon,
                   label: IsrTranslationFile.share,
                   onTap: () async {
-                    if (_reelData.onTapShare != null) {
+                    if (widget.reelsConfig.onTapShare != null) {
                       _pauseForNavigation();
-                      _reelData.onTapShare!();
+                      await widget.reelsConfig.onTapShare!(_reelData);
                       _resumeAfterNavigation();
                     }
                   },
@@ -952,9 +964,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                 Flexible(
                                   child: TapHandler(
                                     onTap: () async {
-                                      if (_reelData.onTapUserProfile != null) {
+                                      if (widget.reelsConfig.onTapUserProfile != null) {
                                         _pauseForNavigation();
-                                        await _reelData.onTapUserProfile?.call(false);
+                                        await widget.reelsConfig
+                                            .onTapUserProfile?.call(_reelData);
                                         _resumeAfterNavigation();
                                       }
                                     },
@@ -1089,6 +1102,74 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     // Hide if it's self profile
     if (_reelData.isSelfProfile == true) return const SizedBox.shrink();
 
+    return FollowActionWidget(
+      postId: _reelData.postId ?? '',
+      userId: _reelData.userId ?? '',
+      builder: (isLoading, isFollowing, onTap) {
+        _reelData.isFollow = isFollowing;
+        if (isLoading) {
+          return SizedBox(
+            width: IsrDimens.sixty,
+            height: IsrDimens.twentyFour,
+            child: Center(
+              child: SizedBox(
+                width: IsrDimens.sixteen,
+                height: IsrDimens.sixteen,
+                child: const CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          );
+        } else if (!isFollowing && _reelData.postSetting?.isUnFollowButtonVisible == true) {
+          return Container(
+            height: IsrDimens.twentyFour,
+            decoration: BoxDecoration(
+              color: Theme.of(context).primaryColor,
+              borderRadius: BorderRadius.circular(IsrDimens.twenty),
+            ),
+            child: MaterialButton(
+              minWidth: IsrDimens.sixty,
+              height: IsrDimens.twentyFour,
+              padding: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twelve),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(IsrDimens.twenty)),
+              onPressed: onTap,
+              child: Text(
+                IsrTranslationFile.follow,
+                style: IsrStyles.white12.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          );
+        } else if (isFollowing && _reelData.postSetting?.isFollowButtonVisible == true) {
+          return Container(
+            height: IsrDimens.twentyFour,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(IsrDimens.twenty),
+            ),
+            child: MaterialButton(
+              minWidth: IsrDimens.sixty,
+              height: IsrDimens.twentyFour,
+              padding: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twelve),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(IsrDimens.twenty),
+              ),
+              onPressed: onTap,
+              // <-- your unfollow logic
+              child: Text(
+                IsrTranslationFile.following,
+                style: IsrStyles.primaryText12.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          );
+        }
+        return const SizedBox.shrink();
+      },
+    );
+
     // FOLLOW button
     if (_reelData.postSetting?.isFollowButtonVisible == true && _reelData.isFollow == false) {
       return ValueListenableBuilder<bool>(
@@ -1191,13 +1272,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   Future<void> _callLikeFunction() async {
-    if (widget.onPressLikeButton == null || _isLikeLoading.value) return;
-    _isLikeLoading.value = true;
-    try {
-      await widget.onPressLikeButton!();
-      _logLikeEvent(_reelData, _reelData.isLiked == true ? LikeAction.like : LikeAction.unlike);
-    } finally {
-      _isLikeLoading.value = false;
+    if (!_isLikeLoading.value) {
+      if (_reelData.isLiked == true) {
+        context.getOrCreateBloc<IsmSocialActionCubit>().likePost(_reelData.postId ?? '', _reelData.likesCount ?? 0);
+      } else {
+        context.getOrCreateBloc<IsmSocialActionCubit>().unLikePost(_reelData.postId ?? '', _reelData.likesCount ?? 0);
+      }
     }
   }
 
@@ -1399,11 +1479,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   void _handleCommentClick(StateSetter setBuilderState) async {
-    if (_reelData.onTapComment != null) {
+    if (widget.reelsConfig.onTapComment != null) {
       // Pause video before opening comments
       _pauseForNavigation();
 
-      final commentCount = await _reelData.onTapComment!(_reelData.commentCount ?? 0);
+      final commentCount =
+          await widget.reelsConfig.onTapComment!(_reelData, _reelData.commentCount ?? 0);
 
       // Resume video when coming back
       _resumeAfterNavigation();

@@ -36,60 +36,36 @@ class _HomeScreenState extends State<HomeScreen> {
             title: TranslationFile.forYou,
             reelsDataList: [],
             startingPostIndex: 0,
-            onTapCartIcon: (productIds, postId, userId) {
-              debugPrint('productIds: $productIds');
-              debugPrint('postId: $postId');
-            },
           ),
           isr.TabDataModel(
             postSectionType: isr.PostSectionType.following,
             title: TranslationFile.following,
             reelsDataList: [],
             startingPostIndex: 0,
-            onTapCartIcon: (productIds, postId, userId) {
-              debugPrint('productIds: $productIds');
-              debugPrint('postId: $postId');
-            },
           ),
           isr.TabDataModel(
             postSectionType: isr.PostSectionType.trending,
             title: TranslationFile.trending,
             reelsDataList: [],
             startingPostIndex: 0,
-            onTapCartIcon: (productIds, postId, userId) {
-              debugPrint('productIds: $productIds');
-              debugPrint('postId: $postId');
-            },
           ),
           isr.TabDataModel(
             postSectionType: isr.PostSectionType.myPost,
             title: TranslationFile.myPost,
             reelsDataList: [],
             startingPostIndex: 0,
-            onTapCartIcon: (productIds, postId, userId) {
-              debugPrint('productIds: $productIds');
-              debugPrint('postId: $postId');
-            },
           ),
           isr.TabDataModel(
             postSectionType: isr.PostSectionType.savedPost,
             title: TranslationFile.saved,
             reelsDataList: [],
             startingPostIndex: 0,
-            onTapCartIcon: (productIds, postId, userId) {
-              debugPrint('productIds: $productIds');
-              debugPrint('postId: $postId');
-            },
           ),
           isr.TabDataModel(
             postSectionType: isr.PostSectionType.myTaggedPost,
             title: TranslationFile.tagged,
             reelsDataList: [],
             startingPostIndex: 0,
-            onTapCartIcon: (productIds, postId, userId) {
-              debugPrint('productIds: $productIds');
-              debugPrint('postId: $postId');
-            },
           ),
           isr.TabDataModel(
             postSectionType: isr.PostSectionType.singlePost,
@@ -97,10 +73,6 @@ class _HomeScreenState extends State<HomeScreen> {
             reelsDataList: [],
             postId: 'post_ab8fd4f9c562', //hardCoded post id
             startingPostIndex: 0,
-            onTapCartIcon: (productIds, postId, userId) {
-              debugPrint('productIds: $productIds');
-              debugPrint('postId: $postId');
-            },
           ),
           isr.TabDataModel(
             postSectionType: isr.PostSectionType.otherUserPost,
@@ -109,10 +81,6 @@ class _HomeScreenState extends State<HomeScreen> {
             userId:
                 '67c69bb7e0295f209db1d0e9', //hardCoded userId of user asjadibrahim10215
             startingPostIndex: 0,
-            onTapCartIcon: (productIds, postId, userId) {
-              debugPrint('productIds: $productIds');
-              debugPrint('postId: $postId');
-            },
           ),
         ], // ✅ Already working!
       );
@@ -206,10 +174,6 @@ class _HomeScreenState extends State<HomeScreen> {
             .map((_) => isr.TimeLineData.fromMap(_.toMap()))
             .toList(),
         startingPostIndex: startPostIndex,
-        onTapCartIcon: (productIds, postId, userId) {
-          debugPrint('productIds: $productIds');
-          debugPrint('postId: $postId');
-        },
       );
 
   /// Handles refresh for user posts
@@ -279,14 +243,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 postData.tags?.places.isEmptyOrNull == false
             ? postData.tags?.places?.map(_getPlaceMetaData).toList()
             : null,
-        onTapMentionTag: (mentionList) async {
-          debugPrint('onTapMentionTag: ${jsonEncode(mentionList)}');
-          return mentionList;
-        },
+        // onTapMentionTag: (mentionList) async {
+        //   debugPrint('onTapMentionTag: ${jsonEncode(mentionList)}');
+        //   return mentionList;
+        // },
         postId: postData.id,
-        onCreatePost: () async => await _handleCreatePost(),
-        mediaMetaDataList:
-            postData.media?.map(_getMediaMetaData).toList() ?? [],
+        // onCreatePost: () async => await _handleCreatePost(),
+        mediaMetaDataList: postData.media?.map(_getMediaMetaData).toList() ?? [],
         // actionWidget: _buildActionButtons(postData),
         // footerWidget: _buildFooter(postData),
         userId: postData.user?.id ?? '',
@@ -302,53 +265,51 @@ class _HomeScreenState extends State<HomeScreen> {
         isVerifiedUser: false,
         productCount: postData.tags?.products?.length ?? 0,
         description: postData.caption ?? '',
-        onTapUserProfile: (isSelfProfile) {
-          debugPrint('onTapUserProfile: $isSelfProfile');
-        },
-        onTapComment: (totalCommentsCount) async {
-          final result =
-              await _handleCommentAction(postData.id ?? '', totalCommentsCount);
-          return result;
-        },
-        onPressMoreButton: () async {
-          final result = await _handleMoreOptions(postData);
-          return result;
-        },
-        onPressLike: (isLiked) async => _handleLikeAction(isLiked, postData),
-        onPressSave: (isSavedPost) async {
-          try {
-            final completer = Completer<bool>();
-            _homeBloc.add(SavePostEvent(
-              postId: postData.id ?? '',
-              isSaved: isSavedPost,
-              onComplete: (success) {
-                completer.complete(success);
-              },
-            ));
-            return await completer.future;
-          } catch (e) {
-            return false;
-          }
-        },
-        onPressFollow: (userId, isFollow) async {
-          try {
-            final completer = Completer<bool>();
-            _homeBloc.add(FollowUserEvent(
-              followingId: userId,
-              onComplete: (success) {
-                completer.complete(success);
-              },
-              followAction:
-                  isFollow ? FollowAction.unfollow : FollowAction.follow,
-            ));
-            return await completer.future;
-          } catch (e) {
-            return false;
-          }
-        },
-        onTapCartIcon: () {
-          _handleCartAction(postData);
-        },
+        // onTapUserProfile: (isSelfProfile) {
+        //   debugPrint('onTapUserProfile: $isSelfProfile');
+        // },
+        // onTapComment: (totalCommentsCount) async {
+        //   final result = await _handleCommentAction(postData.id ?? '', totalCommentsCount);
+        //   return result;
+        // },
+        // onPressMoreButton: () async {
+        //   final result = await _handleMoreOptions(postData);
+        //   return result;
+        // },
+        // onPressLike: (isLiked) async => _handleLikeAction(isLiked, postData),
+        // onPressSave: (isSavedPost) async {
+        //   try {
+        //     final completer = Completer<bool>();
+        //     _homeBloc.add(SavePostEvent(
+        //       postId: postData.id ?? '',
+        //       isSaved: isSavedPost,
+        //       onComplete: (success) {
+        //         completer.complete(success);
+        //       },
+        //     ));
+        //     return await completer.future;
+        //   } catch (e) {
+        //     return false;
+        //   }
+        // },
+        // onPressFollow: (userId, isFollow) async {
+        //   try {
+        //     final completer = Completer<bool>();
+        //     _homeBloc.add(FollowUserEvent(
+        //       followingId: userId,
+        //       onComplete: (success) {
+        //         completer.complete(success);
+        //       },
+        //       followAction: isFollow ? FollowAction.unfollow : FollowAction.follow,
+        //     ));
+        //     return await completer.future;
+        //   } catch (e) {
+        //     return false;
+        //   }
+        // },
+        // onTapCartIcon: () {
+        //   _handleCartAction(postData);
+        // },
       );
 
   /// Handles the more options menu for a post

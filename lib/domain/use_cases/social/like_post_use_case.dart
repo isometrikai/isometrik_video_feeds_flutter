@@ -10,14 +10,12 @@ class LikePostUseCase extends BaseUseCase {
   Future<ApiResult<ResponseClass?>> executeLikePost({
     required bool isLoading,
     required String postId,
-    required String userId,
     required LikeAction likeAction,
   }) async =>
       await super.execute(() async {
         final response = await _repository.likePost(
           isLoading: isLoading,
           postId: postId,
-          userId: userId,
           likeAction: likeAction,
         );
         return ApiResult(

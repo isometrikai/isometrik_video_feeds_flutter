@@ -149,4 +149,9 @@ class IsrVideoReelConfig {
   static void logEvent(String eventName, Map<String, dynamic> eventData) async {
     unawaited(EventQueueProvider.instance.addEvent(eventName, eventData.removeEmptyValues()));
   }
+
+  static List<BlocProvider> getIsmSingletonBlocProviders() => [
+        BlocProvider(
+            create: (_) => IsmInjectionUtils.getBloc<IsmSocialActionCubit>()),
+      ];
 }

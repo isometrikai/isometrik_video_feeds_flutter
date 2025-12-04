@@ -41,6 +41,14 @@ class BlocInjection {
       ),
     );
 
+    IsmInjectionUtils.registerSingletonBloc<IsmSocialActionCubit>(
+        () => IsmSocialActionCubit(
+          IsmInjectionUtils.getUseCase<FollowUnFollowUserUseCase>(),
+          IsmInjectionUtils.getUseCase<GetPostDetailsUseCase>(),
+          IsmInjectionUtils.getUseCase<LikePostUseCase>(),
+        ),
+    );
+
     IsmInjectionUtils.registerBloc<PostListingBloc>(() => PostListingBloc(
           IsmInjectionUtils.getUseCase<GetTaggedPostsUseCase>(),
           IsmInjectionUtils.getUseCase<SearchTagUseCase>(),

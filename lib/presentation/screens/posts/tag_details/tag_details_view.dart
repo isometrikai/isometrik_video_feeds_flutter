@@ -13,10 +13,14 @@ class TagDetailsView extends StatefulWidget {
     super.key,
     required this.tagValue,
     required this.tagType,
+    this.tabConfig = const TabConfig(),
+    this.postConfig = const PostConfig(),
   });
 
   final String tagValue;
   final TagType tagType;
+  final TabConfig tabConfig;
+  final PostConfig postConfig;
 
   @override
   State<TagDetailsView> createState() => _TagDetailsViewState();
@@ -327,6 +331,8 @@ class _TagDetailsViewState extends State<TagDetailsView> {
                     postSectionType: PostSectionType.tagPost,
                     tagValue: widget.tagValue,
                     tagType: widget.tagType,
+                    tabConfig: widget.tabConfig,
+                    postConfig: widget.postConfig,
                   );
                 },
                 child: _buildPostCard(post, index),

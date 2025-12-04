@@ -21,14 +21,16 @@ class IsrAppNavigator {
     required String tagValue,
     required TagType tagType,
     TransitionType? transitionType,
-    Function(String)? onTapProfilePicture,
+    required TabConfig tabConfig,
+    required PostConfig postConfig,
   }) {
     final page = BlocProvider<PostListingBloc>(
       create: (_) => IsmInjectionUtils.getBloc<PostListingBloc>(),
       child: PostListingView(
         tagValue: tagValue,
         tagType: tagType,
-        onTapProfilePicture: onTapProfilePicture,
+        tabConfig: tabConfig,
+        postConfig: postConfig,
       ),
     );
 
@@ -46,7 +48,8 @@ class IsrAppNavigator {
     required double latitude,
     required double longitude,
     TransitionType? transitionType,
-    Function(String)? onTapProfilePicture,
+    required TabConfig tabConfig,
+    required PostConfig postConfig,
   }) {
     final page = BlocProvider<PlaceDetailsBloc>(
       create: (_) => IsmInjectionUtils.getBloc<PlaceDetailsBloc>(),
@@ -55,7 +58,8 @@ class IsrAppNavigator {
         placeName: placeName,
         latitude: latitude,
         longitude: longitude,
-        onTapProfilePicture: onTapProfilePicture,
+        tabConfig: tabConfig,
+        postConfig: postConfig,
       ),
     );
 
@@ -68,6 +72,8 @@ class IsrAppNavigator {
     BuildContext context, {
     required String tagValue,
     required TagType tagType,
+        required TabConfig tabConfig,
+        required PostConfig postConfig,
     TransitionType? transitionType,
   }) {
     final page = BlocProvider<TagDetailsBloc>(
@@ -75,6 +81,8 @@ class IsrAppNavigator {
       child: TagDetailsView(
         tagValue: tagValue,
         tagType: tagType,
+        tabConfig: tabConfig,
+        postConfig: postConfig,
       ),
     );
 
@@ -91,8 +99,8 @@ class IsrAppNavigator {
     required PostSectionType postSectionType,
     String? tagValue,
     TagType? tagType,
-    Function(String)? onTapProfilePicture,
-    Function(List<String>, String, String)? onTapCartIcon,
+        required TabConfig tabConfig,
+        required PostConfig postConfig,
     Function(String, String, double, double)? onTapPlace,
     TransitionType? transitionType,
   }) {
@@ -101,10 +109,6 @@ class IsrAppNavigator {
       postSectionType: postSectionType,
       reelsDataList: postDataList,
       startingPostIndex: startingPostIndex,
-      onTapUserProfile: onTapProfilePicture != null
-          ? (userId) => onTapProfilePicture(userId ?? '')
-          : null,
-      onTapCartIcon: onTapCartIcon,
       tagValue: tagValue,
       tagType: tagType,
     );
@@ -115,6 +119,8 @@ class IsrAppNavigator {
         tabDataModelList: [tabData],
         currentIndex: 0,
         onTapPlace: onTapPlace,
+        tabConfig: tabConfig,
+        postConfig: postConfig,
       ),
     );
 

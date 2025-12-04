@@ -445,14 +445,21 @@ extension BlocSafeGetter on BuildContext {
 
   Widget attachBlocIfNeeded<T extends BlocBase<Object>>({
     required Widget child,
+    T? bloc
   }) {
-    T? bloc;
+
+    // If bloc exists but is closed → ignore it
+    if (bloc != null && bloc.isClosed) {
+      bloc = null;
+    }
 
     // Try reading the bloc from the widget tree
-    try {
-      bloc = read<T>();
-    } catch (_) {
-      bloc = null;
+    if (bloc == null) {
+      try {
+        bloc = read<T>();
+      } catch (_) {
+        bloc = null;
+      }
     }
 
     // If bloc exists but is closed → ignore it

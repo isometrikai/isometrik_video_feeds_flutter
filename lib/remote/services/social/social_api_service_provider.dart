@@ -279,7 +279,6 @@ class SocialApiServiceProvider extends SocialApiService {
   Future<ResponseModel> likePost({
     required bool isLoading,
     required String postId,
-    required String userId,
     required LikeAction likeAction,
     required Header header,
   }) async =>

@@ -75,6 +75,7 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (context) => InjectionUtils.getBloc<CommentActionCubit>()),
           BlocProvider(create: (context) => InjectionUtils.getBloc<SearchUserBloc>()),
           BlocProvider(create: (context) => InjectionUtils.getBloc<SearchLocationBloc>()),
+          ...isr.IsrVideoReelConfig.getIsmSingletonBlocProviders(),
         ],
         child: ScreenUtilInit(
           useInheritedMediaQuery: true,
