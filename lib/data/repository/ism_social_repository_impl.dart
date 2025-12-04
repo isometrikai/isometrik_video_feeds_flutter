@@ -135,7 +135,6 @@ class SocialRepositoryImpl implements SocialRepository {
   Future<CustomResponse<ResponseClass?>> likePost({
     required bool isLoading,
     required String postId,
-    required String userId,
     required LikeAction likeAction,
   }) async {
     try {
@@ -144,7 +143,6 @@ class SocialRepositoryImpl implements SocialRepository {
         isLoading: isLoading,
         header: header,
         postId: postId,
-        userId: userId,
         likeAction: likeAction,
       );
       return _mapper.mapResponseData(response);

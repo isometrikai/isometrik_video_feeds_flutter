@@ -45,6 +45,7 @@ class BlocInjection {
         () => IsmSocialActionCubit(
           IsmInjectionUtils.getUseCase<FollowUnFollowUserUseCase>(),
           IsmInjectionUtils.getUseCase<GetPostDetailsUseCase>(),
+          IsmInjectionUtils.getUseCase<LikePostUseCase>(),
         ),
     );
 

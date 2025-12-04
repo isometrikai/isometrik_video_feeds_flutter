@@ -42,7 +42,6 @@ abstract class SocialRepository extends BaseRepository {
   Future<CustomResponse<ResponseClass?>> likePost({
     required bool isLoading,
     required String postId,
-    required String userId,
     required LikeAction likeAction,
   });
 

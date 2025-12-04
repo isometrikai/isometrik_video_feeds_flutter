@@ -354,7 +354,6 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     final apiResult = await _likePostUseCase.executeLikePost(
       isLoading: false,
       postId: event.postId,
-      userId: event.userId,
       likeAction: event.likeAction,
     );
 

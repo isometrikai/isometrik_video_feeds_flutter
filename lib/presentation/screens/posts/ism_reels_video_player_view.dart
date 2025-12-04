@@ -8,6 +8,7 @@ import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/video_player_widget.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/like_action_widget.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:lottie/lottie.dart';
@@ -779,16 +780,23 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 ),
               ],
               if (_reelData.postSetting?.isLikeButtonVisible == true)
-                ValueListenableBuilder(
-                    valueListenable: _isLikeLoading,
-                    builder: (context, value, child) => _buildActionButton(
-                          icon: _reelData.isLiked == true
-                              ? AssetConstants.icLikeSelected
-                              : AssetConstants.icLikeUnSelected,
-                          label: _reelData.likesCount.toString(),
-                          onTap: _callLikeFunction,
-                          isLoading: value,
-                        )),
+                LikeActionWidget(
+                  // key: ValueKey('post_like_${_reelData.postId}'),
+                  postId: _reelData.postId ?? '',
+                  builder: (bool isLoading, bool isLiked, int likeCount, void Function() onTap) {
+                    _reelData.isLiked = isLiked;
+                    _reelData.likesCount = likeCount;
+                    _isLikeLoading.value = isLoading;
+                    return _buildActionButton(
+                      icon: isLiked == true
+                          ? AssetConstants.icLikeSelected
+                          : AssetConstants.icLikeUnSelected,
+                      label: likeCount.toString(),
+                      onTap: onTap,
+                      isLoading: isLoading,
+                    );
+                  },
+                ),
               if (_reelData.postSetting?.isCommentButtonVisible == true)
                 StatefulBuilder(
                   builder: (context, setBuilderState) => _buildActionButton(
@@ -1264,13 +1272,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   Future<void> _callLikeFunction() async {
-    if (widget.onPressLikeButton == null || _isLikeLoading.value) return;
-    _isLikeLoading.value = true;
-    try {
-      await widget.onPressLikeButton!();
-      _logLikeEvent(_reelData, _reelData.isLiked == true ? LikeAction.like : LikeAction.unlike);
-    } finally {
-      _isLikeLoading.value = false;
+    if (!_isLikeLoading.value) {
+      if (_reelData.isLiked == true) {
+        context.getOrCreateBloc<IsmSocialActionCubit>().likePost(_reelData.postId ?? '', _reelData.likesCount ?? 0);
+      } else {
+        context.getOrCreateBloc<IsmSocialActionCubit>().unLikePost(_reelData.postId ?? '', _reelData.likesCount ?? 0);
+      }
     }
   }
 
