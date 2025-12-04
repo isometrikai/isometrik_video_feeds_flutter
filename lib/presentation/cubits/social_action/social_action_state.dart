@@ -23,4 +23,10 @@ class IsmSavePostState extends IsmSocialActionState{
   bool isLoading;
 }
 
+class IsmFollowActionListenerState extends IsmSocialActionState {
+  IsmFollowActionListenerState({required this.isFollowing, required this.userId});
+
+  String userId;
+  bool isFollowing;
+}
 

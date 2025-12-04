@@ -106,6 +106,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     // ));
   }
 
+  Future<String> get userId => _localDataUseCase.getUserId();
+
   Future<void> _onLoadHomeData(
     LoadPostData event,
     Emitter<SocialPostState> emit,

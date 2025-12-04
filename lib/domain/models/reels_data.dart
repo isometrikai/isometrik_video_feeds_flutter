@@ -32,6 +32,7 @@ class ReelsData {
     this.tagDataList,
     this.placeDataList,
     this.tags,
+    this.createOn,
   });
 
   final dynamic postData;
@@ -44,6 +45,7 @@ class ReelsData {
   final bool? isVerifiedUser;
   final bool? isSelfProfile;
   final String? description;
+  final String? createOn;
 
   final List<MediaMetaData> mediaMetaDataList;
 
@@ -95,6 +97,7 @@ class ReelsData {
       tagDataList: tagDataList,
       placeDataList: placeDataList,
       tags: tags,
+      createOn: createOn,
       isFollow: isFollow ?? this.isFollow,
       isLiked: isLiked ?? this.isLiked,
       isSavedPost: isSavedPost ?? this.isSavedPost,

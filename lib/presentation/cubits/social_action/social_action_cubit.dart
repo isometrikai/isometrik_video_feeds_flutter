@@ -24,6 +24,11 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
 
   TimeLineData? getPostById(String postId) => _uniquePostList[postId];
 
+  List<TimeLineData> getPostList({bool Function(TimeLineData)? filter}) =>
+      filter != null
+          ? _uniquePostList.values.where(filter).toList()
+          : _uniquePostList.values.toList();
+
   Future<TimeLineData?> getAsyncPostById(String postId) async =>
       _uniquePostList[postId] ?? await _getPostDetails(postId);
 
@@ -66,12 +71,15 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
       followAction: FollowAction.follow,
     );
     if (apiResult.isSuccess) {
-      emit(IsmFollowUserState(isFollowing: true, userId: userId));
+      emit(IsmFollowUserState(isFollowing: true, userId: userId)); // to update button/widget state
       _uniquePostList.values
           .where((e) => e.userId == userId)
           .forEach((element) {
         element.isFollowing = true;
       });
+      emit(IsmFollowActionListenerState(
+          isFollowing: true,
+          userId: userId)); // on api success to invoke listener
     } else {
       emit(IsmFollowUserState(isFollowing: false, userId: userId));
       ErrorHandler.showAppError(appError: apiResult.error);
@@ -87,14 +95,18 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
       followAction: FollowAction.unfollow,
     );
     if (apiResult.isSuccess) {
-      emit(IsmFollowUserState(isFollowing: false, userId: userId));
+      emit(IsmFollowUserState(isFollowing: false, userId: userId)); // to update button/widget state
       _uniquePostList.values
           .where((e) => e.userId == userId)
           .forEach((element) {
         element.isFollowing = false;
       });
+      emit(IsmFollowActionListenerState(
+          isFollowing: false,
+          userId: userId)); // on api success to invoke listener
     } else {
-      emit(IsmFollowUserState(isFollowing: true, userId: userId));
+      emit(IsmFollowUserState(
+          isFollowing: true, userId: userId));
       ErrorHandler.showAppError(appError: apiResult.error);
     }
   }

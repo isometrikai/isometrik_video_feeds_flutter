@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
@@ -45,6 +46,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
   final Set<String> _cachedImages = {};
   late final VideoCacheManager _videoCacheManager;
   List<ReelsData> _reelsDataList = [];
+  late final IsmSocialActionCubit _ismSocialActionCubit;
 
   bool _isInitialized = false;
 
@@ -59,6 +61,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
 
   /// Initialize the widget
   void _onStartInit() {
+    _ismSocialActionCubit = context.getOrCreateBloc();
     _videoCacheManager = widget.videoCacheManager ?? VideoCacheManager();
     _reelsDataList = widget.reelsDataList;
     _pageController = PageController(initialPage: widget.startingPostIndex ?? 0);
@@ -152,9 +155,56 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return _reelsDataList.isListEmptyOrNull == true
-        ? _buildPlaceHolder(context)
-        : _buildContent(context);
+    return context.attachBlocIfNeeded<IsmSocialActionCubit>(
+      bloc: _ismSocialActionCubit,
+      child: BlocListener<IsmSocialActionCubit, IsmSocialActionState>(
+        listenWhen: (previous, current) => current is IsmFollowActionListenerState && widget.postSectionType == PostSectionType.following,
+        listener: (context, state) {
+          if (state is IsmFollowActionListenerState){
+            _updateWithFollowAction(state.userId, state.isFollowing);
+          }
+        },
+        child: _reelsDataList.isListEmptyOrNull == true
+            ? _buildPlaceHolder(context)
+            : _buildContent(context),
+      ),
+    );
+  }
+
+  Future<void> _updateWithFollowAction(String userId, bool isFollowing) async {
+    var updateState = false;
+    if (isFollowing && !_reelsDataList.any((element) => element.userId == userId)) {
+      final followedUserReels = _ismSocialActionCubit.getPostList(filter: (post) => post.userId == userId);
+      if (followedUserReels.isNotEmpty){
+        _reelsDataList.addAll(followedUserReels.map((e) => getReelData(e, loggedInUserId: widget.loggedInUserId)));
+        _reelsDataList.sort((a, b) {
+          final dateA = DateTime.tryParse(a.createOn ?? '');
+          final dateB = DateTime.tryParse(b.createOn ?? '');
+
+          // Default fallback date when parsing fails
+          final safeA = dateA ?? DateTime.fromMillisecondsSinceEpoch(0); // oldest
+          final safeB = dateB ?? DateTime.fromMillisecondsSinceEpoch(0);
+
+          return safeB.compareTo(safeA); // latest → oldest
+        });
+
+        updateState = true;
+      }
+    } else if (!isFollowing && _reelsDataList.any((element) => element.userId == userId)){
+      _reelsDataList.removeWhere((element) => element.userId == userId);
+      updateState = true;
+    }
+    if (updateState) {
+      // Get current index before refresh
+      final currentIndex = _pageController.page?.toInt() ?? 0;
+      debugPrint('🔄 MainWidget: Starting update at index $currentIndex');
+
+      // Increment refresh count to force rebuild
+      _refreshCounts[currentIndex] = (_refreshCounts[currentIndex] ?? 0) + 1;
+      _updateState();
+      // Re-initialize caching for current index after successful refresh
+      await _doMediaCaching(currentIndex);
+    }
   }
 
   Widget _buildPlaceHolder(BuildContext context) => Column(
