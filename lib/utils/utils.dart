@@ -11,3 +11,4 @@ export 'isr_size_config.dart';
 export 'navigator/navigator.dart';
 export 'triangle_painter.dart';
 export 'utility.dart';
+export 'video_merger_util.dart';

@@ -2,9 +2,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:camera/camera.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:ism_video_reel_player/utils/enums.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:video_player/video_player.dart';
 
 part 'camera_event.dart';
@@ -26,45 +25,79 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     on<CameraApplyFilterEvent>(_applyFilter);
     on<CameraNextStepEvent>(_nextStep);
     on<CameraResetEvent>(_resetCamera);
+    on<CameraPauseForEditEvent>(_pauseForEdit);
+    on<CameraDisposeEvent>(_disposeAll);
     on<CameraUpdateRecordingDurationEvent>(_updateRecordingDuration);
     on<CameraSetExternalMediaEvent>(_setExternalMedia);
+
+    on<CameraSetSpeedEvent>(_setSpeed);
+    on<CameraStartSegmentRecordingEvent>(_startSegmentRecording);
+    on<CameraStopSegmentRecordingEvent>(_stopSegmentRecording);
+    on<CameraRemoveLastSegmentEvent>(_removeLastSegment);
+    on<CameraUpdateSegmentRecordingDurationEvent>(
+        _updateSegmentRecordingDuration);
   }
 
   CameraController? _cameraController;
   VideoPlayerController? _videoPlayerController;
   List<CameraDescription> _cameras = [];
   int _selectedCameraIndex = 0;
-  bool _isRecording = false;
-  bool _isStoppingRecording = false;
   bool _isFlashOn = false;
   double _currentZoom = 1.0;
-  int _selectedDuration = 15; // 15 or 60 seconds
+  int _selectedDuration = 0;
+  double _selectedSpeed = 1.0;
   String? _recordedVideoPath;
   String? _capturedPhotoPath;
   MediaType _selectedMediaType = MediaType.photo;
   String _selectedFilter = 'Normal';
   Timer? _recordingTimer;
   int _recordingDuration = 0;
+  bool _isSwitchingCamera = false;
+  String? _selectedMusicId;
+  String? _selectedMusicName;
+  String? _selectedMusicArtist;
 
-  // Getters
+  final List<VideoSegment> _videoSegments = [];
+  bool _isSegmentRecording = false;
+  int _currentSegmentDuration = 0;
+  Timer? _segmentTimer;
+
   CameraController? get cameraController => _cameraController;
   VideoPlayerController? get videoPlayerController => _videoPlayerController;
-  bool get isRecording => _isRecording;
+  // Use segment recording flag for backward compatibility
+  bool get isRecording => _isSegmentRecording;
   bool get isFlashOn => _isFlashOn;
   double get currentZoom => _currentZoom;
   int get selectedDuration => _selectedDuration;
+  double get selectedSpeed => _selectedSpeed;
   String? get recordedVideoPath => _recordedVideoPath;
   String? get capturedPhotoPath => _capturedPhotoPath;
   MediaType get selectedMediaType => _selectedMediaType;
   String get selectedFilter => _selectedFilter;
   int get recordingDuration => _recordingDuration;
+  String? get selectedMusicId => _selectedMusicId;
+  String? get selectedMusicName => _selectedMusicName;
+  String? get selectedMusicArtist => _selectedMusicArtist;
+  bool get hasMusicSelected =>
+      _selectedMusicId != null && _selectedMusicId!.isNotEmpty;
+  bool get isSegmentRecording => _isSegmentRecording;
+  List<VideoSegment> get videoSegments => _videoSegments;
+  int get totalRecordingDuration {
+    final segmentsDuration = _videoSegments.fold<int>(
+      0,
+      (sum, segment) => sum + segment.duration,
+    );
+    return segmentsDuration + _recordingDuration;
+  }
 
   Future<void> _initializeCamera(
     CameraInitializeEvent event,
     Emitter<CameraState> emit,
   ) async {
     try {
-      // If camera controller is already initialized and not disposed, just emit the state
+      _recordedVideoPath = null;
+      _capturedPhotoPath = null;
+
       if (_cameraController != null &&
           _cameraController!.value.isInitialized &&
           !_cameraController!.value.hasError) {
@@ -84,12 +117,11 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
         return;
       }
 
-      // Safely dispose existing controller if it exists
       if (_cameraController != null) {
         try {
           await _cameraController!.dispose();
         } catch (e) {
-          debugPrint('Error disposing camera controller: $e');
+          AppLog.error('Error disposing camera controller: $e');
         }
         _cameraController = null;
       }
@@ -103,7 +135,6 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
 
       await _cameraController!.initialize();
 
-      // Verify controller is properly initialized and not disposed
       if (_cameraController == null ||
           !_cameraController!.value.isInitialized ||
           _cameraController!.value.hasError) {
@@ -112,12 +143,11 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
       }
 
       emit(CameraInitializedState(
-        cameraController: _cameraController!,
-        isFlashAvailable: true, // Default to true, can be checked later
-        maxZoom: 4.0, // Default max zoom level
-      ));
+          cameraController: _cameraController!,
+          isFlashAvailable: true,
+          maxZoom: 4.0));
     } catch (e) {
-      debugPrint('Camera initialization error: $e');
+      AppLog.error('Camera initialization error: $e');
       emit(CameraErrorState('Failed to initialize camera: $e'));
     }
   }
@@ -126,71 +156,22 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     CameraStartRecordingEvent event,
     Emitter<CameraState> emit,
   ) async {
-    if (_cameraController == null || !_cameraController!.value.isInitialized) {
-      return;
-    }
-
-    try {
-      if (_selectedMediaType == MediaType.video) {
-        if (_isRecording) return;
-        await _cameraController!.startVideoRecording();
-        _isRecording = true;
-        _isStoppingRecording = false;
-        _recordingDuration = 0;
-
-        _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-          if (_isStoppingRecording) return;
-          _recordingDuration++;
-          if (_recordingDuration >= _selectedDuration) {
-            _isStoppingRecording = true;
-            add(CameraStopRecordingEvent());
-            return;
-          }
-          add(CameraUpdateRecordingDurationEvent(_recordingDuration));
-        });
-
-        emit(CameraRecordingState(
-          isRecording: true,
-          recordingDuration: _recordingDuration,
-          maxDuration: _selectedDuration,
-        ));
-      }
-    } catch (e) {
-      emit(CameraErrorState('Failed to start recording: $e'));
-    }
+    // Delegate to segment recording for unified behavior
+    await _startSegmentRecording(
+      CameraStartSegmentRecordingEvent(),
+      emit,
+    );
   }
 
   Future<void> _stopRecording(
     CameraStopRecordingEvent event,
     Emitter<CameraState> emit,
   ) async {
-    if (_cameraController == null || !_isRecording || _isStoppingRecording) {
-      return;
-    }
-
-    try {
-      _isStoppingRecording = true;
-      final videoFile = await _cameraController!.stopVideoRecording();
-      _isRecording = false;
-      _recordingTimer?.cancel();
-      _recordedVideoPath = videoFile.path;
-
-      // Initialize video player for preview
-      _videoPlayerController = VideoPlayerController.file(File(videoFile.path));
-      await _videoPlayerController!.initialize();
-
-      emit(CameraRecordingReadyState(
-        videoPath: _recordedVideoPath!,
-        videoController: _videoPlayerController!,
-        recordingDuration: _recordingDuration,
-      ));
-    } catch (e) {
-      _recordingTimer?.cancel();
-      _isRecording = false;
-      emit(CameraErrorState('Failed to stop recording: $e'));
-    } finally {
-      _isStoppingRecording = false;
-    }
+    // Delegate to segment recording for unified behavior
+    await _stopSegmentRecording(
+      CameraStopSegmentRecordingEvent(),
+      emit,
+    );
   }
 
   Future<void> _capturePhoto(
@@ -210,7 +191,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
 
       emit(CameraPhotoCapturedState(photoPath: _capturedPhotoPath!));
     } catch (e) {
-      debugPrint('Photo capture error: $e');
+      AppLog.error('Photo capture error: $e');
       emit(CameraErrorState('Failed to capture photo: $e'));
     }
   }
@@ -220,20 +201,44 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     Emitter<CameraState> emit,
   ) async {
     if (_cameras.length < 2) return;
+    if (_isSwitchingCamera) return;
+
+    _isSwitchingCamera = true;
 
     try {
-      // Safely dispose existing controller
+      emit(CameraLoadingState());
+
       if (_cameraController != null) {
         try {
+          if (_cameraController!.value.isStreamingImages) {
+            await _cameraController!.stopImageStream();
+          }
+          await _cameraController!.pausePreview();
           await _cameraController!.dispose();
         } catch (e) {
-          debugPrint('Error disposing camera controller during switch: $e');
+          AppLog.error('Error disposing camera controller during switch: $e');
         }
         _cameraController = null;
       }
 
-      _selectedCameraIndex = (_selectedCameraIndex + 1) % _cameras.length;
+      final currentLens = _cameras.isNotEmpty
+          ? _cameras[_selectedCameraIndex].lensDirection
+          : CameraLensDirection.back;
+      final targetLens = (currentLens == CameraLensDirection.front)
+          ? CameraLensDirection.back
+          : CameraLensDirection.front;
 
+      int? targetIndex;
+      for (var i = 0; i < _cameras.length; i++) {
+        if (_cameras[i].lensDirection == targetLens) {
+          targetIndex = i;
+          break;
+        }
+      }
+      _selectedCameraIndex =
+          targetIndex ?? ((_selectedCameraIndex + 1) % _cameras.length);
+
+      // Create new controller with the new camera
       _cameraController = CameraController(
         _cameras[_selectedCameraIndex],
         ResolutionPreset.high,
@@ -243,10 +248,10 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
 
       await _cameraController!.initialize();
 
-      // Verify controller is properly initialized before emitting state
       if (_cameraController == null ||
           !_cameraController!.value.isInitialized ||
           _cameraController!.value.hasError) {
+        _isSwitchingCamera = false;
         emit(CameraErrorState('Failed to initialize camera after switch'));
         return;
       }
@@ -257,8 +262,9 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
         maxZoom: 4.0,
       ));
     } catch (e) {
-      debugPrint('Camera switch error: $e');
       emit(CameraErrorState('Failed to switch camera: $e'));
+    } finally {
+      _isSwitchingCamera = false;
     }
   }
 
@@ -281,7 +287,6 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
 
       emit(CameraFlashToggledState(isFlashOn: _isFlashOn));
     } catch (e) {
-      debugPrint('Flash toggle error: $e');
       emit(CameraErrorState('Failed to toggle flash: $e'));
     }
   }
@@ -303,7 +308,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
 
       emit(CameraZoomChangedState(zoomLevel: _currentZoom));
     } catch (e) {
-      debugPrint('Zoom error: $e');
+      AppLog.error('Zoom error: $e');
       emit(CameraErrorState('Failed to set zoom: $e'));
     }
   }
@@ -328,28 +333,55 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     CameraUpdateRecordingDurationEvent event,
     Emitter<CameraState> emit,
   ) async {
-    if (!_isRecording || _isStoppingRecording) {
-      return;
-    }
-    _recordingDuration = event.duration;
-    if (_isRecording && !_isStoppingRecording) {
-      emit(CameraRecordingState(
-        isRecording: true,
-        recordingDuration: _recordingDuration,
-        maxDuration: _selectedDuration,
-      ));
-    }
+    // Delegate to segment recording duration update for unified behavior
+    await _updateSegmentRecordingDuration(
+      CameraUpdateSegmentRecordingDurationEvent(
+        recordingDuration: event.duration,
+        currentSegmentDuration: event.duration,
+      ),
+      emit,
+    );
   }
 
   Future<void> _confirmRecording(
     CameraConfirmRecordingEvent event,
     Emitter<CameraState> emit,
   ) async {
-    if (_recordedVideoPath != null || _capturedPhotoPath != null) {
+    if (_videoSegments.isNotEmpty ||
+        _recordedVideoPath != null ||
+        _capturedPhotoPath != null) {
+      var finalVideoPath = _recordedVideoPath ?? _capturedPhotoPath;
+
+      if (_videoSegments.isNotEmpty) {
+        if (_videoSegments.length == 1) {
+          finalVideoPath = _videoSegments.first.path;
+          AppLog.error(
+              '_confirmRecording: Only one segment, using: $finalVideoPath');
+        } else {
+          AppLog.error(
+              '_confirmRecording: Merging ${_videoSegments.length} segments');
+          final segmentPaths = _videoSegments.map((s) => s.path).toList();
+
+          try {
+            final mergedPath =
+                await VideoMergerUtil.mergeVideoSegments(segmentPaths);
+            if (mergedPath != null && await File(mergedPath).exists()) {
+              finalVideoPath = mergedPath;
+              _recordedVideoPath = mergedPath;
+            } else {
+              throw Exception('Merge returned null or file missing');
+            }
+          } catch (e) {
+            finalVideoPath = _videoSegments.first.path;
+          }
+        }
+      }
+
       emit(CameraRecordingConfirmedState(
-        mediaPath: _recordedVideoPath ?? _capturedPhotoPath!,
+        mediaPath: finalVideoPath!,
         mediaType: _selectedMediaType,
         filter: _selectedFilter,
+        segments: null,
       ));
     }
   }
@@ -358,16 +390,30 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     CameraSetExternalMediaEvent event,
     Emitter<CameraState> emit,
   ) async {
-    // When media is chosen from gallery, set the appropriate path and media type
     _selectedMediaType = event.mediaType;
     if (event.mediaType == MediaType.video) {
       _recordedVideoPath = event.mediaPath;
       _capturedPhotoPath = null;
+
+      try {
+        if (_cameraController != null) {
+          if (_cameraController!.value.isStreamingImages) {
+            await _cameraController!.stopImageStream();
+          }
+          await _cameraController!.pausePreview();
+        }
+      } catch (_) {}
+
+      try {
+        await _videoPlayerController?.dispose();
+      } catch (_) {}
+      _videoPlayerController =
+          VideoPlayerController.file(File(_recordedVideoPath!));
+      await _videoPlayerController!.initialize();
     } else {
       _capturedPhotoPath = event.mediaPath;
       _recordedVideoPath = null;
     }
-    emit(CameraMediaTypeChangedState(mediaType: _selectedMediaType));
   }
 
   Future<void> _discardRecording(
@@ -379,9 +425,27 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     _videoPlayerController?.dispose();
     _videoPlayerController = null;
     _recordingDuration = 0;
+    _selectedMusicId = null;
+    _selectedMusicName = null;
+    _selectedMusicArtist = null;
+    _videoSegments.clear();
+    _isSegmentRecording = false;
+    _currentSegmentDuration = 0;
+    _segmentTimer?.cancel();
+    _segmentTimer = null;
 
-    // Return to camera view
-    if (_cameraController != null) {
+    if (_cameraController != null &&
+        _cameraController!.value.isInitialized &&
+        !_cameraController!.value.hasError) {
+      try {
+        if (!_cameraController!.value.isPreviewPaused) {
+        } else {
+          await _cameraController!.resumePreview();
+        }
+      } catch (e) {
+        AppLog.error('Error resuming preview: $e');
+      }
+
       emit(CameraInitializedState(
         cameraController: _cameraController!,
         isFlashAvailable: true,
@@ -411,7 +475,6 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
       return;
     }
 
-    // Use filtered image path if provided, otherwise use original path
     final mediaPath = event.filteredImagePath ?? path;
 
     emit(CameraNextStepState(
@@ -426,21 +489,22 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     CameraResetEvent event,
     Emitter<CameraState> emit,
   ) async {
-    // Only dispose video player controller, keep camera controller for reuse
     await _videoPlayerController?.dispose();
     _videoPlayerController = null;
-    _isRecording = false;
+    _isSegmentRecording = false;
     _isFlashOn = false;
     _currentZoom = 1.0;
-    _selectedDuration = 15;
+    _selectedDuration = 0;
     _recordedVideoPath = null;
     _capturedPhotoPath = null;
     _selectedMediaType = MediaType.photo;
     _selectedFilter = 'Normal';
     _recordingDuration = 0;
     _recordingTimer?.cancel();
+    _selectedMusicId = null;
+    _selectedMusicName = null;
+    _selectedMusicArtist = null;
 
-    // If camera controller exists and is initialized, emit initialized state
     if (_cameraController != null && _cameraController!.value.isInitialized) {
       emit(CameraInitializedState(
         cameraController: _cameraController!,
@@ -454,30 +518,276 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
 
   @override
   Future<void> close() async {
-    // Cancel any ongoing recording timer
     _recordingTimer?.cancel();
     _recordingTimer = null;
+    _segmentTimer?.cancel();
+    _segmentTimer = null;
+    _videoSegments.clear();
 
-    // Safely dispose video player controller
     if (_videoPlayerController != null) {
       try {
         await _videoPlayerController!.dispose();
       } catch (e) {
-        debugPrint('Error disposing video player controller: $e');
+        AppLog.error('Error disposing video player controller: $e');
       }
       _videoPlayerController = null;
     }
 
-    // Safely dispose camera controller
     if (_cameraController != null) {
       try {
         await _cameraController!.dispose();
       } catch (e) {
-        debugPrint('Error disposing camera controller: $e');
+        AppLog.error('Error disposing camera controller: $e');
       }
       _cameraController = null;
     }
 
+    _recordingTimer?.cancel();
+    _segmentTimer?.cancel();
+    _videoSegments.clear();
     return super.close();
+  }
+
+  Future<void> _disposeAll(
+    CameraDisposeEvent event,
+    Emitter<CameraState> emit,
+  ) async {
+    _recordingTimer?.cancel();
+    _recordingTimer = null;
+    _recordingTimer?.cancel();
+    _segmentTimer?.cancel();
+    _videoSegments.clear();
+
+    if (_videoPlayerController != null) {
+      try {
+        await _videoPlayerController!.dispose();
+      } catch (_) {}
+      _videoPlayerController = null;
+    }
+
+    if (_cameraController != null) {
+      try {
+        if (_cameraController!.value.isStreamingImages) {
+          await _cameraController!.stopImageStream();
+        }
+      } catch (_) {}
+      try {
+        await _cameraController!.dispose();
+      } catch (_) {}
+      _cameraController = null;
+    }
+
+    _isSegmentRecording = false;
+    _isFlashOn = false;
+    _currentZoom = 1.0;
+    _selectedDuration = 0;
+    _selectedSpeed = 1.0;
+    _recordedVideoPath = null;
+    _capturedPhotoPath = null;
+    _selectedMediaType = MediaType.photo;
+    _selectedFilter = 'Normal';
+    _recordingDuration = 0;
+    _selectedMusicId = null;
+    _selectedMusicName = null;
+    _selectedMusicArtist = null;
+
+    emit(CameraInitialState());
+  }
+
+  Future<void> _pauseForEdit(
+    CameraPauseForEditEvent event,
+    Emitter<CameraState> emit,
+  ) async {
+    _recordingTimer?.cancel();
+    _recordingTimer = null;
+
+    if (_videoPlayerController != null) {
+      try {
+        await _videoPlayerController!.pause();
+      } catch (_) {}
+    }
+
+    if (_cameraController != null) {
+      try {
+        if (_cameraController!.value.isStreamingImages) {
+          await _cameraController!.stopImageStream();
+        }
+      } catch (_) {}
+      try {
+        await _cameraController!.pausePreview();
+      } catch (_) {}
+    }
+    _isSegmentRecording = false;
+    emit(CameraInitialState());
+    if (_videoPlayerController != null) {
+      try {
+        await _videoPlayerController!.dispose();
+      } catch (_) {}
+      _videoPlayerController = null;
+    }
+  }
+
+  Future<void> _setSpeed(
+    CameraSetSpeedEvent event,
+    Emitter<CameraState> emit,
+  ) async {
+    _selectedSpeed = event.speed;
+    emit(CameraSpeedChangedState(speed: _selectedSpeed));
+  }
+
+  Future<void> _startSegmentRecording(
+    CameraStartSegmentRecordingEvent event,
+    Emitter<CameraState> emit,
+  ) async {
+    if (_cameraController == null || !_cameraController!.value.isInitialized) {
+      return;
+    }
+
+    if (_isSegmentRecording) return;
+
+    try {
+      await _cameraController!.startVideoRecording();
+      _isSegmentRecording = true;
+      _currentSegmentDuration = 0;
+
+      _segmentTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (!_isSegmentRecording) {
+          timer.cancel();
+          return;
+        }
+        _currentSegmentDuration++;
+        _recordingDuration++;
+
+        if (_selectedDuration > 0 && _recordingDuration >= _selectedDuration) {
+          timer.cancel();
+          add(CameraStopSegmentRecordingEvent());
+          return;
+        }
+
+        add(CameraUpdateSegmentRecordingDurationEvent(
+          recordingDuration: _recordingDuration,
+          currentSegmentDuration: _currentSegmentDuration,
+        ));
+      });
+
+      emit(CameraSegmentRecordingState(
+        isRecording: true,
+        recordingDuration: _recordingDuration,
+        maxDuration: _selectedDuration,
+        segments: List.from(_videoSegments),
+        currentSegmentDuration: 0,
+      ));
+    } catch (e) {
+      emit(CameraErrorState('Failed to start segment recording: $e'));
+    }
+  }
+
+  Future<void> _stopSegmentRecording(
+    CameraStopSegmentRecordingEvent event,
+    Emitter<CameraState> emit,
+  ) async {
+    if (_cameraController == null || !_isSegmentRecording) {
+      return;
+    }
+
+    try {
+      _isSegmentRecording = false;
+      _segmentTimer?.cancel();
+
+      final videoFile = await _cameraController!.stopVideoRecording();
+
+      _videoSegments.add(VideoSegment(
+        path: videoFile.path,
+        duration: _currentSegmentDuration,
+      ));
+
+      _currentSegmentDuration = 0;
+
+      if (_recordingDuration >= 10 && _videoSegments.isNotEmpty) {
+        String finalVideoPath;
+        final segmentPaths = _videoSegments.map((s) => s.path).toList();
+
+        try {
+          final mergedPath =
+              await VideoMergerUtil.mergeVideoSegments(segmentPaths);
+          if (mergedPath != null && await File(mergedPath).exists()) {
+            finalVideoPath = mergedPath;
+          } else {
+            throw Exception('Merge returned null');
+          }
+        } catch (e) {
+          finalVideoPath = _videoSegments.last.path;
+        }
+
+        _recordedVideoPath = finalVideoPath;
+
+        emit(CameraRecordingConfirmedState(
+          mediaPath: finalVideoPath,
+          mediaType: _selectedMediaType,
+          filter: _selectedFilter,
+          segments: null,
+        ));
+        return;
+      }
+
+      emit(CameraSegmentRecordingState(
+        isRecording: false,
+        recordingDuration: _recordingDuration,
+        maxDuration: _selectedDuration,
+        segments: List.from(_videoSegments),
+        currentSegmentDuration: 0,
+      ));
+    } catch (e) {
+      _isSegmentRecording = false;
+      _segmentTimer?.cancel();
+      emit(CameraErrorState('Failed to stop segment recording: $e'));
+    }
+  }
+
+  Future<void> _removeLastSegment(
+    CameraRemoveLastSegmentEvent event,
+    Emitter<CameraState> emit,
+  ) async {
+    if (_videoSegments.isEmpty) return;
+
+    final removedSegment = _videoSegments.removeLast();
+    _recordingDuration -= removedSegment.duration;
+
+    try {
+      final file = File(removedSegment.path);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    } catch (e) {
+      AppLog.error('Error deleting segment file: $e');
+    }
+
+    emit(CameraSegmentRecordingState(
+      isRecording: false,
+      recordingDuration: _recordingDuration,
+      maxDuration: _selectedDuration,
+      segments: List.from(_videoSegments),
+      currentSegmentDuration: 0,
+    ));
+  }
+
+  Future<void> _updateSegmentRecordingDuration(
+    CameraUpdateSegmentRecordingDurationEvent event,
+    Emitter<CameraState> emit,
+  ) async {
+    if (!_isSegmentRecording) {
+      return;
+    }
+
+    _recordingDuration = event.recordingDuration;
+    _currentSegmentDuration = event.currentSegmentDuration;
+
+    emit(CameraSegmentRecordingState(
+      isRecording: true,
+      recordingDuration: _recordingDuration,
+      maxDuration: _selectedDuration,
+      segments: List.from(_videoSegments),
+      currentSegmentDuration: _currentSegmentDuration,
+    ));
   }
 }

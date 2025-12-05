@@ -6,7 +6,10 @@ class CameraInitializeEvent extends CameraEvent {}
 
 class CameraStartRecordingEvent extends CameraEvent {}
 
-class CameraStopRecordingEvent extends CameraEvent {}
+class CameraStopRecordingEvent extends CameraEvent {
+  CameraStopRecordingEvent({this.isAutoStop = false});
+  final bool isAutoStop;
+}
 
 class CameraCapturePhotoEvent extends CameraEvent {}
 
@@ -21,7 +24,7 @@ class CameraSetZoomEvent extends CameraEvent {
 
 class CameraSetDurationEvent extends CameraEvent {
   CameraSetDurationEvent({required this.duration});
-  final int duration; // 15 or 60 seconds
+  final int duration;
 }
 
 class CameraConfirmRecordingEvent extends CameraEvent {}
@@ -40,6 +43,10 @@ class CameraNextStepEvent extends CameraEvent {
 
 class CameraResetEvent extends CameraEvent {}
 
+class CameraPauseForEditEvent extends CameraEvent {}
+
+class CameraDisposeEvent extends CameraEvent {}
+
 class CameraUpdateRecordingDurationEvent extends CameraEvent {
   CameraUpdateRecordingDurationEvent(this.duration);
   final int duration;
@@ -55,4 +62,33 @@ class CameraSetExternalMediaEvent extends CameraEvent {
       {required this.mediaPath, required this.mediaType});
   final String mediaPath;
   final MediaType mediaType;
+}
+
+class CameraSetMusicEvent extends CameraEvent {
+  CameraSetMusicEvent({this.musicId, this.musicName, this.musicArtist});
+  final String? musicId;
+  final String? musicName;
+  final String? musicArtist;
+}
+
+class CameraRemoveMusicEvent extends CameraEvent {}
+
+class CameraSetSpeedEvent extends CameraEvent {
+  CameraSetSpeedEvent({required this.speed});
+  final double speed;
+}
+
+class CameraStartSegmentRecordingEvent extends CameraEvent {}
+
+class CameraStopSegmentRecordingEvent extends CameraEvent {}
+
+class CameraRemoveLastSegmentEvent extends CameraEvent {}
+
+class CameraUpdateSegmentRecordingDurationEvent extends CameraEvent {
+  CameraUpdateSegmentRecordingDurationEvent({
+    required this.recordingDuration,
+    required this.currentSegmentDuration,
+  });
+  final int recordingDuration;
+  final int currentSegmentDuration;
 }
