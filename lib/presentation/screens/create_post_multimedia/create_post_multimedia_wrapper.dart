@@ -10,6 +10,7 @@ import 'package:ism_video_reel_player/presentation/screens/media/media_edit/medi
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart'
     as ms;
 import 'package:ism_video_reel_player/res/res.dart';
+import 'package:ism_video_reel_player/utils/extensions.dart';
 import 'package:path/path.dart' as path;
 
 class CreatePostMultimediaWrapper extends StatefulWidget {
@@ -183,11 +184,12 @@ class _CreatePostMultimediaWrapperState
         onCaptureMedia: _captureMedia,
       );
 
-  Future<String?> _captureMedia() async => await Navigator.push<String?>(
+  Future<String?> _captureMedia(String? mediaType) async => await Navigator.push<String?>(
         context,
         MaterialPageRoute(
           builder: (context) => mc.CameraCaptureView(
-            onPickMedia: () async {
+            mediaType: mediaType?.mediaType ?? MediaType.both,
+            onGalleryClick: () async {
               Navigator.pop(context);
               return null;
             },

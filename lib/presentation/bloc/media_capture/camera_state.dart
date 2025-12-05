@@ -96,11 +96,13 @@ class CameraRecordingConfirmedState extends CameraState {
     required this.mediaPath,
     required this.mediaType,
     required this.filter,
+    this.segments,
   });
 
   final String mediaPath;
   final MediaType mediaType;
   final String filter;
+  final List<VideoSegment>? segments;
 }
 
 class CameraRecordingDiscardedState extends CameraState {}
@@ -127,4 +129,35 @@ class CameraNextStepState extends CameraState {
 class CameraErrorState extends CameraState {
   CameraErrorState(this.message);
   final String message;
+}
+
+class CameraSpeedChangedState extends CameraState {
+  CameraSpeedChangedState({required this.speed});
+  final double speed;
+}
+
+class CameraSegmentRecordingState extends CameraState {
+  CameraSegmentRecordingState({
+    required this.isRecording,
+    required this.recordingDuration,
+    required this.maxDuration,
+    required this.segments,
+    required this.currentSegmentDuration,
+  });
+
+  final bool isRecording;
+  final int recordingDuration;
+  final int maxDuration;
+  final List<VideoSegment> segments;
+  final int currentSegmentDuration;
+}
+
+class VideoSegment {
+  VideoSegment({
+    required this.path,
+    required this.duration,
+  });
+
+  final String path;
+  final int duration;
 }

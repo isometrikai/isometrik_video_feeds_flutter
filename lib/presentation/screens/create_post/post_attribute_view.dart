@@ -1670,11 +1670,12 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
     mediaListType: ms.MediaListType.imageVideo,
   );
 
-  Future<String?> _captureMedia() async => await Navigator.push<String?>(
+  Future<String?> _captureMedia(String? mediaType) async => await Navigator.push<String?>(
         context,
         MaterialPageRoute(
           builder: (context) => mc.CameraCaptureView(
-            onPickMedia: () async {
+            mediaType: mediaType?.mediaType ?? MediaType.photo,
+            onGalleryClick: () async {
               Navigator.pop(context);
               return null;
             },
