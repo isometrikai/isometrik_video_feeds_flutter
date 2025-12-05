@@ -50,10 +50,10 @@ class CommentActionCubit extends Cubit<CommentActionState> {
           message: message,
         ));
         if (commentAction == CommentAction.like) {
-          _sendAnalyticsEvent(EventType.commentLiked.value, commentId, postId, userId);
+          _sendAnalyticsEvent(EventType.commentLiked.value, commentId, postId, userId, 'video');
         }
         if (commentAction == CommentAction.comment) {
-          _sendAnalyticsEvent(EventType.commentCreated.value, commentId, postId, userId);
+          _sendAnalyticsEvent(EventType.commentCreated.value, commentId, postId, userId, 'video');
         }
       } else {
         emit(CommentActionErrorState(
@@ -82,17 +82,19 @@ class CommentActionCubit extends Cubit<CommentActionState> {
     String commentId,
     String postId,
     String userId,
+    String postType,
   ) async {
     try {
       // Prepare analytics event in the required format: "Post Viewed"
       final eventMap = {
         'post_id': postId,
+        'post_type': postType,
         'comment_id': commentId,
         'post_author_id': userId,
-        'timestamp': DateTime.now().toIso8601String(),
+        'feed_type': 'for_you',
+        'categories': [],
+        'hashtags': [],
       };
-
-      debugPrint('📊 Post Viewed Event: ${jsonEncode(eventMap)}');
       unawaited(EventQueueProvider.instance.addEvent(eventName, eventMap.removeEmptyValues()));
     } catch (e) {
       debugPrint('❌ Error sending analytics event: $e');

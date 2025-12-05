@@ -152,8 +152,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
             ..add(StartPost(
                 postSections: widget.tabDataModelList
                     .map((_) => PostTabAssistData(
-                        postSectionType: _.postSectionType,
-                        postList: _.reelsDataList))
+                        postSectionType: _.postSectionType, postList: _.reelsDataList))
                     .toList())), // ✅ Trigger initial load
         ),
         BlocProvider.value(value: _socialActionCubit),
@@ -255,7 +254,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         },
         loggedInUserId: _loggedInUserId,
         allowImplicitScrolling: widget.allowImplicitScrolling,
-        reelsDataList: tabData.reelsDataList.map((_) => getReelData(_, loggedInUserId: _loggedInUserId)).toList(),
+        reelsDataList: tabData.reelsDataList
+            .map((_) => getReelData(_, loggedInUserId: _loggedInUserId))
+            .toList(),
         reelsConfig: _getReelsConfig(tabData),
         onLoadMore: () async => await _handleLoadMore(tabData),
         onRefresh: () async {
@@ -273,118 +274,129 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       );
 
   ReelsConfig _getReelsConfig(TabDataModel tabData) => ReelsConfig(
-    overlayPadding: widget.postConfig.postUIConfig?.overlayPadding,
-    onTapPlace: (reelData, placeList) async {
-      if (placeList.isListEmptyOrNull) return;
-      if (placeList.length == 1) {
-        _goToPlaceDetailsView(
-          tabData.postSectionType,
-          placeList.first,
-          TagType.place,
-          reelData.postId ?? '',
-        );
-      } else {
-        // _showPlaceList(placeList, postSectionType);
-      }
-    },
-    onTaggedProduct: (reelsData) async {
-      if (reelsData.postData is TimeLineData) {
-        _socialPostBloc.add(PlayPauseVideoEvent(play: false));
-        await widget.postConfig.postCallBackConfig?.onTagProductClick?.call(
-            reelsData.postData as TimeLineData);
-        _socialPostBloc.add(PlayPauseVideoEvent(play: true));
-      }
-    },
-    onTapShare: (reelsData) async {
-      if (reelsData.postData is TimeLineData) {
-        _socialPostBloc.add(PlayPauseVideoEvent(play: false));
-            await widget.postConfig.postCallBackConfig?.onShareClicked
-                ?.call(reelsData.postData as TimeLineData);
-        _socialPostBloc.add(PlayPauseVideoEvent(play: true));
+        overlayPadding: widget.postConfig.postUIConfig?.overlayPadding,
+        onTapPlace: (reelData, placeList) async {
+          if (placeList.isListEmptyOrNull) return;
+          if (placeList.length == 1) {
+            _goToPlaceDetailsView(
+              tabData.postSectionType,
+              placeList.first,
+              TagType.place,
+              reelData.postId ?? '',
+            );
+          } else {
+            // _showPlaceList(placeList, postSectionType);
           }
         },
-    onTapMentionTag: (reelData, mentionList) async {
-      if (mentionList.isListEmptyOrNull) return [];
-      if (mentionList.length == 1) {
-        final mention = mentionList.first;
-        if (mention.tag.isStringEmptyOrNull == false) {
-          _redirectToHashtag(
-            mention.tag,
-            tabData.postSectionType,
-            reelData.postId ?? '',
-          );
-          return null;
-        } else {
-          if (mention.userId.isStringEmptyOrNull == false) {
-            widget.postConfig.postCallBackConfig?.onProfileClick
-                ?.call(reelData.postData is TimeLineData ? reelData.postData as TimeLineData : null, mention.userId!);
-            _logProfileEvent(reelData.userId ?? '', reelData.postId ?? '');
+        onTaggedProduct: (reelsData) async {
+          if (reelsData.postData is TimeLineData) {
+            _socialPostBloc.add(PlayPauseVideoEvent(play: false));
+            await widget.postConfig.postCallBackConfig?.onTagProductClick
+                ?.call(reelsData.postData as TimeLineData);
+            _socialPostBloc.add(PlayPauseVideoEvent(play: true));
           }
-        }
-      } else if (reelData.postData is TimeLineData){
-        return _showMentionList(mentionList, tabData.postSectionType, reelData.postData as TimeLineData);
-      }
-      return mentionList;
-    },
-    onCreatePost: (reelsData) async => await _handleCreatePost(tabData),
-    onTapUserProfile: (reelsData) async {
-      widget.postConfig.postCallBackConfig?.onProfileClick
-          ?.call(reelsData.postData is TimeLineData ? reelsData.postData as TimeLineData : null, reelsData.userId ?? '');
-      _logProfileEvent(reelsData.userId ?? '', reelsData.postId ?? '');
-    },
-    onTapComment: (reelsData, totalCommentsCount) async {
-      _socialPostBloc.add(PlayPauseVideoEvent(play: false));
-      final result = await _handleCommentAction(
-          reelsData.postId ?? '', totalCommentsCount, tabData, reelsData.postData is TimeLineData? reelsData.postData as TimeLineData : null);
-      _socialPostBloc.add(PlayPauseVideoEvent(play: true));
-      return result;
-    },
-    onPressMoreButton: (reelsData) async {
-      if (reelsData.postData is TimeLineData){
-        _socialPostBloc.add(PlayPauseVideoEvent(play: false));
-        final result = await _handleMoreOptions(reelsData.postData as TimeLineData, tabData);
-        _socialPostBloc.add(PlayPauseVideoEvent(play: true));
-        return result;
-      }
-    },
-    onPressLike: (reelsData, isLiked) async => (reelsData.postData is TimeLineData)? _handleLikeAction(isLiked, reelsData.postData as TimeLineData) : isLiked,
-    onPressSave: (reelsData, isSavedPost) async {
-      try {
-        if (widget.postConfig.postCallBackConfig?.onSaveClicked != null && reelsData.postData is TimeLineData) {
+        },
+        onTapShare: (reelsData) async {
+          if (reelsData.postData is TimeLineData) {
+            _socialPostBloc.add(PlayPauseVideoEvent(play: false));
+            await widget.postConfig.postCallBackConfig?.onShareClicked
+                ?.call(reelsData.postData as TimeLineData);
+            _socialPostBloc.add(PlayPauseVideoEvent(play: true));
+          }
+        },
+        onTapMentionTag: (reelData, mentionList) async {
+          if (mentionList.isListEmptyOrNull) return [];
+          if (mentionList.length == 1) {
+            final mention = mentionList.first;
+            if (mention.tag.isStringEmptyOrNull == false) {
+              _redirectToHashtag(
+                mention.tag,
+                tabData.postSectionType,
+                reelData.postId ?? '',
+              );
+              return null;
+            } else {
+              if (mention.userId.isStringEmptyOrNull == false) {
+                widget.postConfig.postCallBackConfig?.onProfileClick?.call(
+                    reelData.postData is TimeLineData ? reelData.postData as TimeLineData : null,
+                    mention.userId!);
+                _logProfileEvent(reelData.userId ?? '', reelData.userName ?? '');
+              }
+            }
+          } else if (reelData.postData is TimeLineData) {
+            return _showMentionList(
+                mentionList, tabData.postSectionType, reelData.postData as TimeLineData);
+          }
+          return mentionList;
+        },
+        onCreatePost: (reelsData) async => await _handleCreatePost(tabData),
+        onTapUserProfile: (reelsData) async {
+          widget.postConfig.postCallBackConfig?.onProfileClick?.call(
+              reelsData.postData is TimeLineData ? reelsData.postData as TimeLineData : null,
+              reelsData.userId ?? '');
+          _logProfileEvent(reelsData.userId ?? '', reelsData.userName ?? '');
+        },
+        onTapComment: (reelsData, totalCommentsCount) async {
           _socialPostBloc.add(PlayPauseVideoEvent(play: false));
-          final res = await widget.postConfig.postCallBackConfig?.onSaveClicked?.call(reelsData.postData as TimeLineData, isSavedPost) ?? isSavedPost;
+          final result = await _handleCommentAction(
+              reelsData.postId ?? '',
+              totalCommentsCount,
+              tabData,
+              reelsData.postData is TimeLineData ? reelsData.postData as TimeLineData : null);
           _socialPostBloc.add(PlayPauseVideoEvent(play: true));
-          return res;
-        }
-        final completer = Completer<bool>();
-        _socialPostBloc.add(SavePostEvent(
-          postId: reelsData.postId ?? '',
-          isSaved: isSavedPost,
-          onComplete: (success) {
-            completer.complete(success);
-          },
-        ));
-        return await completer.future;
-      } catch (e) {
-        return false;
-      }
-    },
-    onPressFollow: (reelsData, isFollow) async {
-      try {
-        final completer = Completer<bool>();
-        _socialPostBloc.add(FollowUserEvent(
-          followingId: reelsData.userId ?? '',
-          onComplete: (success) {
-            completer.complete(success);
-          },
-          followAction: isFollow ? FollowAction.unfollow : FollowAction.follow,
-        ));
-        return await completer.future;
-      } catch (e) {
-        return false;
-      }
-    },
-  );
+          return result;
+        },
+        onPressMoreButton: (reelsData) async {
+          if (reelsData.postData is TimeLineData) {
+            _socialPostBloc.add(PlayPauseVideoEvent(play: false));
+            final result = await _handleMoreOptions(reelsData.postData as TimeLineData, tabData);
+            _socialPostBloc.add(PlayPauseVideoEvent(play: true));
+            return result;
+          }
+        },
+        onPressLike: (reelsData, isLiked) async => (reelsData.postData is TimeLineData)
+            ? _handleLikeAction(isLiked, reelsData.postData as TimeLineData)
+            : isLiked,
+        onPressSave: (reelsData, isSavedPost) async {
+          try {
+            if (widget.postConfig.postCallBackConfig?.onSaveClicked != null &&
+                reelsData.postData is TimeLineData) {
+              _socialPostBloc.add(PlayPauseVideoEvent(play: false));
+              final res = await widget.postConfig.postCallBackConfig?.onSaveClicked
+                      ?.call(reelsData.postData as TimeLineData, isSavedPost) ??
+                  isSavedPost;
+              _socialPostBloc.add(PlayPauseVideoEvent(play: true));
+              return res;
+            }
+            final completer = Completer<bool>();
+            _socialPostBloc.add(SavePostEvent(
+              postId: reelsData.postId ?? '',
+              isSaved: isSavedPost,
+              onComplete: (success) {
+                completer.complete(success);
+              },
+            ));
+            return await completer.future;
+          } catch (e) {
+            return false;
+          }
+        },
+        onPressFollow: (reelsData, isFollow) async {
+          try {
+            final completer = Completer<bool>();
+            _socialPostBloc.add(FollowUserEvent(
+              followingId: reelsData.userId ?? '',
+              onComplete: (success) {
+                completer.complete(success);
+              },
+              followAction: isFollow ? FollowAction.unfollow : FollowAction.follow,
+            ));
+            return await completer.future;
+          } catch (e) {
+            return false;
+          }
+        },
+      );
 
   void _goToPlaceDetailsView(
     PostSectionType postSectionType,
@@ -458,8 +470,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       ));
       final timeLinePostList = await completer.future;
       if (timeLinePostList.isEmpty) return [];
-      final timeLineReelDataList =
-          timeLinePostList.map((post) => getReelData(post, loggedInUserId: _loggedInUserId)).toList();
+      final timeLineReelDataList = timeLinePostList
+          .map((post) => getReelData(post, loggedInUserId: _loggedInUserId))
+          .toList();
       return timeLineReelDataList;
     } catch (e) {
       debugPrint('Error handling load more: $e');
@@ -580,9 +593,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           totalCommentsCount: totalCommentsCount,
           onTapProfile: (userId) {
             context.pop(totalCommentsCount);
-            widget.postConfig.postCallBackConfig?.onProfileClick
-                ?.call(postData, userId);
-            _logProfileEvent(userId, postId);
+            widget.postConfig.postCallBackConfig?.onProfileClick?.call(postData, userId);
+            _logProfileEvent(userId, postData?.user?.username ?? '');
           },
           onTapHasTag: (hashTag) {
             context.pop(totalCommentsCount);
@@ -603,6 +615,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     PostSectionType postSectionType,
     String postId,
   ) {
+    _logHashtagEvent(tag ?? '');
     _goToPostListingView(postSectionType, tag ?? '', TagType.hashtag, postId);
   }
 
@@ -636,7 +649,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         onTapUserProfile: (userId) {
           context.pop();
           widget.postConfig.postCallBackConfig?.onProfileClick?.call(postData, userId);
-          _logProfileEvent(userId, postData.id ?? '');
+          _logProfileEvent(userId, postData.user?.username ?? '');
         },
       ),
     );
@@ -685,11 +698,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                 postId: postDataModel.id ?? '',
                 message: message,
                 reason: reason,
-                onComplete: (success) {
+                onComplete: (success, reportReason) {
                   if (success) {
                     Utility.showInSnackBar(IsrTranslationFile.postReportedSuccessfully, context,
                         isSuccessIcon: true);
-                    _logReportEvent(postDataModel);
+                    _logReportEvent(postDataModel, reportReason);
                   }
                   completer.complete(success);
                 },
@@ -759,8 +772,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         onPressReport: ({String message = '', String reason = ''}) async {
           try {
             if (onPressReport != null) {
-              final isReported =
-              await onPressReport(message: message, reason: reason);
+              final isReported = await onPressReport(message: message, reason: reason);
               if (!completer.isCompleted) {
                 completer.complete(isReported);
               }
@@ -784,8 +796,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           if (onEditPost != null) {
             final postDataString = await onEditPost();
             if (postDataString.isStringEmptyOrNull == false) {
-              final postData = TimeLineData.fromMap(
-                  jsonDecode(postDataString) as Map<String, dynamic>);
+              final postData =
+                  TimeLineData.fromMap(jsonDecode(postDataString) as Map<String, dynamic>);
               final reelData = getReelData(postData, loggedInUserId: _loggedInUserId);
               if (!completer.isCompleted) {
                 completer.complete(reelData);
@@ -959,28 +971,35 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     return postDataString;
   }
 
-  void _logReportEvent(TimeLineData postDataModel) async {
+  void _logReportEvent(TimeLineData postDataModel, String reportReason) async {
     final postReportEvent = {
       'post_id': postDataModel.id ?? '',
       'post_author_id': postDataModel.userId ?? '',
       'post_type': postDataModel.media?.first.mediaType,
-      'category': EventCategory.postEngagement.value,
-      'timestamp': DateTime.now().toIso8601String(),
+      'categories': [],
+      'hashtags': postDataModel.tags?.hashtags?.map((e) => '#$e').toList(),
+      'report_reason': reportReason
     };
 
     unawaited(EventQueueProvider.instance
         .addEvent(EventType.postReported.value, postReportEvent.removeEmptyValues()));
   }
 
-  void _logProfileEvent(String userId, String postId) {
+  void _logProfileEvent(String profileUserId, String profileUserName) {
     final profileEvent = {
-      'post_id': postId,
-      'user_id': userId,
-      'category': EventCategory.socialGraph.value,
-      'timestamp': DateTime.now().toIso8601String(),
+      'profile_user_id': profileUserId,
+      'profile_username': profileUserName,
     };
 
     unawaited(EventQueueProvider.instance
         .addEvent(EventType.profileViewed.value, profileEvent.removeEmptyValues()));
+  }
+
+  void _logHashtagEvent(String hashTag) {
+    final hashTagEventMap = {
+      'hashtag': hashTag,
+    };
+    unawaited(EventQueueProvider.instance
+        .addEvent(EventType.hashTagClicked.value, hashTagEventMap.removeEmptyValues()));
   }
 }
