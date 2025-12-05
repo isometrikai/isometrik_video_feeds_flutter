@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -548,7 +547,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     if (apiResult.isSuccess) {
       if (event.commentAction == CommentAction.comment) {
         _sendAnalyticsEvent(EventType.commentCreated.value, event.commentId ?? '',
-            event.postId ?? '', event.userId ?? '');
+            event.postId ?? '', event.userId ?? '', event.postDataModel, event.tabDataModel);
         comment?.status = IsrTranslationFile.inReview;
         if (commentList != null) {
           emit(
@@ -697,6 +696,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     String commentId,
     String postId,
     String userId,
+    TimeLineData? postDataModel,
+    TabDataModel? tabDataModel,
   ) async {
     try {
       // Prepare analytics event in the required format: "Post Viewed"
@@ -704,15 +705,14 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         'post_id': postId,
         'comment_id': commentId,
         'post_author_id': userId,
-        'timestamp': DateTime.now().toIso8601String(),
-      };
-      final finalAnalyticsDataMap = {
-        ...postViewedEvent,
+        'post_type': postDataModel?.type,
+        'feed_type': tabDataModel?.postSectionType.title,
+        'hashtags': postDataModel?.tags?.hashtags?.map((e) => '#$e').toList(),
+        'categories': [],
       };
 
-      debugPrint('📊 Post Viewed Event: ${jsonEncode(finalAnalyticsDataMap)}');
-      unawaited(EventQueueProvider.instance
-          .addEvent(eventName, finalAnalyticsDataMap.removeEmptyValues()));
+      unawaited(
+          EventQueueProvider.instance.addEvent(eventName, postViewedEvent.removeEmptyValues()));
     } catch (e) {
       debugPrint('❌ Error sending analytics event: $e');
       return null;

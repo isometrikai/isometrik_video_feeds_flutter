@@ -553,6 +553,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                             commentAction: CommentAction.delete,
                             postCommentList: _postCommentList.toList(),
                             onComplete: (commentId, isSuccess) {},
+                            postDataModel: widget.postData,
+                            tabDataModel: widget.tabData,
                           ),
                         );
                       },
@@ -581,6 +583,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                   commentAction: CommentAction.report,
                                   reportReason: reportReason.id,
                                   commentMessage: reportReason.name,
+                                  postDataModel: widget.postData,
+                                  tabDataModel: widget.tabData,
                                 ),
                               );
                             },
@@ -756,18 +760,21 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                       final postId = commentDataItem?.postId;
                       _socialBloc.add(
                         CommentActionEvent(
-                            userId: commentDataItem?.commentedByUserId,
-                            isLoading: false,
-                            parentCommentId: commentDataItem?.id ?? '',
-                            postId: postId ?? widget.postId,
-                            replyText: value.text,
-                            commentAction: CommentAction.comment,
-                            postedBy: _myUserId,
-                            postCommentList: _postCommentList,
-                            commentTags: {
-                              'hashtags': tagMentions.map((e) => e.toJson()).toList(),
-                              'mentions': userMentions.map((e) => e.toJson()).toList(),
-                            }.also((_) => debugPrint('comment: comment tag: $_'))),
+                          userId: commentDataItem?.commentedByUserId,
+                          isLoading: false,
+                          parentCommentId: commentDataItem?.id ?? '',
+                          postId: postId ?? widget.postId,
+                          replyText: value.text,
+                          commentAction: CommentAction.comment,
+                          postedBy: _myUserId,
+                          postCommentList: _postCommentList,
+                          commentTags: {
+                            'hashtags': tagMentions.map((e) => e.toJson()).toList(),
+                            'mentions': userMentions.map((e) => e.toJson()).toList(),
+                          }.also((_) => debugPrint('comment: comment tag: $_')),
+                          postDataModel: widget.postData,
+                          tabDataModel: widget.tabData,
+                        ),
                       );
                       _replyController.clear();
                       tagMentions.clear();

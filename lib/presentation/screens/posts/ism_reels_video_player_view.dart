@@ -823,7 +823,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                           ? AssetConstants.icSaveSelected
                           : AssetConstants.icSaveUnSelected,
                       label: isSaved == true ? IsrTranslationFile.saved : IsrTranslationFile.save,
-                      onTap: () => onTap(reelData: _reelData),
+                      onTap: () async {
+                        await onTap(reelData: _reelData);
+                        _logSaveEvent(
+                            _reelData, isSaved == true ? SaveAction.unsave : SaveAction.save);
+                      },
                       isLoading: isLoading,
                     );
                   },
@@ -1300,11 +1304,17 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   void _logSaveEvent(ReelsData reelsData, SaveAction saveAction) {
     final eventMap = <String, dynamic>{
-      'view_source': 'feed',
-      'category': EventCategory.postEngagement.value,
+      'post_id': _reelData.postId ?? '',
+      'post_author_id': _reelData.userId ?? '',
+      'post_type': (_reelData.postData as TimeLineData).type,
+      'categories': [],
+      'hashtags': _reelData.tags?.hashtags?.isEmptyOrNull == false
+          ? _reelData.tags!.hashtags!.map((tag) => tag.tag).toList()
+          : [],
     };
     if (saveAction == SaveAction.save) {
-      sendAnalyticsEvent(EventType.postSaved.value, eventMap);
+      unawaited(EventQueueProvider.instance
+          .addEvent(EventType.postSaved.value, eventMap.removeEmptyValues()));
     }
   }
 
