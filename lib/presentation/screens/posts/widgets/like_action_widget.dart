@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/utils/extensions.dart';
 
@@ -11,7 +12,7 @@ class LikeActionWidget extends StatefulWidget {
   });
 
   final String postId;
-  final Widget Function(bool isLoading, bool isLiked, int likeCount, VoidCallback onTap)
+  final Widget Function(bool isLoading, bool isLiked, int likeCount, Function({ReelsData? reelData}) onTap)
       builder;
 
   @override
@@ -31,7 +32,7 @@ class _LikeActionWidgetState extends State<LikeActionWidget> {
     super.initState();
     cubit = context.getOrCreateBloc<IsmSocialActionCubit>();
     postId = widget.postId;
-    cubit.loadPostLikeState(postId: widget.postId);
+    cubit.loadPostLikeState(widget.postId);
   }
 
   @override
@@ -43,12 +44,12 @@ class _LikeActionWidgetState extends State<LikeActionWidget> {
     super.dispose();
   }
 
-  void _onTap() {
+  void _onTap({ReelsData? reelData}) {
     if (isLoading) return;
     if (isLiked) {
-      cubit.unLikePost(postId, likeCount);
+      cubit.unLikePost(postId, likeCount, reelData: reelData);
     } else {
-      cubit.likePost(postId, likeCount);
+      cubit.likePost(postId, likeCount, reelData: reelData);
     }
   }
 
