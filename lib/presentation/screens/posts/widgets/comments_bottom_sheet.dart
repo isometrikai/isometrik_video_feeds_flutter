@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -13,6 +16,8 @@ class CommentsBottomSheet extends StatefulWidget {
     required this.totalCommentsCount,
     this.onTapProfile,
     this.onTapHasTag,
+    this.postData,
+    this.tabData,
     Key? key,
   }) : super(key: key);
 
@@ -20,6 +25,8 @@ class CommentsBottomSheet extends StatefulWidget {
   final int totalCommentsCount;
   final Function(String)? onTapProfile;
   final Function(String)? onTapHasTag;
+  final TimeLineData? postData;
+  final TabDataModel? tabData;
 
   @override
   State<CommentsBottomSheet> createState() => _CommentsBottomSheetState();
@@ -305,6 +312,13 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                   ? 0
                                   : (comment.likeCount ?? 0) - 1;
                         });
+                        if (isLiked) {
+                          _logLikeCommentEvent(
+                            EventType.commentLiked.value,
+                            comment.id ?? '',
+                            comment.postId ?? '',
+                          );
+                        }
                       },
                     ),
                     8.responsiveHorizontalSpace,
@@ -539,6 +553,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                             commentAction: CommentAction.delete,
                             postCommentList: _postCommentList.toList(),
                             onComplete: (commentId, isSuccess) {},
+                            postDataModel: widget.postData,
+                            tabDataModel: widget.tabData,
                           ),
                         );
                       },
@@ -567,6 +583,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                   commentAction: CommentAction.report,
                                   reportReason: reportReason.id,
                                   commentMessage: reportReason.name,
+                                  postDataModel: widget.postData,
+                                  tabDataModel: widget.tabData,
                                 ),
                               );
                             },
@@ -742,18 +760,21 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                       final postId = commentDataItem?.postId;
                       _socialBloc.add(
                         CommentActionEvent(
-                            userId: commentDataItem?.commentedByUserId,
-                            isLoading: false,
-                            parentCommentId: commentDataItem?.id ?? '',
-                            postId: postId ?? widget.postId,
-                            replyText: value.text,
-                            commentAction: CommentAction.comment,
-                            postedBy: _myUserId,
-                            postCommentList: _postCommentList,
-                            commentTags: {
-                              'hashtags': tagMentions.map((e) => e.toJson()).toList(),
-                              'mentions': userMentions.map((e) => e.toJson()).toList(),
-                            }.also((_) => debugPrint('comment: comment tag: $_'))),
+                          userId: commentDataItem?.commentedByUserId,
+                          isLoading: false,
+                          parentCommentId: commentDataItem?.id ?? '',
+                          postId: postId ?? widget.postId,
+                          replyText: value.text,
+                          commentAction: CommentAction.comment,
+                          postedBy: _myUserId,
+                          postCommentList: _postCommentList,
+                          commentTags: {
+                            'hashtags': tagMentions.map((e) => e.toJson()).toList(),
+                            'mentions': userMentions.map((e) => e.toJson()).toList(),
+                          }.also((_) => debugPrint('comment: comment tag: $_')),
+                          postDataModel: widget.postData,
+                          tabDataModel: widget.tabData,
+                        ),
                       );
                       _replyController.clear();
                       tagMentions.clear();
@@ -802,4 +823,17 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
           ),
         ),
       );
+
+  void _logLikeCommentEvent(String eventName, String commentId, String postId) async {
+    final eventMap = {
+      'post_id': postId,
+      'post_type': widget.postData?.type,
+      'comment_id': commentId,
+      'post_author_id': widget.postData?.userId,
+      'feed_type': widget.tabData?.postSectionType.title,
+      'categories': [],
+      'hashtags': widget.postData?.tags?.hashtags?.map((e) => '#$e').toList(),
+    };
+    unawaited(EventQueueProvider.instance.addEvent(eventName, eventMap.removeEmptyValues()));
+  }
 }

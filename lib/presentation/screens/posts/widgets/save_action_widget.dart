@@ -12,8 +12,8 @@ class SaveActionWidget extends StatefulWidget {
   });
 
   final String postId;
-  final Widget Function(bool isLoading, bool isSaved, Function({ReelsData? reelData}) onTap)
-  builder;
+  final Widget Function(
+      bool isLoading, bool isSaved, Future<bool> Function({ReelsData? reelData}) onTap) builder;
 
   @override
   State<SaveActionWidget> createState() => _SaveActionWidgetState();
@@ -34,21 +34,19 @@ class _SaveActionWidgetState extends State<SaveActionWidget> {
     cubit.loadPostSaveState(widget.postId);
   }
 
-  void _onTap({ReelsData? reelData}) {
-    if (isLoading) return;
+  Future<bool> _onTap({ReelsData? reelData}) async {
+    if (isLoading) return false;
     if (isSaved) {
-      cubit.unSavePost(postId, reelData: reelData);
+      return await cubit.unSavePost(postId, reelData: reelData);
     } else {
-      cubit.savePost(postId, reelData: reelData);
+      return await cubit.savePost(postId, reelData: reelData);
     }
   }
 
   @override
-  Widget build(BuildContext context) =>
-      context.attachBlocIfNeeded<IsmSocialActionCubit>(
+  Widget build(BuildContext context) => context.attachBlocIfNeeded<IsmSocialActionCubit>(
         child: BlocBuilder<IsmSocialActionCubit, IsmSocialActionState>(
-          buildWhen: (previous, current) =>
-          current is IsmSavePostState && current.postId == postId,
+          buildWhen: (previous, current) => current is IsmSavePostState && current.postId == postId,
           builder: (context, state) {
             if (state is IsmSavePostState && state.postId == postId) {
               isLoading = state.isLoading;

@@ -184,6 +184,8 @@ class CommentActionEvent extends SocialPostEvent {
     this.commentIds,
     this.postCommentList,
     this.commentTags,
+    this.tabDataModel,
+    this.postDataModel,
   });
 
   final String? postId;
@@ -200,6 +202,8 @@ class CommentActionEvent extends SocialPostEvent {
   final String? commentMessage;
   final List<CommentDataItem>? postCommentList;
   final Map<String, dynamic>? commentTags;
+  final TimeLineData? postDataModel;
+  final TabDataModel? tabDataModel;
 }
 
 class GetMorePostEvent extends SocialPostEvent {

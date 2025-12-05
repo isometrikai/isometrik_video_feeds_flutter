@@ -215,7 +215,7 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     emit(IsmSavePostState(isSaved: isSaved, postId: postId));
   }
 
-  savePost(
+  Future<bool> savePost(
     String postId, {
     ReelsData? reelData,
   }) async {
@@ -248,9 +248,10 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
       emit(IsmSavePostState(isSaved: false, postId: postId));
       ErrorHandler.showAppError(appError: apiResult.error);
     }
+    return apiResult.isSuccess;
   }
 
-  unSavePost(
+  Future<bool> unSavePost(
     String postId, {
     ReelsData? reelData,
   }) async {
@@ -285,6 +286,7 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
       emit(IsmSavePostState(isSaved: true, postId: postId));
       ErrorHandler.showAppError(appError: apiResult.error);
     }
+    return apiResult.isSuccess;
   }
 
   void _logFollowEvent(
@@ -321,13 +323,13 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     SaveAction saveAction, {
     ReelsData? reelsData,
   }) {
-    if (saveAction == SaveAction.save) {
-      sendAnalyticsEvent(
-        EventType.postSaved.value,
-        {},
-        reelsData: reelsData,
-      );
-    }
+    // if (saveAction == SaveAction.save) {
+    //   sendAnalyticsEvent(
+    //     EventType.postSaved.value,
+    //     {},
+    //     reelsData: reelsData,
+    //   );
+    // }
   }
 
   /// Implementation of PostHelperCallBacks interface

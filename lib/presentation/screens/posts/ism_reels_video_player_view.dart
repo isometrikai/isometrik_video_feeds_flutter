@@ -46,7 +46,6 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
   final int index;
   final ReelsConfig reelsConfig;
 
-
   @override
   State<IsmReelsVideoPlayerView> createState() => _IsmReelsVideoPlayerViewState();
 }
@@ -619,17 +618,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       duration: const Duration(milliseconds: 200),
                       curve: Curves.elasticOut,
                       child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.black.changeOpacity(0.3),
-                          shape: BoxShape.circle,
-                        ),
                         padding: const EdgeInsets.all(24),
                         child: AppImage.svg(
-                          _isMuted
-                              ? AssetConstants.muteRoundedSvg
-                              : AssetConstants.unMuteRoundedSvg,
-                          width: 70,
-                          height: 70,
+                          _isMuted ? AssetConstants.icMuteIcon : AssetConstants.icUnMuteIcon,
                         ),
                       ),
                     ),
@@ -698,24 +689,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 // Persistent mute icon indicator in top-right (placed last to be on top)
                 // if (_isMuted &&
                 //     _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kVideoType)
-                //   Positioned(
-                //     top: IsrDimens.oneHundredForty,
-                //     right: IsrDimens.sixteen,
+                //   Align(
+                //     alignment: Alignment.center,
                 //     child: GestureDetector(
                 //       behavior: HitTestBehavior.opaque,
                 //       onTap: _toggleMuteAndUnMute,
-                //       child: Container(
-                //         padding: EdgeInsets.all(IsrDimens.eight),
-                //         decoration: BoxDecoration(
-                //           color: Colors.black.changeOpacity(0.5),
-                //           shape: BoxShape.circle,
-                //         ),
-                //         child: AppImage.svg(
-                //           AssetConstants.muteRoundedSvg,
-                //           width: IsrDimens.twenty,
-                //           height: IsrDimens.twenty,
-                //         ),
-                //       ),
+                //       child: const AppImage.svg(AssetConstants.icMuteIcon),
                 //     ),
                 //   ),
               ],
@@ -833,8 +812,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                     }
                   },
                 ),
-              if (_reelData.postStatus != 0 &&
-                  _reelData.postSetting?.isSaveButtonVisible == true)
+              if (_reelData.postStatus != 0 && _reelData.postSetting?.isSaveButtonVisible == true)
                 SaveActionWidget(
                   postId: _reelData.postId ?? '',
                   builder: (isLoading, isSaved, onTap) {
@@ -844,10 +822,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       icon: isSaved == true
                           ? AssetConstants.icSaveSelected
                           : AssetConstants.icSaveUnSelected,
-                      label: isSaved == true
-                          ? IsrTranslationFile.saved
-                          : IsrTranslationFile.save,
-                      onTap: () => onTap(reelData: _reelData),
+                      label: isSaved == true ? IsrTranslationFile.saved : IsrTranslationFile.save,
+                      onTap: () async {
+                        await onTap(reelData: _reelData);
+                        _logSaveEvent(
+                            _reelData, isSaved == true ? SaveAction.unsave : SaveAction.save);
+                      },
                       isLoading: isLoading,
                     );
                   },
@@ -983,8 +963,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                     onTap: () async {
                                       if (widget.reelsConfig.onTapUserProfile != null) {
                                         _pauseForNavigation();
-                                        await widget.reelsConfig
-                                            .onTapUserProfile?.call(_reelData);
+                                        await widget.reelsConfig.onTapUserProfile?.call(_reelData);
                                         _resumeAfterNavigation();
                                       }
                                     },
@@ -1147,8 +1126,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               minWidth: IsrDimens.sixty,
               height: IsrDimens.twentyFour,
               padding: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twelve),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(IsrDimens.twenty)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(IsrDimens.twenty)),
               onPressed: () => onTap(reelData: _reelData),
               child: Text(
                 IsrTranslationFile.follow,
@@ -1291,9 +1269,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   Future<void> _callLikeFunction() async {
     if (!_isLikeLoading.value) {
       if (_reelData.isLiked == true) {
-        context.getOrCreateBloc<IsmSocialActionCubit>().likePost(_reelData.postId ?? '', _reelData.likesCount ?? 0);
+        context
+            .getOrCreateBloc<IsmSocialActionCubit>()
+            .likePost(_reelData.postId ?? '', _reelData.likesCount ?? 0);
       } else {
-        context.getOrCreateBloc<IsmSocialActionCubit>().unLikePost(_reelData.postId ?? '', _reelData.likesCount ?? 0);
+        context
+            .getOrCreateBloc<IsmSocialActionCubit>()
+            .unLikePost(_reelData.postId ?? '', _reelData.likesCount ?? 0);
       }
     }
   }
@@ -1322,11 +1304,17 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   void _logSaveEvent(ReelsData reelsData, SaveAction saveAction) {
     final eventMap = <String, dynamic>{
-      'view_source': 'feed',
-      'category': EventCategory.postEngagement.value,
+      'post_id': _reelData.postId ?? '',
+      'post_author_id': _reelData.userId ?? '',
+      'post_type': (_reelData.postData as TimeLineData).type,
+      'categories': [],
+      'hashtags': _reelData.tags?.hashtags?.isEmptyOrNull == false
+          ? _reelData.tags!.hashtags!.map((tag) => tag.tag).toList()
+          : [],
     };
     if (saveAction == SaveAction.save) {
-      sendAnalyticsEvent(EventType.postSaved.value, eventMap);
+      unawaited(EventQueueProvider.instance
+          .addEvent(EventType.postSaved.value, eventMap.removeEmptyValues()));
     }
   }
 
@@ -1601,18 +1589,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       _isMuted = !_isMuted;
       _globalMuteState = _isMuted; // Update global mute state
     });
-    _logMuteAndUnMuteEvent();
     // Volume change is handled by VideoPlayerWidget via didUpdateWidget
     _triggerMuteAnimation();
-  }
-
-  void _logMuteAndUnMuteEvent() {
-    final eventMap = <String, dynamic>{
-      'view_source': 'feed',
-      'sound_enable': _isMuted == false,
-      'category': EventCategory.videoEngagement.value,
-    };
-    sendAnalyticsEvent(EventType.videoSoundToggled.value, eventMap);
   }
 
   /// Starts the image view timer if current media is an image
