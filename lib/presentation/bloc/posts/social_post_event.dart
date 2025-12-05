@@ -127,7 +127,7 @@ class ReportPostEvent extends SocialPostEvent {
   final String postId;
   final String message;
   final String reason;
-  final Function(bool) onComplete;
+  final Function(bool, String) onComplete;
 }
 
 class GetSocialProductsEvent extends SocialPostEvent {

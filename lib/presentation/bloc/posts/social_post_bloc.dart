@@ -73,7 +73,6 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   final GetUserPostDataUseCase _getUserPostDataUseCase;
   IsmSocialActionCubit get _socialActionCubit => IsmInjectionUtils.getBloc();
 
-
   UserInfoClass? _userInfoClass;
   var reelsPageTrendingController = PageController();
   TextEditingController? descriptionController;
@@ -343,10 +342,10 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     );
 
     if (apiResult.isSuccess) {
-      event.onComplete.call(true);
+      event.onComplete.call(true, event.reason);
     } else {
       ErrorHandler.showAppError(appError: apiResult.error);
-      event.onComplete.call(false);
+      event.onComplete.call(false, event.reason);
     }
   }
 

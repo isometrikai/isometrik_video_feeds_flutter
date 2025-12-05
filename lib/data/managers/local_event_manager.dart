@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/widgets.dart';
@@ -166,6 +167,9 @@ class LocalEventQueue with WidgetsBindingObserver {
         timestamp: DateTime.now().toUtc(),
       );
       await box.add(event);
+      debugPrint(
+          '${runtimeType.toString()}:Event Name: $eventName\n Event Data : ${jsonEncode(payload)}');
+
       if (box.length >= _batchSize) {
         final events = box.values.toList();
 
@@ -233,6 +237,7 @@ enum EventType {
   videoPaused, // Video Paused
   videoSoundToggled, // User mutes/unmutes
   profileViewed, // User navigates to profile screen/page
+  hashTagClicked, // User click on hash tag
 }
 
 extension EventTypeExtension on EventType {
@@ -270,6 +275,8 @@ extension EventTypeExtension on EventType {
         return 'Video Sound Toggled';
       case EventType.profileViewed:
         return 'Profile Viewed';
+      case EventType.hashTagClicked:
+        return 'Hashtag Clicked';
     }
   }
 }
