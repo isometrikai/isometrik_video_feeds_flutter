@@ -16,12 +16,14 @@ class IsmPostView extends StatefulWidget {
     this.currentIndex = 0,
     this.allowImplicitScrolling = false,
     this.onPageChanged,
+    this.onTabChange,
   });
 
   final List<TabDataModel> tabDataModelList;
   final num? currentIndex;
   final bool? allowImplicitScrolling;
   final Function(int, String)? onPageChanged;
+  final Future<bool> Function(TabDataModel, int)? onTabChange;
 
   @override
   State<IsmPostView> createState() => _PostViewState();
@@ -172,15 +174,22 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     if (_isFollowingPostsEmpty()) {
       // _tabsVisibilityNotifier.value = false;
     }
-    _postTabController?.addListener(() {
-      final newIndex = _postTabController?.index ?? 0;
-      if (_isFollowingPostsEmpty()) {
-        // _tabsVisibilityNotifier.value = false;
-        _postTabController?.animateTo(0);
-        return;
+    _postTabController?.addListener(() async {
+      final success = await widget.onTabChange?.call(
+          widget.tabDataModelList[_postTabController?.index ?? _currentIndex],
+          _postTabController?.index ?? _currentIndex);
+      if (success == true) {
+        final newIndex = _postTabController?.index ?? 0;
+        if (_isFollowingPostsEmpty()) {
+          // _tabsVisibilityNotifier.value = false;
+          _postTabController?.animateTo(0);
+          return;
+        }
+        _currentIndex = newIndex;
+        postBloc.add(PostsLoadedEvent(widget.tabDataModelList[_currentIndex].postList));
+      } else {
+        _postTabController?.animateTo(_currentIndex);
       }
-      _currentIndex = newIndex;
-      postBloc.add(PostsLoadedEvent(widget.tabDataModelList[_currentIndex].postList));
     });
     postBloc.add(const StartPost());
   }
