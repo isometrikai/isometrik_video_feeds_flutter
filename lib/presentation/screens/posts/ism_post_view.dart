@@ -107,6 +107,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                       ),
                       child: TabBar(
                         controller: _postTabController,
+                        onTap: _onTabTapped,
                         labelColor: _isFollowingPostsEmpty() ? IsrColors.black : IsrColors.white,
                         unselectedLabelColor: _isFollowingPostsEmpty()
                             ? IsrColors.black
@@ -174,24 +175,27 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     if (_isFollowingPostsEmpty()) {
       // _tabsVisibilityNotifier.value = false;
     }
-    _postTabController?.addListener(() async {
-      final success = await widget.onTabChange?.call(
-          widget.tabDataModelList[_postTabController?.index ?? _currentIndex],
-          _postTabController?.index ?? _currentIndex);
-      if (success == true) {
-        final newIndex = _postTabController?.index ?? 0;
-        if (_isFollowingPostsEmpty()) {
-          // _tabsVisibilityNotifier.value = false;
-          _postTabController?.animateTo(0);
-          return;
-        }
-        _currentIndex = newIndex;
-        postBloc.add(PostsLoadedEvent(widget.tabDataModelList[_currentIndex].postList));
-      } else {
-        _postTabController?.animateTo(_currentIndex);
-      }
-    });
     postBloc.add(const StartPost());
+  }
+
+  void _onTabTapped(int index) async {
+    // If tapping the same tab, do nothing
+    if (index == _currentIndex) return;
+
+    // Immediately reset to current tab to prevent animation
+    _postTabController?.index = _currentIndex;
+
+    final success = await widget.onTabChange?.call(widget.tabDataModelList[index], index);
+
+    if (success == true) {
+      if (index == 0 && _isFollowingPostsEmpty()) {
+        return;
+      }
+      _currentIndex = index;
+      _postTabController?.animateTo(index);
+      final postBloc = IsmInjectionUtils.getBloc<PostBloc>();
+      postBloc.add(PostsLoadedEvent(widget.tabDataModelList[_currentIndex].postList));
+    }
   }
 
   @override
