@@ -220,10 +220,8 @@ class _Network extends StatelessWidget {
       fit: fit ?? BoxFit.cover,
       alignment: Alignment.center,
       cacheKey: optimizedImageUrl,
-      fadeInDuration:
-          fadeAnimationEnable ?? false ? const Duration(milliseconds: 300) : Duration.zero,
-      fadeOutDuration:
-          fadeAnimationEnable ?? false ? const Duration(milliseconds: 300) : Duration.zero,
+      fadeInDuration: fadeAnimationEnable ?? false ? const Duration(milliseconds: 300) : Duration.zero,
+      fadeOutDuration: fadeAnimationEnable ?? false ? const Duration(milliseconds: 300) : Duration.zero,
       placeholderFadeInDuration: Duration.zero,
       imageBuilder: (_, image) => ClipRRect(
         borderRadius: borderRadius ?? BorderRadius.zero,
@@ -247,8 +245,7 @@ class _Network extends StatelessWidget {
         child: name.isStringEmptyOrNull == false && isProfileImage
             ? Text(
                 initials,
-                style: IsrStyles.secondaryText14
-                    .copyWith(fontWeight: FontWeight.w500, color: IsrColors.white),
+                style: IsrStyles.secondaryText14.copyWith(fontWeight: FontWeight.w500, color: IsrColors.white),
                 textAlign: TextAlign.center,
               )
             : null,
@@ -259,13 +256,13 @@ class _Network extends StatelessWidget {
         borderRadius: borderRadius,
         boxFit: fit ?? BoxFit.contain,
         padding: 4,
+        backgroundColor: Theme.of(context).primaryColor,
         placeHolderName: placeHolderName,
         boxShape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
         child: name.isStringEmptyOrNull == false && isProfileImage
             ? Text(
                 initials,
-                style: IsrStyles.secondaryText14
-                    .copyWith(fontWeight: FontWeight.w500, color: IsrColors.white),
+                style: IsrStyles.secondaryText14.copyWith(fontWeight: FontWeight.w500, color: IsrColors.white),
                 textAlign: TextAlign.center,
               )
             : null,
