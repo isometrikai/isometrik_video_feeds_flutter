@@ -5,13 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/isr_utils.dart';
+import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 /// Custom Reels Player for both Video and Photo content
 class IsmReelsVideoPlayerView extends StatefulWidget {
   const IsmReelsVideoPlayerView({
     super.key,
-    this.videoCacheManager,
     required this.mediaUrl,
     required this.mediaType, // 0 for picture, 1 for video
     this.onDoubleTap,
@@ -98,7 +98,6 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
   final int? postStatus;
   final bool? isFirstPost;
   final Function(String tag)? onTapTag;
-  final VideoCacheManager? videoCacheManager;
 
   @override
   State<IsmReelsVideoPlayerView> createState() => _IsmReelsVideoPlayerViewState();
@@ -110,7 +109,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
   static const int kVideoType = 1;
   late TapGestureRecognizer _tapGestureRecognizer;
 
-  // VideoPlayerController? _videoPlayerController;
+  VideoPlayerController? _videoPlayerController;
 
   var _isPlaying = true;
 
@@ -130,20 +129,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
 
   var _isVideoInitialized = false;
 
-  VideoCacheManager get _videoCacheManager => widget.videoCacheManager ?? VideoCacheManager();
-
-  IVideoPlayerController? _videoPlayerController;
-
-  var _isDisposed = false;
-
-  /// Returns true if the video controller is ready for playback.
-  bool get _controllerReady =>
-      _videoPlayerController != null && !_isDisposed && _videoPlayerController!.isInitialized;
-
   @override
   void initState() {
-    _onStartInit();
     super.initState();
+    _onStartInit();
   }
 
   void _onStartInit() async {
@@ -153,8 +142,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
     debugPrint(
         'IsmReelsVideoPlayerView ...Post by ...${widget.name}\n Post url ${widget.mediaUrl}');
     if (widget.mediaType == kVideoType) {
-      await _initializeVideoPlayer(); // ✅ CHANGED: Make this await
-      mountUpdate();
+      await initializeVideoPlayer(); // ✅ CHANGED: Make this await
     }
   }
 
@@ -164,133 +152,55 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
     setState(() {});
   }
 
-  /// Initializes the video player controller for the current video.
-  /// - Uses the cached controller if available and initialized.
-  /// - If pre-caching is in progress, waits for the same initialization future.
-  /// - Only creates a new controller if not cached or initializing.
-  Future<void> _initializeVideoPlayer() async {
-    final videoUrl = widget.mediaUrl ?? '';
-    debugPrint('IsmReelsVideoPlayerView....initializeVideoPlayer video url $videoUrl');
-
+  //initialize vide player controller
+  //initialize video player controller
+  Future<void> initializeVideoPlayer() async {
+    // ✅ CHANGED: Make this return Future<void>
+    debugPrint('IsmReelsVideoPlayerView....initializeVideoPlayer video url ${widget.mediaUrl}');
+    if (widget.mediaUrl?.isStringEmptyOrNull == false) {
+      var mediaUrl = widget.mediaUrl!;
+      if (mediaUrl.startsWith('http:')) {
+        mediaUrl = mediaUrl.replaceFirst('http:', 'https:');
+        debugPrint(
+            'IsmReelsVideoPlayerView....initializeVideoPlayer video url converted to https $mediaUrl');
+      }
+      _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(mediaUrl));
+    }
+    if (_videoPlayerController == null) return;
     try {
-      // First try to get cached controller
-      _videoPlayerController =
-          _videoCacheManager.getCachedMedia(videoUrl) as IVideoPlayerController?;
+      await _videoPlayerController?.initialize();
+      // Always start with volume on
+      await _videoPlayerController?.setVolume(1.0);
+      await _videoPlayerController?.setLooping(true);
 
-      if (_videoPlayerController != null) {
-        debugPrint('IsmReelsVideoPlayerView....Using cached video controller for $videoUrl');
-        if (_videoPlayerController!.isInitialized) {
-          await _setupVideoController();
-          return;
-        } else {
-          // If controller exists but not initialized, dispose and recreate
-          await _videoPlayerController!.dispose();
-          _videoPlayerController = null;
-        }
+      // ✅ ADD: Mark as initialized
+      _isVideoInitialized = true;
+
+      debugPrint('IsmReelsVideoPlayerView....initializeVideoPlayer name ${widget.name}');
+
+      // ✅ ADD: Auto-play if this is the initial/first video
+      if (widget.isFirstPost == true) {
+        await _videoPlayerController?.seekTo(Duration.zero);
+        await _videoPlayerController?.play();
+        _isPlaying = true;
+        debugPrint('IsmReelsVideoPlayerView....Auto-playing initial video');
       }
-
-      // If not cached or needs reinitializing, check if initialization is in progress
-      if (_videoCacheManager.isMediaInitializing(videoUrl)) {
-        debugPrint('IsmReelsVideoPlayerView....Video is being initialized, waiting...');
-        // Wait for initialization with timeout
-        for (var i = 0; i < 5; i++) {
-          // Try up to 5 times
-          await Future.delayed(const Duration(milliseconds: 200));
-          if (!mounted || _isDisposed) return;
-
-          _videoPlayerController =
-              _videoCacheManager.getCachedMedia(videoUrl) as IVideoPlayerController?;
-          if (_videoPlayerController != null && _videoPlayerController!.isInitialized) {
-            debugPrint('IsmReelsVideoPlayerView....Found initialized controller after waiting');
-            await _setupVideoController();
-            return;
-          }
-        }
-      }
-
-      // If still not available, initialize normally (fallback)
-      await _initializeVideoControllerNormally(videoUrl);
+      // Wait until next frame before forcing visibility check
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        VisibilityDetectorController.instance.notifyNow();
+      });
+      mountUpdate();
     } catch (e) {
-      debugPrint('IsmReelsVideoPlayerView...catch video url $videoUrl');
+      debugPrint('IsmReelsVideoPlayerView...catch video url ${widget.mediaUrl}');
       IsrVideoReelUtility.debugCatchLog(error: e);
-    }
-  }
-
-  /// Fallback initialization method for video controller.
-  /// Only used if not cached or pre-caching is not in progress.
-  Future<void> _initializeVideoControllerNormally(String videoUrl) async {
-    debugPrint('IsmReelsVideoPlayerView....Initializing video controller normally $videoUrl');
-    var mediaUrl = videoUrl;
-    if (mediaUrl.startsWith('http:')) {
-      mediaUrl = mediaUrl.replaceFirst('http:', 'https:');
-    }
-
-    // Try to get from cache first
-    _videoPlayerController = _videoCacheManager.getCachedMedia(mediaUrl) as IVideoPlayerController?;
-
-    if (_videoPlayerController == null) {
-      // If not in cache, trigger precaching which will create a new controller
-      await MediaCacheFactory.precacheMedia([mediaUrl], highPriority: true);
-      _videoPlayerController =
-          _videoCacheManager.getCachedMedia(mediaUrl) as IVideoPlayerController?;
-
-      if (_videoPlayerController == null) return;
-    }
-
-    await _setupVideoController();
-  }
-
-  /// Sets up the video controller for playback, looping, and volume.
-  Future<void> _setupVideoController() async {
-    debugPrint('_setupVideoController....setup video controller');
-    if (_isDisposed) return;
-
-    try {
-      if (_videoPlayerController == null) {
-        debugPrint('⚠️ VideoController is null in setup');
-        return;
-      }
-
-      // Make sure controller is initialized
-      if (!_videoPlayerController!.isInitialized) {
-        debugPrint('🔄 Initializing video controller in setup');
-        await _videoPlayerController!.initialize();
-      }
-
-      // Reset to beginning
-      await _videoPlayerController!.seekTo(Duration.zero);
-
-      // Set up basic properties
-      await _videoPlayerController!.setLooping(true);
-      await _videoPlayerController!.setVolume(_isMuted ? 0.0 : 1.0);
-
-      // Start playback
-      if (!_videoPlayerController!.isPlaying) {
-        debugPrint('▶️ Starting video playback in setup');
-        await _videoPlayerController!.play();
-      }
-
-      debugPrint('✅ Video controller setup complete');
-    } catch (e) {
-      debugPrint('❌ Error in setupVideoController: $e');
     }
   }
 
   @override
   void dispose() {
-    _isDisposed = true;
     _tapGestureRecognizer.dispose();
-    _videoCacheManager.markAsNotVisible(widget.mediaUrl ?? '');
-    // Dispose controller if not cached
-    if (_videoPlayerController != null &&
-        widget.mediaUrl.isStringEmptyOrNull == false &&
-        !_videoCacheManager.isMediaCached(widget.mediaUrl ?? '')) {
-      _videoPlayerController?.pause();
-      _videoPlayerController?.dispose();
-    } else {
-      _videoPlayerController?.pause();
-    }
-
+    _videoPlayerController?.pause();
+    _videoPlayerController?.dispose();
     _videoPlayerController = null;
     super.dispose();
   }
@@ -315,33 +225,20 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
     }
 
     // ✅ CHANGED: Check _isVideoInitialized instead of just isInitialized
-    return _controllerReady
+    return _videoPlayerController != null && _videoPlayerController?.value.isInitialized == true
         ? FittedBox(
             fit: BoxFit.cover,
             child: SizedBox(
-              height: _videoPlayerController?.videoSize.height,
-              width: _videoPlayerController?.videoSize.width,
+              height: _videoPlayerController?.value.size.height,
+              width: _videoPlayerController?.value.size.width,
               child: AspectRatio(
-                aspectRatio: _videoPlayerController!.aspectRatio,
-                child: _buildVideoPlayerWidget(_videoPlayerController!),
+                aspectRatio: _videoPlayerController!.value.aspectRatio,
+                child: VideoPlayer(_videoPlayerController!),
               ),
             ),
           )
-        : AppImage.network(
-            widget.thumbnail ?? '',
-            width: IsrDimens.getScreenWidth(context),
-            height: IsrDimens.getScreenHeight(context),
-            fit: BoxFit.contain,
-          );
+        : const SizedBox();
   }
-
-  /// Helper method to build the video player widget
-  Widget _buildVideoPlayerWidget(IVideoPlayerController controller) => Container(
-        color: Colors.black,
-        child: Center(
-          child: controller.buildVideoPlayerWidget(),
-        ),
-      );
 
   void _togglePlayPause() {
     if (widget.showBlur == true || widget.mediaType == kPictureType) {
@@ -396,25 +293,21 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
                 if (widget.showBlur == true || widget.mediaType == kPictureType) {
                   return;
                 }
-
-                if (info.visibleFraction > 0.7) {
-                  // Mark video as visible in cache manager
-                  _videoCacheManager.markAsVisible(widget.mediaUrl ?? '');
-
-                  if (_controllerReady && !_videoPlayerController!.isPlaying) {
+                if (info.visibleFraction > 0.9) {
+                  mountUpdate();
+                  if (_videoPlayerController?.value.isPlaying == false) {
                     _videoPlayerController?.seekTo(Duration.zero);
                     _videoPlayerController?.play();
                     _isPlaying = true;
                     mountUpdate();
                   }
                 } else {
-                  // Mark video as not visible in cache manager
-                  _videoCacheManager.markAsNotVisible(widget.mediaUrl ?? '');
-
-                  if (_controllerReady && _videoPlayerController!.isPlaying) {
+                  _isPlayPauseActioned =
+                      false; // Reset play/pause icon state when video becomes visible
+                  mountUpdate();
+                  if (_videoPlayerController?.value.isPlaying == true) {
                     _videoPlayerController?.pause();
                     _isPlaying = false;
-                    _isPlayPauseActioned = false;
                     mountUpdate();
                   }
                 }
@@ -469,7 +362,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
           ),
 
           // Video controls
-          if (widget.mediaType == kVideoType && _videoPlayerController?.isInitialized == true)
+          if (widget.mediaType == kVideoType && _videoPlayerController?.value.isInitialized == true)
             AnimatedOpacity(
               opacity: _isPlayPauseActioned ? 1.0 : 0.0,
               duration: const Duration(milliseconds: 300),
