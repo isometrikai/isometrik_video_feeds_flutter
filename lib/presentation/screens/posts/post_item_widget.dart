@@ -50,7 +50,7 @@ class PostItemWidget extends StatefulWidget {
   final VoidCallback? onTapPlaceHolder;
   final Future<num>? Function(String, int)? onTapComment;
   final Function(String)? onTapShare;
-  final Function(String)? onTapUserProfilePic;
+  final Function(String, String)? onTapUserProfilePic;
   final bool? isCreatePostButtonVisible;
   final int? startingPostIndex;
   final String? loggedInUserId;
@@ -254,7 +254,8 @@ class _PostItemWidgetState extends State<PostItemWidget> {
           mediaType: _postList[index].mediaType1?.toInt() ?? 0,
           onTapUserProfilePic: () {
             if (widget.onTapUserProfilePic != null) {
-              widget.onTapUserProfilePic!(_postList[index].userId ?? '');
+              widget.onTapUserProfilePic!(
+                  _postList[index].userId ?? '', _postList[index].postId ?? '');
             }
           },
           productCount: _postList[index].productCount?.toInt() ?? 0,

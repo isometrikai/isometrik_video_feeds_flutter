@@ -230,9 +230,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         onTapShare: tabData.onTapShare,
         isCreatePostButtonVisible: tabData.isCreatePostButtonVisible,
         startingPostIndex: tabData.startingPostIndex,
-        onTapUserProfilePic: (userId) {
+        onTapUserProfilePic: (userId, postId) {
           if (tabData.onTapUserProfile == null) return;
-          tabData.onTapUserProfile!(userId);
+          tabData.onTapUserProfile!(
+              userId, postId, tabData.postSectionType ?? PostSectionType.trending);
         },
         loggedInUserId: _loggedInUserId,
         allowImplicitScrolling: widget.allowImplicitScrolling,
