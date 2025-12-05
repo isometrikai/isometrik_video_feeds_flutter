@@ -207,8 +207,9 @@ class IsrVideoReelUtility {
         useSafeArea: false,
         isDismissible: isDismissible,
         isScrollControlled: isScrollControlled,
-        backgroundColor:
-            isDarkBG ? Theme.of(context ?? IsrVideoReelConfig.buildContext!).primaryColor : IsrColors.white,
+        backgroundColor: isDarkBG
+            ? Theme.of(context ?? IsrVideoReelConfig.buildContext!).primaryColor
+            : IsrColors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(
             top: Radius.circular(IsrDimens.sixteen),
@@ -342,7 +343,8 @@ class IsrVideoReelUtility {
       );
 
   /// get formated date
-  static String getFormattedDateWithNumberOfDays(int? numberOfDays, {String? dataFormat = 'EEEE, dd MMM'}) =>
+  static String getFormattedDateWithNumberOfDays(int? numberOfDays,
+          {String? dataFormat = 'EEEE, dd MMM'}) =>
       DateFormat(dataFormat).format(DateTime.now().add(Duration(days: numberOfDays ?? 0)));
 
   static Color rgbStringToColor(String rgbString) {
@@ -362,7 +364,9 @@ class IsrVideoReelUtility {
 
   static String getFormattedPrice(double price, String? currencySymbol) => NumberFormat.currency(
           decimalDigits: price % 1 == 0 ? 0 : 2,
-          symbol: currencySymbol.isStringEmptyOrNull ? DefaultValues.defaultCurrencySymbol : currencySymbol)
+          symbol: currencySymbol.isStringEmptyOrNull
+              ? DefaultValues.defaultCurrencySymbol
+              : currencySymbol)
       .format(price);
 
   static Future<void> showCustomModalBottomSheet({
@@ -380,7 +384,8 @@ class IsrVideoReelUtility {
           ),
         ),
         builder: (context) => Padding(
-          padding: IsrDimens.edgeInsetsSymmetric(vertical: IsrDimens.sixteen, horizontal: IsrDimens.eighteen)
+          padding: IsrDimens.edgeInsetsSymmetric(
+                  vertical: IsrDimens.sixteen, horizontal: IsrDimens.eighteen)
               .copyWith(top: IsrDimens.twentyFour),
           child: Stack(
             clipBehavior: Clip.none,
@@ -479,7 +484,8 @@ class IsrVideoReelUtility {
       inputText.replaceAll(RegExp(r'[\n\t\r]'), ''); // Removes newline, tab, and carriage return
 
   ///show custom widget dialog
-  static Future<void> showCustomDialog({required BuildContext context, required Widget child}) => showDialog(
+  static Future<void> showCustomDialog({required BuildContext context, required Widget child}) =>
+      showDialog(
         context: context,
         builder: (context) => AlertDialog(
           contentPadding: IsrDimens.edgeInsetsAll(IsrDimens.twelve),
@@ -547,4 +553,7 @@ class IsrVideoReelUtility {
           ? ''
           : jsonDecode(data.data)['message'] as String
       : data.statusCode.toString();
+
+  static bool isLocalUrl(String url) =>
+      url.startsWith('http://') == false && url.startsWith('https://') == false;
 }

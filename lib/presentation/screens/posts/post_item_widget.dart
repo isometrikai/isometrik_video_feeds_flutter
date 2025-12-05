@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/di/di.dart';
@@ -73,7 +74,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
     super.initState();
   }
 
-  void _onStartInit() {
+  void _onStartInit() async {
     _pageController = PageController(initialPage: widget.startingPostIndex ?? 0);
 
     // Check current state
@@ -105,6 +106,35 @@ class _PostItemWidgetState extends State<PostItemWidget> {
         );
       }
     });
+    if (_postList.isListEmptyOrNull == false) {
+      // Immediately initialize ALL media from first post with highest priority
+      final firstPost = _postList[0];
+      final urlsToCache = <String>[];
+
+      // Process ALL media items in the first post
+      if (firstPost.imageUrl1.isStringEmptyOrNull == false) {
+        urlsToCache.add(firstPost.imageUrl1 ?? '');
+        if (firstPost.mediaType1 == 1) {
+          // Video
+          // For video, cache both video and thumbnail
+          if (firstPost.thumbnailUrl1.isStringEmptyOrNull == false) {
+            urlsToCache.add(firstPost.thumbnailUrl1 ?? '');
+            debugPrint(
+                '🚀 MainWidget: Pre-initializing video and thumbnail: ${firstPost.imageUrl1}');
+          }
+        }
+
+        // Initialize all first post media with maximum priority
+        if (urlsToCache.isNotEmpty) {
+          await MediaCacheFactory.precacheMedia(urlsToCache, highPriority: true);
+          debugPrint(
+              '🚀 MainWidget: Pre-initialized ${urlsToCache.length} media items for first post');
+        }
+
+        // Then start caching other media in parallel
+        unawaited(_doMediaCaching(0));
+      }
+    }
   }
 
   @override
@@ -160,6 +190,8 @@ class _PostItemWidgetState extends State<PostItemWidget> {
           debugPrint('FollowingPostWidget ...index $index');
           debugPrint(
               'FollowingPostWidget ...Post by ...${_postList[index].userName}\n Post url ${_postList[index].imageUrl1}');
+          _doMediaCaching(index);
+
           // Check if we're at 65% of the list
           final threshold = (_postList.length * 0.65).floor();
           if (index >= threshold) {
@@ -173,12 +205,16 @@ class _PostItemWidgetState extends State<PostItemWidget> {
                         !_postList.any((existingPost) => existingPost.postId == newPost.postId));
                     _postList.addAll(newPosts);
                   });
+                  if (_postList.isNotEmpty) {
+                    _doMediaCaching(0);
+                  }
                 }
               });
             }
           }
-          if (widget.onPageChanged != null)
+          if (widget.onPageChanged != null) {
             widget.onPageChanged!(index, _postList[index].postId ?? '');
+          }
         },
         itemCount: _postList.length,
         scrollDirection: Axis.vertical,
@@ -343,4 +379,62 @@ class _PostItemWidgetState extends State<PostItemWidget> {
           },
         ),
       );
+
+  // Handle media caching for both images and videos
+  Future<void> _doMediaCaching(int index) async {
+    if (_postList.isEmpty || index >= _postList.length) return;
+
+    final reelsData = _postList[index];
+    final username = reelsData.userName;
+
+    debugPrint('🎯 MainWidget: Page changed to index $index (@$username)');
+
+    // Collect media URLs for current and nearby posts
+    final mediaUrls = <String>[];
+    final startIndex = math.max(0, index - 4); // 4 behind
+    final endIndex = math.min(_postList.length - 1, index + 4); // 4 ahead
+
+    // First process current post with high priority
+    if (reelsData.imageUrl1.isStringEmptyOrNull == false) {
+      // Video
+      // For videos, cache both video and thumbnail with high priority
+      mediaUrls.insert(0, reelsData.imageUrl1 ?? ''); // Add to start for high priority
+      if (reelsData.mediaType1 == 1) {
+        if (reelsData.thumbnailUrl1.isStringEmptyOrNull == false) {
+          mediaUrls.insert(1, reelsData.thumbnailUrl1 ?? '');
+          debugPrint('🚀 Adding current video and thumbnail: ${reelsData.imageUrl1}');
+        }
+      }
+    }
+
+    // Then process nearby posts
+    for (var i = startIndex; i <= endIndex; i++) {
+      if (i == index) continue; // Skip current post as it's already added
+
+      final nearbyPost = _postList[i];
+      if (nearbyPost.imageUrl1.isStringEmptyOrNull == false) {
+        mediaUrls.add(nearbyPost.imageUrl1 ?? '');
+
+        if (nearbyPost.mediaType1 == 1) {
+          // Video
+          if (nearbyPost.thumbnailUrl1.isStringEmptyOrNull == false) {
+            mediaUrls.add(nearbyPost.thumbnailUrl1 ?? '');
+            debugPrint('➕ Adding nearby video and thumbnail for post $i');
+          }
+        }
+      }
+    }
+
+    // Cache all media with current post's media having priority
+    if (mediaUrls.isNotEmpty) {
+      debugPrint('🚀 MainWidget: Caching media: ${mediaUrls.length} items');
+      await MediaCacheFactory.precacheMedia(mediaUrls, highPriority: true);
+    }
+
+    // Print cache stats every few scrolls
+    if (index % 3 == 0) {
+      final stats = MediaCacheFactory.getCombinedStats();
+      debugPrint('📊 MainWidget: Cache Stats - ${stats.toString()}');
+    }
+  }
 }
