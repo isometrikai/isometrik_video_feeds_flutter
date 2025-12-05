@@ -111,3 +111,21 @@ class IsmLikeActionListenerState extends IsmSocialActionState {
       isLiked: isLiked ?? this.isLiked,
     );
 }
+
+class IsmSaveActionListenerState extends IsmSocialActionState {
+  IsmSaveActionListenerState({
+    required this.postId,
+    required this.isSaved,
+  });
+
+  final String postId;
+  final bool isSaved;
+
+  IsmSaveActionListenerState copyWith({
+    String? postId,
+    bool? isSaved,
+  }) => IsmSaveActionListenerState(
+    postId: postId ?? this.postId,
+    isSaved: isSaved ?? this.isSaved,
+  );
+}

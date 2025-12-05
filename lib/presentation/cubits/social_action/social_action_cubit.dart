@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:bloc/bloc.dart';
@@ -12,11 +14,13 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     this._followPostUseCase,
     this._getPostDetailsUseCase,
     this._likePostUseCase,
+    this._savePostUseCase,
   ) : super(IsmSocialActionState());
 
   final FollowUnFollowUserUseCase _followPostUseCase;
   final GetPostDetailsUseCase _getPostDetailsUseCase;
   final LikePostUseCase _likePostUseCase;
+  final SavePostUseCase _savePostUseCase;
 
   final _uniquePostList = <String, TimeLineData>{};
 
@@ -60,14 +64,14 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     return postData;
   }
 
-  loadPostFollowState({required String postId}) async {
+  loadPostFollowState(String postId) async {
     final postData = await getAsyncPostById(postId);
     final isFollow = postData?.isFollowing ?? false;
     final userId = postData?.userId ?? '';
     emit(IsmFollowUserState(isFollowing: isFollow, userId: userId));
   }
 
-  followUser({required String userId}) async {
+  followUser(String userId, {ReelsData? reelData,}) async {
     emit(IsmFollowUserState(
         isFollowing: false, isLoading: true, userId: userId));
     final apiResult = await _followPostUseCase.executeFollowUser(
@@ -85,13 +89,14 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
       emit(IsmFollowActionListenerState(
           isFollowing: true,
           userId: userId)); // on api success to invoke listener
+      _logFollowEvent(FollowAction.follow, reelsData: reelData,);
     } else {
       emit(IsmFollowUserState(isFollowing: false, userId: userId));
       ErrorHandler.showAppError(appError: apiResult.error);
     }
   }
 
-  unfollowUser({required String userId}) async {
+  unfollowUser(String userId, {ReelsData? reelData,}) async {
     emit(
         IsmFollowUserState(isFollowing: true, isLoading: true, userId: userId));
     final apiResult = await _followPostUseCase.executeFollowUser(
@@ -109,6 +114,7 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
       emit(IsmFollowActionListenerState(
           isFollowing: false,
           userId: userId)); // on api success to invoke listener
+      _logFollowEvent(FollowAction.unfollow, reelsData: reelData,);
     } else {
       emit(IsmFollowUserState(
           isFollowing: true, userId: userId));
@@ -116,7 +122,7 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     }
   }
 
-  loadPostLikeState({required String postId}) async {
+  loadPostLikeState(String postId) async {
     final postData = await getAsyncPostById(postId);
     final isLiked= postData?.isLiked ?? false;
     final _likeCount = postData?.engagementMetrics?.likeTypes?.love?.toInt() ?? 0;
@@ -124,7 +130,7 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     emit(IsmLikePostState(isLiked: isLiked, likeCount: max(_likeCount, 0), postId: postId));
   }
 
-  likePost(String postId, int _likeCount) async {
+  likePost(String postId, int _likeCount, {ReelsData? reelData,}) async {
     final likeCount = max(_likeCount, 0);
     emit(IsmLikePostState(isLiked: false, likeCount: likeCount, postId: postId, isLoading: true));
     final apiResult = await _likePostUseCase.executeLikePost(
@@ -146,13 +152,14 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
         isLiked: true,
         postId: postId,
       )); // on api success to invoke listener
+      _logLikeEvent(LikeAction.like, reelsData: reelData,);
     } else {
       emit(IsmLikePostState(isLiked: false, postId: postId, likeCount: likeCount)); // to update button/widget state
       ErrorHandler.showAppError(appError: apiResult.error);
     }
   }
 
-  unLikePost(String postId, int _likeCount) async {
+  unLikePost(String postId, int _likeCount, {ReelsData? reelData,}) async {
     final likeCount = max(_likeCount, 0);
     emit(IsmLikePostState(isLiked: true, likeCount: likeCount, postId: postId, isLoading: true));
     final apiResult = await _likePostUseCase.executeLikePost(
@@ -174,9 +181,141 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
         isLiked: false,
         postId: postId,
       )); // on api success to invoke listener
+      _logLikeEvent(LikeAction.unlike, reelsData: reelData,);
     } else {
       emit(IsmLikePostState(isLiked: true, postId: postId, likeCount: likeCount)); // to update button/widget state
       ErrorHandler.showAppError(appError: apiResult.error);
+    }
+  }
+
+  loadPostSaveState(String postId) async {
+    final postData = await getAsyncPostById(postId);
+    final isSaved = postData?.isSaved ?? false;
+    emit(IsmSavePostState(isSaved: isSaved, postId: postId));
+  }
+
+  savePost(String postId, {ReelsData? reelData,}) async {
+    emit(IsmSavePostState(
+      isSaved: false,
+      postId: postId,
+      isLoading: true,
+    ));
+
+    final apiResult = await _savePostUseCase.executeSavePost(
+      isLoading: false,
+      postId: postId,
+      socialPostAction: SocialPostAction.save,
+    );
+
+    if (apiResult.isSuccess) {
+      emit(IsmSavePostState(isSaved: true, postId: postId)); // update widget state
+      getPostById(postId)?.let((post) {
+        post.isSaved = true;
+      });
+      emit(IsmSaveActionListenerState(
+        isSaved: true,
+        postId: postId,
+      ));
+      _logSaveEvent(SaveAction.save, reelsData: reelData,);
+    } else {
+      emit(IsmSavePostState(isSaved: false, postId: postId));
+      ErrorHandler.showAppError(appError: apiResult.error);
+    }
+  }
+
+  unSavePost(String postId, {ReelsData? reelData,}) async {
+    emit(IsmSavePostState(
+      isSaved: true,
+      postId: postId,
+      isLoading: true,
+    ));
+
+    final apiResult = await _savePostUseCase.executeSavePost(
+      isLoading: false,
+      postId: postId,
+      socialPostAction: SocialPostAction.unSave,
+    );
+
+    if (apiResult.isSuccess) {
+      emit(IsmSavePostState(isSaved: false, postId: postId)); // update widget state
+
+      getPostById(postId)?.let((post) {
+        post.isSaved = false;
+      });
+
+      emit(IsmSaveActionListenerState(
+        isSaved: false,
+        postId: postId,
+      ));
+      _logSaveEvent(SaveAction.unsave, reelsData: reelData,);
+    } else {
+      emit(IsmSavePostState(isSaved: true, postId: postId));
+      ErrorHandler.showAppError(appError: apiResult.error);
+    }
+  }
+
+  void _logFollowEvent(FollowAction followAction, {ReelsData? reelsData,}) {
+    final eventMap = <String, dynamic>{
+      'view_source': 'feed',
+      'category': EventCategory.socialGraph.value,
+    };
+    sendAnalyticsEvent(
+        followAction == FollowAction.follow
+            ? EventType.userFollowed.value
+            : EventType.userUnFollowed.value,
+        eventMap, reelData: reelsData,);
+  }
+
+  void _logLikeEvent(LikeAction likeAction, {ReelsData? reelsData,}) {
+    final eventMap = <String, dynamic>{
+      'view_source': 'feed',
+      'category': EventCategory.postEngagement.value,
+    };
+    sendAnalyticsEvent(
+        likeAction == LikeAction.unlike ? EventType.postUnliked.value : EventType.postLiked.value,
+        eventMap, reelData: reelsData,);
+  }
+
+  void _logSaveEvent(SaveAction saveAction, {ReelsData? reelsData,}) {
+    final eventMap = <String, dynamic>{
+      'view_source': 'feed',
+      'category': EventCategory.postEngagement.value,
+    };
+    if (saveAction == SaveAction.save) {
+      sendAnalyticsEvent(EventType.postSaved.value, eventMap, reelData: reelsData,);
+    }
+  }
+
+  /// Implementation of PostHelperCallBacks interface
+  /// This method is called by VideoPlayerWidget to send analytics events
+  void sendAnalyticsEvent(String eventName, Map<String, dynamic> analyticsData, {ReelsData? reelData,}) async {
+    try {
+      // Prepare analytics event in the required format: "Post Viewed"
+      final postViewedEvent = {
+        'post_id': reelData?.postId ?? '',
+        'post_author_id': reelData?.userId ?? '',
+        'post_type': (reelData?.mediaMetaDataList.length ?? 0) > 1
+            ? 'carousel'
+            : reelData?.mediaMetaDataList.firstOrNull?.mediaType == MediaType.video.value
+            ? 'video'
+            : 'image',
+        'media_count': reelData?.mediaMetaDataList.length,
+        'timestamp': DateTime.now().toIso8601String(),
+        'hashtags': reelData?.tags?.hashtags?.isEmptyOrNull == false
+            ? reelData?.tags!.hashtags!.map((tag) => tag.tag).toList()
+            : [],
+      };
+      final finalAnalyticsDataMap = {
+        ...postViewedEvent,
+        ...analyticsData,
+      };
+
+      debugPrint('📊 Post Viewed Event: ${jsonEncode(finalAnalyticsDataMap)}');
+      unawaited(EventQueueProvider.instance
+          .addEvent(eventName, finalAnalyticsDataMap.removeEmptyValues()));
+    } catch (e) {
+      debugPrint('❌ Error sending analytics event: $e');
+      return null;
     }
   }
 }

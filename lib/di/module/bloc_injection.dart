@@ -46,6 +46,7 @@ class BlocInjection {
           IsmInjectionUtils.getUseCase<FollowUnFollowUserUseCase>(),
           IsmInjectionUtils.getUseCase<GetPostDetailsUseCase>(),
           IsmInjectionUtils.getUseCase<LikePostUseCase>(),
+          IsmInjectionUtils.getUseCase<SavePostUseCase>(),
         ),
     );
 

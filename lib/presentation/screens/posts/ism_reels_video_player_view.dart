@@ -796,9 +796,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               ],
               if (_reelData.postSetting?.isLikeButtonVisible == true)
                 LikeActionWidget(
-                  // key: ValueKey('post_like_${_reelData.postId}'),
                   postId: _reelData.postId ?? '',
-                  builder: (bool isLoading, bool isLiked, int likeCount, void Function() onTap) {
+                  builder: (isLoading, isLiked, likeCount, onTap) {
                     _reelData.isLiked = isLiked;
                     _reelData.likesCount = likeCount;
                     _isLikeLoading.value = isLoading;
@@ -807,7 +806,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                           ? AssetConstants.icLikeSelected
                           : AssetConstants.icLikeUnSelected,
                       label: likeCount.toString(),
-                      onTap: onTap,
+                      onTap: () => onTap(reelData: _reelData),
                       isLoading: isLoading,
                     );
                   },
@@ -835,21 +834,24 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   },
                 ),
               if (_reelData.postStatus != 0 &&
-                  _reelData.postSetting?.isSaveButtonVisible == true) ...[
-                ValueListenableBuilder<bool>(
-                  valueListenable: _isSaveLoading,
-                  builder: (context, value, child) => _buildActionButton(
-                    icon: _reelData.isSavedPost == true
-                        ? AssetConstants.icSaveSelected
-                        : AssetConstants.icSaveUnSelected,
-                    label: _reelData.isSavedPost == true
-                        ? IsrTranslationFile.saved
-                        : IsrTranslationFile.save,
-                    onTap: _callSaveFunction,
-                    isLoading: value,
-                  ),
+                  _reelData.postSetting?.isSaveButtonVisible == true)
+                SaveActionWidget(
+                  postId: _reelData.postId ?? '',
+                  builder: (isLoading, isSaved, onTap) {
+                    _reelData.isSavedPost = isSaved;
+                    _isSaveLoading.value = isLoading;
+                    return _buildActionButton(
+                      icon: isSaved == true
+                          ? AssetConstants.icSaveSelected
+                          : AssetConstants.icSaveUnSelected,
+                      label: isSaved == true
+                          ? IsrTranslationFile.saved
+                          : IsrTranslationFile.save,
+                      onTap: () => onTap(reelData: _reelData),
+                      isLoading: isLoading,
+                    );
+                  },
                 ),
-              ],
               if (_reelData.postSetting?.isMoreButtonVisible == true)
                 _buildActionButton(
                   icon: AssetConstants.icMoreIcon,
@@ -1147,7 +1149,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               padding: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twelve),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(IsrDimens.twenty)),
-              onPressed: onTap,
+              onPressed: () => onTap(reelData: _reelData),
               child: Text(
                 IsrTranslationFile.follow,
                 style: IsrStyles.white12.copyWith(
@@ -1170,7 +1172,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(IsrDimens.twenty),
               ),
-              onPressed: onTap,
+              onPressed: () => onTap(reelData: _reelData),
               // <-- your unfollow logic
               child: Text(
                 IsrTranslationFile.following,

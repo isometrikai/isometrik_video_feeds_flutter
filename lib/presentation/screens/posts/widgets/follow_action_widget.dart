@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/utils/extensions.dart';
 
@@ -13,7 +14,7 @@ class FollowActionWidget extends StatefulWidget {
 
   final String postId;
   final String userId;
-  final Widget Function(bool isLoading, bool isFollowing, VoidCallback onTap)
+  final Widget Function(bool isLoading, bool isFollowing, Function({ReelsData? reelData}) onTap)
       builder;
 
   @override
@@ -34,7 +35,7 @@ class _FollowActionWidgetState extends State<FollowActionWidget> {
     cubit = context.getOrCreateBloc<IsmSocialActionCubit>();
     userId = widget.userId;
     postId = widget.postId;
-    cubit.loadPostFollowState(postId: widget.postId);
+    cubit.loadPostFollowState(widget.postId);
   }
 
   @override
@@ -46,12 +47,12 @@ class _FollowActionWidgetState extends State<FollowActionWidget> {
     super.dispose();
   }
 
-  void _onTap() {
+  void _onTap({ReelsData? reelData}) {
     if (isLoading) return;
     if (isFollowing) {
-      cubit.unfollowUser(userId: userId);
+      cubit.unfollowUser(userId, reelData: reelData);
     } else {
-      cubit.followUser(userId: userId);
+      cubit.followUser(userId, reelData: reelData);
     }
   }
 
