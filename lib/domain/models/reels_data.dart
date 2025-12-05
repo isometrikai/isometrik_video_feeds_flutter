@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
@@ -74,36 +73,37 @@ class ReelsData {
     bool? isSavedPost,
     int? likesCount,
     int? commentCount,
-  }) => ReelsData(
-      postData: postData,
-      postId: postId,
-      userName: userName,
-      userId: userId,
-      firstName: firstName,
-      lastName: lastName,
-      profilePhoto: profilePhoto,
-      isVerifiedUser: isVerifiedUser,
-      isSelfProfile: isSelfProfile,
-      description: description,
-      mediaMetaDataList: mediaMetaDataList,
-      hasTags: hasTags,
-      showBlur: showBlur,
-      productCount: productCount,
-      postStatus: postStatus,
-      isCreatePostButtonVisible: isCreatePostButtonVisible,
-      isScheduledPost: isScheduledPost,
-      postSetting: postSetting,
-      mentions: mentions,
-      tagDataList: tagDataList,
-      placeDataList: placeDataList,
-      tags: tags,
-      createOn: createOn,
-      isFollow: isFollow ?? this.isFollow,
-      isLiked: isLiked ?? this.isLiked,
-      isSavedPost: isSavedPost ?? this.isSavedPost,
-      likesCount: likesCount ?? this.likesCount,
-      commentCount: commentCount ?? this.commentCount,
-    );
+  }) =>
+      ReelsData(
+        postData: postData,
+        postId: postId,
+        userName: userName,
+        userId: userId,
+        firstName: firstName,
+        lastName: lastName,
+        profilePhoto: profilePhoto,
+        isVerifiedUser: isVerifiedUser,
+        isSelfProfile: isSelfProfile,
+        description: description,
+        mediaMetaDataList: mediaMetaDataList,
+        hasTags: hasTags,
+        showBlur: showBlur,
+        productCount: productCount,
+        postStatus: postStatus,
+        isCreatePostButtonVisible: isCreatePostButtonVisible,
+        isScheduledPost: isScheduledPost,
+        postSetting: postSetting,
+        mentions: mentions,
+        tagDataList: tagDataList,
+        placeDataList: placeDataList,
+        tags: tags,
+        createOn: createOn,
+        isFollow: isFollow ?? this.isFollow,
+        isLiked: isLiked ?? this.isLiked,
+        isSavedPost: isSavedPost ?? this.isSavedPost,
+        likesCount: likesCount ?? this.likesCount,
+        commentCount: commentCount ?? this.commentCount,
+      );
 }
 
 class MediaMetaData {
@@ -129,8 +129,7 @@ class MentionMetaData {
     this.mediaPosition,
   });
 
-  factory MentionMetaData.fromJson(Map<String, dynamic> json) =>
-      MentionMetaData(
+  factory MentionMetaData.fromJson(Map<String, dynamic> json) => MentionMetaData(
         userId: json['user_id'] as String? ?? '',
         username: json['username'] as String? ?? '',
         tag: json['tag'] as String? ?? '',
@@ -138,12 +137,10 @@ class MentionMetaData {
         avatarUrl: json['avatarUrl'] as String? ?? '',
         textPosition: json['text_position'] == null
             ? null
-            : MentionPosition.fromJson(
-                json['text_position'] as Map<String, dynamic>),
+            : MentionPosition.fromJson(json['text_position'] as Map<String, dynamic>),
         mediaPosition: json['media_position'] == null
             ? null
-            : MediaPosition.fromJson(
-                json['media_position'] as Map<String, dynamic>),
+            : MediaPosition.fromJson(json['media_position'] as Map<String, dynamic>),
       );
   String? userId;
   String? username;
@@ -168,8 +165,7 @@ class MentionPosition {
     required this.end,
   });
 
-  factory MentionPosition.fromJson(Map<String, dynamic> json) =>
-      MentionPosition(
+  factory MentionPosition.fromJson(Map<String, dynamic> json) => MentionPosition(
         start: json['start'] as num? ?? 0,
         end: json['end'] as num? ?? 0,
       );
@@ -225,8 +221,7 @@ class PlaceMetaData {
         city: json['city'] as String? ?? '',
         coordinates: json['coordinates'] == null
             ? []
-            : List<double>.from(
-                (json['coordinates'] as List).map((x) => x?.toDouble())),
+            : List<double>.from((json['coordinates'] as List).map((x) => x?.toDouble())),
         country: json['country'] as String? ?? '',
         description: json['description'] as String? ?? '',
         placeId: json['place_id'] as String? ?? '',
@@ -249,9 +244,7 @@ class PlaceMetaData {
   Map<String, dynamic> toJson() => {
         'address': address,
         'city': city,
-        'coordinates': coordinates == null
-            ? []
-            : List<dynamic>.from(coordinates!.map((x) => x)),
+        'coordinates': coordinates == null ? [] : List<dynamic>.from(coordinates!.map((x) => x)),
         'country': country,
         'description': description,
         'place_id': placeId,
@@ -272,4 +265,29 @@ enum PostSectionType {
   myTaggedPost,
   tagPost,
   singlePost,
+}
+
+extension PostSectionTypeExtension on PostSectionType {
+  String get title {
+    switch (this) {
+      case PostSectionType.forYou:
+        return 'for_you';
+      case PostSectionType.following:
+        return 'following';
+      case PostSectionType.trending:
+        return 'trending';
+      case PostSectionType.myPost:
+        return 'my_posts';
+      case PostSectionType.otherUserPost:
+        return 'user_posts';
+      case PostSectionType.savedPost:
+        return 'saved_posts';
+      case PostSectionType.myTaggedPost:
+        return 'tagged_posts';
+      case PostSectionType.tagPost:
+        return 'user_tagged_post';
+      case PostSectionType.singlePost:
+        return 'Single Post';
+    }
+  }
 }

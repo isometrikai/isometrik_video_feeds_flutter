@@ -73,7 +73,6 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   final GetUserPostDataUseCase _getUserPostDataUseCase;
   IsmSocialActionCubit get _socialActionCubit => IsmInjectionUtils.getBloc();
 
-  UserInfoClass? _userInfoClass;
   var reelsPageTrendingController = PageController();
   TextEditingController? descriptionController;
 
@@ -95,15 +94,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
 
   final List<ProductDataModel> _detailsProductList = [];
 
-  void _onStartPost(StartPost event, Emitter<SocialPostState> emit) async {
-    final userInfoString = await _localDataUseCase.getUserInfo();
-    _userInfoClass = userInfoString.isStringEmptyOrNull
-        ? null
-        : UserInfoClass.fromJson(jsonDecode(userInfoString) as Map<String, dynamic>);
-    // add(LoadPostData(
-    //   postSections: event.postSections
-    // ));
-  }
+  void _onStartPost(StartPost event, Emitter<SocialPostState> emit) async {}
 
   Future<String> get userId => _localDataUseCase.getUserId();
 
@@ -681,7 +672,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       {Function(TimeLineData data)? onSuccess, bool showError = true}) async {
     final result = await _getPostDetailsUseCase.executeGetPostDetails(
       isLoading: false,
-      postId: postId ?? '',
+      postId: postId,
     );
 
     if (result.isSuccess && onSuccess != null) {

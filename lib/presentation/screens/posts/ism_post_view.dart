@@ -148,12 +148,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   List<BlocProvider> _getAllBlocProviders() => [
         // Social Post BLoC (main BLoC for this screen)
         BlocProvider<SocialPostBloc>(
-          create: (_) => _socialPostBloc
-            ..add(StartPost(
-                postSections: widget.tabDataModelList
-                    .map((_) => PostTabAssistData(
-                        postSectionType: _.postSectionType, postList: _.reelsDataList))
-                    .toList())), // ✅ Trigger initial load
+          create: (_) => _socialPostBloc, // ✅ Trigger initial load
         ),
         BlocProvider.value(value: _socialActionCubit),
       ];
@@ -600,6 +595,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
             context.pop(totalCommentsCount);
             _redirectToHashtag(hashTag, tabData.postSectionType, postId);
           },
+          postData: postData,
+          tabData: tabData,
         ),
       ),
       isDarkBG: true,
@@ -702,7 +699,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                   if (success) {
                     Utility.showInSnackBar(IsrTranslationFile.postReportedSuccessfully, context,
                         isSuccessIcon: true);
-                    _logReportEvent(postDataModel, reportReason);
+                    _logReportEvent(postDataModel, reportReason, tabData);
                   }
                   completer.complete(success);
                 },
@@ -971,12 +968,14 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     return postDataString;
   }
 
-  void _logReportEvent(TimeLineData postDataModel, String reportReason) async {
+  void _logReportEvent(
+      TimeLineData postDataModel, String reportReason, TabDataModel tabDataModel) async {
     final postReportEvent = {
       'post_id': postDataModel.id ?? '',
       'post_author_id': postDataModel.userId ?? '',
       'post_type': postDataModel.media?.first.mediaType,
       'categories': [],
+      'feed_type': tabDataModel.postSectionType.title,
       'hashtags': postDataModel.tags?.hashtags?.map((e) => '#$e').toList(),
       'report_reason': reportReason
     };
@@ -996,9 +995,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   }
 
   void _logHashtagEvent(String hashTag) {
-    final hashTagEventMap = {
-      'hashtag': hashTag,
-    };
+    final hashTagEventMap = {'hashtag': hashTag};
     unawaited(EventQueueProvider.instance
         .addEvent(EventType.hashTagClicked.value, hashTagEventMap.removeEmptyValues()));
   }
