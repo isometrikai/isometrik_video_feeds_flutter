@@ -158,9 +158,11 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
     return context.attachBlocIfNeeded<IsmSocialActionCubit>(
       bloc: _ismSocialActionCubit,
       child: BlocListener<IsmSocialActionCubit, IsmSocialActionState>(
-        listenWhen: (previous, current) => current is IsmFollowActionListenerState && widget.postSectionType == PostSectionType.following,
+        listenWhen: (previous, current) =>
+            current is IsmFollowActionListenerState &&
+            widget.postSectionType == PostSectionType.following,
         listener: (context, state) {
-          if (state is IsmFollowActionListenerState){
+          if (state is IsmFollowActionListenerState) {
             _updateWithFollowAction(state.userId, state.isFollowing);
           }
         },
@@ -174,9 +176,11 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
   Future<void> _updateWithFollowAction(String userId, bool isFollowing) async {
     var updateState = false;
     if (isFollowing && !_reelsDataList.any((element) => element.userId == userId)) {
-      final followedUserReels = _ismSocialActionCubit.getPostList(filter: (post) => post.userId == userId);
-      if (followedUserReels.isNotEmpty){
-        _reelsDataList.addAll(followedUserReels.map((e) => getReelData(e, loggedInUserId: widget.loggedInUserId)));
+      final followedUserReels =
+          _ismSocialActionCubit.getPostList(filter: (post) => post.userId == userId);
+      if (followedUserReels.isNotEmpty) {
+        _reelsDataList.addAll(
+            followedUserReels.map((e) => getReelData(e, loggedInUserId: widget.loggedInUserId)));
         _reelsDataList.sort((a, b) {
           final dateA = DateTime.tryParse(a.createOn ?? '');
           final dateB = DateTime.tryParse(b.createOn ?? '');
@@ -190,7 +194,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
 
         updateState = true;
       }
-    } else if (!isFollowing && _reelsDataList.any((element) => element.userId == userId)){
+    } else if (!isFollowing && _reelsDataList.any((element) => element.userId == userId)) {
       _reelsDataList.removeWhere((element) => element.userId == userId);
       updateState = true;
     }
@@ -290,6 +294,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                     child: IsmReelsVideoPlayerView(
                       index: index,
                       reelsData: reelsData,
+                      postSectionType: widget.postSectionType ?? PostSectionType.following,
                       loggedInUserId: widget.loggedInUserId,
                       videoCacheManager: _videoCacheManager,
                       // Add refresh count to force rebuild
@@ -298,8 +303,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                       reelsConfig: widget.reelsConfig,
                       onPressMoreButton: () async {
                         if (widget.reelsConfig.onPressMoreButton == null) return;
-                        final result =
-                        await widget.reelsConfig.onPressMoreButton!.call(reelsData);
+                        final result = await widget.reelsConfig.onPressMoreButton!.call(reelsData);
                         if (result == null) return;
                         if (result is bool) {
                           final isSuccess = result;
@@ -348,8 +352,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                       onPressFollowButton: () async {
                         if (widget.reelsConfig.onPressFollow != null) {
                           final result = await widget.reelsConfig.onPressFollow!(
-                              reelsData,
-                              reelsData.isFollow ?? false);
+                              reelsData, reelsData.isFollow ?? false);
                           if (result == true && mounted) {
                             final index = _reelsDataList
                                 .indexWhere((element) => element.postId == reelsData.postId);
@@ -372,8 +375,8 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                       },
                       onPressLikeButton: () async {
                         if (widget.reelsConfig.onPressLike != null) {
-                          final result = await widget.reelsConfig
-                              .onPressLike!(reelsData, reelsData.isLiked ?? false);
+                          final result = await widget.reelsConfig.onPressLike!(
+                              reelsData, reelsData.isLiked ?? false);
                           if (result == true) {
                             reelsData.isLiked = reelsData.isLiked == false;
                             if (reelsData.isLiked == true) {
@@ -397,8 +400,8 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
                       },
                       onPressSaveButton: () async {
                         if (widget.reelsConfig.onPressSave != null) {
-                          final result = await widget.reelsConfig
-                              .onPressSave!(reelsData, reelsData.isSavedPost ?? false);
+                          final result = await widget.reelsConfig.onPressSave!(
+                              reelsData, reelsData.isSavedPost ?? false);
                           if (result != reelsData.isSavedPost) {
                             reelsData.isSavedPost = result;
                             _updateState();

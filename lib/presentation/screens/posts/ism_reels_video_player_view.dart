@@ -30,6 +30,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
     this.onTapCartIcon,
     required this.index,
     required this.reelsConfig,
+    this.postSectionType = PostSectionType.following,
   });
 
   final VideoCacheManager? videoCacheManager;
@@ -45,6 +46,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
   final Function(String)? onTapCartIcon;
   final int index;
   final ReelsConfig reelsConfig;
+  final PostSectionType postSectionType;
 
   @override
   State<IsmReelsVideoPlayerView> createState() => _IsmReelsVideoPlayerViewState();
@@ -115,6 +117,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   // Image view tracking
   Timer? _imageViewTimer;
   bool _hasLoggedImageViewEvent = false;
+  var _watchDuration = 0;
 
   @override
   void initState() {
@@ -401,6 +404,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         widget.onVideoCompleted?.call();
       },
       postHelperCallBacks: this,
+      videoProgressCallBack: (totalDuration, currentPosition) {
+        _watchDuration = currentPosition;
+      },
     );
   }
 
@@ -785,7 +791,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                           ? AssetConstants.icLikeSelected
                           : AssetConstants.icLikeUnSelected,
                       label: likeCount.toString(),
-                      onTap: () => onTap(reelData: _reelData),
+                      onTap: () {
+                        onTap(reelData: _reelData, watchDuration: _watchDuration);
+                      },
                       isLoading: isLoading,
                     );
                   },
@@ -1269,13 +1277,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   Future<void> _callLikeFunction() async {
     if (!_isLikeLoading.value) {
       if (_reelData.isLiked == true) {
-        context
-            .getOrCreateBloc<IsmSocialActionCubit>()
-            .likePost(_reelData.postId ?? '', _reelData.likesCount ?? 0);
+        context.getOrCreateBloc<IsmSocialActionCubit>().likePost(
+            _reelData.postId ?? '', _reelData.likesCount ?? 0,
+            watchDuration: _watchDuration);
       } else {
-        context
-            .getOrCreateBloc<IsmSocialActionCubit>()
-            .unLikePost(_reelData.postId ?? '', _reelData.likesCount ?? 0);
+        context.getOrCreateBloc<IsmSocialActionCubit>().unLikePost(
+            _reelData.postId ?? '', _reelData.likesCount ?? 0,
+            watchDuration: _watchDuration);
       }
     }
   }
@@ -1292,24 +1300,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         eventMap);
   }
 
-  void _logLikeEvent(ReelsData reelsData, LikeAction likeAction) {
-    final eventMap = <String, dynamic>{
-      'view_source': 'feed',
-      'category': EventCategory.postEngagement.value,
-    };
-    sendAnalyticsEvent(
-        likeAction == LikeAction.unlike ? EventType.postUnliked.value : EventType.postLiked.value,
-        eventMap);
-  }
-
   void _logSaveEvent(ReelsData reelsData, SaveAction saveAction) {
     final eventMap = <String, dynamic>{
       'post_id': _reelData.postId ?? '',
-      'post_author_id': _reelData.userId ?? '',
       'post_type': (_reelData.postData as TimeLineData).type,
+      'post_author_id': _reelData.userId ?? '',
+      'feed_type': widget.postSectionType.title,
       'categories': [],
       'hashtags': _reelData.tags?.hashtags?.isEmptyOrNull == false
-          ? _reelData.tags!.hashtags!.map((tag) => tag.tag).toList()
+          ? _reelData.tags!.hashtags!.map((tag) => '#${tag.tag}').toList()
           : [],
     };
     if (saveAction == SaveAction.save) {
@@ -1567,6 +1566,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               widget.onVideoCompleted?.call();
             }
           },
+          postHelperCallBacks: this,
+          videoProgressCallBack: (totalDuration, currentPosition) {
+            _watchDuration = currentPosition;
+          },
         ),
       );
     }
@@ -1623,15 +1626,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       final postViewedEvent = {
         'post_id': _reelData.postId ?? '',
         'post_author_id': _reelData.userId ?? '',
+        'feed_type': widget.postSectionType.title,
         'post_type': _reelData.mediaMetaDataList.length > 1
             ? 'carousel'
             : _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kVideoType
                 ? 'video'
                 : 'image',
-        'media_count': _reelData.mediaMetaDataList.length,
-        'timestamp': DateTime.now().toIso8601String(),
+        'categories': [],
         'hashtags': _reelData.tags?.hashtags?.isEmptyOrNull == false
-            ? _reelData.tags!.hashtags!.map((tag) => tag.tag).toList()
+            ? _reelData.tags!.hashtags!.map((tag) => '#${tag.tag}').toList()
             : [],
       };
       final finalAnalyticsDataMap = {

@@ -12,8 +12,8 @@ class LikeActionWidget extends StatefulWidget {
   });
 
   final String postId;
-  final Widget Function(bool isLoading, bool isLiked, int likeCount, Function({ReelsData? reelData}) onTap)
-      builder;
+  final Widget Function(bool isLoading, bool isLiked, int likeCount,
+      Function({ReelsData? reelData, int? watchDuration}) onTap) builder;
 
   @override
   State<LikeActionWidget> createState() => _LikeActionWidgetState();
@@ -44,31 +44,33 @@ class _LikeActionWidgetState extends State<LikeActionWidget> {
     super.dispose();
   }
 
-  void _onTap({ReelsData? reelData}) {
+  void _onTap({ReelsData? reelData, int? watchDuration}) {
     if (isLoading) return;
     if (isLiked) {
-      cubit.unLikePost(postId, likeCount, reelData: reelData);
+      cubit.unLikePost(postId, likeCount, reelData: reelData, watchDuration: watchDuration);
     } else {
-      cubit.likePost(postId, likeCount, reelData: reelData);
+      cubit.likePost(postId, likeCount, reelData: reelData, watchDuration: watchDuration);
     }
   }
 
   @override
   Widget build(BuildContext context) => context.attachBlocIfNeeded<IsmSocialActionCubit>(
-      child: BlocBuilder<IsmSocialActionCubit, IsmSocialActionState>(
-        buildWhen: (previous, current) =>
-            current is IsmLikePostState && current.postId == postId,
-        builder: (context, state) {
-          if (state is IsmLikePostState && state.postId == postId) {
-            isLoading = state.isLoading;
-            isLiked = state.isLiked;
-            likeCount = state.likeCount;
-          }
-          return GestureDetector(
-            onTap: isLoading ? null : _onTap,
-            child: widget.builder(isLoading, isLiked, likeCount, _onTap),
-          );
-        },
-      ),
-    );
+        child: BlocBuilder<IsmSocialActionCubit, IsmSocialActionState>(
+          buildWhen: (previous, current) => current is IsmLikePostState && current.postId == postId,
+          builder: (context, state) {
+            if (state is IsmLikePostState && state.postId == postId) {
+              isLoading = state.isLoading;
+              isLiked = state.isLiked;
+              likeCount = state.likeCount;
+            }
+            return GestureDetector(
+              onTap: isLoading
+                  ? null
+                  : ({ReelsData? reelsData, int? watchDuration}) =>
+                      _onTap(reelData: reelsData, watchDuration: watchDuration),
+              child: widget.builder(isLoading, isLiked, likeCount, _onTap),
+            );
+          },
+        ),
+      );
 }

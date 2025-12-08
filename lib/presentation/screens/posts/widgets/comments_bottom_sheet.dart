@@ -828,11 +828,11 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     final eventMap = {
       'post_id': postId,
       'post_type': widget.postData?.type,
-      'comment_id': commentId,
       'post_author_id': widget.postData?.userId,
       'feed_type': widget.tabData?.postSectionType.title,
       'categories': [],
       'hashtags': widget.postData?.tags?.hashtags?.map((e) => '#$e').toList(),
+      'comment_id': commentId,
     };
     unawaited(EventQueueProvider.instance.addEvent(eventName, eventMap.removeEmptyValues()));
   }

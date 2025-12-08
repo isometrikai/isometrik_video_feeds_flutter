@@ -20,6 +20,7 @@ class VideoPlayerWidget extends StatefulWidget {
     this.aspectRatio,
     this.onVideoCompleted,
     this.postHelperCallBacks,
+    this.videoProgressCallBack,
   });
 
   final String mediaUrl;
@@ -30,6 +31,7 @@ class VideoPlayerWidget extends StatefulWidget {
   final double? aspectRatio;
   final VoidCallback? onVideoCompleted;
   final PostHelperCallBacks? postHelperCallBacks;
+  final Function(int, int)? videoProgressCallBack;
 
   @override
   State<VideoPlayerWidget> createState() => _VideoPlayerWidgetState();
@@ -158,6 +160,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     if (position.inMilliseconds > _maxWatchPosition.inMilliseconds) {
       _maxWatchPosition = position;
     }
+
+    widget.videoProgressCallBack?.call(duration.inSeconds, position.inSeconds);
 
     // 1. Log "Video Started" event when video actually starts playing (position > 0)
     if (!_hasLoggedVideoStarted &&
@@ -366,11 +370,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         }
 
         final eventMap = <String, dynamic>{
-          // 'view_source': 'feed',
-          // 'view_completion_rate': completionRate,
           'dwell_time': watchedSeconds,
-          // 'total_duration': totalSeconds,
-          'category': EventCategory.postEngagement.value,
         };
 
         // Mark as logged to prevent duplicate logging

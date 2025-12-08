@@ -133,6 +133,7 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     String postId,
     int _likeCount, {
     ReelsData? reelData,
+    int? watchDuration,
   }) async {
     final likeCount = max(_likeCount, 0);
     emit(IsmLikePostState(isLiked: false, likeCount: likeCount, postId: postId, isLoading: true));
@@ -161,6 +162,7 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
       _logLikeEvent(
         LikeAction.like,
         reelsData: reelData,
+        watchDuration: watchDuration,
       );
     } else {
       emit(IsmLikePostState(
@@ -173,6 +175,7 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     String postId,
     int _likeCount, {
     ReelsData? reelData,
+    int? watchDuration,
   }) async {
     final likeCount = max(_likeCount, 0);
     emit(IsmLikePostState(isLiked: true, likeCount: likeCount, postId: postId, isLoading: true));
@@ -201,6 +204,7 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
       _logLikeEvent(
         LikeAction.unlike,
         reelsData: reelData,
+        watchDuration: watchDuration,
       );
     } else {
       emit(IsmLikePostState(
@@ -308,9 +312,11 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
   void _logLikeEvent(
     LikeAction likeAction, {
     ReelsData? reelsData,
+    int? watchDuration,
   }) {
     final eventMap = <String, dynamic>{
-      likeAction == LikeAction.like ? 'time_to_like_seconds' : 'time_to_unlike_seconds': 1,
+      likeAction == LikeAction.like ? 'time_to_like_seconds' : 'time_to_unlike_seconds':
+          watchDuration,
     };
     sendAnalyticsEvent(
       likeAction == LikeAction.unlike ? EventType.postUnliked.value : EventType.postLiked.value,

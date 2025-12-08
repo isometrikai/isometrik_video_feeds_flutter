@@ -32,6 +32,7 @@ class ReelsData {
     this.placeDataList,
     this.tags,
     this.createOn,
+    this.watchDuration,
   });
 
   final dynamic postData;
@@ -66,6 +67,7 @@ class ReelsData {
   final List<MentionMetaData>? tagDataList;
   final List<PlaceMetaData>? placeDataList;
   final Tags? tags;
+  final num? watchDuration;
 
   ReelsData copyWith({
     bool? isFollow,
