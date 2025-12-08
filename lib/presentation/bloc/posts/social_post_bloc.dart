@@ -573,7 +573,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
             event.commentId ?? '',
             event.postId ?? '',
             event.userId ?? '',
-           event.commentMessage ?? '', event.postDataModel,
+            event.commentMessage ?? '',
+            event.postDataModel,
             event.tabDataModel);
         comment?.status = IsrTranslationFile.inReview;
         if (commentList != null) {

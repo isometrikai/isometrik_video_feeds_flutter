@@ -47,9 +47,11 @@ class _LikeActionWidgetState extends State<LikeActionWidget> {
   void _onTap({ReelsData? reelData, int? watchDuration}) {
     if (isLoading) return;
     if (isLiked) {
-      cubit.unLikePost(postId, likeCount, reelData: reelData, watchDuration: watchDuration);
+      cubit.unLikePost(postId, likeCount,
+          reelData: reelData, watchDuration: watchDuration);
     } else {
-      cubit.likePost(postId, likeCount, reelData: reelData, watchDuration: watchDuration);
+      cubit.likePost(postId, likeCount,
+          reelData: reelData, watchDuration: watchDuration);
     }
   }
 
@@ -66,7 +68,9 @@ class _LikeActionWidgetState extends State<LikeActionWidget> {
               likeCount = state.likeCount;
             }
             return GestureDetector(
-              onTap: isLoading ? null : ({ReelsData? reelsData, int? watchDuration}) =>
+              onTap: isLoading
+                  ? null
+                  : ({ReelsData? reelsData, int? watchDuration}) =>
                       _onTap(reelData: reelsData, watchDuration: watchDuration),
               child: widget.builder(isLoading, isLiked, likeCount, _onTap),
             );

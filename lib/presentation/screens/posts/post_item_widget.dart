@@ -188,12 +188,10 @@ class _PostItemWidgetState extends State<PostItemWidget>
     var updateState = false;
     if (isFollowing &&
         !_reelsDataList.any((element) => element.userId == userId)) {
-      final followedUserReels =
-          _ismSocialActionCubit.getPostList(
+      final followedUserReels = _ismSocialActionCubit.getPostList(
           filter: (post) => post.userId == userId);
       if (followedUserReels.isNotEmpty) {
-        _reelsDataList.addAll(
-            followedUserReels
+        _reelsDataList.addAll(followedUserReels
             .map((e) => getReelData(e, loggedInUserId: widget.loggedInUserId)));
         _reelsDataList.sort((a, b) {
           final dateA = DateTime.tryParse(a.createOn ?? '');
@@ -313,7 +311,8 @@ class _PostItemWidgetState extends State<PostItemWidget>
                     child: IsmReelsVideoPlayerView(
                       index: index,
                       reelsData: reelsData,
-                      postSectionType: widget.postSectionType ?? PostSectionType.following,
+                      postSectionType:
+                          widget.postSectionType ?? PostSectionType.following,
                       loggedInUserId: widget.loggedInUserId,
                       videoCacheManager: _videoCacheManager,
                       // Add refresh count to force rebuild

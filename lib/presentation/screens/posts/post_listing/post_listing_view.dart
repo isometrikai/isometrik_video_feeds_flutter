@@ -420,7 +420,8 @@ class _PostListingViewState extends State<PostListingView> {
             if (!state.isFromPagination &&
                 state.tabType == _selectedTab &&
                 state.tabType != SearchTabType.places) {
-              final searchQuery = _hashtagController.text.trim().replaceFirst('#', '');
+              final searchQuery =
+                  _hashtagController.text.trim().replaceFirst('#', '');
               _logSearchEvent(
                 searchQuery,
                 state.results.length,
@@ -1055,15 +1056,16 @@ class _PostListingViewState extends State<PostListingView> {
     // );
   }
 
-/// Log search event when user performs a search
-  void _logSearchEvent(String searchQuery, int searchResultsCount, String searchFilter) {
+  /// Log search event when user performs a search
+  void _logSearchEvent(
+      String searchQuery, int searchResultsCount, String searchFilter) {
     final searchEventMap = {
       'search_query': searchQuery,
       'search_results_count': searchResultsCount,
       'search_filter': searchFilter,
     };
-    unawaited(EventQueueProvider.instance
-        .addEvent(EventType.searchPerformed.value, searchEventMap.removeEmptyValues()));
+    unawaited(EventQueueProvider.instance.addEvent(
+        EventType.searchPerformed.value, searchEventMap.removeEmptyValues()));
   }
 
   /// Log event when user clicks on a post in search results
@@ -1080,8 +1082,11 @@ class _PostListingViewState extends State<PostListingView> {
     }
 
     // Extract hashtags from post
-    final hashtags =
-        post.tags?.hashtags?.map((h) => '#${h.tag}').where((tag) => tag.isNotEmpty).toList() ?? [];
+    final hashtags = post.tags?.hashtags
+            ?.map((h) => '#${h.tag}')
+            .where((tag) => tag.isNotEmpty)
+            .toList() ??
+        [];
 
     final eventMap = {
       'search_query': searchQuery,
@@ -1090,15 +1095,15 @@ class _PostListingViewState extends State<PostListingView> {
       'post_author_id': post.userId ?? '',
       'hashtags': hashtags,
     };
-    unawaited(EventQueueProvider.instance
-        .addEvent(EventType.searchResultClicked.value, eventMap.removeEmptyValues()));
+    unawaited(EventQueueProvider.instance.addEvent(
+        EventType.searchResultClicked.value, eventMap.removeEmptyValues()));
   }
 
   /// Log event when user clicks on a tag in search results
   void _logHashtagEvent(String hashTag) {
     final hashTagEventMap = {'hashtag': hashTag};
-    unawaited(EventQueueProvider.instance
-        .addEvent(EventType.hashTagClicked.value, hashTagEventMap.removeEmptyValues()));
+    unawaited(EventQueueProvider.instance.addEvent(
+        EventType.hashTagClicked.value, hashTagEventMap.removeEmptyValues()));
   }
 
   /// Log event when user clicks on an account in search results

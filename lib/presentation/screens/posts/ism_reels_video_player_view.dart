@@ -831,7 +831,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                           : AssetConstants.icLikeUnSelected,
                       label: likeCount.toString(),
                       onTap: () {
-                        onTap(reelData: _reelData, watchDuration: _watchDuration);
+                        onTap(
+                            reelData: _reelData, watchDuration: _watchDuration);
                       },
                       isLoading: isLoading,
                     );

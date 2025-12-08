@@ -341,8 +341,7 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     final eventMap = <String, dynamic>{
       likeAction == LikeAction.like
           ? 'time_to_like_seconds'
-          : 'time_to_unlike_seconds':
-          watchDuration,
+          : 'time_to_unlike_seconds': watchDuration,
     };
     sendAnalyticsEvent(
       likeAction == LikeAction.unlike
