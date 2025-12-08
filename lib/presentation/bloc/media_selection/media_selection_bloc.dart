@@ -269,7 +269,8 @@ class MediaSelectionBloc
     LoadMoreMediaEvent event,
     Emitter<MediaSelectionState> emit,
   ) async {
-    if (state is MediaSelectionLoadedState && (state as MediaSelectionLoadedState).isLoadingMore) {
+    if (state is MediaSelectionLoadedState &&
+        (state as MediaSelectionLoadedState).isLoadingMore) {
       return;
     }
     // Don't increment _currentPage here, it's incremented in _onLoadMedia after successful load

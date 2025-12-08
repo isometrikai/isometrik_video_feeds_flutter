@@ -1,9 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-import '../../screens/media/media_edit/model/media_edit_audio_model.dart';
-import '../../screens/media/media_edit/model/media_edit_models.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_models.dart';
 
 part 'media_edit_event.dart';
 part 'media_edit_state.dart';

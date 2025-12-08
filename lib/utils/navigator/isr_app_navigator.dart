@@ -72,8 +72,8 @@ class IsrAppNavigator {
     BuildContext context, {
     required String tagValue,
     required TagType tagType,
-        required TabConfig tabConfig,
-        required PostConfig postConfig,
+    required TabConfig tabConfig,
+    required PostConfig postConfig,
     TransitionType? transitionType,
   }) {
     final page = BlocProvider<TagDetailsBloc>(
@@ -99,8 +99,8 @@ class IsrAppNavigator {
     required PostSectionType postSectionType,
     String? tagValue,
     TagType? tagType,
-        required TabConfig tabConfig,
-        required PostConfig postConfig,
+    required TabConfig tabConfig,
+    required PostConfig postConfig,
     Function(String, String, double, double)? onTapPlace,
     TransitionType? transitionType,
   }) {

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -39,7 +38,9 @@ class CameraTopControls extends StatelessWidget {
                 },
                 child: Container(
                   padding: IsrDimens.edgeInsetsAll(7.responsiveDimension),
-                  decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.black.withValues(alpha: 0.25)),
+                  decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.black.withValues(alpha: 0.25)),
                   child: Icon(
                     Icons.close,
                     color: Colors.white,

@@ -337,7 +337,9 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
                   current is MediaSelectionPermissionDeniedState ||
                   current is MediaSelectionLoadedState,
               listenWhen: (previous, current) =>
-                  current is MediaSelectionErrorState && (previous is! MediaSelectionErrorState || previous.message != current.message) ||
+                  current is MediaSelectionErrorState &&
+                      (previous is! MediaSelectionErrorState ||
+                          previous.message != current.message) ||
                   current is MediaSelectionCompletedState,
               listener: (context, state) {
                 if (state is MediaSelectionErrorState) {
@@ -645,7 +647,8 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
 
   void _captureMedia() async {
     if (widget.onCaptureMedia != null) {
-      final filePath = await widget.onCaptureMedia!(widget.mediaSelectionConfig.mediaListType.name);
+      final filePath = await widget
+          .onCaptureMedia!(widget.mediaSelectionConfig.mediaListType.name);
       if (filePath?.isNotEmpty == true) {
         final file = File(filePath!);
         final mediaType = await _getMediaType(file);

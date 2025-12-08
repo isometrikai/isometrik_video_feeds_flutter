@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -82,121 +81,122 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
 
   @override
   Widget build(BuildContext context) => context.attachBlocIfNeeded<CameraBloc>(
-      bloc: _cameraBloc,
-      child: BlocConsumer<CameraBloc, CameraState>(
         bloc: _cameraBloc,
-        listener: (context, state) {
-          if (state is CameraErrorState) {
-            Utility.showToastMessage(state.message);
-          } else if (state is CameraPhotoCapturedState && !_isNavigatingToEdit) {
-            _isNavigatingToEdit = true;
-            _navigateToEditScreen(state.photoPath, MediaType.photo);
-          } else if (state is CameraRecordingConfirmedState) {
-            if (!_isNavigatingToEdit) {
+        child: BlocConsumer<CameraBloc, CameraState>(
+          bloc: _cameraBloc,
+          listener: (context, state) {
+            if (state is CameraErrorState) {
+              Utility.showToastMessage(state.message);
+            } else if (state is CameraPhotoCapturedState &&
+                !_isNavigatingToEdit) {
               _isNavigatingToEdit = true;
-              // Pass segments if available (for segment recordings)
-              final segments = state.segments != null
-                  ? List<VideoSegment>.from(state.segments!)
-                  : null;
+              _navigateToEditScreen(state.photoPath, MediaType.photo);
+            } else if (state is CameraRecordingConfirmedState) {
+              if (!_isNavigatingToEdit) {
+                _isNavigatingToEdit = true;
+                // Pass segments if available (for segment recordings)
+                final segments = state.segments != null
+                    ? List<VideoSegment>.from(state.segments!)
+                    : null;
 
-              debugPrint(
-                  'Navigating to edit with ${segments?.length ?? 0} segments');
-              if (segments != null) {
                 debugPrint(
-                    'Segment paths: ${segments.map((s) => s.path).toList()}');
-              }
+                    'Navigating to edit with ${segments?.length ?? 0} segments');
+                if (segments != null) {
+                  debugPrint(
+                      'Segment paths: ${segments.map((s) => s.path).toList()}');
+                }
 
-              _navigateToEditScreenWithSegments(
-                state.mediaPath,
-                MediaType.video,
-                segments,
+                _navigateToEditScreenWithSegments(
+                  state.mediaPath,
+                  MediaType.video,
+                  segments,
+                );
+              }
+              // // Always navigate when recording is confirmed (either manual or auto-stop)
+              // debugPrint(
+              //     'CameraRecordingConfirmedState received, mediaPath: ${state.mediaPath}');
+              // if (!_isNavigatingToEdit) {
+              //   _isNavigatingToEdit = true;
+              //   debugPrint(
+              //       'Navigating to edit screen with video: ${state.mediaPath}');
+              //   _navigateToEditScreen(state.mediaPath, MediaType.video);
+              // }
+            } else if (state is CameraRecordingReadyState &&
+                !_isNavigatingToEdit) {}
+          },
+          builder: (context, state) {
+            if (state is CameraLoadingState) {
+              return const Scaffold(
+                backgroundColor: Colors.black,
+                body: Center(
+                  child: CircularProgressIndicator(color: Colors.white),
+                ),
               );
             }
-            // // Always navigate when recording is confirmed (either manual or auto-stop)
-            // debugPrint(
-            //     'CameraRecordingConfirmedState received, mediaPath: ${state.mediaPath}');
-            // if (!_isNavigatingToEdit) {
-            //   _isNavigatingToEdit = true;
-            //   debugPrint(
-            //       'Navigating to edit screen with video: ${state.mediaPath}');
-            //   _navigateToEditScreen(state.mediaPath, MediaType.video);
-            // }
-          } else if (state is CameraRecordingReadyState &&
-              !_isNavigatingToEdit) {}
-        },
-        builder: (context, state) {
-          if (state is CameraLoadingState) {
+
+            if (state is CameraErrorState) {
+              return Scaffold(
+                backgroundColor: Colors.black,
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.error,
+                          color: Colors.white, size: IsrDimens.sixtyFour),
+                      IsrDimens.boxHeight(IsrDimens.sixteen),
+                      Text(
+                        state.message,
+                        style: IsrStyles.white16,
+                        textAlign: TextAlign.center,
+                      ),
+                      IsrDimens.boxHeight(IsrDimens.twentyFour),
+                      AppButton(
+                        title: 'Retry',
+                        onPress: () => _cameraBloc.add(CameraInitializeEvent()),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            if (state is CameraInitializedState ||
+                state is CameraSwitchedState ||
+                state is CameraFlashToggledState ||
+                state is CameraZoomChangedState ||
+                state is CameraDurationChangedState ||
+                state is CameraRecordingState ||
+                state is CameraMediaTypeChangedState ||
+                state is CameraRecordingReadyState ||
+                state is CameraRecordingDiscardedState ||
+                state is CameraFilterAppliedState ||
+                state is CameraSpeedChangedState ||
+                state is CameraSegmentRecordingState) {
+              if (mounted && context.mounted) {
+                return _buildCameraView(state);
+              }
+            }
+
+            if (state is CameraInitialState) {
+              final controller = _cameraBloc.cameraController;
+              if (controller != null &&
+                  controller.value.isInitialized &&
+                  !controller.value.hasError &&
+                  mounted &&
+                  context.mounted) {
+                return _buildCameraView(state);
+              }
+            }
+
             return const Scaffold(
               backgroundColor: Colors.black,
               body: Center(
                 child: CircularProgressIndicator(color: Colors.white),
               ),
             );
-          }
-
-          if (state is CameraErrorState) {
-            return Scaffold(
-              backgroundColor: Colors.black,
-              body: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.error,
-                        color: Colors.white, size: IsrDimens.sixtyFour),
-                    IsrDimens.boxHeight(IsrDimens.sixteen),
-                    Text(
-                      state.message,
-                      style: IsrStyles.white16,
-                      textAlign: TextAlign.center,
-                    ),
-                    IsrDimens.boxHeight(IsrDimens.twentyFour),
-                    AppButton(
-                      title: 'Retry',
-                      onPress: () => _cameraBloc.add(CameraInitializeEvent()),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          if (state is CameraInitializedState ||
-              state is CameraSwitchedState ||
-              state is CameraFlashToggledState ||
-              state is CameraZoomChangedState ||
-              state is CameraDurationChangedState ||
-              state is CameraRecordingState ||
-              state is CameraMediaTypeChangedState ||
-              state is CameraRecordingReadyState ||
-              state is CameraRecordingDiscardedState ||
-              state is CameraFilterAppliedState ||
-              state is CameraSpeedChangedState ||
-              state is CameraSegmentRecordingState) {
-            if (mounted && context.mounted) {
-              return _buildCameraView(state);
-            }
-          }
-
-          if (state is CameraInitialState) {
-            final controller = _cameraBloc.cameraController;
-            if (controller != null &&
-                controller.value.isInitialized &&
-                !controller.value.hasError &&
-                mounted &&
-                context.mounted) {
-              return _buildCameraView(state);
-            }
-          }
-
-          return const Scaffold(
-            backgroundColor: Colors.black,
-            body: Center(
-              child: CircularProgressIndicator(color: Colors.white),
-            ),
-          );
-        },
-      ),
-    );
+          },
+        ),
+      );
 
   Widget _buildCameraView(CameraState state) => AnnotatedRegion(
         value: const SystemUiOverlayStyle(

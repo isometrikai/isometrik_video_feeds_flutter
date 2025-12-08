@@ -142,10 +142,10 @@ class NearByPlaceResult {
       };
 }
 
-enum BusinessStatus { OPERATIONAL }
+enum BusinessStatus { operational }
 
 final businessStatusValues =
-    EnumValues({'OPERATIONAL': BusinessStatus.OPERATIONAL});
+    EnumValues({'OPERATIONAL': BusinessStatus.operational});
 
 class Viewport {
   Viewport({

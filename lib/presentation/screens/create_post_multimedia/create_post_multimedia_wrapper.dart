@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart'
     as mc;
@@ -24,8 +23,6 @@ class CreatePostMultimediaWrapper extends StatefulWidget {
 
 class _CreatePostMultimediaWrapperState
     extends State<CreatePostMultimediaWrapper> {
-  CreatePostBloc get _createPostBloc =>
-      BlocProvider.of<CreatePostBloc>(context);
   final mediaSelectionConfig = ms.MediaSelectionConfig(
     isMultiSelect: true,
     imageMediaLimit: AppConstants.imageMediaLimit,
@@ -104,15 +101,19 @@ class _CreatePostMultimediaWrapperState
 
     final imageLimit = AppConstants.imageMediaLimit - presentImageCount;
     final videoLimit = AppConstants.videoMediaLimit - presentVideoCount;
-    final mediaLimit = AppConstants.totalMediaLimit - (presentImageCount + presentVideoCount);
-
+    final mediaLimit =
+        AppConstants.totalMediaLimit - (presentImageCount + presentVideoCount);
 
     final res = await Navigator.push<List<ms.MediaAssetData>>(
       context,
       MaterialPageRoute(
         builder: (context) => ms.MediaSelectionView(
           mediaSelectionConfig: mediaSelectionConfig.copyWith(
-            mediaListType: (videoLimit > 0 && imageLimit > 0) ? ms.MediaListType.imageVideo : (videoLimit > 0) ? ms.MediaListType.video : ms.MediaListType.image,
+            mediaListType: (videoLimit > 0 && imageLimit > 0)
+                ? ms.MediaListType.imageVideo
+                : (videoLimit > 0)
+                    ? ms.MediaListType.video
+                    : ms.MediaListType.image,
             isMultiSelect: mediaLimit > 1,
             imageMediaLimit: imageLimit,
             videoMediaLimit: videoLimit,
@@ -167,7 +168,8 @@ class _CreatePostMultimediaWrapperState
               fileExtension: _getFileExtension(
                   editItem.editedPath ?? editItem.originalPath)))
           .toList();
-      await IsrAppNavigator.goToCreatePostAttributionView(context, onTagProduct: widget.onTagProduct, newMediaDataList:  _mediaDataList);
+      await IsrAppNavigator.goToCreatePostAttributionView(context,
+          onTagProduct: widget.onTagProduct, newMediaDataList: _mediaDataList);
       // _createPostBloc.goToPostAttributeView(context,
       //     newMediaDataList: _mediaDataList, onTagProduct: widget.onTagProduct);
       return false;
@@ -175,16 +177,15 @@ class _CreatePostMultimediaWrapperState
     return false;
   }
 
-
   @override
-  Widget build(BuildContext context) =>
-      ms.MediaSelectionView(
+  Widget build(BuildContext context) => ms.MediaSelectionView(
         mediaSelectionConfig: mediaSelectionConfig,
         onComplete: _onMediaSelectionComplete,
         onCaptureMedia: _captureMedia,
       );
 
-  Future<String?> _captureMedia(String? mediaType) async => await Navigator.push<String?>(
+  Future<String?> _captureMedia(String? mediaType) async =>
+      await Navigator.push<String?>(
         context,
         MaterialPageRoute(
           builder: (context) => mc.CameraCaptureView(

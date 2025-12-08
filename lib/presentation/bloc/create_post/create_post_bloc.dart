@@ -74,13 +74,10 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
   var _createPostRequest = CreatePostRequest();
   var descriptionText = '';
-  var _pageCount = 0;
-  final List<ProductDataModel> _listOfProducts = [];
   List<ProductDataModel> linkedProducts = [];
   final List<ProductDataModel> _linkedSocialProducts = [];
 
   var _isDataLoading = false;
-  var _searchQuery = '';
   final DeBouncer _deBouncer = DeBouncer();
   var _isCompressionRunning = false;
 
@@ -104,15 +101,14 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   FutureOr<void> _initState(
       CreatePostInitialEvent event, Emitter<CreatePostState> emit) async {
     _resetData();
-    final postAttribution = await preparePostAttribution(newMediaDataList: event.newMediaDataList);
+    final postAttribution =
+        await preparePostAttribution(newMediaDataList: event.newMediaDataList);
     emit(PostAttributionUpdatedState(postAttributeClass: postAttribution));
   }
 
   void resetApiCall() {
     // _listOfProducts.clear();
-    _pageCount = 0;
     _isDataLoading = false;
-    _searchQuery = '';
   }
 
   // Reset all variables after successful post creation
@@ -535,7 +531,10 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       final isMediaChanged = _isMediaChanged();
       if (!_isForEdit || isMediaChanged) {
         add(MediaUploadEvent(
-            mediaDataList: _mediaDataList, postId: (event.isForEdit == true) ? _postData?.id ?? '' : createPostData?.id ?? ''));
+            mediaDataList: _mediaDataList,
+            postId: (event.isForEdit == true)
+                ? _postData?.id ?? ''
+                : createPostData?.id ?? ''));
       } else {
         if (_isForEdit) {
           _updatePostData();
@@ -620,10 +619,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   /// search product
   void searchProduct(String query) {
     resetApiCall();
-    _deBouncer.run(() {
-      _searchQuery = query;
-      add(GetProductsEvent());
-    });
+    _deBouncer.run(() => add(GetProductsEvent()));
   }
 
   List<SocialProductData> getSocialProductList(
@@ -781,8 +777,10 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
         }
       }
     }
-    debugPrint('CreatePostBloc: _makePostRequest => mentionedUserData => ${mentionedUserData.map((e) => e.toJson())}');
-    debugPrint('CreatePostBloc: _makePostRequest => mediaMentionUserData => ${mediaMentionUserData.map((e) => e.toJson())}');
+    debugPrint(
+        'CreatePostBloc: _makePostRequest => mentionedUserData => ${mentionedUserData.map((e) => e.toJson())}');
+    debugPrint(
+        'CreatePostBloc: _makePostRequest => mediaMentionUserData => ${mediaMentionUserData.map((e) => e.toJson())}');
     hashTagDataList = _postData?.tags?.hashtags ?? [];
     locationTagDataList = _postData?.tags?.places ?? [];
 
@@ -867,12 +865,17 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   FutureOr<void> _uploadMedia(
       MediaUploadEvent event, Emitter<CreatePostState> emit) async {
     _removeDuplicateMedia(_mediaDataList);
-    final uploadingMedia = _mediaDataList.where((mediaData) =>
-    mediaData.localPath.isEmptyOrNull == false &&
-        Utility.isLocalUrl(mediaData.localPath ?? '')).toList();
-    final uploadingCover = _createPostRequest.previews?.where((mediaData) =>
-    mediaData.localFilePath.isEmptyOrNull == false &&
-        Utility.isLocalUrl(mediaData.localFilePath ?? '')).toList() ?? [];
+    final uploadingMedia = _mediaDataList
+        .where((mediaData) =>
+            mediaData.localPath.isEmptyOrNull == false &&
+            Utility.isLocalUrl(mediaData.localPath ?? ''))
+        .toList();
+    final uploadingCover = _createPostRequest.previews
+            ?.where((mediaData) =>
+                mediaData.localFilePath.isEmptyOrNull == false &&
+                Utility.isLocalUrl(mediaData.localFilePath ?? ''))
+            .toList() ??
+        [];
 
     // Calculate total files including cover media if present
     final hasCoverMedia = uploadingCover.isNotEmpty;
@@ -1253,12 +1256,9 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       debugPrint('cover image extension : $_coverImageExtension');
       debugPrint('cover file name : $_coverFileName');
       final finalFileName =
-          '${_coverFileName}_${0}_${DateTime
-          .now()
-          .millisecondsSinceEpoch}';
+          '${_coverFileName}_${0}_${DateTime.now().millisecondsSinceEpoch}';
       final normalizedFolder =
-          '${AppConstants.tenantId}/${AppConstants
-          .projectId}/user_$userId/posts/$finalFileName$_coverImageExtension';
+          '${AppConstants.tenantId}/${AppConstants.projectId}/user_$userId/posts/$finalFileName$_coverImageExtension';
       final uploadUrl = '${AppUrl.gumletUrl}/$normalizedFolder';
       _createPostRequest.previews = [
         PreviewMedia(
@@ -1392,8 +1392,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     if (newMediaDataList?.isNotEmpty == true) {
       final newMedia = <MediaData>[];
       for (var i = 0; i < (newMediaDataList?.length ?? 0); i++) {
-        final processedMedia =
-            await _processMediaData(newMediaDataList![i], i);
+        final processedMedia = await _processMediaData(newMediaDataList![i], i);
         if (processedMedia != null) {
           newMedia.add(processedMedia);
         }

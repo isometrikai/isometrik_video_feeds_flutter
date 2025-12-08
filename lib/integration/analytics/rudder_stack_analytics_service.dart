@@ -48,7 +48,8 @@ class RudderStackAnalyticsService implements AnalyticsService {
   }
 
   @override
-  void trackScreen(String screenName, {List<Map<String, dynamic>>? properties}) {
+  void trackScreen(String screenName,
+      {List<Map<String, dynamic>>? properties}) {
     if (properties.isEmptyOrNull == false) {
       final rudderProperties = RudderProperty();
       for (final mapItem in properties!) {

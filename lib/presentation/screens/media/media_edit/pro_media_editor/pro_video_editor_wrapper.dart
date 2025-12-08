@@ -2,17 +2,16 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit_config.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/pro_media_editor/pro_media_util.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/pro_media_editor/pro_video_assist/mixins/video_editor_mixin.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/pro_media_editor/pro_video_assist/widgets/video_initializing_widget.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
 // import '../../custom_pro_image_editor/pro_image_editor.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/core/models/video/editor_video_model.dart';
 import 'package:video_player/video_player.dart';
-
-import '../media_edit_config.dart';
-import 'pro_video_assist/mixins/video_editor_mixin.dart';
-import 'pro_video_assist/widgets/video_initializing_widget.dart';
 
 class ProVideoEditorWrapper extends StatefulWidget {
   const ProVideoEditorWrapper({
@@ -297,11 +296,7 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
       );
 
   /// Returns the number of available stickers
-  int _getStickerCount() {
-    // For now, return a simple count of placeholder stickers
-    // In a real implementation, this would come from your sticker assets or API
-    return 20;
-  }
+  int _getStickerCount() => 20;
 
   /// Builds individual sticker items
   Widget _buildStickerItem(int index, Function(WidgetLayer) setLayer) =>

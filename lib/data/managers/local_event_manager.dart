@@ -28,8 +28,10 @@ class EventQueueProvider {
     required String rudderStackWriteKey,
     required String rudderStackDataPlaneUrl,
   }) async {
-    final localDataUseCase = IsmInjectionUtils.getUseCase<IsmLocalDataUseCase>();
-    final deviceInfoManager = IsmInjectionUtils.getOtherClass<DeviceInfoManager>();
+    final localDataUseCase =
+        IsmInjectionUtils.getUseCase<IsmLocalDataUseCase>();
+    final deviceInfoManager =
+        IsmInjectionUtils.getOtherClass<DeviceInfoManager>();
 
     // Fetch all required data
     final userId = await localDataUseCase.getUserId();
@@ -75,7 +77,8 @@ class EventQueueProvider {
         'os': deviceInfoManager.deviceOs,
         'os_version': deviceInfoManager.deviceOsVersion,
         'type': deviceInfoManager.deviceType,
-        'name': '${deviceInfoManager.deviceManufacturer} ${deviceInfoManager.deviceModel}',
+        'name':
+            '${deviceInfoManager.deviceManufacturer} ${deviceInfoManager.deviceModel}',
       },
       'location': {
         'city': city,
@@ -204,14 +207,16 @@ class LocalEventQueue with WidgetsBindingObserver {
       return;
     }
     final box = Hive.box<LocalEvent>(_boxName);
-    debugPrint('${runtimeType.toString()} Box length before flushing: ${box.length}');
+    debugPrint(
+        '${runtimeType.toString()} Box length before flushing: ${box.length}');
 
     final events = box.values.toList();
 
     if (events.isEmpty) return;
 
     await box.clear();
-    debugPrint('${runtimeType.toString()} Box length after flushing: ${box.length}');
+    debugPrint(
+        '${runtimeType.toString()} Box length after flushing: ${box.length}');
   }
 
   /// cleanup

@@ -54,9 +54,11 @@ class _LikeActionWidgetState extends State<LikeActionWidget> {
   }
 
   @override
-  Widget build(BuildContext context) => context.attachBlocIfNeeded<IsmSocialActionCubit>(
+  Widget build(BuildContext context) =>
+      context.attachBlocIfNeeded<IsmSocialActionCubit>(
         child: BlocBuilder<IsmSocialActionCubit, IsmSocialActionState>(
-          buildWhen: (previous, current) => current is IsmLikePostState && current.postId == postId,
+          buildWhen: (previous, current) =>
+              current is IsmLikePostState && current.postId == postId,
           builder: (context, state) {
             if (state is IsmLikePostState && state.postId == postId) {
               isLoading = state.isLoading;
@@ -64,9 +66,7 @@ class _LikeActionWidgetState extends State<LikeActionWidget> {
               likeCount = state.likeCount;
             }
             return GestureDetector(
-              onTap: isLoading
-                  ? null
-                  : ({ReelsData? reelsData, int? watchDuration}) =>
+              onTap: isLoading ? null : ({ReelsData? reelsData, int? watchDuration}) =>
                       _onTap(reelData: reelsData, watchDuration: watchDuration),
               child: widget.builder(isLoading, isLiked, likeCount, _onTap),
             );

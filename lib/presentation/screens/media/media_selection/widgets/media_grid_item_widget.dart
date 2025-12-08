@@ -2,9 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:get_thumbnail_video/video_thumbnail.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
-
-import '../media_selection.dart';
 
 class MediaGridItemWidget extends StatelessWidget {
   const MediaGridItemWidget({

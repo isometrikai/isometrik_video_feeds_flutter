@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
-
-import 'media_selection.dart';
 
 class MediaSelectionConfig {
   MediaSelectionConfig({
@@ -43,8 +40,7 @@ class MediaSelectionConfig {
         closeIcon =
             closeIcon ?? MediaSelectionConstant.closeIcon(color: Colors.black),
         cameraIcon = cameraIcon ??
-            MediaSelectionConstant.cameraIcon(
-                color: Colors.white ?? MediaSelectionConstant.primaryColor),
+            MediaSelectionConstant.cameraIcon(color: Colors.white),
         videoIcon = videoIcon ??
             MediaSelectionConstant.videoIcon(
                 color: primaryColor ?? MediaSelectionConstant.primaryColor),

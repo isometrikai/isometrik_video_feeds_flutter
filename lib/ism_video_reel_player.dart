@@ -15,10 +15,10 @@ export 'isr_video_reel_config.dart';
 export 'presentation/presentation.dart';
 //remote
 export 'remote/remote.dart';
-// page navigator
-export 'utils/navigator/navigator.dart';
 // enum
 export 'utils/enums.dart';
+// page navigator
+export 'utils/navigator/navigator.dart';
 
 class IsmVideoReelPlayer {
   Future<String?> getPlatformVersion() =>

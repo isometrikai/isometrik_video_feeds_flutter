@@ -439,15 +439,12 @@ extension BlocSafeGetter on BuildContext {
 
     // If missing or closed → create from DI
     bloc ??= IsmInjectionUtils.getBloc<T>();
-    debugPrint("Bloc: ${bloc.hashCode}");
+    debugPrint('Bloc: ${bloc.hashCode}');
     return bloc;
   }
 
-  Widget attachBlocIfNeeded<T extends BlocBase<Object>>({
-    required Widget child,
-    T? bloc
-  }) {
-
+  Widget attachBlocIfNeeded<T extends BlocBase<Object>>(
+      {required Widget child, T? bloc}) {
     // If bloc exists but is closed → ignore it
     if (bloc != null && bloc.isClosed) {
       bloc = null;

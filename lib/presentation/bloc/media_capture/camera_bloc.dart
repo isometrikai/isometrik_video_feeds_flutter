@@ -422,7 +422,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
   ) async {
     _recordedVideoPath = null;
     _capturedPhotoPath = null;
-    _videoPlayerController?.dispose();
+    await _videoPlayerController?.dispose();
     _videoPlayerController = null;
     _recordingDuration = 0;
     _selectedMusicId = null;

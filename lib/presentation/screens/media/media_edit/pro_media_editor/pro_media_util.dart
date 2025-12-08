@@ -1,14 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
-import 'package:ism_video_reel_player/di/di.dart';
-import 'package:ism_video_reel_player/domain/domain.dart';
-import 'package:ism_video_reel_player/presentation/presentation.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit_config.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
-import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit_config.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 
 PaintEditorConfigs paintEditorConfigs(MediaEditConfig mediaEditConfig) =>
@@ -215,11 +211,7 @@ Widget _buildStickerPicker(
     );
 
 /// Returns the number of available stickers
-int _getStickerCount() {
-  // For now, return a simple count of placeholder stickers
-  // In a real implementation, this would come from your sticker assets or API
-  return 20;
-}
+int _getStickerCount() => 20;
 
 /// Builds individual sticker items
 Widget _buildStickerItem(int index, Function(WidgetLayer) setLayer) =>

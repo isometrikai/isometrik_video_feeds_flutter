@@ -18,11 +18,12 @@ class IsmFollowUserState extends IsmSocialActionState {
     String? userId,
     bool? isFollowing,
     bool? isLoading,
-  }) => IsmFollowUserState(
-      userId: userId ?? this.userId,
-      isFollowing: isFollowing ?? this.isFollowing,
-      isLoading: isLoading ?? this.isLoading,
-    );
+  }) =>
+      IsmFollowUserState(
+        userId: userId ?? this.userId,
+        isFollowing: isFollowing ?? this.isFollowing,
+        isLoading: isLoading ?? this.isLoading,
+      );
 }
 
 // ---------------- Like State ---------------- //
@@ -44,12 +45,13 @@ class IsmLikePostState extends IsmSocialActionState {
     int? likeCount,
     bool? isLiked,
     bool? isLoading,
-  }) => IsmLikePostState(
-      postId: postId ?? this.postId,
-      likeCount: likeCount ?? this.likeCount,
-      isLiked: isLiked ?? this.isLiked,
-      isLoading: isLoading ?? this.isLoading,
-    );
+  }) =>
+      IsmLikePostState(
+        postId: postId ?? this.postId,
+        likeCount: likeCount ?? this.likeCount,
+        isLiked: isLiked ?? this.isLiked,
+        isLoading: isLoading ?? this.isLoading,
+      );
 }
 
 // ---------------- Save State ---------------- //
@@ -68,11 +70,12 @@ class IsmSavePostState extends IsmSocialActionState {
     String? postId,
     bool? isSaved,
     bool? isLoading,
-  }) => IsmSavePostState(
-      postId: postId ?? this.postId,
-      isSaved: isSaved ?? this.isSaved,
-      isLoading: isLoading ?? this.isLoading,
-    );
+  }) =>
+      IsmSavePostState(
+        postId: postId ?? this.postId,
+        isSaved: isSaved ?? this.isSaved,
+        isLoading: isLoading ?? this.isLoading,
+      );
 }
 
 // ---------------- Listener States ---------------- //
@@ -88,10 +91,11 @@ class IsmFollowActionListenerState extends IsmSocialActionState {
   IsmFollowActionListenerState copyWith({
     String? userId,
     bool? isFollowing,
-  }) => IsmFollowActionListenerState(
-      userId: userId ?? this.userId,
-      isFollowing: isFollowing ?? this.isFollowing,
-    );
+  }) =>
+      IsmFollowActionListenerState(
+        userId: userId ?? this.userId,
+        isFollowing: isFollowing ?? this.isFollowing,
+      );
 }
 
 class IsmLikeActionListenerState extends IsmSocialActionState {
@@ -106,10 +110,11 @@ class IsmLikeActionListenerState extends IsmSocialActionState {
   IsmLikeActionListenerState copyWith({
     String? postId,
     bool? isLiked,
-  }) => IsmLikeActionListenerState(
-      postId: postId ?? this.postId,
-      isLiked: isLiked ?? this.isLiked,
-    );
+  }) =>
+      IsmLikeActionListenerState(
+        postId: postId ?? this.postId,
+        isLiked: isLiked ?? this.isLiked,
+      );
 }
 
 class IsmSaveActionListenerState extends IsmSocialActionState {
@@ -124,8 +129,9 @@ class IsmSaveActionListenerState extends IsmSocialActionState {
   IsmSaveActionListenerState copyWith({
     String? postId,
     bool? isSaved,
-  }) => IsmSaveActionListenerState(
-    postId: postId ?? this.postId,
-    isSaved: isSaved ?? this.isSaved,
-  );
+  }) =>
+      IsmSaveActionListenerState(
+        postId: postId ?? this.postId,
+        isSaved: isSaved ?? this.isSaved,
+      );
 }

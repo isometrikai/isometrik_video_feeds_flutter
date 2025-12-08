@@ -10,7 +10,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -796,22 +795,6 @@ class Utility {
     }
 
     return spans;
-  }
-
-  static Widget provideBlocIfMissing<T extends Bloc>({
-    required BuildContext context,
-    required T Function() create,
-    required Widget child,
-  }) {
-    try {
-      context.read<T>();
-      return child;
-    } catch (_) {
-      return BlocProvider<T>(
-        create: (_) => create(),
-        child: child,
-      );
-    }
   }
 
   // get time ago

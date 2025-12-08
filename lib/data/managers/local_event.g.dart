@@ -44,5 +44,7 @@ class LocalEventAdapter extends TypeAdapter<LocalEvent> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is LocalEventAdapter && runtimeType == other.runtimeType && typeId == other.typeId;
+      other is LocalEventAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
 }

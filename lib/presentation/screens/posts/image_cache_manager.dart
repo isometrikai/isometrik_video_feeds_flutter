@@ -4,7 +4,6 @@ import 'dart:collection';
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
-import 'package:ism_video_reel_player/utils/utils.dart';
 
 /// Cache manager implementation for images
 class ImageCacheManager implements IMediaCacheManager {

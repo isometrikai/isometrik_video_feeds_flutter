@@ -1,4 +1,4 @@
-import 'media_edit_audio_model.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
 
 enum EditMediaType {
   image,

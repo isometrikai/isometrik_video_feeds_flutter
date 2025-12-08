@@ -1,5 +1,4 @@
 import 'package:flutter/widgets.dart';
-import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 
 /// UI + interaction handlers only
@@ -46,16 +45,15 @@ class ReelsConfig {
   final Future<int> Function(ReelsData reelsData, int currentCount)?
       onTapComment;
   final Future<void> Function(ReelsData reelsData)? onTapShare;
-  final Future<void> Function(ReelsData reelsData)?
-      onTapUserProfile;
+  final Future<void> Function(ReelsData reelsData)? onTapUserProfile;
   final Future<void> Function(ReelsData reelsData)? onTapReport;
   final Future<dynamic> Function(ReelsData reelsData)? onPressMoreButton;
   final Future<ReelsData?> Function(ReelsData reelsData)? onCreatePost;
 
   final void Function(ReelsData reelsData, int index)? onReelsChange;
 
-  final Future<List<MentionMetaData>?> Function(ReelsData reelsData, List<MentionMetaData>)?
-      onTapMentionTag;
+  final Future<List<MentionMetaData>?> Function(
+      ReelsData reelsData, List<MentionMetaData>)? onTapMentionTag;
 
   final Future<void> Function(ReelsData reelsData, List<PlaceMetaData>)?
       onTapPlace;

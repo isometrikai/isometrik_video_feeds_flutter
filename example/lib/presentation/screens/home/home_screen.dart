@@ -249,7 +249,8 @@ class _HomeScreenState extends State<HomeScreen> {
         // },
         postId: postData.id,
         // onCreatePost: () async => await _handleCreatePost(),
-        mediaMetaDataList: postData.media?.map(_getMediaMetaData).toList() ?? [],
+        mediaMetaDataList:
+            postData.media?.map(_getMediaMetaData).toList() ?? [],
         // actionWidget: _buildActionButtons(postData),
         // footerWidget: _buildFooter(postData),
         userId: postData.user?.id ?? '',
