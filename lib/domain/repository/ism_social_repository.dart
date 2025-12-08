@@ -171,4 +171,31 @@ abstract class SocialRepository extends BaseRepository {
     required bool isLoading,
     required String postId,
   });
+
+  Future<CustomResponse<ResponseClass?>> createCollection({
+    required bool isLoading,
+  });
+
+  Future<CustomResponse<CollectionListResponse?>> getCollectionList({
+    required bool isLoading,
+    required int page,
+    required int pageSize,
+    required bool isPublicOnly,
+  });
+
+  Future<CustomResponse<ResponseClass?>> movePostToCollection({
+    required bool isLoading,
+    required String postId,
+    required String collectionId,
+  });
+
+  Future<CustomResponse<ResponseClass?>> updateCollection({
+    required bool isLoading,
+    required String collectionId,
+  });
+
+  Future<CustomResponse<ResponseClass?>> deleteCollection({
+    required bool isLoading,
+    required String collectionId,
+  });
 }

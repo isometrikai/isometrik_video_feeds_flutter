@@ -1630,9 +1630,7 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
       _createPostBloc.add(ChangeCoverImageEvent(
           coverImage: File(coverPic),
           onComplete: () {
-            setState(() {
-              _updatePostButtonState();
-            });
+            setState(_updatePostButtonState);
           }));
     }
   }

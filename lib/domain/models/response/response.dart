@@ -1,4 +1,5 @@
 export 'cloud__details_response.dart';
+export 'collection_list_response.dart';
 export 'comments_response.dart';
 export 'create_post_response.dart';
 export 'custom_response.dart';

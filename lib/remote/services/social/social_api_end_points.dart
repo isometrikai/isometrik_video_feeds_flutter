@@ -28,12 +28,16 @@ class SocialApiEndPoints {
   static const String getPost = '/social/v1/post';
   static const getSavedPostsOfUserSocial = '/api/v1/posts/saved';
   static const getProfileUserPostSocial = '/api/v1/posts/user';
-  static String postMediaProcess(String postId) =>
-      '/api/v1/posts/$postId/start-processing';
+  static String postMediaProcess(String postId) => '/api/v1/posts/$postId/start-processing';
   static const String getSearchUsers = '/api/v1/users/search';
   static const String getSearchTags = '/api/v1/tags/hashtags/search';
   static const String getTaggedPosts = '/api/v1/tags/posts';
   static const String getForYouPosts = '/api/v1/posts/fyp';
   static const String getMentionedUsers = '/api/v1/posts';
   static const String deleteMention = '/api/v1/posts/mentions';
+  static const String createCollection = '/api/v1/posts/collections';
+  static const String getCollectionList = '/api/v1/posts/collections';
+  static const String postMoveToCollection = '/api/v1/posts/move_to_collection';
+  static const String putCollection = '/api/v1/posts/collections';
+  static const String deleteCollection = '/api/v1/posts/collections';
 }
