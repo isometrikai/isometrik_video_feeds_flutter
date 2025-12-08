@@ -72,7 +72,7 @@ PODS:
     - FlutterMacOS
   - permission_handler_apple (9.3.0):
     - Flutter
-  - photo_manager (3.8.2):
+  - photo_manager (3.8.3):
     - Flutter
     - FlutterMacOS
   - pro_video_editor (0.0.1):
@@ -221,7 +221,7 @@ SPEC CHECKSUMS:
   package_info_plus: c0502532a26c7662a62a356cebe2692ec5fe4ec4
   path_provider_foundation: 0b743cbb62d8e47eab856f09262bb8c1ddcfe6ba
   permission_handler_apple: 9878588469a2b0d0fc1e048d9f43605f92e6cec2
-  photo_manager: 8f40300912c856ef39d0d533a205afab5fbee62f
+  photo_manager: 647b6f5c5057632e2d00e2921c6ce3437ded57a9
   pro_video_editor: a2db926b93feb56ceeaad07ce08a4f64252d658e
   RSCrashReporter: 6b8376ac729b0289ebe0908553e5f56d8171f313
   Rudder: 352cb3417238fb84cc083826d9a5a7cc91efaa69

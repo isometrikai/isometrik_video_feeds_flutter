@@ -412,6 +412,18 @@ class _PostListingViewState extends State<PostListingView> {
               });
               debugPrint('⚠️ Listener: No more data for ${state.tabType.name}');
             }
+
+            // Log search event only for fresh searches (not pagination), selected tab, and exclude places tab
+            if (!state.isFromPagination &&
+                state.tabType == _selectedTab &&
+                state.tabType != SearchTabType.places) {
+              final searchQuery = _hashtagController.text.trim().replaceFirst('#', '');
+              _logSearchEvent(
+                searchQuery,
+                state.results.length,
+                state.tabType.displayName.toLowerCase(),
+              );
+            }
           }
         },
         builder: (context, state) {
@@ -574,6 +586,8 @@ class _PostListingViewState extends State<PostListingView> {
                   return TapHandler(
                     key: ValueKey('post_${post.id}'),
                     onTap: () {
+                      // Log search post clicked event
+                      _logSearchPostClickedEvent(post, _getHasTagValue());
                       IsrAppNavigator.navigateToReelsPlayer(
                         context,
                         postDataList: postList,
@@ -764,7 +778,14 @@ class _PostListingViewState extends State<PostListingView> {
   void _onTagTapped(dynamic tag) {
     final tagText = (tag?.hashtag as String?) ?? '';
 
-    IsrAppNavigator.navigateTagDetails(context, tagValue: tagText, tagType: TagType.hashtag, tabConfig: widget.tabConfig, postConfig: widget.postConfig);
+    // Log hashtag clicked event
+    _logHashtagEvent(tagText);
+
+    IsrAppNavigator.navigateTagDetails(context,
+        tagValue: tagText,
+        tagType: TagType.hashtag,
+        tabConfig: widget.tabConfig,
+        postConfig: widget.postConfig);
   }
 
   void _handlePlaceTap(String placeId, String placeName) {
@@ -999,9 +1020,11 @@ class _PostListingViewState extends State<PostListingView> {
       );
 
   void _handleAccountTap(SocialUserData user) {
+    // Log profile viewed event
+    _logSearchProfileEvent(user.id ?? '', user.username ?? '');
+
     if (widget.postConfig.postCallBackConfig?.onProfileClick != null) {
       widget.postConfig.postCallBackConfig?.onProfileClick?.call(null, user.id ?? '');
-      _logProfileEvent(user.id ?? '', '');
     }
 
     /// TODO need to decide
@@ -1012,15 +1035,58 @@ class _PostListingViewState extends State<PostListingView> {
     // );
   }
 
-
-  void _logProfileEvent(String userId, String postId) {
-    final profileEvent = {
-      'post_id': postId,
-      'user_id': userId,
-      'category': EventCategory.socialGraph.value,
-      'timestamp': DateTime.now().toIso8601String(),
+  /// Log search event when user performs a search
+  void _logSearchEvent(String searchQuery, int searchResultsCount, String searchFilter) {
+    final searchEventMap = {
+      'search_query': searchQuery,
+      'search_results_count': searchResultsCount,
+      'search_filter': searchFilter,
     };
+    unawaited(EventQueueProvider.instance
+        .addEvent(EventType.searchPerformed.value, searchEventMap.removeEmptyValues()));
+  }
 
+  /// Log event when user clicks on a post in search results
+  void _logSearchPostClickedEvent(TimeLineData post, String searchQuery) {
+    // Determine post type based on media count
+    final mediaCount = post.media?.length ?? 0;
+    String postType;
+    if (mediaCount > 1) {
+      postType = 'carousel';
+    } else if (post.media?.first.mediaType?.mediaType == MediaType.video) {
+      postType = 'video';
+    } else {
+      postType = 'image';
+    }
+
+    // Extract hashtags from post
+    final hashtags =
+        post.tags?.hashtags?.map((h) => '#${h.tag}').where((tag) => tag.isNotEmpty).toList() ?? [];
+
+    final eventMap = {
+      'search_query': searchQuery,
+      'result_post_id': post.id ?? '',
+      'post_type': postType,
+      'post_author_id': post.userId ?? '',
+      'hashtags': hashtags,
+    };
+    unawaited(EventQueueProvider.instance
+        .addEvent(EventType.searchResultClicked.value, eventMap.removeEmptyValues()));
+  }
+
+  /// Log event when user clicks on a tag in search results
+  void _logHashtagEvent(String hashTag) {
+    final hashTagEventMap = {'hashtag': hashTag};
+    unawaited(EventQueueProvider.instance
+        .addEvent(EventType.hashTagClicked.value, hashTagEventMap.removeEmptyValues()));
+  }
+
+  /// Log event when user clicks on an account in search results
+  void _logSearchProfileEvent(String profileUserId, String profileUserName) {
+    final profileEvent = {
+      'profile_user_id': profileUserId,
+      'profile_username': profileUserName,
+    };
     unawaited(EventQueueProvider.instance
         .addEvent(EventType.profileViewed.value, profileEvent.removeEmptyValues()));
   }

@@ -972,10 +972,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       TimeLineData postDataModel, String reportReason, TabDataModel tabDataModel) async {
     final postReportEvent = {
       'post_id': postDataModel.id ?? '',
-      'post_author_id': postDataModel.userId ?? '',
       'post_type': postDataModel.media?.first.mediaType,
-      'categories': [],
+      'post_author_id': postDataModel.userId ?? '',
       'feed_type': tabDataModel.postSectionType.title,
+      'categories': [],
       'hashtags': postDataModel.tags?.hashtags?.map((e) => '#$e').toList(),
       'report_reason': reportReason
     };

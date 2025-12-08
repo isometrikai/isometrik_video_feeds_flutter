@@ -546,8 +546,14 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     );
     if (apiResult.isSuccess) {
       if (event.commentAction == CommentAction.comment) {
-        _sendAnalyticsEvent(EventType.commentCreated.value, event.commentId ?? '',
-            event.postId ?? '', event.userId ?? '', event.postDataModel, event.tabDataModel);
+        _sendAnalyticsEvent(
+            EventType.commentCreated.value,
+            event.commentId ?? '',
+            event.postId ?? '',
+            event.userId ?? '',
+            event.commentMessage ?? '',
+            event.postDataModel,
+            event.tabDataModel);
         comment?.status = IsrTranslationFile.inReview;
         if (commentList != null) {
           emit(
@@ -696,6 +702,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     String commentId,
     String postId,
     String userId,
+    String commentText,
     TimeLineData? postDataModel,
     TabDataModel? tabDataModel,
   ) async {
@@ -703,12 +710,13 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       // Prepare analytics event in the required format: "Post Viewed"
       final postViewedEvent = {
         'post_id': postId,
-        'comment_id': commentId,
-        'post_author_id': userId,
         'post_type': postDataModel?.type,
+        'post_author_id': userId,
         'feed_type': tabDataModel?.postSectionType.title,
-        'hashtags': postDataModel?.tags?.hashtags?.map((e) => '#$e').toList(),
         'categories': [],
+        'hashtags': postDataModel?.tags?.hashtags?.map((e) => '#$e').toList(),
+        'comment_id': commentId,
+        'comment_text': commentText,
       };
 
       unawaited(

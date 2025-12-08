@@ -238,6 +238,8 @@ enum EventType {
   videoSoundToggled, // User mutes/unmutes
   profileViewed, // User navigates to profile screen/page
   hashTagClicked, // User click on hash tag
+  searchPerformed, // User performs a search
+  searchResultClicked, // User clicks on a search result
 }
 
 extension EventTypeExtension on EventType {
@@ -277,6 +279,10 @@ extension EventTypeExtension on EventType {
         return 'Profile Viewed';
       case EventType.hashTagClicked:
         return 'Hashtag Clicked';
+      case EventType.searchPerformed:
+        return 'Search Performed';
+      case EventType.searchResultClicked:
+        return 'Search Result Clicked';
     }
   }
 }
