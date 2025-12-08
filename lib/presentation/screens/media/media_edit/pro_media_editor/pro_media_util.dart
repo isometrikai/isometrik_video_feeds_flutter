@@ -24,6 +24,7 @@ PaintEditorConfigs paintEditorConfigs(MediaEditConfig mediaEditConfig) =>
 TextEditorConfigs textEditorConfigs(MediaEditConfig mediaEditConfig) =>
     TextEditorConfigs(
         style: TextEditorStyle(
+      background: Colors.black.applyOpacity(.1),
       appBarColor: mediaEditConfig.blackColor,
       appBarBackground: mediaEditConfig.whiteColor,
       bottomBarBackground: mediaEditConfig.whiteColor,

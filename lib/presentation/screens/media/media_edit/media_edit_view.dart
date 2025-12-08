@@ -8,7 +8,6 @@ import 'package:ism_video_reel_player/presentation/screens/media/media_edit/mode
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_models.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/pro_media_editor/pro_image_editor_wrapper.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/pro_media_editor/pro_video_editor_wrapper.dart';
-import 'package:ism_video_reel_player/presentation/screens/media/media_edit/video_cover_selector_view.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/widgets/media_edit_widgets.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -212,45 +211,6 @@ class _MediaEditViewState extends State<MediaEditView> {
     );
 
     _bloc.add(NavigateToVideoFilterEvent(result: result));
-  }
-
-  Future<void> _navigateToCoverPhoto(MediaEditLoadedState state) async {
-    final currentItem = state.mediaEditItems[state.currentIndex];
-
-    if (currentItem.mediaType != EditMediaType.video) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content:
-                Text('Cover photo selection is only available for videos')),
-      );
-      return;
-    }
-
-    // Navigate to video cover selector
-    final result = await Navigator.push<File>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => VideoCoverSelectorView(
-          file: File(currentItem.editedPath ?? currentItem.originalPath),
-          mediaEditConfig: widget.mediaEditConfig,
-          pickCoverPic: widget.pickCoverPic,
-        ),
-      ),
-    );
-
-    if (result != null) {
-      _bloc.add(NavigateToCoverPhotoEvent(coverFile: result));
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Cover image updated successfully'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    }
-  }
-
-  Future<void> _proceedToNext(MediaEditLoadedState state) async {
-    _bloc.add(ProceedToNextEvent());
   }
 
   Future<void> _handleMediaEditComplete(
@@ -572,15 +532,13 @@ class _MediaEditViewState extends State<MediaEditView> {
         child: Row(
           children: [
             // Media list with thumbnails
-            Expanded(
-              child: _buildMediaList(state),
-            ),
+            Expanded(child: _buildMediaList(state)),
 
             const SizedBox(width: 16),
 
             // Next button
             GestureDetector(
-              onTap: () => _proceedToNext(state),
+              onTap: () => _bloc.add(ProceedToNextEvent()),
               child: Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
