@@ -47,16 +47,20 @@ class _LikeActionWidgetState extends State<LikeActionWidget> {
   void _onTap({ReelsData? reelData, int? watchDuration}) {
     if (isLoading) return;
     if (isLiked) {
-      cubit.unLikePost(postId, likeCount, reelData: reelData, watchDuration: watchDuration);
+      cubit.unLikePost(postId, likeCount,
+          reelData: reelData, watchDuration: watchDuration);
     } else {
-      cubit.likePost(postId, likeCount, reelData: reelData, watchDuration: watchDuration);
+      cubit.likePost(postId, likeCount,
+          reelData: reelData, watchDuration: watchDuration);
     }
   }
 
   @override
-  Widget build(BuildContext context) => context.attachBlocIfNeeded<IsmSocialActionCubit>(
+  Widget build(BuildContext context) =>
+      context.attachBlocIfNeeded<IsmSocialActionCubit>(
         child: BlocBuilder<IsmSocialActionCubit, IsmSocialActionState>(
-          buildWhen: (previous, current) => current is IsmLikePostState && current.postId == postId,
+          buildWhen: (previous, current) =>
+              current is IsmLikePostState && current.postId == postId,
           builder: (context, state) {
             if (state is IsmLikePostState && state.postId == postId) {
               isLoading = state.isLoading;

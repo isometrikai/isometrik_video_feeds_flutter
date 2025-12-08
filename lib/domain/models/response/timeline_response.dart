@@ -796,8 +796,7 @@ class PlaceData {
       };
 }
 
-ReelsData getReelData(TimeLineData postData,
-    {String? loggedInUserId}) =>
+ReelsData getReelData(TimeLineData postData, {String? loggedInUserId}) =>
     ReelsData(
       postData: postData,
       createOn: postData.publishedAt,
@@ -812,13 +811,16 @@ ReelsData getReelData(TimeLineData postData,
         isFollowButtonVisible: postData.user?.id != loggedInUserId,
         isUnFollowButtonVisible: postData.user?.id != loggedInUserId,
       ),
-      mentions: postData.tags != null && postData.tags?.mentions.isListEmptyOrNull == false
+      mentions: postData.tags != null &&
+              postData.tags?.mentions.isListEmptyOrNull == false
           ? (postData.tags?.mentions?.map(_getMentionMetaData).toList() ?? [])
           : [],
-      tagDataList: postData.tags != null && postData.tags?.hashtags.isListEmptyOrNull == false
+      tagDataList: postData.tags != null &&
+              postData.tags?.hashtags.isListEmptyOrNull == false
           ? postData.tags?.hashtags?.map(_getMentionMetaData).toList()
           : null,
-      placeDataList: postData.tags != null && postData.tags?.places.isListEmptyOrNull == false
+      placeDataList: postData.tags != null &&
+              postData.tags?.places.isListEmptyOrNull == false
           ? postData.tags?.places?.map(_getPlaceMetaData).toList()
           : null,
       postId: postData.id,
@@ -828,8 +830,11 @@ ReelsData getReelData(TimeLineData postData,
       userName: postData.user?.username ?? '',
       profilePhoto: postData.user?.avatarUrl ?? '',
       firstName: postData.user?.displayName?.split(' ').firstOrNull ?? '',
-      lastName:
-      postData.user?.displayName?.split(' ').takeIf((_) => _.length > 1)?.lastOrNull ?? '',
+      lastName: postData.user?.displayName
+              ?.split(' ')
+              .takeIf((_) => _.length > 1)
+              ?.lastOrNull ??
+          '',
       likesCount: postData.engagementMetrics?.likeTypes?.love?.toInt() ?? 0,
       commentCount: postData.engagementMetrics?.comments?.toInt() ?? 0,
       isFollow: postData.isFollowing == true,
@@ -841,41 +846,41 @@ ReelsData getReelData(TimeLineData postData,
     );
 
 MediaMetaData _getMediaMetaData(MediaData mediaData) => MediaMetaData(
-  mediaType: mediaData.mediaType == 'image' ? 0 : 1,
-  mediaUrl: mediaData.url ?? '',
-  thumbnailUrl: mediaData.previewUrl ?? '',
-);
+      mediaType: mediaData.mediaType == 'image' ? 0 : 1,
+      mediaUrl: mediaData.url ?? '',
+      thumbnailUrl: mediaData.previewUrl ?? '',
+    );
 
 MentionMetaData _getMentionMetaData(MentionData mentionData) => MentionMetaData(
-  userId: mentionData.userId,
-  username: mentionData.username,
-  name: mentionData.name,
-  avatarUrl: mentionData.avatarUrl,
-  tag: mentionData.tag,
-  textPosition: mentionData.textPosition != null
-      ? MentionPosition(
-    start: mentionData.textPosition?.start,
-    end: mentionData.textPosition?.end,
-  )
-      : null,
-  mediaPosition: mentionData.mediaPosition != null
-      ? MediaPosition(
-    position: mentionData.mediaPosition?.position,
-    x: mentionData.mediaPosition?.x,
-    y: mentionData.mediaPosition?.y,
-  )
-      : null,
-);
+      userId: mentionData.userId,
+      username: mentionData.username,
+      name: mentionData.name,
+      avatarUrl: mentionData.avatarUrl,
+      tag: mentionData.tag,
+      textPosition: mentionData.textPosition != null
+          ? MentionPosition(
+              start: mentionData.textPosition?.start,
+              end: mentionData.textPosition?.end,
+            )
+          : null,
+      mediaPosition: mentionData.mediaPosition != null
+          ? MediaPosition(
+              position: mentionData.mediaPosition?.position,
+              x: mentionData.mediaPosition?.x,
+              y: mentionData.mediaPosition?.y,
+            )
+          : null,
+    );
 
 PlaceMetaData _getPlaceMetaData(TaggedPlace placeData) => PlaceMetaData(
-  address: placeData.address,
-  city: placeData.city,
-  coordinates: placeData.coordinates,
-  country: placeData.country,
-  description: placeData.placeData?.description,
-  placeId: placeData.placeId,
-  placeName: placeData.placeName,
-  placeType: placeData.placeType,
-  postalCode: placeData.postalCode,
-  state: placeData.state,
-);
+      address: placeData.address,
+      city: placeData.city,
+      coordinates: placeData.coordinates,
+      country: placeData.country,
+      description: placeData.placeData?.description,
+      placeId: placeData.placeId,
+      placeName: placeData.placeName,
+      placeType: placeData.placeType,
+      postalCode: placeData.postalCode,
+      state: placeData.state,
+    );

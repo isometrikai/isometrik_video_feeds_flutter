@@ -2,10 +2,9 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
-
-import '../media_edit.dart';
 
 class VideoPreviewWidget extends StatefulWidget {
   const VideoPreviewWidget({
@@ -215,72 +214,70 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return VisibilityDetector(
-      key: Key('video_preview_${widget.mediaEditItem.originalPath}'),
-      onVisibilityChanged: _onVisibilityChanged,
-      child: GestureDetector(
-        onTap: _handlePlayPause,
-        child: Container(
-          width: double.infinity,
-          height: double.infinity,
-          color: Colors.black,
-          child: _videoController != null &&
-                  _videoController!.value.isInitialized
-              ? Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // Video player with center crop
-                    Center(
-                      child: AspectRatio(
-                        aspectRatio: _videoController!.value.aspectRatio,
-                        child: VideoPlayer(_videoController!),
-                      ),
-                    ),
-                    // Play/Pause Icon Overlay
-                    AnimatedOpacity(
-                      opacity: _videoController!.value.isPlaying
-                          ? (_showPauseIcon ? 1.0 : 0.0)
-                          : 1.0,
-                      duration: const Duration(milliseconds: 300),
-                      child: Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.6),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          _videoController!.value.isPlaying
-                              ? Icons.pause
-                              : Icons.play_arrow,
-                          color: Colors.white,
-                          size: 40,
+  Widget build(BuildContext context) => VisibilityDetector(
+        key: Key('video_preview_${widget.mediaEditItem.originalPath}'),
+        onVisibilityChanged: _onVisibilityChanged,
+        child: GestureDetector(
+          onTap: _handlePlayPause,
+          child: Container(
+            width: double.infinity,
+            height: double.infinity,
+            color: Colors.black,
+            child: _videoController != null &&
+                    _videoController!.value.isInitialized
+                ? Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Video player with center crop
+                      Center(
+                        child: AspectRatio(
+                          aspectRatio: _videoController!.value.aspectRatio,
+                          child: VideoPlayer(_videoController!),
                         ),
                       ),
-                    ),
-                  ],
-                )
-              : Container(
-                  color: widget.mediaEditConfig.backgroundColor,
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CircularProgressIndicator(
-                            color: widget.mediaEditConfig.primaryColor),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Loading video...',
-                          style: TextStyle(
-                              color: widget.mediaEditConfig.primaryTextColor),
+                      // Play/Pause Icon Overlay
+                      AnimatedOpacity(
+                        opacity: _videoController!.value.isPlaying
+                            ? (_showPauseIcon ? 1.0 : 0.0)
+                            : 1.0,
+                        duration: const Duration(milliseconds: 300),
+                        child: Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.6),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            _videoController!.value.isPlaying
+                                ? Icons.pause
+                                : Icons.play_arrow,
+                            color: Colors.white,
+                            size: 40,
+                          ),
                         ),
-                      ],
+                      ),
+                    ],
+                  )
+                : Container(
+                    color: widget.mediaEditConfig.backgroundColor,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(
+                              color: widget.mediaEditConfig.primaryColor),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Loading video...',
+                            style: TextStyle(
+                                color: widget.mediaEditConfig.primaryTextColor),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
+          ),
         ),
-      ),
-    );
-  }
+      );
 }

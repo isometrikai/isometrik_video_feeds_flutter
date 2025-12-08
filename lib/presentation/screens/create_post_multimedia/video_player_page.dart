@@ -4,15 +4,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_models.dart';
 import 'package:ism_video_reel_player/res/res.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:video_player/video_player.dart';
 
 class VideoPlayerPage extends StatefulWidget {
-  final MediaEditItem mediaItem;
-  final String title;
-  final bool allowEditing;
-  final Function(MediaEditItem)? onComplete;
-  final Function()? onCancel;
-
   const VideoPlayerPage({
     super.key,
     required this.mediaItem,
@@ -21,6 +16,11 @@ class VideoPlayerPage extends StatefulWidget {
     this.onComplete,
     this.onCancel,
   });
+  final MediaEditItem mediaItem;
+  final String title;
+  final bool allowEditing;
+  final Function(MediaEditItem)? onComplete;
+  final Function()? onCancel;
 
   @override
   State<VideoPlayerPage> createState() => _VideoPlayerPageState();
@@ -189,37 +189,35 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
+  Widget build(BuildContext context) => Scaffold(
         backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        title: Text(
-          widget.title,
-          style: IsrStyles.primaryText16.copyWith(color: Colors.white),
-        ),
-        actions: [
-          if (widget.allowEditing)
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          foregroundColor: Colors.white,
+          title: Text(
+            widget.title,
+            style: IsrStyles.primaryText16.copyWith(color: Colors.white),
+          ),
+          actions: [
+            if (widget.allowEditing)
+              TextButton(
+                onPressed: _onEdit,
+                child: Text(
+                  'Edit',
+                  style: IsrStyles.primaryText14.copyWith(color: Colors.white),
+                ),
+              ),
             TextButton(
-              onPressed: _onEdit,
+              onPressed: _onCancel,
               child: Text(
-                'Edit',
+                'Cancel',
                 style: IsrStyles.primaryText14.copyWith(color: Colors.white),
               ),
             ),
-          TextButton(
-            onPressed: _onCancel,
-            child: Text(
-              'Cancel',
-              style: IsrStyles.primaryText14.copyWith(color: Colors.white),
-            ),
-          ),
-        ],
-      ),
-      body: _buildBody(),
-    );
-  }
+          ],
+        ),
+        body: _buildBody(),
+      );
 
   Widget _buildBody() {
     if (_isLoading) {
@@ -292,130 +290,126 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     );
   }
 
-  Widget _buildControlsOverlay() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Colors.black.withOpacity(0.7),
-            Colors.transparent,
-            Colors.transparent,
-            Colors.black.withOpacity(0.7),
+  Widget _buildControlsOverlay() => Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.black.applyOpacity(0.7),
+              Colors.transparent,
+              Colors.transparent,
+              Colors.black.applyOpacity(0.7),
+            ],
+          ),
+        ),
+        child: Column(
+          children: [
+            // Top controls
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: _onCancel,
+                    icon: const Icon(Icons.close, color: Colors.white),
+                  ),
+                  const Spacer(),
+                  if (widget.allowEditing)
+                    IconButton(
+                      onPressed: _onEdit,
+                      icon: const Icon(Icons.edit, color: Colors.white),
+                    ),
+                ],
+              ),
+            ),
+
+            const Spacer(),
+
+            // Bottom controls
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  // Progress bar
+                  _buildProgressBar(),
+                  const SizedBox(height: 16),
+
+                  // Control buttons
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      // Rewind 10 seconds
+                      IconButton(
+                        onPressed: () =>
+                            _seekRelative(const Duration(seconds: -10)),
+                        icon: const Icon(Icons.replay_10,
+                            color: Colors.white, size: 32),
+                      ),
+
+                      // Play/Pause
+                      IconButton(
+                        onPressed: _togglePlayPause,
+                        icon: Icon(
+                          _isPlaying ? Icons.pause : Icons.play_arrow,
+                          color: Colors.white,
+                          size: 48,
+                        ),
+                      ),
+
+                      // Forward 10 seconds
+                      IconButton(
+                        onPressed: () =>
+                            _seekRelative(const Duration(seconds: 10)),
+                        icon: const Icon(Icons.forward_10,
+                            color: Colors.white, size: 32),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Duration info
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        _formatDuration(_currentPosition),
+                        style: IsrStyles.primaryText14
+                            .copyWith(color: Colors.white),
+                      ),
+                      Text(
+                        _formatDuration(_totalDuration),
+                        style: IsrStyles.primaryText14
+                            .copyWith(color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
-      ),
-      child: Column(
-        children: [
-          // Top controls
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                IconButton(
-                  onPressed: _onCancel,
-                  icon: const Icon(Icons.close, color: Colors.white),
-                ),
-                const Spacer(),
-                if (widget.allowEditing)
-                  IconButton(
-                    onPressed: _onEdit,
-                    icon: const Icon(Icons.edit, color: Colors.white),
-                  ),
-              ],
-            ),
-          ),
+      );
 
-          const Spacer(),
-
-          // Bottom controls
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                // Progress bar
-                _buildProgressBar(),
-                const SizedBox(height: 16),
-
-                // Control buttons
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    // Rewind 10 seconds
-                    IconButton(
-                      onPressed: () =>
-                          _seekRelative(const Duration(seconds: -10)),
-                      icon: const Icon(Icons.replay_10,
-                          color: Colors.white, size: 32),
-                    ),
-
-                    // Play/Pause
-                    IconButton(
-                      onPressed: _togglePlayPause,
-                      icon: Icon(
-                        _isPlaying ? Icons.pause : Icons.play_arrow,
-                        color: Colors.white,
-                        size: 48,
-                      ),
-                    ),
-
-                    // Forward 10 seconds
-                    IconButton(
-                      onPressed: () =>
-                          _seekRelative(const Duration(seconds: 10)),
-                      icon: const Icon(Icons.forward_10,
-                          color: Colors.white, size: 32),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-
-                // Duration info
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      _formatDuration(_currentPosition),
-                      style:
-                          IsrStyles.primaryText14.copyWith(color: Colors.white),
-                    ),
-                    Text(
-                      _formatDuration(_totalDuration),
-                      style:
-                          IsrStyles.primaryText14.copyWith(color: Colors.white),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProgressBar() {
-    return SliderTheme(
-      data: SliderTheme.of(context).copyWith(
-        activeTrackColor: Colors.white,
-        inactiveTrackColor: Colors.white.withOpacity(0.3),
-        thumbColor: Colors.white,
-        overlayColor: Colors.white.withOpacity(0.2),
-        trackHeight: 4.0,
-      ),
-      child: Slider(
-        value: _totalDuration.inMilliseconds > 0
-            ? _currentPosition.inMilliseconds / _totalDuration.inMilliseconds
-            : 0.0,
-        onChanged: (value) {
-          final position = Duration(
-            milliseconds: (value * _totalDuration.inMilliseconds).round(),
-          );
-          _seekTo(position);
-        },
-      ),
-    );
-  }
+  Widget _buildProgressBar() => SliderTheme(
+        data: SliderTheme.of(context).copyWith(
+          activeTrackColor: Colors.white,
+          inactiveTrackColor: Colors.white.applyOpacity(0.3),
+          thumbColor: Colors.white,
+          overlayColor: Colors.white.applyOpacity(0.2),
+          trackHeight: 4.0,
+        ),
+        child: Slider(
+          value: _totalDuration.inMilliseconds > 0
+              ? _currentPosition.inMilliseconds / _totalDuration.inMilliseconds
+              : 0.0,
+          onChanged: (value) {
+            final position = Duration(
+              milliseconds: (value * _totalDuration.inMilliseconds).round(),
+            );
+            _seekTo(position);
+          },
+        ),
+      );
 }

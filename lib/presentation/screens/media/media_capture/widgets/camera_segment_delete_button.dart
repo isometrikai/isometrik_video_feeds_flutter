@@ -54,7 +54,8 @@ class CameraSegmentDeleteButton extends StatelessWidget {
             IsrDimens.boxHeight(IsrDimens.twelve),
             IsrDimens.boxHeight(IsrDimens.sixteen),
             Padding(
-              padding: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.sixteen),
+              padding:
+                  IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.sixteen),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -78,7 +79,8 @@ class CameraSegmentDeleteButton extends StatelessWidget {
             ),
             IsrDimens.boxHeight(IsrDimens.sixteen),
             Padding(
-              padding: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.sixteen),
+              padding:
+                  IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.sixteen),
               child: Text(
                 'Do you want to remove the previous segment?',
                 style: IsrStyles.primaryText14,
@@ -87,7 +89,8 @@ class CameraSegmentDeleteButton extends StatelessWidget {
             ),
             IsrDimens.boxHeight(IsrDimens.twentyFour),
             Padding(
-              padding: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.sixteen),
+              padding:
+                  IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.sixteen),
               child: Row(
                 children: [
                   Expanded(

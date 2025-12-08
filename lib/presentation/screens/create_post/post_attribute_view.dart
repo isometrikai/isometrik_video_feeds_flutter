@@ -7,7 +7,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
-import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart' as mc;
+import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart'
+    as mc;
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart'
     as ms;
 import 'package:ism_video_reel_player/res/res.dart';
@@ -27,14 +28,16 @@ class PostAttributeView extends StatefulWidget {
 
   final bool? isEditMode;
   final List<MediaData>? newMediaDataList;
-  final Future<List<ProductDataModel>?> Function(List<ProductDataModel>)? onTagProduct;
+  final Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
+      onTagProduct;
   final TimeLineData? postData;
 
   @override
   State<PostAttributeView> createState() => _PostAttributeViewState();
 }
 
-class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindingObserver {
+class _PostAttributeViewState extends State<PostAttributeView>
+    with WidgetsBindingObserver {
   final Map<String, VideoPlayerController> _videoControllers = {};
   final Map<String, bool> _videoInitializingStates = {};
   var _mediaDataList = <MediaData>[];
@@ -73,7 +76,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
     if (_isEditMode && editData != null) {
       _createPostBloc.add(EditPostEvent(postData: editData));
     } else if (!_isEditMode && widget.newMediaDataList?.isNotEmpty == true) {
-      _createPostBloc.add(CreatePostInitialEvent(newMediaDataList: widget.newMediaDataList));
+      _createPostBloc.add(
+          CreatePostInitialEvent(newMediaDataList: widget.newMediaDataList));
     } else {
       Navigator.pop(context);
     }
@@ -100,7 +104,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
     _hashTags.addAll(_createPostBloc.hashTagDataList);
 
     // Set description in PostAttributeClass if not already set
-    _postAttributeClass?.createPostRequest?.caption ??= _createPostBloc.descriptionText;
+    _postAttributeClass?.createPostRequest?.caption ??=
+        _createPostBloc.descriptionText;
 
     // Set default values for new posts
     _postAttributeClass?.allowComment ??= true;
@@ -274,11 +279,14 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
     if (original == null) return null;
 
     final copy = PostAttributeClass();
-    copy.mentionedUserList = List<MentionData>.from(original.mentionedUserList ?? []);
-    copy.hashTagDataList = List<MentionData>.from(original.hashTagDataList ?? []);
+    copy.mentionedUserList =
+        List<MentionData>.from(original.mentionedUserList ?? []);
+    copy.hashTagDataList =
+        List<MentionData>.from(original.hashTagDataList ?? []);
     copy.taggedPlaces = List<TaggedPlace>.from(original.taggedPlaces ?? []);
     copy.mediaDataList = List<MediaData>.from(original.mediaDataList ?? []);
-    copy.linkedProducts = List<ProductDataModel>.from(original.linkedProducts ?? []);
+    copy.linkedProducts =
+        List<ProductDataModel>.from(original.linkedProducts ?? []);
     copy.allowComment = original.allowComment ?? true;
     copy.allowSave = original.allowSave ?? true;
 
@@ -331,13 +339,15 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
     final current = _postAttributeClass!;
 
     // Check mentioned users changes
-    if (!_compareMentionLists(original.mentionedUserList, current.mentionedUserList)) {
+    if (!_compareMentionLists(
+        original.mentionedUserList, current.mentionedUserList)) {
       debugPrint('Changes detected in mentioned users');
       return true;
     }
 
     // Check hashtags changes
-    if (!_compareMentionLists(original.hashTagDataList, current.hashTagDataList)) {
+    if (!_compareMentionLists(
+        original.hashTagDataList, current.hashTagDataList)) {
       debugPrint('Changes detected in hashtags');
       return true;
     }
@@ -355,14 +365,16 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
     }
 
     // check for coverImage change
-    if (Utility.isLocalUrl(
-        _postAttributeClass?.createPostRequest?.previews?.firstOrNull?.localFilePath ?? '')) {
+    if (Utility.isLocalUrl(_postAttributeClass
+            ?.createPostRequest?.previews?.firstOrNull?.localFilePath ??
+        '')) {
       debugPrint('Changes detected in preview data');
       return true;
     }
 
     // Check settings changes
-    if (original.allowComment != current.allowComment || original.allowSave != current.allowSave) {
+    if (original.allowComment != current.allowComment ||
+        original.allowSave != current.allowSave) {
       debugPrint('Changes detected in settings');
       return true;
     }
@@ -376,13 +388,15 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
     }
 
     // Check linked products changes directly from PostAttributeClass
-    if (!_compareLinkedProducts(original.linkedProducts, current.linkedProducts)) {
+    if (!_compareLinkedProducts(
+        original.linkedProducts, current.linkedProducts)) {
       debugPrint('Changes detected in linked products from PostAttributeClass');
       return true;
     }
 
     // Check local linked products changes
-    if (!_compareLinkedProducts(_originalPostAttributeClass?.linkedProducts, _linkedProducts)) {
+    if (!_compareLinkedProducts(
+        _originalPostAttributeClass?.linkedProducts, _linkedProducts)) {
       debugPrint('Changes detected in local linked products');
       return true;
     }
@@ -393,13 +407,15 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
       final currentLinkedProducts = createPostBloc.linkedProducts;
 
       debugPrint('=== LINKED PRODUCTS CHECK ===');
-      debugPrint('Current linked products count: ${currentLinkedProducts.length}');
+      debugPrint(
+          'Current linked products count: ${currentLinkedProducts.length}');
       debugPrint(
           'Current linked products: ${currentLinkedProducts.map((p) => p.productName).toList()}');
 
       // Check what's in the bloc's original products list
       final originalLinkedProducts = createPostBloc.originalLinkedProducts;
-      debugPrint('Original linked products count: ${originalLinkedProducts.length}');
+      debugPrint(
+          'Original linked products count: ${originalLinkedProducts.length}');
       debugPrint(
           'Original linked products: ${originalLinkedProducts.map((p) => p.productName).toList()}');
 
@@ -423,12 +439,14 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
   }
 
   /// Compare two mention lists
-  bool _compareMentionLists(List<MentionData>? list1, List<MentionData>? list2) {
+  bool _compareMentionLists(
+      List<MentionData>? list1, List<MentionData>? list2) {
     if (list1?.length != list2?.length) return false;
     if (list1 == null || list2 == null) return list1 == list2;
 
     for (var i = 0; i < list1.length; i++) {
-      if (list1[i].userId != list2[i].userId || list1[i].mediaPosition != list2[i].mediaPosition) {
+      if (list1[i].userId != list2[i].userId ||
+          list1[i].mediaPosition != list2[i].mediaPosition) {
         return false;
       }
     }
@@ -436,7 +454,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
   }
 
   /// Compare two location tag lists
-  bool _compareLocationTags(List<TaggedPlace>? list1, List<TaggedPlace>? list2) {
+  bool _compareLocationTags(
+      List<TaggedPlace>? list1, List<TaggedPlace>? list2) {
     if (list1?.length != list2?.length) return false;
     if (list1 == null || list2 == null) return list1 == list2;
 
@@ -454,7 +473,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
     if (list1 == null || list2 == null) return list1 == list2;
 
     for (var i = 0; i < list1.length; i++) {
-      if (list1[i].url != list2[i].url || list1[i].localPath != list2[i].localPath) {
+      if (list1[i].url != list2[i].url ||
+          list1[i].localPath != list2[i].localPath) {
         return false;
       }
     }
@@ -462,7 +482,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
   }
 
   /// Compare two linked product lists
-  bool _compareLinkedProducts(List<ProductDataModel>? list1, List<ProductDataModel>? list2) {
+  bool _compareLinkedProducts(
+      List<ProductDataModel>? list1, List<ProductDataModel>? list2) {
     if (list1?.length != list2?.length) return false;
     if (list1 == null || list2 == null) return list1 == list2;
 
@@ -537,7 +558,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
           }
           // Update all cubit state values
           _progressCubit.updateProgress(state.progress ?? 0);
-          _progressCubit.updateTitle(state.title ?? IsrTranslationFile.uploadingMediaFiles);
+          _progressCubit.updateTitle(
+              state.title ?? IsrTranslationFile.uploadingMediaFiles);
           _progressCubit.updateSubtitle(state.subTitle ?? '');
         }
       },
@@ -603,15 +625,17 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                     // Media Preview Section
                     if (_mediaDataList.isNotEmpty)
                       Container(
-                        height:
-                            220.responsiveDimension, // Increased height for reels-like aspect ratio
+                        height: 220
+                            .responsiveDimension, // Increased height for reels-like aspect ratio
                         width: double.infinity,
-                        padding: EdgeInsetsGeometry.symmetric(horizontal: 5.responsiveDimension),
+                        padding: EdgeInsetsGeometry.symmetric(
+                            horizontal: 5.responsiveDimension),
                         child: Center(
                           child: GestureDetector(
                             onTap: _changeCover,
                             child: Container(
-                              margin: IsrDimens.edgeInsetsAll(7.responsiveDimension),
+                              margin: IsrDimens.edgeInsetsAll(
+                                  7.responsiveDimension),
                               child: AspectRatio(
                                 aspectRatio: 9 / 16,
                                 child: Container(
@@ -622,10 +646,16 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                                     borderRadius: BorderRadius.circular(8),
                                     child: Stack(
                                       children: [
-                                        _buildImage(_postAttributeClass?.createPostRequest?.previews
-                                                ?.firstOrNull?.localFilePath ??
+                                        _buildImage(_postAttributeClass
+                                                ?.createPostRequest
+                                                ?.previews
+                                                ?.firstOrNull
+                                                ?.localFilePath ??
                                             _postAttributeClass
-                                                ?.createPostRequest?.previews?.firstOrNull?.url ??
+                                                ?.createPostRequest
+                                                ?.previews
+                                                ?.firstOrNull
+                                                ?.url ??
                                             ''),
                                         Positioned(
                                           left: 0,
@@ -634,11 +664,13 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                                           child: Container(
                                             width: double.infinity,
                                             height: 28.responsiveDimension,
-                                            color: IsrColors.black.withValues(alpha: 0.3),
+                                            color: IsrColors.black
+                                                .withValues(alpha: 0.3),
                                             child: Center(
                                               child: Text(
                                                 IsrTranslationFile.changeCover,
-                                                style: IsrStyles.primaryText12.copyWith(
+                                                style: IsrStyles.primaryText12
+                                                    .copyWith(
                                                   color: IsrColors.white,
                                                   fontWeight: FontWeight.w600,
                                                 ),
@@ -694,19 +726,19 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                           icon: AssetConstants.icTagUser,
                           title: IsrTranslationFile.tagPeople,
                           onTap: () async {
-                            final mentionedDataList = _mentionedUsers
-                                .where((element) => element.mediaPosition != null)
-                                .toList();
-                            final mediaDataList = _postAttributeClass?.mediaDataList ?? [];
-                            final result = await IsrAppNavigator.goToTagPeopleScreen(
+                            final mediaDataList =
+                                _postAttributeClass?.mediaDataList ?? [];
+                            final result =
+                                await IsrAppNavigator.goToTagPeopleScreen(
                               context,
                               mentionDataList: _mentionedUsers,
                               mediaDataList: mediaDataList,
                             );
                             if (result.isEmptyOrNull == false) {
-                              for (var mentionData in result as Iterable<MentionData>) {
-                                if (!_mentionedUsers
-                                    .any((element) => element.userId == mentionData.userId)) {
+                              for (var mentionData
+                                  in result as Iterable<MentionData>) {
+                                if (!_mentionedUsers.any((element) =>
+                                    element.userId == mentionData.userId)) {
                                   _mentionedUsers.add(mentionData);
                                 }
                               }
@@ -900,7 +932,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
           hintText: '${IsrTranslationFile.addCaption}...',
           maxLength: _maxLength,
           style: IsrStyles.primaryText14,
-          hintStyle: IsrStyles.secondaryText14.copyWith(color: IsrColors.colorBBBBBB),
+          hintStyle:
+              IsrStyles.secondaryText14.copyWith(color: IsrColors.colorBBBBBB),
           onTap: _scrollToCaptionInput,
           onChanged: (value) {
             final createPostBloc = BlocProvider.of<CreatePostBloc>(context);
@@ -908,7 +941,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
 
             // Update PostAttributeClass
             if (_postAttributeClass?.createPostRequest != null) {
-              _postAttributeClass!.createPostRequest!.caption = _descriptionController.text;
+              _postAttributeClass!.createPostRequest!.caption =
+                  _descriptionController.text;
             }
 
             setState(() {});
@@ -946,22 +980,19 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
       );
 
   /// Get count of tagged users
-  int _getTaggedUsersCount() {
-    final mentionedMediaUserList =
-        _mentionedUsers.where((element) => element.mediaPosition != null).toList();
-    return _mentionedUsers.length;
-  }
+  int _getTaggedUsersCount() => _mentionedUsers.length;
 
   @override
   void didChangeMetrics() {
-    final bottomInset = WidgetsBinding.instance.window.viewInsets.bottom;
+    final bottomInset = View.of(context).viewInsets.bottom;
     final newValue = bottomInset > 0.0;
     if (newValue != isKeyboardVisible) {
       debugPrint('Keyboard visibility changed: $newValue');
       isKeyboardVisible = newValue;
       if (isKeyboardVisible && _isCaptionFocused) {
         debugPrint('Keyboard visibility changed a: $newValue');
-        Future.delayed(const Duration(milliseconds: 700), _performScrollToCaptionInput);
+        Future.delayed(
+            const Duration(milliseconds: 700), _performScrollToCaptionInput);
       }
     }
   }
@@ -976,15 +1007,18 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
 
   /// Perform the actual scroll to caption input
   void _performScrollToCaptionInput() {
-    if (_scrollController.hasClients && _captionInputKey.currentContext != null) {
+    if (_scrollController.hasClients &&
+        _captionInputKey.currentContext != null) {
       // Get the render box of the caption input
-      final renderBox = _captionInputKey.currentContext!.findRenderObject() as RenderBox;
+      final renderBox =
+          _captionInputKey.currentContext!.findRenderObject() as RenderBox;
 
       // Get the position of the widget relative to the scrollable area
       final position = renderBox.localToGlobal(Offset.zero);
 
       // Calculate the offset to scroll to (position of the widget minus some padding)
-      final scrollOffset = _scrollController.offset + position.dy - 80; // 20px padding from top
+      final scrollOffset =
+          _scrollController.offset + position.dy - 80; // 20px padding from top
 
       // Ensure we don't scroll beyond the bounds
       final maxScrollExtent = _scrollController.position.maxScrollExtent;
@@ -1008,7 +1042,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
       title: hasLocation
           ? '${taggedPlace?.placeName}${taggedPlace?.placeName == taggedPlace?.city ? '' : ', ${taggedPlace?.city}'}'
           : IsrTranslationFile.addLocation,
-      subtitle: hasLocation ? '${taggedPlace?.state}, ${taggedPlace?.country}' : null,
+      subtitle:
+          hasLocation ? '${taggedPlace?.state}, ${taggedPlace?.country}' : null,
       trailing: Icon(
         hasLocation ? Icons.close : Icons.chevron_right,
         color: IsrColors.primaryTextColor,
@@ -1016,8 +1051,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
       ),
       color: hasLocation ? IsrColors.appColor : IsrColors.primaryTextColor,
       onTap: () async {
-        final result =
-            await IsrAppNavigator.goToSearchLocation(context, taggedPlaceList: taggedPlaces);
+        final result = await IsrAppNavigator.goToSearchLocation(context,
+            taggedPlaceList: taggedPlaces);
 
         if (result != null) {
           _postAttributeClass?.taggedPlaces = result;
@@ -1084,11 +1119,13 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
       'Dec'
     ];
 
-    final dateStr = '${schedule.day} ${months[schedule.month - 1]} ${schedule.year}';
+    final dateStr =
+        '${schedule.day} ${months[schedule.month - 1]} ${schedule.year}';
 
     // Format time
-    final hour =
-        schedule.hour == 0 ? 12 : (schedule.hour > 12 ? schedule.hour - 12 : schedule.hour);
+    final hour = schedule.hour == 0
+        ? 12
+        : (schedule.hour > 12 ? schedule.hour - 12 : schedule.hour);
     final minute = schedule.minute.toString().padLeft(2, '0');
     final period = schedule.hour >= 12 ? 'PM' : 'AM';
     final timeStr = '$hour:$minute $period';
@@ -1115,7 +1152,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
 
   /// Build schedule bottom sheet
   Widget _buildScheduleBottomSheet() {
-    var selectedDate = _selectedDate?.toLocal() ?? _createPostBloc.getBufferedDate();
+    var selectedDate =
+        _selectedDate?.toLocal() ?? _createPostBloc.getBufferedDate();
     var selectedTime = TimeOfDay.fromDateTime(selectedDate);
 
     return StatefulBuilder(
@@ -1132,8 +1170,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
           children: [
             // Handle bar
             Container(
-              margin:
-                  IsrDimens.edgeInsets(top: 12.responsiveDimension, bottom: 16.responsiveDimension),
+              margin: IsrDimens.edgeInsets(
+                  top: 12.responsiveDimension, bottom: 16.responsiveDimension),
               width: 40.responsiveDimension,
               height: 4.responsiveDimension,
               decoration: BoxDecoration(
@@ -1145,13 +1183,15 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
             // Header
             Padding(
               padding: IsrDimens.edgeInsetsSymmetric(
-                  horizontal: 20.responsiveDimension, vertical: 8.responsiveDimension),
+                  horizontal: 20.responsiveDimension,
+                  vertical: 8.responsiveDimension),
               child: Row(
                 children: [
                   Expanded(
                     child: Text(
                       IsrTranslationFile.schedulePost,
-                      style: IsrStyles.primaryText20.copyWith(fontWeight: FontWeight.w600),
+                      style: IsrStyles.primaryText20
+                          .copyWith(fontWeight: FontWeight.w600),
                     ),
                   ),
                   IconButton(
@@ -1165,7 +1205,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
             // Date field
             Container(
               margin: IsrDimens.edgeInsetsSymmetric(
-                  horizontal: 20.responsiveDimension, vertical: 8.responsiveDimension),
+                  horizontal: 20.responsiveDimension,
+                  vertical: 8.responsiveDimension),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1190,9 +1231,7 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                               onSurface: Colors.black,
                               secondary: Colors.black,
                               onSecondary: Colors.white,
-                              background: Colors.white,
-                              onBackground: Colors.black,
-                              surfaceVariant: Color(0xFFF5F5F5),
+                              surfaceContainerHighest: Color(0xFFF5F5F5),
                               onSurfaceVariant: Colors.black54,
                             ),
                             dialogTheme: const DialogThemeData(
@@ -1222,10 +1261,14 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                                 color: Colors.black,
                                 fontWeight: FontWeight.w400,
                               ),
-                              todayBackgroundColor: MaterialStatePropertyAll(Color(0xFFF0F0F0)),
-                              todayForegroundColor: MaterialStatePropertyAll(Colors.black),
-                              dayBackgroundColor: MaterialStatePropertyAll(Colors.transparent),
-                              dayForegroundColor: MaterialStatePropertyAll(Colors.black),
+                              todayBackgroundColor:
+                                  WidgetStatePropertyAll(Color(0xFFF0F0F0)),
+                              todayForegroundColor:
+                                  WidgetStatePropertyAll(Colors.black),
+                              dayBackgroundColor:
+                                  WidgetStatePropertyAll(Colors.transparent),
+                              dayForegroundColor:
+                                  WidgetStatePropertyAll(Colors.black),
                               rangeSelectionBackgroundColor: Color(0xFFF0F0F0),
                             ),
                           ),
@@ -1245,7 +1288,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                     },
                     child: Container(
                       padding: IsrDimens.edgeInsetsSymmetric(
-                          horizontal: 16.responsiveDimension, vertical: 16.responsiveDimension),
+                          horizontal: 16.responsiveDimension,
+                          vertical: 16.responsiveDimension),
                       decoration: BoxDecoration(
                         border: Border.all(color: Colors.grey[300]!),
                         borderRadius: BorderRadius.circular(8),
@@ -1270,7 +1314,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
             // Time field
             Container(
               margin: IsrDimens.edgeInsetsSymmetric(
-                  horizontal: 20.responsiveDimension, vertical: 8.responsiveDimension),
+                  horizontal: 20.responsiveDimension,
+                  vertical: 8.responsiveDimension),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1338,7 +1383,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                     },
                     child: Container(
                       padding: IsrDimens.edgeInsetsSymmetric(
-                          horizontal: 16.responsiveDimension, vertical: 16.responsiveDimension),
+                          horizontal: 16.responsiveDimension,
+                          vertical: 16.responsiveDimension),
                       decoration: BoxDecoration(
                         border: Border.all(color: Colors.grey[300]!),
                         borderRadius: BorderRadius.circular(8),
@@ -1365,11 +1411,13 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
               height: 44.responsiveDimension,
               margin: IsrDimens.edgeInsetsAll(20.responsiveDimension),
               borderRadius: 22.responsiveDimension,
-              textStyle: IsrStyles.white14.copyWith(fontWeight: FontWeight.w600),
+              textStyle:
+                  IsrStyles.white14.copyWith(fontWeight: FontWeight.w600),
               onPress: () {
                 debugPrint('Selected date: $selectedDate');
                 debugPrint('Current time: ${DateTime.now()}');
-                debugPrint('Is future: ${selectedDate.isAfter(DateTime.now())}');
+                debugPrint(
+                    'Is future: ${selectedDate.isAfter(DateTime.now())}');
 
                 // Validate buffer time before saving
                 if (_validateScheduleTime(selectedDate)) {
@@ -1419,7 +1467,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
 
   /// Format time for display
   String _formatTime(TimeOfDay time) {
-    final hour = time.hour == 0 ? 12 : (time.hour > 12 ? time.hour - 12 : time.hour);
+    final hour =
+        time.hour == 0 ? 12 : (time.hour > 12 ? time.hour - 12 : time.hour);
     final minute = time.minute.toString().padLeft(2, '0');
     final period = time.hour >= 12 ? 'PM' : 'AM';
     return '$hour:$minute $period';
@@ -1446,7 +1495,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
 
     final createPostBloc = BlocProvider.of<CreatePostBloc>(context);
 
-    debugPrint('Current bloc mentionedUserData count: ${createPostBloc.mentionedUserData.length}');
+    debugPrint(
+        'Current bloc mentionedUserData count: ${createPostBloc.mentionedUserData.length}');
     debugPrint(
         'Current bloc mediaMentionUserData count: ${createPostBloc.mediaMentionUserData.length}');
 
@@ -1470,7 +1520,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
         'After sync - bloc mentionedUserData count: ${createPostBloc.mentionedUserData.length}');
     debugPrint(
         'After sync - bloc mediaMentionUserData count: ${createPostBloc.mediaMentionUserData.length}');
-    debugPrint('After sync - bloc hashTagDataList count: ${createPostBloc.hashTagDataList.length}');
+    debugPrint(
+        'After sync - bloc hashTagDataList count: ${createPostBloc.hashTagDataList.length}');
     debugPrint('=== _syncMentionDataToBloc END ===');
   }
 
@@ -1496,7 +1547,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
   void _createPost() {
     _setPostRequest();
     BlocProvider.of<CreatePostBloc>(context).add(PostCreateEvent(
-      createPostRequest: _postAttributeClass?.createPostRequest ?? CreatePostRequest(),
+      createPostRequest:
+          _postAttributeClass?.createPostRequest ?? CreatePostRequest(),
       isForEdit: _isEditMode,
     ));
   }
@@ -1548,11 +1600,16 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
 
       createPostRequest.tags = tags;
 
-      debugPrint('createPostRequest.....${jsonEncode(createPostRequest.toJson())}');
-      debugPrint('createPostRequest.....${jsonEncode(createPostRequest.tags?.mentions)}');
-      debugPrint('createPostRequest.....${jsonEncode(createPostRequest.tags?.hashtags)}');
-      debugPrint('createPostRequest.....${jsonEncode(createPostRequest.tags?.places)}');
-      debugPrint('createPostRequest.....${jsonEncode(createPostRequest.tags?.products)}');
+      debugPrint(
+          'createPostRequest.....${jsonEncode(createPostRequest.toJson())}');
+      debugPrint(
+          'createPostRequest.....${jsonEncode(createPostRequest.tags?.mentions)}');
+      debugPrint(
+          'createPostRequest.....${jsonEncode(createPostRequest.tags?.hashtags)}');
+      debugPrint(
+          'createPostRequest.....${jsonEncode(createPostRequest.tags?.places)}');
+      debugPrint(
+          'createPostRequest.....${jsonEncode(createPostRequest.tags?.products)}');
     }
     _postAttributeClass?.createPostRequest = createPostRequest;
   }
@@ -1572,9 +1629,11 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
         child: InkWell(
           onTap: onTap,
           child: Container(
-            margin: IsrDimens.edgeInsetsSymmetric(vertical: 4.responsiveDimension),
+            margin:
+                IsrDimens.edgeInsetsSymmetric(vertical: 4.responsiveDimension),
             padding: IsrDimens.edgeInsetsSymmetric(
-                horizontal: 20.responsiveDimension, vertical: 12.responsiveDimension),
+                horizontal: 20.responsiveDimension,
+                vertical: 12.responsiveDimension),
             child: Row(
               children: [
                 AppImage.svg(
@@ -1600,7 +1659,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                         4.horizontalSpace,
                         Text(
                           subtitle,
-                          style: IsrStyles.primaryText12.copyWith(color: IsrColors.grey),
+                          style: IsrStyles.primaryText12
+                              .copyWith(color: IsrColors.grey),
                         ),
                       ],
                     ],
@@ -1630,9 +1690,7 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
       _createPostBloc.add(ChangeCoverImageEvent(
           coverImage: File(coverPic),
           onComplete: () {
-            setState(() {
-              _updatePostButtonState();
-            });
+            setState(_updatePostButtonState);
           }));
     }
   }
@@ -1658,8 +1716,10 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
     imageMediaLimit: AppConstants.imageMediaLimit,
     videoMediaLimit: AppConstants.videoMediaLimit,
     mediaLimit: AppConstants.totalMediaLimit,
-    singleSelectModeIcon: const AppImage.svg(AssetConstants.icMediaSelectSingle),
-    multiSelectModeIcon: const AppImage.svg(AssetConstants.icMediaSelectMultiple),
+    singleSelectModeIcon:
+        const AppImage.svg(AssetConstants.icMediaSelectSingle),
+    multiSelectModeIcon:
+        const AppImage.svg(AssetConstants.icMediaSelectMultiple),
     doneButtonText: IsrTranslationFile.next,
     selectMediaTitle: IsrTranslationFile.newReel,
     primaryColor: IsrColors.appColor,
@@ -1670,7 +1730,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
     mediaListType: ms.MediaListType.imageVideo,
   );
 
-  Future<String?> _captureMedia(String? mediaType) async => await Navigator.push<String?>(
+  Future<String?> _captureMedia(String? mediaType) async =>
+      await Navigator.push<String?>(
         context,
         MaterialPageRoute(
           builder: (context) => mc.CameraCaptureView(
@@ -1695,8 +1756,10 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
         child: InkWell(
           onTap: () => onChanged(!value),
           child: Container(
-            margin: IsrDimens.edgeInsetsSymmetric(vertical: 4.responsiveDimension),
-            padding: IsrDimens.edgeInsetsSymmetric(horizontal: 20.responsiveDimension),
+            margin:
+                IsrDimens.edgeInsetsSymmetric(vertical: 4.responsiveDimension),
+            padding: IsrDimens.edgeInsetsSymmetric(
+                horizontal: 20.responsiveDimension),
             child: Row(
               children: [
                 AppImage.svg(icon),
@@ -1704,7 +1767,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                 Expanded(
                   child: Text(
                     title,
-                    style: IsrStyles.primaryText14.copyWith(fontWeight: FontWeight.w500),
+                    style: IsrStyles.primaryText14
+                        .copyWith(fontWeight: FontWeight.w500),
                   ),
                 ),
                 Switch(
@@ -1721,15 +1785,15 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
         ),
       );
 
-  Widget _buildImage(String url) => Utility.isLocalUrl(url ?? '')
+  Widget _buildImage(String url) => Utility.isLocalUrl(url)
       ? AppImage.file(
-          url ?? '',
+          url,
           fit: BoxFit.cover,
           width: double.infinity,
           height: double.infinity,
         )
       : AppImage.network(
-          url ?? '',
+          url,
           fit: BoxFit.cover,
           width: double.infinity,
           height: double.infinity,

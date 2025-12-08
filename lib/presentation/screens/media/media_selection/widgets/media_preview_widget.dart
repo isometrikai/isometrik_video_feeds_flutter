@@ -1,12 +1,11 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
-
-import '../media_selection.dart';
 
 enum VideoLoadingState {
   idle,
@@ -43,9 +42,6 @@ class _MediaPreviewWidgetState extends State<MediaPreviewWidget>
   VideoPlayerController? _videoController;
   late AnimationController _buttonAnimationController;
   late Animation<double> _buttonOpacityAnimation;
-  final PhotoViewController _photoViewController = PhotoViewController();
-  final PhotoViewScaleStateController _scaleStateController =
-      PhotoViewScaleStateController();
 
   // State management
   bool _showPlayPauseButton = true;

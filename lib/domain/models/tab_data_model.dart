@@ -1,27 +1,26 @@
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 
 class TabDataModel {
-
   factory TabDataModel.fromJson(Map<String, dynamic> json) => TabDataModel(
-      title: json['title'] as String? ?? '',
-      reelsDataList: (json['reelsDataList'] as List<dynamic>? ?? [])
-          .map((e) => TimeLineData.fromMap(e as Map<String, dynamic>? ?? {}))
-          .toList(),
-      startingPostIndex: json['startingPostIndex'] as int? ?? 0,
-      postSectionType: PostSectionType.values.firstWhere(
-            (e) => e.name == json['postSectionType'],
-        orElse: () => PostSectionType.trending,
-      ),
-      userId: json['userId'] as String?,
-      postId: json['postId'] as String?,
-      tagValue: json['tagValue'] as String?,
-      tagType: json['tagType'] != null
-          ? TagType.values.firstWhere(
-            (e) => e.name == json['tagType'],
-        orElse: () => TagType.product,
-      )
-          : null,
-    );
+        title: json['title'] as String? ?? '',
+        reelsDataList: (json['reelsDataList'] as List<dynamic>? ?? [])
+            .map((e) => TimeLineData.fromMap(e as Map<String, dynamic>? ?? {}))
+            .toList(),
+        startingPostIndex: json['startingPostIndex'] as int? ?? 0,
+        postSectionType: PostSectionType.values.firstWhere(
+          (e) => e.name == json['postSectionType'],
+          orElse: () => PostSectionType.trending,
+        ),
+        userId: json['userId'] as String?,
+        postId: json['postId'] as String?,
+        tagValue: json['tagValue'] as String?,
+        tagType: json['tagType'] != null
+            ? TagType.values.firstWhere(
+                (e) => e.name == json['tagType'],
+                orElse: () => TagType.product,
+              )
+            : null,
+      );
   TabDataModel({
     required this.title,
     required this.reelsDataList,
@@ -64,13 +63,13 @@ class TabDataModel {
       );
 
   Map<String, dynamic> toJson() => {
-      'title': title,
-      'reelsDataList': reelsDataList.map((e) => e.toMap()).toList(),
-      'startingPostIndex': startingPostIndex,
-      'postSectionType': postSectionType.name,
-      'userId': userId,
-      'postId': postId,
-      'tagValue': tagValue,
-      'tagType': tagType?.name,
-    };
+        'title': title,
+        'reelsDataList': reelsDataList.map((e) => e.toMap()).toList(),
+        'startingPostIndex': startingPostIndex,
+        'postSectionType': postSectionType.name,
+        'userId': userId,
+        'postId': postId,
+        'tagValue': tagValue,
+        'tagType': tagType?.name,
+      };
 }

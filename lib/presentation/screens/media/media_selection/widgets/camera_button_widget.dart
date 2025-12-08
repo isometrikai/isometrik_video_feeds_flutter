@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:ism_video_reel_player/res/res.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart';
 import 'package:ism_video_reel_player/utils/extensions.dart';
-import '../media_selection.dart';
 
 class CameraButtonWidget extends StatelessWidget {
   const CameraButtonWidget({

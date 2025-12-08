@@ -14,8 +14,8 @@ class FollowActionWidget extends StatefulWidget {
 
   final String postId;
   final String userId;
-  final Widget Function(bool isLoading, bool isFollowing, Function({ReelsData? reelData}) onTap)
-      builder;
+  final Widget Function(bool isLoading, bool isFollowing,
+      Function({ReelsData? reelData}) onTap) builder;
 
   @override
   State<FollowActionWidget> createState() => _FollowActionWidgetState();
@@ -57,20 +57,21 @@ class _FollowActionWidgetState extends State<FollowActionWidget> {
   }
 
   @override
-  Widget build(BuildContext context) => context.attachBlocIfNeeded<IsmSocialActionCubit>(
-      child: BlocBuilder<IsmSocialActionCubit, IsmSocialActionState>(
-        buildWhen: (previous, current) =>
-            current is IsmFollowUserState && current.userId == userId,
-        builder: (context, state) {
-          if (state is IsmFollowUserState) {
-            isLoading = state.isLoading;
-            isFollowing = state.isFollowing;
-          }
-          return GestureDetector(
-            onTap: isLoading ? null : _onTap,
-            child: widget.builder(isLoading, isFollowing, _onTap),
-          );
-        },
-      ),
-    );
+  Widget build(BuildContext context) =>
+      context.attachBlocIfNeeded<IsmSocialActionCubit>(
+        child: BlocBuilder<IsmSocialActionCubit, IsmSocialActionState>(
+          buildWhen: (previous, current) =>
+              current is IsmFollowUserState && current.userId == userId,
+          builder: (context, state) {
+            if (state is IsmFollowUserState) {
+              isLoading = state.isLoading;
+              isFollowing = state.isFollowing;
+            }
+            return GestureDetector(
+              onTap: isLoading ? null : _onTap,
+              child: widget.builder(isLoading, isFollowing, _onTap),
+            );
+          },
+        ),
+      );
 }

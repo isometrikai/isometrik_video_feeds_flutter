@@ -2,12 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:ism_video_reel_player/di/di.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class UserMentionTextField extends StatefulWidget {
   const UserMentionTextField({

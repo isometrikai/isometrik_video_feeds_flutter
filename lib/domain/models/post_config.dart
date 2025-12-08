@@ -12,11 +12,11 @@ class PostConfig {
 
   PostConfig copyWith({
     PostUIConfig? postUIConfig,
-    PostCallBackConfig? PostCallBackConfig,
+    PostCallBackConfig? postCallBackConfig,
   }) =>
       PostConfig(
         postUIConfig: postUIConfig ?? this.postUIConfig,
-        postCallBackConfig: postCallBackConfig ?? this.postCallBackConfig,
+        postCallBackConfig: postCallBackConfig ?? postCallBackConfig,
       );
 }
 
@@ -50,14 +50,14 @@ class PostCallBackConfig {
 
   final Function(TimeLineData postData, bool isSaved)? onSaveChanged;
   final Function(TimeLineData postData, bool isLiked)? onLikeChanged;
-  final Future<bool> Function(TimeLineData postData, bool isSaved)? onSaveClicked;
+  final Future<bool> Function(TimeLineData postData, bool isSaved)?
+      onSaveClicked;
   final Function(TimeLineData postData)? onShareClicked;
   final Future<bool> Function(TimeLineData postData, bool isLiked)? onLikeClick;
   final Function(TimeLineData postData)? onCommentClick;
   final Function(TimeLineData? postData, String userId)? onProfileClick;
   final Future<void> Function(TimeLineData postData)? onTagProductClick;
   final Function(TimeLineData postData, int index)? onPostChanged;
-
 
   PostCallBackConfig copyWith({
     Function(TimeLineData postData, bool isSaved)? onSaveChanged,

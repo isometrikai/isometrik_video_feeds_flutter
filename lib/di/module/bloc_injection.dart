@@ -42,12 +42,12 @@ class BlocInjection {
     );
 
     IsmInjectionUtils.registerSingletonBloc<IsmSocialActionCubit>(
-        () => IsmSocialActionCubit(
-          IsmInjectionUtils.getUseCase<FollowUnFollowUserUseCase>(),
-          IsmInjectionUtils.getUseCase<GetPostDetailsUseCase>(),
-          IsmInjectionUtils.getUseCase<LikePostUseCase>(),
-          IsmInjectionUtils.getUseCase<SavePostUseCase>(),
-        ),
+      () => IsmSocialActionCubit(
+        IsmInjectionUtils.getUseCase<FollowUnFollowUserUseCase>(),
+        IsmInjectionUtils.getUseCase<GetPostDetailsUseCase>(),
+        IsmInjectionUtils.getUseCase<LikePostUseCase>(),
+        IsmInjectionUtils.getUseCase<SavePostUseCase>(),
+      ),
     );
 
     IsmInjectionUtils.registerBloc<PostListingBloc>(() => PostListingBloc(
@@ -101,7 +101,7 @@ class BlocInjection {
     );
 
     IsmInjectionUtils.registerBloc<MediaSelectionBloc>(
-          MediaSelectionBloc.new,
+      MediaSelectionBloc.new,
     );
 
     IsmInjectionUtils.registerBloc<MediaEditBloc>(

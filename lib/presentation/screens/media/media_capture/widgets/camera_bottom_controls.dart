@@ -133,6 +133,7 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
 
   Timer? _holdTimer;
   bool _isHolding = false;
+  bool _isProcessingTap = false;
 
   Widget _buildRecordButton() {
     final isRecording = widget.cameraBloc.isRecording;
@@ -172,6 +173,9 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
         });
       },
       onPointerUp: (details) {
+        // Prevent multiple simultaneous taps
+        if (_isProcessingTap) return;
+
         // Check camera readiness
         if (!isControllerReady) {
           Utility.showToastMessage('Camera not ready');
@@ -253,23 +257,37 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
 
   void _handleTap(
       bool isRecording, bool isSegmentRecording, bool hasRecordedVideo) {
-    if (widget.cameraBloc.selectedMediaType == MediaType.photo) {
-      widget.cameraBloc.add(CameraCapturePhotoEvent());
-    } else {
-      if (isRecording || isSegmentRecording) {
-        widget.cameraBloc.add(CameraStopSegmentRecordingEvent());
-      } else if (hasRecordedVideo) {
-        widget.cameraBloc.add(CameraConfirmRecordingEvent());
+    // Prevent rapid multiple taps
+    if (_isProcessingTap) return;
+
+    _isProcessingTap = true;
+
+    try {
+      if (widget.cameraBloc.selectedMediaType == MediaType.photo) {
+        widget.cameraBloc.add(CameraCapturePhotoEvent());
       } else {
-        if (widget.cameraBloc.selectedDuration == 0) {
-          Utility.showToastMessage('Please choose video duration');
-          return;
+        if (isRecording || isSegmentRecording) {
+          widget.cameraBloc.add(CameraStopSegmentRecordingEvent());
+        } else if (hasRecordedVideo) {
+          widget.cameraBloc.add(CameraConfirmRecordingEvent());
+        } else {
+          if (widget.cameraBloc.selectedDuration == 0) {
+            Utility.showToastMessage('Please choose video duration');
+            return;
+          }
+          setState(() {
+            _isHoldRecording = false;
+          });
+          widget.cameraBloc.add(CameraStartSegmentRecordingEvent());
         }
-        setState(() {
-          _isHoldRecording = false;
-        });
-        widget.cameraBloc.add(CameraStartSegmentRecordingEvent());
       }
+    } finally {
+      // Reset flag after a short delay to prevent rapid taps
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          _isProcessingTap = false;
+        }
+      });
     }
   }
 

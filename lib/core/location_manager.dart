@@ -1,6 +1,6 @@
+import 'package:geolocator/geolocator.dart';
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
-import 'package:geolocator/geolocator.dart';
 
 class LocationManager with AppMixin {
   LocationManager(this._localStorageManager);

@@ -18,10 +18,11 @@ class CommentActionCubit extends Cubit<CommentActionState> {
   final CommentActionUseCase _commentUseCase;
 
   /// add to wish list after calling api
-  Future<void> doActionOnComment(
-      CommentAction commentAction, String commentId, String postId, String userId) async {
-    final finalAction =
-        commentAction == CommentAction.like ? CommentAction.dislike : CommentAction.like;
+  Future<void> doActionOnComment(CommentAction commentAction, String commentId,
+      String postId, String userId) async {
+    final finalAction = commentAction == CommentAction.like
+        ? CommentAction.dislike
+        : CommentAction.like;
     final commentRequest = CommentRequest(
       commentId: commentId,
       commentAction: commentAction,
@@ -58,7 +59,8 @@ class CommentActionCubit extends Cubit<CommentActionState> {
       }
     } else {
       emit(CommentActionErrorState(
-        apiResult.error?.message ?? IsrTranslationFile.failedToUpdateWishlistStatus,
+        apiResult.error?.message ??
+            IsrTranslationFile.failedToUpdateWishlistStatus,
         commentId,
         commentAction,
       ));

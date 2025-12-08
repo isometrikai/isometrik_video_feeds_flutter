@@ -1,4 +1,4 @@
-import 'media_edit_audio_model.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
 
 enum EditMediaType {
   image,
@@ -20,16 +20,17 @@ enum EditMediaType {
 
 // Media editing models
 class MediaEditItem {
-  MediaEditItem(
-      {required this.originalPath,
-      this.editedPath,
-      required this.mediaType,
-      required this.width,
-      required this.height,
-      this.duration,
-      this.thumbnailPath,
-      this.sound,
-      this.metaData});
+  MediaEditItem({
+    required this.originalPath,
+    this.editedPath,
+    required this.mediaType,
+    required this.width,
+    required this.height,
+    this.duration,
+    this.thumbnailPath,
+    this.sound,
+    this.metaData,
+  });
 
   factory MediaEditItem.fromJson(Map<String, dynamic> json) => MediaEditItem(
       originalPath: json['originalPath'] as String? ?? '',

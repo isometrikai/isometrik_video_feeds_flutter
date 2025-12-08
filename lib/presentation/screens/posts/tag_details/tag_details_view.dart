@@ -55,8 +55,8 @@ class _TagDetailsViewState extends State<TagDetailsView> {
       if (!mounted || !_scrollController.hasClients) return;
 
       // Check if scrolled to 65% of the content
-      final scrollPercentage =
-          _scrollController.position.pixels / _scrollController.position.maxScrollExtent;
+      final scrollPercentage = _scrollController.position.pixels /
+          _scrollController.position.maxScrollExtent;
 
       // Trigger pagination at 65% scroll
       if (scrollPercentage >= 0.65 && !_isLoadingMore && _hasMoreData) {
@@ -92,7 +92,8 @@ class _TagDetailsViewState extends State<TagDetailsView> {
                   // Reset loading flag when pagination completes
                   if (!mounted) return;
 
-                  if (state is TagDetailsLoadedState || state is TagDetailsErrorState) {
+                  if (state is TagDetailsLoadedState ||
+                      state is TagDetailsErrorState) {
                     if (_isLoadingMore) {
                       setState(() {
                         _isLoadingMore = false;
@@ -218,13 +219,17 @@ class _TagDetailsViewState extends State<TagDetailsView> {
   String _getTagDisplayText() {
     switch (widget.tagType) {
       case TagType.hashtag:
-        return widget.tagValue.startsWith('#') ? widget.tagValue : '#${widget.tagValue}';
+        return widget.tagValue.startsWith('#')
+            ? widget.tagValue
+            : '#${widget.tagValue}';
       case TagType.place:
         return widget.tagValue;
       case TagType.product:
         return widget.tagValue;
       case TagType.mention:
-        return widget.tagValue.startsWith('@') ? widget.tagValue : '@${widget.tagValue}';
+        return widget.tagValue.startsWith('@')
+            ? widget.tagValue
+            : '@${widget.tagValue}';
     }
   }
 
@@ -355,8 +360,10 @@ class _TagDetailsViewState extends State<TagDetailsView> {
           child: Stack(
             children: [
               _buildPostImage(post),
-              if (post.tags?.products?.isEmptyOrNull == false) _buildProductsOverlay(post),
-              if (post.media?.first.mediaType?.mediaType == MediaType.video) _buildVideoIcon(),
+              if (post.tags?.products?.isEmptyOrNull == false)
+                _buildProductsOverlay(post),
+              if (post.media?.first.mediaType?.mediaType == MediaType.video)
+                _buildVideoIcon(),
             ],
           ),
         ),

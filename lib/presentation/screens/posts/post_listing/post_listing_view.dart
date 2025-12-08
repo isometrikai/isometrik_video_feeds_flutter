@@ -97,8 +97,8 @@ class _PostListingViewState extends State<PostListingView> {
     if (!mounted || !_scrollController.hasClients) return;
 
     // Check if scrolled to 65% of the content
-    final scrollPercentage =
-        _scrollController.position.pixels / _scrollController.position.maxScrollExtent;
+    final scrollPercentage = _scrollController.position.pixels /
+        _scrollController.position.maxScrollExtent;
 
     // Trigger pagination at 65% scroll for the selected tab
     if (scrollPercentage >= 0.65 &&
@@ -296,8 +296,11 @@ class _PostListingViewState extends State<PostListingView> {
                     child: Text(
                       tab.displayName,
                       style: IsrStyles.primaryText14.copyWith(
-                        color: isSelected ? IsrColors.appColor : IsrColors.color9B9B9B,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        color: isSelected
+                            ? IsrColors.appColor
+                            : IsrColors.color9B9B9B,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
                       ),
                     ),
                   ),
@@ -417,7 +420,8 @@ class _PostListingViewState extends State<PostListingView> {
             if (!state.isFromPagination &&
                 state.tabType == _selectedTab &&
                 state.tabType != SearchTabType.places) {
-              final searchQuery = _hashtagController.text.trim().replaceFirst('#', '');
+              final searchQuery =
+                  _hashtagController.text.trim().replaceFirst('#', '');
               _logSearchEvent(
                 searchQuery,
                 state.results.length,
@@ -429,8 +433,11 @@ class _PostListingViewState extends State<PostListingView> {
         builder: (context, state) {
           // Handle different state types
           // Only show full screen loader if it's NOT pagination loading
-          final isAnyTabLoadingMore = _tabLoadingMore.values.any((loading) => loading);
-          if (state is PostListingLoadingState && state.isLoading && !isAnyTabLoadingMore) {
+          final isAnyTabLoadingMore =
+              _tabLoadingMore.values.any((loading) => loading);
+          if (state is PostListingLoadingState &&
+              state.isLoading &&
+              !isAnyTabLoadingMore) {
             return const Center(child: AppLoader());
           }
 
@@ -447,7 +454,10 @@ class _PostListingViewState extends State<PostListingView> {
               if (state.results.isNotEmpty) {
                 // Append new results to existing ones
                 final existingResults = _tabResults[state.tabType] ?? [];
-                _tabResults[state.tabType] = [...existingResults, ...state.results];
+                _tabResults[state.tabType] = [
+                  ...existingResults,
+                  ...state.results
+                ];
                 debugPrint(
                     '✅ Pagination: Appended ${state.results.length} items to ${state.tabType.name}. Total: ${_tabResults[state.tabType]?.length}');
               } else {
@@ -466,7 +476,8 @@ class _PostListingViewState extends State<PostListingView> {
             }
             _tabLoading[state.tabType] = false;
             // Store the query for this tab to avoid unnecessary API calls
-            final currentQuery = _hashtagController.text.trim().replaceFirst('#', '');
+            final currentQuery =
+                _hashtagController.text.trim().replaceFirst('#', '');
             _tabLastQuery[state.tabType] = currentQuery;
           }
 
@@ -622,8 +633,10 @@ class _PostListingViewState extends State<PostListingView> {
             children: [
               _buildPostImage(post),
               _buildUserProfileOverlay(post),
-              if (post.tags?.products?.isEmptyOrNull == false) _buildShopButtonOverlay(post),
-              if (post.media?.first.mediaType?.mediaType == MediaType.video) _buildVideoIcon(),
+              if (post.tags?.products?.isEmptyOrNull == false)
+                _buildShopButtonOverlay(post),
+              if (post.media?.first.mediaType?.mediaType == MediaType.video)
+                _buildVideoIcon(),
             ],
           ),
         ),
@@ -773,7 +786,8 @@ class _PostListingViewState extends State<PostListingView> {
         ),
       );
 
-  String _getHasTagValue() => _hashtagController.text.trim().replaceFirst('#', '');
+  String _getHasTagValue() =>
+      _hashtagController.text.trim().replaceFirst('#', '');
 
   void _onTagTapped(dynamic tag) {
     final tagText = (tag?.hashtag as String?) ?? '';
@@ -832,13 +846,15 @@ class _PostListingViewState extends State<PostListingView> {
               key: ValueKey('tag_$tagHashtag'),
               height: IsrDimens.sixty,
               margin: IsrDimens.edgeInsetsSymmetric(
-                  vertical: 4.responsiveDimension, horizontal: 8.responsiveDimension),
+                  vertical: 4.responsiveDimension,
+                  horizontal: 8.responsiveDimension),
               child: TapHandler(
                 onTap: () {
                   _onTagTapped(tag);
                 },
                 child: Padding(
-                  padding: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.sixteen),
+                  padding: IsrDimens.edgeInsetsSymmetric(
+                      horizontal: IsrDimens.sixteen),
                   child: Row(
                     children: [
                       const AppImage.svg(AssetConstants.icTagIcon),
@@ -881,8 +897,9 @@ class _PostListingViewState extends State<PostListingView> {
           physics: const BouncingScrollPhysics(),
           itemCount: places.length,
           itemBuilder: (context, index) {
-            final resultList =
-                (places as List<Result>).map(UnifiedLocationItem.fromLocationResult).toList();
+            final resultList = (places as List<Result>)
+                .map(UnifiedLocationItem.fromLocationResult)
+                .toList();
 
             final result = resultList[index];
             final placeName = result.title;
@@ -890,14 +907,16 @@ class _PostListingViewState extends State<PostListingView> {
               key: ValueKey('place_${result.placeId}'),
               height: 60.responsiveDimension,
               margin: IsrDimens.edgeInsetsSymmetric(
-                  vertical: 4.responsiveDimension, horizontal: 8.responsiveDimension),
+                  vertical: 4.responsiveDimension,
+                  horizontal: 8.responsiveDimension),
               child: TapHandler(
                 onTap: () => _handlePlaceTap(
                   result.placeId,
                   placeName,
                 ),
                 child: Padding(
-                  padding: IsrDimens.edgeInsetsSymmetric(horizontal: 16.responsiveDimension),
+                  padding: IsrDimens.edgeInsetsSymmetric(
+                      horizontal: 16.responsiveDimension),
                   child: Row(
                     children: [
                       const AppImage.svg(AssetConstants.icPlacesIcon),
@@ -998,7 +1017,9 @@ class _PostListingViewState extends State<PostListingView> {
                             ),
                             4.responsiveVerticalSpace,
                             Text(
-                              user.fullName ?? user.displayName ?? 'No description',
+                              user.fullName ??
+                                  user.displayName ??
+                                  'No description',
                               style: IsrStyles.primaryText14.copyWith(
                                 color: IsrColors.color9B9B9B,
                               ),
@@ -1024,10 +1045,10 @@ class _PostListingViewState extends State<PostListingView> {
     _logSearchProfileEvent(user.id ?? '', user.username ?? '');
 
     if (widget.postConfig.postCallBackConfig?.onProfileClick != null) {
-      widget.postConfig.postCallBackConfig?.onProfileClick?.call(null, user.id ?? '');
+      widget.postConfig.postCallBackConfig?.onProfileClick
+          ?.call(null, user.id ?? '');
     }
 
-    /// TODO need to decide
     // Navigate to user profile
     // IsmInjectionUtils.getRouteManagement().goToUserProfileDetail(
     //   userId: user.id ?? '',
@@ -1036,14 +1057,15 @@ class _PostListingViewState extends State<PostListingView> {
   }
 
   /// Log search event when user performs a search
-  void _logSearchEvent(String searchQuery, int searchResultsCount, String searchFilter) {
+  void _logSearchEvent(
+      String searchQuery, int searchResultsCount, String searchFilter) {
     final searchEventMap = {
       'search_query': searchQuery,
       'search_results_count': searchResultsCount,
       'search_filter': searchFilter,
     };
-    unawaited(EventQueueProvider.instance
-        .addEvent(EventType.searchPerformed.value, searchEventMap.removeEmptyValues()));
+    unawaited(EventQueueProvider.instance.addEvent(
+        EventType.searchPerformed.value, searchEventMap.removeEmptyValues()));
   }
 
   /// Log event when user clicks on a post in search results
@@ -1060,8 +1082,11 @@ class _PostListingViewState extends State<PostListingView> {
     }
 
     // Extract hashtags from post
-    final hashtags =
-        post.tags?.hashtags?.map((h) => '#${h.tag}').where((tag) => tag.isNotEmpty).toList() ?? [];
+    final hashtags = post.tags?.hashtags
+            ?.map((h) => '#${h.tag}')
+            .where((tag) => tag.isNotEmpty)
+            .toList() ??
+        [];
 
     final eventMap = {
       'search_query': searchQuery,
@@ -1070,15 +1095,15 @@ class _PostListingViewState extends State<PostListingView> {
       'post_author_id': post.userId ?? '',
       'hashtags': hashtags,
     };
-    unawaited(EventQueueProvider.instance
-        .addEvent(EventType.searchResultClicked.value, eventMap.removeEmptyValues()));
+    unawaited(EventQueueProvider.instance.addEvent(
+        EventType.searchResultClicked.value, eventMap.removeEmptyValues()));
   }
 
   /// Log event when user clicks on a tag in search results
   void _logHashtagEvent(String hashTag) {
     final hashTagEventMap = {'hashtag': hashTag};
-    unawaited(EventQueueProvider.instance
-        .addEvent(EventType.hashTagClicked.value, hashTagEventMap.removeEmptyValues()));
+    unawaited(EventQueueProvider.instance.addEvent(
+        EventType.hashTagClicked.value, hashTagEventMap.removeEmptyValues()));
   }
 
   /// Log event when user clicks on an account in search results
@@ -1087,14 +1112,15 @@ class _PostListingViewState extends State<PostListingView> {
       'profile_user_id': profileUserId,
       'profile_username': profileUserName,
     };
-    unawaited(EventQueueProvider.instance
-        .addEvent(EventType.profileViewed.value, profileEvent.removeEmptyValues()));
+    unawaited(EventQueueProvider.instance.addEvent(
+        EventType.profileViewed.value, profileEvent.removeEmptyValues()));
   }
 
   // Follow button widget with API integration
   Widget _buildFollowButton(SocialUserData user) {
     // Check if user is following from either the user model or local state
-    final isFollowing = _userFollowingState[user.id] ?? user.isFollowing ?? false;
+    final isFollowing =
+        _userFollowingState[user.id] ?? user.isFollowing ?? false;
 
     // Hide button if user is already following
     if (isFollowing) {

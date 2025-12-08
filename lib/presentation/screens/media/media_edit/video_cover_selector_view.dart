@@ -2,12 +2,12 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:ism_video_reel_player/utils/extensions.dart';
-import 'media_edit_config.dart';
+import 'package:get_thumbnail_video/video_thumbnail.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit_config.dart';
+import 'package:ism_video_reel_player/utils/extensions.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
-import 'package:get_thumbnail_video/video_thumbnail.dart';
 
 enum FrameGenerationState {
   pending,
@@ -17,30 +17,28 @@ enum FrameGenerationState {
 }
 
 class FrameState {
-  final int timestamp;
-  final FrameGenerationState state;
-  final String? filePath;
-  final double progress;
-
   FrameState({
     required this.timestamp,
     required this.state,
     this.filePath,
     this.progress = 0.0,
   });
+  final int timestamp;
+  final FrameGenerationState state;
+  final String? filePath;
+  final double progress;
 
   FrameState copyWith({
     FrameGenerationState? state,
     String? filePath,
     double? progress,
-  }) {
-    return FrameState(
-      timestamp: timestamp,
-      state: state ?? this.state,
-      filePath: filePath ?? this.filePath,
-      progress: progress ?? this.progress,
-    );
-  }
+  }) =>
+      FrameState(
+        timestamp: timestamp,
+        state: state ?? this.state,
+        filePath: filePath ?? this.filePath,
+        progress: progress ?? this.progress,
+      );
 }
 
 /// Video Cover Selector View
@@ -93,7 +91,6 @@ class _VideoCoverSelectorViewState extends State<VideoCoverSelectorView> {
   int _currentVideoPosition = 0; // Current video position in seconds
   int _totalVideoDuration = 0; // Total video duration in seconds
   bool _isGeneratingFrames = false;
-  int _framesGenerated = 0;
   final ScrollController _frameScrollController = ScrollController();
 
   // Track individual frame states
@@ -155,7 +152,6 @@ class _VideoCoverSelectorViewState extends State<VideoCoverSelectorView> {
                 frame.filePath != null)
             .map((frame) => frame.filePath!)
             .toList();
-        _framesGenerated = _videoFrames.length;
       });
     }
   }
@@ -260,10 +256,7 @@ class _VideoCoverSelectorViewState extends State<VideoCoverSelectorView> {
   Future<void> _generateFramesProgressively() async {
     if (_isGeneratingFrames || _totalVideoDuration == 0) return;
 
-    setState(() {
-      _isGeneratingFrames = true;
-      _framesGenerated = 0;
-    });
+    setState(() => _isGeneratingFrames = true);
 
     final videoPath = widget.file.path;
 
@@ -472,13 +465,13 @@ class _VideoCoverSelectorViewState extends State<VideoCoverSelectorView> {
                         ),
                       ),
                     ),
-          
+
                     // Video frames strip
                     Expanded(
                       flex: 1,
                       child: _buildFramesStrip(),
                     ),
-          
+
                     // Add from Gallery button
                     Container(
                       width: double.infinity,
