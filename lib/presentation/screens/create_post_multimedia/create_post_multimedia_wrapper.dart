@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:get_thumbnail_video/video_thumbnail.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart'
     as mc;
@@ -52,6 +54,18 @@ class _CreatePostMultimediaWrapperState
 
   Future<bool> _onMediaSelectionComplete(
       List<ms.MediaAssetData> selectedMedia) async {
+    // Ensure all video thumbnails are generated before proceeding
+    for (final media in selectedMedia) {
+      if (media.mediaType == ms.SelectedMediaType.video &&
+          (media.thumbnailPath == null || media.thumbnailPath!.isEmpty)) {
+        // Generate thumbnail if not already available
+        final thumbnailPath = await _generateVideoThumbnail(media.localPath);
+        if (thumbnailPath != null) {
+          media.thumbnailPath = thumbnailPath;
+        }
+      }
+    }
+
     // Convert to MediaEditItem and navigate to edit view
     final mediaEditItems = selectedMedia.map(mapSelectedToEditMedia).toList();
 
@@ -197,6 +211,23 @@ class _CreatePostMultimediaWrapperState
           ),
         ),
       );
+
+  Future<String?> _generateVideoThumbnail(String? videoPath) async {
+    if (videoPath == null || videoPath.isEmpty) return null;
+
+    try {
+      final thumbnailFile = await VideoThumbnail.thumbnailFile(
+        video: videoPath,
+        thumbnailPath: (await Directory.systemTemp.createTemp()).path,
+        quality: 75,
+      );
+
+      return thumbnailFile.path;
+    } catch (e) {
+      debugPrint('Error generating thumbnail for $videoPath: $e');
+      return null;
+    }
+  }
 
   String _getFileExtension(String filePath) => path.extension(filePath);
 }

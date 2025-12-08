@@ -12,7 +12,6 @@ import 'package:ism_video_reel_player/presentation/screens/media/media_edit/vide
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/widgets/media_edit_widgets.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
-import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:reorderables/reorderables.dart';
 
 class MediaEditView extends StatefulWidget {
@@ -47,10 +46,6 @@ class _MediaEditViewState extends State<MediaEditView> {
     super.initState();
     _bloc = context.getOrCreateBloc();
     _bloc.add(MediaEditInitialEvent(mediaDataList: widget.mediaDataList));
-    // Force plugin registration
-    if (Platform.isAndroid || Platform.isIOS) {
-      ProVideoEditor.instance; // Initialize the plugin
-    }
   }
 
   @override
@@ -639,117 +634,113 @@ class _MediaEditViewState extends State<MediaEditView> {
               onNoReorder: (int index) {
                 // Triggered when user cancels reorder
               },
-              children: [
-                // Media thumbnails
-                ...state.mediaEditItems.asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final mediaItem = entry.value;
-                  final isSelected = index == state.currentIndex;
-
-                  return Padding(
-                    key: ValueKey('media_$index'),
-                    padding: EdgeInsets.zero,
-                    child: Stack(
-                      children: [
-                        GestureDetector(
-                          onTap: () =>
-                              _bloc.add(OnSelectMediaEvent(index: index)),
-                          child: Container(
-                            width: 48.responsiveDimension,
-                            height: 48.responsiveDimension,
-                            margin: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(
-                                color: isSelected
-                                    ? widget.mediaEditConfig.primaryColor
-                                    : Colors.grey[300]!,
-                                width: isSelected ? 2 : 1,
-                              ),
+              children: state.mediaEditItems.asMap().entries.map((entry) {
+                final index = entry.key;
+                final mediaItem = entry.value;
+                final isSelected = index == state.currentIndex;
+                return Padding(
+                  key: ValueKey('media_$index'),
+                  padding: EdgeInsets.zero,
+                  child: Stack(
+                    children: [
+                      GestureDetector(
+                        onTap: () =>
+                            _bloc.add(OnSelectMediaEvent(index: index)),
+                        child: Container(
+                          width: 48.responsiveDimension,
+                          height: 48.responsiveDimension,
+                          margin: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(
+                              color: isSelected
+                                  ? widget.mediaEditConfig.primaryColor
+                                  : Colors.grey[300]!,
+                              width: isSelected ? 2 : 1,
                             ),
-                            child: Stack(
-                              children: [
-                                Center(
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(4),
-                                    child: SizedBox(
+                          ),
+                          child: Stack(
+                            children: [
+                              Center(
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: SizedBox(
+                                    width: 48.responsiveDimension,
+                                    height: 48.responsiveDimension,
+                                    child: AppImage.file(
+                                      mediaItem.thumbnailPath ??
+                                          mediaItem.editedPath ??
+                                          mediaItem.originalPath,
+                                      fit: BoxFit.cover,
                                       width: 48.responsiveDimension,
                                       height: 48.responsiveDimension,
-                                      child: AppImage.file(
-                                        mediaItem.thumbnailPath ??
-                                            mediaItem.editedPath ??
-                                            mediaItem.originalPath,
-                                        fit: BoxFit.cover,
-                                        width: 48.responsiveDimension,
-                                        height: 48.responsiveDimension,
-                                      ),
                                     ),
                                   ),
                                 ),
-                                // Media type indicator
-                                if (mediaItem.mediaType == EditMediaType.video)
-                                  Positioned(
-                                    bottom: 4,
-                                    left: 4,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(2),
-                                      decoration: BoxDecoration(
-                                        color:
-                                            Colors.black.withValues(alpha: 0.6),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: const Icon(
-                                        Icons.play_arrow,
-                                        color: Colors.white,
-                                        size: 12,
-                                      ),
+                              ),
+                              // Media type indicator
+                              if (mediaItem.mediaType == EditMediaType.video)
+                                Positioned(
+                                  bottom: 4,
+                                  left: 4,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(2),
+                                    decoration: BoxDecoration(
+                                      color:
+                                          Colors.black.withValues(alpha: 0.6),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const Icon(
+                                      Icons.play_arrow,
+                                      color: Colors.white,
+                                      size: 12,
                                     ),
                                   ),
-                              ],
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      // Remove button
+                      Positioned(
+                        top: 0,
+                        right: 0,
+                        child: GestureDetector(
+                          onTap: () {
+                            _bloc.add(OnRemoveMediaEvent(index: index));
+                            widget.mediaEditConfig.showDialogFunction.call(
+                              context: context,
+                              title: widget.mediaEditConfig.removeMediaTitle,
+                              message:
+                                  widget.mediaEditConfig.removeMediaMessage,
+                              positiveButtonText:
+                                  widget.mediaEditConfig.removeButtonText,
+                              negativeButtonText:
+                                  widget.mediaEditConfig.cancelButtonText,
+                              onPressPositiveButton: () =>
+                                  _bloc.add(ConfirmRemoveMediaEvent()),
+                              onPressNegativeButton: () {},
+                            );
+                          },
+                          child: Container(
+                            width: 15,
+                            height: 15,
+                            decoration: const BoxDecoration(
+                              color: Colors.black54,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.close,
+                              color: Colors.white,
+                              size: 12,
                             ),
                           ),
                         ),
-                        // Remove button
-                        Positioned(
-                          top: 0,
-                          right: 0,
-                          child: GestureDetector(
-                            onTap: () {
-                              _bloc.add(OnRemoveMediaEvent(index: index));
-                              widget.mediaEditConfig.showDialogFunction.call(
-                                context: context,
-                                title: widget.mediaEditConfig.removeMediaTitle,
-                                message:
-                                    widget.mediaEditConfig.removeMediaMessage,
-                                positiveButtonText:
-                                    widget.mediaEditConfig.removeButtonText,
-                                negativeButtonText:
-                                    widget.mediaEditConfig.cancelButtonText,
-                                onPressPositiveButton: () =>
-                                    _bloc.add(ConfirmRemoveMediaEvent()),
-                                onPressNegativeButton: () {},
-                              );
-                            },
-                            child: Container(
-                              width: 15,
-                              height: 15,
-                              decoration: const BoxDecoration(
-                                color: Colors.black54,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.close,
-                                color: Colors.white,
-                                size: 12,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ],
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
             ),
 
             // Add more media button

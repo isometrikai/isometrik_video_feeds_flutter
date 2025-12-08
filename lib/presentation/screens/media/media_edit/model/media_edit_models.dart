@@ -20,16 +20,17 @@ enum EditMediaType {
 
 // Media editing models
 class MediaEditItem {
-  MediaEditItem(
-      {required this.originalPath,
-      this.editedPath,
-      required this.mediaType,
-      required this.width,
-      required this.height,
-      this.duration,
-      this.thumbnailPath,
-      this.sound,
-      this.metaData});
+  MediaEditItem({
+    required this.originalPath,
+    this.editedPath,
+    required this.mediaType,
+    required this.width,
+    required this.height,
+    this.duration,
+    this.thumbnailPath,
+    this.sound,
+    this.metaData,
+  });
 
   factory MediaEditItem.fromJson(Map<String, dynamic> json) => MediaEditItem(
       originalPath: json['originalPath'] as String? ?? '',
