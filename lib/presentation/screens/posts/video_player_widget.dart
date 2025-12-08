@@ -123,7 +123,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   Future<void> _setupVideoController() async {
     if (_videoPlayerController == null ||
-        !_videoPlayerController!.isInitialized) return;
+        !_videoPlayerController!.isInitialized) {
+      return;
+    }
 
     try {
       // Set looping to false so video can complete
@@ -466,7 +468,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                   imageUrl: widget.thumbnailUrl,
                   width: IsrDimens.getScreenWidth(context),
                   height: IsrDimens.getScreenHeight(context),
-                  fit: BoxFit.cover,
+                  fit: BoxFit.contain,
                   filterQuality: FilterQuality.low,
                   showError: false,
                 ),

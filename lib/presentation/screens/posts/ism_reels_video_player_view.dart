@@ -312,6 +312,21 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           );
   }
 
+  /// Builds an image with black background (Instagram-style)
+  Widget _buildImageWithBlurredBackground({required String imageUrl}) =>
+      Container(
+        color: Colors.black,
+        child: Center(
+          child: _getImageWidget(
+            imageUrl: imageUrl,
+            width: IsrDimens.getScreenWidth(context),
+            height: IsrDimens.getScreenHeight(context),
+            fit: BoxFit.contain,
+            filterQuality: FilterQuality.high,
+          ),
+        ),
+      );
+
   Widget _buildMediaContent() {
     Widget mediaWidget;
 
@@ -321,7 +336,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             .mediaMetaDataList[_currentPageNotifier.value].thumbnailUrl,
         width: IsrDimens.getScreenWidth(context),
         height: IsrDimens.getScreenHeight(context),
-        fit: BoxFit.cover,
+        fit: BoxFit.contain,
         showError: false,
       );
     } else if (_hasMultipleMedia) {
@@ -391,12 +406,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   Widget _buildSingleMediaContent() {
     if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType ==
         kPictureType) {
-      return _getImageWidget(
+      return _buildImageWithBlurredBackground(
         imageUrl:
             _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl,
-        width: IsrDimens.getScreenWidth(context),
-        height: IsrDimens.getScreenHeight(context),
-        fit: BoxFit.cover,
       );
     } else {
       return _buildVideoContent();
@@ -1575,11 +1587,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (media.mediaType == kPictureType) {
       return SizedBox(
         key: ValueKey('media_$index'), // Consistent key
-        child: _getImageWidget(
+        child: _buildImageWithBlurredBackground(
           imageUrl: media.mediaUrl,
-          width: IsrDimens.getScreenWidth(context),
-          height: IsrDimens.getScreenHeight(context),
-          fit: BoxFit.cover,
         ),
       );
     } else {

@@ -23,13 +23,14 @@ PaintEditorConfigs paintEditorConfigs(MediaEditConfig mediaEditConfig) =>
 
 TextEditorConfigs textEditorConfigs(MediaEditConfig mediaEditConfig) =>
     TextEditorConfigs(
-        style: TextEditorStyle(
-      background: Colors.black.applyOpacity(.1),
-      appBarColor: mediaEditConfig.blackColor,
-      appBarBackground: mediaEditConfig.whiteColor,
-      bottomBarBackground: mediaEditConfig.whiteColor,
-      fontScaleBottomSheetBackground: mediaEditConfig.whiteColor,
-    ));
+      style: TextEditorStyle(
+        background: Colors.black.applyOpacity(.1),
+        appBarColor: mediaEditConfig.blackColor,
+        appBarBackground: mediaEditConfig.whiteColor,
+        bottomBarBackground: mediaEditConfig.whiteColor,
+        fontScaleBottomSheetBackground: mediaEditConfig.whiteColor,
+      ),
+    );
 
 CropRotateEditorConfigs cropRotateEditorConfigs(
         MediaEditConfig mediaEditConfig) =>
@@ -92,8 +93,8 @@ final uiOverLay = const SystemUiOverlayStyle(
 
 MainEditorConfigs mainEditorConfig(MediaEditConfig mediaEditConfig) =>
     MainEditorConfigs(
-        enableZoom: true,
-        enableDoubleTapZoom: true,
+        enableZoom: false,
+        enableDoubleTapZoom: false,
         mobilePanInteraction: MobilePanInteraction.dragSelect,
         style: MainEditorStyle(
           uiOverlayStyle: uiOverLay,

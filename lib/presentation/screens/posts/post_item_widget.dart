@@ -322,8 +322,9 @@ class _PostItemWidgetState extends State<PostItemWidget>
                       // onVideoCompleted: () => _handleVideoCompletion(index),
                       reelsConfig: widget.reelsConfig,
                       onPressMoreButton: () async {
-                        if (widget.reelsConfig.onPressMoreButton == null)
+                        if (widget.reelsConfig.onPressMoreButton == null) {
                           return;
+                        }
                         final result = await widget
                             .reelsConfig.onPressMoreButton!
                             .call(reelsData);
