@@ -945,4 +945,150 @@ class SocialApiServiceProvider extends SocialApiService {
         isLoading,
         pathSegments: [postId],
       );
+
+  @override
+  Future<ResponseModel> createCollection({
+    required bool isLoading,
+    required Header header,
+  }) async =>
+      await networkClient.makeRequest(
+        SocialApiEndPoints.createCollection,
+        NetworkRequestType.post,
+        null,
+        null,
+        {
+          'Accept': AppConstants.headerAccept,
+          'Content-Type': AppConstants.headerContentType,
+          'Authorization': header.accessToken,
+          'lan': header.language,
+          'currencySymbol': header.currencySymbol,
+          'currencyCode': header.currencyCode,
+          'platform': header.platForm.platformText,
+          'latitude': header.latitude.toString(),
+          'longitude': header.longitude.toString(),
+          'x-tenant-id': AppConstants.tenantId,
+          'x-project-id': AppConstants.projectId,
+        },
+        isLoading,
+      );
+
+  @override
+  Future<ResponseModel> getCollectionList({
+    required bool isLoading,
+    required Header header,
+    required int page,
+    required int pageSize,
+    required bool isPublicOnly,
+  }) async =>
+      await networkClient.makeRequest(
+        SocialApiEndPoints.getCollectionList,
+        NetworkRequestType.get,
+        null,
+        {
+          'page': page.toString(),
+          'page_size': pageSize.toString(),
+          'public_only': isPublicOnly.toString(),
+        },
+        {
+          'Accept': AppConstants.headerAccept,
+          'Content-Type': AppConstants.headerContentType,
+          'Authorization': header.accessToken,
+          'lan': header.language,
+          'currencySymbol': header.currencySymbol,
+          'currencyCode': header.currencyCode,
+          'platform': header.platForm.platformText,
+          'latitude': header.latitude.toString(),
+          'longitude': header.longitude.toString(),
+          'x-tenant-id': AppConstants.tenantId,
+          'x-project-id': AppConstants.projectId,
+        },
+        isLoading,
+      );
+
+  @override
+  Future<ResponseModel> movePostToCollection({
+    required bool isLoading,
+    required Header header,
+    required String postId,
+    required String collectionId,
+  }) async =>
+      await networkClient.makeRequest(
+        SocialApiEndPoints.postMoveToCollection,
+        NetworkRequestType.post,
+        null,
+        {
+          'post_id': postId,
+          'collection_id': collectionId,
+        },
+        {
+          'Accept': AppConstants.headerAccept,
+          'Content-Type': AppConstants.headerContentType,
+          'Authorization': header.accessToken,
+          'lan': header.language,
+          'currencySymbol': header.currencySymbol,
+          'currencyCode': header.currencyCode,
+          'platform': header.platForm.platformText,
+          'latitude': header.latitude.toString(),
+          'longitude': header.longitude.toString(),
+          'x-tenant-id': AppConstants.tenantId,
+          'x-project-id': AppConstants.projectId,
+        },
+        isLoading,
+      );
+
+  @override
+  Future<ResponseModel> updateCollection({
+    required bool isLoading,
+    required Header header,
+    required String collectionId,
+  }) async =>
+      await networkClient.makeRequest(
+        SocialApiEndPoints.putCollection,
+        NetworkRequestType.put,
+        null,
+        null,
+        {
+          'Accept': AppConstants.headerAccept,
+          'Content-Type': AppConstants.headerContentType,
+          'Authorization': header.accessToken,
+          'lan': header.language,
+          'currencySymbol': header.currencySymbol,
+          'currencyCode': header.currencyCode,
+          'platform': header.platForm.platformText,
+          'latitude': header.latitude.toString(),
+          'longitude': header.longitude.toString(),
+          'x-tenant-id': AppConstants.tenantId,
+          'x-project-id': AppConstants.projectId,
+        },
+        isLoading,
+        pathSegments: [collectionId],
+      );
+
+  @override
+  Future<ResponseModel> deleteCollection({
+    required bool isLoading,
+    required Header header,
+    required String collectionId,
+  }) async =>
+      await networkClient.makeRequest(
+        SocialApiEndPoints.deleteCollection,
+        NetworkRequestType.delete,
+        null,
+        null,
+        {
+          'Accept': AppConstants.headerAccept,
+          'Content-Type': AppConstants.headerContentType,
+          'Authorization': header.accessToken,
+          'lan': header.language,
+          'currencySymbol': header.currencySymbol,
+          'currencyCode': header.currencyCode,
+          'platform': header.platForm.platformText,
+          'latitude': header.latitude.toString(),
+          'longitude': header.longitude.toString(),
+          'x-tenant-id': AppConstants.tenantId,
+          'x-project-id': AppConstants.projectId,
+        },
+        isLoading,
+        pathSegments: [collectionId],
+      );
 }

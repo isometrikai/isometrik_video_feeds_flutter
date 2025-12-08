@@ -337,16 +337,15 @@ class SocialRepositoryImpl implements SocialRepository {
     Function(double p1)? onProgress,
     String? cloudFolderName,
   }) async {
-    final response =
-        await GoogleCloudStorageUploader.uploadFileWithRealProgress(
-            file: file,
-            fileName: fileName,
-            fileExtension: fileExtension,
-            userId: userId,
-            onProgress: (progress) {
-              if (onProgress == null) return;
-              onProgress(progress);
-            });
+    final response = await GoogleCloudStorageUploader.uploadFileWithRealProgress(
+        file: file,
+        fileName: fileName,
+        fileExtension: fileExtension,
+        userId: userId,
+        onProgress: (progress) {
+          if (onProgress == null) return;
+          onProgress(progress);
+        });
     return response ?? '';
   }
 
@@ -544,6 +543,100 @@ class SocialRepositoryImpl implements SocialRepository {
         isLoading: isLoading,
         header: header,
         postId: postId,
+      );
+      return _mapper.mapResponseData(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<CustomResponse<ResponseClass?>> createCollection({
+    required bool isLoading,
+  }) async {
+    try {
+      final header = await _dataSource.getHeader();
+      final response = await _apiService.createCollection(
+        isLoading: isLoading,
+        header: header,
+      );
+      return _mapper.mapResponseData(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<CustomResponse<CollectionListResponse?>> getCollectionList({
+    required bool isLoading,
+    required int page,
+    required int pageSize,
+    required bool isPublicOnly,
+  }) async {
+    try {
+      final header = await _dataSource.getHeader();
+      final response = await _apiService.getCollectionList(
+        isLoading: isLoading,
+        header: header,
+        page: page,
+        pageSize: pageSize,
+        isPublicOnly: isPublicOnly,
+      );
+      return _socialMapper.mapCollectionListResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<CustomResponse<ResponseClass?>> movePostToCollection({
+    required bool isLoading,
+    required String postId,
+    required String collectionId,
+  }) async {
+    try {
+      final header = await _dataSource.getHeader();
+      final response = await _apiService.movePostToCollection(
+        isLoading: isLoading,
+        header: header,
+        postId: postId,
+        collectionId: collectionId,
+      );
+      return _mapper.mapResponseData(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<CustomResponse<ResponseClass?>> updateCollection({
+    required bool isLoading,
+    required String collectionId,
+  }) async {
+    try {
+      final header = await _dataSource.getHeader();
+      final response = await _apiService.updateCollection(
+        isLoading: isLoading,
+        header: header,
+        collectionId: collectionId,
+      );
+      return _mapper.mapResponseData(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<CustomResponse<ResponseClass?>> deleteCollection({
+    required bool isLoading,
+    required String collectionId,
+  }) async {
+    try {
+      final header = await _dataSource.getHeader();
+      final response = await _apiService.deleteCollection(
+        isLoading: isLoading,
+        header: header,
+        collectionId: collectionId,
       );
       return _mapper.mapResponseData(response);
     } catch (e) {

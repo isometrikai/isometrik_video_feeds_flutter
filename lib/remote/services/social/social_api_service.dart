@@ -193,4 +193,36 @@ abstract class SocialApiService extends BaseService {
     required Header header,
     required String postId,
   });
+
+  Future<ResponseModel> createCollection({
+    required bool isLoading,
+    required Header header,
+  });
+
+  Future<ResponseModel> getCollectionList({
+    required bool isLoading,
+    required Header header,
+    required int page,
+    required int pageSize,
+    required bool isPublicOnly,
+  });
+
+  Future<ResponseModel> movePostToCollection({
+    required bool isLoading,
+    required Header header,
+    required String postId,
+    required String collectionId,
+  });
+
+  Future<ResponseModel> updateCollection({
+    required bool isLoading,
+    required Header header,
+    required String collectionId,
+  });
+
+  Future<ResponseModel> deleteCollection({
+    required bool isLoading,
+    required Header header,
+    required String collectionId,
+  });
 }

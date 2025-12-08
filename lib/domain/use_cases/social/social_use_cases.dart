@@ -1,3 +1,4 @@
+export 'collection_use_case.dart';
 export 'comment_action_use_case.dart';
 export 'create_post_use_case.dart';
 export 'delete_post_use_case.dart';
