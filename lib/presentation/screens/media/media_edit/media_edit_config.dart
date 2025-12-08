@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 
 class MediaEditConfig {
   MediaEditConfig({
@@ -177,7 +178,7 @@ class MediaEditConstant {
   static const String selectFrameMessage =
       'Please select a frame or choose from gallery';
 
-  //default dialog function
+  //default dialog function using app's standard dialog pattern
   static Future<void> showDialogFunction({
     required BuildContext context,
     required String title,
@@ -187,47 +188,14 @@ class MediaEditConstant {
     required VoidCallback onPressPositiveButton,
     required VoidCallback onPressNegativeButton,
   }) async =>
-      showDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) => AlertDialog(
-          title: Text(
-            title,
-            style: primaryText18,
-          ),
-          content: Text(
-            message,
-            style: primaryText14,
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                onPressNegativeButton();
-              },
-              child: Text(
-                negativeButtonText,
-                style: primaryText14.copyWith(
-                  color: whiteColor,
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                onPressPositiveButton();
-              },
-              style: TextButton.styleFrom(backgroundColor: Colors.red),
-              child: Text(
-                positiveButtonText,
-                style: primaryText14.copyWith(
-                  color: whiteColor,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
+      Utility.showAppDialog(
+        titleText: title,
+        message: message,
+        isTwoButtons: true,
+        positiveButtonText: positiveButtonText,
+        negativeButtonText: negativeButtonText,
+        onPressPositiveButton: onPressPositiveButton,
+        onPressNegativeButton: onPressNegativeButton,
       );
 
   //text styles
