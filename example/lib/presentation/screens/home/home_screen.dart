@@ -71,7 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
             postSectionType: isr.PostSectionType.singlePost,
             title: TranslationFile.single,
             reelsDataList: [],
-            postId: 'post_ab8fd4f9c562',
+            postId: 'post_98e927787ec5',
             //hardCoded post id
             startingPostIndex: 0,
           ),
@@ -258,8 +258,7 @@ class _HomeScreenState extends State<HomeScreen> {
         // },
         postId: postData.id,
         // onCreatePost: () async => await _handleCreatePost(),
-        mediaMetaDataList:
-            postData.media?.map(_getMediaMetaData).toList() ?? [],
+        mediaMetaDataList: postData.media?.map(_getMediaMetaData).toList() ?? [],
         // actionWidget: _buildActionButtons(postData),
         // footerWidget: _buildFooter(postData),
         userId: postData.user?.id ?? '',
