@@ -145,6 +145,7 @@ abstract class SocialRepository extends BaseRepository {
     required bool isLoading,
     required int page,
     required int pageSize,
+    required String collectionId,
   });
 
   Future<CustomResponse<TimelineResponse?>> getProfileUserPostData({

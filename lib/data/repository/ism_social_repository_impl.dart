@@ -460,6 +460,7 @@ class SocialRepositoryImpl implements SocialRepository {
     required bool isLoading,
     required int page,
     required int pageSize,
+    required String collectionId,
   }) async {
     final header = await _dataSource.getHeader();
     final response = await _apiService.getProfileSavedPostData(
@@ -467,6 +468,7 @@ class SocialRepositoryImpl implements SocialRepository {
       header: header,
       page: page,
       pageSize: pageSize,
+      collectionId: collectionId,
     );
     return _socialMapper.mapTimelineResponse(response);
   }

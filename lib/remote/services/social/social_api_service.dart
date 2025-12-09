@@ -163,6 +163,7 @@ abstract class SocialApiService extends BaseService {
     required Header header,
     required int page,
     required int pageSize,
+    required String collectionId,
   });
 
   Future<ResponseModel> getProfileUserPostDataSocial({
