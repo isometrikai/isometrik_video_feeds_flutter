@@ -403,10 +403,11 @@ class _MediaEditViewState extends State<MediaEditView> {
         width: double.infinity,
         height: double.infinity,
         decoration: BoxDecoration(
+          color: Colors.black,
           image: DecorationImage(
             image:
                 FileImage(File(mediaItem.editedPath ?? mediaItem.originalPath)),
-            fit: BoxFit.cover, // Center crop
+            fit: BoxFit.contain, // Center crop
           ),
         ),
       );
