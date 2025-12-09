@@ -616,6 +616,7 @@ class SocialRepositoryImpl implements SocialRepository {
   Future<CustomResponse<ResponseClass?>> updateCollection({
     required bool isLoading,
     required String collectionId,
+    required Map<String, dynamic> requestMap,
   }) async {
     try {
       final header = await _dataSource.getHeader();
@@ -623,6 +624,7 @@ class SocialRepositoryImpl implements SocialRepository {
         isLoading: isLoading,
         header: header,
         collectionId: collectionId,
+        requestMap: requestMap,
       );
       return _mapper.mapResponseData(response);
     } catch (e) {

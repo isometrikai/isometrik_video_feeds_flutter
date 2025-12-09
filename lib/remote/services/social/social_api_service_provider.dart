@@ -911,6 +911,7 @@ class SocialApiServiceProvider extends SocialApiService {
         },
         isLoading,
       );
+
   @override
   Future<ResponseModel> removeMentionFromPost({
     required bool isLoading,
@@ -1035,11 +1036,12 @@ class SocialApiServiceProvider extends SocialApiService {
     required bool isLoading,
     required Header header,
     required String collectionId,
+    required Map<String, dynamic> requestMap,
   }) async =>
       await networkClient.makeRequest(
         SocialApiEndPoints.putCollection,
         NetworkRequestType.put,
-        null,
+        requestMap.removeEmptyValues(),
         null,
         {
           'Accept': AppConstants.headerAccept,
