@@ -220,6 +220,7 @@ abstract class SocialApiService extends BaseService {
     required bool isLoading,
     required Header header,
     required String collectionId,
+    required Map<String, dynamic> requestMap,
   });
 
   Future<ResponseModel> deleteCollection({

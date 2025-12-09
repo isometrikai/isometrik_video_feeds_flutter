@@ -131,6 +131,7 @@ class IsmDataProvider {
   /// Update collection
   Future<void> updateCollection({
     required String collectionId,
+    required Map<String, dynamic> requestMap,
     bool isLoading = false,
     Function(String, int)? onSuccess,
     Function(String, int)? onError,
@@ -139,6 +140,7 @@ class IsmDataProvider {
       apiCall: () => _collectionUseCase.executeUpdateCollection(
         isLoading: isLoading,
         collectionId: collectionId,
+        requestMap: requestMap,
       ),
       toJson: (data) => data?.toMap() ?? {},
       onSuccess: onSuccess,

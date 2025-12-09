@@ -56,12 +56,14 @@ class CollectionUseCase extends BaseUseCase {
   /// Create or update collection
   Future<ApiResult<ResponseClass?>> executeUpdateCollection({
     required bool isLoading,
+    required Map<String, dynamic> requestMap,
     required String collectionId,
   }) async =>
       await super.execute(() async {
         final response = await _repository.updateCollection(
           isLoading: isLoading,
           collectionId: collectionId,
+          requestMap: requestMap,
         );
         return ApiResult(
             data: response.responseCode == 200 || response.responseCode == 201
