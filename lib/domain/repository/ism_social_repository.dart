@@ -175,6 +175,7 @@ abstract class SocialRepository extends BaseRepository {
 
   Future<CustomResponse<ResponseClass?>> createCollection({
     required bool isLoading,
+    required Map<String, dynamic> requestMap,
   });
 
   Future<CustomResponse<CollectionListResponse?>> getCollectionList({

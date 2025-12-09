@@ -198,6 +198,7 @@ abstract class SocialApiService extends BaseService {
   Future<ResponseModel> createCollection({
     required bool isLoading,
     required Header header,
+    required Map<String, dynamic> requestMap,
   });
 
   Future<ResponseModel> getCollectionList({
