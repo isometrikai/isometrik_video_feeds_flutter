@@ -28,12 +28,14 @@ class SavePostUseCase extends BaseUseCase {
     required bool isLoading,
     required int page,
     required int pageSize,
+    String collectionId = '',
   }) async =>
       await super.execute(() async {
         final response = await _repository.getProfileSavedPostData(
           isLoading: isLoading,
           page: page,
           pageSize: pageSize,
+          collectionId: collectionId,
         );
         return ApiResult(
             data: response.responseCode == 200 && response.responseCode != 204
