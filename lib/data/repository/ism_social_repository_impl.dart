@@ -555,12 +555,14 @@ class SocialRepositoryImpl implements SocialRepository {
   @override
   Future<CustomResponse<ResponseClass?>> createCollection({
     required bool isLoading,
+    required Map<String, dynamic> requestMap,
   }) async {
     try {
       final header = await _dataSource.getHeader();
       final response = await _apiService.createCollection(
         isLoading: isLoading,
         header: header,
+        requestMap: requestMap,
       );
       return _mapper.mapResponseData(response);
     } catch (e) {

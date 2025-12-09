@@ -8,10 +8,12 @@ class CollectionUseCase extends BaseUseCase {
   /// Create collection
   Future<ApiResult<ResponseClass?>> executeCreateCollection({
     required bool isLoading,
+    required Map<String, dynamic> requestMap,
   }) async =>
       await super.execute(() async {
         final response = await _repository.createCollection(
           isLoading: isLoading,
+          requestMap: requestMap,
         );
         return ApiResult(data: response.responseCode == 200 ? response.data : null);
       });

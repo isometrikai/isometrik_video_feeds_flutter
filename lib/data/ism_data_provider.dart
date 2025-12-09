@@ -87,14 +87,20 @@ class IsmDataProvider {
   }
 
   /// Create collection
+  /// `requestMap` is a `Map` containing the following properties:
+  /// - `description`: A description of the collection
+  /// - `is_private`: A boolean indicating whether the collection is private or not
+  /// - `name`: The name of the collection
   Future<void> createCollection({
     bool isLoading = false,
+    required Map<String, dynamic> requestMap,
     Function(String, int)? onSuccess,
     Function(String, int)? onError,
   }) async {
     await _executeApiCall(
       apiCall: () => _collectionUseCase.executeCreateCollection(
         isLoading: isLoading,
+        requestMap: requestMap,
       ),
       toJson: (data) => data?.toMap() ?? {},
       onSuccess: onSuccess,

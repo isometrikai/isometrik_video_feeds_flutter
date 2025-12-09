@@ -943,11 +943,12 @@ class SocialApiServiceProvider extends SocialApiService {
   Future<ResponseModel> createCollection({
     required bool isLoading,
     required Header header,
+    required Map<String, dynamic> requestMap,
   }) async =>
       await networkClient.makeRequest(
         SocialApiEndPoints.createCollection,
         NetworkRequestType.post,
-        null,
+        requestMap.removeEmptyValues(),
         null,
         {
           'Accept': AppConstants.headerAccept,
