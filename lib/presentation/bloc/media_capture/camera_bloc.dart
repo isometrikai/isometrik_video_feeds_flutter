@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:camera/camera.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:video_player/video_player.dart';
@@ -703,13 +704,15 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
 
       _currentSegmentDuration = 0;
 
-      if (_recordingDuration >= 10 && _videoSegments.isNotEmpty) {
+      if (_recordingDuration >= _selectedDuration && _videoSegments.isNotEmpty) {
         String finalVideoPath;
         final segmentPaths = _videoSegments.map((s) => s.path).toList();
 
         try {
           final mergedPath =
-              await VideoMergerUtil.mergeVideoSegments(segmentPaths);
+              await VideoMergerUtil.mergeVideoSegments(segmentPaths, onProgress: (progress) {
+                debugPrint('Merge progress: $progress');
+              });
           if (mergedPath != null && await File(mergedPath).exists()) {
             finalVideoPath = mergedPath;
           } else {
