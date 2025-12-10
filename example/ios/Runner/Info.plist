@@ -78,5 +78,12 @@
     <!-- Microphone Access (if recording video with audio) -->
     <key>NSMicrophoneUsageDescription</key>
     <string>We need access to your microphone to record audio with videos</string>
+
+    <!-- Location Access -->
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>We need access to your location to show nearby places and tag your posts with location</string>
+    
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>We need access to your location to show nearby places and tag your posts with location</string>
 </dict>
 </plist>

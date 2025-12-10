@@ -61,9 +61,8 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
             duration: const Duration(milliseconds: 300),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: !showReportReasons
-                  ? CrossAxisAlignment.center
-                  : CrossAxisAlignment.start,
+              crossAxisAlignment:
+                  !showReportReasons ? CrossAxisAlignment.center : CrossAxisAlignment.start,
               children: [
                 if (widget.isSelfProfile) ...[
                   const Divider(height: 1),
@@ -72,8 +71,8 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
                     title: Text(
                       IsrTranslationFile.edit,
                       textAlign: TextAlign.center,
-                      style: IsrStyles.primaryText16.copyWith(
-                          fontWeight: FontWeight.w500, color: IsrColors.black),
+                      style: IsrStyles.primaryText16
+                          .copyWith(fontWeight: FontWeight.w500, color: IsrColors.black),
                     ),
                     onTap: () {
                       Navigator.pop(context);
@@ -88,8 +87,8 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
                     title: Text(
                       IsrTranslationFile.postInsight,
                       textAlign: TextAlign.center,
-                      style: IsrStyles.primaryText16.copyWith(
-                          fontWeight: FontWeight.w500, color: IsrColors.black),
+                      style: IsrStyles.primaryText16
+                          .copyWith(fontWeight: FontWeight.w500, color: IsrColors.black),
                     ),
                     onTap: () {
                       Navigator.pop(context);
@@ -101,15 +100,13 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
                   const Divider(height: 1),
                   isLoadingDelete
                       ? Container(
-                          padding: IsrDimens.edgeInsetsSymmetric(
-                              vertical: 10.responsiveDimension),
+                          padding: IsrDimens.edgeInsetsSymmetric(vertical: 10.responsiveDimension),
                           child: SizedBox(
                             width: IsrDimens.twenty,
                             height: IsrDimens.twenty,
                             child: const CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor:
-                                  AlwaysStoppedAnimation<Color>(Colors.blue),
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
                             ),
                           ),
                         )
@@ -118,9 +115,8 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
                           title: Text(
                             IsrTranslationFile.delete,
                             textAlign: TextAlign.center,
-                            style: IsrStyles.primaryText16.copyWith(
-                                fontWeight: FontWeight.w500,
-                                color: IsrColors.black),
+                            style: IsrStyles.primaryText16
+                                .copyWith(fontWeight: FontWeight.w500, color: IsrColors.black),
                           ),
                           onTap: () {
                             Navigator.pop(context);
@@ -146,8 +142,8 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
                     title: Text(
                       IsrTranslationFile.cancel,
                       textAlign: TextAlign.center,
-                      style: IsrStyles.primaryText16.copyWith(
-                          fontWeight: FontWeight.w500, color: IsrColors.black),
+                      style: IsrStyles.primaryText16
+                          .copyWith(fontWeight: FontWeight.w500, color: IsrColors.black),
                     ),
                     onTap: () => Navigator.pop(context),
                   ),
@@ -169,8 +165,8 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
               title: Text(
                 IsrTranslationFile.report,
                 textAlign: TextAlign.center,
-                style: IsrStyles.primaryText16.copyWith(
-                    fontWeight: FontWeight.w500, color: IsrColors.black),
+                style: IsrStyles.primaryText16
+                    .copyWith(fontWeight: FontWeight.w500, color: IsrColors.black),
               ),
               onTap: () async {
                 setState(() {
@@ -180,8 +176,7 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
 
                 try {
                   final completer = Completer<List<ReportReason>>();
-                  IsmInjectionUtils.getBloc<SocialPostBloc>()
-                      .add(GetReasonEvent(
+                  IsmInjectionUtils.getBloc<SocialPostBloc>().add(GetReasonEvent(
                     onComplete: (reasons) {
                       completer.complete(reasons);
                     },
@@ -290,12 +285,12 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
                                   });
 
                                   try {
-                                    await widget.onPressReport!(
-                                        message: selectedReason?.name ?? '',
-                                        reason: selectedReason?.id ?? '');
                                     if (context.mounted) {
                                       Navigator.pop(context);
                                     }
+                                    await widget.onPressReport!(
+                                        message: selectedReason?.name ?? '',
+                                        reason: selectedReason?.id ?? '');
                                   } finally {
                                     if (mounted) {
                                       setState(() {
