@@ -1237,7 +1237,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   Future<void> _callLikeFunction() async {
     if (!_isLikeLoading.value) {
       if (_reelData.isLiked == true) {
-        context.getOrCreateBloc<IsmSocialActionCubit>().likePost(
+        context.getOrCreateBloc<IsmSocialActionCubit>().unLikePost(
             _reelData.postId ?? '',
             _reelData.likesCount ?? 0,
             reelData: _reelData,
@@ -1245,7 +1245,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             apiCallBack: widget.onPressLikeButton != null ? () => widget.onPressLikeButton!(_reelData, _reelData.isLiked == true) : null,
         );
       } else {
-        context.getOrCreateBloc<IsmSocialActionCubit>().unLikePost(
+        context.getOrCreateBloc<IsmSocialActionCubit>().likePost(
             _reelData.postId ?? '',
             _reelData.likesCount ?? 0,
             reelData: _reelData,
