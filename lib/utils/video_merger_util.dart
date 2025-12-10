@@ -1,18 +1,16 @@
 import 'dart:io';
 
+import 'package:easy_video_editor/easy_video_editor.dart';
 import 'package:flutter/services.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
-import 'package:easy_video_editor/easy_video_editor.dart';
 
 class VideoMergerUtil {
-  static const MethodChannel _channel =
-      MethodChannel('flutter_ecommerce/video_merger');
-
   /// Merges multiple video segments into a single video file
   /// Returns the path to the merged video file
-  static Future<String?> mergeVideoSegments(List<String> videoPaths, {Function(int progress)? onProgress}) async {
+  static Future<String?> mergeVideoSegments(List<String> videoPaths,
+      {Function(int progress)? onProgress}) async {
     try {
       if (videoPaths.isEmpty) {
         return null;
@@ -38,15 +36,18 @@ class VideoMergerUtil {
       final otherVideoPaths = videoPaths.toList();
       otherVideoPaths.removeAt(0);
       var progress = 0;
-      final editor = VideoEditorBuilder(videoPath: firstVideo!).merge(otherVideoPaths: otherVideoPaths);
+      final editor = VideoEditorBuilder(videoPath: firstVideo!)
+          .merge(otherVideoPaths: otherVideoPaths);
 
-      final result = await editor.export(outputPath: outputPath, onProgress: (progressValue) {
-        final mProgressPercent = (progressValue * 100).toInt();
-        if (mProgressPercent != progress) {
-          progress = mProgressPercent;
-          onProgress?.call(progress);
-        }
-      });
+      final result = await editor.export(
+          outputPath: outputPath,
+          onProgress: (progressValue) {
+            final mProgressPercent = (progressValue * 100).toInt();
+            if (mProgressPercent != progress) {
+              progress = mProgressPercent;
+              onProgress?.call(progress);
+            }
+          });
 
       if (result != null) {
         final outputFile = File(result);

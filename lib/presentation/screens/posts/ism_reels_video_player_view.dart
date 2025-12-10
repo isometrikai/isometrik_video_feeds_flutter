@@ -587,17 +587,25 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   void _togglePlayPause() {
+    if (!mounted) return; // Safety check: Widget is disposed
+
     // Pause video on long press start
     final key = _getCurrentVideoPlayerKey();
     final videoPlayerState = VideoPlayerWidget.of(key);
-    videoPlayerState?.pause();
+    if (videoPlayerState != null && videoPlayerState.mounted) {
+      videoPlayerState.pause();
+    }
   }
 
   void _resumePlayback() {
+    if (!mounted) return; // Safety check: Widget is disposed
+
     // Resume video on long press release
     final key = _getCurrentVideoPlayerKey();
     final videoPlayerState = VideoPlayerWidget.of(key);
-    videoPlayerState?.play();
+    if (videoPlayerState != null && videoPlayerState.mounted) {
+      videoPlayerState.play();
+    }
   }
 
   @override
