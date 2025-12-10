@@ -42,6 +42,16 @@ class _SaveActionWidgetState extends State<SaveActionWidget> {
     cubit.loadPostSaveState(widget.postId);
   }
 
+  @override
+  void didUpdateWidget(SaveActionWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Reload state if postId changed
+    if (oldWidget.postId != widget.postId) {
+      postId = widget.postId;
+      cubit.loadPostSaveState(postId);
+    }
+  }
+
   Future<bool> _onTap({
     ReelsData? reelData,
     PostSectionType? postSectionType,
@@ -72,12 +82,27 @@ class _SaveActionWidgetState extends State<SaveActionWidget> {
   Widget build(BuildContext context) =>
       context.attachBlocIfNeeded<IsmSocialActionCubit>(
         child: BlocBuilder<IsmSocialActionCubit, IsmSocialActionState>(
-          buildWhen: (previous, current) =>
-              current is IsmSavePostState && current.postId == postId,
+          buildWhen: (previous, current) {
+            // Listen to both IsmSavePostState and IsmSaveActionListenerState
+            // This ensures updates from outside the package are reflected
+            if (current is IsmSavePostState && current.postId == postId) {
+              return true;
+            }
+            if (current is IsmSaveActionListenerState &&
+                current.postId == postId) {
+              return true;
+            }
+            return false;
+          },
           builder: (context, state) {
             if (state is IsmSavePostState && state.postId == postId) {
               isLoading = state.isLoading;
               isSaved = state.isSaved;
+            } else if (state is IsmSaveActionListenerState &&
+                state.postId == postId) {
+              // Update state from listener state (emitted after save/unsave actions)
+              isSaved = state.isSaved;
+              isLoading = false; // Listener state means action is complete
             }
             return GestureDetector(
               onTap: isLoading ? null : _onTap,

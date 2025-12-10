@@ -371,9 +371,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           ? null
           : (reelsData, isLiked) async {
               _socialPostBloc.add(PlayPauseVideoEvent(play: false));
+              final postData = reelsData.postData is TimeLineData ? reelsData.postData as TimeLineData : null;
               final result = await widget
                   .postConfig.postCallBackConfig?.onLikeClick
-                  ?.call(reelsData.as(), isLiked);
+                  ?.call(postData, isLiked);
               _socialPostBloc.add(PlayPauseVideoEvent(play: true));
               return result ?? false;
             },
@@ -381,9 +382,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           ? null
           : (reelsData, isSaved) async {
               _socialPostBloc.add(PlayPauseVideoEvent(play: false));
+              final postData = reelsData.postData is TimeLineData ? reelsData.postData as TimeLineData : null;
               final result = await widget
                   .postConfig.postCallBackConfig?.onSaveClicked
-                  ?.call(reelsData.as(), isSaved);
+                  ?.call(postData, isSaved);
               _socialPostBloc.add(PlayPauseVideoEvent(play: true));
               return result ?? false;
             },
@@ -391,9 +393,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           ? null
           : (reelsData, isFollowed) async {
               _socialPostBloc.add(PlayPauseVideoEvent(play: false));
+              final postData = reelsData.postData is TimeLineData ? reelsData.postData as TimeLineData : null;
               final result = await widget
                   .postConfig.postCallBackConfig?.onFollowClick
-                  ?.call(reelsData.as(), isFollowed);
+                  ?.call(postData, isFollowed);
               _socialPostBloc.add(PlayPauseVideoEvent(play: true));
               return result ?? false;
             });

@@ -9,17 +9,20 @@ import 'package:ism_video_reel_player/utils/extensions.dart';
 part 'social_action_state.dart';
 
 class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
-  IsmSocialActionCubit(
-    this._followPostUseCase,
-    this._getPostDetailsUseCase,
-    this._likePostUseCase,
-    this._savePostUseCase,
-  ) : super(IsmSocialActionState());
+  IsmSocialActionCubit._() : super(IsmSocialActionState());
+  static IsmSocialActionCubit? _instance;
 
-  final FollowUnFollowUserUseCase _followPostUseCase;
-  final GetPostDetailsUseCase _getPostDetailsUseCase;
-  final LikePostUseCase _likePostUseCase;
-  final SavePostUseCase _savePostUseCase;
+  static IsmSocialActionCubit instance() {
+    if (_instance == null || _instance!.isClosed) {
+      _instance = IsmSocialActionCubit._();
+    }
+    return _instance!;
+  }
+
+  final FollowUnFollowUserUseCase _followPostUseCase = IsmInjectionUtils.getUseCase<FollowUnFollowUserUseCase>();
+  final GetPostDetailsUseCase _getPostDetailsUseCase = IsmInjectionUtils.getUseCase<GetPostDetailsUseCase>();
+  final LikePostUseCase _likePostUseCase = IsmInjectionUtils.getUseCase<LikePostUseCase>();
+  final SavePostUseCase _savePostUseCase = IsmInjectionUtils.getUseCase<SavePostUseCase>();
 
   final _uniquePostList = <String, TimeLineData>{};
 
@@ -70,6 +73,10 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     emit(IsmFollowUserState(isFollowing: isFollow, userId: userId));
   }
 
+  loadFollowState(String userId, {bool? isFollowing}) async {
+    emit(IsmFollowUserState(isFollowing: isFollowing == true, userId: userId));
+  }
+
   followUser(
     String userId, {
     ReelsData? reelData,
@@ -77,6 +84,7 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     int? watchDuration,
     Future<bool> Function()? apiCallBack,
   }) async {
+    debugPrint('IsmSocialActionCubit hashCode -> $hashCode');
     emit(IsmFollowUserState(
         isFollowing: true, isLoading: true, userId: userId));
 
@@ -122,6 +130,7 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     int? watchDuration,
     Future<bool> Function()? apiCallBack,
   }) async {
+    debugPrint('IsmSocialActionCubit hashCode -> $hashCode');
     emit(
         IsmFollowUserState(isFollowing: false, isLoading: true, userId: userId));
 
