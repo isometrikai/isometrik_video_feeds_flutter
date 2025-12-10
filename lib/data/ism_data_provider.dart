@@ -19,6 +19,9 @@ class IsmDataProvider {
 
   SavePostUseCase get _savedPostUseCase => IsmInjectionUtils.getUseCase<SavePostUseCase>();
 
+  GetUserPostDataUseCase get _userPostDataUseCase =>
+      IsmInjectionUtils.getUseCase<GetUserPostDataUseCase>();
+
   CreatePostUseCase get _createPostUseCase => IsmInjectionUtils.getUseCase<CreatePostUseCase>();
 
   DeletePostUseCase get _deletePostUseCase => IsmInjectionUtils.getUseCase<DeletePostUseCase>();
@@ -216,6 +219,28 @@ class IsmDataProvider {
       apiCall: () => _deletePostUseCase.executeDeletePost(
         isLoading: isLoading,
         postId: postId,
+      ),
+      toJson: (data) => data?.toMap() ?? {},
+      onSuccess: onSuccess,
+      onError: onError,
+    );
+  }
+
+  /// Get user posts
+  Future<void> getUserPosts({
+    required String userId,
+    required int page,
+    required int pageSize,
+    bool isLoading = false,
+    Function(String, int)? onSuccess,
+    Function(String, int)? onError,
+  }) async {
+    await _executeApiCall(
+      apiCall: () => _userPostDataUseCase.executeGetUserProfilePostData(
+        isLoading: isLoading,
+        page: page,
+        pageSize: pageSize,
+        memberId: userId,
       ),
       toJson: (data) => data?.toMap() ?? {},
       onSuccess: onSuccess,

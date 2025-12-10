@@ -1,8 +1,10 @@
 // coverage:ignore-file
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
+import 'package:http/io_client.dart';
 import 'package:ism_video_reel_player/core/core.dart';
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/di/di.dart';
@@ -13,12 +15,35 @@ import 'package:ism_video_reel_player/utils/utils.dart';
 class NetworkClient with AppMixin {
   NetworkClient({
     required this.baseUrl,
-  });
+  }) {
+    _client = _getOrCreateClient();
+  }
+
+  // Static shared HttpClient for connection reuse across all instances
+  static HttpClient? _sharedHttpClient;
+  static IOClient? _sharedIOClient;
+
+  /// Creates or returns the shared IOClient for connection reuse
+  static IOClient _getOrCreateClient() {
+    if (_sharedIOClient != null) return _sharedIOClient!;
+
+    _sharedHttpClient = HttpClient()
+      ..connectionTimeout = AppConstants.timeOutDuration
+      ..idleTimeout = const Duration(minutes: 15) // Keep connections alive longer
+      ..maxConnectionsPerHost = 6 // Increase max connections
+      ..autoUncompress = true; // Enable automatic decompression
+
+    // Enable HTTP/1.1 keep-alive and connection reuse
+    _sharedHttpClient!.findProxy = (uri) => 'DIRECT';
+
+    _sharedIOClient = IOClient(_sharedHttpClient!);
+    return _sharedIOClient!;
+  }
+
+  late final IOClient _client;
 
   final String baseUrl;
   final localStorageManager = isrGetIt<LocalStorageManager>();
-
-  final networkClient = http.Client();
 
   var _isRefreshing = false;
   var responseCode = 200;
@@ -129,8 +154,7 @@ class NetworkClient with AppMixin {
     }
   }
 
-  ResponseModel _proceedWithErrorResponse(
-      ResponseModel res, http.Response response) {
+  ResponseModel _proceedWithErrorResponse(ResponseModel res, http.Response response) {
     final message = Utility.getErrorMessage(res);
     if (res.statusCode == 401) {
       return res;
@@ -256,20 +280,17 @@ class NetworkClient with AppMixin {
   }
 
   Future<http.Response> getFinalResponse(
-      Uri finalUrl,
-      Map<String, String>? headers,
-      data,
-      NetworkRequestType requestType) async {
+      Uri finalUrl, Map<String, String>? headers, data, NetworkRequestType requestType) async {
     switch (requestType) {
       case NetworkRequestType.get:
-        return await http.Client()
+        return await _client
             .get(
               finalUrl,
               headers: headers,
             )
             .timeout(AppConstants.timeOutDuration);
       case NetworkRequestType.post:
-        return await http.Client()
+        return _client
             .post(
               finalUrl,
               body: jsonEncode(data),
@@ -277,7 +298,7 @@ class NetworkClient with AppMixin {
             )
             .timeout(AppConstants.timeOutDuration);
       case NetworkRequestType.put:
-        return await http.Client()
+        return _client
             .put(
               finalUrl,
               body: jsonEncode(data),
@@ -285,7 +306,7 @@ class NetworkClient with AppMixin {
             )
             .timeout(AppConstants.timeOutDuration);
       case NetworkRequestType.patch:
-        return await http.Client()
+        return _client
             .patch(
               finalUrl,
               body: jsonEncode(data),
@@ -293,7 +314,7 @@ class NetworkClient with AppMixin {
             )
             .timeout(AppConstants.timeOutDuration);
       case NetworkRequestType.delete:
-        return await http.Client()
+        return _client
             .delete(
               finalUrl,
               body: jsonEncode(data),
@@ -301,5 +322,9 @@ class NetworkClient with AppMixin {
             )
             .timeout(AppConstants.timeOutDuration);
     }
+  }
+
+  void dispose() {
+    _client.close();
   }
 }
