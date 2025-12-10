@@ -40,6 +40,7 @@ class PostCallBackConfig {
     this.onSaveChanged,
     this.onLikeChanged,
     this.onSaveClicked,
+    this.onFollowClick,
     this.onShareClicked,
     this.onLikeClick,
     this.onCommentClick,
@@ -50,10 +51,12 @@ class PostCallBackConfig {
 
   final Function(TimeLineData postData, bool isSaved)? onSaveChanged;
   final Function(TimeLineData postData, bool isLiked)? onLikeChanged;
-  final Future<bool> Function(TimeLineData postData, bool isSaved)?
-      onSaveClicked;
+  // return true if success
+  final Future<bool> Function(TimeLineData? postData, bool isSaved)? onSaveClicked;
+  final Future<bool> Function(TimeLineData? postData, bool isLiked)? onLikeClick;
+  final Future<bool> Function(TimeLineData? postData, bool isFollow)? onFollowClick;
+
   final Function(TimeLineData postData)? onShareClicked;
-  final Future<bool> Function(TimeLineData postData, bool isLiked)? onLikeClick;
   final Function(TimeLineData postData)? onCommentClick;
   final Function(TimeLineData? postData, String userId)? onProfileClick;
   final Future<void> Function(TimeLineData postData)? onTagProductClick;
@@ -62,9 +65,10 @@ class PostCallBackConfig {
   PostCallBackConfig copyWith({
     Function(TimeLineData postData, bool isSaved)? onSaveChanged,
     Function(TimeLineData postData, bool isLiked)? onLikeChanged,
-    Future<bool> Function(TimeLineData postData, bool isSaved)? onSaveClicked,
+    Future<bool> Function(TimeLineData? postData, bool isLiked)? onLikeClick,
+    Future<bool> Function(TimeLineData? postData, bool isLiked)? onFollowClicked,
+    Future<bool> Function(TimeLineData? postData, bool isSaved)? onSaveClicked,
     Function(TimeLineData postData)? onShareClicked,
-    Future<bool> Function(TimeLineData postData, bool isLiked)? onLikeClick,
     Function(TimeLineData postData)? onCommentClick,
     Function(TimeLineData? postData, String userId)? onProfileClick,
     Future<void> Function(TimeLineData postData)? onTagProductClick,

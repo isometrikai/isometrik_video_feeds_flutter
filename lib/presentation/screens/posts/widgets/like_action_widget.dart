@@ -12,8 +12,17 @@ class LikeActionWidget extends StatefulWidget {
   });
 
   final String postId;
-  final Widget Function(bool isLoading, bool isLiked, int likeCount,
-      Function({ReelsData? reelData, int? watchDuration}) onTap) builder;
+  final Widget Function(
+    bool isLoading,
+    bool isLiked,
+    int likeCount,
+    Function({
+      ReelsData? reelData,
+      PostSectionType? postSectionType,
+      int? watchDuration,
+      Future<bool> Function()? apiCallBack,
+    }) onTap,
+  ) builder;
 
   @override
   State<LikeActionWidget> createState() => _LikeActionWidgetState();
@@ -44,14 +53,31 @@ class _LikeActionWidgetState extends State<LikeActionWidget> {
     super.dispose();
   }
 
-  void _onTap({ReelsData? reelData, int? watchDuration}) {
+  void _onTap({
+    ReelsData? reelData,
+    PostSectionType? postSectionType,
+    int? watchDuration,
+    Future<bool> Function()? apiCallBack,
+  }) {
     if (isLoading) return;
     if (isLiked) {
-      cubit.unLikePost(postId, likeCount,
-          reelData: reelData, watchDuration: watchDuration);
+      cubit.unLikePost(
+        postId,
+        likeCount,
+        reelData: reelData,
+        watchDuration: watchDuration,
+        postSectionType: postSectionType,
+        apiCallBack: apiCallBack,
+      );
     } else {
-      cubit.likePost(postId, likeCount,
-          reelData: reelData, watchDuration: watchDuration);
+      cubit.likePost(
+        postId,
+        likeCount,
+        reelData: reelData,
+        watchDuration: watchDuration,
+        postSectionType: postSectionType,
+        apiCallBack: apiCallBack,
+      );
     }
   }
 

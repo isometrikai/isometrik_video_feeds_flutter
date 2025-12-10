@@ -12,8 +12,16 @@ class SaveActionWidget extends StatefulWidget {
   });
 
   final String postId;
-  final Widget Function(bool isLoading, bool isSaved,
-      Future<bool> Function({ReelsData? reelData}) onTap) builder;
+  final Widget Function(
+    bool isLoading,
+    bool isSaved,
+    Future<bool> Function({
+      ReelsData? reelData,
+      PostSectionType? postSectionType,
+      int? watchDuration,
+      Future<bool> Function()? apiCallBack,
+    }) onTap,
+  ) builder;
 
   @override
   State<SaveActionWidget> createState() => _SaveActionWidgetState();
@@ -34,12 +42,29 @@ class _SaveActionWidgetState extends State<SaveActionWidget> {
     cubit.loadPostSaveState(widget.postId);
   }
 
-  Future<bool> _onTap({ReelsData? reelData}) async {
+  Future<bool> _onTap({
+    ReelsData? reelData,
+    PostSectionType? postSectionType,
+    int? watchDuration,
+    Future<bool> Function()? apiCallBack,
+  }) async {
     if (isLoading) return false;
     if (isSaved) {
-      return await cubit.unSavePost(postId, reelData: reelData);
+      return await cubit.unSavePost(
+        postId,
+        reelData: reelData,
+        postSectionType: postSectionType,
+        watchDuration: watchDuration,
+        apiCallBack: apiCallBack,
+      );
     } else {
-      return await cubit.savePost(postId, reelData: reelData);
+      return await cubit.savePost(
+        postId,
+        reelData: reelData,
+        postSectionType: postSectionType,
+        watchDuration: watchDuration,
+        apiCallBack: apiCallBack,
+      );
     }
   }
 

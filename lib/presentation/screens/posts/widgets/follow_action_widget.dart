@@ -14,8 +14,16 @@ class FollowActionWidget extends StatefulWidget {
 
   final String postId;
   final String userId;
-  final Widget Function(bool isLoading, bool isFollowing,
-      Function({ReelsData? reelData}) onTap) builder;
+  final Widget Function(
+    bool isLoading,
+    bool isFollowing,
+    Function({
+      ReelsData? reelData,
+      PostSectionType? postSectionType,
+      int? watchDuration,
+    Future<bool> Function()? apiCallBack,
+    }) onTap,
+  ) builder;
 
   @override
   State<FollowActionWidget> createState() => _FollowActionWidgetState();
@@ -47,12 +55,26 @@ class _FollowActionWidgetState extends State<FollowActionWidget> {
     super.dispose();
   }
 
-  void _onTap({ReelsData? reelData}) {
+  void _onTap(
+      {ReelsData? reelData,
+      PostSectionType? postSectionType,
+      int? watchDuration,
+        Future<bool> Function()? apiCallBack,}) {
     if (isLoading) return;
     if (isFollowing) {
-      cubit.unfollowUser(userId, reelData: reelData);
+      cubit.unfollowUser(userId,
+          reelData: reelData,
+          postSectionType: postSectionType,
+          watchDuration: watchDuration,
+          apiCallBack: apiCallBack
+      );
     } else {
-      cubit.followUser(userId, reelData: reelData);
+      cubit.followUser(userId,
+          reelData: reelData,
+          postSectionType: postSectionType,
+          watchDuration: watchDuration,
+          apiCallBack: apiCallBack
+      );
     }
   }
 

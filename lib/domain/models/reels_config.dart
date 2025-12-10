@@ -30,13 +30,11 @@ class ReelsConfig {
   final EdgeInsetsGeometry? overlayPadding;
   final Widget? placeHolderWidget;
 
-  // All callbacks return Future<void>
+  // All callbacks return true if success
   final Future<bool> Function(ReelsData reelsData, bool currentSaved)?
       onPressSave;
-
   final Future<bool> Function(ReelsData reelsData, bool currentLiked)?
       onPressLike;
-
   final Future<bool> Function(ReelsData reelsData, bool currentFollow)?
       onPressFollow;
 

@@ -474,3 +474,7 @@ extension BlocSafeGetter on BuildContext {
     );
   }
 }
+
+extension ObjectCasting on Object {
+  T? as<T>() => this is T ? this as T : null;
+}
