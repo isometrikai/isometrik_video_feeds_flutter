@@ -283,24 +283,31 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     }
 
     // Control playback based on visibility (only if not manually paused)
-    if (_videoPlayerController != null &&
+    if (!_isDisposed &&
+        _videoPlayerController != null &&
         _videoPlayerController!.isInitialized) {
-      if (_isVisible &&
-          !_videoPlayerController!.isPlaying &&
-          !_isManuallyPaused) {
-        // Video is visible - play it (only if not manually paused)
-        _videoPlayerController!.play();
-        widget.videoCacheManager.markAsVisible(widget.mediaUrl);
-      } else if (!_isVisible && _videoPlayerController!.isPlaying) {
-        // Video is not visible - pause it
-        _videoPlayerController!.pause();
-        widget.videoCacheManager.markAsNotVisible(widget.mediaUrl);
+      try {
+        if (_isVisible &&
+            !_videoPlayerController!.isPlaying &&
+            !_isManuallyPaused) {
+          // Video is visible - play it (only if not manually paused)
+          _videoPlayerController!.play();
+          widget.videoCacheManager.markAsVisible(widget.mediaUrl);
+        } else if (!_isVisible && _videoPlayerController!.isPlaying) {
+          // Video is not visible - pause it
+          _videoPlayerController!.pause();
+          widget.videoCacheManager.markAsNotVisible(widget.mediaUrl);
+        }
+      } catch (e) {
+        debugPrint('⚠️ VideoPlayerWidget: Error in visibility change handler: $e');
       }
     }
   }
 
   // Public methods to control playback
   void pause() {
+    if (_isDisposed) return; // Safety check: Don't operate on disposed widget
+
     if (_videoPlayerController != null &&
         _videoPlayerController!.isInitialized &&
         _videoPlayerController!.isPlaying) {
@@ -311,6 +318,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   }
 
   void play() {
+    if (_isDisposed) return; // Safety check: Don't operate on disposed widget
+
     if (_videoPlayerController != null &&
         _videoPlayerController!.isInitialized &&
         !_videoPlayerController!.isPlaying) {
@@ -338,10 +347,15 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     super.didUpdateWidget(oldWidget);
 
     // Handle mute state changes
-    if (oldWidget.isMuted != widget.isMuted &&
+    if (!_isDisposed &&
+        oldWidget.isMuted != widget.isMuted &&
         _videoPlayerController != null &&
         _videoPlayerController!.isInitialized) {
-      _videoPlayerController!.setVolume(widget.isMuted ? 0.0 : 1.0);
+      try {
+        _videoPlayerController!.setVolume(widget.isMuted ? 0.0 : 1.0);
+      } catch (e) {
+        debugPrint('⚠️ VideoPlayerWidget: Error updating volume: $e');
+      }
     }
 
     // Handle media URL changes
@@ -415,6 +429,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         child: BlocListener<SocialPostBloc, SocialPostState>(
           listenWhen: (previous, current) => current is PlayPauseVideoState,
           listener: (context, state) {
+            if (_isDisposed) return; // Safety check: Widget is disposed
+
             if (state is PlayPauseVideoState) {
               if (state.play) {
                 if (_isVisible && mounted && _isManuallyPaused) {
