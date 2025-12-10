@@ -12,8 +12,17 @@ class LikeActionWidget extends StatefulWidget {
   });
 
   final String postId;
-  final Widget Function(bool isLoading, bool isLiked, int likeCount,
-      Function({ReelsData? reelData, int? watchDuration}) onTap) builder;
+  final Widget Function(
+    bool isLoading,
+    bool isLiked,
+    int likeCount,
+    Function({
+      ReelsData? reelData,
+      PostSectionType? postSectionType,
+      int? watchDuration,
+      Future<bool> Function()? apiCallBack,
+    }) onTap,
+  ) builder;
 
   @override
   State<LikeActionWidget> createState() => _LikeActionWidgetState();
@@ -36,6 +45,16 @@ class _LikeActionWidgetState extends State<LikeActionWidget> {
   }
 
   @override
+  void didUpdateWidget(LikeActionWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Reload state if postId changed
+    if (oldWidget.postId != widget.postId) {
+      postId = widget.postId;
+      cubit.loadPostLikeState(postId);
+    }
+  }
+
+  @override
   void dispose() {
     // IMPORTANT: Do NOT close the cubit here!
     // - The cubit is a singleton managed by the DI container
@@ -44,14 +63,31 @@ class _LikeActionWidgetState extends State<LikeActionWidget> {
     super.dispose();
   }
 
-  void _onTap({ReelsData? reelData, int? watchDuration}) {
+  void _onTap({
+    ReelsData? reelData,
+    PostSectionType? postSectionType,
+    int? watchDuration,
+    Future<bool> Function()? apiCallBack,
+  }) {
     if (isLoading) return;
     if (isLiked) {
-      cubit.unLikePost(postId, likeCount,
-          reelData: reelData, watchDuration: watchDuration);
+      cubit.unLikePost(
+        postId,
+        likeCount,
+        reelData: reelData,
+        watchDuration: watchDuration,
+        postSectionType: postSectionType,
+        apiCallBack: apiCallBack,
+      );
     } else {
-      cubit.likePost(postId, likeCount,
-          reelData: reelData, watchDuration: watchDuration);
+      cubit.likePost(
+        postId,
+        likeCount,
+        reelData: reelData,
+        watchDuration: watchDuration,
+        postSectionType: postSectionType,
+        apiCallBack: apiCallBack,
+      );
     }
   }
 
@@ -59,13 +95,29 @@ class _LikeActionWidgetState extends State<LikeActionWidget> {
   Widget build(BuildContext context) =>
       context.attachBlocIfNeeded<IsmSocialActionCubit>(
         child: BlocBuilder<IsmSocialActionCubit, IsmSocialActionState>(
-          buildWhen: (previous, current) =>
-              current is IsmLikePostState && current.postId == postId,
+          buildWhen: (previous, current) {
+            // Listen to both IsmLikePostState and IsmLikeActionListenerState
+            // This ensures updates from outside the package are reflected
+            if (current is IsmLikePostState && current.postId == postId) {
+              return true;
+            }
+            if (current is IsmLikeActionListenerState &&
+                current.postId == postId) {
+              return true;
+            }
+            return false;
+          },
           builder: (context, state) {
             if (state is IsmLikePostState && state.postId == postId) {
               isLoading = state.isLoading;
               isLiked = state.isLiked;
               likeCount = state.likeCount;
+            } else if (state is IsmLikeActionListenerState &&
+                state.postId == postId) {
+              // Update state from listener state (emitted after like/unlike actions)
+              // Note: Listener state doesn't have likeCount, so we keep the current value
+              isLiked = state.isLiked;
+              isLoading = false; // Listener state means action is complete
             }
             return GestureDetector(
               onTap: isLoading

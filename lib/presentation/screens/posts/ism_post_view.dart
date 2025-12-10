@@ -367,52 +367,39 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
             return result;
           }
         },
-        onPressLike: (reelsData, isLiked) async =>
-            (reelsData.postData is TimeLineData)
-                ? _handleLikeAction(isLiked, reelsData.postData as TimeLineData)
-                : isLiked,
-        onPressSave: (reelsData, isSavedPost) async {
-          try {
-            if (widget.postConfig.postCallBackConfig?.onSaveClicked != null &&
-                reelsData.postData is TimeLineData) {
+      onPressLike: widget.postConfig.postCallBackConfig?.onLikeClick == null
+          ? null
+          : (reelsData, isLiked) async {
               _socialPostBloc.add(PlayPauseVideoEvent(play: false));
-              final res = await widget
-                      .postConfig.postCallBackConfig?.onSaveClicked
-                      ?.call(reelsData.postData as TimeLineData, isSavedPost) ??
-                  isSavedPost;
+              final postData = reelsData.postData is TimeLineData ? reelsData.postData as TimeLineData : null;
+              final result = await widget
+                  .postConfig.postCallBackConfig?.onLikeClick
+                  ?.call(postData, isLiked);
               _socialPostBloc.add(PlayPauseVideoEvent(play: true));
-              return res;
-            }
-            final completer = Completer<bool>();
-            _socialPostBloc.add(SavePostEvent(
-              postId: reelsData.postId ?? '',
-              isSaved: isSavedPost,
-              onComplete: (success) {
-                completer.complete(success);
-              },
-            ));
-            return await completer.future;
-          } catch (e) {
-            return false;
-          }
-        },
-        onPressFollow: (reelsData, isFollow) async {
-          try {
-            final completer = Completer<bool>();
-            _socialPostBloc.add(FollowUserEvent(
-              followingId: reelsData.userId ?? '',
-              onComplete: (success) {
-                completer.complete(success);
-              },
-              followAction:
-                  isFollow ? FollowAction.unfollow : FollowAction.follow,
-            ));
-            return await completer.future;
-          } catch (e) {
-            return false;
-          }
-        },
-      );
+              return result ?? false;
+            },
+      onPressSave: widget.postConfig.postCallBackConfig?.onSaveClicked == null
+          ? null
+          : (reelsData, isSaved) async {
+              _socialPostBloc.add(PlayPauseVideoEvent(play: false));
+              final postData = reelsData.postData is TimeLineData ? reelsData.postData as TimeLineData : null;
+              final result = await widget
+                  .postConfig.postCallBackConfig?.onSaveClicked
+                  ?.call(postData, isSaved);
+              _socialPostBloc.add(PlayPauseVideoEvent(play: true));
+              return result ?? false;
+            },
+      onPressFollow: widget.postConfig.postCallBackConfig?.onFollowClick == null
+          ? null
+          : (reelsData, isFollowed) async {
+              _socialPostBloc.add(PlayPauseVideoEvent(play: false));
+              final postData = reelsData.postData is TimeLineData ? reelsData.postData as TimeLineData : null;
+              final result = await widget
+                  .postConfig.postCallBackConfig?.onFollowClick
+                  ?.call(postData, isFollowed);
+              _socialPostBloc.add(PlayPauseVideoEvent(play: true));
+              return result ?? false;
+            });
 
   void _goToPlaceDetailsView(
     PostSectionType postSectionType,

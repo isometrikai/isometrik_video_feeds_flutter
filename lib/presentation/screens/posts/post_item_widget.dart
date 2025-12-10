@@ -379,76 +379,9 @@ class _PostItemWidgetState extends State<PostItemWidget>
                           }
                         }
                       },
-                      onPressFollowButton: () async {
-                        if (widget.reelsConfig.onPressFollow != null) {
-                          final result =
-                              await widget.reelsConfig.onPressFollow!(
-                                  reelsData, reelsData.isFollow ?? false);
-                          if (result == true && mounted) {
-                            final index = _reelsDataList.indexWhere((element) =>
-                                element.postId == reelsData.postId);
-                            if (index != -1) {
-                              _reelsDataList[index].isFollow =
-                                  reelsData.isFollow == true ? false : true;
-                              _refreshCounts[index] =
-                                  (_refreshCounts[index] ?? 0) + 1;
-                              _updateState();
-                            }
-                          }
-                          // // ✅ Log event locally
-                          // unawaited(EventQueueProvider.instance.addEvent({
-                          //   'type': EventType.follow.value,
-                          //   'postId': reelsData.postId,
-                          //   'userId': widget.loggedInUserId,
-                          //   'isFollow': reelsData.isFollow,
-                          //   'timestamp': DateTime.now().toUtc().toIso8601String(),
-                          // }));
-                        }
-                      },
-                      onPressLikeButton: () async {
-                        if (widget.reelsConfig.onPressLike != null) {
-                          final result = await widget.reelsConfig.onPressLike!(
-                              reelsData, reelsData.isLiked ?? false);
-                          if (result == true) {
-                            reelsData.isLiked = reelsData.isLiked == false;
-                            if (reelsData.isLiked == true) {
-                              reelsData.likesCount =
-                                  (reelsData.likesCount ?? 0) + 1;
-                            } else {
-                              if ((reelsData.likesCount ?? 0) > 0) {
-                                reelsData.likesCount =
-                                    (reelsData.likesCount ?? 0) - 1;
-                              }
-                            }
-                            _updateState();
-                          }
-                          // ✅ Log event locally
-                          // unawaited(EventQueueProvider.instance.addEvent({
-                          //   'type': EventType.like.value,
-                          //   'postId': reelsData.postId,
-                          //   'userId': widget.loggedInUserId,
-                          //   'isLiked': reelsData.isLiked,
-                          //   'timestamp': DateTime.now().toUtc().toIso8601String(),
-                          // }));
-                        }
-                      },
-                      onPressSaveButton: () async {
-                        if (widget.reelsConfig.onPressSave != null) {
-                          final result = await widget.reelsConfig.onPressSave!(
-                              reelsData, reelsData.isSavedPost ?? false);
-                          if (result != reelsData.isSavedPost) {
-                            reelsData.isSavedPost = result;
-                            _updateState();
-                          }
-                          // unawaited(EventQueueProvider.instance.addEvent({
-                          //   'type': EventType.save.value,
-                          //   'postId': reelsData.postId,
-                          //   'isSaved': reelsData.isSavedPost,
-                          //   'userId': widget.loggedInUserId,
-                          //   'timestamp': DateTime.now().toUtc().toIso8601String(),
-                          // }));
-                        }
-                      },
+                      onPressFollowButton: widget.reelsConfig.onPressFollow,
+                      onPressLikeButton: widget.reelsConfig.onPressLike,
+                      onPressSaveButton: widget.reelsConfig.onPressSave,
                       onTapMentionTag: (mentionedList) async {
                         if (widget.reelsConfig.onTapMentionTag != null) {
                           final result = await widget.reelsConfig
