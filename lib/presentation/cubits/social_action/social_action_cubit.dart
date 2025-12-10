@@ -78,7 +78,7 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     Future<bool> Function()? apiCallBack,
   }) async {
     emit(IsmFollowUserState(
-        isFollowing: false, isLoading: true, userId: userId));
+        isFollowing: true, isLoading: true, userId: userId));
 
     final bool isSuccess;
     AppError? error;
@@ -123,7 +123,7 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     Future<bool> Function()? apiCallBack,
   }) async {
     emit(
-        IsmFollowUserState(isFollowing: true, isLoading: true, userId: userId));
+        IsmFollowUserState(isFollowing: false, isLoading: true, userId: userId));
 
     final bool isSuccess;
     AppError? error;
@@ -182,7 +182,7 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     final likeCount = max(_likeCount, 0);
 
     emit(IsmLikePostState(
-        isLiked: false, likeCount: likeCount, postId: postId, isLoading: true));
+        isLiked: true, likeCount: likeCount, postId: postId, isLoading: true));
 
     final bool isSuccess;
     AppError? error;
@@ -236,7 +236,7 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     final likeCount = max(_likeCount, 0);
 
     emit(IsmLikePostState(
-        isLiked: true, likeCount: likeCount, postId: postId, isLoading: true));
+        isLiked: false, likeCount: likeCount, postId: postId, isLoading: true));
 
     final bool isSuccess;
     AppError? error;
@@ -293,7 +293,7 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     Future<bool> Function()? apiCallBack,
   }) async {
     emit(IsmSavePostState(
-      isSaved: false,
+      isSaved: true,
       postId: postId,
       isLoading: true,
     ));
@@ -344,7 +344,7 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     Future<bool> Function()? apiCallBack,
   }) async {
     emit(IsmSavePostState(
-      isSaved: true,
+      isSaved: false,
       postId: postId,
       isLoading: true,
     ));

@@ -818,7 +818,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                         postSectionType: widget.postSectionType,
                         apiCallBack: widget.onPressLikeButton != null ? () => widget.onPressLikeButton!(_reelData, isLiked) : null,
                       ),
-                      isLoading: isLoading,
+                      isLoading: false, //isLoading,
                     );
                   },
                 ),
@@ -863,7 +863,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                         postSectionType: widget.postSectionType,
                         apiCallBack: widget.onPressSaveButton != null ? () => widget.onPressSaveButton!(_reelData, isSaved) : null,
                       ),
-                      isLoading: isLoading,
+                      isLoading: false, //isLoading,
                     );
                   },
                 ),
@@ -1138,19 +1138,20 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       userId: _reelData.userId ?? '',
       builder: (isLoading, isFollowing, onTap) {
         _reelData.isFollow = isFollowing;
-        if (isLoading) {
-          return SizedBox(
-            width: IsrDimens.sixty,
-            height: IsrDimens.twentyFour,
-            child: Center(
-              child: SizedBox(
-                width: IsrDimens.sixteen,
-                height: IsrDimens.sixteen,
-                child: const CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
-          );
-        } else if (!isFollowing && _reelData.postSetting?.isUnFollowButtonVisible == true) {
+        // if (isLoading) {
+        //   return SizedBox(
+        //     width: IsrDimens.sixty,
+        //     height: IsrDimens.twentyFour,
+        //     child: Center(
+        //       child: SizedBox(
+        //         width: IsrDimens.sixteen,
+        //         height: IsrDimens.sixteen,
+        //         child: const CircularProgressIndicator(strokeWidth: 2),
+        //       ),
+        //     ),
+        //   );
+        // } else
+          if (!isFollowing && _reelData.postSetting?.isUnFollowButtonVisible == true) {
           return Container(
             height: IsrDimens.twentyFour,
             decoration: BoxDecoration(
