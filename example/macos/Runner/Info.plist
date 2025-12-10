@@ -33,5 +33,9 @@
     		<key>NSAllowsArbitraryLoads</key>
     		<true/>
     	</dict>
+	
+	<!-- Location Access -->
+	<key>NSLocationUsageDescription</key>
+	<string>We need access to your location to show nearby places and tag your posts with location</string>
 </dict>
 </plist>

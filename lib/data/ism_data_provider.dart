@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:ism_video_reel_player/core/core.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 
 class IsmDataProvider {
   /// Private constructor
@@ -18,6 +19,9 @@ class IsmDataProvider {
   CollectionUseCase get _collectionUseCase => IsmInjectionUtils.getUseCase<CollectionUseCase>();
 
   SavePostUseCase get _savedPostUseCase => IsmInjectionUtils.getUseCase<SavePostUseCase>();
+
+  GetTaggedPostsUseCase get _getTaggedPostUseCase =>
+      IsmInjectionUtils.getUseCase<GetTaggedPostsUseCase>();
 
   GetUserPostDataUseCase get _userPostDataUseCase =>
       IsmInjectionUtils.getUseCase<GetUserPostDataUseCase>();
@@ -241,6 +245,50 @@ class IsmDataProvider {
         page: page,
         pageSize: pageSize,
         memberId: userId,
+      ),
+      toJson: (data) => data?.toMap() ?? {},
+      onSuccess: onSuccess,
+      onError: onError,
+    );
+  }
+
+  /// Get saved post
+  Future<void> getSavedPosts({
+    required int page,
+    required int pageSize,
+    bool isLoading = false,
+    Function(String, int)? onSuccess,
+    Function(String, int)? onError,
+  }) async {
+    await _executeApiCall(
+      apiCall: () => _savedPostUseCase.executeGetProfileSavedPostData(
+        isLoading: isLoading,
+        page: page,
+        pageSize: pageSize,
+      ),
+      toJson: (data) => data?.toMap() ?? {},
+      onSuccess: onSuccess,
+      onError: onError,
+    );
+  }
+
+  /// Get tagged posts
+  Future<void> getTaggedPosts({
+    required TagType tagType,
+    required String tagValue,
+    required int page,
+    required int pageSize,
+    bool isLoading = false,
+    Function(String, int)? onSuccess,
+    Function(String, int)? onError,
+  }) async {
+    await _executeApiCall(
+      apiCall: () => _getTaggedPostUseCase.executeGetTaggedPosts(
+        isLoading: isLoading,
+        page: page,
+        pageLimit: pageSize,
+        tagType: tagType,
+        tagValue: tagValue,
       ),
       toJson: (data) => data?.toMap() ?? {},
       onSuccess: onSuccess,
