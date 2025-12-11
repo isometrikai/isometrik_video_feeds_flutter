@@ -80,6 +80,9 @@ class StandardVideoPlayerController implements IVideoPlayerController {
   bool get isInitialized => _controller.value.isInitialized;
 
   @override
+  bool get isDisposed => _isDisposed;
+
+  @override
   ValueNotifier<bool> get playingStateNotifier => _playingStateNotifier;
 
   @override

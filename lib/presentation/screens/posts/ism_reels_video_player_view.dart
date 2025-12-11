@@ -816,7 +816,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                         reelData: _reelData,
                         watchDuration: _watchDuration,
                         postSectionType: widget.postSectionType,
-                        apiCallBack: widget.onPressLikeButton != null ? () => widget.onPressLikeButton!(_reelData, isLiked) : null,
+                        apiCallBack: widget.onPressLikeButton != null
+                            ? () => widget.onPressLikeButton!(_reelData, isLiked)
+                            : null,
                       ),
                       isLoading: false, //isLoading,
                     );
@@ -854,14 +856,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       icon: isSaved == true
                           ? AssetConstants.icSaveSelected
                           : AssetConstants.icSaveUnSelected,
-                      label: isSaved == true
-                          ? IsrTranslationFile.saved
-                          : IsrTranslationFile.save,
+                      label: isSaved == true ? IsrTranslationFile.saved : IsrTranslationFile.save,
                       onTap: () => onTap(
                         reelData: _reelData,
                         watchDuration: _watchDuration,
                         postSectionType: widget.postSectionType,
-                        apiCallBack: widget.onPressSaveButton != null ? () => widget.onPressSaveButton!(_reelData, isSaved) : null,
+                        apiCallBack: widget.onPressSaveButton != null
+                            ? () => widget.onPressSaveButton!(_reelData, isSaved)
+                            : null,
                       ),
                       isLoading: false, //isLoading,
                     );
@@ -1151,7 +1153,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         //     ),
         //   );
         // } else
-          if (!isFollowing && _reelData.postSetting?.isUnFollowButtonVisible == true) {
+        if (!isFollowing && _reelData.postSetting?.isUnFollowButtonVisible == true) {
           return Container(
             height: IsrDimens.twentyFour,
             decoration: BoxDecoration(
@@ -1161,15 +1163,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             child: MaterialButton(
               minWidth: IsrDimens.sixty,
               height: IsrDimens.twentyFour,
-              padding:
-                  IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twelve),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(IsrDimens.twenty)),
+              padding: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twelve),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(IsrDimens.twenty)),
               onPressed: () => onTap(
                 reelData: _reelData,
                 postSectionType: widget.postSectionType,
                 watchDuration: _watchDuration,
-                apiCallBack: widget.onPressFollowButton != null ? () => widget.onPressFollowButton!(_reelData, isFollowing) : null,
+                apiCallBack: widget.onPressFollowButton != null
+                    ? () => widget.onPressFollowButton!(_reelData, isFollowing)
+                    : null,
               ),
               child: Text(
                 IsrTranslationFile.follow,
@@ -1239,20 +1241,24 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (!_isLikeLoading.value) {
       if (_reelData.isLiked == true) {
         context.getOrCreateBloc<IsmSocialActionCubit>().unLikePost(
-            _reelData.postId ?? '',
-            _reelData.likesCount ?? 0,
-            reelData: _reelData,
-            watchDuration: _watchDuration,
-            apiCallBack: widget.onPressLikeButton != null ? () => widget.onPressLikeButton!(_reelData, _reelData.isLiked == true) : null,
-        );
+              _reelData.postId ?? '',
+              _reelData.likesCount ?? 0,
+              reelData: _reelData,
+              watchDuration: _watchDuration,
+              apiCallBack: widget.onPressLikeButton != null
+                  ? () => widget.onPressLikeButton!(_reelData, _reelData.isLiked == true)
+                  : null,
+            );
       } else {
         context.getOrCreateBloc<IsmSocialActionCubit>().likePost(
-            _reelData.postId ?? '',
-            _reelData.likesCount ?? 0,
-            reelData: _reelData,
-            watchDuration: _watchDuration,
-            apiCallBack: widget.onPressLikeButton != null ? () => widget.onPressLikeButton!(_reelData, _reelData.isLiked == true) : null,
-        );
+              _reelData.postId ?? '',
+              _reelData.likesCount ?? 0,
+              reelData: _reelData,
+              watchDuration: _watchDuration,
+              apiCallBack: widget.onPressLikeButton != null
+                  ? () => widget.onPressLikeButton!(_reelData, _reelData.isLiked == true)
+                  : null,
+            );
       }
     }
   }
