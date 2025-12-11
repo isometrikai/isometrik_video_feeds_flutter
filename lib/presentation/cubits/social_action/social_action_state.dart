@@ -102,18 +102,26 @@ class IsmLikeActionListenerState extends IsmSocialActionState {
   IsmLikeActionListenerState({
     required this.postId,
     required this.isLiked,
+    required this.likeCount,
+    this.postData,
   });
 
   final String postId;
   final bool isLiked;
+  final int likeCount;
+  final TimeLineData? postData;
 
   IsmLikeActionListenerState copyWith({
     String? postId,
     bool? isLiked,
+    TimeLineData? postData,
+    int? likeCount,
   }) =>
       IsmLikeActionListenerState(
         postId: postId ?? this.postId,
         isLiked: isLiked ?? this.isLiked,
+        postData: postData ?? this.postData,
+        likeCount: likeCount ?? this.likeCount,
       );
 }
 
@@ -121,17 +129,75 @@ class IsmSaveActionListenerState extends IsmSocialActionState {
   IsmSaveActionListenerState({
     required this.postId,
     required this.isSaved,
+    this.postData,
   });
 
   final String postId;
   final bool isSaved;
+  final TimeLineData? postData;
 
   IsmSaveActionListenerState copyWith({
     String? postId,
     bool? isSaved,
+    TimeLineData? postData
   }) =>
       IsmSaveActionListenerState(
         postId: postId ?? this.postId,
         isSaved: isSaved ?? this.isSaved,
+        postData: postData ?? this.postData,
+      );
+}
+
+class IsmCreatePostActionListenerState extends IsmSocialActionState {
+  IsmCreatePostActionListenerState({
+    this.postData,
+    this.postId,
+  });
+
+  final TimeLineData? postData;
+  final String? postId;
+
+  IsmCreatePostActionListenerState copyWith({
+    TimeLineData? postData,
+    String? postId,
+  }) =>
+      IsmCreatePostActionListenerState(
+        postData: postData ?? this.postData,
+        postId: postId ?? this.postId,
+      );
+}
+
+class IsmEditPostActionListenerState extends IsmSocialActionState {
+  IsmEditPostActionListenerState({
+    this.postData,
+    this.postId,
+  });
+
+  final TimeLineData? postData;
+  final String? postId;
+
+  IsmEditPostActionListenerState copyWith({
+    TimeLineData? postData,
+    String? postId,
+  }) =>
+      IsmEditPostActionListenerState(
+        postData: postData ?? this.postData,
+        postId: postId ?? this.postId,
+      );
+}
+
+class IsmDeletedPostActionListenerState extends IsmSocialActionState {
+  IsmDeletedPostActionListenerState({
+    this.postId,
+  });
+
+  final String? postId;
+
+  IsmDeletedPostActionListenerState copyWith({
+    TimeLineData? postData,
+    String? postId,
+  }) =>
+      IsmDeletedPostActionListenerState(
+        postId: postId ?? this.postId,
       );
 }

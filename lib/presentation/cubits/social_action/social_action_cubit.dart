@@ -71,8 +71,12 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     emit(IsmFollowUserState(isFollowing: isFollow, userId: userId));
   }
 
-  loadFollowState(String userId, {bool? isFollowing}) async {
-    emit(IsmFollowUserState(isFollowing: isFollowing == true, userId: userId));
+  loadFollowState(String userId, {bool? isFollowing, bool callApi = false}) async {
+    if (callApi) {
+
+    } else {
+      emit(IsmFollowUserState(isFollowing: isFollowing == true, userId: userId));
+    }
   }
 
   followUser(
@@ -202,12 +206,11 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
 
       emit(IsmLikePostState(isLiked: true, postId: postId, likeCount: successLikeCount));
 
-      getPostById(postId)?.let((post) {
-        post.isLiked = true;
-        post.engagementMetrics?.likeTypes?.love = successLikeCount;
-      });
+      final post = await getAsyncPostById(postId);
+      post?.isLiked = true;
+      post?.engagementMetrics?.likeTypes?.love = successLikeCount;
 
-      emit(IsmLikeActionListenerState(isLiked: true, postId: postId));
+      emit(IsmLikeActionListenerState(isLiked: true, postId: postId, postData: post, likeCount: successLikeCount));
 
       _logLikeEvent(
         LikeAction.like,
@@ -253,12 +256,11 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
 
       emit(IsmLikePostState(isLiked: false, postId: postId, likeCount: successLikeCount));
 
-      getPostById(postId)?.let((post) {
-        post.isLiked = false;
-        post.engagementMetrics?.likeTypes?.love = successLikeCount;
-      });
+      final post = await getAsyncPostById(postId);
+      post?.isLiked = false;
+      post?.engagementMetrics?.likeTypes?.love = successLikeCount;
 
-      emit(IsmLikeActionListenerState(isLiked: false, postId: postId));
+      emit(IsmLikeActionListenerState(isLiked: false, postId: postId, postData: post, likeCount: successLikeCount));
 
       _logLikeEvent(
         LikeAction.unlike,
@@ -307,14 +309,17 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     }
 
     if (isSuccess) {
-      emit(IsmSavePostState(isSaved: true, postId: postId)); // update widget state
-      getPostById(postId)?.let((post) {
-        post.isSaved = true;
-      });
+      emit(IsmSavePostState(
+          isSaved: true, postId: postId)); // update widget state
+
+      final post = await getAsyncPostById(postId);
+      post?.isSaved = true;
       emit(IsmSaveActionListenerState(
         isSaved: true,
         postId: postId,
+        postData: post,
       ));
+
       _logSaveEvent(
         SaveAction.save,
         reelsData: reelData,
@@ -359,14 +364,14 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     if (isSuccess) {
       emit(IsmSavePostState(isSaved: false, postId: postId)); // update widget state
 
-      getPostById(postId)?.let((post) {
-        post.isSaved = false;
-      });
-
+      final post = await getAsyncPostById(postId);
+      post?.isSaved = false;
       emit(IsmSaveActionListenerState(
         isSaved: false,
         postId: postId,
+        postData: post,
       ));
+
       _logSaveEvent(
         SaveAction.unsave,
         reelsData: reelData,
@@ -378,6 +383,22 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
       ErrorHandler.showAppError(appError: error);
     }
     return isSuccess;
+  }
+
+  void onPostCreated({String? postId, TimeLineData? postData}) {
+    debugPrint('IsmSocialActionCubit onPostCreated -> postId: $postId, postData: ${postData?.toMap()}');
+    emit(IsmCreatePostActionListenerState(postData: postData, postId: postId));
+  }
+
+  void onPostEdited({String? postId, TimeLineData? postData}) {
+    debugPrint('IsmSocialActionCubit onPostEdited -> postId: $postId, postData: ${postData?.toMap()}');
+    emit(IsmEditPostActionListenerState(postData: postData, postId: postId));
+  }
+
+  void onPostDeleted({String? postId}) {
+    debugPrint('IsmSocialActionCubit onPostDeleted -> postId: $postId');
+    emit(IsmDeletedPostActionListenerState(postId: postId));
+    _uniquePostList.remove(postId);
   }
 
   void _logFollowEvent(

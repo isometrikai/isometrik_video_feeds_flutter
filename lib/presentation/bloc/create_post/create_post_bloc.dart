@@ -540,7 +540,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
           _updatePostData();
         }
         emit(PostCreatedState(
-          postDataModel: _isForEdit ? jsonEncode(_postData?.toMap()) : null,
+          postDataModel: _isForEdit ? _postData : null,
           postSuccessMessage: _isForEdit
               ? IsrTranslationFile.postUpdatedSuccessfully
               : _createPostRequest.scheduleTime != null
@@ -1143,7 +1143,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
         await _createPostData(event.postId);
       }
       emit(PostCreatedState(
-        postDataModel: _isForEdit ? jsonEncode(_postData?.toMap()) : null,
+        postDataModel: _postData,
         postSuccessMessage: _isForEdit
             ? IsrTranslationFile.postUpdatedSuccessfully
             : _createPostRequest.scheduleTime != null
@@ -1183,7 +1183,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
         await _createPostData(event.postId);
       }
       emit(PostCreatedState(
-        postDataModel: _isForEdit ? jsonEncode(_postData?.toMap()) : null,
+        postDataModel: _postData,
         postSuccessMessage: _isForEdit
             ? IsrTranslationFile.postUpdatedSuccessfully
             : _createPostRequest.scheduleTime != null

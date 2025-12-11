@@ -366,6 +366,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       postId: event.postId,
     );
     event.onComplete(apiResult.isSuccess);
+    if (apiResult.isSuccess) {
+      _socialActionCubit.onPostDeleted(postId:event.postId);
+    }
   }
 
   FutureOr<void> _followUser(FollowUserEvent event, Emitter<SocialPostState> emit) async {

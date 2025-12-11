@@ -45,7 +45,7 @@ class ReelsConfig {
   final Future<void> Function(ReelsData reelsData)? onTapShare;
   final Future<void> Function(ReelsData reelsData)? onTapUserProfile;
   final Future<void> Function(ReelsData reelsData)? onTapReport;
-  final Future<dynamic> Function(ReelsData reelsData)? onPressMoreButton;
+  final Future<void> Function(ReelsData reelsData)? onPressMoreButton;
   final Future<ReelsData?> Function(ReelsData reelsData)? onCreatePost;
 
   final void Function(ReelsData reelsData, int index)? onReelsChange;
