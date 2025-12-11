@@ -33,6 +33,7 @@ class ReelsData {
     this.tags,
     this.createOn,
     this.watchDuration,
+    this.interests,
   });
 
   final dynamic postData;
@@ -68,6 +69,7 @@ class ReelsData {
   final List<PlaceMetaData>? placeDataList;
   final Tags? tags;
   final num? watchDuration;
+  final List<String>? interests;
 
   ReelsData copyWith({
     bool? isFollow,
@@ -105,6 +107,7 @@ class ReelsData {
         isSavedPost: isSavedPost ?? this.isSavedPost,
         likesCount: likesCount ?? this.likesCount,
         commentCount: commentCount ?? this.commentCount,
+        interests: interests ?? this.interests,
       );
 }
 
@@ -131,8 +134,7 @@ class MentionMetaData {
     this.mediaPosition,
   });
 
-  factory MentionMetaData.fromJson(Map<String, dynamic> json) =>
-      MentionMetaData(
+  factory MentionMetaData.fromJson(Map<String, dynamic> json) => MentionMetaData(
         userId: json['user_id'] as String? ?? '',
         username: json['username'] as String? ?? '',
         tag: json['tag'] as String? ?? '',
@@ -140,12 +142,10 @@ class MentionMetaData {
         avatarUrl: json['avatarUrl'] as String? ?? '',
         textPosition: json['text_position'] == null
             ? null
-            : MentionPosition.fromJson(
-                json['text_position'] as Map<String, dynamic>),
+            : MentionPosition.fromJson(json['text_position'] as Map<String, dynamic>),
         mediaPosition: json['media_position'] == null
             ? null
-            : MediaPosition.fromJson(
-                json['media_position'] as Map<String, dynamic>),
+            : MediaPosition.fromJson(json['media_position'] as Map<String, dynamic>),
       );
   String? userId;
   String? username;
@@ -170,8 +170,7 @@ class MentionPosition {
     required this.end,
   });
 
-  factory MentionPosition.fromJson(Map<String, dynamic> json) =>
-      MentionPosition(
+  factory MentionPosition.fromJson(Map<String, dynamic> json) => MentionPosition(
         start: json['start'] as num? ?? 0,
         end: json['end'] as num? ?? 0,
       );
@@ -227,8 +226,7 @@ class PlaceMetaData {
         city: json['city'] as String? ?? '',
         coordinates: json['coordinates'] == null
             ? []
-            : List<double>.from(
-                (json['coordinates'] as List).map((x) => x?.toDouble())),
+            : List<double>.from((json['coordinates'] as List).map((x) => x?.toDouble())),
         country: json['country'] as String? ?? '',
         description: json['description'] as String? ?? '',
         placeId: json['place_id'] as String? ?? '',
@@ -251,9 +249,7 @@ class PlaceMetaData {
   Map<String, dynamic> toJson() => {
         'address': address,
         'city': city,
-        'coordinates': coordinates == null
-            ? []
-            : List<dynamic>.from(coordinates!.map((x) => x)),
+        'coordinates': coordinates == null ? [] : List<dynamic>.from(coordinates!.map((x) => x)),
         'country': country,
         'description': description,
         'place_id': placeId,
