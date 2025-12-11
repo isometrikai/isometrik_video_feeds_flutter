@@ -65,11 +65,15 @@ class _PostAttributeViewState extends State<PostAttributeView>
   bool _isDialogOpen = false;
 
   // Schedule post variables - sync with bloc
-  CreatePostBloc get _createPostBloc => context.getOrCreateBloc();
-  UploadProgressCubit get _progressCubit => context.getOrCreateBloc();
+  late final CreatePostBloc _createPostBloc;
+  late final UploadProgressCubit _progressCubit;
+  late final IsmSocialActionCubit _socialActionCubit;
 
   @override
   void initState() {
+    _createPostBloc = context.getOrCreateBloc();
+    _progressCubit = context.getOrCreateBloc();
+    _socialActionCubit = context.getOrCreateBloc();
     WidgetsBinding.instance.addObserver(this);
     _isEditMode = widget.isEditMode ?? false;
     final editData = widget.postData;
@@ -515,14 +519,20 @@ class _PostAttributeViewState extends State<PostAttributeView>
           });
         }
         if (state is PostCreatedState) {
+          if (widget.isEditMode == true) {
+            _socialActionCubit.onPostEdited(postId: state.postDataModel?.id, postData: state.postDataModel);
+          } else {
+            _socialActionCubit.onPostCreated(postId: state.postDataModel?.id);
+          }
+          final postData = state.postDataModel != null ? jsonEncode(state.postDataModel!.toMap()) : null;
           Utility.showBottomSheet(
             child: _buildSuccessBottomSheet(
               onTapBack: () {
-                Navigator.pop(context, state.postDataModel);
                 if (widget.isEditMode != true) {
-                  Navigator.pop(context, state.postDataModel);
-                  Navigator.pop(context, state.postDataModel);
+                  Navigator.pop(context, null);
+                  Navigator.pop(context, null);
                 }
+                Navigator.pop(context, postData);
               },
               title: state.postSuccessTitle ?? '',
               message: state.postSuccessMessage ?? '',
@@ -532,11 +542,11 @@ class _PostAttributeViewState extends State<PostAttributeView>
           _doMediaCaching(state.mediaDataList);
           Future.delayed(const Duration(seconds: 2), () async {
             Navigator.pop(context);
-            Navigator.pop(context, state.postDataModel);
             if (widget.isEditMode != true) {
-              Navigator.pop(context, state.postDataModel);
-              Navigator.pop(context, state.postDataModel);
+              Navigator.pop(context);
+              Navigator.pop(context);
             }
+            Navigator.pop(context, postData);
           });
         }
         if (state is ShowProgressDialogState) {

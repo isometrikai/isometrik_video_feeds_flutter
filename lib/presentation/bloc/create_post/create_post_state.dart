@@ -60,7 +60,7 @@ class PostCreatedState extends CreatePostState {
     this.mediaDataList,
   });
 
-  final String? postDataModel;
+  final TimeLineData? postDataModel;
   final String? postSuccessMessage;
   final String? postSuccessTitle;
   final List<MediaData>? mediaDataList;

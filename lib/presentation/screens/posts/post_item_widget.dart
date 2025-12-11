@@ -170,11 +170,18 @@ class _PostItemWidgetState extends State<PostItemWidget>
       bloc: _ismSocialActionCubit,
       child: BlocListener<IsmSocialActionCubit, IsmSocialActionState>(
         listenWhen: (previous, current) =>
-            current is IsmFollowActionListenerState &&
-            widget.postSectionType == PostSectionType.following,
+            (current is IsmFollowActionListenerState && widget.postSectionType == PostSectionType.following)
+        || (current is IsmSaveActionListenerState && widget.postSectionType == PostSectionType.savedPost)
+                || (current is IsmDeletedPostActionListenerState),
         listener: (context, state) {
-          if (state is IsmFollowActionListenerState) {
-            _updateWithFollowAction(state.userId, state.isFollowing);
+          if (state is IsmFollowActionListenerState && widget.postSectionType == PostSectionType.following) {
+            _updateWithFollowAction(state);
+          } else if (state is IsmSaveActionListenerState && widget.postSectionType == PostSectionType.savedPost) {
+            _updateWithSaveAction(state);
+          } else if (state is IsmDeletedPostActionListenerState){
+            _updateWithDeleteAction(state);
+          } else if (state is IsmEditPostActionListenerState){
+            _updateWithEditAction(state);
           }
         },
         child: _reelsDataList.isListEmptyOrNull == true
@@ -184,12 +191,54 @@ class _PostItemWidgetState extends State<PostItemWidget>
     );
   }
 
-  Future<void> _updateWithFollowAction(String userId, bool isFollowing) async {
+  Future<void> _updateWithEditAction(IsmEditPostActionListenerState state) async {
+    if (state.postData != null && _reelsDataList.any((e) => e.postId == state.postId)) {
+      final index = _reelsDataList.indexWhere(
+            (element) => element.postId == state.postData!.id,
+      );
+
+      if (index != -1) {
+        final postData = getReelData(state.postData!, loggedInUserId: widget.loggedInUserId);
+        _reelsDataList[index] = postData; // replace
+        _updateState();
+      }
+    }
+  }
+
+  Future<void> _updateWithDeleteAction(IsmDeletedPostActionListenerState state) async {
+    if (_reelsDataList.any((e) => e.postId == state.postId)) {
+      final deletedPost = _reelsDataList.firstWhere((e) => e.postId == state.postId);
+      await evictDeletedPostMedia(deletedPost);
+      _reelsDataList.removeWhere((element) => element.postId == state.postId);
+      await updateStateByKey();
+    }
+  }
+
+  Future<void> _updateWithSaveAction(IsmSaveActionListenerState state) async {
+    if (!state.isSaved && widget.postSectionType == PostSectionType.savedPost) {
+      _reelsDataList.removeWhere((element) => element.postId == state.postId);
+      await updateStateByKey();
+    }
+  }
+
+  Future<void> updateStateByKey() async {
+    // Get current index before refresh
+    final currentIndex = _pageController.page?.toInt() ?? 0;
+    debugPrint('🔄 MainWidget: Starting update at index $currentIndex');
+
+    // Increment refresh count to force rebuild
+    _refreshCounts[currentIndex] = (_refreshCounts[currentIndex] ?? 0) + 1;
+    _updateState();
+    // Re-initialize caching for current index after successful refresh
+    await _doMediaCaching(currentIndex);
+  }
+
+  Future<void> _updateWithFollowAction(IsmFollowActionListenerState state) async {
     var updateState = false;
-    if (isFollowing &&
-        !_reelsDataList.any((element) => element.userId == userId)) {
+    if (state.isFollowing &&
+        !_reelsDataList.any((element) => element.userId == state.userId)) {
       final followedUserReels = _ismSocialActionCubit.getPostList(
-          filter: (post) => post.userId == userId);
+          filter: (post) => post.userId == state.userId);
       if (followedUserReels.isNotEmpty) {
         _reelsDataList.addAll(followedUserReels
             .map((e) => getReelData(e, loggedInUserId: widget.loggedInUserId)));
@@ -207,21 +256,13 @@ class _PostItemWidgetState extends State<PostItemWidget>
 
         updateState = true;
       }
-    } else if (!isFollowing &&
-        _reelsDataList.any((element) => element.userId == userId)) {
-      _reelsDataList.removeWhere((element) => element.userId == userId);
+    } else if (!state.isFollowing &&
+        _reelsDataList.any((element) => element.userId == state.userId)) {
+      _reelsDataList.removeWhere((element) => element.userId == state.userId);
       updateState = true;
     }
     if (updateState) {
-      // Get current index before refresh
-      final currentIndex = _pageController.page?.toInt() ?? 0;
-      debugPrint('🔄 MainWidget: Starting update at index $currentIndex');
-
-      // Increment refresh count to force rebuild
-      _refreshCounts[currentIndex] = (_refreshCounts[currentIndex] ?? 0) + 1;
-      _updateState();
-      // Re-initialize caching for current index after successful refresh
-      await _doMediaCaching(currentIndex);
+      await updateStateByKey();
     }
   }
 
@@ -324,50 +365,8 @@ class _PostItemWidgetState extends State<PostItemWidget>
                         if (widget.reelsConfig.onPressMoreButton == null) {
                           return;
                         }
-                        final result = await widget
-                            .reelsConfig.onPressMoreButton!
+                        await widget.reelsConfig.onPressMoreButton!
                             .call(reelsData);
-                        if (result == null) return;
-                        if (result is bool) {
-                          final isSuccess = result;
-                          if (isSuccess) {
-                            final postIndex = _reelsDataList.indexWhere(
-                                (element) =>
-                                    element.postId == reelsData.postId);
-                            if (postIndex != -1) {
-                              _reelsDataList.removeAt(postIndex);
-                              final imageUrl = _reelsDataList[postIndex]
-                                  .mediaMetaDataList[0]
-                                  .mediaUrl;
-                              final thumbnailUrl = _reelsDataList[postIndex]
-                                  .mediaMetaDataList[0]
-                                  .thumbnailUrl;
-                              if (_reelsDataList[postIndex]
-                                      .mediaMetaDataList[0]
-                                      .mediaType ==
-                                  MediaType.photo.value) {
-                                // For image post
-                                await _evictDeletedPostImage(imageUrl);
-                              } else {
-                                // For video post
-                                await _evictDeletedPostImage(thumbnailUrl);
-                                // Clear video controller
-                                _videoCacheManager.clearMedia(imageUrl);
-                              }
-                            }
-                            _updateState();
-                          }
-                        }
-                        if (result is ReelsData) {
-                          final index = _reelsDataList.indexWhere(
-                              (element) => element.postId == result.postId);
-                          if (index != -1) {
-                            _refreshCounts[index] =
-                                (_refreshCounts[index] ?? 0) + 1;
-                            _reelsDataList[index] = result;
-                            _updateState();
-                          }
-                        }
                       },
                       onCreatePost: () async {
                         if (widget.reelsConfig.onCreatePost != null) {

@@ -150,7 +150,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         BlocProvider<SocialPostBloc>(
           create: (_) => _socialPostBloc, // ✅ Trigger initial load
         ),
-        BlocProvider.value(value: _socialActionCubit),
       ];
 
   // ✅ Don't wrap with BlocProvider again - just use BlocConsumer
@@ -160,60 +159,83 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           statusBarBrightness: Brightness.dark,
           statusBarIconBrightness: Brightness.light,
         ),
-        child: BlocConsumer<SocialPostBloc, SocialPostState>(
-          bloc: _socialPostBloc,
-          listenWhen: (previousState, currentState) => currentState is SocialPostLoadedState,
-          listener: (context, state) {
-            // ✅ Update _socialPostBloc reference if needed
-            debugPrint('ism_post_view: listener called with state: $state');
-            if (state is SocialPostLoadedState) {
-              state.postsByTab.forEach((sectionType, posts) {
-                _tabDataModelList
-                    .where((_) => _.postSectionType == sectionType)
-                    .firstOrNull
-                    ?.let((tabData) => {tabData.reelsDataList = posts.toList()});
-              });
-            }
-          },
-          buildWhen: (previousState, currentState) =>
-              currentState is SocialPostLoadedState || currentState is PostLoadingState,
-          builder: (context, state) {
-            final newUserId = state is SocialPostLoadedState ? state.userId : '';
-            if (newUserId.isNotEmpty && _loggedInUserId.isEmpty) {
-              _videoCacheManager = VideoCacheManager();
-            } else if (newUserId.isEmpty && _loggedInUserId.isNotEmpty) {
-              _videoCacheManager?.clearCache();
-              _videoCacheManager = null;
-            }
-            _loggedInUserId = newUserId;
+        child: context.attachBlocIfNeeded<IsmSocialActionCubit>(
+          bloc: _socialActionCubit,
+          child: BlocListener<IsmSocialActionCubit, IsmSocialActionState>(
+            listenWhen: (previousState, currentState) =>
+                currentState is IsmDeletedPostActionListenerState ||
+                currentState is IsmEditPostActionListenerState,
+            listener: (context, state) {
+              // Do Not setState to prevent reels to start from first
+              // this is only to update data to update ui it is done in post_item_widget
+              if (state is IsmDeletedPostActionListenerState && state.postId?.isNotEmpty == true) {
+                _removePostFromList(state.postId!);
+              } else if (state is IsmEditPostActionListenerState && state.postData != null) {
+                _replacePostFromList(state.postData!);
+              }
+            },
+            child: BlocConsumer<SocialPostBloc, SocialPostState>(
+              bloc: _socialPostBloc,
+              listenWhen: (previousState, currentState) =>
+                  currentState is SocialPostLoadedState,
+              listener: (context, state) {
+                // ✅ Update _socialPostBloc reference if needed
+                debugPrint('ism_post_view: listener called with state: $state');
+                if (state is SocialPostLoadedState) {
+                  state.postsByTab.forEach((sectionType, posts) {
+                    _tabDataModelList
+                        .where((_) => _.postSectionType == sectionType)
+                        .firstOrNull
+                        ?.let((tabData) =>
+                            {tabData.reelsDataList = posts.toList()});
+                  });
+                }
+              },
+              buildWhen: (previousState, currentState) =>
+                  currentState is SocialPostLoadedState ||
+                  currentState is PostLoadingState,
+              builder: (context, state) {
+                final newUserId =
+                    state is SocialPostLoadedState ? state.userId : '';
+                if (newUserId.isNotEmpty && _loggedInUserId.isEmpty) {
+                  _videoCacheManager = VideoCacheManager();
+                } else if (newUserId.isEmpty && _loggedInUserId.isNotEmpty) {
+                  _videoCacheManager?.clearCache();
+                  _videoCacheManager = null;
+                }
+                _loggedInUserId = newUserId;
 
-            return state is PostLoadingState
-                ? state.isLoading == true
-                    ? _buildInitialLoadingView()
-                    : const SizedBox.shrink()
-                : state is SocialPostLoadedState
-                    ? DefaultTabController(
-                        length: _tabDataModelList.isListEmptyOrNull ? 0 : _tabDataModelList.length,
-                        initialIndex: _currentIndex,
-                        child: Stack(
-                          children: [
-                            TabBarView(
-                              controller: _postTabController,
-                              children: _tabDataModelList
-                                  .map((tabData) =>
-                                      _buildTabBarView(tabData, _tabDataModelList.indexOf(tabData)))
-                                  .toList(),
+                return state is PostLoadingState
+                    ? state.isLoading == true
+                        ? _buildInitialLoadingView()
+                        : const SizedBox.shrink()
+                    : state is SocialPostLoadedState
+                        ? DefaultTabController(
+                            length: _tabDataModelList.isListEmptyOrNull
+                                ? 0
+                                : _tabDataModelList.length,
+                            initialIndex: _currentIndex,
+                            child: Stack(
+                              children: [
+                                TabBarView(
+                                  controller: _postTabController,
+                                  children: _tabDataModelList
+                                      .map((tabData) => _buildTabBarView(tabData,
+                                          _tabDataModelList.indexOf(tabData)))
+                                      .toList(),
+                                ),
+                                if (_tabDataModelList.length > 1) ...[
+                                  _buildTabBar()
+                                ] else ...[
+                                  _buildBackButton()
+                                ],
+                              ],
                             ),
-                            if (_tabDataModelList.length > 1) ...[
-                              _buildTabBar()
-                            ] else ...[
-                              _buildBackButton()
-                            ],
-                          ],
-                        ),
-                      )
-                    : const SizedBox.shrink();
-          },
+                          )
+                        : const SizedBox.shrink();
+              },
+            ),
+          ),
         ),
       );
 
@@ -269,86 +291,93 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       );
 
   ReelsConfig _getReelsConfig(TabDataModel tabData) => ReelsConfig(
-      overlayPadding: widget.postConfig.postUIConfig?.overlayPadding,
-      onTapPlace: (reelData, placeList) async {
-        if (placeList.isListEmptyOrNull) return;
-        if (placeList.length == 1) {
-          _goToPlaceDetailsView(
-            tabData.postSectionType,
-            placeList.first,
-            TagType.place,
-            reelData.postId ?? '',
-          );
-        } else {
-          // _showPlaceList(placeList, postSectionType);
-        }
-      },
-      onTaggedProduct: (reelsData) async {
-        if (reelsData.postData is TimeLineData) {
-          _socialPostBloc.add(PlayPauseVideoEvent(play: false));
-          await widget.postConfig.postCallBackConfig?.onTagProductClick
-              ?.call(reelsData.postData as TimeLineData);
-          _socialPostBloc.add(PlayPauseVideoEvent(play: true));
-        }
-      },
-      onTapShare: (reelsData) async {
-        if (reelsData.postData is TimeLineData) {
-          _socialPostBloc.add(PlayPauseVideoEvent(play: false));
-          await widget.postConfig.postCallBackConfig?.onShareClicked
-              ?.call(reelsData.postData as TimeLineData);
-          _socialPostBloc.add(PlayPauseVideoEvent(play: true));
-        }
-      },
-      onTapMentionTag: (reelData, mentionList) async {
-        if (mentionList.isListEmptyOrNull) return [];
-        if (mentionList.length == 1) {
-          final mention = mentionList.first;
-          if (mention.tag.isStringEmptyOrNull == false) {
-            _redirectToHashtag(
-              mention.tag,
+        overlayPadding: widget.postConfig.postUIConfig?.overlayPadding,
+        onTapPlace: (reelData, placeList) async {
+          if (placeList.isListEmptyOrNull) return;
+          if (placeList.length == 1) {
+            _goToPlaceDetailsView(
               tabData.postSectionType,
+              placeList.first,
+              TagType.place,
               reelData.postId ?? '',
             );
-            return null;
           } else {
-            if (mention.userId.isStringEmptyOrNull == false) {
-              widget.postConfig.postCallBackConfig?.onProfileClick?.call(
-                  reelData.postData is TimeLineData ? reelData.postData as TimeLineData : null,
-                  mention.userId!);
-              _logProfileEvent(reelData.userId ?? '', reelData.userName ?? '');
-            }
+            // _showPlaceList(placeList, postSectionType);
           }
-        } else if (reelData.postData is TimeLineData) {
-          return _showMentionList(
-              mentionList, tabData.postSectionType, reelData.postData as TimeLineData);
-        }
-        return mentionList;
-      },
-      onCreatePost: (reelsData) async => await _handleCreatePost(tabData),
-      onTapUserProfile: (reelsData) async {
-        widget.postConfig.postCallBackConfig?.onProfileClick?.call(
-            reelsData.postData is TimeLineData ? reelsData.postData as TimeLineData : null,
-            reelsData.userId ?? '');
-        _logProfileEvent(reelsData.userId ?? '', reelsData.userName ?? '');
-      },
-      onTapComment: (reelsData, totalCommentsCount) async {
-        _socialPostBloc.add(PlayPauseVideoEvent(play: false));
-        final result = await _handleCommentAction(
-            reelsData.postId ?? '',
-            totalCommentsCount,
-            tabData,
-            reelsData.postData is TimeLineData ? reelsData.postData as TimeLineData : null);
-        _socialPostBloc.add(PlayPauseVideoEvent(play: true));
-        return result;
-      },
-      onPressMoreButton: (reelsData) async {
-        if (reelsData.postData is TimeLineData) {
+        },
+        onTaggedProduct: (reelsData) async {
+          if (reelsData.postData is TimeLineData) {
+            _socialPostBloc.add(PlayPauseVideoEvent(play: false));
+            await widget.postConfig.postCallBackConfig?.onTagProductClick
+                ?.call(reelsData.postData as TimeLineData);
+            _socialPostBloc.add(PlayPauseVideoEvent(play: true));
+          }
+        },
+        onTapShare: (reelsData) async {
+          if (reelsData.postData is TimeLineData) {
+            _socialPostBloc.add(PlayPauseVideoEvent(play: false));
+            await widget.postConfig.postCallBackConfig?.onShareClicked
+                ?.call(reelsData.postData as TimeLineData);
+            _socialPostBloc.add(PlayPauseVideoEvent(play: true));
+          }
+        },
+        onTapMentionTag: (reelData, mentionList) async {
+          if (mentionList.isListEmptyOrNull) return [];
+          if (mentionList.length == 1) {
+            final mention = mentionList.first;
+            if (mention.tag.isStringEmptyOrNull == false) {
+              _redirectToHashtag(
+                mention.tag,
+                tabData.postSectionType,
+                reelData.postId ?? '',
+              );
+              return null;
+            } else {
+              if (mention.userId.isStringEmptyOrNull == false) {
+                widget.postConfig.postCallBackConfig?.onProfileClick?.call(
+                    reelData.postData is TimeLineData
+                        ? reelData.postData as TimeLineData
+                        : null,
+                    mention.userId!);
+                _logProfileEvent(
+                    reelData.userId ?? '', reelData.userName ?? '');
+              }
+            }
+          } else if (reelData.postData is TimeLineData) {
+            return _showMentionList(mentionList, tabData.postSectionType,
+                reelData.postData as TimeLineData);
+          }
+          return mentionList;
+        },
+        onCreatePost: (reelsData) async => await _handleCreatePost(tabData),
+        onTapUserProfile: (reelsData) async {
+          widget.postConfig.postCallBackConfig?.onProfileClick?.call(
+              reelsData.postData is TimeLineData
+                  ? reelsData.postData as TimeLineData
+                  : null,
+              reelsData.userId ?? '');
+          _logProfileEvent(reelsData.userId ?? '', reelsData.userName ?? '');
+        },
+        onTapComment: (reelsData, totalCommentsCount) async {
           _socialPostBloc.add(PlayPauseVideoEvent(play: false));
-          final result = await _handleMoreOptions(reelsData.postData as TimeLineData, tabData);
+          final result = await _handleCommentAction(
+              reelsData.postId ?? '',
+              totalCommentsCount,
+              tabData,
+              reelsData.postData is TimeLineData
+                  ? reelsData.postData as TimeLineData
+                  : null);
           _socialPostBloc.add(PlayPauseVideoEvent(play: true));
           return result;
-        }
-      },
+        },
+        onPressMoreButton: (reelsData) async {
+          if (reelsData.postData is TimeLineData) {
+            _socialPostBloc.add(PlayPauseVideoEvent(play: false));
+            await _handleMoreOptions(
+                reelsData.postData as TimeLineData, tabData);
+            _socialPostBloc.add(PlayPauseVideoEvent(play: true));
+          }
+        },
       onPressLike: widget.postConfig.postCallBackConfig?.onLikeClick == null
           ? null
           : (reelsData, isLiked) async {
@@ -739,8 +768,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                 postId: postDataModel.id ?? '',
                 onComplete: (success) {
                   if (success) {
-                    Utility.showToastMessage(IsrTranslationFile.postDeletedSuccessfully);
-                    _removePostFromList(postDataModel.id ?? '', tabData);
+                    Utility.showToastMessage(
+                        IsrTranslationFile.postDeletedSuccessfully);
                   }
                   completer.complete(success);
                 },
@@ -766,9 +795,21 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     }
   }
 
-  void _removePostFromList(String postId, TabDataModel tabData) {
+  void _removePostFromList(String postId) {
     for (var tabData in _tabDataModelList) {
       tabData.reelsDataList.removeWhere((element) => element.id == postId);
+    }
+  }
+
+  void _replacePostFromList(TimeLineData postData) {
+    for (var tabData in _tabDataModelList) {
+      final index = tabData.reelsDataList.indexWhere(
+            (element) => element.id == postData.id,
+      );
+
+      if (index != -1) {
+        tabData.reelsDataList[index] = postData; // replace
+      }
     }
   }
 
@@ -804,7 +845,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         onDeletePost: () async {
           if (onDeletePost != null) {
             final isDeleted = await onDeletePost();
-            completer.complete(isDeleted);
             return isDeleted;
           }
           return false;
@@ -812,14 +852,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         onEditPost: () async {
           if (onEditPost != null) {
             final postDataString = await onEditPost();
-            if (postDataString.isStringEmptyOrNull == false) {
-              final postData =
-                  TimeLineData.fromMap(jsonDecode(postDataString) as Map<String, dynamic>);
-              final reelData = getReelData(postData, loggedInUserId: _loggedInUserId);
-              if (!completer.isCompleted) {
-                completer.complete(reelData);
-              }
-            }
+            debugPrint('Post data string: $postDataString');
             return postDataString;
           }
           return '';

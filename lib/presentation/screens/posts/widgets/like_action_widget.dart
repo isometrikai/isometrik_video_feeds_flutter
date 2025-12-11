@@ -118,6 +118,7 @@ class _LikeActionWidgetState extends State<LikeActionWidget> {
               // Note: Listener state doesn't have likeCount, so we keep the current value
               isLiked = state.isLiked;
               isLoading = false; // Listener state means action is complete
+              likeCount = state.likeCount;
             }
             return GestureDetector(
               onTap: isLoading
