@@ -34,6 +34,9 @@ abstract class IVideoPlayerController {
   /// Check if video is initialized
   bool get isInitialized;
 
+  /// Check if the controller has been disposed
+  bool get isDisposed;
+
   /// Get video value notifier
   ValueNotifier<bool> get playingStateNotifier;
 
