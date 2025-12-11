@@ -995,7 +995,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       'post_type': postDataModel.media?.first.mediaType,
       'post_author_id': postDataModel.userId ?? '',
       'feed_type': tabDataModel.postSectionType.title,
-      'categories': [],
+      'interests': postDataModel.interests ?? [],
       'hashtags': postDataModel.tags?.hashtags?.map((e) => '#$e').toList(),
       'report_reason': reportReason
     };

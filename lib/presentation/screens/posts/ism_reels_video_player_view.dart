@@ -1281,7 +1281,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       'post_type': (_reelData.postData as TimeLineData).type,
       'post_author_id': _reelData.userId ?? '',
       'feed_type': widget.postSectionType.title,
-      'categories': [],
+      'interests': _reelData.interests ?? [],
       'hashtags': _reelData.tags?.hashtags?.isEmptyOrNull == false
           ? _reelData.tags!.hashtags!.map((tag) => '#${tag.tag}').toList()
           : [],
@@ -1602,7 +1602,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             : _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kVideoType
                 ? 'video'
                 : 'image',
-        'categories': [],
+        'interests': _reelData.interests ?? [],
         'hashtags': _reelData.tags?.hashtags?.isEmptyOrNull == false
             ? _reelData.tags!.hashtags!.map((tag) => '#${tag.tag}').toList()
             : [],

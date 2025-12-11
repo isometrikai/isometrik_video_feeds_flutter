@@ -717,7 +717,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         'post_type': postDataModel?.type,
         'post_author_id': userId,
         'feed_type': tabDataModel?.postSectionType.title,
-        'categories': [],
+        'interests': postDataModel?.interests ?? [],
         'hashtags': postDataModel?.tags?.hashtags?.map((e) => '#$e').toList(),
         'comment_id': commentId,
         'comment_text': commentText,
