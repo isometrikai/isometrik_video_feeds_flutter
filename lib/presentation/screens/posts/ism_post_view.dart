@@ -219,6 +219,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                               children: [
                                 TabBarView(
                                   controller: _postTabController,
+                                  physics: const NeverScrollableScrollPhysics(),
                                   children: _tabDataModelList
                                       .map((tabData) => _buildTabBarView(tabData,
                                           _tabDataModelList.indexOf(tabData)))
