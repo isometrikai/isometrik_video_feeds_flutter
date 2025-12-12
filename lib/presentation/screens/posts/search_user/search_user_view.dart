@@ -384,7 +384,7 @@ class _SearchUserViewState extends State<SearchUserView>
       );
 
   Widget _buildSearchResultItem(SocialUserData result, int index) {
-    final isSelected = _selectedUsers.contains(result);
+    final isSelected = _selectedUsers.any((e) => e.id == result.id);
 
     return InkWell(
       onTap: () => _toggleSelection(result),
@@ -480,22 +480,17 @@ class _SearchUserViewState extends State<SearchUserView>
     _isSelectingUser = true;
 
     // Only call setState if there's actually a change
-    final wasSelected = _selectedUsers.contains(user);
-    var changed = false;
+    final wasSelected = _selectedUsers.any((e) => e.id == user.id);
 
     if (wasSelected) {
-      changed = _selectedUsers.remove(user);
+      _selectedUsers.removeWhere((e) => e.id == user.id);
     } else {
       _selectedUsers.add(user);
-      changed = true;
     }
 
-    // Only trigger rebuild if selection actually changed
-    if (changed) {
-      setState(() {
-        // Selection state has been updated above
-      });
-    }
+    setState(() {
+      // Selection state has been updated above
+    });
 
     // Reset the flag after a short delay to allow for any pending rebuilds
     Future.delayed(const Duration(milliseconds: 100), () {
