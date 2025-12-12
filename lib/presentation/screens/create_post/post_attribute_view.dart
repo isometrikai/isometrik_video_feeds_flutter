@@ -579,9 +579,9 @@ class _PostAttributeViewState extends State<PostAttributeView>
 
   Widget _buildPage() => Scaffold(
         backgroundColor: Colors.white,
-        appBar: const IsmCustomAppBarWidget(
+        appBar: IsmCustomAppBarWidget(
           backgroundColor: Colors.white,
-          titleText: IsrTranslationFile.newPost,
+          titleText: widget.isEditMode == true? IsrTranslationFile.editPost : IsrTranslationFile.newPost,
           centerTitle: true,
         ),
         body: Column(
