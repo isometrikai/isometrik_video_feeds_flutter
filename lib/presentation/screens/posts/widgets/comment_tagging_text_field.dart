@@ -661,39 +661,46 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
   }
 
   @override
-  Widget build(BuildContext context) => TextField(
-        key: _textFieldKey,
-        controller: widget.controller,
-        focusNode: widget.focusNode,
-        maxLength: widget.maxLength,
-        maxLines: widget.maxLines,
-        minLines: widget.minLines,
-        autocorrect: false,
-        expands: widget.expands,
-        autofocus: widget.autoFocus == true,
-        enableSuggestions: false,
-        keyboardType: TextInputType.multiline,
-        textInputAction: TextInputAction.newline,
-        style: widget.style ??
-            const TextStyle(
-              fontSize: 14,
-              color: Colors.black87,
-            ),
-        decoration: widget.decoration ??
-            InputDecoration(
-              hintText: widget.hintText,
-              hintStyle: widget.hintStyle ??
-                  TextStyle(
-                    color: Colors.grey.shade500,
-                    fontSize: 14,
-                  ),
-              border: InputBorder.none,
-              counterText: '',
-              contentPadding: const EdgeInsets.all(16),
-            ),
-        onChanged: _onTextChanged,
-        onTap: widget.onTap,
-      );
+  Widget build(BuildContext context) => Container(
+    constraints: const BoxConstraints(
+      maxHeight: 150,
+    ),
+    child: SingleChildScrollView(
+      child: TextField(
+            key: _textFieldKey,
+            controller: widget.controller,
+            focusNode: widget.focusNode,
+            maxLength: widget.maxLength,
+            maxLines: widget.maxLines,
+            minLines: widget.minLines,
+            autocorrect: false,
+            expands: widget.expands,
+            autofocus: widget.autoFocus == true,
+            enableSuggestions: false,
+            keyboardType: TextInputType.multiline,
+            textInputAction: TextInputAction.newline,
+            style: widget.style ??
+                const TextStyle(
+                  fontSize: 14,
+                  color: Colors.black87,
+                ),
+            decoration: widget.decoration ??
+                InputDecoration(
+                  hintText: widget.hintText,
+                  hintStyle: widget.hintStyle ??
+                      TextStyle(
+                        color: Colors.grey.shade500,
+                        fontSize: 14,
+                      ),
+                  border: InputBorder.none,
+                  counterText: '',
+                  contentPadding: const EdgeInsets.all(16),
+                ),
+            onChanged: _onTextChanged,
+            onTap: widget.onTap,
+          ),
+    ),
+  );
 
   @override
   void dispose() {
