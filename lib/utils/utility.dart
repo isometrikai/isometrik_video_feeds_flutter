@@ -202,7 +202,6 @@ class Utility {
     bool isScrollControlled = true,
     Color? backgroundColor,
     double? maxHeight,
-    double? padding,
     bool isRoundedCorners = true,
   }) {
     // Try to get context from multiple sources
@@ -227,7 +226,6 @@ class Utility {
             maxHeight: maxHeight ?? 84.percentHeight,
           ),
           child: child,
-          padding: IsrDimens.edgeInsetsAll(padding ?? IsrDimens.fourteen),
         ),
       ),
       enableDrag: false,

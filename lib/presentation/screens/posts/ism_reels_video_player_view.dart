@@ -836,7 +836,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 ),
               if (_reelData.postSetting?.isShareButtonVisible == true)
                 _buildActionButton(
-                  icon: AssetConstants.icShareIcon,
+                  icon: AssetConstants.icShareIconSvg,
                   label: IsrTranslationFile.share,
                   onTap: () async {
                     if (widget.reelsConfig.onTapShare != null) {
@@ -908,7 +908,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   )
                 : icon.endsWith('svg')
                 ? AppImage.svg(icon, width: IsrDimens.twentyFive, height: IsrDimens.twentyFive,)
-                : AppImage.asset(icon, width: IsrDimens.twentyFive, height: IsrDimens.twentyFive,),
+                : AppImage.svg(icon, width: IsrDimens.twentyFive, height: IsrDimens.twentyFive,),
             if (label.isStringEmptyOrNull == false) ...[
               IsrDimens.boxHeight(IsrDimens.four),
               Text(
