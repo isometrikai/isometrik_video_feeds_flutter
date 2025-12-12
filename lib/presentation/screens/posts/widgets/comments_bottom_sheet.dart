@@ -340,8 +340,11 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
           if (comment.showReply) ...[
             BlocConsumer<SocialPostBloc, SocialPostState>(
                 listenWhen: (previousState, currentState) =>
-                    currentState is LoadPostCommentRepliesState ||
-                    currentState is LoadingPostCommentReplies,
+                (currentState is LoadPostCommentRepliesState && currentState.parentCommentId == comment.id) ||
+                    (currentState is LoadingPostCommentReplies && currentState.parentCommentId == comment.id),
+                buildWhen: (previousState, currentState) =>
+                (currentState is LoadPostCommentRepliesState && currentState.parentCommentId == comment.id) ||
+                    (currentState is LoadingPostCommentReplies && currentState.parentCommentId == comment.id),
                 listener: (context, state) {
                   switch (state) {
                     case LoadPostCommentRepliesState():
@@ -354,9 +357,6 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                       break;
                   }
                 },
-                buildWhen: (previousState, currentState) =>
-                    currentState is LoadPostCommentRepliesState ||
-                    currentState is LoadingPostCommentReplies,
                 builder: (context, state) => switch (state) {
                       LoadingPostCommentReplies() => Utility.loaderWidget(),
                       _ => Column(children: [

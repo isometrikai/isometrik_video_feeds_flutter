@@ -57,15 +57,20 @@ class LoadPostCommentRepliesState extends SocialPostState {
   LoadPostCommentRepliesState({
     required this.postCommentRepliesList,
     this.myUserId,
+    required this.parentCommentId,
   });
 
   final List<CommentDataItem>? postCommentRepliesList;
   final String? myUserId;
+  final String parentCommentId;
 }
 
 class LoadingPostComment extends SocialPostState {}
 
-class LoadingPostCommentReplies extends SocialPostState {}
+class LoadingPostCommentReplies extends SocialPostState {
+  LoadingPostCommentReplies({required this.parentCommentId});
+  final String parentCommentId;
+}
 
 class PostInsightDetailsLoading extends SocialPostState {
   PostInsightDetailsLoading({this.postId, this.postData});

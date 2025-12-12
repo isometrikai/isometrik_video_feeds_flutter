@@ -463,7 +463,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   FutureOr<void> _getPostCommentReplies(
       GetPostCommentReplyEvent event, Emitter<SocialPostState> emit) async {
     if (event.isLoading == true) {
-      emit(LoadingPostCommentReplies());
+      emit(LoadingPostCommentReplies(
+        parentCommentId: event.parentComment.id ?? '',
+      ));
     }
     final apiResult = await _getPostCommentUseCase.executeGetPostComment(
       postId: event.postId,
@@ -474,6 +476,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     final myUserId = await _localDataUseCase.getUserId();
     emit(LoadPostCommentRepliesState(
       postCommentRepliesList: postCommentRepliesList,
+      parentCommentId: event.parentComment.id ?? '',
       myUserId: myUserId,
     ));
   }
@@ -536,13 +539,6 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
           ),
         );
       }
-      // ✅ Delay before calling API
-      Future.delayed(const Duration(seconds: 2), () {
-        add(
-          GetPostCommentsEvent(
-              postId: event.postId ?? '', isLoading: false, createdComment: comment),
-        );
-      });
     }
     final apiResult = await _commentUseCase.executeCommentAction(
       isLoading: event.isLoading ?? true,
