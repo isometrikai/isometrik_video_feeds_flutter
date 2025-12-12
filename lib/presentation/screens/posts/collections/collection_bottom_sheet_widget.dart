@@ -172,9 +172,12 @@ class _CollectionBottomSheetWidgetState extends State<CollectionBottomSheetWidge
               Utility.showToastMessage(message);
             }
           },
-          child: Padding(
+          child: Container(
             padding: EdgeInsets.only(
               bottom: MediaQuery.of(context).viewInsets.bottom,
+              left: IsrDimens.fourteen,
+              right: IsrDimens.fourteen,
+              top: IsrDimens.six,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
