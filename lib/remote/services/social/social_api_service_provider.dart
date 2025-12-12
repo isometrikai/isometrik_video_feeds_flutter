@@ -539,6 +539,7 @@ class SocialApiServiceProvider extends SocialApiService {
         networkRequestType = NetworkRequestType.post;
         requestBody = {
           'additional_details': commentRequest['message'],
+          'reason': commentRequest['message'],
           'content_id': commentRequest['commentId'],
           'reason_id': commentRequest['reason'],
           'type': 'comment'

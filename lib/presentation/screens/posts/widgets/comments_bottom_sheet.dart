@@ -570,12 +570,11 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                   ] else ...[
                     TapHandler(
                       onTap: () async {
-                        // context.pop();
+                        context.pop();
                         final data = await showDialog<int>(
                           context: context,
                           builder: (_) => ReportReasonDialog(
                             onConfirm: (reportReason) {
-                              Navigator.pop(context, _totalCommentsCount);
                               _socialBloc.add(
                                 CommentActionEvent(
                                   userId: comment.commentedByUserId,
