@@ -571,7 +571,7 @@ class SocialRepositoryImpl implements SocialRepository {
   }
 
   @override
-  Future<CustomResponse<CollectionListResponse?>> getCollectionList({
+  Future<CustomResponse<CollectionResponseModel?>> getCollectionList({
     required bool isLoading,
     required int page,
     required int pageSize,

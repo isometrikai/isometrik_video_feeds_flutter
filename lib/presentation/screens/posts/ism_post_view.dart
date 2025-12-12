@@ -361,7 +361,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
               return result ?? false;
             },
       onPressSave: widget.postConfig.postCallBackConfig?.onSaveClicked == null
-          ? null
+          ? (reelsData, isSaved) async => await _handleCollection(reelsData, isSaved)
           : (reelsData, isSaved) async {
               _socialPostBloc.add(PlayPauseVideoEvent(play: false));
               final postData =
@@ -488,8 +488,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withOpacity(0.6),
-                    Colors.black.withOpacity(0.3),
+                    Colors.black.changeOpacity(0.6),
+                    Colors.black.changeOpacity(0.3),
                     Colors.transparent,
                   ],
                   stops: const [0.0, 0.7, 1.0],
@@ -524,12 +524,12 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                           height: 1.5,
                           shadows: [
                             Shadow(
-                              color: Colors.black.withOpacity(0.8),
+                              color: Colors.black.changeOpacity(0.8),
                               offset: const Offset(0, 1),
                               blurRadius: 4,
                             ),
                             Shadow(
-                              color: Colors.black.withOpacity(0.5),
+                              color: Colors.black.changeOpacity(0.5),
                               offset: const Offset(0, 2),
                               blurRadius: 8,
                             ),
@@ -540,12 +540,12 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                           height: 1.5,
                           shadows: [
                             Shadow(
-                              color: Colors.black.withOpacity(0.8),
+                              color: Colors.black.changeOpacity(0.8),
                               offset: const Offset(0, 1),
                               blurRadius: 4,
                             ),
                             Shadow(
-                              color: Colors.black.withOpacity(0.5),
+                              color: Colors.black.changeOpacity(0.5),
                               offset: const Offset(0, 2),
                               blurRadius: 8,
                             ),
@@ -1018,5 +1018,35 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     final hashTagEventMap = {'hashtag': hashTag};
     unawaited(EventQueueProvider.instance
         .addEvent(EventType.hashTagClicked.value, hashTagEventMap.removeEmptyValues()));
+  }
+
+  Future<bool> _handleCollection(ReelsData reelsData, bool isSavedPost) async {
+    final postData = reelsData.postData as TimeLineData;
+    var coverUrl = '';
+    if (postData.previews.isEmptyOrNull == false) {
+      final previewUrl = postData.previews?.first.url ?? '';
+      if (previewUrl.isEmptyOrNull == false) {
+        coverUrl = previewUrl;
+      }
+    }
+    if (coverUrl.isEmptyOrNull && postData.media.isEmptyOrNull == false) {
+      coverUrl = postData.media?.first.mediaType?.mediaType == MediaType.video
+          ? (postData.media?.first.previewUrl.toString() ?? '')
+          : postData.media?.first.url.toString() ?? '';
+    }
+    final updatedSaveStatus = await Utility.showBottomSheet(
+      child: BlocProvider<CollectionBloc>(
+        create: (context) => IsmInjectionUtils.getBloc<CollectionBloc>(),
+        child: CollectionBottomSheetWidget(
+          postId: reelsData.postId ?? '',
+          isFromPost: true,
+          isSaved: isSavedPost,
+          thumbnailUrl: coverUrl,
+        ),
+      ),
+      isScrollControlled: false,
+      isDismissible: true,
+    );
+    return updatedSaveStatus != isSavedPost; // Return true if the save status has changed
   }
 }
