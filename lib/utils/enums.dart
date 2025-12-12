@@ -142,3 +142,12 @@ enum SearchTabType {
 
   final String displayName;
 }
+
+enum DoActionOnCollection {
+  add('ADD'),
+  remove('REMOVE');
+
+  const DoActionOnCollection(this.value);
+
+  final String value;
+}

@@ -3,8 +3,7 @@ import 'dart:convert';
 CollectionListResponse collectionListResponseFromJson(String str) =>
     CollectionListResponse.fromMap(json.decode(str) as Map<String, dynamic>);
 
-String collectionListResponseToMap(CollectionListResponse data) =>
-    json.encode(data.toMap());
+String collectionListResponseToMap(CollectionListResponse data) => json.encode(data.toMap());
 
 class CollectionListResponse {
   CollectionListResponse({
@@ -19,16 +18,15 @@ class CollectionListResponse {
     this.totalPages,
   });
 
-  factory CollectionListResponse.fromMap(Map<String, dynamic> json) =>
-      CollectionListResponse(
+  factory CollectionListResponse.fromMap(Map<String, dynamic> json) => CollectionListResponse(
         status: json['status'] as String? ?? '',
         message: json['message'] as String? ?? '',
         statusCode: json['statusCode'] as num? ?? 0,
         code: json['code'] as String? ?? '',
         data: json['data'] == null
             ? []
-            : List<CollectionData>.from((json['data'] as List)
-                .map((x) => CollectionData.fromMap(x as Map<String, dynamic>))),
+            : List<CollectionDataItem>.from((json['data'] as List)
+                .map((x) => CollectionDataItem.fromMap(x as Map<String, dynamic>))),
         total: json['total'] as num? ?? 0,
         page: json['page'] as num? ?? 0,
         pageSize: json['page_size'] as num? ?? 0,
@@ -39,7 +37,7 @@ class CollectionListResponse {
   String? message;
   num? statusCode;
   String? code;
-  List<CollectionData>? data;
+  List<CollectionDataItem>? data;
   num? total;
   num? page;
   num? pageSize;
@@ -50,8 +48,7 @@ class CollectionListResponse {
         'message': message,
         'statusCode': statusCode,
         'code': code,
-        'data':
-            data == null ? [] : List<dynamic>.from(data!.map((x) => x.toMap())),
+        'data': data == null ? [] : List<dynamic>.from(data!.map((x) => x.toMap())),
         'total': total,
         'page': page,
         'page_size': pageSize,
@@ -59,8 +56,8 @@ class CollectionListResponse {
       };
 }
 
-class CollectionData {
-  CollectionData({
+class CollectionDataItem {
+  CollectionDataItem({
     this.id,
     this.name,
     this.userId,
@@ -70,7 +67,7 @@ class CollectionData {
     this.updatedAt,
   });
 
-  factory CollectionData.fromMap(Map<String, dynamic> json) => CollectionData(
+  factory CollectionDataItem.fromMap(Map<String, dynamic> json) => CollectionDataItem(
         id: json['id'] as String? ?? '',
         name: json['name'] as String? ?? '',
         userId: json['user_id'] as String? ?? '',

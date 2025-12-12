@@ -53,7 +53,7 @@ class SocialMapper {
     return CustomResponse(data: timeLineData, responseCode: response.statusCode);
   }
 
-  CustomResponse<CollectionListResponse?> mapCollectionListResponse(ResponseModel response) =>
+  CustomResponse<CollectionResponseModel?> mapCollectionListResponse(ResponseModel response) =>
       CustomResponse(
-          data: collectionListResponseFromJson(response.data), responseCode: response.statusCode);
+          data: collectionResponseModelFromJson(response.data), responseCode: response.statusCode);
 }

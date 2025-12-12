@@ -105,7 +105,7 @@ class IsmDataProvider {
     Function(String, int)? onError,
   }) async {
     await _executeApiCall(
-      apiCall: () => _collectionUseCase.executeCreateCollection(
+      apiCall: () => _collectionUseCase.executeCreateUserCollectionList(
         isLoading: isLoading,
         requestMap: requestMap,
       ),
@@ -144,7 +144,7 @@ class IsmDataProvider {
     Function(String, int)? onError,
   }) async {
     await _executeApiCall(
-      apiCall: () => _collectionUseCase.executeUpdateCollection(
+      apiCall: () => _collectionUseCase.executeModifyUserCollectionList(
         isLoading: isLoading,
         collectionId: collectionId,
         requestMap: requestMap,

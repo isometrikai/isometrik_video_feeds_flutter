@@ -6,7 +6,7 @@ class CollectionUseCase extends BaseUseCase {
   final SocialRepository _repository;
 
   /// Create collection
-  Future<ApiResult<ResponseClass?>> executeCreateCollection({
+  Future<ApiResult<ResponseClass?>> executeCreateUserCollectionList({
     required bool isLoading,
     required Map<String, dynamic> requestMap,
   }) async =>
@@ -15,11 +15,14 @@ class CollectionUseCase extends BaseUseCase {
           isLoading: isLoading,
           requestMap: requestMap,
         );
-        return ApiResult(data: response.responseCode == 200 ? response.data : null);
+        return ApiResult(
+            data: response.responseCode == 200 || response.responseCode == 201
+                ? response.data
+                : null);
       });
 
   /// Get list of collections
-  Future<ApiResult<CollectionListResponse?>> executeGetCollectionList({
+  Future<ApiResult<CollectionResponseModel?>> executeGetCollectionList({
     required bool isLoading,
     required int page,
     required int pageSize,
@@ -54,7 +57,7 @@ class CollectionUseCase extends BaseUseCase {
       });
 
   /// Create or update collection
-  Future<ApiResult<ResponseClass?>> executeUpdateCollection({
+  Future<ApiResult<ResponseClass?>> executeModifyUserCollectionList({
     required bool isLoading,
     required Map<String, dynamic> requestMap,
     required String collectionId,
