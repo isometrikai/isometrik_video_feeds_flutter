@@ -892,12 +892,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     required VoidCallback onTap,
     bool isLoading = false,
   }) =>
-      Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          GestureDetector(
-            onTap: onTap,
-            child: isLoading
+      GestureDetector(
+        onTap: onTap,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            isLoading
                 ? SizedBox(
                     width: IsrDimens.twenty,
                     height: IsrDimens.twenty,
@@ -906,19 +906,21 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
                     ),
                   )
-                : AppImage.asset(icon),
-          ),
-          if (label.isStringEmptyOrNull == false) ...[
-            IsrDimens.boxHeight(IsrDimens.four),
-            Text(
-              label ?? '',
-              style: IsrStyles.white12.copyWith(
-                fontWeight: FontWeight.w500,
-                decoration: TextDecoration.none,
+                : icon.endsWith('svg')
+                ? AppImage.svg(icon, width: IsrDimens.twentyFive, height: IsrDimens.twentyFive,)
+                : AppImage.asset(icon, width: IsrDimens.twentyFive, height: IsrDimens.twentyFive,),
+            if (label.isStringEmptyOrNull == false) ...[
+              IsrDimens.boxHeight(IsrDimens.four),
+              Text(
+                label ?? '',
+                style: IsrStyles.white12.copyWith(
+                  fontWeight: FontWeight.w500,
+                  decoration: TextDecoration.none,
+                ),
               ),
-            ),
+            ],
           ],
-        ],
+        ),
       );
 
   Widget _buildBottomSectionWithoutOverlay() => Padding(
