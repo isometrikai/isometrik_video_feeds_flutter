@@ -24,6 +24,7 @@ class UserMentionTextField extends StatefulWidget {
     this.onRemoveMentionData,
     this.onAddHashTagData,
     this.onRemoveHashTagData,
+    this.focusNode,
   }) : super(key: key);
   final TextEditingController controller;
   final String hintText;
@@ -36,6 +37,7 @@ class UserMentionTextField extends StatefulWidget {
   final Function(MentionData)? onAddHashTagData;
   final Function(MentionData)? onRemoveHashTagData;
   final TextStyle? style;
+  final FocusNode? focusNode;
 
   final TextStyle? hintStyle;
   final InputDecoration? decoration;
@@ -507,6 +509,7 @@ class _UserMentionTextFieldState extends State<UserMentionTextField> {
               maxLength: widget.maxLength,
               maxLines: widget.maxLines,
               autocorrect: false,
+              focusNode: widget.focusNode,
               enableSuggestions: false,
               keyboardType: TextInputType.multiline,
               textInputAction: TextInputAction.newline,
