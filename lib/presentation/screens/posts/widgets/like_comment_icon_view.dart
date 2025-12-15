@@ -67,6 +67,7 @@ class _LikeCommentIconViewState extends State<LikeCommentIconView> {
             }
           } else if (current is CommentActionLoadingState) {
             if (current.commentId == widget.commentId) {
+              commentAction = current.commentAction;
               return true;
             }
           } else if (current is CommentActionErrorState) {
@@ -81,9 +82,9 @@ class _LikeCommentIconViewState extends State<LikeCommentIconView> {
           duration: const Duration(milliseconds: 500),
           firstCurve: Curves.fastOutSlowIn,
           secondCurve: Curves.fastOutSlowIn,
-          crossFadeState: state is CommentActionLoadingState
-              ? CrossFadeState.showFirst
-              : CrossFadeState.showSecond,
+          crossFadeState: CrossFadeState.showSecond, //state is CommentActionLoadingState
+              // ? CrossFadeState.showFirst
+              // : CrossFadeState.showSecond,
           firstChild: SizedBox(
             height: iconSize,
             width: iconSize,
@@ -94,25 +95,23 @@ class _LikeCommentIconViewState extends State<LikeCommentIconView> {
               ),
             ),
           ),
-          secondChild: SizedBox(
-            height: iconSize,
-            width: iconSize,
-            child: TapHandler(
-              onTap: () {
-                context.getOrCreateBloc<CommentActionCubit>().doActionOnComment(
-                      commentAction == CommentAction.like
-                          ? CommentAction.dislike
-                          : CommentAction.like,
-                      widget.commentId,
-                      widget.postId,
-                      widget.userId,
-                    );
-              },
-              child: AppImage.svg(
-                commentAction == CommentAction.like
-                    ? AssetConstants.icHeartIconSelected
-                    : AssetConstants.icHeartIconUnSelected,
-              ),
+          secondChild: GestureDetector(
+            onTap: () {
+              context.getOrCreateBloc<CommentActionCubit>().doActionOnComment(
+                    commentAction == CommentAction.like
+                        ? CommentAction.dislike
+                        : CommentAction.like,
+                    widget.commentId,
+                    widget.postId,
+                    widget.userId,
+                  );
+            },
+            child: AppImage.svg(
+              commentAction == CommentAction.like
+                  ? AssetConstants.icHeartIconSelected
+                  : AssetConstants.icHeartIconUnSelected,
+              height: iconSize,
+              width: iconSize,
             ),
           ),
         ),
