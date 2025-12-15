@@ -1713,7 +1713,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
           mediaSelectionConfig: mediaSelectionConfig.copyWith(
               mediaListType: ms.MediaListType.image,
               isMultiSelect: false,
-              selectMediaTitle: IsrTranslationFile.addCover),
+              selectMediaTitle: IsrTranslationFile.changeCover),
           onCaptureMedia: _captureMedia,
         ),
       ),
