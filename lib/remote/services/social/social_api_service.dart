@@ -149,6 +149,12 @@ abstract class SocialApiService extends BaseService {
     required Header header,
   });
 
+  Future<ResponseModel> getUserProfile({
+    required bool isLoading,
+    required String userId,
+    required Header header,
+  });
+
   Future<ResponseModel> getTaggedPosts({
     required bool isLoading,
     required Header header,

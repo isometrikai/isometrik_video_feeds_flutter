@@ -133,6 +133,11 @@ abstract class SocialRepository extends BaseRepository {
     required String searchText,
   });
 
+  Future<CustomResponse<SocialUserProfileResponse?>> getUserProfile({
+    required bool isLoading,
+    required String userId,
+  });
+
   Future<CustomResponse<TimelineResponse?>> getTaggedPosts({
     required bool isLoading,
     required String tagValue,

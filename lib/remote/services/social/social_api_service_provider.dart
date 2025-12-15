@@ -756,6 +756,33 @@ class SocialApiServiceProvider extends SocialApiService {
       );
 
   @override
+  Future<ResponseModel> getUserProfile({
+    required bool isLoading,
+    required String userId,
+    required Header header,
+  }) async =>
+      await networkClient.makeRequest(
+        SocialApiEndPoints.getUserProfile(userId),
+        NetworkRequestType.get,
+        null,
+        null,
+        {
+          'Accept': AppConstants.headerAccept,
+          'Content-Type': AppConstants.headerContentType,
+          'Authorization': header.accessToken,
+          'language': header.language,
+          'currencySymbol': header.currencySymbol,
+          'currencyCode': header.currencyCode,
+          'platform': header.platForm.toString(),
+          'latitude': header.latitude.toString(),
+          'longitude': header.longitude.toString(),
+          'x-tenant-id': AppConstants.tenantId,
+          'x-project-id': AppConstants.projectId,
+        },
+        isLoading,
+      );
+
+  @override
   Future<ResponseModel> getProfileSavedPostData({
     required bool isLoading,
     required Header header,

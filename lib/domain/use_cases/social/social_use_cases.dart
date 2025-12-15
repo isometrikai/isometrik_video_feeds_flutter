@@ -22,3 +22,4 @@ export 'report_post_use_case.dart';
 export 'save_post_use_case.dart';
 export 'search_tag_use_case.dart';
 export 'search_user_use_case.dart';
+export 'social_user_profile_use_case.dart';

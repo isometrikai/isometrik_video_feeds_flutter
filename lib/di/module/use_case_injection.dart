@@ -63,6 +63,8 @@ class UseCaseInjection {
         () => SearchUserUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<SearchTagUseCase>(
         () => SearchTagUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<SocialUserProfileUseCase>(
+            () => SocialUserProfileUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<GetTaggedPostsUseCase>(() =>
         GetTaggedPostsUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<CollectionUseCase>(

@@ -47,6 +47,11 @@ class SocialMapper {
   CustomResponse<HashTagResponse?> mapSearchTagResponse(ResponseModel response) => CustomResponse(
       data: hashTagResponseFromJson(response.data), responseCode: response.statusCode);
 
+  CustomResponse<SocialUserProfileResponse?> mapUserProfileResponse(ResponseModel response) =>
+      CustomResponse(
+          data: socialUserProfileResponseFromJson(response.data),
+          responseCode: response.statusCode);
+
   CustomResponse<TimeLineData?> mapTimelineData(ResponseModel response) {
     final timeLineData = TimeLineData.fromMap(
         (jsonDecode(response.data) as Map<String, dynamic>)['data'] as Map<String, dynamic>);

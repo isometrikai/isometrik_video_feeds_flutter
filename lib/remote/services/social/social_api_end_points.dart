@@ -31,6 +31,7 @@ class SocialApiEndPoints {
   static String postMediaProcess(String postId) => '/api/v1/posts/$postId/start-processing';
   static const String getSearchUsers = '/api/v1/users/search';
   static const String getSearchTags = '/api/v1/tags/hashtags/search';
+  static String getUserProfile(String userId) => '/api/v1/users/$userId/profile';
   static const String getTaggedPosts = '/api/v1/tags/posts';
   static const String getForYouPosts = '/api/v1/posts/fyp';
   static const String getMentionedUsers = '/api/v1/posts';
