@@ -44,8 +44,8 @@ class _PostAttributeViewState extends State<PostAttributeView>
   PostAttributeClass? _postAttributeClass;
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _captionInputKey = GlobalKey();
-  bool _isCaptionFocused = false;
   bool isKeyboardVisible = false;
+  final FocusNode _descriptionFocusNode = FocusNode();
 
   // State variables for tracking changes
   bool _isPostButtonEnabled = true;
@@ -85,6 +85,11 @@ class _PostAttributeViewState extends State<PostAttributeView>
     } else {
       Navigator.pop(context);
     }
+    _descriptionFocusNode.addListener(() {
+      if (_descriptionFocusNode.hasFocus) {
+        _performScrollToCaptionInput();
+      }
+    });
     super.initState();
   }
 
@@ -265,6 +270,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
     }
     _videoControllers.clear();
     _videoInitializingStates.clear();
+    _descriptionFocusNode.dispose();
     super.dispose();
   }
 
@@ -736,6 +742,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
                           icon: AssetConstants.icTagUser,
                           title: IsrTranslationFile.tagPeople,
                           onTap: () async {
+                            _descriptionFocusNode.unfocus();
                             final mediaDataList =
                                 _postAttributeClass?.mediaDataList ?? [];
                             final result =
@@ -944,7 +951,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
           style: IsrStyles.primaryText14,
           hintStyle:
               IsrStyles.secondaryText14.copyWith(color: IsrColors.colorBBBBBB),
-          onTap: _scrollToCaptionInput,
+          focusNode: _descriptionFocusNode,
           onChanged: (value) {
             final createPostBloc = BlocProvider.of<CreatePostBloc>(context);
             createPostBloc.descriptionText = _descriptionController.text;
@@ -999,7 +1006,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
     if (newValue != isKeyboardVisible) {
       debugPrint('Keyboard visibility changed: $newValue');
       isKeyboardVisible = newValue;
-      if (isKeyboardVisible && _isCaptionFocused) {
+      if (isKeyboardVisible && _descriptionFocusNode.hasFocus) {
         debugPrint('Keyboard visibility changed a: $newValue');
         Future.delayed(
             const Duration(milliseconds: 700), _performScrollToCaptionInput);
@@ -1007,16 +1014,9 @@ class _PostAttributeViewState extends State<PostAttributeView>
     }
   }
 
-  /// Scroll to the UserMentionTextField position after keyboard appears
-  void _scrollToCaptionInput() {
-    _isCaptionFocused = true;
-    if (isKeyboardVisible && _isCaptionFocused) {
-      _performScrollToCaptionInput();
-    }
-  }
-
   /// Perform the actual scroll to caption input
   void _performScrollToCaptionInput() {
+    if (!(_descriptionFocusNode.hasFocus && isKeyboardVisible)) return;
     if (_scrollController.hasClients &&
         _captionInputKey.currentContext != null) {
       // Get the render box of the caption input
@@ -1061,6 +1061,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
       ),
       color: hasLocation ? IsrColors.appColor : IsrColors.primaryTextColor,
       onTap: () async {
+        _descriptionFocusNode.unfocus();
         final result = await IsrAppNavigator.goToSearchLocation(context,
             taggedPlaceList: taggedPlaces);
 
@@ -1144,6 +1145,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
 
   /// Show schedule bottom sheet
   void _showScheduleBottomSheet() {
+    _descriptionFocusNode.unfocus();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1537,6 +1539,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
 
   /// Get linked products from product selection screen
   void _getLinkedProducts() async {
+    _descriptionFocusNode.unfocus();
     final result = await widget.onTagProduct?.call(_linkedProducts.toList());
     setState(() {
       _linkedProducts.clear();
@@ -1695,6 +1698,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
       );
 
   void _changeCover() async {
+    _descriptionFocusNode.unfocus();
     final coverPic = await _pickCoverPic();
     if (coverPic != null && Utility.isLocalUrl(coverPic)) {
       _createPostBloc.add(ChangeCoverImageEvent(
@@ -1713,7 +1717,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
           mediaSelectionConfig: mediaSelectionConfig.copyWith(
               mediaListType: ms.MediaListType.image,
               isMultiSelect: false,
-              selectMediaTitle: IsrTranslationFile.addCover),
+              selectMediaTitle: IsrTranslationFile.changeCover),
           onCaptureMedia: _captureMedia,
         ),
       ),

@@ -23,6 +23,11 @@ class CameraTopControls extends StatelessWidget {
             children: [
               TapHandler(
                 onTap: () {
+                  //stop recording
+                  if (cameraBloc.isRecording || cameraBloc.isSegmentRecording) {
+                    cameraBloc.add(CameraStopSegmentRecordingEvent());
+                  }
+                  //show confirmation dialog
                   Utility.showAppDialog(
                     isTwoButtons: true,
                     message: 'Are you sure you want to exit?',

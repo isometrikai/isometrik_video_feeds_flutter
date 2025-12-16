@@ -432,6 +432,21 @@ class SocialRepositoryImpl implements SocialRepository {
   }
 
   @override
+  Future<CustomResponse<SocialUserProfileResponse?>> getUserProfile({
+    required bool isLoading,
+    required String userId,
+  }) async {
+    try {
+      final header = await _dataSource.getHeader();
+      final response =
+      await _apiService.getUserProfile(isLoading: isLoading, header: header, userId: userId);
+      return _socialMapper.mapUserProfileResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
   Future<CustomResponse<TimelineResponse?>> getTaggedPosts({
     required bool isLoading,
     required String tagValue,

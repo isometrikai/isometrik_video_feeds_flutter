@@ -118,14 +118,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
         return;
       }
 
-      if (_cameraController != null) {
-        try {
-          await _cameraController!.dispose();
-        } catch (e) {
-          AppLog.error('Error disposing camera controller: $e');
-        }
-        _cameraController = null;
-      }
+      await _releaseCamera();
 
       _cameraController = CameraController(
         _cameras[_selectedCameraIndex],
@@ -209,18 +202,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     try {
       emit(CameraLoadingState());
 
-      if (_cameraController != null) {
-        try {
-          if (_cameraController!.value.isStreamingImages) {
-            await _cameraController!.stopImageStream();
-          }
-          await _cameraController!.pausePreview();
-          await _cameraController!.dispose();
-        } catch (e) {
-          AppLog.error('Error disposing camera controller during switch: $e');
-        }
-        _cameraController = null;
-      }
+      await _releaseCamera();
 
       final currentLens = _cameras.isNotEmpty
           ? _cameras[_selectedCameraIndex].lensDirection
@@ -534,20 +516,34 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
       _videoPlayerController = null;
     }
 
-    if (_cameraController != null) {
-      try {
-        await _cameraController!.dispose();
-      } catch (e) {
-        AppLog.error('Error disposing camera controller: $e');
-      }
-      _cameraController = null;
-    }
+    await _releaseCamera();
 
     _recordingTimer?.cancel();
     _segmentTimer?.cancel();
     _videoSegments.clear();
     return super.close();
   }
+
+  Future<void> _releaseCamera() async {
+    if (_cameraController == null) return;
+
+    try {
+      if (_cameraController!.value.isRecordingVideo) {
+        await _cameraController!.stopVideoRecording();
+      }
+
+      if (_cameraController!.value.isStreamingImages) {
+        await _cameraController!.stopImageStream();
+      }
+    } catch (_) {}
+
+    await _cameraController!.dispose();
+    _cameraController = null;
+
+    // 🔥 Critical on Android
+    await Future.delayed(const Duration(milliseconds: 300));
+  }
+
 
   Future<void> _disposeAll(
     CameraDisposeEvent event,
@@ -566,17 +562,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
       _videoPlayerController = null;
     }
 
-    if (_cameraController != null) {
-      try {
-        if (_cameraController!.value.isStreamingImages) {
-          await _cameraController!.stopImageStream();
-        }
-      } catch (_) {}
-      try {
-        await _cameraController!.dispose();
-      } catch (_) {}
-      _cameraController = null;
-    }
+    await _releaseCamera();
 
     _isSegmentRecording = false;
     _isFlashOn = false;

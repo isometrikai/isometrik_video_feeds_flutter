@@ -95,6 +95,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   bool _isMuted = false;
   Timer? _audioDebounceTimer;
   final _maxLengthToShow = 50;
+  final _maxLinesToShow = 2;
   late ReelsData _reelData;
 
   bool _mentionsVisible = false;
@@ -1025,59 +1026,64 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       ),
                       if (_postDescription.isStringEmptyOrNull == false) ...[
                         IsrDimens.boxHeight(IsrDimens.eight),
-                        ValueListenableBuilder<bool>(
-                          valueListenable: _isExpandedDescription,
-                          builder: (context, value, child) {
-                            final fullDescription = _reelData.description ?? '';
-                            final shouldTruncate = fullDescription.length > _maxLengthToShow;
+                        Container(
+                          constraints: BoxConstraints(maxHeight: 350.responsiveDimension),
+                          child: SingleChildScrollView(
+                            child: ValueListenableBuilder<bool>(
+                              valueListenable: _isExpandedDescription,
+                              builder: (context, value, child) {
+                                final fullDescription = _reelData.description ?? '';
+                                final descriptionLineCount = fullDescription.split('\n').length;
+                                final shouldTruncate = fullDescription.length > _maxLengthToShow || descriptionLineCount > _maxLinesToShow;
+                                // Show truncated version when collapsed, full version when expanded
+                                final displayText = shouldTruncate && !value
+                                    ? fullDescription.substring(0, _maxLengthToShow).split('\n').take(_maxLinesToShow).join('\n')
+                                    : fullDescription;
 
-                            // Show truncated version when collapsed, full version when expanded
-                            final displayText = shouldTruncate && !value
-                                ? fullDescription.substring(0, _maxLengthToShow)
-                                : fullDescription;
-
-                            // OPTIMIZATION: Cache parsed description to avoid reparsing on every build
-                            if (_lastParsedDescription != displayText.trim() ||
-                                _cachedDescriptionTextSpan == null) {
-                              _lastParsedDescription = displayText.trim();
-                              _cachedDescriptionTextSpan = _buildDescriptionTextSpan(
-                                displayText.trim(),
-                                _mentionedDataList,
-                                _taggedDataList,
-                                IsrStyles.white14
-                                    .copyWith(color: IsrColors.white.changeOpacity(0.9)),
-                                (mention) {
-                                  _callOnTapMentionData([mention]);
-                                },
-                              );
-                            }
-
-                            return GestureDetector(
-                              onTap: () {
-                                if (shouldTruncate) {
-                                  _isExpandedDescription.value = !_isExpandedDescription.value;
+                                // OPTIMIZATION: Cache parsed description to avoid reparsing on every build
+                                if (_lastParsedDescription != displayText.trim() ||
+                                    _cachedDescriptionTextSpan == null) {
+                                  _lastParsedDescription = displayText.trim();
+                                  _cachedDescriptionTextSpan = _buildDescriptionTextSpan(
+                                    displayText.trim(),
+                                    _mentionedDataList,
+                                    _taggedDataList,
+                                    IsrStyles.white14
+                                        .copyWith(color: IsrColors.white.changeOpacity(0.9)),
+                                    (mention) {
+                                      _callOnTapMentionData([mention]);
+                                    },
+                                  );
                                 }
+
+                                return GestureDetector(
+                                  onTap: () {
+                                    if (shouldTruncate) {
+                                      _isExpandedDescription.value = !_isExpandedDescription.value;
+                                    }
+                                  },
+                                  child: RichText(
+                                    text: TextSpan(
+                                      children: [
+                                        _cachedDescriptionTextSpan!,
+                                        if (shouldTruncate)
+                                          TextSpan(
+                                            text: value ? ' ' : ' ... ',
+                                            style:
+                                                IsrStyles.white14.copyWith(fontWeight: FontWeight.w700),
+                                            recognizer: TapGestureRecognizer()
+                                              ..onTap = () {
+                                                // _isExpandedDescription.value =
+                                                //     !_isExpandedDescription.value;
+                                              },
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                );
                               },
-                              child: RichText(
-                                text: TextSpan(
-                                  children: [
-                                    _cachedDescriptionTextSpan!,
-                                    if (shouldTruncate)
-                                      TextSpan(
-                                        text: value ? ' ' : ' ... ',
-                                        style:
-                                            IsrStyles.white14.copyWith(fontWeight: FontWeight.w700),
-                                        recognizer: TapGestureRecognizer()
-                                          ..onTap = () {
-                                            // _isExpandedDescription.value =
-                                            //     !_isExpandedDescription.value;
-                                          },
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
+                            ),
+                          ),
                         ),
                       ],
                       // Mentioned Users and Location in same row

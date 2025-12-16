@@ -11,11 +11,13 @@ class FollowActionWidget extends StatefulWidget {
     required this.userId,
     required this.builder,
     this.isFollowing,
+    this.callProfileApi = false,
   });
 
   final String? postId;
   final String userId;
   final bool? isFollowing;
+  final bool callProfileApi;
   final Widget Function(
     bool isLoading,
     bool isFollowing,
@@ -49,7 +51,7 @@ class _FollowActionWidgetState extends State<FollowActionWidget> {
     if (postId != null) {
       cubit.loadPostFollowState(postId!);
     } else {
-      cubit.loadFollowState(userId, isFollowing: isFollowing);
+      cubit.loadFollowState(userId, isFollowing: isFollowing, callApi: widget.callProfileApi);
     }
   }
 

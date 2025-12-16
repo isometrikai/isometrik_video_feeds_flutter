@@ -19,10 +19,9 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     return _instance!;
   }
 
-  final FollowUnFollowUserUseCase _followPostUseCase =
-      IsmInjectionUtils.getUseCase<FollowUnFollowUserUseCase>();
-  final GetPostDetailsUseCase _getPostDetailsUseCase =
-      IsmInjectionUtils.getUseCase<GetPostDetailsUseCase>();
+  final FollowUnFollowUserUseCase _followPostUseCase = IsmInjectionUtils.getUseCase<FollowUnFollowUserUseCase>();
+  final GetPostDetailsUseCase _getPostDetailsUseCase = IsmInjectionUtils.getUseCase<GetPostDetailsUseCase>();
+  final SocialUserProfileUseCase _socialUserProfileUseCase = IsmInjectionUtils.getUseCase<SocialUserProfileUseCase>();
   final LikePostUseCase _likePostUseCase = IsmInjectionUtils.getUseCase<LikePostUseCase>();
   final SavePostUseCase _savePostUseCase = IsmInjectionUtils.getUseCase<SavePostUseCase>();
 
@@ -64,6 +63,22 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     return postData;
   }
 
+  Future<SocialUserProfileData?> _getSocialUserDetails(String userId, {bool showError = false}) async {
+    final result = await _socialUserProfileUseCase.executeSearchUser(
+      isLoading: false,
+      userId: userId,
+    );
+
+    final userData = result.data?.data;
+
+    if (result.isError && showError) {
+      ErrorHandler.showAppError(
+          appError: result.error, isNeedToShowError: true, errorViewType: ErrorViewType.toast);
+    }
+
+    return userData;
+  }
+
   loadPostFollowState(String postId) async {
     final postData = await getAsyncPostById(postId);
     final isFollow = postData?.isFollowing ?? false;
@@ -72,8 +87,11 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
   }
 
   loadFollowState(String userId, {bool? isFollowing, bool callApi = false}) async {
-    if (callApi) {
-
+    if (callApi && userId.isNotEmpty) {
+      emit(IsmFollowUserState(isFollowing: isFollowing == true, userId: userId, isLoading: true));
+      final userData = await _getSocialUserDetails(userId, showError: true);
+      final apiFollowStatue = userData?.isFollowing ?? isFollowing ?? false;
+      emit(IsmFollowUserState(isFollowing: apiFollowStatue, userId: userId));
     } else {
       emit(IsmFollowUserState(isFollowing: isFollowing == true, userId: userId));
     }
