@@ -197,7 +197,7 @@ class IsrTranslationFile {
   static const String trySearchingWithADifferentName =
       'Try searching with a different name';
   static const String posting = 'Posting...';
-  static const String inReview = 'InReview';
+  static const String inReview = 'In Review';
   static const String searchLocation = 'Search location';
   static const String searchForALocation = 'Search for a location';
   static const String startTypingToFindPlaces = 'Start typing to find places';
