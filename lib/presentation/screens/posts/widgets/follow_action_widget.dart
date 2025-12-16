@@ -74,15 +74,6 @@ class _FollowActionWidgetState extends State<FollowActionWidget> {
     }
   }
 
-  @override
-  void dispose() {
-    // IMPORTANT: Do NOT close the cubit here!
-    // - The cubit is a singleton managed by the DI container
-    // - BlocProvider.value does NOT close the cubit when the widget is disposed
-    // - Closing it here would break the singleton pattern and affect other widgets
-    super.dispose();
-  }
-
   void _onTap({
     ReelsData? reelData,
     PostSectionType? postSectionType,
@@ -111,13 +102,16 @@ class _FollowActionWidgetState extends State<FollowActionWidget> {
       context.attachBlocIfNeeded<IsmSocialActionCubit>(
         child: BlocBuilder<IsmSocialActionCubit, IsmSocialActionState>(
           buildWhen: (previous, current) {
-            // Listen to both IsmFollowUserState and IsmFollowActionListenerState
+            // Listen to IsmFollowUserState, IsmFollowActionListenerState, and IsmFollowErrorState
             // This ensures updates from outside the package (like profile page) are reflected
             if (current is IsmFollowUserState && current.userId == userId) {
               return true;
             }
             if (current is IsmFollowActionListenerState &&
                 current.userId == userId) {
+              return true;
+            }
+            if (current is IsmFollowErrorState && current.userId == userId) {
               return true;
             }
             return false;
@@ -130,6 +124,12 @@ class _FollowActionWidgetState extends State<FollowActionWidget> {
               // Update state from listener state (emitted after follow/unfollow actions)
               isFollowing = state.isFollowing;
               isLoading = false; // Listener state means action is complete
+            } else if (state is IsmFollowErrorState) {
+              // Handle error state - reset loading, keep previous following state
+              isLoading = false;
+              isFollowing = state.wasFollowing;
+              // Error message is already shown via ErrorHandler in Cubit
+              debugPrint('❌ Follow/Unfollow error: ${state.errorMessage}');
             }
             debugPrint('IsmSocialActionCubit hashCode -> ${cubit.hashCode}');
             return GestureDetector(

@@ -271,29 +271,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     }
   }
 
-  /// Log "Video Progress" event at specific milestones (25%, 50%, 75%, 100%)
-  void _logVideoProgressEvent(
-      int milestone, Duration position, Duration duration) {
-    try {
-      final eventMap = <String, dynamic>{
-        'progress_milestone': milestone, // 25, 50, 75, or 100
-        'current_position': position.inSeconds,
-        'video_duration': duration.inSeconds,
-        'category': EventCategory.videoEngagement.value,
-      };
-
-      widget.postHelperCallBacks?.sendAnalyticsEvent(
-        EventType.videoProgress.value,
-        eventMap,
-      );
-
-      debugPrint(
-          '📹 Video Progress - $milestone% reached at ${position.inSeconds}s');
-    } catch (e) {
-      debugPrint('❌ Error logging Video Progress event: $e');
-    }
-  }
-
   void _handleVisibilityChanged(VisibilityInfo info) {
     if (_isDisposed) return;
 

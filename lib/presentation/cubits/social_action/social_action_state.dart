@@ -78,6 +78,45 @@ class IsmSavePostState extends IsmSocialActionState {
       );
 }
 
+// ---------------- Error States ---------------- //
+class IsmFollowErrorState extends IsmSocialActionState {
+  IsmFollowErrorState({
+    required this.userId,
+    required this.errorMessage,
+    required this.wasFollowing,
+  });
+
+  final String userId;
+  final String errorMessage;
+  final bool wasFollowing; // State before error occurred
+}
+
+class IsmLikeErrorState extends IsmSocialActionState {
+  IsmLikeErrorState({
+    required this.postId,
+    required this.errorMessage,
+    required this.wasLiked,
+    required this.likeCount,
+  });
+
+  final String postId;
+  final String errorMessage;
+  final bool wasLiked;
+  final int likeCount;
+}
+
+class IsmSaveErrorState extends IsmSocialActionState {
+  IsmSaveErrorState({
+    required this.postId,
+    required this.errorMessage,
+    required this.wasSaved,
+  });
+
+  final String postId;
+  final String errorMessage;
+  final bool wasSaved;
+}
+
 // ---------------- Listener States ---------------- //
 class IsmFollowActionListenerState extends IsmSocialActionState {
   IsmFollowActionListenerState({

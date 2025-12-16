@@ -120,41 +120,81 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     Future<bool> Function()? apiCallBack,
   }) async {
     debugPrint('IsmSocialActionCubit hashCode -> $hashCode');
-    emit(
-        IsmFollowUserState(isFollowing: true, isLoading: true, userId: userId));
 
-    final bool isSuccess;
-    AppError? error;
+    try {
+      emit(IsmFollowUserState(
+          isFollowing: true, isLoading: true, userId: userId));
 
-    if (apiCallBack != null) {
-      isSuccess = await apiCallBack();
-    } else {
-      final apiResult = await _followPostUseCase.executeFollowUser(
-        isLoading: false,
-        followingId: userId,
-        followAction: FollowAction.follow,
-      );
-      isSuccess = apiResult.isSuccess;
-      error = apiResult.error;
-    }
+      final bool isSuccess;
+      AppError? error;
 
-    if (isSuccess) {
-      emit(IsmFollowUserState(isFollowing: true, userId: userId));
-      _uniquePostList.values
-          .where((e) => e.userId == userId)
-          .forEach((e) => e.isFollowing = true);
+      if (apiCallBack != null) {
+        isSuccess = await apiCallBack();
+      } else {
+        final apiResult = await _followPostUseCase.executeFollowUser(
+          isLoading: false,
+          followingId: userId,
+          followAction: FollowAction.follow,
+        );
+        isSuccess = apiResult.isSuccess;
+        error = apiResult.error;
+      }
 
-      emit(IsmFollowActionListenerState(isFollowing: true, userId: userId));
+      if (isSuccess) {
+        emit(IsmFollowUserState(isFollowing: true, userId: userId));
+        _uniquePostList.values
+            .where((e) => e.userId == userId)
+            .forEach((e) => e.isFollowing = true);
 
-      _logFollowEvent(
-        FollowAction.follow,
-        reelsData: reelData,
-        watchDuration: watchDuration,
-        postSectionType: postSectionType,
-      );
-    } else {
+        emit(IsmFollowActionListenerState(isFollowing: true, userId: userId));
+
+        _logFollowEvent(
+          FollowAction.follow,
+          reelsData: reelData,
+          watchDuration: watchDuration,
+          postSectionType: postSectionType,
+        );
+      } else {
+        // Emit error state first, then revert UI state
+        final errorMessage =
+            error?.message ?? 'Failed to follow user. Please try again.';
+        emit(IsmFollowErrorState(
+          userId: userId,
+          errorMessage: errorMessage,
+          wasFollowing: false,
+        ));
+
+        // Revert to previous state after error
+        emit(IsmFollowUserState(isFollowing: false, userId: userId));
+
+        // Show error to user - always show, not just NetworkError
+        ErrorHandler.showAppError(
+          appError: error,
+          message: errorMessage,
+          isNeedToShowError: true, // ✅ Always show error!
+        );
+      }
+    } catch (e, stackTrace) {
+      // Catch unexpected exceptions
+      debugPrint('❌ Unexpected error in followUser: $e');
+      debugPrint('   Stack trace: $stackTrace');
+
+      final errorMessage = 'An unexpected error occurred. Please try again.';
+      emit(IsmFollowErrorState(
+        userId: userId,
+        errorMessage: errorMessage,
+        wasFollowing: false,
+      ));
+
+      // Revert state
       emit(IsmFollowUserState(isFollowing: false, userId: userId));
-      ErrorHandler.showAppError(appError: error);
+
+      // Show error
+      ErrorHandler.showAppError(
+        appError: null,
+        message: errorMessage,
+        isNeedToShowError: true,
+      );
     }
   }
 
@@ -166,41 +206,81 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     Future<bool> Function()? apiCallBack,
   }) async {
     debugPrint('IsmSocialActionCubit hashCode -> $hashCode');
-    emit(IsmFollowUserState(
-        isFollowing: false, isLoading: true, userId: userId));
 
-    final bool isSuccess;
-    AppError? error;
+    try {
+      emit(IsmFollowUserState(
+          isFollowing: false, isLoading: true, userId: userId));
 
-    if (apiCallBack != null) {
-      isSuccess = await apiCallBack();
-    } else {
-      final apiResult = await _followPostUseCase.executeFollowUser(
-        isLoading: false,
-        followingId: userId,
-        followAction: FollowAction.unfollow,
-      );
-      isSuccess = apiResult.isSuccess;
-      error = apiResult.error;
-    }
+      final bool isSuccess;
+      AppError? error;
 
-    if (isSuccess) {
-      emit(IsmFollowUserState(isFollowing: false, userId: userId));
-      _uniquePostList.values
-          .where((e) => e.userId == userId)
-          .forEach((e) => e.isFollowing = false);
+      if (apiCallBack != null) {
+        isSuccess = await apiCallBack();
+      } else {
+        final apiResult = await _followPostUseCase.executeFollowUser(
+          isLoading: false,
+          followingId: userId,
+          followAction: FollowAction.unfollow,
+        );
+        isSuccess = apiResult.isSuccess;
+        error = apiResult.error;
+      }
 
-      emit(IsmFollowActionListenerState(isFollowing: false, userId: userId));
+      if (isSuccess) {
+        emit(IsmFollowUserState(isFollowing: false, userId: userId));
+        _uniquePostList.values
+            .where((e) => e.userId == userId)
+            .forEach((e) => e.isFollowing = false);
 
-      _logFollowEvent(
-        FollowAction.unfollow,
-        reelsData: reelData,
-        watchDuration: watchDuration,
-        postSectionType: postSectionType,
-      );
-    } else {
+        emit(IsmFollowActionListenerState(isFollowing: false, userId: userId));
+
+        _logFollowEvent(
+          FollowAction.unfollow,
+          reelsData: reelData,
+          watchDuration: watchDuration,
+          postSectionType: postSectionType,
+        );
+      } else {
+        // Emit error state first, then revert UI state
+        final errorMessage =
+            error?.message ?? 'Failed to unfollow user. Please try again.';
+        emit(IsmFollowErrorState(
+          userId: userId,
+          errorMessage: errorMessage,
+          wasFollowing: true,
+        ));
+
+        // Revert to previous state after error
+        emit(IsmFollowUserState(isFollowing: true, userId: userId));
+
+        // Show error to user - always show, not just NetworkError
+        ErrorHandler.showAppError(
+          appError: error,
+          message: errorMessage,
+          isNeedToShowError: true, // ✅ Always show error!
+        );
+      }
+    } catch (e, stackTrace) {
+      // Catch unexpected exceptions
+      debugPrint('❌ Unexpected error in unfollowUser: $e');
+      debugPrint('   Stack trace: $stackTrace');
+
+      final errorMessage = 'An unexpected error occurred. Please try again.';
+      emit(IsmFollowErrorState(
+        userId: userId,
+        errorMessage: errorMessage,
+        wasFollowing: true,
+      ));
+
+      // Revert state
       emit(IsmFollowUserState(isFollowing: true, userId: userId));
-      ErrorHandler.showAppError(appError: error);
+
+      // Show error
+      ErrorHandler.showAppError(
+        appError: null,
+        message: errorMessage,
+        isNeedToShowError: true,
+      );
     }
   }
 

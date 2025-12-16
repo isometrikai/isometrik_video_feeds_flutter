@@ -90,10 +90,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
   }
 
-  final ValueNotifier<bool> _isFollowLoading = ValueNotifier(false);
   final ValueNotifier<bool> _isExpandedDescription = ValueNotifier(false);
-  final ValueNotifier<bool> _isSaveLoading = ValueNotifier(false);
-  final ValueNotifier<bool> _isLikeLoading = ValueNotifier(false);
 
   // Audio state management
   static bool _globalMuteState =
@@ -125,6 +122,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   Timer? _imageViewTimer;
   bool _hasLoggedImageViewEvent = false;
   var _watchDuration = 0;
+
+  // Video progress tracking
+  final ValueNotifier<double> _videoProgress = ValueNotifier<double>(0.0);
 
   @override
   void initState() {
@@ -260,6 +260,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     // Update current page notifier
     _currentPageNotifier.value = index;
 
+    // Reset video progress when changing pages
+    _videoProgress.value = 0.0;
+
     _pageMentionMetaDataList = _mentionedMetaDataList
         .where((mention) =>
             mention.mediaPosition?.position == _currentPageNotifier.value + 1)
@@ -283,6 +286,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _muteAnimationTimer?.cancel();
     _audioDebounceTimer?.cancel();
     _imageViewTimer?.cancel();
+    _videoProgress.dispose();
     // Analytics logging is now handled by VideoPlayerWidget
     _logImagePostEvent();
     super.dispose();
@@ -354,12 +358,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       children: [
         GestureDetector(
           onTap: _toggleMuteAndUnMute,
-          onDoubleTap: () async {
-            _triggerLikeAnimation(); // Always show animation
-            if (_reelData.isLiked != true) {
-              await _callLikeFunction();
-            }
-          },
+          onDoubleTap: _triggerLikeAnimation,
           child: mediaWidget,
         ),
 
@@ -409,8 +408,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   Widget _buildSingleMediaContent() {
     debugPrint('mediaMetaDataList....${_reelData.mediaMetaDataList}');
-    if (_reelData.mediaMetaDataList.isEmptyOrNull)
+    if (_reelData.mediaMetaDataList.isEmptyOrNull) {
       return const SizedBox.shrink();
+    }
     if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType ==
         kPictureType) {
       return _buildImageWithBlurredBackground(
@@ -440,6 +440,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       postHelperCallBacks: this,
       videoProgressCallBack: (totalDuration, currentPosition) {
         _watchDuration = currentPosition;
+        // Update progress (0.0 to 1.0)
+        if (totalDuration > 0) {
+          _videoProgress.value = currentPosition / totalDuration;
+        }
       },
     );
   }
@@ -639,12 +643,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           GestureDetector(
             onTap: _toggleMuteAndUnMute,
             onLongPressStart: (_) => _togglePlayPause(),
-            onDoubleTap: () async {
-              _triggerLikeAnimation(); // Always show animation
-              if (_reelData.isLiked != true) {
-                await _callLikeFunction();
-              }
-            },
+            onDoubleTap: _triggerLikeAnimation,
             onLongPressEnd: (_) => _resumePlayback(),
             child: Stack(
               fit: StackFit.expand,
@@ -675,6 +674,50 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                           _isMuted
                               ? AssetConstants.icMuteIcon
                               : AssetConstants.icUnMuteIcon,
+                        ),
+                      ),
+                    ),
+                  ),
+                // Video progress bar (Instagram style - thicker with shadow)
+                if (_reelData.mediaMetaDataList[_currentPageNotifier.value]
+                        .mediaType ==
+                    kVideoType)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: ValueListenableBuilder<double>(
+                      valueListenable: _videoProgress,
+                      builder: (context, progress, child) => Container(
+                        height: 3,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.25),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.3),
+                              blurRadius: 2,
+                              offset: const Offset(0, -1),
+                            ),
+                          ],
+                        ),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: FractionallySizedBox(
+                            widthFactor: progress.clamp(0.0, 1.0),
+                            child: Container(
+                              height: 3,
+                              decoration: BoxDecoration(
+                                color: IsrColors.white,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.white.withValues(alpha: 0.5),
+                                    blurRadius: 4,
+                                    spreadRadius: 1,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -839,7 +882,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   builder: (isLoading, isLiked, likeCount, onTap) {
                     _reelData.isLiked = isLiked;
                     _reelData.likesCount = likeCount;
-                    _isLikeLoading.value = isLoading;
                     return _buildActionButton(
                       icon: isLiked == true
                           ? AssetConstants.icLikeSelected
@@ -886,7 +928,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   postId: _reelData.postId ?? '',
                   builder: (isLoading, isSaved, onTap) {
                     _reelData.isSavedPost = isSaved;
-                    _isSaveLoading.value = isLoading;
                     return _buildActionButton(
                       icon: isSaved == true
                           ? AssetConstants.icSaveSelected
@@ -1255,21 +1296,30 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       postId: _reelData.postId ?? '',
       userId: _reelData.userId ?? '',
       builder: (isLoading, isFollowing, onTap) {
+        // Update reel data state (non-blocking, for UI sync)
         _reelData.isFollow = isFollowing;
-        // if (isLoading) {
-        //   return SizedBox(
-        //     width: IsrDimens.sixty,
-        //     height: IsrDimens.twentyFour,
-        //     child: Center(
-        //       child: SizedBox(
-        //         width: IsrDimens.sixteen,
-        //         height: IsrDimens.sixteen,
-        //         child: const CircularProgressIndicator(strokeWidth: 2),
-        //       ),
-        //     ),
-        //   );
-        // } else
-        if (!isFollowing &&
+
+        // Show loading indicator during API call
+        if (isLoading) {
+          return Container(
+            width: IsrDimens.sixty,
+            height: IsrDimens.twentyFour,
+            decoration: BoxDecoration(
+              color: Theme.of(context).primaryColor.withValues(alpha: 0.7),
+              borderRadius: BorderRadius.circular(IsrDimens.twenty),
+            ),
+            child: const Center(
+              child: SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(IsrColors.white),
+                ),
+              ),
+            ),
+          );
+        } else if (!isFollowing &&
             _reelData.postSetting?.isUnFollowButtonVisible == true) {
           return Container(
             height: IsrDimens.twentyFour,
@@ -1330,93 +1380,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         return const SizedBox.shrink();
       },
     );
-  }
-
-  //calls api to follow and unfollow user
-  Future<void> _callFollowFunction() async {
-    if (widget.onPressFollowButton == null) return;
-    _isFollowLoading.value = true;
-
-    try {
-      await widget.onPressFollowButton!(_reelData, _reelData.isFollow == true);
-      _logFollowEvent(
-          _reelData,
-          _reelData.isFollow == true
-              ? FollowAction.follow
-              : FollowAction.unfollow);
-    } finally {
-      _isFollowLoading.value = false;
-    }
-  }
-
-  Future<void> _callSaveFunction() async {
-    if (widget.onPressSaveButton == null || _isSaveLoading.value) return;
-    _isSaveLoading.value = true;
-
-    try {
-      await widget.onPressSaveButton!(_reelData, _reelData.isSavedPost == true);
-      _logSaveEvent(_reelData,
-          _reelData.isSavedPost == true ? SaveAction.save : SaveAction.unsave);
-    } finally {
-      _isSaveLoading.value = false;
-    }
-  }
-
-  Future<void> _callLikeFunction() async {
-    if (!_isLikeLoading.value) {
-      if (_reelData.isLiked == true) {
-        context.getOrCreateBloc<IsmSocialActionCubit>().unLikePost(
-              _reelData.postId ?? '',
-              _reelData.likesCount ?? 0,
-              reelData: _reelData,
-              watchDuration: _watchDuration,
-              apiCallBack: widget.onPressLikeButton != null
-                  ? () => widget.onPressLikeButton!(
-                      _reelData, _reelData.isLiked == true)
-                  : null,
-            );
-      } else {
-        context.getOrCreateBloc<IsmSocialActionCubit>().likePost(
-              _reelData.postId ?? '',
-              _reelData.likesCount ?? 0,
-              reelData: _reelData,
-              watchDuration: _watchDuration,
-              apiCallBack: widget.onPressLikeButton != null
-                  ? () => widget.onPressLikeButton!(
-                      _reelData, _reelData.isLiked == true)
-                  : null,
-            );
-      }
-    }
-  }
-
-  void _logFollowEvent(ReelsData reelsData, FollowAction followAction) {
-    final eventMap = <String, dynamic>{
-      'view_source': 'feed',
-      'category': EventCategory.socialGraph.value,
-    };
-    sendAnalyticsEvent(
-        followAction == FollowAction.follow
-            ? EventType.userFollowed.value
-            : EventType.userUnFollowed.value,
-        eventMap);
-  }
-
-  void _logSaveEvent(ReelsData reelsData, SaveAction saveAction) {
-    final eventMap = <String, dynamic>{
-      'post_id': _reelData.postId ?? '',
-      'post_type': (_reelData.postData as TimeLineData).type,
-      'post_author_id': _reelData.userId ?? '',
-      'feed_type': widget.postSectionType.title,
-      'interests': _reelData.interests ?? [],
-      'hashtags': _reelData.tags?.hashtags?.isEmptyOrNull == false
-          ? _reelData.tags!.hashtags!.map((tag) => '#${tag.tag}').toList()
-          : [],
-    };
-    if (saveAction == SaveAction.save) {
-      unawaited(EventQueueProvider.instance
-          .addEvent(EventType.postSaved.value, eventMap.removeEmptyValues()));
-    }
   }
 
   void _triggerLikeAnimation() {
@@ -1666,6 +1629,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           postHelperCallBacks: this,
           videoProgressCallBack: (totalDuration, currentPosition) {
             _watchDuration = currentPosition;
+            // Update progress (0.0 to 1.0)
+            if (totalDuration > 0) {
+              _videoProgress.value = currentPosition / totalDuration;
+            }
           },
         ),
       );
