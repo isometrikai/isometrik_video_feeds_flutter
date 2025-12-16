@@ -35,7 +35,8 @@ class CollectionUseCase extends BaseUseCase {
           pageSize: pageSize,
           isPublicOnly: isPublicOnly,
         );
-        return ApiResult(data: response.responseCode == 200 ? response.data : null);
+        return ApiResult(
+            data: response.responseCode == 200 ? response.data : null);
       });
 
   /// Move post to collection
@@ -84,6 +85,7 @@ class CollectionUseCase extends BaseUseCase {
           isLoading: isLoading,
           collectionId: collectionId,
         );
-        return ApiResult(data: response.responseCode == 200 ? response.data : null);
+        return ApiResult(
+            data: response.responseCode == 200 ? response.data : null);
       });
 }

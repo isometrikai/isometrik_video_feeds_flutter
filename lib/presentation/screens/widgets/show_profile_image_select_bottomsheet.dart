@@ -33,7 +33,8 @@ class ShowProfileImageSelectBottomSheet extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(IsrTranslationFile.takePhoto,
-                    style: IsrStyles.secondaryText16.copyWith(color: IsrColors.black)),
+                    style: IsrStyles.secondaryText16
+                        .copyWith(color: IsrColors.black)),
                 // Icon(
                 //   Icons.arrow_forward_ios_rounded,
                 //   size: IsrDimens.fourteen,
@@ -56,7 +57,8 @@ class ShowProfileImageSelectBottomSheet extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(IsrTranslationFile.chooseFromGallery,
-                    style: IsrStyles.secondaryText16.copyWith(color: IsrColors.black)),
+                    style: IsrStyles.secondaryText16
+                        .copyWith(color: IsrColors.black)),
                 // Icon(
                 //   Icons.arrow_forward_ios_rounded,
                 //   size: IsrDimens.fourteen,

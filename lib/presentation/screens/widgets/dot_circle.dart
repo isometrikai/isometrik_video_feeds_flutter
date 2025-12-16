@@ -18,15 +18,18 @@ class DotCircle extends StatelessWidget {
         decoration: BoxDecoration(
           color: IsrColors.white,
           shape: BoxShape.circle,
-          border:
-              Border.all(color: Theme.of(context).primaryColor), // Change the color of the dot here
+          border: Border.all(
+              color: Theme.of(context)
+                  .primaryColor), // Change the color of the dot here
         ),
         child: Container(
           width: size ?? IsrDimens.ten, // Adjust the size of the dot as needed
           height: size ?? IsrDimens.ten,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: color ?? Theme.of(context).primaryColor, // Change the color of the dot here
+            color: color ??
+                Theme.of(context)
+                    .primaryColor, // Change the color of the dot here
           ),
         ),
       );

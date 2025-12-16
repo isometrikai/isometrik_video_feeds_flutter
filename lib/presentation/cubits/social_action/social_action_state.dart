@@ -136,11 +136,8 @@ class IsmSaveActionListenerState extends IsmSocialActionState {
   final bool isSaved;
   final TimeLineData? postData;
 
-  IsmSaveActionListenerState copyWith({
-    String? postId,
-    bool? isSaved,
-    TimeLineData? postData
-  }) =>
+  IsmSaveActionListenerState copyWith(
+          {String? postId, bool? isSaved, TimeLineData? postData}) =>
       IsmSaveActionListenerState(
         postId: postId ?? this.postId,
         isSaved: isSaved ?? this.isSaved,

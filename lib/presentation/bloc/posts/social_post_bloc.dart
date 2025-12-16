@@ -199,7 +199,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
           onSuccess: postTabAssistData.postList.add);
       debugPrint('social_post_bloc => postIdPostData: ${postIdPostData?.id}');
     } else if (postTabAssistData.postId?.trim().isNotEmpty == true) {
-      postIdPostData = postTabAssistData.postList.where((e) => e.id == postTabAssistData.postId).firstOrNull;
+      postIdPostData = postTabAssistData.postList
+          .where((e) => e.id == postTabAssistData.postId)
+          .firstOrNull;
     }
 
     // Route to the correct use case based on PostSectionType

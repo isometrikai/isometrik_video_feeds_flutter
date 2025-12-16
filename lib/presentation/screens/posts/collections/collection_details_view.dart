@@ -77,7 +77,8 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
   }
 
   @override
-  Widget build(BuildContext context) => BlocListener<CollectionBloc, CollectionState>(
+  Widget build(BuildContext context) =>
+      BlocListener<CollectionBloc, CollectionState>(
         bloc: _collectionBloc,
         listener: _handleBlocState,
         child: PopScope(
@@ -163,7 +164,8 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
 
   /// Builds the app bar action buttons
   Widget _buildAppBarActions() => Padding(
-        padding: IsrDimens.edgeInsetsSymmetric(horizontal: 8.responsiveDimension),
+        padding:
+            IsrDimens.edgeInsetsSymmetric(horizontal: 8.responsiveDimension),
         child: Row(
           spacing: 12.responsiveDimension,
           children: [
@@ -401,7 +403,8 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
                             10.responsiveHorizontalSpace,
                             _buildInfoChip(
                               icon: Icons.grid_view_rounded,
-                              label: '$_totalPosts ${_totalPosts == 1 ? 'Item' : 'Items'}',
+                              label:
+                                  '$_totalPosts ${_totalPosts == 1 ? 'Item' : 'Items'}',
                             ),
                           ],
                         ),
@@ -455,7 +458,8 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
                 height: 20.responsiveDimension,
                 decoration: BoxDecoration(
                   color: Theme.of(context).primaryColor,
-                  borderRadius: IsrDimens.borderRadiusAll(2.responsiveDimension),
+                  borderRadius:
+                      IsrDimens.borderRadiusAll(2.responsiveDimension),
                 ),
               ),
               8.responsiveHorizontalSpace,
@@ -484,7 +488,9 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
         child: Container(
           padding: IsrDimens.edgeInsetsAll(8.responsiveDimension),
           decoration: BoxDecoration(
-            color: isDestructive ? Colors.red.changeOpacity(0.9) : Colors.white.changeOpacity(0.9),
+            color: isDestructive
+                ? Colors.red.changeOpacity(0.9)
+                : Colors.white.changeOpacity(0.9),
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
@@ -503,7 +509,8 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
       );
 
   /// Builds info chip for header
-  Widget _buildInfoChip({required IconData icon, required String label}) => Container(
+  Widget _buildInfoChip({required IconData icon, required String label}) =>
+      Container(
         padding: IsrDimens.edgeInsetsSymmetric(
           horizontal: 10.responsiveDimension,
           vertical: 6.responsiveDimension,
@@ -596,8 +603,10 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
           child: Stack(
             children: [
               _buildPostImage(post),
-              if (post.tags?.products?.isEmptyOrNull == false) _buildProductsOverlay(post),
-              if (post.media?.first.mediaType?.mediaType == MediaType.video) _buildVideoIcon(),
+              if (post.tags?.products?.isEmptyOrNull == false)
+                _buildProductsOverlay(post),
+              if (post.media?.first.mediaType?.mediaType == MediaType.video)
+                _buildVideoIcon(),
             ],
           ),
         ),
@@ -714,7 +723,8 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
   /// Builds the empty collection placeholder
   Widget _buildEmptyCollectionPlaceholder() => Container(
         padding: IsrDimens.edgeInsetsAll(40.responsiveDimension),
-        margin: IsrDimens.edgeInsetsSymmetric(horizontal: 16.responsiveDimension),
+        margin:
+            IsrDimens.edgeInsetsSymmetric(horizontal: 16.responsiveDimension),
         decoration: BoxDecoration(
           color: 'F9FAFB'.toColor(),
           borderRadius: IsrDimens.borderRadiusAll(16.responsiveDimension),
@@ -790,12 +800,14 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
           children: [
             Text(
               'Delete Collection',
-              style: IsrStyles.primaryText16.copyWith(fontWeight: FontWeight.w600),
+              style:
+                  IsrStyles.primaryText16.copyWith(fontWeight: FontWeight.w600),
             ),
             12.responsiveVerticalSpace,
             Text(
               'Are you sure you want to delete this collection?',
-              style: IsrStyles.primaryText14.copyWith(color: IsrColors.color333333),
+              style: IsrStyles.primaryText14
+                  .copyWith(color: IsrColors.color333333),
             ),
             24.responsiveVerticalSpace,
             Row(
@@ -815,7 +827,8 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
                     onPress: () {
                       context.pop();
                       if (collectionId?.isNotEmpty ?? false) {
-                        _collectionBloc.add(DeleteCollectionEvent(collectionId: collectionId!));
+                        _collectionBloc.add(
+                            DeleteCollectionEvent(collectionId: collectionId!));
                       }
                     },
                     backgroundColor: Colors.red,

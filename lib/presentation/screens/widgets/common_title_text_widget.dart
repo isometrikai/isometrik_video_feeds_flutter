@@ -26,12 +26,16 @@ class CommonTitleTextWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Row(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: titleCenter ? MainAxisAlignment.center : MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: titleCenter
+            ? MainAxisAlignment.center
+            : MainAxisAlignment.spaceBetween,
         children: [
           Expanded(
             child: Padding(
               padding: IsrDimens.edgeInsets(
-                  top: removePadding ? 0.responsiveDimension : 16.responsiveDimension),
+                  top: removePadding
+                      ? 0.responsiveDimension
+                      : 16.responsiveDimension),
               child: Text(
                 title,
                 textAlign: titleAlign,

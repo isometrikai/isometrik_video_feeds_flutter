@@ -52,9 +52,12 @@ class PostCallBackConfig {
   final Function(TimeLineData postData, bool isSaved)? onSaveChanged;
   final Function(TimeLineData postData, bool isLiked)? onLikeChanged;
   // return true if success
-  final Future<bool> Function(TimeLineData? postData, bool isSaved)? onSaveClicked;
-  final Future<bool> Function(TimeLineData? postData, bool isLiked)? onLikeClick;
-  final Future<bool> Function(TimeLineData? postData, bool isFollow)? onFollowClick;
+  final Future<bool> Function(TimeLineData? postData, bool isSaved)?
+      onSaveClicked;
+  final Future<bool> Function(TimeLineData? postData, bool isLiked)?
+      onLikeClick;
+  final Future<bool> Function(TimeLineData? postData, bool isFollow)?
+      onFollowClick;
 
   final Function(TimeLineData postData)? onShareClicked;
   final Function(TimeLineData postData)? onCommentClick;
@@ -66,7 +69,8 @@ class PostCallBackConfig {
     Function(TimeLineData postData, bool isSaved)? onSaveChanged,
     Function(TimeLineData postData, bool isLiked)? onLikeChanged,
     Future<bool> Function(TimeLineData? postData, bool isLiked)? onLikeClick,
-    Future<bool> Function(TimeLineData? postData, bool isLiked)? onFollowClicked,
+    Future<bool> Function(TimeLineData? postData, bool isLiked)?
+        onFollowClicked,
     Future<bool> Function(TimeLineData? postData, bool isSaved)? onSaveClicked,
     Function(TimeLineData postData)? onShareClicked,
     Function(TimeLineData postData)? onCommentClick,

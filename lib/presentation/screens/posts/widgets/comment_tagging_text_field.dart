@@ -662,11 +662,11 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
 
   @override
   Widget build(BuildContext context) => Container(
-    constraints: const BoxConstraints(
-      maxHeight: 150,
-    ),
-    child: SingleChildScrollView(
-      child: TextField(
+        constraints: const BoxConstraints(
+          maxHeight: 150,
+        ),
+        child: SingleChildScrollView(
+          child: TextField(
             key: _textFieldKey,
             controller: widget.controller,
             focusNode: widget.focusNode,
@@ -699,8 +699,8 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
             onChanged: _onTextChanged,
             onTap: widget.onTap,
           ),
-    ),
-  );
+        ),
+      );
 
   @override
   void dispose() {

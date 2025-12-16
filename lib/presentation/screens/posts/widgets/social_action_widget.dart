@@ -104,9 +104,10 @@ class IsmSocialActionWidget extends StatelessWidget {
   // Ensures the IsmSocialActionCubit is available in the tree.
   // If not found, it automatically attaches/creates it.
   @override
-  Widget build(BuildContext context) => context.attachBlocIfNeeded<IsmSocialActionCubit>(
-      child: _buildInternal(context),
-    );
+  Widget build(BuildContext context) =>
+      context.attachBlocIfNeeded<IsmSocialActionCubit>(
+        child: _buildInternal(context),
+      );
 
   //---------------------------------------------------------------------------
   // Internal builder

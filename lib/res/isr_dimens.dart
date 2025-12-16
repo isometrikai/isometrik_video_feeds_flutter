@@ -104,7 +104,8 @@ class IsrDimens {
 
   static final double appButtonHeight = 50.sp;
 
-  static BorderRadius borderRadiusAll(double radius) => BorderRadius.circular(radius);
+  static BorderRadius borderRadiusAll(double radius) =>
+      BorderRadius.circular(radius);
 
   static BorderRadius borderRadius({
     double? topLeftRadius,
@@ -150,11 +151,14 @@ class IsrDimens {
         horizontal: horizontal ?? 0,
       );
 
-  static double getScreenHeight(BuildContext context) => MediaQuery.of(context).size.height;
+  static double getScreenHeight(BuildContext context) =>
+      MediaQuery.of(context).size.height;
 
-  static double getScreenWidth(BuildContext context) => MediaQuery.of(context).size.width;
+  static double getScreenWidth(BuildContext context) =>
+      MediaQuery.of(context).size.width;
 
   static double getDimensValue(double? value) => (value ?? 0).sp;
 
-  static EdgeInsets getSafeAreaPadding(BuildContext context) => MediaQuery.of(context).padding;
+  static EdgeInsets getSafeAreaPadding(BuildContext context) =>
+      MediaQuery.of(context).padding;
 }

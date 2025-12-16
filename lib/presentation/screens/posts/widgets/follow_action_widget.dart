@@ -51,7 +51,8 @@ class _FollowActionWidgetState extends State<FollowActionWidget> {
     if (postId != null) {
       cubit.loadPostFollowState(postId!);
     } else {
-      cubit.loadFollowState(userId, isFollowing: isFollowing, callApi: widget.callProfileApi);
+      cubit.loadFollowState(userId,
+          isFollowing: isFollowing, callApi: widget.callProfileApi);
     }
   }
 

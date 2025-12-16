@@ -526,11 +526,14 @@ class _PostAttributeViewState extends State<PostAttributeView>
         }
         if (state is PostCreatedState) {
           if (widget.isEditMode == true) {
-            _socialActionCubit.onPostEdited(postId: state.postDataModel?.id, postData: state.postDataModel);
+            _socialActionCubit.onPostEdited(
+                postId: state.postDataModel?.id, postData: state.postDataModel);
           } else {
             _socialActionCubit.onPostCreated(postId: state.postDataModel?.id);
           }
-          final postData = state.postDataModel != null ? jsonEncode(state.postDataModel!.toMap()) : null;
+          final postData = state.postDataModel != null
+              ? jsonEncode(state.postDataModel!.toMap())
+              : null;
           Utility.showBottomSheet(
             child: _buildSuccessBottomSheet(
               onTapBack: () {
@@ -587,7 +590,9 @@ class _PostAttributeViewState extends State<PostAttributeView>
         backgroundColor: Colors.white,
         appBar: IsmCustomAppBarWidget(
           backgroundColor: Colors.white,
-          titleText: widget.isEditMode == true? IsrTranslationFile.editPost : IsrTranslationFile.newPost,
+          titleText: widget.isEditMode == true
+              ? IsrTranslationFile.editPost
+              : IsrTranslationFile.newPost,
           centerTitle: true,
         ),
         body: Column(
