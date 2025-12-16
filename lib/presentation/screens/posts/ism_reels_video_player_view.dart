@@ -1079,74 +1079,112 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       ),
                       if (_postDescription.isStringEmptyOrNull == false) ...[
                         IsrDimens.boxHeight(IsrDimens.eight),
-                        Container(
+                        ConstrainedBox(
                           constraints: BoxConstraints(
-                              maxHeight: 350.responsiveDimension),
+                            maxHeight: 350.responsiveDimension,
+                            minHeight: 20, // Prevent grey box on empty content
+                          ),
                           child: SingleChildScrollView(
                             child: ValueListenableBuilder<bool>(
                               valueListenable: _isExpandedDescription,
                               builder: (context, value, child) {
-                                final fullDescription =
-                                    _reelData.description ?? '';
-                                final descriptionLineCount =
-                                    fullDescription.split('\n').length;
-                                final shouldTruncate =
-                                    fullDescription.length > _maxLengthToShow ||
-                                        descriptionLineCount > _maxLinesToShow;
-                                // Show truncated version when collapsed, full version when expanded
-                                final displayText = shouldTruncate && !value
-                                    ? fullDescription
-                                        .substring(0, _maxLengthToShow)
+                                try {
+                                  final fullDescription =
+                                      _reelData.description ?? '';
+
+                                  // Safety check: If empty after trimming, hide widget
+                                  if (fullDescription.trim().isEmpty) {
+                                    return const SizedBox.shrink();
+                                  }
+
+                                  final descriptionLineCount =
+                                      fullDescription.split('\n').length;
+                                  final shouldTruncate = fullDescription
+                                              .length >
+                                          _maxLengthToShow ||
+                                      descriptionLineCount > _maxLinesToShow;
+
+                                  // Show truncated version when collapsed, full version when expanded
+                                  // FIX: Prevent substring out of bounds error
+                                  String displayText;
+                                  if (shouldTruncate && !value) {
+                                    final safeLength = fullDescription.length <
+                                            _maxLengthToShow
+                                        ? fullDescription.length
+                                        : _maxLengthToShow;
+                                    displayText = fullDescription
+                                        .substring(0, safeLength)
                                         .split('\n')
                                         .take(_maxLinesToShow)
-                                        .join('\n')
-                                    : fullDescription;
+                                        .join('\n');
+                                  } else {
+                                    displayText = fullDescription;
+                                  }
 
-                                // OPTIMIZATION: Cache parsed description to avoid reparsing on every build
-                                if (_lastParsedDescription !=
-                                        displayText.trim() ||
-                                    _cachedDescriptionTextSpan == null) {
-                                  _lastParsedDescription = displayText.trim();
-                                  _cachedDescriptionTextSpan =
-                                      _buildDescriptionTextSpan(
-                                    displayText.trim(),
-                                    _mentionedDataList,
-                                    _taggedDataList,
-                                    IsrStyles.white14.copyWith(
+                                  // OPTIMIZATION: Cache parsed description to avoid reparsing on every build
+                                  if (_lastParsedDescription !=
+                                          displayText.trim() ||
+                                      _cachedDescriptionTextSpan == null) {
+                                    _lastParsedDescription = displayText.trim();
+                                    _cachedDescriptionTextSpan =
+                                        _buildDescriptionTextSpan(
+                                      displayText.trim(),
+                                      _mentionedDataList,
+                                      _taggedDataList,
+                                      IsrStyles.white14.copyWith(
                                         color:
-                                            IsrColors.white.changeOpacity(0.9)),
-                                    (mention) {
-                                      _callOnTapMentionData([mention]);
-                                    },
-                                  );
-                                }
+                                            IsrColors.white.changeOpacity(0.9),
+                                      ),
+                                      (mention) =>
+                                          _callOnTapMentionData([mention]),
+                                    );
+                                  }
 
-                                return GestureDetector(
-                                  onTap: () {
-                                    if (shouldTruncate) {
-                                      _isExpandedDescription.value =
-                                          !_isExpandedDescription.value;
-                                    }
-                                  },
-                                  child: RichText(
-                                    text: TextSpan(
-                                      children: [
-                                        _cachedDescriptionTextSpan!,
-                                        if (shouldTruncate)
-                                          TextSpan(
-                                            text: value ? ' ' : ' ... ',
-                                            style: IsrStyles.white14.copyWith(
-                                                fontWeight: FontWeight.w700),
-                                            recognizer: TapGestureRecognizer()
-                                              ..onTap = () {
-                                                // _isExpandedDescription.value =
-                                                //     !_isExpandedDescription.value;
-                                              },
-                                          ),
-                                      ],
+                                  // Safety check: Ensure cached TextSpan is not null
+                                  if (_cachedDescriptionTextSpan == null) {
+                                    debugPrint(
+                                        '❌ Failed to build description TextSpan for post ${_reelData.postId}');
+                                    return const SizedBox.shrink();
+                                  }
+
+                                  return GestureDetector(
+                                    onTap: () {
+                                      if (shouldTruncate) {
+                                        _isExpandedDescription.value =
+                                            !_isExpandedDescription.value;
+                                      }
+                                    },
+                                    child: RichText(
+                                      text: TextSpan(
+                                        children: [
+                                          _cachedDescriptionTextSpan!,
+                                          if (shouldTruncate)
+                                            TextSpan(
+                                              text:
+                                                  value ? ' less' : ' ... more',
+                                              style: IsrStyles.white14.copyWith(
+                                                fontWeight: FontWeight.w700,
+                                                color: IsrColors.white
+                                                    .changeOpacity(0.7),
+                                              ),
+                                              // Removed empty TapGestureRecognizer to prevent memory leak
+                                              // Parent GestureDetector handles the tap
+                                            ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                );
+                                  );
+                                } catch (e, stackTrace) {
+                                  // Catch any unexpected errors and log them
+                                  debugPrint(
+                                      '❌ Error building description widget: $e');
+                                  debugPrint('   Post ID: ${_reelData.postId}');
+                                  debugPrint(
+                                      '   Description length: ${_postDescription.length}');
+                                  debugPrint('   Stack trace: $stackTrace');
+                                  // Return empty widget instead of showing grey box
+                                  return const SizedBox.shrink();
+                                }
                               },
                             ),
                           ),
