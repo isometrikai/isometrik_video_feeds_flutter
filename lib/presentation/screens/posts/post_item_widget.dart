@@ -170,9 +170,12 @@ class _PostItemWidgetState extends State<PostItemWidget>
       bloc: _ismSocialActionCubit,
       child: BlocListener<IsmSocialActionCubit, IsmSocialActionState>(
         listenWhen: (previous, current) =>
-            (current is IsmFollowActionListenerState && widget.postSectionType == PostSectionType.following)
-        || (current is IsmSaveActionListenerState && widget.postSectionType == PostSectionType.savedPost)
-                || (current is IsmDeletedPostActionListenerState),
+        (current is IsmFollowActionListenerState &&
+                widget.postSectionType == PostSectionType.following) ||
+            (current is IsmSaveActionListenerState &&
+                widget.postSectionType == PostSectionType.savedPost) ||
+            (current is IsmDeletedPostActionListenerState) ||
+            (current is IsmEditPostActionListenerState),
         listener: (context, state) {
           if (state is IsmFollowActionListenerState && widget.postSectionType == PostSectionType.following) {
             _updateWithFollowAction(state);
@@ -192,15 +195,17 @@ class _PostItemWidgetState extends State<PostItemWidget>
   }
 
   Future<void> _updateWithEditAction(IsmEditPostActionListenerState state) async {
+    debugPrint('IsmEditPostActionListenerState: ${state.postData?.toMap()}');
     if (state.postData != null && _reelsDataList.any((e) => e.postId == state.postId)) {
       final index = _reelsDataList.indexWhere(
             (element) => element.postId == state.postData!.id,
       );
 
+      debugPrint('IsmEditPostActionListenerState: index $index');
       if (index != -1) {
         final postData = getReelData(state.postData!, loggedInUserId: widget.loggedInUserId);
         _reelsDataList[index] = postData; // replace
-        _updateState();
+        await updateStateByKey();
       }
     }
   }

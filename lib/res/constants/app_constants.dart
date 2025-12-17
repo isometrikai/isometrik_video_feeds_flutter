@@ -38,7 +38,7 @@ class AppConstants {
   static const String cloudinaryImageFolder = 'image/folder/';
   static const String cloudinaryThumbnailFolder = 'thumbnail/folder/';
 
-  static const bool isCompressionEnable = true;
+  static const bool isCompressionEnable = false;
   static const bool isMultipleMediaSelectionEnabled = true;
   static const bool isForYouPostEnable = true;
   static const int imageMediaLimit = 10;
