@@ -8,8 +8,8 @@ class DateTimeUtil {
         DateTime(now.year, now.month, now.day);
   }
 
-  static String getIsoDate(int timestamp) {
-    final date = DateTime.fromMillisecondsSinceEpoch(timestamp);
+  static String getIsoDate(int timestamp, {bool isUtc = false}) {
+    final date = DateTime.fromMillisecondsSinceEpoch(timestamp, isUtc: isUtc);
     debugPrint('getIsoDate...${date.toIso8601String()}');
     return date.toIso8601String();
   }

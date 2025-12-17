@@ -1586,7 +1586,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
           }
         }
         createPostRequest.scheduleTime =
-            DateTimeUtil.getIsoDate(_selectedDate!.millisecondsSinceEpoch);
+            DateTimeUtil.getIsoDate(_selectedDate!.millisecondsSinceEpoch, isUtc: true);
         createPostRequest.visibility = SocialPostVisibility.scheduled;
       } else {
         createPostRequest.scheduleTime = null;
