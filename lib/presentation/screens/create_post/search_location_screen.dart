@@ -321,9 +321,12 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
                   IsrStyles.primaryText14.copyWith(fontWeight: FontWeight.w600),
             ),
             8.verticalSpace,
-            Row(
-              children:
-                  _selectedLocations.map(_buildSelectedLocationChip).toList(),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children:
+                    _selectedLocations.map(_buildSelectedLocationChip).toList(),
+              ),
             ),
           ],
         ),

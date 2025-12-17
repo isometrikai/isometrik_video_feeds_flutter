@@ -782,7 +782,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         },
         isSelfProfile: postDataModel.user?.id == _loggedInUserId,
         onEditPost: () async {
-          final postDataString = await _showEditPostDialog(context, postDataModel);
+          final postDataString = await _handleEditPost(postDataModel);
           return postDataString ?? '';
         },
         onShowPostInsight: () {
