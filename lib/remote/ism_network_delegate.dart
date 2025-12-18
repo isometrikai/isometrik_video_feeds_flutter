@@ -48,7 +48,8 @@ class IsmPagination {
   factory IsmPagination.fromMap(Map<String, dynamic> map) => IsmPagination(
         currentPage: (map['page'] ?? map['currentPage'] ?? 1) as int,
         totalPages: (map['totalPages'] ?? map['total_pages'] ?? 1) as int,
-        pageSize: (map['pageSize'] ?? map['page_size'] ?? map['limit'] ?? 10) as int,
+        pageSize:
+            (map['pageSize'] ?? map['page_size'] ?? map['limit'] ?? 10) as int,
         totalItems: (map['total'] ?? map['totalItems'] ?? 0) as int,
       );
   const IsmPagination({
@@ -284,5 +285,3 @@ abstract class IsmNetworkMethods {
   static const String reportPost = 'reportPost';
   static const String commentAction = 'commentAction';
 }
-
-

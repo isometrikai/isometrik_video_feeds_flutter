@@ -82,9 +82,10 @@ class _LikeCommentIconViewState extends State<LikeCommentIconView> {
           duration: const Duration(milliseconds: 500),
           firstCurve: Curves.fastOutSlowIn,
           secondCurve: Curves.fastOutSlowIn,
-          crossFadeState: CrossFadeState.showSecond, //state is CommentActionLoadingState
-              // ? CrossFadeState.showFirst
-              // : CrossFadeState.showSecond,
+          crossFadeState:
+              CrossFadeState.showSecond, //state is CommentActionLoadingState
+          // ? CrossFadeState.showFirst
+          // : CrossFadeState.showSecond,
           firstChild: SizedBox(
             height: iconSize,
             width: iconSize,

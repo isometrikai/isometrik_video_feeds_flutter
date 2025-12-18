@@ -34,7 +34,9 @@ class SearchLocationBloc
       DeBouncer(duration: const Duration(milliseconds: 900));
 
   FutureOr<void> _getNearByPlaces(
-      GetNearByPlacesEvent event, Emitter<SearchLocationState> emit) async {
+    GetNearByPlacesEvent event,
+    Emitter<SearchLocationState> emit,
+  ) async {
     try {
       final apiResult = await _getNearByPlacesUseCase.executeGetNearByPlaces(
         isLoading: true,
@@ -75,26 +77,25 @@ class SearchLocationBloc
     }
   }
 
-  FutureOr<void> _searchAddress(
-      SearchAddressEvent event, Emitter<SearchLocationState> emit) async {
-    _deBouncer.run(() {
-      _getGeocodeAddress(event, emit);
-    });
-  }
-
-  FutureOr<void> _getGeocodeAddress(
-      SearchAddressEvent event, Emitter<SearchLocationState> emit) async {
-    final apiResult = await _geocodeSearchAddressUseCase.executeGeocodeSearch(
-      isLoading: false,
-      searchText: event.searchText,
-    );
-    if (apiResult.isSuccess) {
-      final response = apiResult.data;
-      if (event.onComplete != null) {
-        event.onComplete?.call(response?.results ?? []);
-      }
-    }
-  }
+  void _searchAddress(
+    SearchAddressEvent event,
+    Emitter<SearchLocationState> emit,
+  ) =>
+      _deBouncer.run(
+        () async {
+          final apiResult =
+              await _geocodeSearchAddressUseCase.executeGeocodeSearch(
+            isLoading: false,
+            searchText: event.searchText,
+          );
+          if (apiResult.isSuccess) {
+            final response = apiResult.data;
+            if (event.onComplete != null) {
+              event.onComplete?.call(response?.results ?? []);
+            }
+          }
+        },
+      );
 
   FutureOr<void> _getPlaceDetails(
       GetPlaceDetails event, Emitter<SearchLocationState> emit) async {
@@ -110,7 +111,9 @@ class SearchLocationBloc
   }
 
   FutureOr<void> _getCurrentLocation(
-      GetCurrentLocationEvent event, Emitter<SearchLocationState> emit) async {
+    GetCurrentLocationEvent event,
+    Emitter<SearchLocationState> emit,
+  ) async {
     try {
       emit(SearchLocationLoadingState(isLoading: true));
 

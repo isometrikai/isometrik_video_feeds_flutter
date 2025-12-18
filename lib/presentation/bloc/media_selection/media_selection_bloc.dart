@@ -12,7 +12,6 @@ import 'package:photo_manager/photo_manager.dart' as pm;
 import 'package:video_compress/video_compress.dart';
 
 part 'media_selection_event.dart';
-
 part 'media_selection_state.dart';
 
 class MediaSelectionBloc
@@ -56,7 +55,7 @@ class MediaSelectionBloc
     if (event.selectedMedia != null) {
       _selectedMedia.addAll(event.selectedMedia!);
     }
-    add(RequestPermissionEvent());
+    add(const RequestPermissionEvent(openSettingsIfDenied: false));
   }
 
   Future<void> _onRequestPermission(
@@ -76,6 +75,11 @@ class MediaSelectionBloc
       ));
       add(LoadAlbumsEvent());
     } else {
+      // Check if permission is permanently denied or limited
+      if (ps == pm.PermissionState.denied || ps == pm.PermissionState.limited) {
+        // Open app settings directly to photo permission page
+        if (event.openSettingsIfDenied) await pm.PhotoManager.openSetting();
+      }
       emit(MediaSelectionPermissionDeniedState());
     }
   }

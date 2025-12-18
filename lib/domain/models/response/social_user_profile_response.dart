@@ -1,9 +1,11 @@
 import 'dart:convert';
 
 SocialUserProfileResponse socialUserProfileResponseFromJson(String str) =>
-    SocialUserProfileResponse.fromJson(json.decode(str) as Map<String, dynamic>);
+    SocialUserProfileResponse.fromJson(
+        json.decode(str) as Map<String, dynamic>);
 
-String socialUserProfileResponseToJson(SocialUserProfileResponse data) => json.encode(data.toJson());
+String socialUserProfileResponseToJson(SocialUserProfileResponse data) =>
+    json.encode(data.toJson());
 
 class SocialUserProfileResponse {
   SocialUserProfileResponse({
@@ -14,14 +16,16 @@ class SocialUserProfileResponse {
     this.data,
   });
 
-  factory SocialUserProfileResponse.fromJson(Map<String, dynamic> json) => SocialUserProfileResponse(
+  factory SocialUserProfileResponse.fromJson(Map<String, dynamic> json) =>
+      SocialUserProfileResponse(
         status: json['status'] as String? ?? '',
         message: json['message'] as String? ?? '',
         statusCode: json['statusCode'] as num? ?? 0,
         code: json['code'] as String? ?? '',
         data: json['data'] == null
             ? null
-            : SocialUserProfileData.fromJson(json['data'] as Map<String, dynamic>),
+            : SocialUserProfileData.fromJson(
+                json['data'] as Map<String, dynamic>),
       );
 
   final String? status;
@@ -56,7 +60,8 @@ class SocialUserProfileData {
     this.postsCount,
   });
 
-  factory SocialUserProfileData.fromJson(Map<String, dynamic> json) => SocialUserProfileData(
+  factory SocialUserProfileData.fromJson(Map<String, dynamic> json) =>
+      SocialUserProfileData(
         fullName: json['full_name'] as String? ?? '',
         avatarUrl: json['avatar_url'] as String? ?? '',
         followersCount: json['followers_count'] as num? ?? 0,

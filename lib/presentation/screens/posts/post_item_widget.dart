@@ -170,20 +170,22 @@ class _PostItemWidgetState extends State<PostItemWidget>
       bloc: _ismSocialActionCubit,
       child: BlocListener<IsmSocialActionCubit, IsmSocialActionState>(
         listenWhen: (previous, current) =>
-        (current is IsmFollowActionListenerState &&
+            (current is IsmFollowActionListenerState &&
                 widget.postSectionType == PostSectionType.following) ||
             (current is IsmSaveActionListenerState &&
                 widget.postSectionType == PostSectionType.savedPost) ||
             (current is IsmDeletedPostActionListenerState) ||
             (current is IsmEditPostActionListenerState),
         listener: (context, state) {
-          if (state is IsmFollowActionListenerState && widget.postSectionType == PostSectionType.following) {
+          if (state is IsmFollowActionListenerState &&
+              widget.postSectionType == PostSectionType.following) {
             _updateWithFollowAction(state);
-          } else if (state is IsmSaveActionListenerState && widget.postSectionType == PostSectionType.savedPost) {
+          } else if (state is IsmSaveActionListenerState &&
+              widget.postSectionType == PostSectionType.savedPost) {
             _updateWithSaveAction(state);
-          } else if (state is IsmDeletedPostActionListenerState){
+          } else if (state is IsmDeletedPostActionListenerState) {
             _updateWithDeleteAction(state);
-          } else if (state is IsmEditPostActionListenerState){
+          } else if (state is IsmEditPostActionListenerState) {
             _updateWithEditAction(state);
           }
         },
@@ -194,25 +196,30 @@ class _PostItemWidgetState extends State<PostItemWidget>
     );
   }
 
-  Future<void> _updateWithEditAction(IsmEditPostActionListenerState state) async {
+  Future<void> _updateWithEditAction(
+      IsmEditPostActionListenerState state) async {
     debugPrint('IsmEditPostActionListenerState: ${state.postData?.toMap()}');
-    if (state.postData != null && _reelsDataList.any((e) => e.postId == state.postId)) {
+    if (state.postData != null &&
+        _reelsDataList.any((e) => e.postId == state.postId)) {
       final index = _reelsDataList.indexWhere(
-            (element) => element.postId == state.postData!.id,
+        (element) => element.postId == state.postData!.id,
       );
 
       debugPrint('IsmEditPostActionListenerState: index $index');
       if (index != -1) {
-        final postData = getReelData(state.postData!, loggedInUserId: widget.loggedInUserId);
+        final postData =
+            getReelData(state.postData!, loggedInUserId: widget.loggedInUserId);
         _reelsDataList[index] = postData; // replace
         await updateStateByKey();
       }
     }
   }
 
-  Future<void> _updateWithDeleteAction(IsmDeletedPostActionListenerState state) async {
+  Future<void> _updateWithDeleteAction(
+      IsmDeletedPostActionListenerState state) async {
     if (_reelsDataList.any((e) => e.postId == state.postId)) {
-      final deletedPost = _reelsDataList.firstWhere((e) => e.postId == state.postId);
+      final deletedPost =
+          _reelsDataList.firstWhere((e) => e.postId == state.postId);
       await evictDeletedPostMedia(deletedPost);
       _reelsDataList.removeWhere((element) => element.postId == state.postId);
       await updateStateByKey();
@@ -238,7 +245,8 @@ class _PostItemWidgetState extends State<PostItemWidget>
     await _doMediaCaching(currentIndex);
   }
 
-  Future<void> _updateWithFollowAction(IsmFollowActionListenerState state) async {
+  Future<void> _updateWithFollowAction(
+      IsmFollowActionListenerState state) async {
     var updateState = false;
     if (state.isFollowing &&
         !_reelsDataList.any((element) => element.userId == state.userId)) {

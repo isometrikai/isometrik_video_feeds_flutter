@@ -60,19 +60,22 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   }
 
   void _onScroll() {
-    if (_scrollController.hasClients) {
-      final scrollPosition = _scrollController.position;
-      final scrollPercentage =
-          scrollPosition.pixels / scrollPosition.maxScrollExtent;
+    if (!_scrollController.hasClients || _isLoadingMore || !_hasMoreComments) {
+      return;
+    }
 
-      if (scrollPercentage >= 0.6 && !_isLoadingMore && _hasMoreComments) {
-        _isLoadingMore = true;
-        _socialBloc.add(
-          GetPostCommentsEvent(
-            isLoading: false,
-            postId: widget.postId,
-            isPagination: true,
-            onComplete: (comments) {
+    final scrollPosition = _scrollController.position;
+    final threshold = scrollPosition.maxScrollExtent * 0.6;
+
+    if (scrollPosition.pixels >= threshold) {
+      _isLoadingMore = true;
+      _socialBloc.add(
+        GetPostCommentsEvent(
+          isLoading: false,
+          postId: widget.postId,
+          isPagination: true,
+          onComplete: (comments) {
+            if (mounted) {
               setState(() {
                 if (comments.isNotEmpty) {
                   _postCommentList.addAll(comments);
@@ -83,10 +86,10 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                 _isLoadingMore = false;
                 _totalCommentsCount = _postCommentList.length;
               });
-            },
-          ),
-        );
-      }
+            }
+          },
+        ),
+      );
     }
   }
 
@@ -126,24 +129,26 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
               currentState is LoadPostCommentState ||
               currentState is LoadingPostComment,
           listener: (context, state) {
-            debugPrint(
-                'comment: state: $state comments : ${_postCommentList.map((_) => '${_.id}, ${_.comment}')}');
             if (state is LoadPostCommentState) {
-              _isCommentsLoaded = true;
-              _myUserId = state.myUserId ?? '';
-              _postCommentList.clear();
-              if (state.postCommentsList.isListEmptyOrNull == false) {
-                _postCommentList.addAll(
-                    state.postCommentsList as Iterable<CommentDataItem>);
-              } else {
-                _setReplyComment(null);
+              if (!_isCommentsLoaded) {
+                _isCommentsLoaded = true;
+                _myUserId = state.myUserId ?? '';
               }
-              _totalCommentsCount = _postCommentList.length;
+
+              // Only update from server if list changed
+              if (state.postCommentsList != null && mounted) {
+                // Don't replace entire list, just update from server
+                // Bloc already handles merging optimistic comments with server response
+                setState(() {
+                  _postCommentList
+                    ..clear()
+                    ..addAll(
+                        state.postCommentsList as Iterable<CommentDataItem>);
+                  _totalCommentsCount = _postCommentList.length;
+                });
+              }
             }
           },
-          buildWhen: (previousState, currentState) =>
-              currentState is LoadPostCommentState ||
-              currentState is LoadingPostComment,
           builder: (context, state) => SafeArea(
             child: Container(
               padding: EdgeInsets.only(
@@ -186,7 +191,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                     ),
                   ),
                   const Divider(height: 1),
-                  // Products List
+                  // Comments List
                   Expanded(
                     child: Stack(children: [
                       if (_postCommentList.isNotEmpty == true)
@@ -194,6 +199,9 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                           controller: _scrollController,
                           padding: IsrDimens.edgeInsetsAll(IsrDimens.sixteen),
                           itemCount: _postCommentList.length,
+                          cacheExtent: 500,
+                          addAutomaticKeepAlives: true,
+                          addRepaintBoundaries: true,
                           separatorBuilder: (_, __) =>
                               16.responsiveVerticalSpace,
                           itemBuilder: (context, index) =>
@@ -211,242 +219,245 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
         ),
       );
 
+  GlobalKey? _getOrCreateCommentKey(String? commentId) {
+    if (commentId == null || commentId.isEmpty) return null;
+    return _commentItemKeys.putIfAbsent(commentId, GlobalKey.new);
+  }
+
   Widget _buildCommentItem(CommentDataItem commentDataItem) {
-    final comment = commentDataItem
-        .also((_) => debugPrint('comment: comment tag: ${_.toJson()}'));
+    final comment = commentDataItem;
 
-    // Ensure GlobalKey exists for this comment
-    if (comment.id != null && comment.id!.isNotEmpty) {
-      _commentItemKeys.putIfAbsent(comment.id!, GlobalKey.new);
-    }
-
-    return StatefulBuilder(
-      builder: (context, setState) => Container(
-        key: comment.id != null && comment.id!.isNotEmpty
-            ? _commentItemKeys[comment.id!]
-            : null,
-        child: Column(
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      RichText(
-                        text: TextSpan(
-                          children: [
-                            TextSpan(
-                              text: comment.commentedBy ?? '',
-                              recognizer: TapGestureRecognizer()
-                                ..onTap = () {
-                                  if (widget.onTapProfile != null) {
-                                    widget.onTapProfile!(
-                                        comment.commentedByUserId ?? '');
-                                  }
-                                },
-                              style: IsrStyles.primaryText14.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const TextSpan(text: ' '),
-                            ...Utility.buildCommentTextSpans(
-                              '${comment.comment ?? ''}',
-                              IsrStyles.primaryText14,
-                              comment.tags,
-                              onUsernameTap: (userId) {
-                                widget.onTapProfile?.call(userId);
-                              },
-                              onHashtagTap: (hashtag) {
-                                widget.onTapHasTag?.call(hashtag);
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                      8.responsiveVerticalSpace,
-                      Row(
-                        spacing: 12.responsiveDimension,
-                        children: [
-                          if (comment.id.isStringEmptyOrNull &&
-                              !comment.status.isStringEmptyOrNull)
-                            Text(
-                              comment.status ?? '',
-                              style: IsrStyles.primaryText12.copyWith(
-                                color: '828282'.toColor(),
-                              ),
-                            ),
-                          if (comment.id != null && comment.id!.isNotEmpty)
-                            Text(
-                              Utility.getTimeAgoFromDateTime(
-                                  comment.commentedOn,
-                                  showJustNow: true),
-                              style: IsrStyles.primaryText12.copyWith(
-                                color: '828282'.toColor(),
-                              ),
-                            ),
-                          if (comment.id != null && comment.id!.isNotEmpty)
-                            Text(
-                              '${comment.likeCount} ${(comment.likeCount ?? 0) <= 1 ? IsrTranslationFile.like : IsrTranslationFile.likes}',
-                              style: IsrStyles.primaryText12.copyWith(
-                                color: '828282'.toColor(),
-                              ),
-                            ),
-                          if (comment.id != null && comment.id!.isNotEmpty)
-                            TapHandler(
-                              onTap: () {
-                                _setReplyComment(comment);
-                                // Scroll to comment after a brief delay to ensure UI is updated
-                                WidgetsBinding.instance
-                                    .addPostFrameCallback((_) {
-                                  _scrollToComment(comment.id);
-                                });
-                              },
-                              child: Text(
-                                IsrTranslationFile.reply,
-                                style: IsrStyles.primaryText12.copyWith(
-                                  color: Theme.of(context).primaryColor,
+    return RepaintBoundary(
+      child: StatefulBuilder(
+        builder: (context, setState) => Container(
+          key: _getOrCreateCommentKey(comment.id),
+          child: Column(
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        RichText(
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text: comment.fullName?.isNotEmpty == true
+                                    ? comment.fullName!
+                                    : comment.commentedBy ?? '',
+                                recognizer: TapGestureRecognizer()
+                                  ..onTap = () {
+                                    if (widget.onTapProfile != null) {
+                                      widget.onTapProfile!(
+                                          comment.commentedByUserId ?? '');
+                                    }
+                                  },
+                                style: IsrStyles.primaryText14.copyWith(
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-                            ),
-                          if (!comment.showReply &&
-                              (comment.childCommentCount ?? 0) > 0)
-                            TapHandler(
-                              onTap: () {
-                                setState(() {
-                                  comment.showReply = true;
-                                });
-                                if (comment.id != null &&
-                                    comment.childComments.isEmptyOrNull) {
-                                  _socialBloc.add(GetPostCommentReplyEvent(
-                                      isLoading: true,
-                                      parentComment: comment,
-                                      postId: widget.postId));
-                                }
-                                // Scroll to comment after a brief delay to ensure UI is updated
-                                WidgetsBinding.instance
-                                    .addPostFrameCallback((_) {
-                                  _scrollToComment(comment.id);
-                                });
-                              },
-                              child: Text(
-                                IsrTranslationFile.viewReplies,
+                              const TextSpan(text: ' '),
+                              ...Utility.buildCommentTextSpans(
+                                '${comment.comment ?? ''}',
+                                IsrStyles.primaryText14,
+                                comment.tags,
+                                onUsernameTap: (userId) {
+                                  widget.onTapProfile?.call(userId);
+                                },
+                                onHashtagTap: (hashtag) {
+                                  widget.onTapHasTag?.call(hashtag);
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                        8.responsiveVerticalSpace,
+                        Row(
+                          spacing: 12.responsiveDimension,
+                          children: [
+                            if (comment.id.isStringEmptyOrNull &&
+                                !comment.status.isStringEmptyOrNull)
+                              Text(
+                                comment.status ?? '',
                                 style: IsrStyles.primaryText12.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: '94A0AF'.toColor()),
+                                  color: '828282'.toColor(),
+                                ),
                               ),
-                            )
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                4.responsiveHorizontalSpace,
-                if (comment.id != null && comment.id!.isNotEmpty)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      LikeCommentIconView(
-                        postId: comment.postId ?? '',
-                        commentId: comment.id ?? '',
-                        userId: comment.commentedByUserId ?? '',
-                        isLiked: comment.isLiked == true,
-                        onLikeDisLikeComment: (isLiked) {
-                          setState(() {
-                            comment.likeCount = isLiked
-                                ? (comment.likeCount ?? 0) + 1
-                                : comment.likeCount == 0
-                                    ? 0
-                                    : (comment.likeCount ?? 0) - 1;
-                          });
-                          if (isLiked) {
-                            _logLikeCommentEvent(
-                              EventType.commentLiked.value,
-                              comment.id ?? '',
-                              comment.postId ?? '',
-                            );
-                          }
-                        },
-                      ),
-                      8.responsiveHorizontalSpace,
-                      TapHandler(
-                        padding: 5.responsiveDimension,
-                        onTap: () async {
-                          await showDialog(
-                            context: context,
-                            builder: (context) => _buildMoreOptionUI(comment),
-                          );
-                        },
-                        child: const AppImage.svg(
-                            AssetConstants.icVerticalMoreMenu),
-                      ),
-                    ],
-                  ),
-              ],
-            ),
-            // Child comments section
-            if (comment.showReply) ...[
-              BlocConsumer<SocialPostBloc, SocialPostState>(
-                  listenWhen: (previousState, currentState) =>
-                      (currentState is LoadPostCommentRepliesState &&
-                          currentState.parentCommentId == comment.id) ||
-                      (currentState is LoadingPostCommentReplies &&
-                          currentState.parentCommentId == comment.id),
-                  buildWhen: (previousState, currentState) =>
-                      (currentState is LoadPostCommentRepliesState &&
-                          currentState.parentCommentId == comment.id) ||
-                      (currentState is LoadingPostCommentReplies &&
-                          currentState.parentCommentId == comment.id),
-                  listener: (context, state) {
-                    switch (state) {
-                      case LoadPostCommentRepliesState():
-                        comment.childComments = state.postCommentRepliesList;
-                        if (state.postCommentRepliesList?.isNotEmpty != true) {
-                          setState(() {
-                            comment.showReply = false;
-                          });
-                        }
-                        break;
-                    }
-                  },
-                  builder: (context, state) => switch (state) {
-                        LoadingPostCommentReplies() => Utility.loaderWidget(),
-                        _ => Column(children: [
-                            ...List.generate(
-                              comment.childComments?.length ?? 0,
-                              (index) => Padding(
-                                padding: IsrDimens.edgeInsets(
-                                    left: 32.responsiveDimension,
-                                    top: 16.responsiveDimension),
-                                child: _buildChildCommentItem(
-                                    comment.childComments![index], false),
+                            if (comment.id != null && comment.id!.isNotEmpty)
+                              Text(
+                                Utility.getTimeAgoFromDateTime(
+                                    comment.commentedOn,
+                                    showJustNow: true),
+                                style: IsrStyles.primaryText12.copyWith(
+                                  color: '828282'.toColor(),
+                                ),
                               ),
-                            ),
-                            TapHandler(
-                              onTap: () {
-                                setState(() {
-                                  comment.showReply = false;
-                                });
-                              },
-                              child: Container(
-                                alignment: Alignment.centerLeft,
-                                padding: IsrDimens.edgeInsets(
-                                    left: 32.responsiveDimension,
-                                    top: 16.responsiveDimension),
+                            if (comment.id != null && comment.id!.isNotEmpty)
+                              Text(
+                                '${comment.likeCount} ${(comment.likeCount ?? 0) <= 1 ? IsrTranslationFile.like : IsrTranslationFile.likes}',
+                                style: IsrStyles.primaryText12.copyWith(
+                                  color: '828282'.toColor(),
+                                ),
+                              ),
+                            if (comment.id != null && comment.id!.isNotEmpty)
+                              TapHandler(
+                                onTap: () {
+                                  _setReplyComment(comment);
+                                  // Scroll to comment after a brief delay to ensure UI is updated
+                                  WidgetsBinding.instance
+                                      .addPostFrameCallback((_) {
+                                    _scrollToComment(comment.id);
+                                  });
+                                },
                                 child: Text(
-                                  IsrTranslationFile.hideReplies,
-                                  style: IsrStyles.secondaryText12.copyWith(
+                                  IsrTranslationFile.reply,
+                                  style: IsrStyles.primaryText12.copyWith(
+                                    color: Theme.of(context).primaryColor,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            if (!comment.showReply &&
+                                (comment.childCommentCount ?? 0) > 0)
+                              TapHandler(
+                                onTap: () {
+                                  setState(() {
+                                    comment.showReply = true;
+                                  });
+                                  if (comment.id != null &&
+                                      comment.childComments.isEmptyOrNull) {
+                                    _socialBloc.add(GetPostCommentReplyEvent(
+                                        isLoading: true,
+                                        parentComment: comment,
+                                        postId: widget.postId));
+                                  }
+                                  // Scroll to comment after a brief delay to ensure UI is updated
+                                  WidgetsBinding.instance
+                                      .addPostFrameCallback((_) {
+                                    _scrollToComment(comment.id);
+                                  });
+                                },
+                                child: Text(
+                                  IsrTranslationFile.viewReplies,
+                                  style: IsrStyles.primaryText12.copyWith(
                                       fontWeight: FontWeight.w700,
                                       color: '94A0AF'.toColor()),
                                 ),
+                              )
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  4.responsiveHorizontalSpace,
+                  if (comment.id != null && comment.id!.isNotEmpty)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        LikeCommentIconView(
+                          postId: comment.postId ?? '',
+                          commentId: comment.id ?? '',
+                          userId: comment.commentedByUserId ?? '',
+                          isLiked: comment.isLiked == true,
+                          onLikeDisLikeComment: (isLiked) {
+                            setState(() {
+                              comment.likeCount = isLiked
+                                  ? (comment.likeCount ?? 0) + 1
+                                  : comment.likeCount == 0
+                                      ? 0
+                                      : (comment.likeCount ?? 0) - 1;
+                            });
+                            if (isLiked) {
+                              _logLikeCommentEvent(
+                                EventType.commentLiked.value,
+                                comment.id ?? '',
+                                comment.postId ?? '',
+                              );
+                            }
+                          },
+                        ),
+                        8.responsiveHorizontalSpace,
+                        TapHandler(
+                          padding: 5.responsiveDimension,
+                          onTap: () async => await showDialog(
+                            context: context,
+                            builder: (context) => _buildMoreOptionUI(comment),
+                          ),
+                          child: const AppImage.svg(
+                            AssetConstants.icVerticalMoreMenu,
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+              // Child comments section
+              if (comment.showReply &&
+                  comment.id != null &&
+                  comment.id!.isNotEmpty) ...[
+                BlocConsumer<SocialPostBloc, SocialPostState>(
+                    listenWhen: (previousState, currentState) =>
+                        (currentState is LoadPostCommentRepliesState &&
+                            currentState.parentCommentId == comment.id) ||
+                        (currentState is LoadingPostCommentReplies &&
+                            currentState.parentCommentId == comment.id),
+                    buildWhen: (previousState, currentState) =>
+                        (currentState is LoadPostCommentRepliesState &&
+                            currentState.parentCommentId == comment.id) ||
+                        (currentState is LoadingPostCommentReplies &&
+                            currentState.parentCommentId == comment.id),
+                    listener: (context, state) {
+                      switch (state) {
+                        case LoadPostCommentRepliesState():
+                          comment.childComments = state.postCommentRepliesList;
+                          if (state.postCommentRepliesList?.isNotEmpty !=
+                              true) {
+                            setState(() {
+                              comment.showReply = false;
+                            });
+                          }
+                          break;
+                      }
+                    },
+                    builder: (context, state) => switch (state) {
+                          LoadingPostCommentReplies() => Utility.loaderWidget(),
+                          _ => Column(children: [
+                              ...List.generate(
+                                comment.childComments?.length ?? 0,
+                                (index) => Padding(
+                                  padding: IsrDimens.edgeInsets(
+                                      left: 32.responsiveDimension,
+                                      top: 16.responsiveDimension),
+                                  child: _buildChildCommentItem(
+                                      comment.childComments![index], false),
+                                ),
                               ),
-                            )
-                          ]),
-                      }),
+                              TapHandler(
+                                onTap: () {
+                                  setState(() {
+                                    comment.showReply = false;
+                                  });
+                                },
+                                child: Container(
+                                  alignment: Alignment.centerLeft,
+                                  padding: IsrDimens.edgeInsets(
+                                      left: 32.responsiveDimension,
+                                      top: 16.responsiveDimension),
+                                  child: Text(
+                                    IsrTranslationFile.hideReplies,
+                                    style: IsrStyles.secondaryText12.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                        color: '94A0AF'.toColor()),
+                                  ),
+                                ),
+                              )
+                            ]),
+                        }),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -454,126 +465,131 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
 
   Widget _buildChildCommentItem(CommentDataItem comment, bool isReply) {
     var likeCount = comment.likeCount ?? 0;
-    return StatefulBuilder(
-      builder: (context, setState) => Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                RichText(
-                  text: TextSpan(
-                    style: DefaultTextStyle.of(context).style,
-                    children: [
-                      TextSpan(
-                        text: comment.commentedBy ?? '',
-                        recognizer: TapGestureRecognizer()
-                          ..onTap = () {
-                            if (widget.onTapProfile != null) {
-                              widget.onTapProfile!(
-                                  comment.commentedByUserId ?? '');
-                            }
-                          },
-                        style: IsrStyles.primaryText14.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const TextSpan(text: ' '),
-                      ...Utility.buildCommentTextSpans(
-                        '${comment.comment ?? ''}',
-                        IsrStyles.primaryText14,
-                        comment.tags,
-                        onUsernameTap: (userId) {
-                          widget.onTapProfile?.call(userId);
-                        },
-                        onHashtagTap: (hashtag) {
-                          widget.onTapHasTag?.call(hashtag);
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                8.responsiveVerticalSpace,
-                Row(
-                  spacing: 12.responsiveDimension,
-                  children: [
-                    if (comment.id.isStringEmptyOrNull &&
-                        !comment.status.isStringEmptyOrNull)
-                      Text(
-                        comment.status ?? '',
-                        style: IsrStyles.primaryText12.copyWith(
-                          color: '828282'.toColor(),
-                        ),
-                      ),
-                    if (comment.id != null && comment.id!.isNotEmpty)
-                      Text(
-                        Utility.getTimeAgoFromDateTime(comment.commentedOn),
-                        style: IsrStyles.primaryText12.copyWith(
-                          color: '828282'.toColor(),
-                        ),
-                      ),
-                    if (comment.id != null && comment.id!.isNotEmpty)
-                      Text(
-                        '$likeCount ${likeCount <= 1 ? IsrTranslationFile.like : IsrTranslationFile.likes}',
-                        style: IsrStyles.primaryText12.copyWith(
-                          color: '828282'.toColor(),
-                        ),
-                      ),
-                    if (isReply) ...[
-                      TapHandler(
-                        onTap: () {
-                          _setReplyComment(comment);
-                        },
-                        child: Text(
-                          IsrTranslationFile.reply,
-                          style: IsrStyles.primaryText12.copyWith(
-                            color: Theme.of(context).primaryColor,
+    return RepaintBoundary(
+      child: StatefulBuilder(
+        builder: (context, setState) => Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  RichText(
+                    text: TextSpan(
+                      style: DefaultTextStyle.of(context).style,
+                      children: [
+                        TextSpan(
+                          text: comment.fullName?.isNotEmpty == true
+                              ? comment.fullName!
+                              : comment.commentedBy ?? '',
+                          recognizer: TapGestureRecognizer()
+                            ..onTap = () {
+                              if (widget.onTapProfile != null) {
+                                widget.onTapProfile!(
+                                    comment.commentedByUserId ?? '');
+                              }
+                            },
+                          style: IsrStyles.primaryText14.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ),
+                        const TextSpan(text: ' '),
+                        ...Utility.buildCommentTextSpans(
+                          '${comment.comment ?? ''}',
+                          IsrStyles.primaryText14,
+                          comment.tags,
+                          onUsernameTap: (userId) {
+                            widget.onTapProfile?.call(userId);
+                          },
+                          onHashtagTap: (hashtag) {
+                            widget.onTapHasTag?.call(hashtag);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  8.responsiveVerticalSpace,
+                  Row(
+                    spacing: 12.responsiveDimension,
+                    children: [
+                      if (comment.id.isStringEmptyOrNull &&
+                          !comment.status.isStringEmptyOrNull)
+                        Text(
+                          comment.status ?? '',
+                          style: IsrStyles.primaryText12.copyWith(
+                            color: '828282'.toColor(),
+                          ),
+                        ),
+                      if (comment.id != null && comment.id!.isNotEmpty)
+                        Text(
+                          Utility.getTimeAgoFromDateTime(comment.commentedOn),
+                          style: IsrStyles.primaryText12.copyWith(
+                            color: '828282'.toColor(),
+                          ),
+                        ),
+                      if (comment.id != null && comment.id!.isNotEmpty)
+                        Text(
+                          '$likeCount ${likeCount <= 1 ? IsrTranslationFile.like : IsrTranslationFile.likes}',
+                          style: IsrStyles.primaryText12.copyWith(
+                            color: '828282'.toColor(),
+                          ),
+                        ),
+                      if (isReply) ...[
+                        TapHandler(
+                          onTap: () {
+                            _setReplyComment(comment);
+                          },
+                          child: Text(
+                            IsrTranslationFile.reply,
+                            style: IsrStyles.primaryText12.copyWith(
+                              color: Theme.of(context).primaryColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
-          ),
-          4.responsiveHorizontalSpace,
-          if (comment.id != null && comment.id!.isNotEmpty)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                LikeCommentIconView(
-                  postId: comment.postId ?? '',
-                  commentId: comment.id ?? '',
-                  userId: comment.commentedByUserId ?? '',
-                  isLiked: comment.isLiked == true,
-                  onLikeDisLikeComment: (isLiked) {
-                    setState(() {
-                      likeCount = isLiked
-                          ? likeCount + 1
-                          : likeCount == 0
-                              ? 0
-                              : likeCount - 1;
-                      comment.likeCount = likeCount;
-                    });
-                  },
-                ),
-                8.responsiveHorizontalSpace,
-                TapHandler(
-                  padding: 5.responsiveDimension,
-                  onTap: () async {
-                    await showDialog(
-                      context: context,
-                      builder: (context) => _buildMoreOptionUI(comment),
-                    );
-                  },
-                  child: const AppImage.svg(AssetConstants.icVerticalMoreMenu),
-                ),
-              ],
-            ),
-        ],
+            4.responsiveHorizontalSpace,
+            if (comment.id != null && comment.id!.isNotEmpty)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  LikeCommentIconView(
+                    postId: comment.postId ?? '',
+                    commentId: comment.id ?? '',
+                    userId: comment.commentedByUserId ?? '',
+                    isLiked: comment.isLiked == true,
+                    onLikeDisLikeComment: (isLiked) {
+                      setState(() {
+                        likeCount = isLiked
+                            ? likeCount + 1
+                            : likeCount == 0
+                                ? 0
+                                : likeCount - 1;
+                        comment.likeCount = likeCount;
+                      });
+                    },
+                  ),
+                  8.responsiveHorizontalSpace,
+                  TapHandler(
+                    padding: 5.responsiveDimension,
+                    onTap: () async {
+                      await showDialog(
+                        context: context,
+                        builder: (context) => _buildMoreOptionUI(comment),
+                      );
+                    },
+                    child:
+                        const AppImage.svg(AssetConstants.icVerticalMoreMenu),
+                  ),
+                ],
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -765,56 +781,48 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
           Padding(
             padding: IsrDimens.edgeInsetsSymmetric(
                 horizontal: 10.responsiveDimension),
-            child: ValueListenableBuilder<TextEditingValue>(
-              valueListenable: _replyController,
-              builder: (context, value, child) => Row(
-                mainAxisSize: MainAxisSize.max,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: CommentTaggingTextField(
-                      controller: _replyController,
-                      focusNode: _replyFocusNode,
-                      minLines: 1,
-                      autoFocus: true,
+            child: Row(
+              mainAxisSize: MainAxisSize.max,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: CommentTaggingTextField(
+                    controller: _replyController,
+                    focusNode: _replyFocusNode,
+                    minLines: 1,
+                    autoFocus: true,
+                    hintText: IsrTranslationFile.addAComment,
+                    decoration: const InputDecoration(
                       hintText: IsrTranslationFile.addAComment,
-                      decoration: const InputDecoration(
-                        hintText: IsrTranslationFile.addAComment,
-                        border: InputBorder.none,
-                        floatingLabelBehavior: FloatingLabelBehavior.never,
-                        alignLabelWithHint: true,
-                      ),
-                      onRemoveHashTagData: (mentionData) {
-                        debugPrint(
-                            'comment: remove hash tag data: ${mentionData.toJson()}');
-                        tagMentions.removeWhere(
-                            (_) => _.toJson() == mentionData.toJson());
-                      },
-                      onRemoveMentionData: (mentionData) {
-                        debugPrint(
-                            'comment: remove mention data: ${mentionData.toJson()}');
-                        userMentions.removeWhere(
-                            (_) => _.toJson() == mentionData.toJson());
-                      },
-                      onAddHashTagData: (mentionData) {
-                        debugPrint(
-                            'comment: add hash tag data: ${mentionData.toJson()}');
-                        if (!tagMentions
-                            .any((_) => _.toJson() == mentionData.toJson())) {
-                          tagMentions.add(mentionData);
-                        }
-                      },
-                      onAddMentionData: (mentionData) {
-                        debugPrint(
-                            'comment: add mention data: ${mentionData.toJson()}');
-                        if (!userMentions
-                            .any((_) => _.toJson() == mentionData.toJson())) {
-                          userMentions.add(mentionData);
-                        }
-                      },
+                      border: InputBorder.none,
+                      floatingLabelBehavior: FloatingLabelBehavior.never,
+                      alignLabelWithHint: true,
                     ),
+                    onRemoveHashTagData: (mentionData) {
+                      tagMentions.removeWhere(
+                          (_) => _.toJson() == mentionData.toJson());
+                    },
+                    onRemoveMentionData: (mentionData) {
+                      userMentions.removeWhere(
+                          (_) => _.toJson() == mentionData.toJson());
+                    },
+                    onAddHashTagData: (mentionData) {
+                      if (!tagMentions
+                          .any((_) => _.toJson() == mentionData.toJson())) {
+                        tagMentions.add(mentionData);
+                      }
+                    },
+                    onAddMentionData: (mentionData) {
+                      if (!userMentions
+                          .any((_) => _.toJson() == mentionData.toJson())) {
+                        userMentions.add(mentionData);
+                      }
+                    },
                   ),
-                  AppButton(
+                ),
+                ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: _replyController,
+                  builder: (context, value, child) => AppButton(
                     width: 70.responsiveDimension,
                     title: IsrTranslationFile.post,
                     textStyle: IsrStyles.primaryText14.copyWith(
@@ -825,37 +833,51 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                     ),
                     isDisable: value.text.isStringEmptyOrNull,
                     type: ButtonType.text,
-                    onPress: () {
+                    onPress: () async {
                       if (value.text.isStringEmptyOrNull) return;
-                      final postId = commentDataItem?.postId;
+
+                      final commentText = value.text;
+                      final postId = commentDataItem?.postId ?? widget.postId;
+                      final parentCommentId = commentDataItem?.id ?? '';
+
+                      // Clear input and hide keyboard immediately for better UX
+                      _replyFocusNode.unfocus();
+                      _replyController.clear();
+                      final currentTagMentions =
+                          List<CommentMentionData>.from(tagMentions);
+                      final currentUserMentions =
+                          List<CommentMentionData>.from(userMentions);
+                      tagMentions.clear();
+                      userMentions.clear();
+                      _setReplyComment(null);
+
+                      // Send to server - Bloc will handle optimistic UI update
                       _socialBloc.add(
                         CommentActionEvent(
                           userId: commentDataItem?.commentedByUserId,
                           isLoading: false,
-                          parentCommentId: commentDataItem?.id ?? '',
-                          postId: postId ?? widget.postId,
-                          replyText: value.text,
+                          parentCommentId: parentCommentId,
+                          postId: postId,
+                          replyText: commentText,
                           commentAction: CommentAction.comment,
                           postedBy: _myUserId,
                           postCommentList: _postCommentList,
                           commentTags: {
-                            'hashtags':
-                                tagMentions.map((e) => e.toJson()).toList(),
-                            'mentions':
-                                userMentions.map((e) => e.toJson()).toList(),
-                          }.also((_) => debugPrint('comment: comment tag: $_')),
+                            'hashtags': currentTagMentions
+                                .map((e) => e.toJson())
+                                .toList(),
+                            'mentions': currentUserMentions
+                                .map((e) => e.toJson())
+                                .toList(),
+                          },
                           postDataModel: widget.postData,
                           tabDataModel: widget.tabData,
                         ),
                       );
-                      _replyController.clear();
-                      tagMentions.clear();
-                      userMentions.clear();
-                      _setReplyComment(null);
                     },
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],

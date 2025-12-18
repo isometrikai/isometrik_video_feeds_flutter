@@ -31,10 +31,12 @@ class CollectionBottomSheetWidget extends StatefulWidget {
   final String? thumbnailUrl;
 
   @override
-  State<CollectionBottomSheetWidget> createState() => _CollectionBottomSheetWidgetState();
+  State<CollectionBottomSheetWidget> createState() =>
+      _CollectionBottomSheetWidgetState();
 }
 
-class _CollectionBottomSheetWidgetState extends State<CollectionBottomSheetWidget> {
+class _CollectionBottomSheetWidgetState
+    extends State<CollectionBottomSheetWidget> {
   late final CollectionBloc _collectionBloc;
   late final ScrollController _scrollController;
   static const int limit = 10;
@@ -184,7 +186,8 @@ class _CollectionBottomSheetWidgetState extends State<CollectionBottomSheetWidge
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 Padding(
-                  padding: IsrDimens.edgeInsetsSymmetric(vertical: 6.responsiveDimension),
+                  padding: IsrDimens.edgeInsetsSymmetric(
+                      vertical: 6.responsiveDimension),
                   child: CommonTitleTextWidget(
                     title: IsrTranslationFile.savingPost,
                     showCloseIcon: true,
@@ -219,14 +222,16 @@ class _CollectionBottomSheetWidgetState extends State<CollectionBottomSheetWidge
                           isRoundedCorners: false,
                           isScrollControlled: true,
                           child: BlocProvider<CollectionBloc>(
-                            create: (context) => IsmInjectionUtils.getBloc<CollectionBloc>(),
+                            create: (context) =>
+                                IsmInjectionUtils.getBloc<CollectionBloc>(),
                             child: CreateCollectionView(
                               productOrPostId: widget.postId,
                               defaultCollectionImage: widget.thumbnailUrl ?? '',
                             ),
                           ),
                         );
-                        _collectionBloc.add(GetUserCollectionEvent(limit: limit, skip: skip));
+                        _collectionBloc.add(
+                            GetUserCollectionEvent(limit: limit, skip: skip));
                       },
                       widget: UnderlinedText(
                         text: IsrTranslationFile.newCollection,
@@ -263,10 +268,12 @@ class _CollectionBottomSheetWidgetState extends State<CollectionBottomSheetWidge
                           debugPrint('Building collection map...');
                           for (final collection in state.collectionList) {
                             final collectionId = collection.id ?? '';
-                            debugPrint('Collection: ${collection.name}, ID: "$collectionId"');
+                            debugPrint(
+                                'Collection: ${collection.name}, ID: "$collectionId"');
                             // Skip collections with empty ID
                             if (collectionId.isEmpty) {
-                              debugPrint('Skipping collection with empty ID: ${collection.name}');
+                              debugPrint(
+                                  'Skipping collection with empty ID: ${collection.name}');
                               continue;
                             }
                             _collectionMap[collectionId] = collection;
@@ -278,11 +285,13 @@ class _CollectionBottomSheetWidgetState extends State<CollectionBottomSheetWidge
                               if (_initialSelectedCollectionId == null) {
                                 _initialSelectedCollectionId = collectionId;
                                 selectedCollectionNotifier.value = collectionId;
-                                debugPrint('Initial selection set to: $collectionId');
+                                debugPrint(
+                                    'Initial selection set to: $collectionId');
                               }
                             }
                           }
-                          debugPrint('Collection map built with ${_collectionMap.length} items');
+                          debugPrint(
+                              'Collection map built with ${_collectionMap.length} items');
                         }
 
                         return ValueListenableBuilder<String?>(
@@ -293,7 +302,8 @@ class _CollectionBottomSheetWidgetState extends State<CollectionBottomSheetWidge
                             return ListView.builder(
                               controller: _scrollController,
                               itemCount: state.collectionList.length,
-                              itemBuilder: (context, index) => _buildCollectionTile(
+                              itemBuilder: (context, index) =>
+                                  _buildCollectionTile(
                                 state.collectionList[index],
                                 selectedCollectionId,
                               ),
@@ -308,7 +318,8 @@ class _CollectionBottomSheetWidgetState extends State<CollectionBottomSheetWidge
                 IsrDimens.boxHeight(IsrDimens.eight),
                 ValueListenableBuilder<bool>(
                   valueListenable: btnEnableNotifier,
-                  builder: (context, isEnable, _) => BlocBuilder<CollectionBloc, CollectionState>(
+                  builder: (context, isEnable, _) =>
+                      BlocBuilder<CollectionBloc, CollectionState>(
                     bloc: _collectionBloc,
                     buildWhen: (previous, current) =>
                         current is ModifyUserCollectionLoadingState ||
@@ -356,7 +367,8 @@ class _CollectionBottomSheetWidgetState extends State<CollectionBottomSheetWidge
           borderRadius: IsrDimens.borderRadiusAll(IsrDimens.four),
         ),
         onChanged: (value) {
-          debugPrint('CheckboxListTile tapped! collectionId: "$collectionId", value: $value');
+          debugPrint(
+              'CheckboxListTile tapped! collectionId: "$collectionId", value: $value');
           selectCollection(collectionId);
         },
         fillColor: WidgetStateProperty.resolveWith<Color>(
@@ -386,7 +398,8 @@ class _CollectionBottomSheetWidgetState extends State<CollectionBottomSheetWidge
                     ? AppImage.network(
                         collectionImage,
                         fit: BoxFit.cover,
-                        borderRadius: IsrDimens.borderRadiusAll(IsrDimens.eight),
+                        borderRadius:
+                            IsrDimens.borderRadiusAll(IsrDimens.eight),
                       )
                     : Padding(
                         padding: IsrDimens.edgeInsetsAll(IsrDimens.ten),
@@ -412,7 +425,8 @@ class _CollectionBottomSheetWidgetState extends State<CollectionBottomSheetWidge
                     Builder(
                       builder: (context) {
                         final baseCount = collection.productIds?.length ?? 0;
-                        final additionalCount = _additionalItemsCount[collectionId] ?? 0;
+                        final additionalCount =
+                            _additionalItemsCount[collectionId] ?? 0;
                         final totalCount = baseCount + additionalCount;
                         return Text(
                           '${(collection.isPrivate ?? false) ? IsrTranslationFile.private : IsrTranslationFile.public} • $totalCount ${totalCount <= 1 ? "Item" : "Items"}',
@@ -478,11 +492,14 @@ class _CollectionBottomSheetWidgetState extends State<CollectionBottomSheetWidge
     return BlocListener<CollectionBloc, CollectionState>(
       bloc: _collectionBloc,
       listenWhen: (previous, current) =>
-          current is SavedPostDataSuccessState || current is SavedPostDataErrorState,
+          current is SavedPostDataSuccessState ||
+          current is SavedPostDataErrorState,
       listener: (context, state) {
-        if (state is SavedPostDataSuccessState || state is SavedPostDataErrorState) {
+        if (state is SavedPostDataSuccessState ||
+            state is SavedPostDataErrorState) {
           if (!isSaved) {
-            _collectionBloc.add(SavePostActionEvent(postId: postId, isSaved: false));
+            _collectionBloc
+                .add(SavePostActionEvent(postId: postId, isSaved: false));
           }
         }
         if (state is SavePostErrorState) {
@@ -522,7 +539,8 @@ class _CollectionBottomSheetWidgetState extends State<CollectionBottomSheetWidge
                           color: '767676'.color,
                         ),
                       ),
-                      DotCircle(color: '767676'.color, size: 2.responsiveDimension),
+                      DotCircle(
+                          color: '767676'.color, size: 2.responsiveDimension),
                       ValueListenableBuilder<int>(
                         valueListenable: totalPostNotifier,
                         builder: (context, totalPost, child) =>
@@ -535,7 +553,8 @@ class _CollectionBottomSheetWidgetState extends State<CollectionBottomSheetWidge
                           listener: (context, state) {
                             if (state is SavedPostDataSuccessState) {
                               if (totalPostNotifier.value == 0) {
-                                totalPostNotifier.value = state.totalPosts.toInt();
+                                totalPostNotifier.value =
+                                    state.totalPosts.toInt();
                               }
                             } else if (state is SavePostSuccessState &&
                                 state.postId == widget.postId) {
@@ -545,10 +564,13 @@ class _CollectionBottomSheetWidgetState extends State<CollectionBottomSheetWidge
                               if (!_processedSaveActions.contains(actionKey)) {
                                 _processedSaveActions.add(actionKey);
 
-                                if (state.socialPostAction == SocialPostAction.save) {
+                                if (state.socialPostAction ==
+                                    SocialPostAction.save) {
                                   totalPostNotifier.value += 1;
-                                } else if (state.socialPostAction == SocialPostAction.unSave) {
-                                  totalPostNotifier.value = max(0, totalPostNotifier.value - 1);
+                                } else if (state.socialPostAction ==
+                                    SocialPostAction.unSave) {
+                                  totalPostNotifier.value =
+                                      max(0, totalPostNotifier.value - 1);
                                 }
 
                                 if (_processedSaveActions.length > 10) {
@@ -569,10 +591,12 @@ class _CollectionBottomSheetWidgetState extends State<CollectionBottomSheetWidge
                                   height: 18.responsiveDimension,
                                   width: 18.responsiveDimension,
                                   child: Padding(
-                                    padding: IsrDimens.edgeInsetsAll(IsrDimens.four),
+                                    padding:
+                                        IsrDimens.edgeInsetsAll(IsrDimens.four),
                                     child: CircularProgressIndicator.adaptive(
                                       strokeWidth: IsrDimens.two,
-                                      valueColor: const AlwaysStoppedAnimation<Color>(
+                                      valueColor:
+                                          const AlwaysStoppedAnimation<Color>(
                                         IsrColors.appColor,
                                       ),
                                     ),
@@ -612,7 +636,8 @@ class _CollectionBottomSheetWidgetState extends State<CollectionBottomSheetWidge
                   }
 
                   Widget iconContent;
-                  if (state is SavePostLoadingState && state.postId == widget.postId) {
+                  if (state is SavePostLoadingState &&
+                      state.postId == widget.postId) {
                     iconContent = Center(
                       child: SizedBox(
                         height: 16.responsiveDimension,
@@ -626,7 +651,8 @@ class _CollectionBottomSheetWidgetState extends State<CollectionBottomSheetWidge
                       ),
                     );
                   } else {
-                    if (state is SavePostSuccessState && state.postId == widget.postId) {
+                    if (state is SavePostSuccessState &&
+                        state.postId == widget.postId) {
                       isSaved = state.socialPostAction == SocialPostAction.save;
                     }
                     iconContent = AppImage.svg(

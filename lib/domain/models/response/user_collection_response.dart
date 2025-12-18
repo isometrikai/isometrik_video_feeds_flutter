@@ -4,7 +4,8 @@ CollectionResponseModel collectionResponseModelFromJson(String str) =>
     CollectionResponseModel.fromJson(json.decode(str) as Map<String, dynamic>);
 
 class CollectionResponseModel {
-  factory CollectionResponseModel.fromJson(Map<String, dynamic> json) => CollectionResponseModel(
+  factory CollectionResponseModel.fromJson(Map<String, dynamic> json) =>
+      CollectionResponseModel(
         data: (json['data'] as List<dynamic>?)
                 ?.map((e) => CollectionData.fromJson(e as Map<String, dynamic>))
                 .toList() ??
@@ -40,8 +41,10 @@ class CollectionData {
         updatedTimeStamp: json['updatedTimeStamp'] as num? ?? 0,
         isPrivate: json['isPrivate'] as bool? ?? false,
         description: json['description'] as String? ?? '',
-        previewImages:
-            (json['previewImages'] as List<dynamic>?)?.map((e) => e as String).toList() ?? [],
+        previewImages: (json['previewImages'] as List<dynamic>?)
+                ?.map((e) => e as String)
+                .toList() ??
+            [],
         postCount: json['postCount'] as int? ?? 0,
         productCount: json['productCount'] as int? ?? 0,
         likes: json['likes'] as int? ?? 0,

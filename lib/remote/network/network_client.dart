@@ -29,7 +29,8 @@ class NetworkClient with AppMixin {
 
     _sharedHttpClient = HttpClient()
       ..connectionTimeout = AppConstants.timeOutDuration
-      ..idleTimeout = const Duration(minutes: 15) // Keep connections alive longer
+      ..idleTimeout =
+          const Duration(minutes: 15) // Keep connections alive longer
       ..maxConnectionsPerHost = 6 // Increase max connections
       ..autoUncompress = true; // Enable automatic decompression
 
@@ -154,7 +155,8 @@ class NetworkClient with AppMixin {
     }
   }
 
-  ResponseModel _proceedWithErrorResponse(ResponseModel res, http.Response response) {
+  ResponseModel _proceedWithErrorResponse(
+      ResponseModel res, http.Response response) {
     final message = Utility.getErrorMessage(res);
     if (res.statusCode == 401) {
       return res;
@@ -280,7 +282,10 @@ class NetworkClient with AppMixin {
   }
 
   Future<http.Response> getFinalResponse(
-      Uri finalUrl, Map<String, String>? headers, data, NetworkRequestType requestType) async {
+      Uri finalUrl,
+      Map<String, String>? headers,
+      data,
+      NetworkRequestType requestType) async {
     switch (requestType) {
       case NetworkRequestType.get:
         return await _client

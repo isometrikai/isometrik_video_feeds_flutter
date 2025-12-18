@@ -337,15 +337,16 @@ class SocialRepositoryImpl implements SocialRepository {
     Function(double p1)? onProgress,
     String? cloudFolderName,
   }) async {
-    final response = await GoogleCloudStorageUploader.uploadFileWithRealProgress(
-        file: file,
-        fileName: fileName,
-        fileExtension: fileExtension,
-        userId: userId,
-        onProgress: (progress) {
-          if (onProgress == null) return;
-          onProgress(progress);
-        });
+    final response =
+        await GoogleCloudStorageUploader.uploadFileWithRealProgress(
+            file: file,
+            fileName: fileName,
+            fileExtension: fileExtension,
+            userId: userId,
+            onProgress: (progress) {
+              if (onProgress == null) return;
+              onProgress(progress);
+            });
     return response ?? '';
   }
 
@@ -438,8 +439,8 @@ class SocialRepositoryImpl implements SocialRepository {
   }) async {
     try {
       final header = await _dataSource.getHeader();
-      final response =
-      await _apiService.getUserProfile(isLoading: isLoading, header: header, userId: userId);
+      final response = await _apiService.getUserProfile(
+          isLoading: isLoading, header: header, userId: userId);
       return _socialMapper.mapUserProfileResponse(response);
     } catch (e) {
       rethrow;

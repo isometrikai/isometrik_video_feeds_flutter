@@ -220,7 +220,8 @@ class FormFieldWidget extends StatelessWidget {
           labelStyle: labelStyle,
           floatingLabelBehavior: FloatingLabelBehavior.always,
           focusedErrorBorder: focusedErrorBorder ?? defaultErrorBorder(),
-          disabledBorder: disabledBorder ?? defaultBorder(borderColor: borderColor),
+          disabledBorder:
+              disabledBorder ?? defaultBorder(borderColor: borderColor),
           focusedBorder: focusedBorder ??
               defaultBorder(
                 borderColor: Theme.of(context).primaryColor,
@@ -255,7 +256,8 @@ class FormFieldWidget extends StatelessWidget {
             minWidth: IsrDimens.twentyFour,
             minHeight: IsrDimens.twentyFour,
           ),
-          suffixIconConstraints: const BoxConstraints(minHeight: 15, minWidth: 15),
+          suffixIconConstraints:
+              const BoxConstraints(minHeight: 15, minWidth: 15),
         ),
         minLines: (expands == true) ? null : minLines,
         onChanged: onChange,

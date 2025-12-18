@@ -19,11 +19,16 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     return _instance!;
   }
 
-  final FollowUnFollowUserUseCase _followPostUseCase = IsmInjectionUtils.getUseCase<FollowUnFollowUserUseCase>();
-  final GetPostDetailsUseCase _getPostDetailsUseCase = IsmInjectionUtils.getUseCase<GetPostDetailsUseCase>();
-  final SocialUserProfileUseCase _socialUserProfileUseCase = IsmInjectionUtils.getUseCase<SocialUserProfileUseCase>();
-  final LikePostUseCase _likePostUseCase = IsmInjectionUtils.getUseCase<LikePostUseCase>();
-  final SavePostUseCase _savePostUseCase = IsmInjectionUtils.getUseCase<SavePostUseCase>();
+  final FollowUnFollowUserUseCase _followPostUseCase =
+      IsmInjectionUtils.getUseCase<FollowUnFollowUserUseCase>();
+  final GetPostDetailsUseCase _getPostDetailsUseCase =
+      IsmInjectionUtils.getUseCase<GetPostDetailsUseCase>();
+  final SocialUserProfileUseCase _socialUserProfileUseCase =
+      IsmInjectionUtils.getUseCase<SocialUserProfileUseCase>();
+  final LikePostUseCase _likePostUseCase =
+      IsmInjectionUtils.getUseCase<LikePostUseCase>();
+  final SavePostUseCase _savePostUseCase =
+      IsmInjectionUtils.getUseCase<SavePostUseCase>();
 
   final _uniquePostList = <String, TimeLineData>{};
 
@@ -37,14 +42,16 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
 
   TimeLineData? getPostById(String postId) => _uniquePostList[postId];
 
-  List<TimeLineData> getPostList({bool Function(TimeLineData)? filter}) => filter != null
-      ? _uniquePostList.values.where(filter).toList()
-      : _uniquePostList.values.toList();
+  List<TimeLineData> getPostList({bool Function(TimeLineData)? filter}) =>
+      filter != null
+          ? _uniquePostList.values.where(filter).toList()
+          : _uniquePostList.values.toList();
 
   Future<TimeLineData?> getAsyncPostById(String postId) async =>
       _uniquePostList[postId] ?? await _getPostDetails(postId);
 
-  Future<TimeLineData?> _getPostDetails(String postId, {bool showError = false}) async {
+  Future<TimeLineData?> _getPostDetails(String postId,
+      {bool showError = false}) async {
     final result = await _getPostDetailsUseCase.executeGetPostDetails(
       isLoading: false,
       postId: postId,
@@ -57,13 +64,16 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     }
     if (result.isError && showError) {
       ErrorHandler.showAppError(
-          appError: result.error, isNeedToShowError: true, errorViewType: ErrorViewType.toast);
+          appError: result.error,
+          isNeedToShowError: true,
+          errorViewType: ErrorViewType.toast);
     }
 
     return postData;
   }
 
-  Future<SocialUserProfileData?> _getSocialUserDetails(String userId, {bool showError = false}) async {
+  Future<SocialUserProfileData?> _getSocialUserDetails(String userId,
+      {bool showError = false}) async {
     final result = await _socialUserProfileUseCase.executeSearchUser(
       isLoading: false,
       userId: userId,
@@ -73,7 +83,9 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
 
     if (result.isError && showError) {
       ErrorHandler.showAppError(
-          appError: result.error, isNeedToShowError: true, errorViewType: ErrorViewType.toast);
+          appError: result.error,
+          isNeedToShowError: true,
+          errorViewType: ErrorViewType.toast);
     }
 
     return userData;
@@ -86,14 +98,17 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     emit(IsmFollowUserState(isFollowing: isFollow, userId: userId));
   }
 
-  loadFollowState(String userId, {bool? isFollowing, bool callApi = false}) async {
+  loadFollowState(String userId,
+      {bool? isFollowing, bool callApi = false}) async {
     if (callApi && userId.isNotEmpty) {
-      emit(IsmFollowUserState(isFollowing: isFollowing == true, userId: userId, isLoading: true));
+      emit(IsmFollowUserState(
+          isFollowing: isFollowing == true, userId: userId, isLoading: true));
       final userData = await _getSocialUserDetails(userId, showError: true);
       final apiFollowStatue = userData?.isFollowing ?? isFollowing ?? false;
       emit(IsmFollowUserState(isFollowing: apiFollowStatue, userId: userId));
     } else {
-      emit(IsmFollowUserState(isFollowing: isFollowing == true, userId: userId));
+      emit(
+          IsmFollowUserState(isFollowing: isFollowing == true, userId: userId));
     }
   }
 
@@ -105,38 +120,81 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     Future<bool> Function()? apiCallBack,
   }) async {
     debugPrint('IsmSocialActionCubit hashCode -> $hashCode');
-    emit(IsmFollowUserState(isFollowing: true, isLoading: true, userId: userId));
 
-    final bool isSuccess;
-    AppError? error;
+    try {
+      emit(IsmFollowUserState(
+          isFollowing: true, isLoading: true, userId: userId));
 
-    if (apiCallBack != null) {
-      isSuccess = await apiCallBack();
-    } else {
-      final apiResult = await _followPostUseCase.executeFollowUser(
-        isLoading: false,
-        followingId: userId,
-        followAction: FollowAction.follow,
-      );
-      isSuccess = apiResult.isSuccess;
-      error = apiResult.error;
-    }
+      final bool isSuccess;
+      AppError? error;
 
-    if (isSuccess) {
-      emit(IsmFollowUserState(isFollowing: true, userId: userId));
-      _uniquePostList.values.where((e) => e.userId == userId).forEach((e) => e.isFollowing = true);
+      if (apiCallBack != null) {
+        isSuccess = await apiCallBack();
+      } else {
+        final apiResult = await _followPostUseCase.executeFollowUser(
+          isLoading: false,
+          followingId: userId,
+          followAction: FollowAction.follow,
+        );
+        isSuccess = apiResult.isSuccess;
+        error = apiResult.error;
+      }
 
-      emit(IsmFollowActionListenerState(isFollowing: true, userId: userId));
+      if (isSuccess) {
+        emit(IsmFollowUserState(isFollowing: true, userId: userId));
+        _uniquePostList.values
+            .where((e) => e.userId == userId)
+            .forEach((e) => e.isFollowing = true);
 
-      _logFollowEvent(
-        FollowAction.follow,
-        reelsData: reelData,
-        watchDuration: watchDuration,
-        postSectionType: postSectionType,
-      );
-    } else {
+        emit(IsmFollowActionListenerState(isFollowing: true, userId: userId));
+
+        _logFollowEvent(
+          FollowAction.follow,
+          reelsData: reelData,
+          watchDuration: watchDuration,
+          postSectionType: postSectionType,
+        );
+      } else {
+        // Emit error state first, then revert UI state
+        final errorMessage =
+            error?.message ?? 'Failed to follow user. Please try again.';
+        emit(IsmFollowErrorState(
+          userId: userId,
+          errorMessage: errorMessage,
+          wasFollowing: false,
+        ));
+
+        // Revert to previous state after error
+        emit(IsmFollowUserState(isFollowing: false, userId: userId));
+
+        // Show error to user - always show, not just NetworkError
+        ErrorHandler.showAppError(
+          appError: error,
+          message: errorMessage,
+          isNeedToShowError: true, // ✅ Always show error!
+        );
+      }
+    } catch (e, stackTrace) {
+      // Catch unexpected exceptions
+      debugPrint('❌ Unexpected error in followUser: $e');
+      debugPrint('   Stack trace: $stackTrace');
+
+      final errorMessage = 'An unexpected error occurred. Please try again.';
+      emit(IsmFollowErrorState(
+        userId: userId,
+        errorMessage: errorMessage,
+        wasFollowing: false,
+      ));
+
+      // Revert state
       emit(IsmFollowUserState(isFollowing: false, userId: userId));
-      ErrorHandler.showAppError(appError: error);
+
+      // Show error
+      ErrorHandler.showAppError(
+        appError: null,
+        message: errorMessage,
+        isNeedToShowError: true,
+      );
     }
   }
 
@@ -148,48 +206,93 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     Future<bool> Function()? apiCallBack,
   }) async {
     debugPrint('IsmSocialActionCubit hashCode -> $hashCode');
-    emit(IsmFollowUserState(isFollowing: false, isLoading: true, userId: userId));
 
-    final bool isSuccess;
-    AppError? error;
+    try {
+      emit(IsmFollowUserState(
+          isFollowing: false, isLoading: true, userId: userId));
 
-    if (apiCallBack != null) {
-      isSuccess = await apiCallBack();
-    } else {
-      final apiResult = await _followPostUseCase.executeFollowUser(
-        isLoading: false,
-        followingId: userId,
-        followAction: FollowAction.unfollow,
-      );
-      isSuccess = apiResult.isSuccess;
-      error = apiResult.error;
-    }
+      final bool isSuccess;
+      AppError? error;
 
-    if (isSuccess) {
-      emit(IsmFollowUserState(isFollowing: false, userId: userId));
-      _uniquePostList.values.where((e) => e.userId == userId).forEach((e) => e.isFollowing = false);
+      if (apiCallBack != null) {
+        isSuccess = await apiCallBack();
+      } else {
+        final apiResult = await _followPostUseCase.executeFollowUser(
+          isLoading: false,
+          followingId: userId,
+          followAction: FollowAction.unfollow,
+        );
+        isSuccess = apiResult.isSuccess;
+        error = apiResult.error;
+      }
 
-      emit(IsmFollowActionListenerState(isFollowing: false, userId: userId));
+      if (isSuccess) {
+        emit(IsmFollowUserState(isFollowing: false, userId: userId));
+        _uniquePostList.values
+            .where((e) => e.userId == userId)
+            .forEach((e) => e.isFollowing = false);
 
-      _logFollowEvent(
-        FollowAction.unfollow,
-        reelsData: reelData,
-        watchDuration: watchDuration,
-        postSectionType: postSectionType,
-      );
-    } else {
+        emit(IsmFollowActionListenerState(isFollowing: false, userId: userId));
+
+        _logFollowEvent(
+          FollowAction.unfollow,
+          reelsData: reelData,
+          watchDuration: watchDuration,
+          postSectionType: postSectionType,
+        );
+      } else {
+        // Emit error state first, then revert UI state
+        final errorMessage =
+            error?.message ?? 'Failed to unfollow user. Please try again.';
+        emit(IsmFollowErrorState(
+          userId: userId,
+          errorMessage: errorMessage,
+          wasFollowing: true,
+        ));
+
+        // Revert to previous state after error
+        emit(IsmFollowUserState(isFollowing: true, userId: userId));
+
+        // Show error to user - always show, not just NetworkError
+        ErrorHandler.showAppError(
+          appError: error,
+          message: errorMessage,
+          isNeedToShowError: true, // ✅ Always show error!
+        );
+      }
+    } catch (e, stackTrace) {
+      // Catch unexpected exceptions
+      debugPrint('❌ Unexpected error in unfollowUser: $e');
+      debugPrint('   Stack trace: $stackTrace');
+
+      final errorMessage = 'An unexpected error occurred. Please try again.';
+      emit(IsmFollowErrorState(
+        userId: userId,
+        errorMessage: errorMessage,
+        wasFollowing: true,
+      ));
+
+      // Revert state
       emit(IsmFollowUserState(isFollowing: true, userId: userId));
-      ErrorHandler.showAppError(appError: error);
+
+      // Show error
+      ErrorHandler.showAppError(
+        appError: null,
+        message: errorMessage,
+        isNeedToShowError: true,
+      );
     }
   }
 
   loadPostLikeState(String postId) async {
     final postData = await getAsyncPostById(postId);
     final isLiked = postData?.isLiked ?? false;
-    final _likeCount = postData?.engagementMetrics?.likeTypes?.love?.toInt() ?? 0;
+    final _likeCount =
+        postData?.engagementMetrics?.likeTypes?.love?.toInt() ?? 0;
     debugPrint(
         'IsmSocialActionCubit: likeState , like: ${postData?.isLiked}, count ${postData?.engagementMetrics?.likeTypes?.love}');
-    emit(IsmLikePostState(isLiked: isLiked, likeCount: max(_likeCount, 0), postId: postId));
+    emit(IsmLikePostState(
+        isLiked: isLiked, likeCount: max(_likeCount, 0), postId: postId));
   }
 
   likePost(
@@ -202,7 +305,8 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
   }) async {
     final likeCount = max(_likeCount, 0);
 
-    emit(IsmLikePostState(isLiked: true, likeCount: likeCount, postId: postId, isLoading: true));
+    emit(IsmLikePostState(
+        isLiked: true, likeCount: likeCount, postId: postId, isLoading: true));
 
     final bool isSuccess;
     AppError? error;
@@ -222,13 +326,18 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     if (isSuccess) {
       final successLikeCount = likeCount + 1;
 
-      emit(IsmLikePostState(isLiked: true, postId: postId, likeCount: successLikeCount));
+      emit(IsmLikePostState(
+          isLiked: true, postId: postId, likeCount: successLikeCount));
 
       final post = await getAsyncPostById(postId);
       post?.isLiked = true;
       post?.engagementMetrics?.likeTypes?.love = successLikeCount;
 
-      emit(IsmLikeActionListenerState(isLiked: true, postId: postId, postData: post, likeCount: successLikeCount));
+      emit(IsmLikeActionListenerState(
+          isLiked: true,
+          postId: postId,
+          postData: post,
+          likeCount: successLikeCount));
 
       _logLikeEvent(
         LikeAction.like,
@@ -237,7 +346,8 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
         postSectionType: postSectionType,
       );
     } else {
-      emit(IsmLikePostState(isLiked: false, postId: postId, likeCount: likeCount));
+      emit(IsmLikePostState(
+          isLiked: false, postId: postId, likeCount: likeCount));
       ErrorHandler.showAppError(appError: error);
     }
   }
@@ -252,7 +362,8 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
   }) async {
     final likeCount = max(_likeCount, 0);
 
-    emit(IsmLikePostState(isLiked: false, likeCount: likeCount, postId: postId, isLoading: true));
+    emit(IsmLikePostState(
+        isLiked: false, likeCount: likeCount, postId: postId, isLoading: true));
 
     final bool isSuccess;
     AppError? error;
@@ -272,13 +383,18 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     if (isSuccess) {
       final successLikeCount = max(0, likeCount - 1);
 
-      emit(IsmLikePostState(isLiked: false, postId: postId, likeCount: successLikeCount));
+      emit(IsmLikePostState(
+          isLiked: false, postId: postId, likeCount: successLikeCount));
 
       final post = await getAsyncPostById(postId);
       post?.isLiked = false;
       post?.engagementMetrics?.likeTypes?.love = successLikeCount;
 
-      emit(IsmLikeActionListenerState(isLiked: false, postId: postId, postData: post, likeCount: successLikeCount));
+      emit(IsmLikeActionListenerState(
+          isLiked: false,
+          postId: postId,
+          postData: post,
+          likeCount: successLikeCount));
 
       _logLikeEvent(
         LikeAction.unlike,
@@ -287,7 +403,8 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
         postSectionType: postSectionType,
       );
     } else {
-      emit(IsmLikePostState(isLiked: true, postId: postId, likeCount: likeCount));
+      emit(IsmLikePostState(
+          isLiked: true, postId: postId, likeCount: likeCount));
       ErrorHandler.showAppError(appError: error);
     }
   }
@@ -380,7 +497,8 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     }
 
     if (isSuccess) {
-      emit(IsmSavePostState(isSaved: false, postId: postId)); // update widget state
+      emit(IsmSavePostState(
+          isSaved: false, postId: postId)); // update widget state
 
       final post = await getAsyncPostById(postId);
       post?.isSaved = false;
@@ -404,12 +522,14 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
   }
 
   void onPostCreated({String? postId, TimeLineData? postData}) {
-    debugPrint('IsmSocialActionCubit onPostCreated -> postId: $postId, postData: ${postData?.toMap()}');
+    debugPrint(
+        'IsmSocialActionCubit onPostCreated -> postId: $postId, postData: ${postData?.toMap()}');
     emit(IsmCreatePostActionListenerState(postData: postData, postId: postId));
   }
 
   void onPostEdited({String? postId, TimeLineData? postData}) {
-    debugPrint('IsmSocialActionCubit onPostEdited -> postId: $postId, postData: ${postData?.toMap()}');
+    debugPrint(
+        'IsmSocialActionCubit onPostEdited -> postId: $postId, postData: ${postData?.toMap()}');
     emit(IsmEditPostActionListenerState(postData: postData, postId: postId));
   }
 
@@ -445,11 +565,14 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     int? watchDuration,
   }) {
     final eventMap = <String, dynamic>{
-      likeAction == LikeAction.like ? 'time_to_like_seconds' : 'time_to_unlike_seconds':
-          watchDuration,
+      likeAction == LikeAction.like
+          ? 'time_to_like_seconds'
+          : 'time_to_unlike_seconds': watchDuration,
     };
     sendAnalyticsEvent(
-      likeAction == LikeAction.unlike ? EventType.postUnliked.value : EventType.postLiked.value,
+      likeAction == LikeAction.unlike
+          ? EventType.postUnliked.value
+          : EventType.postLiked.value,
       eventMap,
       reelsData: reelsData,
       postSectionType: postSectionType,

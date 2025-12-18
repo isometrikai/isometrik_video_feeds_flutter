@@ -36,7 +36,8 @@ class CustomTextButtonWidget extends StatelessWidget {
           }),
           backgroundColor: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.disabled)) {
-              return (backgroundColor ?? Colors.black).applyOpacity(0.3); // disabled bg
+              return (backgroundColor ?? Colors.black)
+                  .applyOpacity(0.3); // disabled bg
             }
             return backgroundColor ?? IsrColors.transparent;
           }),
@@ -50,7 +51,8 @@ class CustomTextButtonWidget extends StatelessWidget {
           ),
           shape: WidgetStateProperty.all(
             RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(borderRadius ?? IsrDimens.six),
+              borderRadius:
+                  BorderRadius.circular(borderRadius ?? IsrDimens.six),
               side: BorderSide(color: borderColor ?? Colors.transparent),
             ),
           ),
