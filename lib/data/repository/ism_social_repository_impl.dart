@@ -495,6 +495,7 @@ class SocialRepositoryImpl implements SocialRepository {
     required int page,
     required int pageSize,
     required String memberId,
+    required bool scheduledOnly,
   }) async {
     final header = await _dataSource.getHeader();
     final response = await _apiService.getProfileUserPostDataSocial(
@@ -503,6 +504,7 @@ class SocialRepositoryImpl implements SocialRepository {
       page: page,
       pageSize: pageSize,
       memberId: memberId,
+      scheduledOnly: scheduledOnly,
     );
 
     return _socialMapper.mapTimelineResponse(response);

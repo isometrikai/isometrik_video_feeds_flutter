@@ -53,6 +53,8 @@ class BlocInjection {
           IsmInjectionUtils.getUseCase<SearchUserUseCase>(),
           localDataUseCase,
           IsmInjectionUtils.getUseCase<FollowUnFollowUserUseCase>(),
+          IsmInjectionUtils.getUseCase<GetUserPostDataUseCase>(),
+          IsmInjectionUtils.getUseCase<DeletePostUseCase>(),
         ));
 
     IsmInjectionUtils.registerBloc<TagDetailsBloc>(() => TagDetailsBloc(

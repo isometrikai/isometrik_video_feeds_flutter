@@ -51,3 +51,29 @@ class FollowSocialUserEvent extends PostListingEvent {
   final Function(bool) onComplete;
   final FollowAction followAction;
 }
+
+class GetUserPostListEvent extends PostListingEvent {
+  GetUserPostListEvent({
+    this.page = 1,
+    this.pageSize = 30,
+    this.isLoading = false,
+    this.scheduledOnly = false,
+    this.onComplete,
+  });
+
+  final bool isLoading;
+  final bool scheduledOnly;
+  final int page;
+  final int pageSize;
+  final void Function(List<TimeLineData> posts)? onComplete;
+}
+
+class DeleteUserPostEvent extends PostListingEvent {
+  DeleteUserPostEvent({
+    required this.onComplete,
+    required this.postId,
+  });
+
+  final Function(bool) onComplete;
+  final String postId;
+}

@@ -11,6 +11,7 @@ class GetUserPostDataUseCase extends BaseUseCase {
     required int page,
     required int pageSize,
     required String memberId,
+    bool scheduledOnly = false,
   }) async =>
       await super.execute(() async {
         final response = await _socialRepository.getProfileUserPostData(
@@ -18,6 +19,7 @@ class GetUserPostDataUseCase extends BaseUseCase {
           page: page,
           pageSize: pageSize,
           memberId: memberId,
+          scheduledOnly: scheduledOnly,
         );
         return ApiResult(
             data: response.responseCode == 200 && response.responseCode != 204

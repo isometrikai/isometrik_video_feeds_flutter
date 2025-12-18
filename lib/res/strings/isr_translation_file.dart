@@ -234,4 +234,10 @@ class IsrTranslationFile {
   static const String chooseFromGallery = 'Choose From Gallery';
   static const String createCollection = 'Create collection';
   static const String characters = 'Characters';
+  static const String scheduledPosts = 'Scheduled Posts';
+  static const String myScheduledPosts = 'My Scheduled Posts';
+  static const String noScheduledPosts = 'No Scheduled Posts';
+  static const String addNewScheduledPosts = 'Add new Scheduled Posts';
+  static const String postNow = 'Post Now';
+  static const String modifySchedule = 'Modify Schedule';
 }

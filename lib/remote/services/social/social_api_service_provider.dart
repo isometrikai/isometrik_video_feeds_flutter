@@ -829,6 +829,7 @@ class SocialApiServiceProvider extends SocialApiService {
     required int page,
     required int pageSize,
     required String memberId,
+    required bool scheduledOnly,
   }) async =>
       await networkClient.makeRequest(
         '${SocialApiEndPoints.getProfileUserPostSocial}/$memberId',
@@ -837,6 +838,7 @@ class SocialApiServiceProvider extends SocialApiService {
         {
           'page': '$page',
           'page_size': '$pageSize',
+          'scheduled_only': scheduledOnly.toString(),
         }.removeEmptyValues(),
         {
           'Accept': AppConstants.headerAccept,

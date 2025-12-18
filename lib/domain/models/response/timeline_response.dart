@@ -88,6 +88,7 @@ class TimeLineData {
     this.isSaved,
     this.isFollowing,
     this.interests,
+    this.scheduledAt,
   });
 
   factory TimeLineData.fromMap(Map<String, dynamic> json) => TimeLineData(
@@ -127,6 +128,7 @@ class TimeLineData {
         isLiked: json['is_liked'] as bool? ?? false,
         isSaved: json['is_saved'] as bool? ?? false,
         isFollowing: json['is_following'] as bool? ?? false,
+        scheduledAt: json['scheduled_at'] as String? ?? '',
         interests: json['interests'] == null || json['interests'] is String
             ? []
             : List<String>.from(json['interests'] as List)
@@ -146,6 +148,7 @@ class TimeLineData {
   Tags? tags;
   Settings? settings;
   EngagementMetrics? engagementMetrics;
+  String? scheduledAt;
   String? type;
   List<PreviewMedia>? previews;
   bool? isLiked;
@@ -178,9 +181,8 @@ class TimeLineData {
         'is_saved': isSaved,
         'isFromLocal': isFromLocal,
         'is_following': isFollowing,
-        'interests': interests == null
-            ? []
-            : List<dynamic>.from(interests!.map((x) => x)),
+        'interests': interests == null ? [] : List<dynamic>.from(interests!.map((x) => x)),
+        'scheduled_at': scheduledAt,
       };
 }
 

@@ -178,6 +178,7 @@ abstract class SocialApiService extends BaseService {
     required int page,
     required int pageSize,
     required String memberId,
+    required bool scheduledOnly,
   });
 
   Future<ResponseModel> getForYouPosts({
