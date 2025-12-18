@@ -170,7 +170,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
       bloc: _ismSocialActionCubit,
       child: BlocListener<IsmSocialActionCubit, IsmSocialActionState>(
         listenWhen: (previous, current) =>
-        (current is IsmFollowActionListenerState &&
+            (current is IsmFollowActionListenerState &&
                 widget.postSectionType == PostSectionType.following) ||
             (current is IsmSaveActionListenerState &&
                 widget.postSectionType == PostSectionType.savedPost) ||
