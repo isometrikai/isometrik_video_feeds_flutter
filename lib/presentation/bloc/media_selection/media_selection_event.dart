@@ -1,6 +1,8 @@
 part of 'media_selection_bloc.dart';
 
-abstract class MediaSelectionEvent {}
+abstract class MediaSelectionEvent {
+  const MediaSelectionEvent();
+}
 
 class MediaSelectionInitialEvent extends MediaSelectionEvent {
   MediaSelectionInitialEvent({
@@ -12,7 +14,10 @@ class MediaSelectionInitialEvent extends MediaSelectionEvent {
   final MediaSelectionConfig config;
 }
 
-class RequestPermissionEvent extends MediaSelectionEvent {}
+class RequestPermissionEvent extends MediaSelectionEvent {
+  const RequestPermissionEvent({required this.openSettingsIfDenied});
+  final bool openSettingsIfDenied;
+}
 
 class LoadAlbumsEvent extends MediaSelectionEvent {}
 

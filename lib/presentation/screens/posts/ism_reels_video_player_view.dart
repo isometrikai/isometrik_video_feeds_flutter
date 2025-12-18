@@ -502,11 +502,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   void _callOnTapMentionData(List<MentionMetaData> mentionDataList) {
-    if (widget.onTapMentionTag != null) {
-      _pauseForNavigation();
-      widget.onTapMentionTag?.call(mentionDataList);
-      _resumeAfterNavigation();
-    }
+    if (widget.onTapMentionTag == null) return;
+    widget.onTapMentionTag?.call(mentionDataList);
   }
 
   Widget _buildMediaCounter(int currentPage) {
@@ -538,11 +535,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
 
     return TapHandler(
-      onTap: () {
-        _pauseForNavigation();
-        _callOnTapMentionData(mentionList);
-        _resumeAfterNavigation();
-      },
+      onTap: () => _callOnTapMentionData(mentionList),
       child: Row(
         children: [
           Icon(
@@ -573,11 +566,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     final placeList = _reelData.placeDataList ?? [];
     if (placeList.isListEmptyOrNull) return const SizedBox.shrink();
 
-    return TapHandler(
+    return InkWell(
       onTap: () async {
-        _pauseForNavigation();
-        await widget.reelsConfig.onTapPlace?.call(_reelData, placeList);
-        _resumeAfterNavigation();
+        await widget.reelsConfig.onTapPlace?.call(
+          _reelData,
+          placeList,
+        );
       },
       child: Row(
         children: [
@@ -596,14 +590,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   Widget _buildSimpleLocationText(List<PlaceMetaData> placeList) {
     if (placeList.isEmpty) return const SizedBox.shrink();
 
-    // Show actual location name for single location, or simplified text for multiple
-    var locationText = placeList.first.placeName ?? '';
-    if (placeList.length > 1) {
-      locationText += ' +${placeList.length - 1} more';
-    }
+    if (placeList.first.placeName.isEmpty) return const SizedBox.shrink();
 
     return Text(
-      locationText,
+      placeList.first.placeName,
       style: IsrStyles.white14.copyWith(
         fontWeight: FontWeight.w600,
         color: IsrColors.white,
@@ -817,11 +807,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 TapHandler(
                   borderRadius: IsrDimens.thirty,
                   onTap: () async {
-                    if (widget.reelsConfig.onTapUserProfile != null) {
-                      _pauseForNavigation();
-                      await widget.reelsConfig.onTapUserProfile!(_reelData);
-                      _resumeAfterNavigation();
-                    }
+                    if (widget.reelsConfig.onTapUserProfile == null) return;
+                    await widget.reelsConfig.onTapUserProfile!(_reelData);
                   },
                   child: Container(
                     decoration: BoxDecoration(
@@ -915,11 +902,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   icon: AssetConstants.icShareIconSvg,
                   label: IsrTranslationFile.share,
                   onTap: () async {
-                    if (widget.reelsConfig.onTapShare != null) {
-                      _pauseForNavigation();
-                      await widget.reelsConfig.onTapShare!(_reelData);
-                      _resumeAfterNavigation();
-                    }
+                    if (widget.reelsConfig.onTapShare == null) return;
+                    await widget.reelsConfig.onTapShare!(_reelData);
                   },
                 ),
               if (_reelData.postStatus != 0 &&
@@ -953,11 +937,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   icon: AssetConstants.icMoreIcon,
                   label: '',
                   onTap: () async {
-                    if (widget.onPressMoreButton != null) {
-                      _pauseForNavigation();
-                      widget.onPressMoreButton!();
-                      _resumeAfterNavigation();
-                    }
+                    if (widget.onPressMoreButton == null) return;
+                    widget.onPressMoreButton!();
                   },
                 ),
             ],
@@ -1023,11 +1004,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             if ((_reelData.productCount ?? 0) > 0) ...[
               TapHandler(
                 onTap: () {
-                  if (widget.onTapCartIcon != null) {
-                    _pauseForNavigation();
-                    widget.onTapCartIcon?.call(_reelData.postId ?? '');
-                    _resumeAfterNavigation();
-                  }
+                  if (widget.onTapCartIcon == null) return;
+                  widget.onTapCartIcon?.call(_reelData.postId ?? '');
                 },
                 child: Container(
                   padding: IsrDimens.edgeInsetsSymmetric(
@@ -1092,14 +1070,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                 Flexible(
                                   child: TapHandler(
                                     onTap: () async {
-                                      if (widget.reelsConfig.onTapUserProfile !=
+                                      if (widget.reelsConfig.onTapUserProfile ==
                                           null) {
-                                        _pauseForNavigation();
-                                        await widget
-                                            .reelsConfig.onTapUserProfile
-                                            ?.call(_reelData);
-                                        _resumeAfterNavigation();
+                                        return;
                                       }
+                                      await widget.reelsConfig.onTapUserProfile
+                                          ?.call(_reelData);
                                     },
                                     child: Text(
                                       _reelData.userName ?? '',
@@ -1548,31 +1524,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   void _handleCommentClick(StateSetter setBuilderState) async {
-    if (widget.reelsConfig.onTapComment != null) {
-      // Pause video before opening comments
-      _pauseForNavigation();
-
-      final commentCount = await widget.reelsConfig.onTapComment!(
-          _reelData, _reelData.commentCount ?? 0);
-
-      // Resume video when coming back
-      _resumeAfterNavigation();
-
-      _reelData.commentCount = commentCount;
-      if (mounted) {
-        setBuilderState.call(() {});
-      }
-    }
-  }
-
-  /// Pauses video when navigating away from reel screen
-  void _pauseForNavigation() {
-    // Navigation is handled by individual VideoPlayerWidgets
-  }
-
-  /// Resumes video when returning to reel screen
-  void _resumeAfterNavigation() {
-    // Navigation is handled by individual VideoPlayerWidgets
+    if (widget.reelsConfig.onTapComment == null) return;
+    final commentCount = await widget.reelsConfig.onTapComment!(
+      _reelData,
+      _reelData.commentCount ?? 0,
+    );
+    _reelData.commentCount = commentCount;
+    if (mounted) setBuilderState.call(() {});
   }
 
   Widget _buildPageView(int index) {

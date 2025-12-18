@@ -30,7 +30,7 @@ class MediaSelectionView extends StatefulWidget {
 }
 
 class _MediaSelectionViewState extends State<MediaSelectionView>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   late final MediaSelectionBloc _bloc;
   late ScrollController _scrollController;
 
@@ -40,6 +40,7 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
     _bloc = context.getOrCreateBloc();
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
+    WidgetsBinding.instance.addObserver(this);
     _bloc.add(MediaSelectionInitialEvent(
       selectedMedia: widget.selectedMedia,
       config: widget.mediaSelectionConfig,
@@ -48,11 +49,25 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _bloc.cleanupThumbnailCache();
     _bloc.close();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // When app resumes from settings, check permission again
+    if (state == AppLifecycleState.resumed) {
+      final currentState = _bloc.state;
+      if (currentState is MediaSelectionPermissionDeniedState) {
+        // Re-check permission when coming back from settings
+        _bloc.add(const RequestPermissionEvent(openSettingsIfDenied: false));
+      }
+    }
   }
 
   void _onScroll() {
@@ -353,7 +368,8 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
                     state is MediaSelectionLoadingState) {
                   return Center(
                     child: CircularProgressIndicator(
-                        color: widget.mediaSelectionConfig.primaryColor),
+                      color: widget.mediaSelectionConfig.primaryColor,
+                    ),
                   );
                 } else if (state is MediaSelectionPermissionDeniedState) {
                   return _buildPermissionDenied();
@@ -791,7 +807,9 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: () => _bloc.add(RequestPermissionEvent()),
+              onPressed: () => _bloc.add(
+                const RequestPermissionEvent(openSettingsIfDenied: true),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: widget.mediaSelectionConfig.primaryColor,
                 foregroundColor: Colors.white,
@@ -807,11 +825,4 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
     final seconds = duration % 60;
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
-
-  Widget _buildVideoPlaceholder() => Container(
-        color: Colors.grey[800],
-        child: const Center(
-          child: Icon(Icons.video_library, color: Colors.white),
-        ),
-      );
 }

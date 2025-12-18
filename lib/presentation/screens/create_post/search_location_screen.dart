@@ -469,14 +469,14 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
                       : _searchResults.isNotEmpty
                           ? ListView.builder(
                               padding: IsrDimens.edgeInsets(
-                                  top: 16.responsiveDimension),
+                                top: 16.responsiveDimension,
+                              ),
                               itemCount: _searchResults.length,
                               itemBuilder: (context, index) {
                                 final location = _searchResults[index];
                                 final isSelected = _selectedLocations.any(
-                                    (place) =>
-                                        place.placeId == location.placeId);
-
+                                  (place) => place.placeId == location.placeId,
+                                );
                                 return InkWell(
                                   onTap: () => _selectLocation(location),
                                   child: Container(

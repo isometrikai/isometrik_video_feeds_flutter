@@ -142,7 +142,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                 setState(() {
                   _postCommentList
                     ..clear()
-                    ..addAll(state.postCommentsList as Iterable<CommentDataItem>);
+                    ..addAll(
+                        state.postCommentsList as Iterable<CommentDataItem>);
                   _totalCommentsCount = _postCommentList.length;
                 });
               }

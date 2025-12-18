@@ -890,7 +890,7 @@ PlaceMetaData _getPlaceMetaData(TaggedPlace placeData) => PlaceMetaData(
       country: placeData.country,
       description: placeData.placeData?.description,
       placeId: placeData.placeId,
-      placeName: placeData.placeName,
+      placeName: placeData.placeName ?? '',
       placeType: placeData.placeType,
       postalCode: placeData.postalCode,
       state: placeData.state,

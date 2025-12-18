@@ -397,20 +397,21 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
               _socialPostBloc.add(PlayPauseVideoEvent(play: true));
               return result ?? false;
             },
-      onPressSave: widget.postConfig.postCallBackConfig?.onSaveClicked == null
-          ? (reelsData, isSaved) async =>
-              await _handleCollection(reelsData, isSaved)
-          : (reelsData, isSaved) async {
-              _socialPostBloc.add(PlayPauseVideoEvent(play: false));
-              final postData = reelsData.postData is TimeLineData
-                  ? reelsData.postData as TimeLineData
-                  : null;
-              final result = await widget
-                  .postConfig.postCallBackConfig?.onSaveClicked
-                  ?.call(postData, isSaved);
-              _socialPostBloc.add(PlayPauseVideoEvent(play: true));
-              return result ?? false;
-            },
+      onPressSave: (reelsData, currentSaved) async {
+        if (widget.postConfig.postCallBackConfig?.onSaveClicked == null) {
+          return await _handleCollection(reelsData, currentSaved);
+        } else {
+          _socialPostBloc.add(PlayPauseVideoEvent(play: false));
+          final postData = reelsData.postData is TimeLineData
+              ? reelsData.postData as TimeLineData
+              : null;
+          final result = await widget
+              .postConfig.postCallBackConfig?.onSaveClicked
+              ?.call(postData, currentSaved);
+          _socialPostBloc.add(PlayPauseVideoEvent(play: true));
+          return result ?? false;
+        }
+      },
       onPressFollow: widget.postConfig.postCallBackConfig?.onFollowClick == null
           ? null
           : (reelsData, isFollowed) async {
@@ -442,7 +443,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     if (widget.onTapPlace != null) {
       widget.onTapPlace!(
         placeMetaData.placeId ?? '',
-        placeMetaData.placeName ?? '',
+        placeMetaData.placeName,
         lat,
         long,
       );
@@ -454,7 +455,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       IsrAppNavigator.navigateToPlaceDetails(
         context,
         placeId: placeMetaData.placeId ?? '',
-        placeName: placeMetaData.placeName ?? '',
+        placeName: placeMetaData.placeName,
         latitude: lat,
         longitude: long,
         tabConfig: widget.tabConfig,
@@ -462,24 +463,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       );
     } catch (e) {
       debugPrint('Navigation failed: $e');
-    }
-  }
-
-  Future<bool> _handleLikeAction(bool isLiked, TimeLineData postData) async {
-    try {
-      final completer = Completer<bool>();
-
-      _socialPostBloc.add(LikePostEvent(
-        postId: postData.id ?? '',
-        userId: postData.user?.id ?? '',
-        likeAction: isLiked ? LikeAction.unlike : LikeAction.like,
-        onComplete: (success) {
-          completer.complete(success);
-        },
-      ));
-      return await completer.future;
-    } catch (e) {
-      return false;
     }
   }
 
@@ -1115,7 +1098,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       isScrollControlled: false,
       isDismissible: true,
     );
-    return updatedSaveStatus !=
-        isSavedPost; // Return true if the save status has changed
+    return updatedSaveStatus != isSavedPost;
   }
 }

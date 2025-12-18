@@ -107,7 +107,7 @@ class ReelsData {
         isSavedPost: isSavedPost ?? this.isSavedPost,
         likesCount: likesCount ?? this.likesCount,
         commentCount: commentCount ?? this.commentCount,
-        interests: interests ?? this.interests,
+        interests: interests,
       );
 }
 
@@ -219,7 +219,7 @@ class PlaceMetaData {
     this.country,
     this.description,
     this.placeId,
-    this.placeName,
+    this.placeName = '',
     this.placeType,
     this.postalCode,
     this.state,
@@ -246,7 +246,7 @@ class PlaceMetaData {
   final String? country;
   final String? description;
   final String? placeId;
-  final String? placeName;
+  final String placeName;
   final String? placeType;
   final String? postalCode;
   final String? state;
