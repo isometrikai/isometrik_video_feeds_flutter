@@ -135,4 +135,5 @@ class AssetConstants {
   static const String icEmptyImageVector =
       '${packageName}assets/icons/ic_empty_image_vector.svg';
   static const String icEditIcon = '${packageName}assets/icons/ic_edit.svg';
+  static const String icNoScheduledPost = '${packageName}assets/icons/ic_timer_icon.svg';
 }

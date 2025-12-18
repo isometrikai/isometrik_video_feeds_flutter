@@ -11,9 +11,10 @@ class PostListingLoadingState extends PostListingState {
 }
 
 class PostLoadedState extends PostListingState {
-  PostLoadedState({required this.postList});
+  PostLoadedState({required this.postList, this.isLoadMore = false});
 
   final List<TimeLineData> postList;
+  final bool isLoadMore;
 }
 
 class SearchResultsLoadedState extends PostListingState {

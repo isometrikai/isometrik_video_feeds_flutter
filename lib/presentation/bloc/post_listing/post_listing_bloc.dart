@@ -18,11 +18,15 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
     this._searchUserUseCase,
     this._localDataUseCase,
     this._followUnFollowUserUseCase,
+    this._getUserPostDataUseCase,
+    this._deletePostUseCase,
   ) : super(PostListingInitialState()) {
     on<GetHashTagPostEvent>(_getHashTagPosts);
     on<GetSearchResultsEvent>(_getSearchResults);
     on<GetPlaceDetailsEvent>(_getPlaceDetails);
     on<FollowSocialUserEvent>(_followSocialUser);
+    on<GetUserPostListEvent>(_getUserPosts);
+    on<DeleteUserPostEvent>(_deletePost);
   }
 
   final GetTaggedPostsUseCase _getTaggedPostUseCase;
@@ -32,6 +36,8 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
   final SearchUserUseCase _searchUserUseCase;
   final IsmLocalDataUseCase _localDataUseCase;
   final FollowUnFollowUserUseCase _followUnFollowUserUseCase;
+  final GetUserPostDataUseCase _getUserPostDataUseCase;
+  final DeletePostUseCase _deletePostUseCase;
 
   var _searchPostPage = 1;
   var _searchTagsPage = 1;
@@ -283,6 +289,48 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
     );
 
     event.onComplete.call(apiResult.isSuccess);
+    if (apiResult.isError) {
+      ErrorHandler.showAppError(
+        appError: apiResult.error,
+        isNeedToShowError: true,
+        errorViewType: ErrorViewType.toast,
+      );
+    }
+  }
+
+  FutureOr<void> _deletePost(
+      DeleteUserPostEvent event, Emitter<PostListingState> emit) async {
+    final userId = await _localDataUseCase.getUserId();
+    if (userId.isEmptyOrNull) {
+      event.onComplete(false);
+      return;
+    }
+    final apiResult = await _deletePostUseCase.executeDeletePost(
+      isLoading: false,
+      postId: event.postId,
+    );
+    event.onComplete(apiResult.isSuccess);
+  }
+
+  FutureOr<void> _getUserPosts(
+      GetUserPostListEvent event, Emitter<PostListingState> emit) async {
+    if (event.onComplete == null) {
+      emit(PostListingLoadingState(isLoading: event.isLoading));
+    }
+    final apiResult =
+        await _getUserPostDataUseCase.executeGetUserProfilePostData(
+      isLoading: event.isLoading,
+      page: event.page,
+      pageSize: event.pageSize,
+      memberId: await _localDataUseCase.getUserId(),
+      scheduledOnly: event.scheduledOnly,
+    );
+    if (event.onComplete == null) {
+      emit(PostLoadedState(postList: apiResult.data?.data ?? [], isLoadMore: event.page > 1));
+    } else {
+      event.onComplete?.call(apiResult.data?.data ?? []);
+    }
+
     if (apiResult.isError) {
       ErrorHandler.showAppError(
         appError: apiResult.error,

@@ -158,6 +158,7 @@ abstract class SocialRepository extends BaseRepository {
     required int page,
     required int pageSize,
     required String memberId,
+    required bool scheduledOnly,
   });
 
   Future<CustomResponse<TimelineResponse?>> getForYouPosts({

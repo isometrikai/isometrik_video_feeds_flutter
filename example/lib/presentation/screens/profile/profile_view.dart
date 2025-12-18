@@ -41,6 +41,16 @@ class _ProfileViewState extends State<ProfileView> {
               ),
               const Divider(),
 
+              // scheduled post listing Tile
+              ListTile(
+                leading: const Icon(Icons.timelapse),
+                title: const Text('Scheduled Posts'),
+                onTap: () {
+                  _schedulePostListing(context);
+                },
+              ),
+              const Divider(),
+
               // Settings Tile
               ListTile(
                 leading: const Icon(Icons.settings),
@@ -76,6 +86,10 @@ class _ProfileViewState extends State<ProfileView> {
 
   void _createPost(BuildContext context) {
     isr.IsrAppNavigator.goToCreatePostView(context);
+  }
+
+  void _schedulePostListing(BuildContext context) {
+    isr.IsrAppNavigator.navigateToSchedulePostListing(context);
   }
 
   void _showLogoutConfirmation(BuildContext context) {

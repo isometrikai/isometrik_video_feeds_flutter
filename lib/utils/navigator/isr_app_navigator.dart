@@ -39,6 +39,24 @@ class IsrAppNavigator {
     );
   }
 
+  /// Navigate to schedule post listing screen
+  /// ✅ Wraps the destination with necessary BLoC providers
+  /// Uses rootNavigator to hide bottom navigation bar
+  static void navigateToSchedulePostListing(
+      BuildContext context, {
+        TransitionType? transitionType,
+        Future<List<ProductDataModel>?> Function(List<ProductDataModel>)? onTagProduct,
+      }) {
+    final page = BlocProvider<PostListingBloc>(
+      create: (_) => IsmInjectionUtils.getBloc<PostListingBloc>(),
+      child: SchedulePostView(onLinkProduct: onTagProduct,),
+    );
+
+    Navigator.of(context, rootNavigator: true).push(
+      _buildRoute(page: page, transitionType: transitionType),
+    );
+  }
+
   /// Navigate to place details
   /// ✅ Wraps the destination with necessary BLoC providers
   static void navigateToPlaceDetails(
