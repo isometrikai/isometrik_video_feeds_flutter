@@ -171,7 +171,8 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
                 state is CameraRecordingDiscardedState ||
                 state is CameraFilterAppliedState ||
                 state is CameraSpeedChangedState ||
-                state is CameraSegmentRecordingState) {
+                state is CameraSegmentRecordingState ||
+                state is CameraBottomLoadingState) {
               if (mounted && context.mounted) {
                 return _buildCameraView(state);
               }

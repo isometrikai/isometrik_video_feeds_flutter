@@ -180,6 +180,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     }
 
     try {
+      emit(CameraBottomLoadingState());
       final photoFile = await _cameraController!.takePicture();
       if (_cameraController?.description.lensDirection == CameraLensDirection.front) {
         _capturedPhotoPath = await MediaUtil.mirrorMedia(File(photoFile.path)).then((value) => value.path);
@@ -339,29 +340,34 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
         _capturedPhotoPath != null) {
       var finalVideoPath = _recordedVideoPath ?? _capturedPhotoPath;
 
-      if (_videoSegments.isNotEmpty) {
-        if (_videoSegments.length == 1) {
-          finalVideoPath = _videoSegments.first.path;
-          AppLog.error(
-              '_confirmRecording: Only one segment, using: $finalVideoPath');
-        } else {
-          AppLog.error(
-              '_confirmRecording: Merging ${_videoSegments.length} segments');
-          final segmentPaths = _videoSegments.map((s) => s.path).toList();
-
-          try {
-            final mergedPath =
-                await MediaUtil.mergeVideoSegments(segmentPaths);
-            if (mergedPath != null && await File(mergedPath).exists()) {
-              finalVideoPath = mergedPath;
-              _recordedVideoPath = mergedPath;
-            } else {
-              throw Exception('Merge returned null or file missing');
-            }
-          } catch (e) {
+      try {
+        emit(CameraBottomLoadingState());
+        if (_videoSegments.isNotEmpty) {
+          if (_videoSegments.length == 1) {
             finalVideoPath = _videoSegments.first.path;
+            AppLog.error(
+                '_confirmRecording: Only one segment, using: $finalVideoPath');
+          } else {
+            AppLog.error(
+                '_confirmRecording: Merging ${_videoSegments.length} segments');
+            final segmentPaths = _videoSegments.map((s) => s.path).toList();
+
+            try {
+              final mergedPath =
+                  await MediaUtil.mergeVideoSegments(segmentPaths);
+              if (mergedPath != null && await File(mergedPath).exists()) {
+                finalVideoPath = mergedPath;
+                _recordedVideoPath = mergedPath;
+              } else {
+                throw Exception('Merge returned null or file missing');
+              }
+            } catch (e) {
+              finalVideoPath = _videoSegments.first.path;
+            }
           }
         }
+      } catch (e) {
+        AppLog.error('_confirmRecording: Error merging segments: $e');
       }
 
       emit(CameraRecordingConfirmedState(
@@ -683,7 +689,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     try {
       _isSegmentRecording = false;
       _segmentTimer?.cancel();
-
+      emit(CameraBottomLoadingState());
       final videoFile = await _cameraController!.stopVideoRecording();
 
       final File confirmedVideo;
