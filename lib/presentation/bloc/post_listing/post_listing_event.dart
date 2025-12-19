@@ -77,3 +77,15 @@ class DeleteUserPostEvent extends PostListingEvent {
   final Function(bool) onComplete;
   final String postId;
 }
+
+class ModifyPostScheduleEvent extends PostListingEvent {
+  ModifyPostScheduleEvent({
+    this.onComplete,
+    required this.postId,
+    required this.scheduleTime,
+  });
+
+  final String postId;
+  final String scheduleTime;
+  final void Function(bool)? onComplete;
+}

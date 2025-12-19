@@ -23,15 +23,15 @@ class CameraSegmentDeleteButton extends StatelessWidget {
           },
           borderRadius: BorderRadius.circular(IsrDimens.twentyFour),
           child: Container(
-            padding: IsrDimens.edgeInsetsAll(IsrDimens.eight),
+            padding: IsrDimens.edgeInsetsAll(IsrDimens.thirteen),
             decoration: const BoxDecoration(
-              color: Colors.transparent,
+              color: Colors.black54,
               shape: BoxShape.circle,
             ),
             child: Icon(
-              Icons.backspace,
-              color: Colors.red,
-              size: IsrDimens.twentyFour,
+              Icons.backspace_outlined,
+              color: Colors.white,
+              size: IsrDimens.twenty,
             ),
           ),
         ),
