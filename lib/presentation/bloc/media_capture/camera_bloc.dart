@@ -708,31 +708,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
 
       if (_recordingDuration >= _selectedDuration &&
           _videoSegments.isNotEmpty) {
-        String finalVideoPath;
-        final segmentPaths = _videoSegments.map((s) => s.path).toList();
-
-        try {
-          final mergedPath = await MediaUtil.mergeVideoSegments(
-              segmentPaths, onProgress: (progress) {
-            debugPrint('Merge progress: $progress');
-          });
-          if (mergedPath != null && await File(mergedPath).exists()) {
-            finalVideoPath = mergedPath;
-          } else {
-            throw Exception('Merge returned null');
-          }
-        } catch (e) {
-          finalVideoPath = _videoSegments.last.path;
-        }
-
-        _recordedVideoPath = finalVideoPath;
-
-        emit(CameraRecordingConfirmedState(
-          mediaPath: finalVideoPath,
-          mediaType: _selectedMediaType,
-          filter: _selectedFilter,
-          segments: null,
-        ));
+        add(CameraConfirmRecordingEvent());
         return;
       }
 

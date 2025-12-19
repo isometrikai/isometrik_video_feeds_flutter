@@ -128,6 +128,19 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
                                       maintainState: true,
                                       child: _buildFlashButton(),
                                     ),
+                                    Visibility(
+                                      visible: widget.cameraBloc.videoSegments
+                                          .isNotEmpty &&
+                                          !widget
+                                              .cameraBloc.isSegmentRecording &&
+                                          widget.cameraBloc.recordedVideoPath ==
+                                              null,
+                                      maintainSize: true,
+                                      maintainAnimation: true,
+                                      maintainState: true,
+                                      child: CameraSegmentDoneButton(
+                                          cameraBloc: widget.cameraBloc),
+                                    )
                                   ],
                                 ),
                               )),

@@ -25,12 +25,12 @@ class CameraSegmentDeleteButton extends StatelessWidget {
           child: Container(
             padding: IsrDimens.edgeInsetsAll(IsrDimens.eight),
             decoration: const BoxDecoration(
-              color: Colors.black54,
+              color: Colors.transparent,
               shape: BoxShape.circle,
             ),
             child: Icon(
-              Icons.close,
-              color: Colors.white,
+              Icons.backspace,
+              color: Colors.red,
               size: IsrDimens.twentyFour,
             ),
           ),
@@ -107,6 +107,7 @@ class CameraSegmentDeleteButton extends StatelessWidget {
                   Expanded(
                     child: CustomButton(
                       title: 'Remove',
+                      color: Theme.of(context).primaryColor,
                       onPress: () {
                         context.pop();
                         cameraBloc.add(CameraRemoveLastSegmentEvent());
