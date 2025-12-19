@@ -690,13 +690,14 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     PostSectionType postSectionType,
     TimeLineData postData,
   ) async {
+    final userid = await _socialPostBloc.userId;
     final updatedMentionList =
         await Utility.showBottomSheet<List<MentionMetaData>>(
       isScrollControlled: true,
       child: MentionListBottomSheet(
         initialMentionList: [],
         postData: postData,
-        myUserId: '',
+        myUserId: userid,
         onTapUserProfile: (userId) {
           context.pop();
           widget.postConfig.postCallBackConfig?.onProfileClick
