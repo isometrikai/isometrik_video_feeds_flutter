@@ -118,11 +118,12 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
                                     left: 16.responsiveDimension,
                                     right: 8.responsiveDimension),
                                 child: Row(
+                                  spacing: 10.responsiveDimension,
+                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                   children: [
                                     Visibility(
                                       visible:
-                                          widget.cameraBloc.selectedMediaType ==
-                                              MediaType.photo,
+                                          widget.cameraBloc.isFlashAvailable,
                                       maintainSize: true,
                                       maintainAnimation: true,
                                       maintainState: true,
@@ -130,7 +131,7 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
                                     ),
                                     Visibility(
                                       visible: widget.cameraBloc.videoSegments
-                                          .isNotEmpty &&
+                                              .isNotEmpty &&
                                           !widget
                                               .cameraBloc.isSegmentRecording &&
                                           widget.cameraBloc.recordedVideoPath ==
@@ -157,7 +158,7 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
                                     right: 16.responsiveDimension),
                                 child: Row(
                                   spacing: 10.responsiveDimension,
-                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                   children: [
                                     Visibility(
                                       visible: widget.cameraBloc.videoSegments

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:camera/camera.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:video_player/video_player.dart';
@@ -83,6 +82,15 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
       _selectedMusicId != null && _selectedMusicId!.isNotEmpty;
   bool get isSegmentRecording => _isSegmentRecording;
   List<VideoSegment> get videoSegments => _videoSegments;
+  bool get isFlashAvailable {
+    if (_cameraController == null || !_cameraController!.value.isInitialized) {
+      return false;
+    }
+    // Back cameras typically have flash, front cameras don't
+    return _cameraController!.description.lensDirection ==
+        CameraLensDirection.back;
+  }
+
   int get totalRecordingDuration {
     final segmentsDuration = _videoSegments.fold<int>(
       0,
@@ -102,9 +110,11 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
       if (_cameraController != null &&
           _cameraController!.value.isInitialized &&
           !_cameraController!.value.hasError) {
+        final hasFlash = _cameraController!.description.lensDirection ==
+            CameraLensDirection.back;
         emit(CameraInitializedState(
           cameraController: _cameraController!,
-          isFlashAvailable: true,
+          isFlashAvailable: hasFlash,
           maxZoom: 4.0,
         ));
         return;
@@ -136,9 +146,11 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
         return;
       }
 
+      final hasFlash = _cameraController!.description.lensDirection ==
+          CameraLensDirection.back;
       emit(CameraInitializedState(
           cameraController: _cameraController!,
-          isFlashAvailable: true,
+          isFlashAvailable: hasFlash,
           maxZoom: 4.0));
     } catch (e) {
       AppLog.error('Camera initialization error: $e');
@@ -182,8 +194,10 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     try {
       emit(CameraBottomLoadingState());
       final photoFile = await _cameraController!.takePicture();
-      if (_cameraController?.description.lensDirection == CameraLensDirection.front) {
-        _capturedPhotoPath = await MediaUtil.mirrorMedia(File(photoFile.path)).then((value) => value.path);
+      if (_cameraController?.description.lensDirection ==
+          CameraLensDirection.front) {
+        _capturedPhotoPath = await MediaUtil.mirrorMedia(File(photoFile.path))
+            .then((value) => value.path);
       } else {
         _capturedPhotoPath = photoFile.path;
       }
@@ -244,9 +258,18 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
         return;
       }
 
+      if (_selectedMediaType == MediaType.photo) {
+        await prepareCameraForPhoto();
+      } else {
+        await prepareCameraForVideoRecording();
+      }
+
+
+      final hasFlash = _cameraController!.description.lensDirection ==
+          CameraLensDirection.back;
       emit(CameraSwitchedState(
         cameraController: _cameraController!,
-        isFlashAvailable: true,
+        isFlashAvailable: hasFlash,
         maxZoom: 4.0,
       ));
     } catch (e) {
@@ -314,6 +337,11 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     Emitter<CameraState> emit,
   ) async {
     _selectedMediaType = event.mediaType;
+    if (_selectedMediaType == MediaType.photo) {
+      await prepareCameraForPhoto();
+    } else {
+      await prepareCameraForVideoRecording();
+    }
     emit(CameraMediaTypeChangedState(mediaType: _selectedMediaType));
   }
 
@@ -439,9 +467,11 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
         AppLog.error('Error resuming preview: $e');
       }
 
+      final hasFlash = _cameraController!.description.lensDirection ==
+          CameraLensDirection.back;
       emit(CameraInitializedState(
         cameraController: _cameraController!,
-        isFlashAvailable: true,
+        isFlashAvailable: hasFlash,
         maxZoom: 4.0,
       ));
     } else {
@@ -499,9 +529,11 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     _selectedMusicArtist = null;
 
     if (_cameraController != null && _cameraController!.value.isInitialized) {
+      final hasFlash = _cameraController!.description.lensDirection ==
+          CameraLensDirection.back;
       emit(CameraInitializedState(
         cameraController: _cameraController!,
-        isFlashAvailable: true,
+        isFlashAvailable: hasFlash,
         maxZoom: 4.0,
       ));
     } else {
@@ -678,6 +710,36 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     }
   }
 
+  Future<void> prepareCameraForVideoRecording() async {
+    if (_cameraController != null) {
+      // Auto focus & exposure
+      await _cameraController!.setFocusMode(FocusMode.auto);
+      await _cameraController!.setExposureMode(ExposureMode.auto);
+
+      // Increase brightness
+      final maxExposure = await _cameraController!.getMaxExposureOffset();
+
+      await _cameraController!.setExposureOffset(maxExposure * 0.6);
+
+      // Lock exposure so it doesn’t change during recording
+      await _cameraController!.setExposureMode(ExposureMode.locked);
+    }
+  }
+
+  Future<void> prepareCameraForPhoto() async {
+    if (_cameraController != null) {
+      // Auto focus & exposure
+      await _cameraController!.setFocusMode(FocusMode.auto);
+      await _cameraController!.setExposureMode(ExposureMode.auto);
+
+      // Increase brightness
+      final maxExposure = await _cameraController!.getMaxExposureOffset();
+
+      await _cameraController!.setExposureOffset(maxExposure * 0.3);
+    }
+  }
+
+
   Future<void> _stopSegmentRecording(
     CameraStopSegmentRecordingEvent event,
     Emitter<CameraState> emit,
@@ -693,7 +755,8 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
       final videoFile = await _cameraController!.stopVideoRecording();
 
       final File confirmedVideo;
-      if (_cameraController?.description.lensDirection == CameraLensDirection.front) {
+      if (_cameraController?.description.lensDirection ==
+          CameraLensDirection.front) {
         confirmedVideo = await MediaUtil.mirrorMedia(File(videoFile.path));
       } else {
         confirmedVideo = File(videoFile.path);

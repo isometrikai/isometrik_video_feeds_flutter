@@ -41,7 +41,7 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
     _cameraBloc.add(CameraInitializeEvent());
     _cameraBloc.add(CameraSetMediaTypeEvent(
         mediaType: widget.mediaType == MediaType.both
-            ? MediaType.video
+            ? MediaType.photo
             : widget.mediaType));
     // Auto-select 15 seconds duration by default
     _cameraBloc.add(CameraSetDurationEvent(duration: 15));
