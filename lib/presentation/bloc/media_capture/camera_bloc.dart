@@ -181,7 +181,11 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
 
     try {
       final photoFile = await _cameraController!.takePicture();
-      _capturedPhotoPath = photoFile.path;
+      if (_cameraController?.description.lensDirection == CameraLensDirection.front) {
+        _capturedPhotoPath = await MediaUtil.mirrorMedia(File(photoFile.path)).then((value) => value.path);
+      } else {
+        _capturedPhotoPath = photoFile.path;
+      }
 
       emit(CameraPhotoCapturedState(photoPath: _capturedPhotoPath!));
     } catch (e) {
@@ -347,7 +351,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
 
           try {
             final mergedPath =
-                await VideoMergerUtil.mergeVideoSegments(segmentPaths);
+                await MediaUtil.mergeVideoSegments(segmentPaths);
             if (mergedPath != null && await File(mergedPath).exists()) {
               finalVideoPath = mergedPath;
               _recordedVideoPath = mergedPath;
@@ -682,8 +686,15 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
 
       final videoFile = await _cameraController!.stopVideoRecording();
 
+      final File confirmedVideo;
+      if (_cameraController?.description.lensDirection == CameraLensDirection.front) {
+        confirmedVideo = await MediaUtil.mirrorMedia(File(videoFile.path));
+      } else {
+        confirmedVideo = File(videoFile.path);
+      }
+
       _videoSegments.add(VideoSegment(
-        path: videoFile.path,
+        path: confirmedVideo.path,
         duration: _currentSegmentDuration,
       ));
 
@@ -695,7 +706,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
         final segmentPaths = _videoSegments.map((s) => s.path).toList();
 
         try {
-          final mergedPath = await VideoMergerUtil.mergeVideoSegments(
+          final mergedPath = await MediaUtil.mergeVideoSegments(
               segmentPaths, onProgress: (progress) {
             debugPrint('Merge progress: $progress');
           });

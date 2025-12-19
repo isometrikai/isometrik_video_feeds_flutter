@@ -19,6 +19,7 @@ import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
+import 'package:mime/mime.dart' as mime;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -104,6 +105,20 @@ class Utility {
         showToastMessage(message);
       }
     }
+  }
+
+  static MediaType getMediaType(File file) {
+    final mimeType = mime.lookupMimeType(file.path);
+
+    if (mimeType == null) return MediaType.unknown;
+
+    if (mimeType.startsWith('image/')) {
+      return MediaType.photo;
+    } else if (mimeType.startsWith('video/')) {
+      return MediaType.video;
+    }
+
+    return MediaType.unknown;
   }
 
   /// shows general dialog for entire app
