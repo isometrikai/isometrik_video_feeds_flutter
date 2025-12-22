@@ -49,7 +49,10 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
   @override
   Widget build(BuildContext context) => Center(
         child: Container(
-          height: 50.percentHeight,
+          constraints: BoxConstraints(
+            maxHeight: 50.percentHeight
+          ),
+          height: null,
           padding: IsrDimens.edgeInsetsAll(IsrDimens.sixteen),
           margin: IsrDimens.edgeInsetsAll(IsrDimens.sixteen),
           decoration: BoxDecoration(
@@ -61,94 +64,91 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                child: _isLoading
-                    ? Center(child: Utility.loaderWidget())
-                    : SingleChildScrollView(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // Header and reasons list
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  IsrTranslationFile.report,
-                                  style: IsrStyles.primaryText18.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
+              _isLoading
+                  ? Center(child: Utility.loaderWidget())
+                  : SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Header and reasons list
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                IsrTranslationFile.report,
+                                style: IsrStyles.primaryText18.copyWith(
+                                  fontWeight: FontWeight.w600,
                                 ),
-                                TapHandler(
-                                  padding: 5.responsiveDimension,
-                                  onTap: () {
-                                    context.pop();
-                                  },
-                                  child: AppImage.svg(
-                                    AssetConstants.icCrossIcon,
-                                    height: IsrDimens.sixteen,
-                                    width: IsrDimens.sixteen,
-                                    color: IsrColors.black,
-                                  ),
+                              ),
+                              TapHandler(
+                                padding: 5.responsiveDimension,
+                                onTap: () {
+                                  context.pop();
+                                },
+                                child: AppImage.svg(
+                                  AssetConstants.icCrossIcon,
+                                  height: IsrDimens.sixteen,
+                                  width: IsrDimens.sixteen,
+                                  color: IsrColors.black,
                                 ),
-                              ],
-                            ),
-                            24.responsiveVerticalSpace,
-                            ...List.generate(
-                              _reportReasons.length,
-                              (index) => Padding(
-                                padding: IsrDimens.edgeInsets(
-                                    bottom: IsrDimens.twelve),
-                                child: TapHandler(
-                                  onTap: () {
-                                    setState(() {
-                                      _selectedReason = _reportReasons[index];
-                                    });
-                                  },
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 24.responsiveDimension,
-                                        height: 24.responsiveDimension,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: _selectedReason ==
-                                                    _reportReasons[index]
-                                                ? Theme.of(context).primaryColor
-                                                : '838383'.toColor(),
-                                            width: 2.responsiveDimension,
-                                          ),
+                              ),
+                            ],
+                          ),
+                          24.responsiveVerticalSpace,
+                          ...List.generate(
+                            _reportReasons.length,
+                            (index) => Padding(
+                              padding: IsrDimens.edgeInsets(
+                                  bottom: IsrDimens.twelve),
+                              child: TapHandler(
+                                onTap: () {
+                                  setState(() {
+                                    _selectedReason = _reportReasons[index];
+                                  });
+                                },
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 24.responsiveDimension,
+                                      height: 24.responsiveDimension,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: _selectedReason ==
+                                                  _reportReasons[index]
+                                              ? Theme.of(context).primaryColor
+                                              : '838383'.toColor(),
+                                          width: 2.responsiveDimension,
                                         ),
-                                        child: _selectedReason ==
-                                                _reportReasons[index]
-                                            ? Center(
-                                                child: Container(
-                                                  width: 12.responsiveDimension,
-                                                  height:
-                                                      12.responsiveDimension,
-                                                  decoration: BoxDecoration(
-                                                    shape: BoxShape.circle,
-                                                    color: Theme.of(context)
-                                                        .primaryColor,
-                                                  ),
+                                      ),
+                                      child: _selectedReason ==
+                                              _reportReasons[index]
+                                          ? Center(
+                                              child: Container(
+                                                width: 12.responsiveDimension,
+                                                height: 12.responsiveDimension,
+                                                decoration: BoxDecoration(
+                                                  shape: BoxShape.circle,
+                                                  color: Theme.of(context)
+                                                      .primaryColor,
                                                 ),
-                                              )
-                                            : null,
-                                      ),
-                                      12.responsiveHorizontalSpace,
-                                      Text(
-                                        _reportReasons[index].name ?? '',
-                                        style: IsrStyles.primaryText14,
-                                      ),
-                                    ],
-                                  ),
+                                              ),
+                                            )
+                                          : null,
+                                    ),
+                                    12.responsiveHorizontalSpace,
+                                    Text(
+                                      _reportReasons[index].name ?? '',
+                                      style: IsrStyles.primaryText14,
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-              ),
+                    ),
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
