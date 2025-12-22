@@ -117,18 +117,14 @@ class AppImage extends StatelessWidget {
         width: width ?? dimensions,
         padding: padding,
         decoration: BoxDecoration(
-          borderRadius: isProfileImage
-              ? null
-              : borderRadius ?? BorderRadius.circular(radius ?? 0),
+          borderRadius: isProfileImage ? null : borderRadius ?? BorderRadius.circular(radius ?? 0),
           shape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
           border: border,
         ),
         clipBehavior: Clip.antiAlias,
         child: switch (_imageType) {
-          ImageType.asset =>
-            _Asset(path, fit: fit, height: height, width: width),
-          ImageType.svg =>
-            _Svg(path, fit: fit, color: color, height: height, width: width),
+          ImageType.asset => _Asset(path, fit: fit, height: height, width: width),
+          ImageType.svg => _Svg(path, fit: fit, color: color, height: height, width: width),
           ImageType.file => _File(
               path,
               fit: fit,
@@ -230,19 +226,23 @@ class _Network extends StatelessWidget {
   Widget build(BuildContext context) {
     final fullName = name.isStringEmptyOrNull == false ? name : '';
     final words = fullName.split(' ');
-    final initials =
-        words.map((word) => word.isNotEmpty ? word[0] : '').join('');
-    final isOptimizationEnable =
-        imageUrl.contains('https://cdn.trulyfreehome.dev');
+    final initials = words.map((word) => word.isNotEmpty ? word[0] : '').join('');
+    final isOptimizationEnable = imageUrl.contains('https://cdn.trulyfreehome.dev');
 
-    final optimizedImageUrl =
-        AppConstants.isGumletEnable && isOptimizationEnable
-            ? Utility.buildGumletImageUrl(
-                imageUrl: imageUrl.trim().replaceAll(RegExp(r'[",]+$'), ''),
-                width: width,
-                height: height)
-            : imageUrl.trim().replaceAll(RegExp(r'[",]+$'), '');
-    // debugPrint('optimizedImageUrl: $optimizedImageUrl');
+    final cleanedUrl = imageUrl.trim().replaceAll(RegExp(r'[",]+$'), '');
+    final optimizedImageUrl = AppConstants.isGumletEnable && isOptimizationEnable
+        ? Utility.buildGumletImageUrl(imageUrl: cleanedUrl, width: width, height: height)
+        : cleanedUrl;
+
+    // Check if the URL is an SVG file - CachedNetworkImage doesn't support SVG
+    // Handle URLs with query parameters like: .svg?h=200.0q=100
+    final urlPath =
+        Uri.tryParse(optimizedImageUrl)?.path.toLowerCase() ?? optimizedImageUrl.toLowerCase();
+    final isSvgUrl = urlPath.endsWith('.svg') || optimizedImageUrl.toLowerCase().contains('.svg?');
+    if (isSvgUrl) {
+      return _buildNetworkSvg(optimizedImageUrl, initials);
+    }
+
     return CachedNetworkImage(
       width: width,
       imageUrl: optimizedImageUrl,
@@ -250,12 +250,10 @@ class _Network extends StatelessWidget {
       fit: fit ?? BoxFit.cover,
       alignment: Alignment.center,
       cacheKey: optimizedImageUrl,
-      fadeInDuration: fadeAnimationEnable ?? false
-          ? const Duration(milliseconds: 300)
-          : Duration.zero,
-      fadeOutDuration: fadeAnimationEnable ?? false
-          ? const Duration(milliseconds: 300)
-          : Duration.zero,
+      fadeInDuration:
+          fadeAnimationEnable ?? false ? const Duration(milliseconds: 300) : Duration.zero,
+      fadeOutDuration:
+          fadeAnimationEnable ?? false ? const Duration(milliseconds: 300) : Duration.zero,
       placeholderFadeInDuration: Duration.zero,
       imageBuilder: (_, image) => ClipRRect(
         borderRadius: borderRadius ?? BorderRadius.zero,
@@ -284,8 +282,8 @@ class _Network extends StatelessWidget {
                           padding: const EdgeInsets.all(8.0),
                           child: Text(
                             initials,
-                            style: IsrStyles.secondaryText14.copyWith(
-                                fontWeight: FontWeight.w500, color: textColor),
+                            style: IsrStyles.secondaryText14
+                                .copyWith(fontWeight: FontWeight.w500, color: textColor),
                             textAlign: TextAlign.center,
                             maxLines: 1,
                           ),
@@ -320,8 +318,8 @@ class _Network extends StatelessWidget {
                           padding: const EdgeInsets.all(8.0),
                           child: Text(
                             initials,
-                            style: IsrStyles.secondaryText14.copyWith(
-                                fontWeight: FontWeight.w500, color: textColor),
+                            style: IsrStyles.secondaryText14
+                                .copyWith(fontWeight: FontWeight.w500, color: textColor),
                             textAlign: TextAlign.center,
                             maxLines: 1,
                           ),
@@ -341,6 +339,51 @@ class _Network extends StatelessWidget {
             ),
     );
   }
+
+  /// Builds a network SVG image using SvgPicture.network
+  Widget _buildNetworkSvg(String svgUrl, String initials) => ClipRRect(
+        borderRadius: borderRadius ?? BorderRadius.zero,
+        child: SvgPicture.network(
+          svgUrl,
+          height: height,
+          width: width,
+          fit: fit ?? BoxFit.cover,
+          placeholderBuilder: (context) => showError
+              ? ImagePlaceHolder(
+                  width: width,
+                  height: height,
+                  borderRadius: borderRadius,
+                  placeHolderName: placeHolderName,
+                  boxShape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
+                  child: name.isStringEmptyOrNull == false && isProfileImage
+                      ? Center(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Text(
+                                initials,
+                                style: IsrStyles.secondaryText14
+                                    .copyWith(fontWeight: FontWeight.w500, color: textColor),
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                              ),
+                            ),
+                          ),
+                        )
+                      : null,
+                )
+              : Container(
+                  width: width,
+                  height: height,
+                  decoration: BoxDecoration(
+                    color: Colors.black.changeOpacity(0.3),
+                    borderRadius: borderRadius,
+                    shape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
+                  ),
+                ),
+        ),
+      );
 }
 
 class _Svg extends StatelessWidget {
