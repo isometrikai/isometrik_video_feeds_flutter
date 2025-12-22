@@ -92,6 +92,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   final ValueNotifier<bool> _isExpandedDescription = ValueNotifier(false);
 
+  // to call like api from likeActionWidget
+  Function({
+  ReelsData? reelData,
+  PostSectionType? postSectionType,
+  int? watchDuration,
+  Future<bool> Function()? apiCallBack,
+  })? _onLikeTap;
+
   // Audio state management
   static bool _globalMuteState =
       false; // Global mute state that persists across all videos
@@ -869,6 +877,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   builder: (isLoading, isLiked, likeCount, onTap) {
                     _reelData.isLiked = isLiked;
                     _reelData.likesCount = likeCount;
+                    _onLikeTap = onTap;
                     return _buildActionButton(
                       icon: isLiked == true
                           ? AssetConstants.icLikeSelected
@@ -1358,8 +1367,19 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     );
   }
 
-  void _triggerLikeAnimation() {
+  Future<void> _triggerLikeAnimation() async {
     _likeAnimationTimer?.cancel();
+    if (_reelData.isLiked != true) {
+      _onLikeTap?.call(
+        reelData: _reelData,
+        watchDuration: _watchDuration,
+        postSectionType: widget.postSectionType,
+        apiCallBack: widget.onPressLikeButton != null
+            ? () =>
+                widget.onPressLikeButton!(_reelData, _reelData.isLiked == true)
+            : null,
+      );
+    }
     setState(() {
       _showLikeAnimation = true;
     });
