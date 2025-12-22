@@ -576,12 +576,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
 
     if (apiResult.isSuccess) {
       if (event.commentAction == CommentAction.report) {
-        ErrorHandler.showAppError(
-          appError: apiResult.error,
-          message: IsrTranslationFile.commentReportedSuccessfully,
-          isNeedToShowError: true,
-          errorViewType: ErrorViewType.snackBar,
-        );
+        Utility.showToastMessage(IsrTranslationFile.commentReportedSuccessfully);
       } else if (event.commentAction == CommentAction.delete &&
           event.commentId?.trim().isNotEmpty == true) {
         final myUserId = await _localDataUseCase.getUserId();
