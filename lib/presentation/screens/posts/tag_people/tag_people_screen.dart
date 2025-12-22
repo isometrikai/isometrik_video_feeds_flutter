@@ -8,6 +8,7 @@ import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:video_player/video_player.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 class TagPeopleScreen extends StatefulWidget {
   const TagPeopleScreen({
@@ -40,6 +41,8 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
   // Video player state
   final Map<String, VideoPlayerController> _videoControllers = {};
   final Map<String, bool> _videoInitializingStates = {};
+  final Map<String, bool> _videoVisibilityStates =
+      {}; // Track visibility per video
 
   @override
   void initState() {
@@ -630,49 +633,88 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
       );
     }
 
-    return LayoutBuilder(
-      key: _mentionedVideoKeys[mediaIndex],
-      builder: (context, constraints) => Container(
-        color: Colors.black,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // Video player
-            FittedBox(
-              fit: BoxFit.contain,
-              child: SizedBox(
-                width: controller.value.size.width,
-                height: controller.value.size.height,
-                child: VideoPlayer(controller),
-              ),
-            ),
-
-            // Invisible overlay for tap detection
-            Positioned.fill(
-              child: GestureDetector(
-                onTapUp: (TapUpDetails details) {
-                  // _handleVideoTap(details, constraints, mediaIndex);
-                },
-                child: Container(
-                  color: Colors.transparent,
+    return VisibilityDetector(
+      key: Key('video_player_$videoKey'),
+      onVisibilityChanged: (VisibilityInfo info) {
+        _handleVisibilityChanged(videoKey, controller, info);
+      },
+      child: LayoutBuilder(
+        key: _mentionedVideoKeys[mediaIndex],
+        builder: (context, constraints) => Container(
+          color: Colors.black,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Video player
+              FittedBox(
+                fit: BoxFit.contain,
+                child: SizedBox(
+                  width: controller.value.size.width,
+                  height: controller.value.size.height,
+                  child: VideoPlayer(controller),
                 ),
               ),
-            ),
 
-            // Play/pause button overlay
-            if (!controller.value.isPlaying)
+              // Invisible overlay for tap detection
+              Positioned.fill(
+                child: GestureDetector(
+                  onTapUp: (TapUpDetails details) {
+                    // _handleVideoTap(details, constraints, mediaIndex);
+                  },
+                  child: Container(
+                    color: Colors.transparent,
+                  ),
+                ),
+              ),
+
+              // Play/pause button overlay
               GestureDetector(
                 onTap: () => _playPause(controller),
-                child: const Icon(
-                  Icons.play_circle_fill,
+                child: Icon(
+                  controller.value.isPlaying
+                      ? Icons.pause_circle
+                      : Icons.play_circle_fill,
                   size: 64,
                   color: Colors.white70,
                 ),
               ),
-          ],
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  /// Handle visibility changes for video player
+  void _handleVisibilityChanged(
+    String videoKey,
+    VideoPlayerController controller,
+    VisibilityInfo info,
+  ) {
+    final isFullyVisible = info.visibleFraction >= 1.0;
+    final wasVisible = _videoVisibilityStates[videoKey] ?? false;
+    _videoVisibilityStates[videoKey] = isFullyVisible;
+
+    // Only play when 100% visible, pause otherwise
+    if (mounted && controller.value.isInitialized) {
+      try {
+        if (isFullyVisible && !wasVisible) {
+          // Video became fully visible - play it
+          if (!controller.value.isPlaying) {
+            controller.play();
+            setState(() {});
+          }
+        } else if (!isFullyVisible && wasVisible) {
+          // Video is no longer fully visible - pause it
+          if (controller.value.isPlaying) {
+            controller.pause();
+            setState(() {});
+          }
+        }
+      } catch (e) {
+        debugPrint('Error handling visibility change: $e');
+      }
+    }
   }
 
   void _handleImageTap(TapUpDetails? details, BoxConstraints? constraints,
