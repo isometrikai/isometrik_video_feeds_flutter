@@ -1061,7 +1061,7 @@ class _PostListingViewState extends State<PostListingView> {
 
     if (widget.postConfig.postCallBackConfig?.onProfileClick != null) {
       widget.postConfig.postCallBackConfig?.onProfileClick
-          ?.call(null, user.id ?? '');
+          ?.call(null, user.id ?? '', user.isFollowing);
     }
 
     // Navigate to user profile
