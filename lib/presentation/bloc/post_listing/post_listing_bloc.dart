@@ -20,12 +20,14 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
     this._followUnFollowUserUseCase,
     this._getUserPostDataUseCase,
     this._deletePostUseCase,
+    this._createPostUseCase,
   ) : super(PostListingInitialState()) {
     on<GetHashTagPostEvent>(_getHashTagPosts);
     on<GetSearchResultsEvent>(_getSearchResults);
     on<GetPlaceDetailsEvent>(_getPlaceDetails);
     on<FollowSocialUserEvent>(_followSocialUser);
     on<GetUserPostListEvent>(_getUserPosts);
+    on<ModifyPostScheduleEvent>(_modifySchedulePost);
     on<DeleteUserPostEvent>(_deletePost);
   }
 
@@ -38,6 +40,7 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
   final FollowUnFollowUserUseCase _followUnFollowUserUseCase;
   final GetUserPostDataUseCase _getUserPostDataUseCase;
   final DeletePostUseCase _deletePostUseCase;
+  final CreatePostUseCase _createPostUseCase;
 
   var _searchPostPage = 1;
   var _searchTagsPage = 1;
@@ -310,6 +313,25 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
       postId: event.postId,
     );
     event.onComplete(apiResult.isSuccess);
+  }
+
+  FutureOr<void> _modifySchedulePost(ModifyPostScheduleEvent event, Emitter<PostListingState> emit) async {
+    final apiResult = await _createPostUseCase.executeEditPost(
+      isLoading: true,
+      postId: event.postId,
+      editPostRequest: {
+        'scheduled_at': event.scheduleTime,
+      },
+    );
+    event.onComplete?.call(apiResult.isSuccess);
+
+    if (apiResult.isError) {
+      ErrorHandler.showAppError(
+        appError: apiResult.error,
+        isNeedToShowError: true,
+        errorViewType: ErrorViewType.toast,
+      );
+    }
   }
 
   FutureOr<void> _getUserPosts(

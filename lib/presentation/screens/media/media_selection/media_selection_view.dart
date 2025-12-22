@@ -420,7 +420,7 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
           color: Colors.white.withValues(alpha: 0.6),
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           child: Row(
             children: [
               // Selected media list
@@ -430,76 +430,58 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
                   itemCount: state.selectedMedia.length,
                   itemBuilder: (context, index) {
                     final media = state.selectedMedia[index];
-                    return Container(
-                      margin: const EdgeInsets.only(right: 8),
-                      child: Stack(
-                        children: [
-                          // Media thumbnail
-                          SizedBox(
-                            width: 70.responsiveDimension *
-                                widget.mediaSelectionConfig.gridItemAspectRatio,
-                            height: 70.responsiveDimension,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: Stack(
-                                children: [
-                                  _buildOptimizedMediaContent(media),
-                                  // Video duration indicator
-                                  if (media.mediaType ==
-                                      SelectedMediaType.video)
-                                    Positioned(
-                                      bottom: 1,
-                                      right: 1,
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 4,
-                                          vertical: 2,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.black
-                                              .withValues(alpha: 0.7),
-                                          borderRadius:
-                                              BorderRadius.circular(4),
-                                        ),
-                                        child: Text(
-                                          _formatDuration(
-                                              (media.duration ?? 0).toInt()),
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 8,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
+                    return Stack(
+                      children: [
+                        // Media thumbnail
+                        Container(
+                          width: 70.responsiveDimension *
+                              widget.mediaSelectionConfig.gridItemAspectRatio,
+                          height: 70.responsiveDimension,
+                        margin: EdgeInsets.all(8.responsiveDimension),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: Stack(
+                              children: [
+                                _buildOptimizedMediaContent(media),
+                                // Video duration indicator
+                                if (media.mediaType ==
+                                    SelectedMediaType.video)
+                                  Positioned(
+                                    bottom: 3,
+                                    right: 3,
+                                    child: Icon(
+                                      Icons.video_camera_back,
+                                      color: Colors.white,
+                                      size: 12.responsiveDimension,
                                     ),
-                                ],
+                                  )
+                              ],
+                            ),
+                          ),
+                        ),
+                        // Remove button
+                        Positioned(
+                          top: 0,
+                          right: 0,
+                          child: GestureDetector(
+                            onTap: () => _bloc
+                                .add(DeselectMediaEvent(mediaData: media)),
+                            child: Container(
+                              width: 17,
+                              height: 17,
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.4),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.close,
+                                color: Colors.white,
+                                size: 12,
                               ),
                             ),
                           ),
-                          // Remove button
-                          Positioned(
-                            top: 0,
-                            right: 0,
-                            child: GestureDetector(
-                              onTap: () => _bloc
-                                  .add(DeselectMediaEvent(mediaData: media)),
-                              child: Container(
-                                width: 12,
-                                height: 12,
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.4),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.close,
-                                  color: Colors.white,
-                                  size: 12,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     );
                   },
                 ),
