@@ -230,7 +230,7 @@ class IsrAppNavigator {
     Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
         onTagProduct,
     List<MediaData>? newMediaDataList,
-    TransitionType? transitionType,
+    TransitionType transitionType = TransitionType.bottomToTop,
   }) async {
     final page = MultiBlocProvider(
       providers: [
