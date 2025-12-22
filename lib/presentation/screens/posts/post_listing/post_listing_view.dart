@@ -31,7 +31,6 @@ class PostListingView extends StatefulWidget {
 class _PostListingViewState extends State<PostListingView> {
   final TextEditingController _hashtagController = TextEditingController();
   late PostListingBloc _postListingBloc;
-  late PageController _pageController;
 
   Timer? _debounceTimer;
   static const int _minCharacterLimit = 3;
@@ -54,6 +53,9 @@ class _PostListingViewState extends State<PostListingView> {
   // Track follow state for users
   final Map<String, bool> _userFollowingState = {};
 
+  // Flag to prevent multiple initializations
+  bool _isInitialized = false;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -61,17 +63,15 @@ class _PostListingViewState extends State<PostListingView> {
     // ✅ Get the BLoC from context (from the BlocProvider in the navigation tree)
     _postListingBloc = context.read<PostListingBloc>();
 
-    // ✅ Now call init after we have the BLoC
-    _onStartInit();
+    // ✅ Only call init once to prevent duplicate API calls
+    if (!_isInitialized) {
+      _isInitialized = true;
+      _onStartInit();
+    }
   }
 
   void _onStartInit() {
     _hashtagController.text = widget.searchQuery ?? '#${widget.tagValue}';
-
-    // Initialize PageController with initial page
-    _pageController = PageController(
-      initialPage: _selectedTab.index,
-    );
 
     // Initialize tab loading states
     for (final tab in SearchTabType.values) {
@@ -92,7 +92,6 @@ class _PostListingViewState extends State<PostListingView> {
   void dispose() {
     _debounceTimer?.cancel();
     _hashtagController.dispose();
-    _pageController.dispose();
     super.dispose();
   }
 
@@ -242,16 +241,14 @@ class _PostListingViewState extends State<PostListingView> {
               child: GestureDetector(
                 onTap: () {
                   if (!mounted) return;
-                  setState(() {
-                    _selectedTab = tab;
-                  });
-                  // Animate to the selected page
-                  _pageController.animateToPage(
-                    tab.index,
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                  );
-                  _searchForSelectedTab();
+                  if (_selectedTab != tab) {
+                    debugPrint(
+                        '👆 Tab tapped: from ${_selectedTab.name} to ${tab.name}');
+                    setState(() {
+                      _selectedTab = tab;
+                    });
+                    _searchForSelectedTab();
+                  }
                 },
                 child: Container(
                   decoration: BoxDecoration(
@@ -373,33 +370,69 @@ class _PostListingViewState extends State<PostListingView> {
           if (!mounted) return;
 
           if (state is SearchResultsLoadedState) {
-            // Always reset loading state
-            if (_tabLoadingMore[state.tabType] ?? false) {
-              setState(() {
-                _tabLoadingMore[state.tabType] = false;
-              });
-            }
+            final currentQuery =
+                _hashtagController.text.trim().replaceFirst('#', '');
 
-            // If it's pagination and empty, mark no more data
-            if (state.isFromPagination && state.results.isEmpty) {
-              setState(() {
-                _tabHasMoreData[state.tabType] = false;
-              });
-              debugPrint('⚠️ Listener: No more data for ${state.tabType.name}');
-            }
+            // Debug: Log what data type is being received
+            final resultType = state.results.isNotEmpty
+                ? state.results.first.runtimeType.toString()
+                : 'empty';
+            debugPrint(
+                '📥 SearchResultsLoadedState: tabType=${state.tabType.name}, count=${state.results.length}, dataType=$resultType');
+
+            setState(() {
+              // Always reset loading more state
+              _tabLoadingMore[state.tabType] = false;
+
+              // Use isFromPagination from state
+              if (state.isFromPagination) {
+                // Pagination mode: only append if results are not empty
+                if (state.results.isNotEmpty) {
+                  // Append new results to existing ones
+                  final existingResults = _tabResults[state.tabType] ?? [];
+                  _tabResults[state.tabType] = [
+                    ...existingResults,
+                    ...state.results
+                  ];
+                  debugPrint(
+                      '✅ Pagination: Appended ${state.results.length} items to ${state.tabType.name}. Total: ${_tabResults[state.tabType]?.length}');
+                } else {
+                  // Empty results during pagination - mark no more data
+                  _tabHasMoreData[state.tabType] = false;
+                  debugPrint(
+                      '⚠️ Pagination: No more data for ${state.tabType.name}. Keeping existing ${_tabResults[state.tabType]?.length} items');
+                }
+              } else {
+                // Fresh search: replace results completely
+                _tabResults[state.tabType] = state.results;
+                // Reset hasMoreData for fresh search
+                _tabHasMoreData[state.tabType] = state.results.isNotEmpty;
+                debugPrint(
+                    '🔄 Fresh search: Loaded ${state.results.length} items for ${state.tabType.name}, dataType=$resultType');
+              }
+
+              _tabLoading[state.tabType] = false;
+              // Store the query for this tab to avoid unnecessary API calls
+              _tabLastQuery[state.tabType] = currentQuery;
+            });
 
             // Log search event only for fresh searches (not pagination), selected tab, and exclude places tab
             if (!state.isFromPagination &&
                 state.tabType == _selectedTab &&
                 state.tabType != SearchTabType.places) {
-              final searchQuery =
-                  _hashtagController.text.trim().replaceFirst('#', '');
               _logSearchEvent(
-                searchQuery,
+                currentQuery,
                 state.results.length,
                 state.tabType.displayName.toLowerCase(),
               );
             }
+          }
+
+          if (state is PostLoadedState) {
+            setState(() {
+              _postList.clear();
+              _postList.addAll(state.postList);
+            });
           }
         },
         builder: (context, state) {
@@ -413,89 +446,92 @@ class _PostListingViewState extends State<PostListingView> {
             return const Center(child: AppLoader());
           }
 
-          // Update the list from state
-          if (state is PostLoadedState) {
-            _postList.clear();
-            _postList.addAll(state.postList);
-          }
-
-          if (state is SearchResultsLoadedState) {
-            // Use isFromPagination from state
-            if (state.isFromPagination) {
-              // Pagination mode: only append if results are not empty
-              if (state.results.isNotEmpty) {
-                // Append new results to existing ones
-                final existingResults = _tabResults[state.tabType] ?? [];
-                _tabResults[state.tabType] = [
-                  ...existingResults,
-                  ...state.results
-                ];
-                debugPrint(
-                    '✅ Pagination: Appended ${state.results.length} items to ${state.tabType.name}. Total: ${_tabResults[state.tabType]?.length}');
-              } else {
-                // Empty results during pagination - keep existing data
-                debugPrint(
-                    '⚠️ Pagination: No more data for ${state.tabType.name}. Keeping existing ${_tabResults[state.tabType]?.length} items');
-                // DON'T modify _tabResults - keep existing data intact
-              }
-            } else {
-              // Fresh search: replace results completely
-              _tabResults[state.tabType] = state.results;
-              // Reset hasMoreData for fresh search
-              _tabHasMoreData[state.tabType] = state.results.isNotEmpty;
-              debugPrint(
-                  '🔄 Fresh search: Loaded ${state.results.length} items for ${state.tabType.name}');
-            }
-            _tabLoading[state.tabType] = false;
-            // Store the query for this tab to avoid unnecessary API calls
-            final currentQuery =
-                _hashtagController.text.trim().replaceFirst('#', '');
-            _tabLastQuery[state.tabType] = currentQuery;
-          }
-
           // Show content based on selected tab
           return _buildTabContent();
         },
       );
 
-  Widget _buildTabContent() => PageView.builder(
-        controller: _pageController,
-        itemCount: SearchTabType.values.length,
-        onPageChanged: (index) {
-          if (!mounted) return;
-          final newTab = SearchTabType.values[index];
+  Widget _buildTabContent() {
+    // Use GestureDetector for swipe + IndexedStack for reliable tab switching
+    return GestureDetector(
+      onHorizontalDragEnd: (details) {
+        if (!mounted) return;
+        final velocity = details.primaryVelocity ?? 0;
+        if (velocity.abs() < 300) return; // Ignore slow swipes
+
+        final currentIndex = _selectedTab.index;
+        int newIndex;
+
+        if (velocity < 0) {
+          // Swipe left - go to next tab
+          newIndex =
+              (currentIndex + 1).clamp(0, SearchTabType.values.length - 1);
+        } else {
+          // Swipe right - go to previous tab
+          newIndex =
+              (currentIndex - 1).clamp(0, SearchTabType.values.length - 1);
+        }
+
+        if (newIndex != currentIndex) {
+          final newTab = SearchTabType.values[newIndex];
+          debugPrint(
+              '👆 Swipe detected: from ${_selectedTab.name} to ${newTab.name}');
           setState(() {
             _selectedTab = newTab;
           });
           _searchForSelectedTab();
-        },
-        itemBuilder: (context, index) {
-          final tab = SearchTabType.values[index];
-          final results = _tabResults[tab] ?? [];
-          final isLoading = _tabLoading[tab] ?? false;
-          final isLoadingMore = _tabLoadingMore[tab] ?? false;
+        }
+      },
+      child: IndexedStack(
+        index: _selectedTab.index,
+        children: SearchTabType.values.map(_buildTabPage).toList(),
+      ),
+    );
+  }
 
-          // Only show full screen loader if it's initial loading (not pagination)
-          if (isLoading && !isLoadingMore && results.isEmpty) {
-            return const Center(child: AppLoader());
-          }
+  Widget _buildTabPage(SearchTabType tab) {
+    final results = _tabResults[tab] ?? [];
+    final isLoading = _tabLoading[tab] ?? false;
+    final isLoadingMore = _tabLoadingMore[tab] ?? false;
+    final hasQuery = _tabLastQuery[tab]?.isNotEmpty ?? false;
 
-          if (results.isEmpty && !isLoading) {
-            return _buildEmptyState(tab);
-          }
+    debugPrint(
+        '📄 Building tab page: tab=${tab.name}, resultsCount=${results.length}, isLoading=$isLoading, hasQuery=$hasQuery');
 
-          // Show content with pagination loader at bottom (if loading more)
-          return NotificationListener<ScrollNotification>(
-            onNotification: (notification) {
-              if (notification is ScrollUpdateNotification) {
-                _handleScrollNotification(notification, tab);
-              }
-              return false;
-            },
-            child: _buildTabSpecificContentForTab(tab, results),
-          );
-        },
+    // Show loader if loading and no results yet
+    if (isLoading && !isLoadingMore && results.isEmpty) {
+      return Center(
+        key: ValueKey('loader_${tab.name}'),
+        child: const AppLoader(),
       );
+    }
+
+    // Show empty state only if not loading and we've completed a query
+    if (results.isEmpty && !isLoading && hasQuery) {
+      return _buildEmptyState(tab);
+    }
+
+    // Show loader if we haven't queried this tab yet
+    if (results.isEmpty && !hasQuery) {
+      return Center(
+        key: ValueKey('initial_loader_${tab.name}'),
+        child: const AppLoader(),
+      );
+    }
+
+    // Show content
+    debugPrint(
+        '📄 Building content for tab=${tab.name}, resultsType=${results.isNotEmpty ? results.first.runtimeType : 'empty'}');
+    return NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        if (notification is ScrollUpdateNotification) {
+          _handleScrollNotification(notification, tab);
+        }
+        return false;
+      },
+      child: _buildTabSpecificContentForTab(tab, results),
+    );
+  }
 
   void _handleScrollNotification(
       ScrollNotification notification, SearchTabType tab) {
@@ -539,15 +575,64 @@ class _PostListingViewState extends State<PostListingView> {
 
   Widget _buildTabSpecificContentForTab(
       SearchTabType tab, List<dynamic> results) {
+    debugPrint(
+        '🎨 _buildTabSpecificContentForTab: tab=${tab.name}, resultsCount=${results.length}');
+
+    // Debug wrapper to visually show which tab content is being rendered
+    Widget wrapWithDebugBanner(Widget child, String tabName, Color color) =>
+        Stack(
+          children: [
+            child,
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                color: color.withOpacity(0.9),
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Text(
+                  'DEBUG: $tabName TAB',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+
     switch (tab) {
       case SearchTabType.posts:
-        return _buildPostsGridWithoutController(results.cast<TimeLineData>());
+        debugPrint('🎨 Returning POSTS grid');
+        return wrapWithDebugBanner(
+          _buildPostsGridWithoutController(results.cast<TimeLineData>()),
+          'POSTS',
+          Colors.blue,
+        );
       case SearchTabType.tags:
-        return _buildTagsListWithoutController(results);
+        debugPrint('🎨 Returning TAGS list');
+        return wrapWithDebugBanner(
+          _buildTagsListWithoutController(results),
+          'TAGS',
+          Colors.green,
+        );
       case SearchTabType.places:
-        return _buildPlacesListWithoutController(results);
+        debugPrint('🎨 Returning PLACES list');
+        return wrapWithDebugBanner(
+          _buildPlacesListWithoutController(results),
+          'PLACES',
+          Colors.orange,
+        );
       case SearchTabType.account:
-        return _buildAccountsListWithoutController(results);
+        debugPrint('🎨 Returning ACCOUNTS list');
+        return wrapWithDebugBanner(
+          _buildAccountsListWithoutController(results),
+          'ACCOUNTS',
+          Colors.purple,
+        );
     }
   }
 
