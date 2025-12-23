@@ -18,6 +18,7 @@ export 'google_cloud_storage_uploader_use_case.dart';
 export 'like_post_use_case.dart';
 export 'media_processing_use_case.dart';
 export 'post_impression_use_case.dart';
+export 'post_scheduled_post_use_case.dart';
 export 'remove_mention_use_case.dart';
 export 'report_post_use_case.dart';
 export 'save_post_use_case.dart';

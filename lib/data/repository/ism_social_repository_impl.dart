@@ -312,6 +312,23 @@ class SocialRepositoryImpl implements SocialRepository {
   }
 
   @override
+  Future<CustomResponse<ResponseClass?>> postScheduledPost({
+    required bool isLoading,
+    required String postId,
+  }) async {
+    try {
+      final response = await _apiService.postScheduledPost(
+        isLoading: isLoading,
+        postId: postId,
+        header: await _dataSource.getHeader(),
+      );
+      return _mapper.mapResponseData(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
   Future<CustomResponse<PostData?>> getPost({
     required bool isLoading,
     required String postId,

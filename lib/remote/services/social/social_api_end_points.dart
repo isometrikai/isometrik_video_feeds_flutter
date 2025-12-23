@@ -35,6 +35,7 @@ class SocialApiEndPoints {
   static const String getTaggedPosts = '/api/v1/tags/posts';
   static const String getForYouPosts = '/api/v1/posts/fyp';
   static const String getMentionedUsers = '/api/v1/posts';
+  static String postScheduledPost(String postId) => '/api/v1/posts/scheduled/$postId/publish';
   static const String deleteMention = '/api/v1/posts/mentions';
   static const String createCollection = '/api/v1/posts/collections';
   static const String getCollectionList = '/api/v1/posts/collections';

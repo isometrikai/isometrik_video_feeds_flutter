@@ -641,6 +641,33 @@ class SocialApiServiceProvider extends SocialApiService {
       );
 
   @override
+  Future<ResponseModel> postScheduledPost({
+    required bool isLoading,
+    required String postId,
+    required Header header,
+  }) async =>
+      await networkClient.makeRequest(
+        SocialApiEndPoints.postScheduledPost(postId),
+        NetworkRequestType.post,
+        null,
+        null,
+        {
+          'Accept': AppConstants.headerAccept,
+          'Content-Type': AppConstants.headerContentType,
+          'Authorization': header.accessToken,
+          'language': header.language,
+          'currencySymbol': header.currencySymbol,
+          'currencyCode': header.currencyCode,
+          'platform': header.platForm.toString(),
+          'latitude': header.latitude.toString(),
+          'longitude': header.longitude.toString(),
+          'x-tenant-id': AppConstants.tenantId,
+          'x-project-id': AppConstants.projectId,
+        },
+        isLoading,
+      );
+
+  @override
   Future<ResponseModel> deletePost({
     required bool isLoading,
     required String postId,
