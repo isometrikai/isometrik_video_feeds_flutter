@@ -224,7 +224,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     return RepaintBoundary(
       child: StatefulBuilder(
         builder: (context, setState) => Container(
-          key: _getOrCreateCommentKey(comment.id),
+          // key: _getOrCreateCommentKey(comment.id),
           child: Column(
             children: [
               Row(
