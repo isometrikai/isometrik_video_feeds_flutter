@@ -90,10 +90,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     }
   }
 
-  void _scrollToComment(String? commentId) {
-    if (commentId == null || commentId.isEmpty) return;
-
-    final key = _commentItemKeys[commentId];
+  void _scrollToComment(CommentDataItem comment) {
+    final key = _commentItemKeys['${comment.id}_${comment.comment}_${comment.commentedOn?.millisecondsSinceEpoch}'];
     if (key?.currentContext != null) {
       Scrollable.ensureVisible(
         key!.currentContext!,
@@ -110,6 +108,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     _scrollController.dispose();
     _replyFocusNode.dispose();
     _replyController.dispose();
+    _commentItemKeys.clear();
     super.dispose();
   }
 
@@ -213,10 +212,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
         ),
       );
 
-  GlobalKey? _getOrCreateCommentKey(String? commentId) {
-    if (commentId == null || commentId.isEmpty) return null;
-    return _commentItemKeys.putIfAbsent(commentId, GlobalKey.new);
-  }
+  GlobalKey? _getOrCreateCommentKey(CommentDataItem comment) => _commentItemKeys.putIfAbsent('${comment.id}_${comment.comment}_${comment.commentedOn?.millisecondsSinceEpoch}', GlobalKey.new);
 
   Widget _buildCommentItem(CommentDataItem commentDataItem) {
     final comment = commentDataItem;
@@ -224,7 +220,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     return RepaintBoundary(
       child: StatefulBuilder(
         builder: (context, setState) => Container(
-          // key: _getOrCreateCommentKey(comment.id),
+          key: _getOrCreateCommentKey(comment),
           child: Column(
             children: [
               Row(
@@ -299,7 +295,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                   _setReplyComment(comment);
                                   // Scroll to comment after a brief delay to ensure UI is updated
                                   WidgetsBinding.instance.addPostFrameCallback((_) {
-                                    _scrollToComment(comment.id);
+                                    _scrollToComment(comment);
                                   });
                                 },
                                 child: Text(
@@ -324,7 +320,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                   }
                                   // Scroll to comment after a brief delay to ensure UI is updated
                                   WidgetsBinding.instance.addPostFrameCallback((_) {
-                                    _scrollToComment(comment.id);
+                                    _scrollToComment(comment);
                                   });
                                 },
                                 child: Text(
@@ -407,34 +403,43 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                     },
                     builder: (context, state) => switch (state) {
                           LoadingPostCommentReplies() => Utility.loaderWidget(),
-                          _ => Column(children: [
-                              ...List.generate(
-                                comment.childComments?.length ?? 0,
-                                (index) => Padding(
-                                  padding: IsrDimens.edgeInsets(
-                                      left: 32.responsiveDimension, top: 16.responsiveDimension),
-                                  child:
-                                      _buildChildCommentItem(comment.childComments![index], false),
-                                ),
-                              ),
-                              TapHandler(
-                                onTap: () {
-                                  setState(() {
-                                    comment.showReply = false;
-                                  });
-                                },
-                                child: Container(
-                                  alignment: Alignment.centerLeft,
-                                  padding: IsrDimens.edgeInsets(
-                                      left: 32.responsiveDimension, top: 16.responsiveDimension),
-                                  child: Text(
-                                    IsrTranslationFile.hideReplies,
-                                    style: IsrStyles.secondaryText12.copyWith(
-                                        fontWeight: FontWeight.w700, color: '94A0AF'.toColor()),
-                                  ),
-                                ),
-                              )
-                            ]),
+                          _ => (comment.childComments?.isNotEmpty == true)
+                              ? Column(
+                                  children: [
+                                    ...List.generate(
+                                      comment.childComments?.length ?? 0,
+                                      (index) => Padding(
+                                        padding: IsrDimens.edgeInsets(
+                                            left: 32.responsiveDimension,
+                                            top: 16.responsiveDimension),
+                                        child: _buildChildCommentItem(
+                                            comment.childComments![index],
+                                            false),
+                                      ),
+                                    ),
+                                    TapHandler(
+                                      onTap: () {
+                                        setState(() {
+                                          comment.showReply = false;
+                                        });
+                                      },
+                                      child: Container(
+                                        alignment: Alignment.centerLeft,
+                                        padding: IsrDimens.edgeInsets(
+                                            left: 32.responsiveDimension,
+                                            top: 16.responsiveDimension),
+                                        child: Text(
+                                          IsrTranslationFile.hideReplies,
+                                          style: IsrStyles.secondaryText12
+                                              .copyWith(
+                                                  fontWeight: FontWeight.w700,
+                                                  color: '94A0AF'.toColor()),
+                                        ),
+                                      ),
+                                    )
+                                  ],
+                                )
+                              : const SizedBox.shrink(),
                         }),
               ],
             ],
