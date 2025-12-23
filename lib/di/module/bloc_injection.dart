@@ -9,8 +9,7 @@ import 'package:ism_video_reel_player/presentation/presentation.dart';
 class BlocInjection {
   /// Registers all Bloc implementations with the dependency injection container.
   static void inject() {
-    final localDataUseCase =
-        IsmInjectionUtils.getUseCase<IsmLocalDataUseCase>();
+    final localDataUseCase = IsmInjectionUtils.getUseCase<IsmLocalDataUseCase>();
 
     // Check if IsmLandingBloc is already registered
     IsmInjectionUtils.registerBloc<IsmLandingBloc>(
@@ -38,6 +37,7 @@ class BlocInjection {
         IsmInjectionUtils.getUseCase<GetTaggedPostsUseCase>(),
         IsmInjectionUtils.getUseCase<GetUserPostDataUseCase>(),
         IsmInjectionUtils.getUseCase<DeletePostUseCase>(),
+        IsmInjectionUtils.getUseCase<PostImpressionUseCase>(),
       ),
     );
 

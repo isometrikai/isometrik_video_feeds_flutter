@@ -29,8 +29,7 @@ class CreateCollectionView extends StatefulWidget {
 }
 
 class _CreateCollectionViewState extends State<CreateCollectionView> {
-  final TextEditingController _collectionNameController =
-      TextEditingController();
+  final TextEditingController _collectionNameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final FocusNode _collectionNameFocusNode = FocusNode();
   final FocusNode _descriptionFocusNode = FocusNode();
@@ -85,16 +84,13 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
   bool get isEditMode => widget.collection != null;
 
   @override
-  Widget build(BuildContext context) =>
-      BlocListener<CollectionBloc, CollectionState>(
+  Widget build(BuildContext context) => BlocListener<CollectionBloc, CollectionState>(
         bloc: _collectionBloc,
         listener: (context, state) {
-          debugPrint(
-              'CreateCollectionView BlocListener received state: $state');
+          debugPrint('CreateCollectionView BlocListener received state: $state');
 
           if (state is CreateCollectionSuccessState) {
-            debugPrint(
-                'CreateCollectionSuccessState received - dismissing bottom sheet');
+            debugPrint('CreateCollectionSuccessState received - dismissing bottom sheet');
             Utility.showToastMessage(state.message);
 
             if ((widget.productOrPostId ?? '').isNotEmpty) {
@@ -116,8 +112,7 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
             debugPrint('CreateCollectionErrorState received: ${state.error}');
             Utility.showToastMessage(state.error);
           } else if (state is EditCollectionSuccessState) {
-            debugPrint(
-                'EditCollectionSuccessState received - dismissing bottom sheet');
+            debugPrint('EditCollectionSuccessState received - dismissing bottom sheet');
             Utility.showToastMessage(state.message);
             context.pop();
           } else if (state is EditCollectionErrorState) {
@@ -167,8 +162,7 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
                           //   RegExp(r'[a-zA-Z0-9 ]'),
                           // ),
                           NoFirstSpaceFormatter(),
-                          CapitalizeTextFormatter(
-                              capitalizeOnlyFirstLetter: true),
+                          CapitalizeTextFormatter(capitalizeOnlyFirstLetter: true),
                         ],
                         onChange: (val) {
                           // _collectionNameController.updateTextWithCursor(
@@ -179,8 +173,7 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
                         maxLength: 42,
                       ),
                       IsrDimens.boxHeight(IsrDimens.twelve),
-                      _buildFieldLabel(
-                          '${IsrTranslationFile.description}(Optional)'),
+                      _buildFieldLabel('${IsrTranslationFile.description}(Optional)'),
                       _buildInputField(
                         _descriptionController,
                         _descriptionFocusNode,
@@ -223,13 +216,11 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
                             valueListenable: _isPrivate,
                             builder: (_, isPrivate, __) => Switch(
                               activeThumbColor: IsrColors.appColor,
-                              activeTrackColor:
-                                  IsrColors.appColor.applyOpacity(0.1),
+                              activeTrackColor: IsrColors.appColor.applyOpacity(0.1),
                               inactiveTrackColor: 'EBEBEB'.toColor(),
                               inactiveThumbColor: '6B6B6B'.toColor(),
                               trackOutlineWidth: WidgetStateProperty.all(0),
-                              trackOutlineColor: WidgetStateProperty.all(
-                                  IsrColors.transparent),
+                              trackOutlineColor: WidgetStateProperty.all(IsrColors.transparent),
                               value: isPrivate,
                               onChanged: (value) {
                                 _isPrivate.value = value;
@@ -270,13 +261,11 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
               ),
               Padding(
                 padding: IsrDimens.edgeInsets(
-                  bottom: MediaQuery.of(context).padding.bottom +
-                      14.responsiveDimension,
+                  bottom: MediaQuery.of(context).padding.bottom + 14.responsiveDimension,
                 ),
                 child: ValueListenableBuilder<bool>(
                   valueListenable: _enableCreateButton,
-                  builder: (context, _enable, _) =>
-                      BlocBuilder<CollectionBloc, CollectionState>(
+                  builder: (context, _enable, _) => BlocBuilder<CollectionBloc, CollectionState>(
                     bloc: _collectionBloc,
                     buildWhen: (previous, current) =>
                         current is CreateCollectionLoadingState ||
@@ -306,12 +295,11 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
                         } else {
                           _collectionBloc.add(
                             CreateUserCollectionEvent(
-                              createCollectionRequestModel:
-                                  CreateCollectionRequestModel(
+                              createCollectionRequestModel: CreateCollectionRequestModel(
                                 isPrivate: _isPrivate.value,
                                 name: _collectionNameController.text,
                                 description: _descriptionController.text,
-                                image: imageUrl.value,
+                                imageUrl: imageUrl.value,
                               ),
                             ),
                           );
@@ -319,8 +307,7 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
                       },
                       isLoading: state is CreateCollectionLoadingState ||
                           state is EditCollectionLoadingState,
-                      textStyle: IsrStyles.primaryText14
-                          .copyWith(color: IsrColors.white),
+                      textStyle: IsrStyles.primaryText14.copyWith(color: IsrColors.white),
                     ),
                   ),
                 ),
@@ -355,13 +342,11 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
                         ? AppImage.file(
                             _localFile.path,
                             fit: BoxFit.cover,
-                            borderRadius:
-                                IsrDimens.borderRadiusAll(IsrDimens.eight),
+                            borderRadius: IsrDimens.borderRadiusAll(IsrDimens.eight),
                           )
                         : AppImage.network(
                             _imageUrl,
-                            borderRadius:
-                                IsrDimens.borderRadiusAll(IsrDimens.eight),
+                            borderRadius: IsrDimens.borderRadiusAll(IsrDimens.eight),
                           );
                     return Center(
                       child: Stack(
@@ -424,8 +409,8 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
         ),
       );
 
-  Widget _buildSharingOption(String svgPath, String title, String subtitle,
-          bool isPrivate, bool value) =>
+  Widget _buildSharingOption(
+          String svgPath, String title, String subtitle, bool isPrivate, bool value) =>
       Expanded(
         child: TapHandler(
           onTap: () {
@@ -434,15 +419,12 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
           },
           borderRadius: 6.responsiveDimension,
           child: Container(
-            padding:
-                const EdgeInsets.symmetric(vertical: 14.0, horizontal: 12.0),
+            padding: const EdgeInsets.symmetric(vertical: 14.0, horizontal: 12.0),
             decoration: BoxDecoration(
               color: isPrivate == value ? 'F3F9FF'.toColor() : IsrColors.white,
               borderRadius: BorderRadius.circular(6.responsiveDimension),
               border: Border.all(
-                color: isPrivate == value
-                    ? IsrColors.appColor
-                    : IsrColors.colorDBDBDB,
+                color: isPrivate == value ? IsrColors.appColor : IsrColors.colorDBDBDB,
               ),
             ),
             child: Column(
@@ -481,9 +463,7 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
 
   Widget _buildFieldLabel(String label) => Padding(
         padding: IsrDimens.edgeInsets(bottom: IsrDimens.four),
-        child: Text(label,
-            style:
-                IsrStyles.primaryText12.copyWith(color: IsrColors.color4A4A4A)),
+        child: Text(label, style: IsrStyles.primaryText12.copyWith(color: IsrColors.color4A4A4A)),
       );
 
   Widget _buildInputField(
@@ -496,8 +476,7 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
     Function(String)? onChange,
     bool? showCountBuilder,
   }) {
-    final maxCharacterLimit =
-        maxLength ?? (maxLines > 1 ? 240 : TextField.noMaxLength);
+    final maxCharacterLimit = maxLength ?? (maxLines > 1 ? 240 : TextField.noMaxLength);
     return FormFieldWidget(
       formStyle: IsrStyles.primaryText14.copyWith(color: IsrColors.color333333),
       autoFocus: false,

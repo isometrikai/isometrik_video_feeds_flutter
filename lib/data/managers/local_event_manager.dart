@@ -4,9 +4,7 @@ import 'dart:convert';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:hive/hive.dart';
-import 'package:ism_video_reel_player/data/data.dart';
-import 'package:ism_video_reel_player/di/di.dart';
-import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:rudder_sdk_flutter/RudderController.dart';
 import 'package:rudder_sdk_flutter_platform_interface/platform.dart';
@@ -28,10 +26,8 @@ class EventQueueProvider {
     required String rudderStackWriteKey,
     required String rudderStackDataPlaneUrl,
   }) async {
-    final localDataUseCase =
-        IsmInjectionUtils.getUseCase<IsmLocalDataUseCase>();
-    final deviceInfoManager =
-        IsmInjectionUtils.getOtherClass<DeviceInfoManager>();
+    final localDataUseCase = IsmInjectionUtils.getUseCase<IsmLocalDataUseCase>();
+    final deviceInfoManager = IsmInjectionUtils.getOtherClass<DeviceInfoManager>();
 
     // Fetch all required data
     final userId = await localDataUseCase.getUserId();
@@ -77,8 +73,7 @@ class EventQueueProvider {
         'os': deviceInfoManager.deviceOs,
         'os_version': deviceInfoManager.deviceOsVersion,
         'type': deviceInfoManager.deviceType,
-        'name':
-            '${deviceInfoManager.deviceManufacturer} ${deviceInfoManager.deviceModel}',
+        'name': '${deviceInfoManager.deviceManufacturer} ${deviceInfoManager.deviceModel}',
       },
       'location': {
         'city': city,
@@ -117,7 +112,7 @@ class LocalEventQueue with WidgetsBindingObserver {
   LocalEventQueue();
 
   static const _boxName = 'local_events';
-  static const _batchSize = 1;
+  static const _batchSize = 10;
 
   Future<void> init() async {
     try {
@@ -154,7 +149,7 @@ class LocalEventQueue with WidgetsBindingObserver {
 
   final Uuid _uuid = const Uuid();
 
-  Future<void> addEvent(String eventName, Map<String, dynamic> payload) async {
+  void addEvent(String eventName, Map<String, dynamic> payload) async {
     try {
       // Ensure box is open before accessing
       if (!Hive.isBoxOpen(_boxName)) {
@@ -171,21 +166,22 @@ class LocalEventQueue with WidgetsBindingObserver {
       );
       await box.add(event);
       debugPrint(
-          '${runtimeType.toString()}:Event Name: $eventName\n Event Data : ${jsonEncode(payload)}');
+          '${runtimeType.toString()}:Event Name: $eventName added with\n Event Data : ${jsonEncode(payload)}');
+      debugPrint('${runtimeType.toString()}:Box length: ${box.length}');
 
       if (box.length >= _batchSize) {
         final events = box.values.toList();
-
-        // OPTION 2: Send each event individually (uncomment if you prefer this approach)
+        final socialPostBloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
+        final eventPayLoadList = <Map<String, dynamic>>[];
         for (final event in events) {
-          final rudderProperties = RudderProperty();
-          rudderProperties.putValue(map: event.payload);
-          RudderController.instance.track(
-            event.eventName,
-            properties: rudderProperties,
-          );
+          eventPayLoadList.add(event.payload);
         }
+        if (eventPayLoadList.isEmpty) return;
+        final result = await socialPostBloc.sendEventsToBackend(eventPayLoadList);
 
+        if (result == false) {
+          return;
+        }
         try {
           unawaited(flush());
         } catch (e) {
@@ -201,22 +197,43 @@ class LocalEventQueue with WidgetsBindingObserver {
     }
   }
 
+  void logEvent(String eventName, Map<String, dynamic> payload) {
+    final excludedEvents = [
+      EventType.postLiked.value,
+      EventType.postUnliked.value,
+      EventType.postSaved.value,
+      EventType.postHidden.value,
+      EventType.postReported.value,
+      EventType.postViewed.value,
+      EventType.postShared.value,
+      EventType.commentCreated.value,
+      EventType.commentLiked.value,
+    ];
+    if (excludedEvents.contains(eventName)) return;
+    debugPrint(
+        '${runtimeType.toString()}:Event Name: $eventName\n Event Data : ${jsonEncode(payload)}');
+    final rudderProperties = RudderProperty();
+    rudderProperties.putValue(map: payload);
+    RudderController.instance.track(
+      eventName,
+      properties: rudderProperties,
+    );
+  }
+
   Future<void> flush() async {
     // Ensure box is open before accessing
     if (!Hive.isBoxOpen(_boxName)) {
       return;
     }
     final box = Hive.box<LocalEvent>(_boxName);
-    debugPrint(
-        '${runtimeType.toString()} Box length before flushing: ${box.length}');
+    debugPrint('${runtimeType.toString()} Box length before flushing: ${box.length}');
 
     final events = box.values.toList();
 
     if (events.isEmpty) return;
 
     await box.clear();
-    debugPrint(
-        '${runtimeType.toString()} Box length after flushing: ${box.length}');
+    debugPrint('${runtimeType.toString()} Box length after flushing: ${box.length}');
   }
 
   /// cleanup

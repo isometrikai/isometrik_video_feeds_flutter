@@ -235,4 +235,10 @@ abstract class SocialApiService extends BaseService {
     required Header header,
     required String collectionId,
   });
+
+  Future<ResponseModel> postImpression({
+    required bool isLoading,
+    required Header header,
+    required List<Map<String, dynamic>> impressionMapList,
+  });
 }

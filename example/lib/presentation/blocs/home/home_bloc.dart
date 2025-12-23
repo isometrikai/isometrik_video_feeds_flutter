@@ -72,11 +72,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   var _isDataLoading = false;
   var _detailsCurrentPage = 1;
 
-  int _forYouCurrentPage = 1;
-  bool _hasForYouMoreData = true;
-  bool _isForYouLoadingMore = false;
-  final _forYouPageSize = 20;
-
   final List<ProductDataModel> _detailsProductList = [];
 
   Future<void> _onLoadHomeData(
@@ -86,62 +81,10 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     // final userId = await _localDataUseCase.getUserId();
     try {
       emit(HomeLoading(isLoading: true));
-      // await _initializeReelsSdk();
-      // await Future.wait([
-      //   _callGetForYouPost(true, false, false, null),
-      //   _callGetTrendingPost(true, false, false, null),
-      //   _callGetTimeLinePost(true, false, false, null),
-      // ]);
-      add(LoadPostsEvent(
-          timeLinePostList: [], trendingPosts: [], forYouPosts: []));
+      add(LoadPostsEvent(timeLinePostList: [], trendingPosts: [], forYouPosts: []));
     } catch (error) {
       emit(HomeError(error.toString()));
     }
-  }
-
-  Future<void> _initializeReelsSdk() async {
-    final userId = await _localDataUseCase.getUserId();
-    final userName = await _localDataUseCase.getFirstName();
-    final firstName = await _localDataUseCase.getFirstName();
-    final lastName = await _localDataUseCase.getLastName();
-    final profilePic = await _localDataUseCase.getProfilePic();
-    final email = await _localDataUseCase.getEmail();
-    final appVersion = await Utility.getAppVersion();
-    final accessToken = await _localDataUseCase.getAccessToken();
-    await isr.IsrVideoReelConfig.initializeSdk(
-      baseUrl: AppUrl.appBaseUrl,
-      userInfoClass: isr.UserInfoClass(
-        userId: userId,
-        userName: userName,
-        firstName: firstName,
-        lastName: lastName,
-        profilePic: profilePic,
-        email: email,
-      ),
-      googleServiceJsonPath: AssetConstants.googleServiceJson,
-      getCurrentBuildContext: () => exNavigatorKey.currentContext,
-      rudderStackDataPlaneUrl:
-          'https://houseofappobxa.dataplane.rudderstack.com',
-      rudderStackWriteKey: '35TS07WtENT85K4N0uZNNov7W1Q',
-      defaultHeaders: {
-        'Authorization': accessToken,
-        'Accept': 'application/json',
-        'Content-Type': AppConstants.headerContentType,
-        'lan': 'en',
-        'city': 'Bengaluru',
-        'state': 'karnataka',
-        'country': 'India',
-        'ipaddress': '192.168.1.1',
-        'version': appVersion,
-        'currencySymbol': '\$',
-        'currencyCode': 'USD',
-        'platform': Utility.platFormType().platformText,
-        'latitude': DefaultValues.defaultLatitude,
-        'longitude': DefaultValues.defaultLongitude,
-        'x-tenant-id': AppConstants.tenantId,
-        'x-project-id': AppConstants.projectId,
-      },
-    );
   }
 
   /// Callback that receives events before flushing
@@ -154,38 +97,31 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       // Process each event
       for (final event in events) {
         debugPrint('${runtimeType.toString()}: Event ID: ${event.id}');
-        debugPrint(
-            '${runtimeType.toString()}: Event Payload: ${jsonEncode(event.payload)}');
-        debugPrint(
-            '${runtimeType.toString()}: Event Timestamp: ${event.timestamp}');
+        debugPrint('${runtimeType.toString()}: Event Payload: ${jsonEncode(event.payload)}');
+        debugPrint('${runtimeType.toString()}: Event Timestamp: ${event.timestamp}');
 
         // You can update your UI or state based on the events
         final eventType = event.payload['type'] as String?;
 
         switch (eventType) {
           case 'like':
-            debugPrint(
-                '❤️ Like event detected for post: ${event.payload['postId']}');
+            debugPrint('❤️ Like event detected for post: ${event.payload['postId']}');
             // Handle like event - you can update analytics, send to your backend, etc.
             break;
           case 'save':
-            debugPrint(
-                '💾 Save event detected for post: ${event.payload['postId']}');
+            debugPrint('💾 Save event detected for post: ${event.payload['postId']}');
             // Handle save event
             break;
           case 'follow':
-            debugPrint(
-                '👤 Follow event detected for user: ${event.payload['userId']}');
+            debugPrint('👤 Follow event detected for user: ${event.payload['userId']}');
             // Handle follow event
             break;
           case 'view':
-            debugPrint(
-                '👁️ View event detected for post: ${event.payload['postId']}');
+            debugPrint('👁️ View event detected for post: ${event.payload['postId']}');
             // Handle view event
             break;
           case 'watch':
-            debugPrint(
-                '⏱️ Watch event detected for post: ${event.payload['postId']}');
+            debugPrint('⏱️ Watch event detected for post: ${event.payload['postId']}');
             // Handle watch event
             break;
           default:
@@ -198,8 +134,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       // await yourBackendService.sendEvents(events);
 
       // Return true to indicate success and allow flush to proceed
-      debugPrint(
-          '✅ HomeScreen: Successfully processed all events, allowing flush');
+      debugPrint('✅ HomeScreen: Successfully processed all events, allowing flush');
       return true;
     } catch (e, stackTrace) {
       debugPrint('❌ HomeScreen: Error handling events: $e');
@@ -209,8 +144,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     }
   }
 
-  FutureOr<void> _getMorePost(
-      GetMorePostEvent event, Emitter<HomeState> emit) async {
+  FutureOr<void> _getMorePost(GetMorePostEvent event, Emitter<HomeState> emit) async {
     if (event.postTabType == PostTabType.following) {
       await _callGetTimeLinePost(
         event.isRefresh,
@@ -228,14 +162,12 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     }
   }
 
-  FutureOr<void> _getTimeLinePost(
-      GetTimeLinePostEvent event, Emitter<HomeState> emit) async {
+  FutureOr<void> _getTimeLinePost(GetTimeLinePostEvent event, Emitter<HomeState> emit) async {
     await _callGetTimeLinePost(
         event.isRefresh, event.isPagination, event.isLoading, event.onComplete);
   }
 
-  FutureOr<void> _getTrendingPost(
-      GetTrendingPostEvent event, Emitter<HomeState> emit) async {
+  FutureOr<void> _getTrendingPost(GetTrendingPostEvent event, Emitter<HomeState> emit) async {
     await _callGetTrendingPost(
         event.isRefresh, event.isPagination, event.isLoading, event.onComplete);
   }
@@ -297,64 +229,11 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     _isTrendingLoadingMore = false;
   }
 
-  Future<void> _callGetForYouPost(
-    bool isFromRefresh,
-    bool isFromPagination,
-    bool isLoading,
-    Function(List<TimeLineData>)? onComplete,
-  ) async {
-    // For refresh, clear cache and start from page 0
-    if (isFromRefresh) {
-      _forYouPostList.clear();
-      _forYouCurrentPage = 1;
-      _hasForYouMoreData = true;
-      _isForYouLoadingMore = false;
-    }
-
-    if (!isFromPagination) {
-      _forYouCurrentPage = 1;
-      _hasForYouMoreData = true;
-    } else if (_isForYouLoadingMore || !_hasForYouMoreData) {
-      return;
-    }
-
-    _isForYouLoadingMore = true;
-
-    final apiResult = await _getTrendingPostUseCase.executeGetTrendingPost(
-      isLoading: isLoading,
-      page: _forYouCurrentPage,
-      pageLimit: _forYouPageSize,
-    );
-
-    if (apiResult.isSuccess) {
-      final postDataList = apiResult.data?.data as List<TimeLineData>;
-      if (postDataList.isEmptyOrNull) {
-        _hasForYouMoreData = false;
-      } else {
-        if (isFromPagination) {
-          _forYouPostList.addAll(postDataList);
-        } else {
-          _forYouPostList
-            ..clear()
-            ..addAll(postDataList);
-        }
-        if (onComplete != null) {
-          onComplete(postDataList);
-        }
-        _forYouCurrentPage++;
-      }
-    } else {
-      ErrorHandler.showAppError(appError: apiResult.error);
-    }
-    _isForYouLoadingMore = false;
-  }
-
   FutureOr<void> _savePost(SavePostEvent event, Emitter<HomeState> emit) async {
     final apiResult = await _savePostUseCase.executeSavePost(
       isLoading: false,
       postId: event.postId,
-      socialPostAction:
-          event.isSaved ? SocialPostAction.unSave : SocialPostAction.save,
+      socialPostAction: event.isSaved ? SocialPostAction.unSave : SocialPostAction.save,
     );
 
     if (apiResult.isSuccess) {
@@ -365,8 +244,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     }
   }
 
-  FutureOr<void> _getReason(
-      GetReasonEvent event, Emitter<HomeState> emit) async {
+  FutureOr<void> _getReason(GetReasonEvent event, Emitter<HomeState> emit) async {
     final apiResult = await _getReportReasonsUseCase.executeGetReportReasons(
       isLoading: false,
     );
@@ -379,8 +257,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     }
   }
 
-  FutureOr<void> _reportPost(
-      ReportPostEvent event, Emitter<HomeState> emit) async {
+  FutureOr<void> _reportPost(ReportPostEvent event, Emitter<HomeState> emit) async {
     final apiResult = await _reportPostUseCase.executeReportPost(
       isLoading: false,
       postId: event.postId,
@@ -412,8 +289,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     }
   }
 
-  FutureOr<void> _followUser(
-      FollowUserEvent event, Emitter<HomeState> emit) async {
+  FutureOr<void> _followUser(FollowUserEvent event, Emitter<HomeState> emit) async {
     // final myUserId = await _localDataUseCase.getUserId();
     final apiResult = await _followPostUseCase.executeFollowPost(
       isLoading: false,
@@ -506,8 +382,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     _isTimeLineLoadingMore = false;
   }
 
-  FutureOr<void> _getPostDetails(
-      GetPostDetailsEvent event, Emitter<HomeState> emit) async {
+  FutureOr<void> _getPostDetails(GetPostDetailsEvent event, Emitter<HomeState> emit) async {
     var totalProductCount = 0;
     if (_isDataLoading) return;
     _isDataLoading = true;
@@ -526,19 +401,15 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     );
     if (apiResult.isSuccess) {
       totalProductCount = apiResult.data?.count?.toInt() ?? 0;
-      _detailsProductList
-          .addAll(apiResult.data?.data as Iterable<ProductDataModel>);
+      _detailsProductList.addAll(apiResult.data?.data as Iterable<ProductDataModel>);
     } else {
       ErrorHandler.showAppError(appError: apiResult.error);
     }
-    emit(PostDetailsLoaded(
-        productList: _detailsProductList,
-        totalProductCount: totalProductCount));
+    emit(PostDetailsLoaded(productList: _detailsProductList, totalProductCount: totalProductCount));
     _isDataLoading = false;
   }
 
-  FutureOr<void> _getPostComments(
-      GetPostCommentsEvent event, Emitter<HomeState> emit) async {
+  FutureOr<void> _getPostComments(GetPostCommentsEvent event, Emitter<HomeState> emit) async {
     if (event.isLoading == true) {
       emit(LoadingPostComment());
     }
@@ -554,8 +425,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     ));
   }
 
-  Future<void> _doActionOnComment(
-      CommentActionEvent event, Emitter<HomeState> emit) async {
+  Future<void> _doActionOnComment(CommentActionEvent event, Emitter<HomeState> emit) async {
     final commentRequest = CommentRequest(
       commentId: event.commentId,
       commentAction: event.commentAction,
@@ -600,8 +470,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     }
   }
 
-  FutureOr<void> _loadPosts(
-      LoadPostsEvent event, Emitter<HomeState> emit) async {
+  FutureOr<void> _loadPosts(LoadPostsEvent event, Emitter<HomeState> emit) async {
     final myUserId = await _localDataUseCase.getUserId();
     emit(HomeLoaded(
       timeLinePosts: _timeLinePostList,

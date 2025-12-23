@@ -207,4 +207,9 @@ abstract class SocialRepository extends BaseRepository {
     required bool isLoading,
     required String collectionId,
   });
+
+  Future<CustomResponse<ResponseClass?>> postImpression({
+    required bool isLoading,
+    required List<Map<String, dynamic>> impressionMapList,
+  });
 }
