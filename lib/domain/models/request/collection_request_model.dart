@@ -22,20 +22,20 @@ class CollectionRequestModel {
 
 class CreateCollectionRequestModel {
   CreateCollectionRequestModel({
-    this.image,
+    this.imageUrl,
     required this.name,
     required this.isPrivate,
     this.description,
   });
 
-  final String? image;
+  final String? imageUrl;
   final String name;
   final bool isPrivate;
   final String? description;
 
   // Convert object to JSON
   Map<String, dynamic> toJson() => {
-        'image': image,
+        'image_url': imageUrl,
         'name': name,
         'isPrivate': isPrivate,
         'description': description,

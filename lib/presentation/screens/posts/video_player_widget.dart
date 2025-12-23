@@ -233,7 +233,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       final duration = _videoPlayerController!.duration;
       final watchedSeconds = _maxWatchPosition.inSeconds;
       final totalSeconds = duration.inSeconds;
-
+      final viewCompletionRate = (watchedSeconds / totalSeconds * 100).toInt();
       // Only log if user watched for at least 1 second
       if (watchedSeconds < 1) {
         return;
@@ -242,9 +242,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       final eventMap = <String, dynamic>{
         'view_source': 'feed',
         'status': _videoPlayerController?.isPlaying == true ? 'playing' : 'paused',
-        'dwell_time': watchedSeconds,
-        'total_duration': totalSeconds,
-        'category': EventCategory.videoEngagement.value,
+        'view_duration': totalSeconds,
+        'view_completion_rate': viewCompletionRate,
       };
 
       widget.postHelperCallBacks?.sendAnalyticsEvent(
@@ -413,7 +412,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         }
 
         final eventMap = <String, dynamic>{
-          'dwell_time': watchedSeconds,
+          'view_duration': totalSeconds,
+          'view_completion_rate': completionRate,
         };
 
         // Mark as logged to prevent duplicate logging
