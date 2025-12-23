@@ -212,7 +212,10 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
         ),
       );
 
-  GlobalKey? _getOrCreateCommentKey(CommentDataItem comment) => _commentItemKeys.putIfAbsent('${comment.id}_${comment.comment}_${comment.commentedOn?.millisecondsSinceEpoch}', GlobalKey.new);
+  GlobalKey? _getOrCreateCommentKey(CommentDataItem comment) {
+    _commentItemKeys['${comment.id}_${comment.comment}_${comment.commentedOn?.millisecondsSinceEpoch}'] = GlobalKey();
+    return _commentItemKeys['${comment.id}_${comment.comment}_${comment.commentedOn?.millisecondsSinceEpoch}'];
+  }
 
   Widget _buildCommentItem(CommentDataItem commentDataItem) {
     final comment = commentDataItem;
