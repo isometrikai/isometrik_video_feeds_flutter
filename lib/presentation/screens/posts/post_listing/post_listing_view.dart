@@ -1111,7 +1111,8 @@ class _PostListingViewState extends State<PostListingView> {
     _logSearchProfileEvent(user.id ?? '', user.username ?? '');
 
     if (widget.postConfig.postCallBackConfig?.onProfileClick != null) {
-      widget.postConfig.postCallBackConfig?.onProfileClick?.call(null, user.id ?? '');
+      widget.postConfig.postCallBackConfig?.onProfileClick
+          ?.call(null, user.id ?? '', user.isFollowing);
     }
 
     // Navigate to user profile

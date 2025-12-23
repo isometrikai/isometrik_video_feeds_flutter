@@ -332,7 +332,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
             if (mention.userId.isStringEmptyOrNull == false) {
               widget.postConfig.postCallBackConfig?.onProfileClick?.call(
                   reelData.postData is TimeLineData ? reelData.postData as TimeLineData : null,
-                  mention.userId!);
+                  mention.userId!,
+                  null);
               _logProfileEvent(reelData.userId ?? '', reelData.userName ?? '');
             }
           }
@@ -344,11 +345,12 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       },
       onCreatePost: (reelsData) async => await _handleCreatePost(tabData),
       onTapUserProfile: (reelsData) async {
-        final postData =
-            await _socialActionCubit.getAsyncPostById(reelsData.postId ?? '');
+        final postData = await _socialActionCubit.getAsyncPostById(reelsData.postId ?? '');
         widget.postConfig.postCallBackConfig?.onProfileClick?.call(
-            reelsData.postData is TimeLineData ? reelsData.postData as TimeLineData : null,
-            reelsData.userId ?? '');
+          postData,
+          reelsData.userId ?? '',
+          postData?.isFollowing,
+        );
         _logProfileEvent(reelsData.userId ?? '', reelsData.userName ?? '');
       },
       onTapComment: (reelsData, totalCommentsCount) async {
@@ -611,7 +613,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           totalCommentsCount: totalCommentsCount,
           onTapProfile: (userId) {
             context.pop(totalCommentsCount);
-            widget.postConfig.postCallBackConfig?.onProfileClick?.call(postData, userId);
+            widget.postConfig.postCallBackConfig?.onProfileClick?.call(postData, userId, null);
             _logProfileEvent(userId, postData?.user?.username ?? '');
           },
           onTapHasTag: (hashTag) {
@@ -660,6 +662,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     PostSectionType postSectionType,
     TimeLineData postData,
   ) async {
+    final userid = await _socialPostBloc.userId;
     final updatedMentionList = await Utility.showBottomSheet<List<MentionMetaData>>(
       isScrollControlled: true,
       child: MentionListBottomSheet(
@@ -668,7 +671,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         myUserId: userid,
         onTapUserProfile: (userId, isFollowing) {
           context.pop();
-          widget.postConfig.postCallBackConfig?.onProfileClick?.call(postData, userId);
+          widget.postConfig.postCallBackConfig?.onProfileClick?.call(postData, userId, isFollowing);
           _logProfileEvent(userId, postData.user?.username ?? '');
         },
       ),
