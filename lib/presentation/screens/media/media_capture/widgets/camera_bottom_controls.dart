@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
@@ -59,74 +60,148 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
   Widget build(BuildContext context) => Align(
         alignment: Alignment.bottomCenter,
         child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (widget.cameraBloc.selectedMediaType == MediaType.video)
-                CameraRecordingProgressBar(
-                  cameraBloc: widget.cameraBloc,
-                  state: widget.state,
-                ),
-              Container(
-                height: 180.responsiveDimension,
-                color: Colors.black.withValues(alpha: 0.25),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                              child: Padding(
-                            padding: EdgeInsets.only(
-                                left: 16.responsiveDimension,
-                                right: 8.responsiveDimension),
-                            child: Row(
-                              children: [
-                                if (widget.cameraBloc.selectedMediaType ==
-                                    MediaType.photo)
-                                  _buildFlashButton(),
-                              ],
-                            ),
-                          )),
-                          Padding(
-                            padding: EdgeInsets.only(
-                                left: 8.responsiveDimension,
-                                right: 8.responsiveDimension),
-                            child: _buildRecordButton(),
+          child: BlocBuilder<CameraBloc, CameraState>(
+            builder: (BuildContext context, CameraState state) {
+              // Show loading state with progress indicator in place of record button
+              if (state is CameraBottomLoadingState) {
+                return Container(
+                  height: 180.responsiveDimension,
+                  color: Colors.black.withValues(alpha: 0.25),
+                  child: Center(
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                          left: 8.responsiveDimension,
+                          right: 8.responsiveDimension),
+                      child: SizedBox(
+                        width: IsrDimens.sixtyFour,
+                        height: IsrDimens.sixtyFour,
+                        child: CircularProgressIndicator(
+                          strokeWidth: IsrDimens.four,
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            IsrColors.white,
                           ),
-                          Expanded(
-                              child: Padding(
-                            padding: EdgeInsets.only(
-                                left: 8.responsiveDimension,
-                                right: 16.responsiveDimension),
-                            child: Row(
-                              spacing: 10.responsiveDimension,
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                if (widget
-                                        .cameraBloc.videoSegments.isNotEmpty &&
-                                    !widget.cameraBloc.isSegmentRecording &&
-                                    widget.cameraBloc.recordedVideoPath == null)
-                                  CameraSegmentDeleteButton(
-                                      cameraBloc: widget.cameraBloc),
-                                if (!widget.cameraBloc.isRecording)
-                                  _buildCameraSwitchButton(),
-                              ],
-                            ),
-                          )),
-                        ],
+                        ),
                       ),
                     ),
-                    if ((widget.cameraBloc.recordedVideoPath == null ||
-                            widget.cameraBloc.isRecording) &&
-                        !widget.cameraBloc.isSegmentRecording)
-                      _buildModeSelection(),
-                  ],
-                ),
-              ),
-            ],
+                  ),
+                );
+              }
+
+              // Normal UI
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Visibility(
+                    visible:
+                        widget.cameraBloc.selectedMediaType == MediaType.video,
+                    maintainSize: true,
+                    maintainAnimation: true,
+                    maintainState: true,
+                    child: CameraRecordingProgressBar(
+                      cameraBloc: widget.cameraBloc,
+                      state: widget.state,
+                    ),
+                  ),
+                  Container(
+                    height: 180.responsiveDimension,
+                    color: Colors.black.withValues(alpha: 0.25),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                  child: Padding(
+                                padding: EdgeInsets.only(
+                                    left: 16.responsiveDimension,
+                                    right: 8.responsiveDimension),
+                                child: Row(
+                                  spacing: 10.responsiveDimension,
+                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    Visibility(
+                                      visible:
+                                          widget.cameraBloc.isFlashAvailable,
+                                      maintainSize: true,
+                                      maintainAnimation: true,
+                                      maintainState: true,
+                                      child: _buildFlashButton(),
+                                    ),
+                                    Visibility(
+                                      visible: widget.cameraBloc.videoSegments
+                                              .isNotEmpty &&
+                                          !widget
+                                              .cameraBloc.isSegmentRecording &&
+                                          widget.cameraBloc.recordedVideoPath ==
+                                              null,
+                                      maintainSize: true,
+                                      maintainAnimation: true,
+                                      maintainState: true,
+                                      child: CameraSegmentDoneButton(
+                                          cameraBloc: widget.cameraBloc),
+                                    )
+                                  ],
+                                ),
+                              )),
+                              Padding(
+                                padding: EdgeInsets.only(
+                                    left: 8.responsiveDimension,
+                                    right: 8.responsiveDimension),
+                                child: _buildRecordButton(),
+                              ),
+                              Expanded(
+                                  child: Padding(
+                                padding: EdgeInsets.only(
+                                    left: 8.responsiveDimension,
+                                    right: 16.responsiveDimension),
+                                child: Row(
+                                  spacing: 10.responsiveDimension,
+                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    Visibility(
+                                      visible: widget.cameraBloc.videoSegments
+                                              .isNotEmpty &&
+                                          !widget
+                                              .cameraBloc.isSegmentRecording &&
+                                          widget.cameraBloc.recordedVideoPath ==
+                                              null,
+                                      maintainSize: true,
+                                      maintainAnimation: true,
+                                      maintainState: true,
+                                      child: CameraSegmentDeleteButton(
+                                          cameraBloc: widget.cameraBloc),
+                                    ),
+                                    Visibility(
+                                      visible: !widget.cameraBloc.isRecording,
+                                      maintainSize: true,
+                                      maintainAnimation: true,
+                                      maintainState: true,
+                                      child: _buildCameraSwitchButton(),
+                                    ),
+                                  ],
+                                ),
+                              )),
+                            ],
+                          ),
+                        ),
+                        Visibility(
+                          visible:
+                              (widget.cameraBloc.recordedVideoPath == null ||
+                                      widget.cameraBloc.isRecording) &&
+                                  !widget.cameraBloc.isSegmentRecording,
+                          maintainSize: true,
+                          maintainAnimation: true,
+                          maintainState: true,
+                          child: _buildModeSelection(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       );
@@ -378,15 +453,43 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
   Widget _buildModeSelection() => Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          if (!widget.cameraBloc.isRecording ||
-              !widget.cameraBloc.isSegmentRecording ||
-              widget.cameraBloc.videoSegments.isEmpty) ...[
-            _buildModeButton('Gallery', Icons.photo_library, null),
-            _buildModeButton('Photo', Icons.camera_alt, MediaType.photo),
-            // _buildModeButton('Video', Icons.videocam, MediaType.video),
-            _buildDurationButton('15', 'Sec', 15),
-            _buildDurationButton('60', 'Sec', 60),
-          ],
+          Visibility(
+            visible: !widget.cameraBloc.isRecording ||
+                !widget.cameraBloc.isSegmentRecording ||
+                widget.cameraBloc.videoSegments.isEmpty,
+            maintainSize: true,
+            maintainAnimation: true,
+            maintainState: true,
+            child: _buildModeButton('Gallery', Icons.photo_library, null),
+          ),
+          Visibility(
+            visible: !widget.cameraBloc.isRecording ||
+                !widget.cameraBloc.isSegmentRecording ||
+                widget.cameraBloc.videoSegments.isEmpty,
+            maintainSize: true,
+            maintainAnimation: true,
+            maintainState: true,
+            child: _buildModeButton('Photo', Icons.camera_alt, MediaType.photo),
+          ),
+          // _buildModeButton('Video', Icons.videocam, MediaType.video),
+          Visibility(
+            visible: !widget.cameraBloc.isRecording ||
+                !widget.cameraBloc.isSegmentRecording ||
+                widget.cameraBloc.videoSegments.isEmpty,
+            maintainSize: true,
+            maintainAnimation: true,
+            maintainState: true,
+            child: _buildDurationButton('15', 'Sec', 15),
+          ),
+          Visibility(
+            visible: !widget.cameraBloc.isRecording ||
+                !widget.cameraBloc.isSegmentRecording ||
+                widget.cameraBloc.videoSegments.isEmpty,
+            maintainSize: true,
+            maintainAnimation: true,
+            maintainState: true,
+            child: _buildDurationButton('60', 'Sec', 60),
+          ),
         ],
       );
 

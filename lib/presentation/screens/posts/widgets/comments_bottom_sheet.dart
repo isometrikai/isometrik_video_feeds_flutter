@@ -639,6 +639,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                   commentMessage: reportReason.name,
                                   postDataModel: widget.postData,
                                   tabDataModel: widget.tabData,
+                                  isLoading: false
                                 ),
                               );
                             },

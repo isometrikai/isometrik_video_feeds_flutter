@@ -67,8 +67,8 @@ class _SchedulePostViewState extends State<SchedulePostView> {
 
   @override
   Widget build(BuildContext context) =>
-      context.attachBlocIfNeeded<PostListingBloc>(
-        bloc: _postListingBloc,
+      BlocProvider<PostListingBloc>(
+        create: (BuildContext context) => _postListingBloc,
         child: Scaffold(
           backgroundColor: Colors.white,
           appBar: const IsmCustomAppBarWidget(
@@ -372,8 +372,20 @@ class _SchedulePostViewState extends State<SchedulePostView> {
     _showScheduleBottomSheet(data, (dateTime) {
       final selectedDateUtc =
           DateTimeUtil.getIsoDate(dateTime.millisecondsSinceEpoch, isUtc: true);
-      Utility.showToastMessage('upcoming :- $selectedDateUtc');
-      debugPrint('Modify schedule at index: ${data.toMap()}');
+      _postListingBloc.add(ModifyPostScheduleEvent(
+        postId: data.id ?? '',
+        scheduleTime: selectedDateUtc,
+        onComplete: (success) {
+          if (success) {
+              setState(() {
+                _postList
+                    .where((post) => post.id == data.id)
+                    .firstOrNull
+                    ?.scheduledAt = selectedDateUtc;
+              });
+            }
+          }
+      ));
     });
   }
 

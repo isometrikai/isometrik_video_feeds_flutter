@@ -17,7 +17,7 @@ class MentionListBottomSheet extends StatefulWidget {
   final List<MentionMetaData> initialMentionList;
   final TimeLineData postData;
   final String myUserId;
-  final Function(String) onTapUserProfile;
+  final Function(String userId, bool isFollowing) onTapUserProfile;
 
   @override
   State<MentionListBottomSheet> createState() => _MentionListBottomSheetState();
@@ -176,7 +176,7 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
   Widget _buildProfileItem(SocialUserData? socialUserData, int index) =>
       TapHandler(
         onTap: () {
-          widget.onTapUserProfile(socialUserData?.id ?? '');
+          widget.onTapUserProfile(socialUserData?.id ?? '', socialUserData?.isFollowing == true);
         },
         child: Container(
           padding: IsrDimens.edgeInsetsSymmetric(
@@ -266,7 +266,6 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
   ) {
     final userId = socialUserData?.id ?? '';
     var isLoading = false;
-    var isFollowing = socialUserData?.isFollowing ?? false;
 
     return StatefulBuilder(
       builder: (context, setState) => userId == widget.myUserId
@@ -299,40 +298,30 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
                       ));
                     },
             )
-          : AppButton(
-              onPress: isLoading == true
-                  ? null
-                  : () {
-                      isLoading = true;
-                      setState.call(() {});
-                      _socialPostBloc.add(FollowUserEvent(
-                          followingId: userId,
-                          onComplete: (isSuccess) {
-                            isLoading = false;
-                            if (isSuccess) {
-                              isFollowing = !isFollowing;
-                            }
-                            setState.call(() {});
-                          },
-                          followAction: isFollowing
-                              ? FollowAction.unfollow
-                              : FollowAction.follow));
-                    },
-              height: 36.responsiveDimension,
-              width: 100.responsiveDimension,
-              borderRadius: 40.responsiveDimension,
-              borderColor:
-                  isFollowing ? IsrColors.appColor : IsrColors.transparent,
-              backgroundColor:
-                  isFollowing ? IsrColors.white : IsrColors.appColor,
-              title: isFollowing
-                  ? IsrTranslationFile.following
-                  : IsrTranslationFile.follow,
-              isLoading: isLoading,
-              textStyle: IsrStyles.primaryText12.copyWith(
-                color: isFollowing ? IsrColors.appColor : IsrColors.white,
-                fontWeight: FontWeight.w600,
-              ),
+          : FollowActionWidget(
+              userId: userId,
+              isFollowing: socialUserData?.isFollowing == true,
+              builder: (isLoading, isFollowing, onTap) {
+                socialUserData?.isFollowing = isFollowing;
+                return AppButton(
+                  onPress: onTap,
+                  height: 36.responsiveDimension,
+                  width: 100.responsiveDimension,
+                  borderRadius: 40.responsiveDimension,
+                  borderColor:
+                      isFollowing ? IsrColors.appColor : IsrColors.transparent,
+                  backgroundColor:
+                      isFollowing ? IsrColors.white : IsrColors.appColor,
+                  title: isFollowing
+                      ? IsrTranslationFile.following
+                      : IsrTranslationFile.follow,
+                  isLoading: isLoading,
+                  textStyle: IsrStyles.primaryText12.copyWith(
+                    color: isFollowing ? IsrColors.appColor : IsrColors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                );
+              },
             ),
     );
   }

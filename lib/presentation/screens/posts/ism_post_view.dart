@@ -344,6 +344,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       },
       onCreatePost: (reelsData) async => await _handleCreatePost(tabData),
       onTapUserProfile: (reelsData) async {
+        final postData =
+            await _socialActionCubit.getAsyncPostById(reelsData.postId ?? '');
         widget.postConfig.postCallBackConfig?.onProfileClick?.call(
             reelsData.postData is TimeLineData ? reelsData.postData as TimeLineData : null,
             reelsData.userId ?? '');
@@ -663,8 +665,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       child: MentionListBottomSheet(
         initialMentionList: [],
         postData: postData,
-        myUserId: '',
-        onTapUserProfile: (userId) {
+        myUserId: userid,
+        onTapUserProfile: (userId, isFollowing) {
           context.pop();
           widget.postConfig.postCallBackConfig?.onProfileClick?.call(postData, userId);
           _logProfileEvent(userId, postData.user?.username ?? '');
