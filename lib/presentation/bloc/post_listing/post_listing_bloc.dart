@@ -21,6 +21,7 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
     this._getUserPostDataUseCase,
     this._deletePostUseCase,
     this._createPostUseCase,
+    this._postScheduledPostUseCase,
   ) : super(PostListingInitialState()) {
     on<GetHashTagPostEvent>(_getHashTagPosts);
     on<GetSearchResultsEvent>(_getSearchResults);
@@ -29,6 +30,7 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
     on<GetUserPostListEvent>(_getUserPosts);
     on<ModifyPostScheduleEvent>(_modifySchedulePost);
     on<DeleteUserPostEvent>(_deletePost);
+    on<PostScheduledPostPostEvent>(_postScheduledPost);
   }
 
   final GetTaggedPostsUseCase _getTaggedPostUseCase;
@@ -41,6 +43,7 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
   final GetUserPostDataUseCase _getUserPostDataUseCase;
   final DeletePostUseCase _deletePostUseCase;
   final CreatePostUseCase _createPostUseCase;
+  final PostScheduledPostUseCase _postScheduledPostUseCase;
 
   var _searchPostPage = 1;
   var _searchTagsPage = 1;
@@ -309,7 +312,21 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
       return;
     }
     final apiResult = await _deletePostUseCase.executeDeletePost(
-      isLoading: false,
+      isLoading: event.isLoading,
+      postId: event.postId,
+    );
+    event.onComplete(apiResult.isSuccess);
+  }
+
+  FutureOr<void> _postScheduledPost(
+      PostScheduledPostPostEvent event, Emitter<PostListingState> emit) async {
+    final userId = await _localDataUseCase.getUserId();
+    if (userId.isEmptyOrNull) {
+      event.onComplete(false);
+      return;
+    }
+    final apiResult = await _postScheduledPostUseCase.executePostNow(
+      isLoading: event.isLoading,
       postId: event.postId,
     );
     event.onComplete(apiResult.isSuccess);

@@ -114,6 +114,8 @@ class IsrTranslationFile {
   static const String deletePost = 'Delete Post';
   static const String deletePostConfirmation =
       'Are you sure you want to delete this post?';
+  static const String postNowConfirmation =
+      'Are you sure you want to Post Now?';
   static const String reportPostConfirmation =
       'Are you sure you want to report this post?';
   static const String editPostConfirmation =

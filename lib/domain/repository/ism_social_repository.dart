@@ -94,6 +94,11 @@ abstract class SocialRepository extends BaseRepository {
     required String postId,
   });
 
+  Future<CustomResponse<ResponseClass?>> postScheduledPost({
+    required bool isLoading,
+    required String postId,
+  });
+
   Future<CustomResponse<PostData?>> getPost({
     required bool isLoading,
     required String postId,
