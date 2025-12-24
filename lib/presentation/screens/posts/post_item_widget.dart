@@ -372,7 +372,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
                       // Add refresh count to force rebuild
                       key: ValueKey(
                           '${reelsData.postId}_${_refreshCounts[index] ?? 0}'),
-                      // onVideoCompleted: () => _handleVideoCompletion(index),
+                      onVideoCompleted: () => _handleVideoCompletion(index),
                       reelsConfig: widget.reelsConfig,
                       onPressMoreButton: () async {
                         if (widget.reelsConfig.onPressMoreButton == null) {
@@ -638,7 +638,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
       // Animate to next page
       _pageController.animateToPage(
         nextIndex,
-        duration: const Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 500),
         curve: Curves.easeInOut,
       );
     } else {
