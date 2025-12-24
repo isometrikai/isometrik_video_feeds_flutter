@@ -721,38 +721,58 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  child: RepaintBoundary(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Colors.black.withValues(alpha: 0.1),
-                            Colors.black.withValues(alpha: 0.3),
-                            Colors.black.withValues(alpha: 0.6),
-                          ],
-                          stops: const [0.0, 0.3, 0.7, 1.0],
-                        ),
-                      ),
-                      padding: widget.reelsConfig.overlayPadding,
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        mainAxisSize: MainAxisSize.max,
-                        children: [
-                          Expanded(
-                            child: SingleChildScrollView(
-                              child: widget.reelsConfig.footerWidget?.call(_reelData).child ??
-                                  _buildBottomSectionWithoutOverlay(),
-                            ),
+                  child: IgnorePointer(
+                    child: RepaintBoundary(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withValues(alpha: 0.1),
+                              Colors.black.withValues(alpha: 0.3),
+                              Colors.black.withValues(alpha: 0.6),
+                            ],
+                            stops: const [0.0, 0.3, 0.7, 1.0],
                           ),
-                          widget.reelsConfig.actionWidget?.call(_reelData).child ??
-                              _buildRightSideActions(),
-                        ],
+                        ),
                       ),
                     ),
                   ),
+                ),
+
+                //right action
+                //kept separate so that it does not bloc touch/gesture to underlying widgets
+                Positioned(
+                  right: widget.reelsConfig.overlayPadding
+                          ?.resolve(TextDirection.ltr)
+                          .right ??
+                      0,
+                  bottom: widget.reelsConfig.overlayPadding
+                          ?.resolve(TextDirection.ltr)
+                          .bottom ??
+                      0,
+                  child:
+                      widget.reelsConfig.actionWidget?.call(_reelData).child ??
+                          _buildRightSideActions(),
+                ),
+
+                //bottom section
+                //kept separate so that it does not bloc touch/gesture to underlying widgets
+                Positioned(
+                  right: 40,
+                  bottom: widget.reelsConfig.overlayPadding
+                          ?.resolve(TextDirection.ltr)
+                          .bottom ??
+                      0,
+                  left: widget.reelsConfig.overlayPadding
+                          ?.resolve(TextDirection.ltr)
+                          .left ??
+                      0,
+                  child:
+                      widget.reelsConfig.footerWidget?.call(_reelData).child ??
+                          _buildBottomSectionWithoutOverlay(),
                 ),
                 // Persistent mute icon indicator in top-right (placed last to be on top)
                 // if (_isMuted &&
