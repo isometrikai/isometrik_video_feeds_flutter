@@ -12,6 +12,7 @@ import 'package:ism_video_reel_player/presentation/screens/posts/widgets/like_ac
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:lottie/lottie.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 /// Custom Reels Player for both Video and Photo content with carousel support
 class IsmReelsVideoPlayerView extends StatefulWidget {
@@ -324,16 +325,32 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           );
   }
 
-  /// Builds an image with black background (Instagram-style)
-  Widget _buildImageWithBlurredBackground({required String imageUrl}) => Container(
-        color: Colors.black,
-        child: Center(
-          child: _getImageWidget(
-            imageUrl: imageUrl,
-            width: IsrDimens.getScreenWidth(context),
-            height: IsrDimens.getScreenHeight(context),
-            fit: BoxFit.contain,
-            filterQuality: FilterQuality.high,
+  Widget _buildImageWithBlurredBackground({
+    required String imageUrl,
+  }) =>
+      VisibilityDetector(
+        key: ValueKey('image_${imageUrl.hashCode}'),
+        onVisibilityChanged: (visibilityInfo) {
+          final visibleFraction = visibilityInfo.visibleFraction;
+
+          if (visibleFraction == 1.0) {
+            // Fully visible → play
+            _startOrResumeImageProgress();
+          } else {
+            // Partially visible / not visible → pause
+            _pauseImageProgress();
+          }
+        },
+        child: Container(
+          color: Colors.black,
+          child: Center(
+            child: _getImageWidget(
+              imageUrl: imageUrl,
+              width: IsrDimens.getScreenWidth(context),
+              height: IsrDimens.getScreenHeight(context),
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.high,
+            ),
           ),
         ),
       );
