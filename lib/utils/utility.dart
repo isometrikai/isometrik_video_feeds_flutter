@@ -223,6 +223,7 @@ class Utility {
     Color? backgroundColor,
     double? maxHeight,
     bool isRoundedCorners = true,
+    bool isSafeArea = true,
   }) {
     // Try to get context from multiple sources
     final contextToUse = context ??
@@ -241,14 +242,21 @@ class Utility {
 
     return showModalBottomSheet<T>(
       context: contextToUse,
-      builder: (_) => SafeArea(
-        child: Container(
-          constraints: BoxConstraints(
-            maxHeight: maxHeight ?? 84.percentHeight,
-          ),
-          child: child,
-        ),
-      ),
+      builder: (_) => isSafeArea
+          ? SafeArea(
+              child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: maxHeight ?? 84.percentHeight,
+                ),
+                child: child,
+              ),
+            )
+          : Container(
+              constraints: BoxConstraints(
+                maxHeight: maxHeight ?? 84.percentHeight,
+              ),
+              child: child,
+            ),
       enableDrag: false,
       showDragHandle: false,
       isDismissible: isDismissible,

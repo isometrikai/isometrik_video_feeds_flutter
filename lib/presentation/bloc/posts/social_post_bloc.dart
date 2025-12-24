@@ -97,12 +97,6 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
 
   final List<ProductDataModel> _detailsProductList = [];
 
-  // Timer for periodic in-review comment updates
-  Timer? _inReviewUpdateTimer;
-
-  // Map to track posts with in-review comments: postId -> current comment list
-  final Map<String, List<CommentDataItem>> _postsWithInReviewComments = {};
-
   void _onStartPost(StartPost event, Emitter<SocialPostState> emit) async {}
 
   Future<String> get userId => _localDataUseCase.getUserId();
@@ -465,44 +459,12 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     );
     final postCommentsList = apiResult.data?.data;
 
-    if (event.createdComment != null &&
-        event.createdComment?.comment?.isNotEmpty == true &&
-        event.createdComment?.parentCommentId?.isNotEmpty != true) {
-      final created = event.createdComment!;
-      final alreadyExists = postCommentsList?.firstOrNull?.comment ==
-          event.createdComment?.comment;
-
-      if (!alreadyExists) {
-        // Insert at the beginning only if it doesn't already exist
-        postCommentsList?.insert(0, created);
-      }
-    }
-
-    // Merge API response with existing in-review comments
-    final existingComments = _postsWithInReviewComments[event.postId];
-    var finalCommentList = postCommentsList;
-
-    if (existingComments != null && postCommentsList != null) {
-      // Merge API response into existing comments (updates in-review comments)
-      _mergeCommentsWithInReview(existingComments, postCommentsList);
-      // Use the merged existing comments list
-      finalCommentList = existingComments;
-      // Update stored list
-      _postsWithInReviewComments[event.postId] = existingComments;
-    } else if (postCommentsList != null) {
-      // If no existing comments, check if there are in-review comments in API response
-      // and store them for future updates
-      if (_hasInReviewComments(postCommentsList)) {
-        _postsWithInReviewComments[event.postId] = List.from(postCommentsList);
-      }
-    }
-
     final myUserId = await _localDataUseCase.getUserId();
     if (event.onComplete != null) {
-      event.onComplete?.call(finalCommentList ?? []);
+      event.onComplete?.call(postCommentsList ?? []);
     } else {
       emit(LoadPostCommentState(
-        postCommentsList: finalCommentList,
+        postCommentsList: postCommentsList,
         myUserId: myUserId,
       ));
     }
@@ -522,28 +484,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     );
     final postCommentRepliesList = apiResult.data?.data;
 
-    // Merge API response with existing in-review reply comments
-    final existingComments = _postsWithInReviewComments[event.postId];
-    var finalRepliesList = postCommentRepliesList;
-
-    if (existingComments != null && postCommentRepliesList != null) {
-      // Find the parent comment in existing comments
-      final parentComment =
-          _findCommentById(existingComments, event.parentComment.id ?? '');
-      if (parentComment != null && parentComment.childComments != null) {
-        // Merge API response with existing in-review reply comments
-        _mergeCommentsWithInReview(
-            parentComment.childComments!, postCommentRepliesList);
-        // Use the merged existing child comments list
-        finalRepliesList = parentComment.childComments;
-        // Update stored list
-        _postsWithInReviewComments[event.postId] = existingComments;
-      }
-    }
-
     final myUserId = await _localDataUseCase.getUserId();
     emit(LoadPostCommentRepliesState(
-      postCommentRepliesList: finalRepliesList,
+      postCommentRepliesList: postCommentRepliesList,
       parentCommentId: event.parentComment.id ?? '',
       myUserId: myUserId,
     ));
@@ -648,7 +591,6 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       timeStamp: DateTime.now().millisecondsSinceEpoch,
       commentedOn: DateTime.now(),
       likeCount: 0,
-      status: IsrTranslationFile.posting,
       tags: CommentTags.fromJson(commentRequest.tags ?? {}),
     );
 
@@ -698,36 +640,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
           event.commentMessage ?? '',
           event.postDataModel,
           event.tabDataModel);
-
-      // Update status to in_review
-      comment.status = IsrTranslationFile.inReview;
-      // Update commentedOn to track when it entered in_review (for 10-second timeout check)
-      comment.commentedOn = DateTime.now();
-
-      if (commentList != null) {
-        // Store current comment list for this post to track in-review comments
-        _postsWithInReviewComments[event.postId ?? ''] = commentList;
-
-        emit(
-          LoadPostCommentState(
-            postCommentsList: commentList,
-            myUserId: myUserId,
-          ),
-        );
-      }
-
-      // Start periodic update if not already running
-      _startInReviewUpdateTimer(event.postId ?? '');
-
-      // Initial delay before first update
-      Future.delayed(const Duration(seconds: 2), () {
-        add(
-          GetPostCommentsEvent(
-              postId: event.postId ?? '',
-              isLoading: false,
-              createdComment: comment),
-        );
-      });
+      // Comment stays in the list with no status - will sync on bottom sheet reopen
     } else {
       // Remove comment on failure
       if (commentList != null) {
@@ -892,247 +805,6 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       debugPrint('❌ Error sending analytics event: $e');
       return null;
     }
-  }
-
-  /// Checks if there are any in-review comments in the list (including child comments)
-  bool _hasInReviewComments(List<CommentDataItem> comments) {
-    for (final comment in comments) {
-      if (comment.status == IsrTranslationFile.inReview) {
-        return true;
-      }
-      // Check child comments recursively
-      if (comment.childComments != null && comment.childComments!.isNotEmpty) {
-        if (_hasInReviewComments(comment.childComments!)) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  /// Finds a comment by ID recursively in the comment tree
-  CommentDataItem? _findCommentById(
-      List<CommentDataItem> comments, String commentId) {
-    for (final comment in comments) {
-      if (comment.id == commentId) {
-        return comment;
-      }
-      if (comment.childComments != null && comment.childComments!.isNotEmpty) {
-        final found = _findCommentById(comment.childComments!, commentId);
-        if (found != null) {
-          return found;
-        }
-      }
-    }
-    return null;
-  }
-
-  /// Removes in-review comments that have been in that state for more than 10 seconds
-  /// Returns true if any comments were removed
-  bool _removeOldInReviewComments(
-      List<CommentDataItem> comments, String postId) {
-    var removedAny = false;
-    final now = DateTime.now();
-    final commentsToRemove = <CommentDataItem>[];
-    final childCommentsToRemove =
-        <MapEntry<CommentDataItem, CommentDataItem>>{};
-
-    void checkComments(List<CommentDataItem> commentList) {
-      for (final comment in commentList) {
-        if (comment.status == IsrTranslationFile.inReview &&
-            comment.commentedOn != null) {
-          final duration = now.difference(comment.commentedOn!);
-          if (duration.inSeconds > 10) {
-            // Mark for removal
-            if (comment.parentCommentId != null &&
-                comment.parentCommentId!.isNotEmpty) {
-              // This is a child comment, find parent recursively and mark for removal
-              final parentComment =
-                  _findCommentById(comments, comment.parentCommentId!);
-              if (parentComment != null) {
-                childCommentsToRemove.add(MapEntry(parentComment, comment));
-              }
-            } else {
-              // Top-level comment
-              commentsToRemove.add(comment);
-            }
-            removedAny = true;
-          }
-        }
-
-        // Check child comments recursively
-        if (comment.childComments != null &&
-            comment.childComments!.isNotEmpty) {
-          checkComments(comment.childComments!);
-        }
-      }
-    }
-
-    checkComments(comments);
-
-    // Remove top-level comments
-    for (final comment in commentsToRemove) {
-      comments.remove(comment);
-    }
-
-    // Remove child comments
-    for (final entry in childCommentsToRemove) {
-      final parent = entry.key;
-      final child = entry.value;
-      parent.childComments?.remove(child);
-      parent.childCommentCount = (parent.childCommentCount ?? 1) - 1;
-      if (parent.childComments?.isEmpty == true) {
-        parent.showReply = false;
-      }
-    }
-
-    return removedAny;
-  }
-
-  /// Merges API response comments with existing in-review comments
-  /// Updates only in-review comments while preserving other comments
-  void _mergeCommentsWithInReview(List<CommentDataItem> existingComments,
-      List<CommentDataItem> apiComments) {
-    // Create a map of API comments by comment text and parentCommentId for matching
-    // This includes both top-level and child comments
-    final apiCommentMap = <String, CommentDataItem>{};
-
-    void addToMap(CommentDataItem comment) {
-      final key = '${comment.comment}_${comment.parentCommentId ?? ''}';
-      apiCommentMap[key] = comment;
-      // Also add child comments to the map
-      if (comment.childComments != null) {
-        for (final child in comment.childComments!) {
-          addToMap(child);
-        }
-      }
-    }
-
-    for (final apiComment in apiComments) {
-      addToMap(apiComment);
-    }
-
-    // Update in-review comments in existing list (both top-level and child)
-    void updateComments(List<CommentDataItem> comments) {
-      for (final existingComment in comments) {
-        if (existingComment.status == IsrTranslationFile.inReview) {
-          final key =
-              '${existingComment.comment}_${existingComment.parentCommentId ?? ''}';
-          final matchingApiComment = apiCommentMap[key];
-          if (matchingApiComment != null &&
-              matchingApiComment.id?.isNotEmpty == true) {
-            // Update the existing comment with API data
-            existingComment.id = matchingApiComment.id;
-            existingComment.status = matchingApiComment.status;
-            existingComment.commentedOn = matchingApiComment.commentedOn;
-            existingComment.likeCount = matchingApiComment.likeCount;
-            existingComment.isLiked = matchingApiComment.isLiked;
-            existingComment.commentLikeList =
-                matchingApiComment.commentLikeList;
-            existingComment.profilePic = matchingApiComment.profilePic;
-            existingComment.fullName = matchingApiComment.fullName;
-            // Preserve other fields that might have been set locally
-          }
-        }
-
-        // Recursively update child comments
-        if (existingComment.childComments != null &&
-            existingComment.childComments!.isNotEmpty) {
-          updateComments(existingComment.childComments!);
-        }
-      }
-    }
-
-    updateComments(existingComments);
-  }
-
-  /// Starts the periodic update timer for in-review comments
-  void _startInReviewUpdateTimer(String postId) {
-    // Cancel existing timer if any
-    _inReviewUpdateTimer?.cancel();
-
-    // Start new periodic timer (every 3 seconds)
-    _inReviewUpdateTimer =
-        Timer.periodic(const Duration(seconds: 3), (timer) async {
-      final commentList = _postsWithInReviewComments[postId];
-      if (commentList == null || commentList.isEmpty) {
-        _stopInReviewUpdateTimer();
-        _postsWithInReviewComments.remove(postId);
-        return;
-      }
-
-      // Remove in-review comments that have been in that state for more than 10 seconds
-      final removedAny = _removeOldInReviewComments(commentList, postId);
-
-      // Check if there are any in-review comments remaining
-      if (!_hasInReviewComments(commentList)) {
-        _stopInReviewUpdateTimer();
-        _postsWithInReviewComments.remove(postId);
-        // Update state if comments were removed
-        if (removedAny) {
-          add(GetPostCommentsEvent(
-            postId: postId,
-            isLoading: false,
-          ));
-        }
-        return;
-      }
-
-      // Update stored comment list if comments were removed
-      if (removedAny) {
-        _postsWithInReviewComments[postId] = commentList;
-      }
-
-      // Fetch updated comments from API (GetPostCommentsEvent will handle merging)
-      add(GetPostCommentsEvent(
-        postId: postId,
-        isLoading: false,
-      ));
-
-      // Also fetch replies for parent comments that have in-review reply comments
-      final parentCommentsWithInReviewReplies = <CommentDataItem>[];
-      void findParentsWithInReviewReplies(List<CommentDataItem> comments) {
-        for (final comment in comments) {
-          if (comment.childComments != null &&
-              comment.childComments!.isNotEmpty) {
-            final hasInReviewReply = comment.childComments!.any(
-              (child) => child.status == IsrTranslationFile.inReview,
-            );
-            if (hasInReviewReply &&
-                comment.id != null &&
-                comment.id!.isNotEmpty) {
-              parentCommentsWithInReviewReplies.add(comment);
-            }
-            // Recursively check nested comments
-            findParentsWithInReviewReplies(comment.childComments!);
-          }
-        }
-      }
-
-      findParentsWithInReviewReplies(commentList);
-
-      // Fetch replies for each parent comment with in-review replies
-      for (final parentComment in parentCommentsWithInReviewReplies) {
-        add(GetPostCommentReplyEvent(
-          postId: postId,
-          parentComment: parentComment,
-          isLoading: false,
-        ));
-      }
-    });
-  }
-
-  /// Stops the periodic update timer
-  void _stopInReviewUpdateTimer() {
-    _inReviewUpdateTimer?.cancel();
-    _inReviewUpdateTimer = null;
-  }
-
-  @override
-  Future<void> close() {
-    _stopInReviewUpdateTimer();
-    _postsWithInReviewComments.clear();
-    return super.close();
   }
 
   Future<bool> sendEventsToBackend(

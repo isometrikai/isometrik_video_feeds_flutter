@@ -631,6 +631,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     final completer = Completer<int>();
 
     final result = await Utility.showBottomSheet<int>(
+      isSafeArea: false,
       child: MultiBlocProvider(
         providers: [
           BlocProvider.value(value: _socialPostBloc),

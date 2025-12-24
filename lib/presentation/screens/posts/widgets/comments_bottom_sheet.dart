@@ -147,71 +147,67 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
               }
             }
           },
-          builder: (context, state) => SafeArea(
-            child: Container(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
+          builder: (context, state) => Container(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+            ),
+            constraints: BoxConstraints(maxHeight: 80.percentHeight),
+            decoration: BoxDecoration(
+              color: IsrColors.white,
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(20.responsiveDimension),
               ),
-              constraints: BoxConstraints(
-                maxHeight: 80.percentHeight,
-              ),
-              decoration: BoxDecoration(
-                color: IsrColors.white,
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(20.responsiveDimension),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Padding(
+                  padding: IsrDimens.edgeInsetsSymmetric(
+                    horizontal: 16.responsiveDimension,
+                    vertical: 20.responsiveDimension,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        IsrTranslationFile.allComments,
+                        style: IsrStyles.primaryText18.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      TapHandler(
+                        onTap: () {
+                          context.pop(_totalCommentsCount);
+                        },
+                        child: const AppImage.svg(AssetConstants.icClose),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Header
-                  Padding(
-                    padding: IsrDimens.edgeInsetsSymmetric(
-                      horizontal: 16.responsiveDimension,
-                      vertical: 20.responsiveDimension,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          IsrTranslationFile.allComments,
-                          style: IsrStyles.primaryText18.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        TapHandler(
-                          onTap: () {
-                            context.pop(_totalCommentsCount);
-                          },
-                          child: const AppImage.svg(AssetConstants.icClose),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Divider(height: 1),
-                  // Comments List
-                  Expanded(
-                    child: Stack(children: [
-                      if (_postCommentList.isNotEmpty == true)
-                        ListView.separated(
-                          controller: _scrollController,
-                          padding: IsrDimens.edgeInsetsAll(IsrDimens.sixteen),
-                          itemCount: _postCommentList.length,
-                          cacheExtent: 500,
-                          addAutomaticKeepAlives: true,
-                          addRepaintBoundaries: true,
-                          separatorBuilder: (_, __) =>
-                              16.responsiveVerticalSpace,
-                          itemBuilder: (context, index) =>
-                              _buildCommentItem(_postCommentList[index]),
-                        )
-                      else if (!(state is LoadingPostComment))
-                        _buildPlaceHolder(),
-                    ]),
-                  ),
-                  if (_isCommentsLoaded) _buildReplyField(_replyComment),
-                ],
-              ),
+                const Divider(height: 1),
+                // Comments List
+                Expanded(
+                  child: Stack(children: [
+                    if (_postCommentList.isNotEmpty == true)
+                      ListView.separated(
+                        controller: _scrollController,
+                        padding: IsrDimens.edgeInsetsAll(IsrDimens.sixteen),
+                        itemCount: _postCommentList.length,
+                        cacheExtent: 500,
+                        addAutomaticKeepAlives: true,
+                        addRepaintBoundaries: true,
+                        separatorBuilder: (_, __) => 16.responsiveVerticalSpace,
+                        itemBuilder: (context, index) =>
+                            _buildCommentItem(_postCommentList[index]),
+                      )
+                    else if (!(state is LoadingPostComment))
+                      _buildPlaceHolder(),
+                  ]),
+                ),
+                if (_isCommentsLoaded) _buildReplyField(_replyComment),
+                const SafeArea(child: SizedBox(), top: false),
+              ],
             ),
           ),
         ),
@@ -278,23 +274,15 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                         Row(
                           spacing: 12.responsiveDimension,
                           children: [
-                            if (comment.id.isStringEmptyOrNull &&
-                                !comment.status.isStringEmptyOrNull)
-                              Text(
-                                comment.status ?? '',
-                                style: IsrStyles.primaryText12.copyWith(
-                                  color: '828282'.toColor(),
-                                ),
+                            // Always show timestamp for all comments (synced and unsynced)
+                            Text(
+                              Utility.getTimeAgoFromDateTime(
+                                  comment.commentedOn,
+                                  showJustNow: true),
+                              style: IsrStyles.primaryText12.copyWith(
+                                color: '828282'.toColor(),
                               ),
-                            if (comment.id != null && comment.id!.isNotEmpty)
-                              Text(
-                                Utility.getTimeAgoFromDateTime(
-                                    comment.commentedOn,
-                                    showJustNow: true),
-                                style: IsrStyles.primaryText12.copyWith(
-                                  color: '828282'.toColor(),
-                                ),
-                              ),
+                            ),
                             if (comment.id != null && comment.id!.isNotEmpty)
                               Text(
                                 '${comment.likeCount} ${(comment.likeCount ?? 0) <= 1 ? IsrTranslationFile.like : IsrTranslationFile.likes}',
@@ -519,21 +507,14 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                   Row(
                     spacing: 12.responsiveDimension,
                     children: [
-                      if (comment.id.isStringEmptyOrNull &&
-                          !comment.status.isStringEmptyOrNull)
-                        Text(
-                          comment.status ?? '',
-                          style: IsrStyles.primaryText12.copyWith(
-                            color: '828282'.toColor(),
-                          ),
+                      // Always show timestamp for all comments (synced and unsynced)
+                      Text(
+                        Utility.getTimeAgoFromDateTime(comment.commentedOn,
+                            showJustNow: true),
+                        style: IsrStyles.primaryText12.copyWith(
+                          color: '828282'.toColor(),
                         ),
-                      if (comment.id != null && comment.id!.isNotEmpty)
-                        Text(
-                          Utility.getTimeAgoFromDateTime(comment.commentedOn),
-                          style: IsrStyles.primaryText12.copyWith(
-                            color: '828282'.toColor(),
-                          ),
-                        ),
+                      ),
                       if (comment.id != null && comment.id!.isNotEmpty)
                         Text(
                           '$likeCount ${likeCount <= 1 ? IsrTranslationFile.like : IsrTranslationFile.likes}',
