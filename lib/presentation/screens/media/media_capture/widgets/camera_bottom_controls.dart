@@ -119,7 +119,8 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
                                     right: 8.responsiveDimension),
                                 child: Row(
                                   spacing: 10.responsiveDimension,
-                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
                                   children: [
                                     Visibility(
                                       visible:
@@ -158,7 +159,8 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
                                     right: 16.responsiveDimension),
                                 child: Row(
                                   spacing: 10.responsiveDimension,
-                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
                                   children: [
                                     Visibility(
                                       visible: widget.cameraBloc.videoSegments

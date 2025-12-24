@@ -73,8 +73,9 @@ class MediaUtil {
     }
   }
 
-
-  static Future<File> flipImage(File file,) async {
+  static Future<File> flipImage(
+    File file,
+  ) async {
     try {
       final bytes = await file.readAsBytes();
       final image = img.decodeImage(bytes);
@@ -97,7 +98,8 @@ class MediaUtil {
     }
   }
 
-  static Future<File> mirrorMedia(File file, {Function(int progress)? onProgress}) async {
+  static Future<File> mirrorMedia(File file,
+      {Function(int progress)? onProgress}) async {
     final mediaType = Utility.getMediaType(file);
 
     if (mediaType == MediaType.photo) {
@@ -107,14 +109,16 @@ class MediaUtil {
     }
   }
 
-  static Future<File> flipVideo(File file, {Function(int progress)? onProgress}) async {
+  static Future<File> flipVideo(File file,
+      {Function(int progress)? onProgress}) async {
     try {
       // Create output file path
       final tempDir = await getTemporaryDirectory();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final outputPath = path.join(tempDir.path, 'merged_video_$timestamp.mp4');
       var progress = 0;
-      final editor = eve.VideoEditorBuilder(videoPath: file.path).flip(flipDirection: eve.FlipDirection.horizontal);
+      final editor = eve.VideoEditorBuilder(videoPath: file.path)
+          .flip(flipDirection: eve.FlipDirection.horizontal);
 
       final result = await editor.export(
           outputPath: outputPath,

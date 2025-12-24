@@ -181,7 +181,9 @@ class TimeLineData {
         'is_saved': isSaved,
         'isFromLocal': isFromLocal,
         'is_following': isFollowing,
-        'interests': interests == null ? [] : List<dynamic>.from(interests!.map((x) => x)),
+        'interests': interests == null
+            ? []
+            : List<dynamic>.from(interests!.map((x) => x)),
         'scheduled_at': scheduledAt,
       };
 }

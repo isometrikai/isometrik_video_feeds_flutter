@@ -43,13 +43,16 @@ class IsrAppNavigator {
   /// ✅ Wraps the destination with necessary BLoC providers
   /// Uses rootNavigator to hide bottom navigation bar
   static void navigateToSchedulePostListing(
-      BuildContext context, {
-        TransitionType? transitionType,
-        Future<List<ProductDataModel>?> Function(List<ProductDataModel>)? onTagProduct,
-      }) {
+    BuildContext context, {
+    TransitionType? transitionType,
+    Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
+        onTagProduct,
+  }) {
     final page = BlocProvider<PostListingBloc>(
       create: (_) => IsmInjectionUtils.getBloc<PostListingBloc>(),
-      child: SchedulePostView(onLinkProduct: onTagProduct,),
+      child: SchedulePostView(
+        onLinkProduct: onTagProduct,
+      ),
     );
 
     Navigator.of(context, rootNavigator: true).push(

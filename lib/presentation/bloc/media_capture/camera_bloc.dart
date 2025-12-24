@@ -264,7 +264,6 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
         await prepareCameraForVideoRecording();
       }
 
-
       final hasFlash = _cameraController!.description.lensDirection ==
           CameraLensDirection.back;
       emit(CameraSwitchedState(
@@ -738,7 +737,6 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
       await _cameraController!.setExposureOffset(maxExposure * 0.3);
     }
   }
-
 
   Future<void> _stopSegmentRecording(
     CameraStopSegmentRecordingEvent event,

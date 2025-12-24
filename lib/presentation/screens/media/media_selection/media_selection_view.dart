@@ -437,15 +437,14 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
                           width: 70.responsiveDimension *
                               widget.mediaSelectionConfig.gridItemAspectRatio,
                           height: 70.responsiveDimension,
-                        margin: EdgeInsets.all(8.responsiveDimension),
+                          margin: EdgeInsets.all(8.responsiveDimension),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(4),
                             child: Stack(
                               children: [
                                 _buildOptimizedMediaContent(media),
                                 // Video duration indicator
-                                if (media.mediaType ==
-                                    SelectedMediaType.video)
+                                if (media.mediaType == SelectedMediaType.video)
                                   Positioned(
                                     bottom: 3,
                                     right: 3,
@@ -464,8 +463,8 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
                           top: 0,
                           right: 0,
                           child: GestureDetector(
-                            onTap: () => _bloc
-                                .add(DeselectMediaEvent(mediaData: media)),
+                            onTap: () =>
+                                _bloc.add(DeselectMediaEvent(mediaData: media)),
                             child: Container(
                               width: 17,
                               height: 17,

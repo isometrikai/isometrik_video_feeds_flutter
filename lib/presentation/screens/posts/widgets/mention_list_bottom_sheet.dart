@@ -176,7 +176,8 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
   Widget _buildProfileItem(SocialUserData? socialUserData, int index) =>
       TapHandler(
         onTap: () {
-          widget.onTapUserProfile(socialUserData?.id ?? '', socialUserData?.isFollowing == true);
+          widget.onTapUserProfile(
+              socialUserData?.id ?? '', socialUserData?.isFollowing == true);
         },
         child: Container(
           padding: IsrDimens.edgeInsetsSymmetric(

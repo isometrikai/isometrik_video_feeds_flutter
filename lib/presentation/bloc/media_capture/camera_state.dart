@@ -5,6 +5,7 @@ abstract class CameraState {}
 class CameraInitialState extends CameraState {}
 
 class CameraLoadingState extends CameraState {}
+
 class CameraBottomLoadingState extends CameraState {
   CameraBottomLoadingState({this.progress, this.message});
   final int? progress;

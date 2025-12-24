@@ -1587,9 +1587,8 @@ class _PostAttributeViewState extends State<PostAttributeView>
         createPostRequest.visibility = SocialPostVisibility.scheduled;
       } else {
         createPostRequest.scheduleTime = null;
-        createPostRequest.visibility = _isEditMode
-            ? null
-            : SocialPostVisibility.public;
+        createPostRequest.visibility =
+            _isEditMode ? null : SocialPostVisibility.public;
       }
 
       final tags = createPostRequest.tags ?? Tags();

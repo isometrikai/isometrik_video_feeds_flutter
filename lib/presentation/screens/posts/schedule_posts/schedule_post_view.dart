@@ -66,8 +66,7 @@ class _SchedulePostViewState extends State<SchedulePostView> {
   }
 
   @override
-  Widget build(BuildContext context) =>
-      BlocProvider<PostListingBloc>(
+  Widget build(BuildContext context) => BlocProvider<PostListingBloc>(
         create: (BuildContext context) => _postListingBloc,
         child: Scaffold(
           backgroundColor: Colors.white,
@@ -385,10 +384,10 @@ class _SchedulePostViewState extends State<SchedulePostView> {
       final selectedDateUtc =
           DateTimeUtil.getIsoDate(dateTime.millisecondsSinceEpoch, isUtc: true);
       _postListingBloc.add(ModifyPostScheduleEvent(
-        postId: data.id ?? '',
-        scheduleTime: selectedDateUtc,
-        onComplete: (success) {
-          if (success) {
+          postId: data.id ?? '',
+          scheduleTime: selectedDateUtc,
+          onComplete: (success) {
+            if (success) {
               setState(() {
                 _postList
                     .where((post) => post.id == data.id)
@@ -396,8 +395,7 @@ class _SchedulePostViewState extends State<SchedulePostView> {
                     ?.scheduledAt = selectedDateUtc;
               });
             }
-          }
-      ));
+          }));
     });
   }
 
@@ -488,54 +486,54 @@ class _SchedulePostViewState extends State<SchedulePostView> {
       );
 
   Future<bool?> _showPostNowDialog(BuildContext context) => showDialog<bool>(
-    context: context,
-    barrierDismissible: false,
-    builder: (context) => Dialog(
-      shape:
-      RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      backgroundColor: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              IsrTranslationFile.postNow,
-              style: IsrStyles.primaryText18
-                  .copyWith(fontWeight: FontWeight.w700),
-            ),
-            16.responsiveVerticalSpace,
-            Text(
-              IsrTranslationFile.postNowConfirmation,
-              style: IsrStyles.primaryText14.copyWith(
-                color: '4A4A4A'.toColor(),
-              ),
-            ),
-            32.responsiveVerticalSpace,
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Dialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppButton(
-                  title: IsrTranslationFile.cancel,
-                  width: 102.responsiveDimension,
-                  onPress: () => Navigator.of(context).pop(false),
-                  backgroundColor: 'F6F6F6'.toColor(),
-                  textColor: Theme.of(context).primaryColor,
+                Text(
+                  IsrTranslationFile.postNow,
+                  style: IsrStyles.primaryText18
+                      .copyWith(fontWeight: FontWeight.w700),
                 ),
-                AppButton(
-                  title: IsrTranslationFile.post,
-                  width: 102.responsiveDimension,
-                  onPress: () => Navigator.of(context).pop(true),
-                  backgroundColor: Theme.of(context).primaryColor,
+                16.responsiveVerticalSpace,
+                Text(
+                  IsrTranslationFile.postNowConfirmation,
+                  style: IsrStyles.primaryText14.copyWith(
+                    color: '4A4A4A'.toColor(),
+                  ),
+                ),
+                32.responsiveVerticalSpace,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    AppButton(
+                      title: IsrTranslationFile.cancel,
+                      width: 102.responsiveDimension,
+                      onPress: () => Navigator.of(context).pop(false),
+                      backgroundColor: 'F6F6F6'.toColor(),
+                      textColor: Theme.of(context).primaryColor,
+                    ),
+                    AppButton(
+                      title: IsrTranslationFile.post,
+                      width: 102.responsiveDimension,
+                      onPress: () => Navigator.of(context).pop(true),
+                      backgroundColor: Theme.of(context).primaryColor,
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
         ),
-      ),
-    ),
-  );
+      );
 
   DateTime getBufferedDate() {
     final now = DateTime.now();

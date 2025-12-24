@@ -332,7 +332,8 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
     event.onComplete(apiResult.isSuccess);
   }
 
-  FutureOr<void> _modifySchedulePost(ModifyPostScheduleEvent event, Emitter<PostListingState> emit) async {
+  FutureOr<void> _modifySchedulePost(
+      ModifyPostScheduleEvent event, Emitter<PostListingState> emit) async {
     final apiResult = await _createPostUseCase.executeEditPost(
       isLoading: true,
       postId: event.postId,
@@ -365,7 +366,8 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
       scheduledOnly: event.scheduledOnly,
     );
     if (event.onComplete == null) {
-      emit(PostLoadedState(postList: apiResult.data?.data ?? [], isLoadMore: event.page > 1));
+      emit(PostLoadedState(
+          postList: apiResult.data?.data ?? [], isLoadMore: event.page > 1));
     } else {
       event.onComplete?.call(apiResult.data?.data ?? []);
     }
