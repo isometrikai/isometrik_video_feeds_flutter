@@ -718,18 +718,26 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                     ),
                   ),
 
-                Positioned(
-                  bottom: widget.reelsConfig.overlayPadding
-                      ?.resolve(TextDirection.ltr)
-                      .bottom ??
-                      0,
-                  left: 0,
-                  right: 0,
-                  child: ValueListenableBuilder<int>(
-                    valueListenable: _currentPageNotifier,
-                    builder: (context, value, child) => _buildMediaIndicators(value),
+                // show progress indicator if there are multiple videos or single media is video or autoMoveNextMedia is true
+                if (_reelData.mediaMetaDataList.length > 1 ||
+                    _reelData.mediaMetaDataList.firstOrNull?.mediaType ==
+                        kVideoType ||
+                    widget.onVideoCompleted != null
+                )
+                  Positioned(
+                    bottom: widget.reelsConfig.overlayPadding
+                            ?.resolve(TextDirection.ltr)
+                            .bottom ??
+                        0,
+                    left: 0,
+                    right: 0,
+                    child: ValueListenableBuilder<int>(
+                      valueListenable: _currentPageNotifier,
+                      builder: (context, value, child) =>
+                          _buildMediaIndicators(value),
+                    ),
                   ),
-                ),
+
                 // Move overlays here so they don't block taps
                 // OPTIMIZATION: Wrap gradient in RepaintBoundary for better scrolling
                 Positioned(
@@ -1624,7 +1632,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   void _moveToNextMedia() {
     // Handle video completion for carousel
-    if (_hasMultipleMedia) {
+    if (_hasMultipleMedia && widget.reelsConfig.autoMoveNextMedia) {
       final index = _currentPageNotifier.value;
       // If there's a next media item in the carousel, move to it
       if (index < _reelData.mediaMetaDataList.length - 1) {
@@ -1643,7 +1651,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           curve: Curves.easeInOut,
         );
       }
-    } else {
+    } else if (!_hasMultipleMedia || _currentPageNotifier.value == _reelData.mediaMetaDataList.length - 1) {
       // Single video, notify parent to move to next post
       widget.onVideoCompleted?.call();
     }
@@ -1680,6 +1688,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   /// Starts the image view timer if current media is an image
   void _startOrResumeImageProgress() {
+    if (!widget.reelsConfig.autoMoveNextMedia && widget.onVideoCompleted == null) {
+      _videoProgress.value = 1;
+      return;
+    }
     _imageViewTimer?.cancel();
     _isImagePaused = false;
 

@@ -22,6 +22,7 @@ class ReelsConfig {
     this.onReelsChange,
     this.onTapMentionTag,
     this.onTapPlace,
+    this.autoMoveNextMedia = true,
   });
 
   // UI Elements
@@ -29,6 +30,7 @@ class ReelsConfig {
   final ReelsWidgetBuilder Function(ReelsData reelsData)? actionWidget;
   final EdgeInsetsGeometry? overlayPadding;
   final Widget? placeHolderWidget;
+  final bool autoMoveNextMedia;
 
   // All callbacks return true if success
   final Future<bool> Function(ReelsData reelsData, bool currentSaved)?

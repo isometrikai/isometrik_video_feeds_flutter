@@ -283,6 +283,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
             .map((_) => getReelData(_, loggedInUserId: _loggedInUserId))
             .toList(),
         reelsConfig: _getReelsConfig(tabData),
+        tabConfig: widget.tabConfig,
         onLoadMore: () async => await _handleLoadMore(tabData),
         onRefresh: () async {
           var result = await _handlePostRefresh(tabData);
@@ -300,6 +301,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   ReelsConfig _getReelsConfig(TabDataModel tabData) => ReelsConfig(
       overlayPadding: widget.postConfig.postUIConfig?.overlayPadding,
+      autoMoveNextMedia: widget.postConfig.autoMoveToNextMedia || widget.tabConfig.autoMoveToNextPost,
       onTapPlace: (reelData, placeList) async {
         if (placeList.isListEmptyOrNull) return;
         if (placeList.length == 1) {

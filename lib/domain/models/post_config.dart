@@ -5,10 +5,13 @@ class PostConfig {
   const PostConfig({
     this.postUIConfig,
     this.postCallBackConfig,
+    this.autoMoveToNextMedia = true,
   });
 
   final PostUIConfig? postUIConfig;
   final PostCallBackConfig? postCallBackConfig;
+  final bool autoMoveToNextMedia;
+
 
   PostConfig copyWith({
     PostUIConfig? postUIConfig,
