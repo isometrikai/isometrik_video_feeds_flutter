@@ -72,8 +72,7 @@ class IsrTranslationFile {
       'Connect products to posts for better visibility and engagement';
   static const addProducts = 'Add Products';
   static const String choosePhotoOrVideo = 'Choose photo or video';
-  static const String noNakedPicture =
-      'No naked picture. No soliciting. No escort services';
+  static const String noNakedPicture = 'No naked picture. No soliciting. No escort services';
   static const String takePhoto = 'Take photo';
   static const String selectImageFromGallery = 'Select image from gallery';
   static const String takeVideo = 'Take video';
@@ -81,8 +80,7 @@ class IsrTranslationFile {
   static const String change = 'Change';
   static const String size = 'Size';
   static const String duration = 'Duration';
-  static const String socialPostCreatedSuccessfully =
-      'Social post created successfully';
+  static const String socialPostCreatedSuccessfully = 'Social post created successfully';
   static const String postUpdatedSuccessfully = 'Post updated successfully';
   static const String postScheduledSuccessfully = 'Post scheduled successfully';
   static const String successfullyPosted = 'Successfully Posted';
@@ -105,21 +103,16 @@ class IsrTranslationFile {
   static const String optimizingMedia = 'Optimizing media';
   static const String time = 'Time';
   static const String pleaseSelectAFutureTime = 'Please select a future time.';
-  static const String yourPostHasBeenSuccessfullyPosted =
-      'Your post has been successfully posted.';
+  static const String yourPostHasBeenSuccessfullyPosted = 'Your post has been successfully posted.';
   static const String date = 'Date';
   static const String postingPost = 'Posting Post';
   static const String edit = 'Edit';
   static const String delete = 'Delete';
   static const String deletePost = 'Delete Post';
-  static const String deletePostConfirmation =
-      'Are you sure you want to delete this post?';
-  static const String postNowConfirmation =
-      'Are you sure you want to Post Now?';
-  static const String reportPostConfirmation =
-      'Are you sure you want to report this post?';
-  static const String editPostConfirmation =
-      'Are you sure you want to edit the post?';
+  static const String deletePostConfirmation = 'Are you sure you want to delete this post?';
+  static const String postNowConfirmation = 'Are you sure you want to Post Now?';
+  static const String reportPostConfirmation = 'Are you sure you want to report this post?';
+  static const String editPostConfirmation = 'Are you sure you want to edit the post?';
   static const postDeletedSuccessfully = 'Post deleted successfully';
   static const String allComments = 'All Comments';
   static const String reply = 'Reply';
@@ -130,12 +123,9 @@ class IsrTranslationFile {
   static const String addAComment = 'Add a comment';
   static const String replyingTo = 'Replying to';
   static const String noCommentsYet = 'No Comments Yet';
-  static const String beTheFirstOneToPostAComment =
-      'Be the first one to post a comment';
-  static const String commentReportedSuccessfully =
-      'Comment reported successfully';
-  static const String failedToUpdateWishlistStatus =
-      'Failed to update wishlist status';
+  static const String beTheFirstOneToPostAComment = 'Be the first one to post a comment';
+  static const String commentReportedSuccessfully = 'Comment reported successfully';
+  static const String failedToUpdateWishlistStatus = 'Failed to update wishlist status';
   static const String justNow = 'Just now';
   static const String noPostsFound = 'No posts found';
   static const String inThisSocialPost = 'In this social post';
@@ -158,8 +148,7 @@ class IsrTranslationFile {
   static const String follows = 'Follows';
   static const String pleaseSelectMinimumResolution =
       'Please select media with minimum resolution of 240 x 240 pixels';
-  static const String allFilesUploadedSuccessfully =
-      'All files uploaded successfully';
+  static const String allFilesUploadedSuccessfully = 'All files uploaded successfully';
   static const String uploadingMediaFiles = 'Uploading Media Files';
   static const String uploadingCoverFiles = 'Uploading Cover Files';
   static const String uploadingPreviewFiles = 'Uploading Preview Files';
@@ -185,19 +174,16 @@ class IsrTranslationFile {
   static const String choosePhoto = 'Choose photo';
   static const String chooseVideo = 'Choose video';
   static const String taggedPeople = 'Tagged People';
-  static const String listOfPeopleLinkedToThePost =
-      'List of people linked to the post';
-  static const String search = 'search';
+  static const String listOfPeopleLinkedToThePost = 'List of people linked to the post';
+  static const String search = 'Search';
   static const String noPeopleFound = 'No people found';
   static const String selectedPeople = 'Selected People';
   static const String noPeopleSelected = 'No people selected';
   static const String searchForPeople = 'Search for people';
   static const String noUserFound = 'No User Found';
-  static const String startTypingToFindPeopleToTag =
-      'Start typing to find people to tag';
+  static const String startTypingToFindPeopleToTag = 'Start typing to find people to tag';
   static const String noLocationFound = 'No Location Found';
-  static const String trySearchingWithADifferentName =
-      'Try searching with a different name';
+  static const String trySearchingWithADifferentName = 'Try searching with a different name';
   static const String posting = 'Posting...';
   static const String inReview = 'In Review';
   static const String searchLocation = 'Search location';
@@ -228,10 +214,8 @@ class IsrTranslationFile {
   static const String yourSavedProducts = 'Your Saved Products';
   static const String done = 'Done';
   static const String savedPosts = 'Saved Posts';
-  static const String makeThisCollectionPrivate =
-      'Make this collection private';
-  static const String collectionsMessage =
-      'When you create collections, they will appear here.';
+  static const String makeThisCollectionPrivate = 'Make this collection private';
+  static const String collectionsMessage = 'When you create collections, they will appear here.';
   static const String createCollectionButton = 'Create a Collection';
   static const String chooseFromGallery = 'Choose From Gallery';
   static const String createCollection = 'Create collection';

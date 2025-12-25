@@ -847,37 +847,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              if (_reelData.postSetting?.isProfilePicVisible == true)
-                TapHandler(
-                  borderRadius: IsrDimens.thirty,
-                  onTap: () async {
-                    if (widget.reelsConfig.onTapUserProfile == null) return;
-                    await widget.reelsConfig.onTapUserProfile!(_reelData);
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(IsrDimens.thirty),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.changeOpacity(0.2),
-                          spreadRadius: 2,
-                          blurRadius: 5,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: AppImage.network(
-                      _reelData.profilePhoto ?? '',
-                      width: IsrDimens.thirtyFive,
-                      height: IsrDimens.thirtyFive,
-                      isProfileImage: true,
-                      textColor: IsrColors.white,
-                      name:
-                          '${_reelData.firstName ?? ''} ${_reelData.lastName ?? ''}',
-                    ),
-                  ),
-                ),
               if (_reelData.postSetting?.isCreatePostButtonVisible == true) ...[
                 Column(
                   children: [
@@ -1112,6 +1081,39 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                           Expanded(
                             child: Row(
                               children: [
+                                if (_reelData.postSetting?.isProfilePicVisible == true) ...[
+                                  TapHandler(
+                                    borderRadius: IsrDimens.thirty,
+                                    onTap: () async {
+                                      if (widget.reelsConfig.onTapUserProfile == null) return;
+                                      await widget.reelsConfig.onTapUserProfile!(_reelData);
+                                    },
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.transparent,
+                                        borderRadius: BorderRadius.circular(IsrDimens.thirty),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.changeOpacity(0.2),
+                                            spreadRadius: 2,
+                                            blurRadius: 5,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child: AppImage.network(
+                                        _reelData.profilePhoto ?? '',
+                                        width: IsrDimens.thirtyFive,
+                                        height: IsrDimens.thirtyFive,
+                                        isProfileImage: true,
+                                        textColor: IsrColors.white,
+                                        name:
+                                            '${_reelData.firstName ?? ''} ${_reelData.lastName ?? ''}',
+                                      ),
+                                    ),
+                                  ),
+                                  IsrDimens.boxWidth(IsrDimens.eight),
+                                ],
                                 Flexible(
                                   child: TapHandler(
                                     onTap: () async {
@@ -1376,8 +1378,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           return Container(
             height: IsrDimens.twentyFour,
             decoration: BoxDecoration(
-              color: Colors.grey.shade300,
               borderRadius: BorderRadius.circular(IsrDimens.twenty),
+              border: Border.all(color: Theme.of(context).primaryColor, width: IsrDimens.two),
             ),
             child: MaterialButton(
               minWidth: IsrDimens.sixty,
@@ -1393,6 +1395,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 IsrTranslationFile.following,
                 style: IsrStyles.primaryText12.copyWith(
                   fontWeight: FontWeight.w600,
+                  color: IsrColors.colorF4F4F4,
                 ),
               ),
             ),
@@ -1411,8 +1414,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         watchDuration: _watchDuration,
         postSectionType: widget.postSectionType,
         apiCallBack: widget.onPressLikeButton != null
-            ? () =>
-                widget.onPressLikeButton!(_reelData, _reelData.isLiked == true)
+            ? () => widget.onPressLikeButton!(_reelData, _reelData.isLiked == true)
             : null,
       );
     }
