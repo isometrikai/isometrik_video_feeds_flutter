@@ -71,8 +71,7 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
       _bloc.add(LoadMoreMediaEvent());
     }
   }
@@ -119,8 +118,7 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
                   label: 'Photo',
                   onTap: () {
                     Navigator.pop(context);
-                    _bloc.add(
-                        CaptureMediaEvent(mediaType: SelectedMediaType.image));
+                    _bloc.add(CaptureMediaEvent(mediaType: SelectedMediaType.image));
                   },
                 ),
                 _buildCameraOption(
@@ -128,8 +126,7 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
                   label: 'Video',
                   onTap: () {
                     Navigator.pop(context);
-                    _bloc.add(
-                        CaptureMediaEvent(mediaType: SelectedMediaType.video));
+                    _bloc.add(CaptureMediaEvent(mediaType: SelectedMediaType.video));
                   },
                 ),
               ],
@@ -151,8 +148,7 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color:
-                widget.mediaSelectionConfig.primaryColor.withValues(alpha: 0.1),
+            color: widget.mediaSelectionConfig.primaryColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
@@ -191,8 +187,7 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
     if (mediaType == SelectedMediaType.video) {
       try {
         final mediaInfo = await VideoCompress.getMediaInfo(file.path);
-        return (mediaInfo.duration ?? 0).toInt() ~/
-            1000; // Convert from milliseconds to seconds
+        return (mediaInfo.duration ?? 0).toInt() ~/ 1000; // Convert from milliseconds to seconds
       } catch (e) {
         debugPrint('Error getting video duration: $e');
         return 0;
@@ -216,8 +211,7 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
     }
   }
 
-  Widget _buildThumbnailWithThrottling(MediaAssetData mediaData) =>
-      FutureBuilder<String?>(
+  Widget _buildThumbnailWithThrottling(MediaAssetData mediaData) => FutureBuilder<String?>(
         future: _bloc.getVideoThumbnail(mediaData.localPath ?? ''),
         builder: (context, snapshot) {
           if (snapshot.hasData && snapshot.data != null) {
@@ -225,8 +219,7 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
             return _buildCachedImage(snapshot.data!);
           }
           return Center(
-            child: CircularProgressIndicator(
-                color: widget.mediaSelectionConfig.primaryColor),
+            child: CircularProgressIndicator(color: widget.mediaSelectionConfig.primaryColor),
           );
         },
       );
@@ -364,8 +357,7 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
                 }
               },
               builder: (context, state) {
-                if (state is MediaSelectionInitialState ||
-                    state is MediaSelectionLoadingState) {
+                if (state is MediaSelectionInitialState || state is MediaSelectionLoadingState) {
                   return Center(
                     child: CircularProgressIndicator(
                       color: widget.mediaSelectionConfig.primaryColor,
@@ -392,8 +384,7 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
         ),
       );
 
-  Future<void> _handleMediaSelectionComplete(
-      List<MediaAssetData> selectedMedia) async {
+  Future<void> _handleMediaSelectionComplete(List<MediaAssetData> selectedMedia) async {
     final isPop = await widget.onComplete?.call(selectedMedia) ?? true;
     if (isPop && mounted) {
       Navigator.pop(context, selectedMedia);
@@ -413,8 +404,7 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
         ],
       );
 
-  Widget _buildSelectedMediaBottomSheet(MediaSelectionLoadedState state) =>
-      Container(
+  Widget _buildSelectedMediaBottomSheet(MediaSelectionLoadedState state) => Container(
         height: 100.responsiveDimension,
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.6),
@@ -463,8 +453,7 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
                           top: 0,
                           right: 0,
                           child: GestureDetector(
-                            onTap: () =>
-                                _bloc.add(DeselectMediaEvent(mediaData: media)),
+                            onTap: () => _bloc.add(DeselectMediaEvent(mediaData: media)),
                             child: Container(
                               width: 17,
                               height: 17,
@@ -507,6 +496,7 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
                       fontSize: 14.responsiveDimension,
                       fontFamily: widget.mediaSelectionConfig.primaryFontFamily,
                       fontWeight: FontWeight.w600,
+                      color: Colors.white,
                     ),
                   ),
                 ),
@@ -530,12 +520,10 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
                     position: PopupMenuPosition.under,
                     color: Colors.white,
                     itemBuilder: (context) => state.albums
-                        .map((album) =>
-                            _buildAlbumMenuItem(album, state.currentAlbum))
+                        .map((album) => _buildAlbumMenuItem(album, state.currentAlbum))
                         .toList(),
                     shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(12.responsiveDimension),
+                      borderRadius: BorderRadius.circular(12.responsiveDimension),
                     ),
                     elevation: 8,
                     child: Container(
@@ -545,17 +533,14 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
                           Text(
                             _getAlbumDisplayName(state.currentAlbum),
                             style: TextStyle(
-                              color:
-                                  widget.mediaSelectionConfig.primaryTextColor,
+                              color: widget.mediaSelectionConfig.primaryTextColor,
                               fontSize: 16.responsiveDimension,
-                              fontFamily:
-                                  widget.mediaSelectionConfig.primaryFontFamily,
+                              fontFamily: widget.mediaSelectionConfig.primaryFontFamily,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                           const SizedBox(width: 8),
-                          const Icon(Icons.keyboard_arrow_down,
-                              color: Colors.black),
+                          const Icon(Icons.keyboard_arrow_down, color: Colors.black),
                         ],
                       ),
                     ),
@@ -595,8 +580,7 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
     // For reels-like layout, we want items to be taller than wide
     // Calculate crossAxisCount based on screen width and desired item width
     final desiredItemWidth = widget.mediaSelectionConfig.gridItemMaxWidth;
-    final crossAxisCount =
-        (screenSize.width / desiredItemWidth).floor().clamp(2, 6);
+    final crossAxisCount = (screenSize.width / desiredItemWidth).floor().clamp(2, 6);
 
     // Use 9:16 aspect ratio as default (9/16 = 0.5625)
     final itemAspectRatio = widget.mediaSelectionConfig.gridItemAspectRatio;
@@ -614,8 +598,7 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
         // Camera button as first item
         if (index == 0) {
           return CameraButtonWidget(
-              mediaSelectionConfig: widget.mediaSelectionConfig,
-              onTap: _captureMedia);
+              mediaSelectionConfig: widget.mediaSelectionConfig, onTap: _captureMedia);
         }
 
         // Gallery media items
@@ -644,8 +627,7 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
 
   void _captureMedia() async {
     if (widget.onCaptureMedia != null) {
-      final filePath = await widget
-          .onCaptureMedia!(widget.mediaSelectionConfig.mediaListType.name);
+      final filePath = await widget.onCaptureMedia!(widget.mediaSelectionConfig.mediaListType.name);
       if (filePath?.isNotEmpty == true) {
         final file = File(filePath!);
         final mediaType = await _getMediaType(file);
@@ -673,8 +655,8 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
     }
   }
 
-  Widget _buildMediaItem(MediaAssetData mediaData, bool isSelected,
-          int selectedIndex, MediaSelectionLoadedState state) =>
+  Widget _buildMediaItem(MediaAssetData mediaData, bool isSelected, int selectedIndex,
+          MediaSelectionLoadedState state) =>
       Stack(
         fit: StackFit.expand,
         children: [
@@ -720,19 +702,14 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
               top: 4,
               right: 4,
               child: GestureDetector(
-                onTap: () =>
-                    _bloc.add(DeselectMediaEvent(mediaData: mediaData)),
+                onTap: () => _bloc.add(DeselectMediaEvent(mediaData: mediaData)),
                 child: Container(
                   width: 24,
                   height: 24,
                   decoration: BoxDecoration(
                     color: widget.mediaSelectionConfig.primaryColor,
-                    shape: state.isMultiSelectMode
-                        ? BoxShape.circle
-                        : BoxShape.rectangle,
-                    borderRadius: state.isMultiSelectMode
-                        ? null
-                        : BorderRadius.circular(4),
+                    shape: state.isMultiSelectMode ? BoxShape.circle : BoxShape.rectangle,
+                    borderRadius: state.isMultiSelectMode ? null : BorderRadius.circular(4),
                   ),
                   child: Center(
                     child: state.isMultiSelectMode
