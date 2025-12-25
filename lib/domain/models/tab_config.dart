@@ -5,9 +5,11 @@ class TabConfig {
   const TabConfig({
     this.tabCallBackConfig,
     this.tabUIConfig,
+    this.autoMoveToNextPost = true,
   });
   final TabCallBackConfig? tabCallBackConfig;
   final TabUIConfig? tabUIConfig;
+  final bool autoMoveToNextPost;
 
   TabConfig copyWith({
     TabCallBackConfig? tabCallBackConfig,

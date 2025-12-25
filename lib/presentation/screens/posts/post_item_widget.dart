@@ -23,6 +23,7 @@ class PostItemWidget extends StatefulWidget {
     required this.reelsDataList,
     this.videoCacheManager,
     required this.reelsConfig,
+    required this.tabConfig,
   });
 
   final Future<List<ReelsData>> Function()? onLoadMore;
@@ -36,6 +37,7 @@ class PostItemWidget extends StatefulWidget {
   final List<ReelsData> reelsDataList;
   final VideoCacheManager? videoCacheManager;
   final ReelsConfig reelsConfig;
+  final TabConfig tabConfig;
 
   @override
   State<PostItemWidget> createState() => _PostItemWidgetState();
@@ -372,7 +374,9 @@ class _PostItemWidgetState extends State<PostItemWidget>
                       // Add refresh count to force rebuild
                       key: ValueKey(
                           '${reelsData.postId}_${_refreshCounts[index] ?? 0}'),
-                      onVideoCompleted: () => _handleVideoCompletion(index),
+                      onVideoCompleted: (widget.tabConfig.autoMoveToNextPost)
+                          ? () => _handleVideoCompletion(index)
+                          : null,
                       reelsConfig: widget.reelsConfig,
                       onPressMoreButton: () async {
                         if (widget.reelsConfig.onPressMoreButton == null) {
