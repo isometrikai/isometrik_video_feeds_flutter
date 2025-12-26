@@ -51,8 +51,7 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
   var _searchAccountsPage = 1;
   final _searchPostLimit = 20;
 
-  FutureOr<void> _getHashTagPosts(
-      GetHashTagPostEvent event, Emitter<PostListingState> emit) async {
+  FutureOr<void> _getHashTagPosts(GetHashTagPostEvent event, Emitter<PostListingState> emit) async {
     // Only emit loading state if not pagination
     if (!event.isFromPagination) {
       emit(PostListingLoadingState(isLoading: true));
@@ -82,8 +81,7 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
     } else {
       // Fix: Decrement properly on error
       _searchPostPage = _searchPostPage > 1 ? _searchPostPage - 1 : 1;
-      emit(PostLoadedState(
-          postList: _searchPostPage == 1 ? [] : apiResult.data?.data ?? []));
+      emit(PostLoadedState(postList: _searchPostPage == 1 ? [] : apiResult.data?.data ?? []));
     }
   }
 
@@ -104,20 +102,16 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
 
       switch (event.tabType) {
         case SearchTabType.posts:
-          results =
-              await _searchPosts(event.searchQuery, event.isFromPagination);
+          results = await _searchPosts(event.searchQuery, event.isFromPagination);
           break;
         case SearchTabType.account:
-          results =
-              await _searchUsers(event.searchQuery, event.isFromPagination);
+          results = await _searchUsers(event.searchQuery, event.isFromPagination);
           break;
         case SearchTabType.tags:
-          results =
-              await _searchTags(event.searchQuery, event.isFromPagination);
+          results = await _searchTags(event.searchQuery, event.isFromPagination);
           break;
         case SearchTabType.places:
-          results =
-              await _searchPlaces(event.searchQuery, event.isFromPagination);
+          results = await _searchPlaces(event.searchQuery, event.isFromPagination);
           break;
       }
 
@@ -138,8 +132,7 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
     }
   }
 
-  Future<List<dynamic>> _searchPosts(
-      String query, bool isFromPagination) async {
+  Future<List<dynamic>> _searchPosts(String query, bool isFromPagination) async {
     // Handle pagination for posts
     if (isFromPagination) {
       _searchPostPage = _searchPostPage + 1;
@@ -147,8 +140,7 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
       _searchPostPage = 1;
     }
 
-    debugPrint(
-        '📄 Posts: Requesting page $_searchPostPage (pagination: $isFromPagination)');
+    debugPrint('📄 Posts: Requesting page $_searchPostPage (pagination: $isFromPagination)');
 
     // Use existing tagged posts functionality for posts search
     final apiResult = await _getTaggedPostUseCase.executeGetTaggedPosts(
@@ -161,8 +153,7 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
 
     if (apiResult.isSuccess) {
       final results = apiResult.data?.data ?? [];
-      debugPrint(
-          '✅ Posts: Page $_searchPostPage returned ${results.length} items');
+      debugPrint('✅ Posts: Page $_searchPostPage returned ${results.length} items');
       // If pagination returns empty, decrement page and return empty to signal no more data
       if (isFromPagination && results.isEmpty) {
         _searchPostPage = _searchPostPage > 1 ? _searchPostPage - 1 : 1;
@@ -206,8 +197,7 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
     return [];
   }
 
-  Future<List<dynamic>> _searchPlaces(
-      String searchQuery, bool isFromPagination) async {
+  Future<List<dynamic>> _searchPlaces(String searchQuery, bool isFromPagination) async {
     // Note: Google Places API might not support pagination the same way
     // If it does, implement similar to other methods
     // For now, keeping it simple
@@ -217,7 +207,7 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
       _searchPlacesPage = 1;
     }
 
-    final apiResult = await _geocodeSearchAddressUseCase.executeGeocodeSearch(
+    final apiResult = await _geocodeSearchAddressUseCase.executeGetPlaceWithTextSearch(
       isLoading: false,
       searchText: searchQuery,
     );
@@ -249,8 +239,7 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
     }
   }
 
-  Future<List<dynamic>> _searchUsers(
-      String searchQuery, bool isFromPagination) async {
+  Future<List<dynamic>> _searchUsers(String searchQuery, bool isFromPagination) async {
     // Handle pagination for users
     if (isFromPagination) {
       _searchAccountsPage = _searchAccountsPage + 1;
@@ -269,14 +258,12 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
       final results = response?.data ?? [];
       // If pagination returns empty, decrement page and return empty to signal no more data
       if (isFromPagination && results.isEmpty) {
-        _searchAccountsPage =
-            _searchAccountsPage > 1 ? _searchAccountsPage - 1 : 1;
+        _searchAccountsPage = _searchAccountsPage > 1 ? _searchAccountsPage - 1 : 1;
       }
       return results;
     } else {
       // Decrement on error
-      _searchAccountsPage =
-          _searchAccountsPage > 1 ? _searchAccountsPage - 1 : 1;
+      _searchAccountsPage = _searchAccountsPage > 1 ? _searchAccountsPage - 1 : 1;
     }
     return [];
   }
@@ -304,8 +291,7 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
     }
   }
 
-  FutureOr<void> _deletePost(
-      DeleteUserPostEvent event, Emitter<PostListingState> emit) async {
+  FutureOr<void> _deletePost(DeleteUserPostEvent event, Emitter<PostListingState> emit) async {
     final userId = await _localDataUseCase.getUserId();
     if (userId.isEmptyOrNull) {
       event.onComplete(false);
@@ -352,13 +338,11 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
     }
   }
 
-  FutureOr<void> _getUserPosts(
-      GetUserPostListEvent event, Emitter<PostListingState> emit) async {
+  FutureOr<void> _getUserPosts(GetUserPostListEvent event, Emitter<PostListingState> emit) async {
     if (event.onComplete == null) {
       emit(PostListingLoadingState(isLoading: event.isLoading));
     }
-    final apiResult =
-        await _getUserPostDataUseCase.executeGetUserProfilePostData(
+    final apiResult = await _getUserPostDataUseCase.executeGetUserProfilePostData(
       isLoading: event.isLoading,
       page: event.page,
       pageSize: event.pageSize,
@@ -366,8 +350,7 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
       scheduledOnly: event.scheduledOnly,
     );
     if (event.onComplete == null) {
-      emit(PostLoadedState(
-          postList: apiResult.data?.data ?? [], isLoadMore: event.page > 1));
+      emit(PostLoadedState(postList: apiResult.data?.data ?? [], isLoadMore: event.page > 1));
     } else {
       event.onComplete?.call(apiResult.data?.data ?? []);
     }

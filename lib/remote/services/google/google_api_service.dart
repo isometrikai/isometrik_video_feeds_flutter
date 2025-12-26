@@ -13,6 +13,11 @@ abstract class GoogleApiService extends BaseService {
     required String searchText,
   });
 
+  Future<ResponseModel> getPlaceWithTextSearch({
+    required bool isLoading,
+    required String searchText,
+  });
+
   Future<ResponseModel> getAddressFromLatLng({
     required bool isLoading,
     double? latitude,

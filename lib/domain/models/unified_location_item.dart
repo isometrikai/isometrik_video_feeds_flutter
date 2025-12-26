@@ -46,22 +46,14 @@ class UnifiedLocationItem {
       }
     }
 
-    // Build subtitle with state and country
-    final subtitleParts = <String>[];
-    if (state != null && state.isNotEmpty) {
-      subtitleParts.add(state);
-    }
-    if (country != null && country.isNotEmpty) {
-      subtitleParts.add(country);
-    }
-    final subtitle = subtitleParts.isNotEmpty
-        ? subtitleParts.join(', ')
-        : result.formattedAddress;
+    // Use place name as title, formatted address as subtitle
+    final placeName = result.name;
+    final hasPlaceName = placeName != null && placeName.isNotEmpty;
 
     return UnifiedLocationItem(
       placeId: result.placeId ?? '',
-      title: result.formattedAddress ?? '',
-      subtitle: subtitle,
+      title: hasPlaceName ? placeName : (result.formattedAddress ?? ''),
+      subtitle: result.formattedAddress,
       description: result.formattedAddress,
       types: result.types,
       geometry: result.geometry,

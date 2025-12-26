@@ -127,10 +127,14 @@ class _PostListingViewState extends State<PostListingView> {
 
     if (!mounted) return;
 
+    // Store the search query for pagination
+    _lastSearchQuery = cleanQuery;
+
     // Set loading state for all tabs (since cache was cleared)
     setState(() {
       for (final tab in SearchTabType.values) {
         _tabLoading[tab] = true;
+        _tabLastQuery[tab] = cleanQuery;
       }
     });
 
@@ -552,10 +556,15 @@ class _PostListingViewState extends State<PostListingView> {
   void _loadMoreForTab(SearchTabType tab) {
     if (!mounted) return;
 
-    final searchQuery = _hashtagController.text.trim().replaceFirst('#', '');
+    // Skip pagination for Places tab (Google Places API doesn't support pagination well)
+    if (tab == SearchTabType.places) return;
+
+    // Use stored search query for pagination to maintain consistency
+    final searchQuery = _tabLastQuery[tab] ?? _lastSearchQuery;
     if (searchQuery.isEmpty) return;
 
-    debugPrint('🔄 LoadMore: Requesting next page for ${tab.name}');
+    debugPrint(
+        '🔄 LoadMore: Requesting next page for ${tab.name} with query: $searchQuery');
 
     setState(() {
       _tabLoadingMore[tab] = true;
@@ -581,24 +590,6 @@ class _PostListingViewState extends State<PostListingView> {
         Stack(
           children: [
             child,
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                color: color.changeOpacity(0.9),
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                child: Text(
-                  'DEBUG: $tabName TAB',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
           ],
         );
 
@@ -745,7 +736,6 @@ class _PostListingViewState extends State<PostListingView> {
           final placeName = result.title;
           return Container(
             key: ValueKey('place_${result.placeId}'),
-            height: 60.responsiveDimension,
             margin: IsrDimens.edgeInsetsSymmetric(
                 vertical: 4.responsiveDimension,
                 horizontal: 8.responsiveDimension),
@@ -756,14 +746,20 @@ class _PostListingViewState extends State<PostListingView> {
               ),
               child: Padding(
                 padding: IsrDimens.edgeInsetsSymmetric(
-                    horizontal: 16.responsiveDimension),
+                  horizontal: 16.responsiveDimension,
+                  vertical: 12.responsiveDimension,
+                ),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const AppImage.svg(AssetConstants.icPlacesIcon),
+                    Padding(
+                      padding: EdgeInsets.only(top: 4.responsiveDimension),
+                      child: const AppImage.svg(AssetConstants.icPlacesIcon),
+                    ),
                     12.responsiveHorizontalSpace,
                     Expanded(
                       child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
@@ -773,12 +769,13 @@ class _PostListingViewState extends State<PostListingView> {
                             overflow: TextOverflow.ellipsis,
                           ),
                           if (result.subtitle?.isNotEmpty == true) ...[
+                            4.responsiveVerticalSpace,
                             Text(
                               result.subtitle ?? '',
                               style: IsrStyles.primaryText12.copyWith(
                                 color: IsrColors.color9B9B9B,
                               ),
-                              maxLines: 1,
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ],

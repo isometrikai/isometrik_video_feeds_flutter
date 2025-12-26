@@ -18,8 +18,7 @@ class GoogleApiServiceProvider extends GoogleApiService with AppMixin {
     required String pinCode,
     required List<String>? countries,
   }) async {
-    var apiURL =
-        '${GoogleApiEndPoints.getGeocodeAddress}?address=$pinCode&key=$apiKey';
+    var apiURL = '${GoogleApiEndPoints.getGeocodeAddress}?address=$pinCode&key=$apiKey';
 
     for (var i = 0; i < countries!.length; i++) {
       final country = countries[i];
@@ -97,6 +96,42 @@ class GoogleApiServiceProvider extends GoogleApiService with AppMixin {
   }
 
   @override
+  Future<ResponseModel> getPlaceWithTextSearch({
+    required bool isLoading,
+    required String searchText,
+  }) async {
+    // Encode the search text for URL
+    final encodedSearch = Uri.encodeQueryComponent(searchText);
+
+    // Build the API URL - using Places Autocomplete API
+    final apiURL =
+        '${GoogleApiEndPoints.getPlaceWithTextSearch}?query=$encodedSearch&key=$apiKey&language=en';
+
+    final response = await http.get(Uri.parse(apiURL));
+    printLog(
+      this,
+      '\nMethod: ${response.request?.method}\nURL :- $apiURL\nStatus Code :- ${response.statusCode}\nResponse Data :- ${response.body}',
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['status'] == 'OK' || data['status'] == 'ZERO_RESULTS') {
+        return ResponseModel(
+          data: response.body,
+          hasError: false,
+          statusCode: response.statusCode,
+        );
+      }
+      return ResponseModel(
+        data: response.body,
+        hasError: true,
+        statusCode: response.statusCode,
+      );
+    } else {
+      throw Exception('Failed to load address');
+    }
+  }
+
+  @override
   Future<ResponseModel> getAddressByAutoCompleteSearch({
     required String searchText,
     required String placeType,
@@ -145,8 +180,7 @@ class GoogleApiServiceProvider extends GoogleApiService with AppMixin {
   Future<ResponseModel> getPlaceDetails({
     required String placeId,
   }) async {
-    final apiURL =
-        '${GoogleApiEndPoints.getPlaceDetails}?placeid=$placeId&key=$apiKey';
+    final apiURL = '${GoogleApiEndPoints.getPlaceDetails}?placeid=$placeId&key=$apiKey';
 
     final response = await http.get(Uri.parse(apiURL));
     printLog(
