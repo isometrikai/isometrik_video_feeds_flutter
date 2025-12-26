@@ -34,21 +34,25 @@ class DataSourceImpl extends DataSource {
     final ipAddress = await _localStorageManager.getValue(
         LocalStorageKeys.ipAddress, SavedValueDataType.string) as String;
 
-    final city = '';
+    final city = await _localStorageManager.getValue(
+        LocalStorageKeys.city, SavedValueDataType.string) as String;
 
-    final countryId = '';
+    final countryId = await _localStorageManager.getValue(
+        LocalStorageKeys.countryId, SavedValueDataType.string) as String;
 
     final cityId = '';
 
-    final state = '';
+    final state = await _localStorageManager.getValue(
+        LocalStorageKeys.state, SavedValueDataType.string) as String;
 
     final postalCode = '';
 
-    final country = '';
+    final country = await _localStorageManager.getValue(
+        LocalStorageKeys.country, SavedValueDataType.string) as String;
 
     final platForm = Utility.platFormType();
 
-    final timeZone = '';
+    final timeZone = DateTime.now().timeZoneName;
 
     final currencySymbol = await _localStorageManager.getValue(
         LocalStorageKeys.currencySymbol, SavedValueDataType.string) as String;
