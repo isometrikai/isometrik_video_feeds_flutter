@@ -465,7 +465,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       onVideoCompleted: _moveToNextMedia,
       postHelperCallBacks: this,
       videoProgressCallBack: (totalDurationMs, currentPositionMs) {
-        _watchDuration = currentPositionMs ~/ 1000; // Convert to seconds for analytics
+        _watchDuration =
+            currentPositionMs ~/ 1000; // Convert to seconds for analytics
         // Update progress (0.0 to 1.0) only if not seeking
         if (totalDurationMs > 0 && !_isSeeking) {
           _videoProgress.value = currentPositionMs / totalDurationMs;
@@ -557,7 +558,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
   }
 
-  Widget _buildVideoSeekbar(Color primaryColor) => ValueListenableBuilder<double>(
+  Widget _buildVideoSeekbar(Color primaryColor) =>
+      ValueListenableBuilder<double>(
         valueListenable: _videoProgress,
         builder: (context, progress, child) => SizedBox(
           height: IsrDimens.four,
@@ -583,7 +585,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         ),
       );
 
-  Widget _buildImageProgressIndicator(Color primaryColor) => ValueListenableBuilder<double>(
+  Widget _buildImageProgressIndicator(Color primaryColor) =>
+      ValueListenableBuilder<double>(
         valueListenable: _videoProgress,
         builder: (context, progress, child) => Container(
           height: IsrDimens.four,
@@ -614,7 +617,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       final duration = videoPlayerState.duration;
       if (duration != null) {
         final position = Duration(
-          milliseconds: (duration.inMilliseconds * _videoProgress.value).toInt(),
+          milliseconds:
+              (duration.inMilliseconds * _videoProgress.value).toInt(),
         );
         videoPlayerState.seekTo(position);
       }
@@ -818,7 +822,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                         kVideoType ||
                     widget.onVideoCompleted != null)
                   Positioned(
-                    bottom:
+                    bottom: widget.reelsConfig.overlayPadding
+                            ?.resolve(TextDirection.ltr)
+                            .bottom ??
                         0,
                     left: 0,
                     right: 0,
@@ -1710,7 +1716,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           onVideoCompleted: _moveToNextMedia,
           postHelperCallBacks: this,
           videoProgressCallBack: (totalDurationMs, currentPositionMs) {
-            _watchDuration = currentPositionMs ~/ 1000; // Convert to seconds for analytics
+            _watchDuration =
+                currentPositionMs ~/ 1000; // Convert to seconds for analytics
             // Update progress (0.0 to 1.0) only if not seeking
             if (totalDurationMs > 0 && !_isSeeking) {
               _videoProgress.value = currentPositionMs / totalDurationMs;
