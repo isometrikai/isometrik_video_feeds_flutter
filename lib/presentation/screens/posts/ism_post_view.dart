@@ -301,7 +301,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   ReelsConfig _getReelsConfig(TabDataModel tabData) => ReelsConfig(
       overlayPadding: widget.postConfig.postUIConfig?.overlayPadding,
-      autoMoveNextMedia: widget.postConfig.autoMoveToNextMedia || widget.tabConfig.autoMoveToNextPost,
+      autoMoveNextMedia: widget.postConfig.autoMoveToNextMedia ||
+          widget.tabConfig.autoMoveToNextPost,
       onTapPlace: (reelData, placeList) async {
         if (placeList.isListEmptyOrNull) return;
         if (placeList.length == 1) {

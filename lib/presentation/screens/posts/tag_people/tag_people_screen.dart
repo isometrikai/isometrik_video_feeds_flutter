@@ -27,17 +27,22 @@ class TagPeopleScreen extends StatefulWidget {
 class _TagPeopleScreenState extends State<TagPeopleScreen> {
   final PageController _pageController = PageController();
   int _currentIndex = 0;
-  final Map<int, List<MentionData>> _mediaMentionedMap = {}; // Mentioned for each media item
-  final Map<int, List<MentionData>> _mediaTaggedMap = {}; // Tagged for each media item
-  final Map<int, GlobalKey> _mentionedImageKeys = {}; // Unique keys for each image
-  final Map<int, GlobalKey> _mentionedVideoKeys = {}; // Unique keys for each video
+  final Map<int, List<MentionData>> _mediaMentionedMap =
+      {}; // Mentioned for each media item
+  final Map<int, List<MentionData>> _mediaTaggedMap =
+      {}; // Tagged for each media item
+  final Map<int, GlobalKey> _mentionedImageKeys =
+      {}; // Unique keys for each image
+  final Map<int, GlobalKey> _mentionedVideoKeys =
+      {}; // Unique keys for each video
   var _mediaDataList = <MediaData>[];
   var _mentionDataList = <MentionData>[];
 
   // Video player state
   final Map<String, VideoPlayerController> _videoControllers = {};
   final Map<String, bool> _videoInitializingStates = {};
-  final Map<String, bool> _videoVisibilityStates = {}; // Track visibility per video
+  final Map<String, bool> _videoVisibilityStates =
+      {}; // Track visibility per video
 
   @override
   void initState() {
@@ -177,7 +182,8 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
         appBar: IsmCustomAppBarWidget(
           backgroundColor: Colors.white,
           leading: IconButton(
-            icon: Icon(Icons.close, color: Colors.black, size: 24.responsiveDimension),
+            icon: Icon(Icons.close,
+                color: Colors.black, size: 24.responsiveDimension),
             onPressed: () => Navigator.pop(context),
           ),
           titleText: 'Tag people',
@@ -250,7 +256,8 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                                 _mediaDataList.length,
                                 (index) => AnimatedContainer(
                                   duration: const Duration(milliseconds: 300),
-                                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                                  margin:
+                                      const EdgeInsets.symmetric(horizontal: 4),
                                   width: _currentIndex == index ? 24 : 8,
                                   height: 8,
                                   decoration: BoxDecoration(
@@ -270,7 +277,8 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                             top: 16,
                             right: 16,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
                                 color: Colors.black.applyOpacity(0.7),
                                 borderRadius: BorderRadius.circular(16),
@@ -292,7 +300,8 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                             top: 16,
                             left: 16,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
                                 color: Colors.blue.applyOpacity(0.9),
                                 borderRadius: BorderRadius.circular(16),
@@ -300,7 +309,8 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(Icons.person, color: Colors.white, size: 16),
+                                  const Icon(Icons.person,
+                                      color: Colors.white, size: 16),
                                   const SizedBox(width: 4),
                                   Text(
                                     '${currentMentions.length}',
@@ -369,13 +379,14 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                               // Header
                               Text(
                                 IsrTranslationFile.taggedPeople,
-                                style:
-                                    IsrStyles.primaryText14.copyWith(fontWeight: FontWeight.w600),
+                                style: IsrStyles.primaryText14
+                                    .copyWith(fontWeight: FontWeight.w600),
                               ),
                               4.verticalSpace,
                               Text(
                                 IsrTranslationFile.listOfPeopleLinkedToThePost,
-                                style: IsrStyles.primaryText12.copyWith(color: '909090'.toColor()),
+                                style: IsrStyles.primaryText12
+                                    .copyWith(color: '909090'.toColor()),
                               ),
                               16.verticalSpace,
 
@@ -399,8 +410,11 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                                               person.avatarUrl ?? '',
                                               height: 48.responsiveDimension,
                                               width: 48.responsiveDimension,
-                                              border: Border.all(color: '#DBDBDB'.toColor()),
-                                              name: person.name ?? person.username ?? 'User',
+                                              border: Border.all(
+                                                  color: '#DBDBDB'.toColor()),
+                                              name: person.name ??
+                                                  person.username ??
+                                                  'User',
                                               isProfileImage: true,
                                             )
                                           : CircleAvatar(
@@ -408,33 +422,44 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                                               backgroundColor: '#E5F0FB'.color,
                                               child: Text(
                                                 Utility.getInitials(
-                                                  firstName:
-                                                      person.name?.split(' ').firstOrNull ?? '',
-                                                  lastName:
-                                                      person.name?.split(' ').lastOrNull ?? '',
+                                                  firstName: person.name
+                                                          ?.split(' ')
+                                                          .firstOrNull ??
+                                                      '',
+                                                  lastName: person.name
+                                                          ?.split(' ')
+                                                          .lastOrNull ??
+                                                      '',
                                                 ),
-                                                style: IsrStyles.primaryText14.copyWith(
+                                                style: IsrStyles.primaryText14
+                                                    .copyWith(
                                                   color: IsrColors.appColor,
                                                   fontWeight: FontWeight.w600,
                                                 ),
                                               ),
                                             ),
                                       title: Text(
-                                        person.name ?? person.username ?? 'Unknown User',
-                                        style: IsrStyles.primaryText14
-                                            .copyWith(fontWeight: FontWeight.w600),
+                                        person.name ??
+                                            person.username ??
+                                            'Unknown User',
+                                        style: IsrStyles.primaryText14.copyWith(
+                                            fontWeight: FontWeight.w600),
                                       ),
                                       subtitle: person.username != null
                                           ? Text(
                                               person.username!,
                                               style: IsrStyles.primaryText12
-                                                  .copyWith(color: '#767676'.toColor()),
+                                                  .copyWith(
+                                                      color:
+                                                          '#767676'.toColor()),
                                             )
                                           : null,
                                       trailing: TapHandler(
                                         onTap: () {
                                           setState(() {
-                                            _mediaMentionedMap[_currentIndex + 1]?.remove(person);
+                                            _mediaMentionedMap[
+                                                    _currentIndex + 1]
+                                                ?.remove(person);
                                           });
                                         },
                                         child: Icon(
@@ -469,8 +494,8 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                             .map((tag) => Container(
                                   margin: const EdgeInsets.only(bottom: 8),
                                   child: ListTile(
-                                    contentPadding:
-                                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 4),
                                     tileColor: Colors.blue[50],
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
@@ -484,13 +509,16 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                                     ),
                                     title: Text(
                                       tag.tag!,
-                                      style: const TextStyle(fontWeight: FontWeight.w500),
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.w500),
                                     ),
                                     trailing: IconButton(
-                                      icon: const Icon(Icons.close, color: Colors.red, size: 20),
+                                      icon: const Icon(Icons.close,
+                                          color: Colors.red, size: 20),
                                       onPressed: () {
                                         setState(() {
-                                          _mediaTaggedMap[_currentIndex]?.remove(tag);
+                                          _mediaTaggedMap[_currentIndex]
+                                              ?.remove(tag);
                                         });
                                       },
                                     ),
@@ -535,13 +563,15 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                 imageUrl,
                 fit: BoxFit.cover,
                 borderRadius: BorderRadius.circular(12),
-                key: _mentionedImageKeys[mediaIndex], // Use unique key for each image
+                key: _mentionedImageKeys[
+                    mediaIndex], // Use unique key for each image
               )
             : AppImage.network(
                 imageUrl,
                 fit: BoxFit.cover,
                 borderRadius: BorderRadius.circular(12),
-                key: _mentionedImageKeys[mediaIndex], // Use unique key for each image
+                key: _mentionedImageKeys[
+                    mediaIndex], // Use unique key for each image
               ),
       ),
     );
@@ -642,7 +672,9 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
               GestureDetector(
                 onTap: () => _playPause(controller),
                 child: Icon(
-                  controller.value.isPlaying ? Icons.pause_circle : Icons.play_circle_fill,
+                  controller.value.isPlaying
+                      ? Icons.pause_circle
+                      : Icons.play_circle_fill,
                   size: 64,
                   color: Colors.white70,
                 ),
@@ -686,7 +718,8 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
     }
   }
 
-  void _handleImageTap(TapUpDetails? details, BoxConstraints? constraints, int mediaIndex) async {
+  void _handleImageTap(TapUpDetails? details, BoxConstraints? constraints,
+      int mediaIndex) async {
     // Calculate relative position (0.0 to 1.0)
     final relativePosition = constraints == null || details == null
         ? null
@@ -708,14 +741,15 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
             ))
         .toList();
 
-    final taggedUserList =
-        await IsrAppNavigator.goToSearchUserScreen(context, socialUserList: selectedUsers);
+    final taggedUserList = await IsrAppNavigator.goToSearchUserScreen(context,
+        socialUserList: selectedUsers);
 
     if (taggedUserList.isEmptyOrNull) return;
     _setMentionedUserPosition(taggedUserList, mediaIndex, relativePosition);
   }
 
-  void _handleVideoTap(TapUpDetails? details, BoxConstraints? constraints, int mediaIndex) async {
+  void _handleVideoTap(TapUpDetails? details, BoxConstraints? constraints,
+      int mediaIndex) async {
     // Calculate relative position (0.0 to 1.0)
     final relativePosition = constraints == null || details == null
         ? null
@@ -737,8 +771,8 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
             ))
         .toList();
 
-    final taggedUserList =
-        await IsrAppNavigator.goToSearchUserScreen(context, socialUserList: selectedUsers);
+    final taggedUserList = await IsrAppNavigator.goToSearchUserScreen(context,
+        socialUserList: selectedUsers);
 
     if (taggedUserList.isEmptyOrNull) return;
     _setMentionedUserPosition(taggedUserList, mediaIndex, relativePosition);
@@ -773,13 +807,15 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
       _mediaMentionedMap[pos] = mentionList;
     }
 
-    debugPrint('Updated media mentions for position $pos: ${taggedUserList.length} users');
+    debugPrint(
+        'Updated media mentions for position $pos: ${taggedUserList.length} users');
     debugPrint(
         'media mentions....${jsonEncode(_mediaMentionedMap.values.map((list) => list.map((mention) => mention.toJson()).toList()).toList())}');
     setState(() {});
   }
 
-  void _setTagPosition(List<HashTagData> taggedList, int mediaIndex, Offset? position) {
+  void _setTagPosition(
+      List<HashTagData> taggedList, int mediaIndex, Offset? position) {
     for (var element in taggedList) {
       final mentionData = MentionData(
         mediaPosition: position == null

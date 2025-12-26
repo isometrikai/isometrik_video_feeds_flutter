@@ -95,9 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
         ),
-    postConfig: const isr.PostConfig(
-      autoMoveToNextMedia: true
-    ),
+        postConfig: const isr.PostConfig(autoMoveToNextMedia: true),
       );
 
   isr.ReelsWidgetBuilder buildFooter(TimeLineData postData) =>

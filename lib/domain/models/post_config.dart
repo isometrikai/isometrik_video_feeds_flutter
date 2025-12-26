@@ -12,7 +12,6 @@ class PostConfig {
   final PostCallBackConfig? postCallBackConfig;
   final bool autoMoveToNextMedia;
 
-
   PostConfig copyWith({
     PostUIConfig? postUIConfig,
     PostCallBackConfig? postCallBackConfig,
