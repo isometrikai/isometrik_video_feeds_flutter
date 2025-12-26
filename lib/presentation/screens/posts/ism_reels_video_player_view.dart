@@ -506,17 +506,27 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   Widget _buildMediaIndicators(int currentPage) {
     final primaryColor = Theme.of(context).primaryColor;
+    final mediaCount = _reelData.mediaMetaDataList.length;
 
-    return Row(
-      mainAxisSize: MainAxisSize.max,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(
-        _reelData.mediaMetaDataList.length,
-        (index) => Expanded(
-          child: _buildSingleMediaIndicator(
-            index: index,
-            currentPage: currentPage,
-            primaryColor: primaryColor,
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: IsrDimens.eight),
+      child: Row(
+        mainAxisSize: MainAxisSize.max,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(
+          mediaCount,
+          (index) => Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(
+                left: index == 0 ? 0 : IsrDimens.two,
+                right: index == mediaCount - 1 ? 0 : IsrDimens.two,
+              ),
+              child: _buildSingleMediaIndicator(
+                index: index,
+                currentPage: currentPage,
+                primaryColor: primaryColor,
+              ),
+            ),
           ),
         ),
       ),
@@ -531,13 +541,17 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     final isCurrentMedia = index == currentPage;
     final isCompletedMedia = index < currentPage;
     final isVideo = _reelData.mediaMetaDataList[index].mediaType == kVideoType;
+    final borderRadius = BorderRadius.circular(IsrDimens.two);
 
     // For completed media segments - show solid color
     if (isCompletedMedia) {
       return Container(
         height: IsrDimens.four,
         width: double.infinity,
-        color: primaryColor,
+        decoration: BoxDecoration(
+          color: primaryColor,
+          borderRadius: borderRadius,
+        ),
       );
     }
 
@@ -546,56 +560,79 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       return Container(
         height: IsrDimens.four,
         width: double.infinity,
-        color: IsrColors.colorD9D9D9,
+        decoration: BoxDecoration(
+          color: IsrColors.white.changeOpacity(0.3),
+          borderRadius: borderRadius,
+        ),
       );
     }
 
     // For current media - show progress bar or seekbar
     if (isVideo) {
-      return _buildVideoSeekbar(primaryColor);
+      return _buildVideoSeekbar(primaryColor, borderRadius);
     } else {
-      return _buildImageProgressIndicator(primaryColor);
+      return _buildImageProgressIndicator(primaryColor, borderRadius);
     }
   }
 
-  Widget _buildVideoSeekbar(Color primaryColor) =>
+  Widget _buildVideoSeekbar(Color primaryColor, BorderRadius borderRadius) =>
       ValueListenableBuilder<double>(
         valueListenable: _videoProgress,
-        builder: (context, progress, child) => SizedBox(
+        builder: (context, progress, child) => Container(
           height: IsrDimens.four,
-          child: SliderTheme(
-            data: SliderThemeData(
-              trackHeight: IsrDimens.four,
-              trackShape: const RectangularSliderTrackShape(),
-              thumbShape: RoundSliderThumbShape(
-                enabledThumbRadius: IsrDimens.one,
+          decoration: BoxDecoration(
+            color: IsrColors.white.changeOpacity(0.3),
+            borderRadius: borderRadius,
+          ),
+          child: ClipRRect(
+            borderRadius: borderRadius,
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: progress.clamp(0.0, 1.0),
+              child: GestureDetector(
+                onHorizontalDragStart: (_) => _onSeekStart(),
+                onHorizontalDragEnd: (_) => _onSeekEnd(),
+                onHorizontalDragUpdate: (details) {
+                  final box = context.findRenderObject() as RenderBox;
+                  final localPosition =
+                      box.globalToLocal(details.globalPosition);
+                  final newProgress =
+                      (localPosition.dx / box.size.width).clamp(0.0, 1.0);
+                  _onSeekVideo(newProgress);
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: primaryColor,
+                    borderRadius: borderRadius,
+                  ),
+                ),
               ),
-              overlayShape: SliderComponentShape.noOverlay,
-              activeTrackColor: primaryColor,
-              inactiveTrackColor: IsrColors.colorD9D9D9,
-              thumbColor: primaryColor,
-            ),
-            child: Slider(
-              value: progress.clamp(0.0, 1.0),
-              onChanged: _onSeekVideo,
-              onChangeStart: (_) => _onSeekStart(),
-              onChangeEnd: (_) => _onSeekEnd(),
             ),
           ),
         ),
       );
 
-  Widget _buildImageProgressIndicator(Color primaryColor) =>
+  Widget _buildImageProgressIndicator(
+          Color primaryColor, BorderRadius borderRadius) =>
       ValueListenableBuilder<double>(
         valueListenable: _videoProgress,
         builder: (context, progress, child) => Container(
           height: IsrDimens.four,
-          color: IsrColors.colorD9D9D9,
-          child: FractionallySizedBox(
-            alignment: Alignment.centerLeft,
-            widthFactor: progress.clamp(0.0, 1.0),
-            child: Container(
-              color: primaryColor,
+          decoration: BoxDecoration(
+            color: IsrColors.white.changeOpacity(0.3),
+            borderRadius: borderRadius,
+          ),
+          child: ClipRRect(
+            borderRadius: borderRadius,
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: progress.clamp(0.0, 1.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: primaryColor,
+                  borderRadius: borderRadius,
+                ),
+              ),
             ),
           ),
         ),
