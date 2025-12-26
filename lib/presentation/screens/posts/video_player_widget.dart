@@ -192,7 +192,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       _maxWatchPosition = position;
     }
 
-    widget.videoProgressCallBack?.call(duration.inSeconds, position.inSeconds);
+    widget.videoProgressCallBack
+        ?.call(duration.inMilliseconds, position.inMilliseconds);
 
     // 1. Log "Video Started" event when video actually starts playing (position > 0)
     if (!_hasLoggedVideoStarted &&
@@ -341,6 +342,29 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       }
       _logVideoStartedEvent();
     }
+  }
+
+  /// Seek to a specific position in the video
+  Future<void> seekTo(Duration position) async {
+    if (_isDisposed) return;
+
+    if (_videoPlayerController != null &&
+        _videoPlayerController!.isInitialized &&
+        !_videoPlayerController!.isDisposed) {
+      await _videoPlayerController!.seekTo(position);
+    }
+  }
+
+  /// Get the total duration of the video
+  Duration? get duration {
+    if (_isDisposed) return null;
+
+    if (_videoPlayerController != null &&
+        _videoPlayerController!.isInitialized &&
+        !_videoPlayerController!.isDisposed) {
+      return _videoPlayerController!.duration;
+    }
+    return null;
   }
 
   // Check initial visibility after first frame

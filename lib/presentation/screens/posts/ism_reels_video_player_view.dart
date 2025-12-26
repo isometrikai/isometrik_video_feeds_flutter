@@ -133,11 +133,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   Duration _imageElapsed = Duration.zero;
   bool _isImagePaused = false;
 
-  bool _hasLoggedImageViewEvent = false;
+  final bool _hasLoggedImageViewEvent = false;
   var _watchDuration = 0;
 
   // Video progress tracking
   final ValueNotifier<double> _videoProgress = ValueNotifier<double>(0.0);
+  bool _isSeeking = false; // Flag to prevent progress updates during seeking
 
   @override
   void initState() {
@@ -463,11 +464,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       },
       onVideoCompleted: _moveToNextMedia,
       postHelperCallBacks: this,
-      videoProgressCallBack: (totalDuration, currentPosition) {
-        _watchDuration = currentPosition;
-        // Update progress (0.0 to 1.0)
-        if (totalDuration > 0) {
-          _videoProgress.value = currentPosition / totalDuration;
+      videoProgressCallBack: (totalDurationMs, currentPositionMs) {
+        _watchDuration = currentPositionMs ~/ 1000; // Convert to seconds for analytics
+        // Update progress (0.0 to 1.0) only if not seeking
+        if (totalDurationMs > 0 && !_isSeeking) {
+          _videoProgress.value = currentPositionMs / totalDurationMs;
         }
       },
     );
@@ -502,45 +503,133 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
   }
 
-  Widget _buildMediaIndicators(int currentPage) => Row(
-        mainAxisSize: MainAxisSize.max,
-        mainAxisAlignment: MainAxisAlignment.center,
-        spacing: IsrDimens.four,
-        children: List.generate(
-          _reelData.mediaMetaDataList.length,
-          (index) => Expanded(
-            child: Container(
-              height: IsrDimens.three,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                shape: BoxShape.rectangle,
-                color: index < currentPage
-                    ? IsrColors.white
-                    : IsrColors.white.changeOpacity(0.2),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(IsrDimens.three),
-                  topRight: Radius.circular(IsrDimens.three),
-                ),
+  Widget _buildMediaIndicators(int currentPage) {
+    final primaryColor = Theme.of(context).primaryColor;
+
+    return Row(
+      mainAxisSize: MainAxisSize.max,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(
+        _reelData.mediaMetaDataList.length,
+        (index) => Expanded(
+          child: _buildSingleMediaIndicator(
+            index: index,
+            currentPage: currentPage,
+            primaryColor: primaryColor,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSingleMediaIndicator({
+    required int index,
+    required int currentPage,
+    required Color primaryColor,
+  }) {
+    final isCurrentMedia = index == currentPage;
+    final isCompletedMedia = index < currentPage;
+    final isVideo = _reelData.mediaMetaDataList[index].mediaType == kVideoType;
+
+    // For completed media segments - show solid color
+    if (isCompletedMedia) {
+      return Container(
+        height: IsrDimens.four,
+        width: double.infinity,
+        color: primaryColor,
+      );
+    }
+
+    // For upcoming media segments - show dim color
+    if (!isCurrentMedia) {
+      return Container(
+        height: IsrDimens.four,
+        width: double.infinity,
+        color: IsrColors.colorD9D9D9,
+      );
+    }
+
+    // For current media - show progress bar or seekbar
+    if (isVideo) {
+      return _buildVideoSeekbar(primaryColor);
+    } else {
+      return _buildImageProgressIndicator(primaryColor);
+    }
+  }
+
+  Widget _buildVideoSeekbar(Color primaryColor) => ValueListenableBuilder<double>(
+        valueListenable: _videoProgress,
+        builder: (context, progress, child) => SizedBox(
+          height: IsrDimens.four,
+          child: SliderTheme(
+            data: SliderThemeData(
+              trackHeight: IsrDimens.four,
+              trackShape: const RectangularSliderTrackShape(),
+              thumbShape: RoundSliderThumbShape(
+                enabledThumbRadius: IsrDimens.one,
               ),
-              child: (currentPage == index)
-                  ? ValueListenableBuilder<double>(
-                      valueListenable: _videoProgress,
-                      builder: (context, progress, child) =>
-                          LinearProgressIndicator(
-                        backgroundColor: IsrColors.transparent,
-                        color: IsrColors.white,
-                        value: progress,
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(IsrDimens.three),
-                          topRight: Radius.circular(IsrDimens.three),
-                        ),
-                      ),
-                    )
-                  : null,
+              overlayShape: SliderComponentShape.noOverlay,
+              activeTrackColor: primaryColor,
+              inactiveTrackColor: IsrColors.colorD9D9D9,
+              thumbColor: primaryColor,
+            ),
+            child: Slider(
+              value: progress.clamp(0.0, 1.0),
+              onChanged: _onSeekVideo,
+              onChangeStart: (_) => _onSeekStart(),
+              onChangeEnd: (_) => _onSeekEnd(),
             ),
           ),
         ),
       );
+
+  Widget _buildImageProgressIndicator(Color primaryColor) => ValueListenableBuilder<double>(
+        valueListenable: _videoProgress,
+        builder: (context, progress, child) => Container(
+          height: IsrDimens.four,
+          color: IsrColors.colorD9D9D9,
+          child: FractionallySizedBox(
+            alignment: Alignment.centerLeft,
+            widthFactor: progress.clamp(0.0, 1.0),
+            child: Container(
+              color: primaryColor,
+            ),
+          ),
+        ),
+      );
+
+  void _onSeekStart() {
+    _isSeeking = true;
+    // Pause video while seeking
+    final key = _getCurrentVideoPlayerKey();
+    final videoPlayerState = VideoPlayerWidget.of(key);
+    videoPlayerState?.pause();
+  }
+
+  void _onSeekEnd() {
+    // Seek to the final position before resuming
+    final key = _getCurrentVideoPlayerKey();
+    final videoPlayerState = VideoPlayerWidget.of(key);
+    if (videoPlayerState != null) {
+      final duration = videoPlayerState.duration;
+      if (duration != null) {
+        final position = Duration(
+          milliseconds: (duration.inMilliseconds * _videoProgress.value).toInt(),
+        );
+        videoPlayerState.seekTo(position);
+      }
+    }
+    // Delay resetting the flag to allow seek to complete
+    Future.delayed(const Duration(milliseconds: 100), () {
+      _isSeeking = false;
+      videoPlayerState?.play();
+    });
+  }
+
+  void _onSeekVideo(double value) {
+    // Only update the progress value during seeking - don't seek video yet
+    _videoProgress.value = value;
+  }
 
   void _callOnTapMentionData(List<MentionMetaData> mentionDataList) {
     if (widget.onTapMentionTag == null) return;
@@ -607,7 +696,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     final placeList = _reelData.placeDataList ?? [];
     if (placeList.isListEmptyOrNull) return const SizedBox.shrink();
 
-    return InkWell(
+    return GestureDetector(
       onTap: () async {
         await widget.reelsConfig.onTapPlace?.call(
           _reelData,
@@ -638,6 +727,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       style: IsrStyles.white14.copyWith(
         fontWeight: FontWeight.w600,
         color: IsrColors.white,
+        decoration: TextDecoration.none,
       ),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
@@ -728,9 +818,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                         kVideoType ||
                     widget.onVideoCompleted != null)
                   Positioned(
-                    bottom: widget.reelsConfig.overlayPadding
-                            ?.resolve(TextDirection.ltr)
-                            .bottom ??
+                    bottom:
                         0,
                     left: 0,
                     right: 0,
@@ -1245,14 +1333,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                       ),
                                     ),
                                   );
-                                } catch (e, stackTrace) {
-                                  // Catch any unexpected errors and log them
-                                  debugPrint(
-                                      '❌ Error building description widget: $e');
-                                  debugPrint('   Post ID: ${_reelData.postId}');
-                                  debugPrint(
-                                      '   Description length: ${_postDescription.length}');
-                                  debugPrint('   Stack trace: $stackTrace');
+                                } catch (_) {
                                   // Return empty widget instead of showing grey box
                                   return const SizedBox.shrink();
                                 }
@@ -1628,12 +1709,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           },
           onVideoCompleted: _moveToNextMedia,
           postHelperCallBacks: this,
-          videoProgressCallBack: (totalDuration, currentPosition) {
-            _watchDuration = currentPosition;
-            // Update progress (0.0 to 1.0)
-            if (totalDuration > 0) {
-              _videoProgress.value = currentPosition / totalDuration;
-              debugPrint('Video Progress: ${_videoProgress.value}');
+          videoProgressCallBack: (totalDurationMs, currentPositionMs) {
+            _watchDuration = currentPositionMs ~/ 1000; // Convert to seconds for analytics
+            // Update progress (0.0 to 1.0) only if not seeking
+            if (totalDurationMs > 0 && !_isSeeking) {
+              _videoProgress.value = currentPositionMs / totalDurationMs;
             }
           },
         ),
