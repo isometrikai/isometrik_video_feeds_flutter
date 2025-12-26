@@ -14,39 +14,49 @@ class SocialApiServiceProvider extends SocialApiService {
   final dummyToken =
       'Bearer eyJhbGciOiJSU0EtT0FFUCIsImN0eSI6IkpXVCIsImVuYyI6IkExMjhHQ00iLCJ0eXAiOiJKV1QifQ.eE9tX3TmagLqO0ulNIxl5RdYLwUfXfVTp3m9rZSyP9GcFNt5HDjuDo51ZRG7XWbIHhJFB9ajDIT_gL73DeizPi0-iLdmY7fkScibyISGp2aJEK__qHNGV6-Xzru3thkBxCFnBhQcW5bF7xFOyt_nGwMiSRziu6S1SEmfzhLXaw4.Imi_glmUC7CowCcz.tPsw-U3axEoxNeqsriWvv36OcQwuRjeXdQ68bsyNt76ody6exlo_Z7Lp8im6Hvrzx9JVNsELV3fjsO8iMtHUgwC7q4M1fAsgrfykgI6N7d4kX01daA2UfTLLW7MmV5DqOdmZOhWqNuOSgIx_1QSBXLfF-wLU-zyq96GDBXmbNZ3dcsy551lhYG2_qIdMcoWwzotc7J4EsEJ_N3Wg_IqTRuQO5_61Y3OD6SdKP4sPHPWHshYP4LiYrVrly-bcZHcT-PNK8PM9BpyNK1kisvlXqgSLwfAQtcZLiILU8Cr_EQKE0IbzPXlRqhbl5dqpdLilhCluncD1S2uNzIMwM38VoG-vK1KNLD_qAReNwYZqxPHbUHIKhIEIj6AZYJz3gGUpuKWVsHZO2A7-Ulq2RN5nX9HqfPZCfOHvtZWXbPocefGq8osm4YRAlDyIhjffulaDsQKlTH4EoyPx9OiluvWrdiQzXIq8v4aGWChieiI2a_q7PJwuxIWPYLwmkXgkVU6GVSFYFOTq7DlfWNdaOxCNjGZeCC4ukb1Gl9_5DeVTJol9UAh-urGsxBgoiHvyBmflZgi_KfMM5Vyxj58GFUCgf6fkroixwbSptNUl-2jYobh_6VawqPvffvQ3mk70BxNjxAHWzbIuElluhwbEjNMSDz401xWwvq4brmVUBVKkaPOmq70BWmHNNajQYh9jKhe2GK_UwY0XlXSu9npSRZcoFUiscrSNpNujLWxASQs4UdtIK3YKlpvdZyTSv4AWFawrsNnlkeg4YUUZTyzCNRVH-qMWU5XAOvQLr_oVjAHMTf8AUknMO60R68oL8EqHgOkGva1xknzjKWrQlbpLCkn2T08x3pipKFAH5txrbxeniLUM-EuN05ZLzytmdWFpMagCNXSRQhTLZGYhq8C3WsZ1GiyXO7Ixh_KxtP6YQgkpUgA5rIi3RwZUCK7en1iqjexVRj0KuRmfa-xEmsfwR7A4sfzh60SPzS8TBd9hIg07ZxNbMs5UlfdzdAA9UzEvjOq06uHVyZO7gsFjhViupMPM0i_LJbUtWmFwMSZzyK6f27sZ0r9nAlJAllGnEM7m_mfzdYFeG0Itin3kORkKGRw9z8zmTjAslhEIp5TUkQ-6HTVM-JZEes9ljr_aKCwB8kjjkYVi2cd88S90QFrEWrPH4Tp3KhnajFAfeJbQHWRNWAQxEXp_7h4gixXKn0C8EBZl9LdEhdnFOTWCDUG53QvnrUeJb_DQv-_j5BMTtR3BcOruFcF6RpKESS-zg-d8LRzgZ2GpMvgyMrTF9CVlAqG3hh7h3954GC2PrO4LK79fFhzAyMFLmTz_en5KwUDifNWgyO1D-e0MlNz7t9r0FBi40GCYmGbqsc1kIrbQOkkZrfGPpMZ-3AP3IjB2J6s0lAsb0ZgkjZwm-7s0j09m8oEJxz-P5gaYzp71p5DcUmoa3C5YujC4GEDGTSv3MPDiQ1O-x6MewbSO3tqL4BUKrxTzgMEfk50nUKzp2iZwf7hN5Ha152RwDTDRMJEEidjPN7o-N2QVIiRSsNkoR662Mw1TP1jBIttnEkAxXKS3elqKeQmOznpMqCLW_6ZF-vJ0_t4RHL3LXuC3QtJCBmTQ55URRTKRjY1Tl_8mzRyqRt37J0hvr6fs-5zOdCxZA0pBtRDhFUpjmJafEb5xk-VMUtoQdeS1H1DptcxMf_0STiN4cZFZ_nZEc_oR8H1yHYkhR575g7y9REaTAM322zNP1hXq5o5fLCVGopFaa-Jz.b9LxbqxdJnZotm12ZAwXsQ';
 
+  Future<Map<String, String>> _getHeaders(
+    Header header,
+  ) async {
+    final appVersion = await Utility.getAppVersion();
+
+    return {
+      if (AppConstants.headerAccept.isEmptyOrNull == false) 'Accept': AppConstants.headerAccept,
+      if (AppConstants.headerContentType.isEmptyOrNull == false)
+        'Content-Type': AppConstants.headerContentType,
+      if (header.accessToken.isEmptyOrNull == false) 'Authorization': header.accessToken,
+      if (header.language.isEmptyOrNull == false) 'lan': header.language,
+      if (header.city.isEmptyOrNull == false) 'city': header.city,
+      if (header.state.isEmptyOrNull == false) 'state': header.state,
+      if (header.country.isEmptyOrNull == false) 'country': header.country,
+      if (header.latitude != 0) 'latitude': header.latitude.toString(),
+      if (header.longitude != 0) 'longitude': header.longitude.toString(),
+      if (header.ipAddress.isEmptyOrNull == false) 'ipaddress': header.ipAddress,
+      if (appVersion.isEmptyOrNull == false) 'version': appVersion,
+      if (header.currencySymbol.isEmptyOrNull == false) 'currencySymbol': header.currencySymbol,
+      if (header.currencyCode.isEmptyOrNull == false) 'currencyCode': header.currencyCode,
+      if (header.platForm.platformText.isEmptyOrNull == false)
+        'platform': header.platForm.platformText,
+      if (AppConstants.tenantId.isEmptyOrNull == false) 'x-tenant-id': AppConstants.tenantId,
+      if (AppConstants.projectId.isEmptyOrNull == false) 'x-project-id': AppConstants.projectId,
+    };
+  }
+
   @override
   Future<ResponseModel> createPost({
     required bool isLoading,
     required Header header,
     Map<String, dynamic>? createPostRequest,
-  }) async {
-    final appVersion = await Utility.getAppVersion();
-    return await networkClient.makeRequest(
-      SocialApiEndPoints.postCreatePost,
-      NetworkRequestType.post,
-      createPostRequest?.removeEmptyValues(),
-      null,
-      {
-        'Accept': AppConstants.headerAccept,
-        'Content-Type': AppConstants.headerContentType,
-        'Authorization': header.accessToken,
-        'lan': header.language,
-        'city': header.city,
-        'state': header.state,
-        'country': header.country,
-        'latitude': header.latitude.toString(),
-        'longitude': header.longitude.toString(),
-        'ipaddress': header.ipAddress,
-        'version': appVersion,
-        'currencySymbol': header.currencySymbol,
-        'currencyCode': header.currencyCode,
-        'platform': header.platForm.platformText,
-        'x-tenant-id': AppConstants.tenantId,
-        'x-project-id': AppConstants.projectId,
-      },
-      isLoading,
-    );
-  }
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.postCreatePost,
+          NetworkRequestType.post,
+          createPostRequest?.removeEmptyValues(),
+          null,
+          headers,
+          isLoading,
+        ),
+      );
 
   @override
   Future<ResponseModel> editPost({
@@ -54,30 +64,17 @@ class SocialApiServiceProvider extends SocialApiService {
     required Header header,
     required String postId,
     Map<String, dynamic>? editPostRequest,
-  }) async =>
-      await networkClient.makeRequest(
-        SocialApiEndPoints.putEditPost,
-        NetworkRequestType.put,
-        editPostRequest?.removeEmptyValues(),
-        null,
-        {
-          'Accept': AppConstants.headerAccept,
-          'Content-Type': AppConstants.headerContentType,
-          'authorization': header.accessToken,
-          'lan': header.language,
-          'currencySymbol': header.currencySymbol,
-          'currencyCode': header.currencyCode,
-          'platform': header.platForm.platformText,
-          'x-tenant-id': AppConstants.tenantId,
-          'x-project-id': AppConstants.projectId,
-          'city': header.city,
-          'state': header.state,
-          'country': header.country,
-          'latitude': header.latitude.toString(),
-          'longitude': header.longitude.toString(),
-        },
-        isLoading,
-        pathSegments: [postId],
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.putEditPost,
+          NetworkRequestType.put,
+          editPostRequest?.removeEmptyValues(),
+          null,
+          headers,
+          isLoading,
+          pathSegments: [postId],
+        ),
       );
 
   @override
@@ -86,30 +83,19 @@ class SocialApiServiceProvider extends SocialApiService {
     required Header header,
     required int page,
     required int pageLimit,
-  }) async =>
-      await networkClient.makeRequest(
-        SocialApiEndPoints.getFollowingPosts,
-        NetworkRequestType.get,
-        null,
-        {
-          'offset': page.toString(),
-          'limit': pageLimit.toString(),
-        },
-        {
-          'Accept': AppConstants.headerAccept,
-          'Content-Type': AppConstants.headerContentType,
-          'Authorization': header.accessToken,
-          'language': header.language,
-          'currencySymbol': header.currencySymbol,
-          'currencyCode': header.currencyCode,
-          'platform': header.platForm.platformText,
-          'city': header.city,
-          'state': header.state,
-          'country': header.country,
-          'latitude': header.latitude.toString(),
-          'longitude': header.longitude.toString(),
-        },
-        isLoading,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.getFollowingPosts,
+          NetworkRequestType.get,
+          null,
+          {
+            'offset': page.toString(),
+            'limit': pageLimit.toString(),
+          },
+          headers,
+          isLoading,
+        ),
       );
 
   @override
@@ -118,32 +104,19 @@ class SocialApiServiceProvider extends SocialApiService {
     required Header header,
     required int page,
     required int pageLimit,
-  }) async =>
-      await networkClient.makeRequest(
-        SocialApiEndPoints.getTimeLinePosts,
-        NetworkRequestType.get,
-        null,
-        {
-          'page': page.toString(),
-          'page_size': pageLimit.toString(),
-        },
-        {
-          'Accept': AppConstants.headerAccept,
-          'Content-Type': AppConstants.headerContentType,
-          'Authorization': header.accessToken,
-          'lan': header.language,
-          'currencySymbol': header.currencySymbol,
-          'currencyCode': header.currencyCode,
-          'platform': header.platForm.platformText,
-          'city': header.city,
-          'state': header.state,
-          'country': header.country,
-          'latitude': header.latitude.toString(),
-          'longitude': header.longitude.toString(),
-          'x-tenant-id': AppConstants.tenantId,
-          'x-project-id': AppConstants.projectId,
-        },
-        isLoading,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.getTimeLinePosts,
+          NetworkRequestType.get,
+          null,
+          {
+            'page': page.toString(),
+            'page_size': pageLimit.toString(),
+          },
+          headers,
+          isLoading,
+        ),
       );
 
   @override
@@ -152,32 +125,19 @@ class SocialApiServiceProvider extends SocialApiService {
     required Header header,
     required int page,
     required int pageLimit,
-  }) async =>
-      await networkClient.makeRequest(
-        SocialApiEndPoints.getTrendingPosts,
-        NetworkRequestType.get,
-        null,
-        {
-          'page': page.toString(),
-          'page_size': pageLimit.toString(),
-        },
-        {
-          'Accept': AppConstants.headerAccept,
-          'Content-Type': AppConstants.headerContentType,
-          'Authorization': header.accessToken,
-          'language': header.language,
-          'currencySymbol': header.currencySymbol,
-          'currencyCode': header.currencyCode,
-          'platform': header.platForm.platformText,
-          'city': header.city,
-          'state': header.state,
-          'country': header.country,
-          'latitude': header.latitude.toString(),
-          'longitude': header.longitude.toString(),
-          'x-tenant-id': header.xTenantId,
-          'x-project-id': header.xProjectId,
-        },
-        isLoading,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.getTrendingPosts,
+          NetworkRequestType.get,
+          null,
+          {
+            'page': page.toString(),
+            'page_size': pageLimit.toString(),
+          },
+          headers,
+          isLoading,
+        ),
       );
 
   @override
@@ -186,37 +146,19 @@ class SocialApiServiceProvider extends SocialApiService {
     required String followingId,
     required Header header,
     required FollowAction followAction,
-  }) async {
-    final appVersion = await Utility.getAppVersion();
+  }) {
     final map = {
       'following_id': followingId,
     };
-    return await networkClient.makeRequest(
-      SocialApiEndPoints.postFollowUser,
-      followAction == FollowAction.follow
-          ? NetworkRequestType.post
-          : NetworkRequestType.delete,
-      followAction == FollowAction.follow ? map : null,
-      followAction == FollowAction.unfollow ? map : null,
-      {
-        'Accept': AppConstants.headerAccept,
-        'Content-Type': AppConstants.headerContentType,
-        'Authorization': header.accessToken,
-        'lan': header.language,
-        'ipaddress': header.ipAddress,
-        'version': appVersion,
-        'currencySymbol': header.currencySymbol,
-        'currencyCode': header.currencyCode,
-        'platform': header.platForm.platformText,
-        'city': header.city,
-        'state': header.state,
-        'country': header.country,
-        'latitude': header.latitude.toString(),
-        'longitude': header.longitude.toString(),
-        'x-tenant-id': AppConstants.tenantId,
-        'x-project-id': AppConstants.projectId,
-      },
-      isLoading,
+    return _getHeaders(header).then(
+      (headers) => networkClient.makeRequest(
+        SocialApiEndPoints.postFollowUser,
+        followAction == FollowAction.follow ? NetworkRequestType.post : NetworkRequestType.delete,
+        followAction == FollowAction.follow ? map : null,
+        followAction == FollowAction.unfollow ? map : null,
+        headers,
+        isLoading,
+      ),
     );
   }
 
@@ -225,31 +167,16 @@ class SocialApiServiceProvider extends SocialApiService {
     required bool isLoading,
     required String followingId,
     required Header header,
-  }) async =>
-      await networkClient.makeRequest(
-        SocialApiEndPoints.postFollowUser,
-        NetworkRequestType.delete,
-        null,
-        {'following_id': followingId},
-        {
-          'Accept': AppConstants.headerAccept,
-          'Content-Type': AppConstants.headerContentType,
-          'Authorization': header.accessToken,
-          'language': header.language,
-          'currencySymbol': header.currencySymbol,
-          'currencyCode': header.currencyCode,
-          'platform': header.platForm.platformText,
-          'x-tenant-id': AppConstants.tenantId,
-          'x-project-id': AppConstants.projectId,
-          'city': header.city,
-          'state': header.state,
-          'country': header.country,
-          'latitude': header.latitude.toString(),
-          'longitude': header.longitude.toString(),
-          'ipaddress': header.ipAddress,
-          'version': deviceInfoManager.appVersion,
-        },
-        isLoading,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.postFollowUser,
+          NetworkRequestType.delete,
+          null,
+          {'following_id': followingId},
+          headers,
+          isLoading,
+        ),
       );
 
   @override
@@ -258,39 +185,21 @@ class SocialApiServiceProvider extends SocialApiService {
     required String postId,
     required Header header,
     required SocialPostAction socialPostAction,
-  }) async {
+  }) {
     final methodType = socialPostAction == SocialPostAction.unSave
         ? NetworkRequestType.delete
         : NetworkRequestType.post;
-    final queryParams = socialPostAction == SocialPostAction.unSave
-        ? {'post_id': postId}
-        : null;
-    final bodyParams =
-        socialPostAction == SocialPostAction.save ? {'post_id': postId} : null;
-    return await networkClient.makeRequest(
-      SocialApiEndPoints.postSavePost,
-      methodType,
-      bodyParams,
-      queryParams,
-      {
-        'Accept': AppConstants.headerAccept,
-        'Content-Type': AppConstants.headerContentType,
-        'Authorization': header.accessToken,
-        'lan': header.language,
-        'currencySymbol': header.currencySymbol,
-        'currencyCode': header.currencyCode,
-        'platform': header.platForm.platformText,
-        'x-tenant-id': AppConstants.tenantId,
-        'x-project-id': AppConstants.projectId,
-        'city': header.city,
-        'state': header.state,
-        'country': header.country,
-        'latitude': header.latitude.toString(),
-        'longitude': header.longitude.toString(),
-        'ipaddress': header.ipAddress,
-        'version': deviceInfoManager.appVersion,
-      },
-      isLoading,
+    final queryParams = socialPostAction == SocialPostAction.unSave ? {'post_id': postId} : null;
+    final bodyParams = socialPostAction == SocialPostAction.save ? {'post_id': postId} : null;
+    return _getHeaders(header).then(
+      (headers) => networkClient.makeRequest(
+        SocialApiEndPoints.postSavePost,
+        methodType,
+        bodyParams,
+        queryParams,
+        headers,
+        isLoading,
+      ),
     );
   }
 
@@ -300,40 +209,23 @@ class SocialApiServiceProvider extends SocialApiService {
     required String postId,
     required LikeAction likeAction,
     required Header header,
-  }) async =>
-      await networkClient.makeRequest(
-        likeAction == LikeAction.like
-            ? SocialApiEndPoints.postLike
-            : SocialApiEndPoints.postUnLike,
-        likeAction == LikeAction.like
-            ? NetworkRequestType.post
-            : NetworkRequestType.delete,
-        likeAction == LikeAction.like
-            ? {
-                'post_id': postId,
-                'like_type': 'love',
-              }
-            : null,
-        (likeAction == LikeAction.unlike) ? {'post_id': postId} : null,
-        {
-          'Accept': AppConstants.headerAccept,
-          'Content-Type': AppConstants.headerContentType,
-          'Authorization': header.accessToken,
-          'language': header.language,
-          'currencySymbol': header.currencySymbol,
-          'currencyCode': header.currencyCode,
-          'platform': header.platForm.platformText,
-          'x-tenant-id': AppConstants.tenantId,
-          'x-project-id': AppConstants.projectId,
-          'city': header.city,
-          'state': header.state,
-          'country': header.country,
-          'latitude': header.latitude.toString(),
-          'longitude': header.longitude.toString(),
-          'ipaddress': header.ipAddress,
-          'version': deviceInfoManager.appVersion,
-        },
-        isLoading,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          likeAction == LikeAction.like
+              ? SocialApiEndPoints.postLike
+              : SocialApiEndPoints.postUnLike,
+          likeAction == LikeAction.like ? NetworkRequestType.post : NetworkRequestType.delete,
+          likeAction == LikeAction.like
+              ? {
+                  'post_id': postId,
+                  'like_type': 'love',
+                }
+              : null,
+          (likeAction == LikeAction.unlike) ? {'post_id': postId} : null,
+          headers,
+          isLoading,
+        ),
       );
 
   @override
@@ -343,37 +235,22 @@ class SocialApiServiceProvider extends SocialApiService {
     required String message,
     required String reason,
     required Header header,
-  }) async =>
-      await networkClient.makeRequest(
-        SocialApiEndPoints.reportPost,
-        NetworkRequestType.post,
-        {
-          'content_id': postId,
-          'additional_details': message,
-          'reason_id': reason,
-          'type': 'post',
-          'reason': message,
-        },
-        null,
-        {
-          'Accept': AppConstants.headerAccept,
-          'Content-Type': AppConstants.headerContentType,
-          'Authorization': header.accessToken,
-          'language': header.language,
-          'currencySymbol': header.currencySymbol,
-          'currencyCode': header.currencyCode,
-          'platform': header.platForm.platformText,
-          'x-tenant-id': AppConstants.tenantId,
-          'x-project-id': AppConstants.projectId,
-          'city': header.city,
-          'state': header.state,
-          'country': header.country,
-          'latitude': header.latitude.toString(),
-          'longitude': header.longitude.toString(),
-          'ipaddress': header.ipAddress,
-          'version': deviceInfoManager.appVersion,
-        },
-        isLoading,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.reportPost,
+          NetworkRequestType.post,
+          {
+            'content_id': postId,
+            'additional_details': message,
+            'reason_id': reason,
+            'type': 'post',
+            'reason': message,
+          },
+          null,
+          headers,
+          isLoading,
+        ),
       );
 
   @override
@@ -381,36 +258,21 @@ class SocialApiServiceProvider extends SocialApiService {
     required bool isLoading,
     ReasonsFor? reasonFor = ReasonsFor.socialPost,
     required Header header,
-  }) async {
+  }) {
     final endPoint = reasonFor == ReasonsFor.socialPost
         ? SocialApiEndPoints.getReportSocialPostReasons
         : SocialApiEndPoints.getReportCommentReasons;
-    return await networkClient.makeRequest(
-      endPoint,
-      NetworkRequestType.get,
-      null,
-      {
-        'reason_type': reasonFor == ReasonsFor.socialPost ? 'post' : 'comment',
-      },
-      {
-        'Accept': AppConstants.headerAccept,
-        'Content-Type': AppConstants.headerContentType,
-        'Authorization': header.accessToken,
-        'lang': header.language,
-        'currencySymbol': header.currencySymbol,
-        'currencyCode': header.currencyCode,
-        'platform': header.platForm.platformText,
-        'city': header.city,
-        'state': header.state,
-        'country': header.country,
-        'latitude': header.latitude.toString(),
-        'longitude': header.longitude.toString(),
-        'ipaddress': header.ipAddress,
-        'version': deviceInfoManager.appVersion,
-        'x-tenant-id': AppConstants.tenantId,
-        'x-project-id': AppConstants.projectId,
-      },
-      isLoading,
+    return _getHeaders(header).then(
+      (headers) => networkClient.makeRequest(
+        endPoint,
+        NetworkRequestType.get,
+        null,
+        {
+          'reason_type': reasonFor == ReasonsFor.socialPost ? 'post' : 'comment',
+        },
+        headers,
+        isLoading,
+      ),
     );
   }
 
@@ -420,29 +282,18 @@ class SocialApiServiceProvider extends SocialApiService {
     required String key,
     required String value,
     required Header header,
-  }) async =>
-      await networkClient.makeRequest(
-        SocialApiEndPoints.getCloudDetails,
-        NetworkRequestType.get,
-        null,
-        {
-          key: value,
-        },
-        {
-          'Accept': AppConstants.headerAccept,
-          'Content-Type': AppConstants.headerContentType,
-          'Authorization': header.accessToken,
-          'language': header.language,
-          'currencySymbol': header.currencySymbol,
-          'currencyCode': header.currencyCode,
-          'platform': header.platForm.platformText,
-          'city': header.city,
-          'state': header.state,
-          'country': header.country,
-          'latitude': header.latitude.toString(),
-          'longitude': header.longitude.toString(),
-        },
-        isLoading,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.getCloudDetails,
+          NetworkRequestType.get,
+          null,
+          {
+            key: value,
+          },
+          headers,
+          isLoading,
+        ),
       );
 
   @override
@@ -453,34 +304,21 @@ class SocialApiServiceProvider extends SocialApiService {
     required Header header,
     int? page = 1,
     int? pageLimit = 10,
-  }) async =>
-      await networkClient.makeRequest(
-        SocialApiEndPoints.getPostComments,
-        NetworkRequestType.get,
-        null,
-        {
-          'post_id': postId,
-          'page': page.toString(),
-          'page_size': pageLimit.toString(),
-          if (parentCommitId != null) 'parent_id': parentCommitId,
-        },
-        {
-          'Accept': AppConstants.headerAccept,
-          'Content-Type': AppConstants.headerContentType,
-          'Authorization': header.accessToken,
-          'language': header.language,
-          'currencySymbol': header.currencySymbol,
-          'currencyCode': header.currencyCode,
-          'platform': header.platForm.platformText,
-          'city': header.city,
-          'state': header.state,
-          'country': header.country,
-          'latitude': header.latitude.toString(),
-          'longitude': header.longitude.toString(),
-          'x-tenant-id': AppConstants.tenantId,
-          'x-project-id': AppConstants.projectId,
-        },
-        isLoading,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.getPostComments,
+          NetworkRequestType.get,
+          null,
+          {
+            'post_id': postId,
+            'page': page.toString(),
+            'page_size': pageLimit.toString(),
+            if (parentCommitId != null) 'parent_id': parentCommitId,
+          },
+          headers,
+          isLoading,
+        ),
       );
 
   @override
@@ -491,33 +329,20 @@ class SocialApiServiceProvider extends SocialApiService {
     int? page,
     int? limit,
     required Header header,
-  }) async =>
-      await networkClient.makeRequest(
-        SocialApiEndPoints.getSocialProducts,
-        NetworkRequestType.get,
-        null,
-        {
-          'productIds': productIds != null ? productIds.join(',') : '',
-          'page': page.toString(),
-          'limit': limit.toString(),
-        }.removeEmptyValues(),
-        {
-          'Accept': AppConstants.headerAccept,
-          'Content-Type': AppConstants.headerContentType,
-          'Authorization': header.accessToken,
-          'language': header.language,
-          'currencySymbol': header.currencySymbol,
-          'currencyCode': header.currencyCode,
-          'platform': header.platForm.toString(),
-          'latitude': header.latitude.toString(),
-          'longitude': header.longitude.toString(),
-          'x-tenant-id': AppConstants.tenantId,
-          'x-project-id': AppConstants.projectId,
-          'city': header.city,
-          'state': header.state,
-          'country': header.country,
-        },
-        isLoading,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.getSocialProducts,
+          NetworkRequestType.get,
+          null,
+          {
+            'productIds': productIds != null ? productIds.join(',') : '',
+            'page': page.toString(),
+            'limit': limit.toString(),
+          }.removeEmptyValues(),
+          headers,
+          isLoading,
+        ),
       );
 
   @override
@@ -525,7 +350,7 @@ class SocialApiServiceProvider extends SocialApiService {
     required bool isLoading,
     required Map<String, dynamic> commentRequest,
     required Header header,
-  }) async {
+  }) {
     final commentAction = commentRequest['commentAction'];
     var endPoint = '';
     var networkRequestType = NetworkRequestType.post;
@@ -588,30 +413,15 @@ class SocialApiServiceProvider extends SocialApiService {
 
     commentRequest['commentAction'] = null;
 
-    return await networkClient.makeRequest(
-      endPoint,
-      networkRequestType,
-      requestBody,
-      queryParams,
-      {
-        'Accept': AppConstants.headerAccept,
-        'Content-Type': AppConstants.headerContentType,
-        'Authorization': header.accessToken,
-        'language': header.language,
-        'currencySymbol': header.currencySymbol,
-        'currencyCode': header.currencyCode,
-        'platform': header.platForm.platformText,
-        'latitude': header.latitude.toString(),
-        'longitude': header.longitude.toString(),
-        'x-tenant-id': AppConstants.tenantId,
-        'x-project-id': AppConstants.projectId,
-        'city': header.city,
-        'state': header.state,
-        'country': header.country,
-        'ipaddress': header.ipAddress,
-        'version': deviceInfoManager.appVersion,
-      },
-      isLoading,
+    return _getHeaders(header).then(
+      (headers) => networkClient.makeRequest(
+        endPoint,
+        networkRequestType,
+        requestBody,
+        queryParams,
+        headers,
+        isLoading,
+      ),
     );
   }
 
@@ -620,33 +430,18 @@ class SocialApiServiceProvider extends SocialApiService {
     required bool isLoading,
     required String postId,
     required Header header,
-  }) async =>
-      await networkClient.makeRequest(
-        SocialApiEndPoints.getPostDetails,
-        NetworkRequestType.get,
-        null,
-        {
-          'post_id': postId,
-        },
-        {
-          'Accept': AppConstants.headerAccept,
-          'Content-Type': AppConstants.headerContentType,
-          'Authorization': header.accessToken,
-          'language': header.language,
-          'currencySymbol': header.currencySymbol,
-          'currencyCode': header.currencyCode,
-          'platform': header.platForm.toString(),
-          'latitude': header.latitude.toString(),
-          'longitude': header.longitude.toString(),
-          'x-tenant-id': AppConstants.tenantId,
-          'x-project-id': AppConstants.projectId,
-          'city': header.city,
-          'state': header.state,
-          'country': header.country,
-          'ipaddress': header.ipAddress,
-          'version': deviceInfoManager.appVersion,
-        },
-        isLoading,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.getPostDetails,
+          NetworkRequestType.get,
+          null,
+          {
+            'post_id': postId,
+          },
+          headers,
+          isLoading,
+        ),
       );
 
   @override
@@ -654,26 +449,16 @@ class SocialApiServiceProvider extends SocialApiService {
     required bool isLoading,
     required String postId,
     required Header header,
-  }) async =>
-      await networkClient.makeRequest(
-        SocialApiEndPoints.postScheduledPost(postId),
-        NetworkRequestType.post,
-        null,
-        null,
-        {
-          'Accept': AppConstants.headerAccept,
-          'Content-Type': AppConstants.headerContentType,
-          'Authorization': header.accessToken,
-          'language': header.language,
-          'currencySymbol': header.currencySymbol,
-          'currencyCode': header.currencyCode,
-          'platform': header.platForm.toString(),
-          'latitude': header.latitude.toString(),
-          'longitude': header.longitude.toString(),
-          'x-tenant-id': AppConstants.tenantId,
-          'x-project-id': AppConstants.projectId,
-        },
-        isLoading,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.postScheduledPost(postId),
+          NetworkRequestType.post,
+          null,
+          null,
+          headers,
+          isLoading,
+        ),
       );
 
   @override
@@ -681,33 +466,18 @@ class SocialApiServiceProvider extends SocialApiService {
     required bool isLoading,
     required String postId,
     required Header header,
-  }) async =>
-      await networkClient.makeRequest(
-        SocialApiEndPoints.deletePost,
-        NetworkRequestType.delete,
-        null,
-        {
-          'post_id': postId,
-        },
-        {
-          'Accept': AppConstants.headerAccept,
-          'Content-Type': AppConstants.headerContentType,
-          'Authorization': header.accessToken,
-          'lan': header.language,
-          'currencySymbol': header.currencySymbol,
-          'currencyCode': header.currencyCode,
-          'platform': header.platForm.platformText,
-          'latitude': header.latitude.toString(),
-          'longitude': header.longitude.toString(),
-          'x-tenant-id': AppConstants.tenantId,
-          'x-project-id': AppConstants.projectId,
-          'city': header.city,
-          'state': header.state,
-          'country': header.country,
-          'ipaddress': header.ipAddress,
-          'version': deviceInfoManager.appVersion,
-        },
-        isLoading,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.deletePost,
+          NetworkRequestType.delete,
+          null,
+          {
+            'post_id': postId,
+          },
+          headers,
+          isLoading,
+        ),
       );
 
   @override
@@ -715,33 +485,18 @@ class SocialApiServiceProvider extends SocialApiService {
     required bool isLoading,
     required String postId,
     required Header header,
-  }) async =>
-      await networkClient.makeRequest(
-        SocialApiEndPoints.getPost,
-        NetworkRequestType.get,
-        null,
-        {
-          'postId': postId,
-        },
-        {
-          'Accept': AppConstants.headerAccept,
-          'Content-Type': AppConstants.headerContentType,
-          'Authorization': header.accessToken,
-          'language': header.language,
-          'currencySymbol': header.currencySymbol,
-          'currencyCode': header.currencyCode,
-          'platform': header.platForm.platformText,
-          'latitude': header.latitude.toString(),
-          'longitude': header.longitude.toString(),
-          'x-tenant-id': AppConstants.tenantId,
-          'x-project-id': AppConstants.projectId,
-          'city': header.city,
-          'state': header.state,
-          'country': header.country,
-          'ipaddress': header.ipAddress,
-          'version': deviceInfoManager.appVersion,
-        },
-        isLoading,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.getPost,
+          NetworkRequestType.get,
+          null,
+          {
+            'postId': postId,
+          },
+          headers,
+          isLoading,
+        ),
       );
 
   @override
@@ -749,31 +504,16 @@ class SocialApiServiceProvider extends SocialApiService {
     required bool isLoading,
     required String postId,
     required Header header,
-  }) async =>
-      await networkClient.makeRequest(
-        SocialApiEndPoints.postMediaProcess(postId),
-        NetworkRequestType.post,
-        null,
-        null,
-        {
-          'Accept': AppConstants.headerAccept,
-          'Content-Type': AppConstants.headerContentType,
-          'Authorization': header.accessToken,
-          'language': header.language,
-          'currencySymbol': header.currencySymbol,
-          'currencyCode': header.currencyCode,
-          'platform': header.platForm.platformText,
-          'latitude': header.latitude.toString(),
-          'longitude': header.longitude.toString(),
-          'x-tenant-id': AppConstants.tenantId,
-          'x-project-id': AppConstants.projectId,
-          'city': header.city,
-          'state': header.state,
-          'country': header.country,
-          'ipaddress': header.ipAddress,
-          'version': deviceInfoManager.appVersion,
-        },
-        isLoading,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.postMediaProcess(postId),
+          NetworkRequestType.post,
+          null,
+          null,
+          headers,
+          isLoading,
+        ),
       );
 
   @override
@@ -783,35 +523,20 @@ class SocialApiServiceProvider extends SocialApiService {
     required int page,
     required String searchText,
     required Header header,
-  }) async =>
-      await networkClient.makeRequest(
-        SocialApiEndPoints.getSearchUsers,
-        NetworkRequestType.get,
-        null,
-        {
-          'search': searchText,
-          'page': page.toString(),
-          'page_size': limit.toString(),
-        },
-        {
-          'Accept': AppConstants.headerAccept,
-          'Content-Type': AppConstants.headerContentType,
-          'Authorization': header.accessToken,
-          'language': header.language,
-          'currencySymbol': header.currencySymbol,
-          'currencyCode': header.currencyCode,
-          'platform': header.platForm.platformText,
-          'latitude': header.latitude.toString(),
-          'longitude': header.longitude.toString(),
-          'x-tenant-id': AppConstants.tenantId,
-          'x-project-id': AppConstants.projectId,
-          'city': header.city,
-          'state': header.state,
-          'country': header.country,
-          'ipaddress': header.ipAddress,
-          'version': deviceInfoManager.appVersion,
-        },
-        isLoading,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.getSearchUsers,
+          NetworkRequestType.get,
+          null,
+          {
+            'search': searchText,
+            'page': page.toString(),
+            'page_size': limit.toString(),
+          },
+          headers,
+          isLoading,
+        ),
       );
 
   @override
@@ -821,35 +546,20 @@ class SocialApiServiceProvider extends SocialApiService {
     required int page,
     required String searchText,
     required Header header,
-  }) async =>
-      await networkClient.makeRequest(
-        SocialApiEndPoints.getSearchTags,
-        NetworkRequestType.get,
-        null,
-        {
-          'q': searchText,
-          'page': page.toString(),
-          'page_size': limit.toString(),
-        },
-        {
-          'Accept': AppConstants.headerAccept,
-          'Content-Type': AppConstants.headerContentType,
-          'Authorization': header.accessToken,
-          'language': header.language,
-          'currencySymbol': header.currencySymbol,
-          'currencyCode': header.currencyCode,
-          'platform': header.platForm.platformText,
-          'latitude': header.latitude.toString(),
-          'longitude': header.longitude.toString(),
-          'x-tenant-id': AppConstants.tenantId,
-          'x-project-id': AppConstants.projectId,
-          'city': header.city,
-          'state': header.state,
-          'country': header.country,
-          'ipaddress': header.ipAddress,
-          'version': deviceInfoManager.appVersion,
-        },
-        isLoading,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.getSearchTags,
+          NetworkRequestType.get,
+          null,
+          {
+            'q': searchText,
+            'page': page.toString(),
+            'page_size': limit.toString(),
+          },
+          headers,
+          isLoading,
+        ),
       );
 
   @override
@@ -857,31 +567,16 @@ class SocialApiServiceProvider extends SocialApiService {
     required bool isLoading,
     required String userId,
     required Header header,
-  }) async =>
-      await networkClient.makeRequest(
-        SocialApiEndPoints.getUserProfile(userId),
-        NetworkRequestType.get,
-        null,
-        null,
-        {
-          'Accept': AppConstants.headerAccept,
-          'Content-Type': AppConstants.headerContentType,
-          'Authorization': header.accessToken,
-          'language': header.language,
-          'currencySymbol': header.currencySymbol,
-          'currencyCode': header.currencyCode,
-          'platform': header.platForm.toString(),
-          'latitude': header.latitude.toString(),
-          'longitude': header.longitude.toString(),
-          'x-tenant-id': AppConstants.tenantId,
-          'x-project-id': AppConstants.projectId,
-          'city': header.city,
-          'state': header.state,
-          'country': header.country,
-          'ipaddress': header.ipAddress,
-          'version': deviceInfoManager.appVersion,
-        },
-        isLoading,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.getUserProfile(userId),
+          NetworkRequestType.get,
+          null,
+          null,
+          headers,
+          isLoading,
+        ),
       );
 
   @override
@@ -891,35 +586,20 @@ class SocialApiServiceProvider extends SocialApiService {
     required int page,
     required int pageSize,
     required String collectionId,
-  }) async =>
-      await networkClient.makeRequest(
-        SocialApiEndPoints.getSavedPostsOfUserSocial,
-        NetworkRequestType.get,
-        null,
-        {
-          'page': '$page',
-          'page_size': '$pageSize',
-          'collection_id': collectionId,
-        }.removeEmptyValues(),
-        {
-          'Accept': AppConstants.headerAccept,
-          'Content-Type': AppConstants.headerContentType,
-          'currencySymbol': header.currencySymbol,
-          'currencyCode': header.currencyCode,
-          'platform': header.platForm.toString(),
-          'language': header.language,
-          'Authorization': header.accessToken,
-          'x-tenant-id': AppConstants.tenantId,
-          'x-project-id': AppConstants.projectId,
-          'city': header.city,
-          'state': header.state,
-          'country': header.country,
-          'ipaddress': header.ipAddress,
-          'version': deviceInfoManager.appVersion,
-          'latitude': header.latitude.toString(),
-          'longitude': header.longitude.toString(),
-        },
-        isLoading,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.getSavedPostsOfUserSocial,
+          NetworkRequestType.get,
+          null,
+          {
+            'page': '$page',
+            'page_size': '$pageSize',
+            'collection_id': collectionId,
+          }.removeEmptyValues(),
+          headers,
+          isLoading,
+        ),
       );
 
   @override
@@ -930,35 +610,20 @@ class SocialApiServiceProvider extends SocialApiService {
     required int pageSize,
     required String memberId,
     required bool scheduledOnly,
-  }) async =>
-      await networkClient.makeRequest(
-        '${SocialApiEndPoints.getProfileUserPostSocial}/$memberId',
-        NetworkRequestType.get,
-        {},
-        {
-          'page': '$page',
-          'page_size': '$pageSize',
-          'scheduled_only': scheduledOnly.toString(),
-        }.removeEmptyValues(),
-        {
-          'Accept': AppConstants.headerAccept,
-          'Content-Type': AppConstants.headerContentType,
-          'currencySymbol': header.currencySymbol,
-          'currencyCode': header.currencyCode,
-          'platform': header.platForm.toString(),
-          'language': header.language,
-          'Authorization': header.accessToken,
-          'x-tenant-id': AppConstants.tenantId,
-          'x-project-id': AppConstants.projectId,
-          'city': header.city,
-          'state': header.state,
-          'country': header.country,
-          'ipaddress': header.ipAddress,
-          'version': deviceInfoManager.appVersion,
-          'latitude': header.latitude.toString(),
-          'longitude': header.longitude.toString(),
-        },
-        isLoading,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          '${SocialApiEndPoints.getProfileUserPostSocial}/$memberId',
+          NetworkRequestType.get,
+          {},
+          {
+            'page': '$page',
+            'page_size': '$pageSize',
+            'scheduled_only': scheduledOnly.toString(),
+          }.removeEmptyValues(),
+          headers,
+          isLoading,
+        ),
       );
 
   @override
@@ -969,35 +634,20 @@ class SocialApiServiceProvider extends SocialApiService {
     required TagType tagType,
     required int page,
     required int pageLimit,
-  }) async =>
-      await networkClient.makeRequest(
-        SocialApiEndPoints.getTaggedPosts,
-        NetworkRequestType.get,
-        null,
-        {
-          'page': page.toString(),
-          'page_size': pageLimit.toString(),
-        },
-        {
-          'Accept': AppConstants.headerAccept,
-          'Content-Type': AppConstants.headerContentType,
-          'authorization': header.accessToken,
-          'lan': header.language,
-          'currencySymbol': header.currencySymbol,
-          'currencyCode': header.currencyCode,
-          'platform': header.platForm.platformText,
-          'x-tenant-id': AppConstants.tenantId,
-          'x-project-id': AppConstants.projectId,
-          'city': header.city,
-          'state': header.state,
-          'country': header.country,
-          'ipaddress': header.ipAddress,
-          'version': deviceInfoManager.appVersion,
-          'latitude': header.latitude.toString(),
-          'longitude': header.longitude.toString(),
-        },
-        isLoading,
-        pathSegments: [tagType.value, tagValue],
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.getTaggedPosts,
+          NetworkRequestType.get,
+          null,
+          {
+            'page': page.toString(),
+            'page_size': pageLimit.toString(),
+          },
+          headers,
+          isLoading,
+          pathSegments: [tagType.value, tagValue],
+        ),
       );
 
   @override
@@ -1006,34 +656,19 @@ class SocialApiServiceProvider extends SocialApiService {
     required Header header,
     required int page,
     required int pageLimit,
-  }) async =>
-      await networkClient.makeRequest(
-        SocialApiEndPoints.getForYouPosts,
-        NetworkRequestType.get,
-        null,
-        {
-          'page': page.toString(),
-          'page_size': pageLimit.toString(),
-        },
-        {
-          'Accept': AppConstants.headerAccept,
-          'Content-Type': AppConstants.headerContentType,
-          'authorization': header.accessToken,
-          'lan': header.language,
-          'currencySymbol': header.currencySymbol,
-          'currencyCode': header.currencyCode,
-          'platform': header.platForm.platformText,
-          'latitude': header.latitude.toString(),
-          'longitude': header.longitude.toString(),
-          'x-tenant-id': AppConstants.tenantId,
-          'x-project-id': AppConstants.projectId,
-          'city': header.city,
-          'state': header.state,
-          'country': header.country,
-          'ipaddress': header.ipAddress,
-          'version': deviceInfoManager.appVersion,
-        },
-        isLoading,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.getForYouPosts,
+          NetworkRequestType.get,
+          null,
+          {
+            'page': page.toString(),
+            'page_size': pageLimit.toString(),
+          },
+          headers,
+          isLoading,
+        ),
       );
 
   @override
@@ -1043,34 +678,19 @@ class SocialApiServiceProvider extends SocialApiService {
     required String postId,
     required int page,
     required int pageLimit,
-  }) async =>
-      await networkClient.makeRequest(
-        '${SocialApiEndPoints.getMentionedUsers}/$postId/mentioned-users',
-        NetworkRequestType.get,
-        null,
-        {
-          'page': page.toString(),
-          'page_size': pageLimit.toString(),
-        },
-        {
-          'Accept': AppConstants.headerAccept,
-          'Content-Type': AppConstants.headerContentType,
-          'authorization': header.accessToken,
-          'lan': header.language,
-          'currencySymbol': header.currencySymbol,
-          'currencyCode': header.currencyCode,
-          'platform': header.platForm.platformText.toString(),
-          'x-tenant-id': AppConstants.tenantId,
-          'x-project-id': AppConstants.projectId,
-          'city': header.city,
-          'state': header.state,
-          'country': header.country,
-          'ipaddress': header.ipAddress,
-          'version': deviceInfoManager.appVersion,
-          'latitude': header.latitude.toString(),
-          'longitude': header.longitude.toString(),
-        },
-        isLoading,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          '${SocialApiEndPoints.getMentionedUsers}/$postId/mentioned-users',
+          NetworkRequestType.get,
+          null,
+          {
+            'page': page.toString(),
+            'page_size': pageLimit.toString(),
+          },
+          headers,
+          isLoading,
+        ),
       );
 
   @override
@@ -1078,32 +698,17 @@ class SocialApiServiceProvider extends SocialApiService {
     required bool isLoading,
     required Header header,
     required String postId,
-  }) async =>
-      await networkClient.makeRequest(
-        SocialApiEndPoints.deleteMention,
-        NetworkRequestType.delete,
-        null,
-        null,
-        {
-          'Accept': AppConstants.headerAccept,
-          'Content-Type': AppConstants.headerContentType,
-          'authorization': header.accessToken,
-          'lan': header.language,
-          'currencySymbol': header.currencySymbol,
-          'currencyCode': header.currencyCode,
-          'platform': header.platForm.platformText.toString(),
-          'latitude': header.latitude.toString(),
-          'longitude': header.longitude.toString(),
-          'x-tenant-id': AppConstants.tenantId,
-          'x-project-id': AppConstants.projectId,
-          'city': header.city,
-          'state': header.state,
-          'country': header.country,
-          'ipaddress': header.ipAddress,
-          'version': deviceInfoManager.appVersion,
-        },
-        isLoading,
-        pathSegments: [postId],
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.deleteMention,
+          NetworkRequestType.delete,
+          null,
+          null,
+          headers,
+          isLoading,
+          pathSegments: [postId],
+        ),
       );
 
   @override
@@ -1111,31 +716,16 @@ class SocialApiServiceProvider extends SocialApiService {
     required bool isLoading,
     required Header header,
     required Map<String, dynamic> requestMap,
-  }) async =>
-      await networkClient.makeRequest(
-        SocialApiEndPoints.createCollection,
-        NetworkRequestType.post,
-        requestMap.removeEmptyValues(),
-        null,
-        {
-          'Accept': AppConstants.headerAccept,
-          'Content-Type': AppConstants.headerContentType,
-          'Authorization': header.accessToken,
-          'lan': header.language,
-          'currencySymbol': header.currencySymbol,
-          'currencyCode': header.currencyCode,
-          'platform': header.platForm.platformText,
-          'x-tenant-id': AppConstants.tenantId,
-          'x-project-id': AppConstants.projectId,
-          'city': header.city,
-          'state': header.state,
-          'country': header.country,
-          'ipaddress': header.ipAddress,
-          'version': deviceInfoManager.appVersion,
-          'latitude': header.latitude.toString(),
-          'longitude': header.longitude.toString(),
-        },
-        isLoading,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.createCollection,
+          NetworkRequestType.post,
+          requestMap.removeEmptyValues(),
+          null,
+          headers,
+          isLoading,
+        ),
       );
 
   @override
@@ -1145,35 +735,20 @@ class SocialApiServiceProvider extends SocialApiService {
     required int page,
     required int pageSize,
     required bool isPublicOnly,
-  }) async =>
-      await networkClient.makeRequest(
-        SocialApiEndPoints.getCollectionList,
-        NetworkRequestType.get,
-        null,
-        {
-          'page': page.toString(),
-          'page_size': pageSize.toString(),
-          'public_only': isPublicOnly.toString(),
-        },
-        {
-          'Accept': AppConstants.headerAccept,
-          'Content-Type': AppConstants.headerContentType,
-          'Authorization': header.accessToken,
-          'lan': header.language,
-          'currencySymbol': header.currencySymbol,
-          'currencyCode': header.currencyCode,
-          'platform': header.platForm.platformText,
-          'latitude': header.latitude.toString(),
-          'longitude': header.longitude.toString(),
-          'x-tenant-id': AppConstants.tenantId,
-          'x-project-id': AppConstants.projectId,
-          'city': header.city,
-          'state': header.state,
-          'country': header.country,
-          'ipaddress': header.ipAddress,
-          'version': deviceInfoManager.appVersion,
-        },
-        isLoading,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.getCollectionList,
+          NetworkRequestType.get,
+          null,
+          {
+            'page': page.toString(),
+            'page_size': pageSize.toString(),
+            'public_only': isPublicOnly.toString(),
+          },
+          headers,
+          isLoading,
+        ),
       );
 
   @override
@@ -1182,34 +757,19 @@ class SocialApiServiceProvider extends SocialApiService {
     required Header header,
     required String postId,
     required String collectionId,
-  }) async =>
-      await networkClient.makeRequest(
-        SocialApiEndPoints.postMoveToCollection,
-        NetworkRequestType.post,
-        null,
-        {
-          'post_id': postId,
-          'collection_id': collectionId,
-        },
-        {
-          'Accept': AppConstants.headerAccept,
-          'Content-Type': AppConstants.headerContentType,
-          'Authorization': header.accessToken,
-          'lan': header.language,
-          'currencySymbol': header.currencySymbol,
-          'currencyCode': header.currencyCode,
-          'platform': header.platForm.platformText,
-          'latitude': header.latitude.toString(),
-          'longitude': header.longitude.toString(),
-          'x-tenant-id': AppConstants.tenantId,
-          'x-project-id': AppConstants.projectId,
-          'city': header.city,
-          'state': header.state,
-          'country': header.country,
-          'ipaddress': header.ipAddress,
-          'version': deviceInfoManager.appVersion,
-        },
-        isLoading,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.postMoveToCollection,
+          NetworkRequestType.post,
+          null,
+          {
+            'post_id': postId,
+            'collection_id': collectionId,
+          },
+          headers,
+          isLoading,
+        ),
       );
 
   @override
@@ -1218,32 +778,17 @@ class SocialApiServiceProvider extends SocialApiService {
     required Header header,
     required String collectionId,
     required Map<String, dynamic> requestMap,
-  }) async =>
-      await networkClient.makeRequest(
-        SocialApiEndPoints.putCollection,
-        NetworkRequestType.put,
-        requestMap.removeEmptyValues(),
-        null,
-        {
-          'Accept': AppConstants.headerAccept,
-          'Content-Type': AppConstants.headerContentType,
-          'Authorization': header.accessToken,
-          'lan': header.language,
-          'currencySymbol': header.currencySymbol,
-          'currencyCode': header.currencyCode,
-          'platform': header.platForm.platformText,
-          'latitude': header.latitude.toString(),
-          'longitude': header.longitude.toString(),
-          'x-tenant-id': AppConstants.tenantId,
-          'x-project-id': AppConstants.projectId,
-          'city': header.city,
-          'state': header.state,
-          'country': header.country,
-          'ipaddress': header.ipAddress,
-          'version': deviceInfoManager.appVersion,
-        },
-        isLoading,
-        pathSegments: [collectionId],
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.putCollection,
+          NetworkRequestType.put,
+          requestMap.removeEmptyValues(),
+          null,
+          headers,
+          isLoading,
+          pathSegments: [collectionId],
+        ),
       );
 
   @override
@@ -1251,32 +796,17 @@ class SocialApiServiceProvider extends SocialApiService {
     required bool isLoading,
     required Header header,
     required String collectionId,
-  }) async =>
-      await networkClient.makeRequest(
-        SocialApiEndPoints.deleteCollection,
-        NetworkRequestType.delete,
-        null,
-        null,
-        {
-          'Accept': AppConstants.headerAccept,
-          'Content-Type': AppConstants.headerContentType,
-          'Authorization': header.accessToken,
-          'lan': header.language,
-          'currencySymbol': header.currencySymbol,
-          'currencyCode': header.currencyCode,
-          'platform': header.platForm.platformText,
-          'latitude': header.latitude.toString(),
-          'longitude': header.longitude.toString(),
-          'x-tenant-id': AppConstants.tenantId,
-          'x-project-id': AppConstants.projectId,
-          'city': header.city,
-          'state': header.state,
-          'country': header.country,
-          'ipaddress': header.ipAddress,
-          'version': deviceInfoManager.appVersion,
-        },
-        isLoading,
-        pathSegments: [collectionId],
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.deleteCollection,
+          NetworkRequestType.delete,
+          null,
+          null,
+          headers,
+          isLoading,
+          pathSegments: [collectionId],
+        ),
       );
 
   @override
@@ -1284,33 +814,15 @@ class SocialApiServiceProvider extends SocialApiService {
     required bool isLoading,
     required Header header,
     required List<Map<String, dynamic>> impressionMapList,
-  }) async {
-    final appVersion = await Utility.getAppVersion();
-
-    return await networkClient.makeRequest(
-      SocialApiEndPoints.postImpressions,
-      NetworkRequestType.post,
-      {'views_data': impressionMapList},
-      null,
-      {
-        'Accept': AppConstants.headerAccept,
-        'Content-Type': AppConstants.headerContentType,
-        'authorization': header.accessToken,
-        'lan': header.language,
-        'version': appVersion,
-        'currencySymbol': header.currencySymbol,
-        'currencyCode': header.currencyCode,
-        'ipaddress': header.ipAddress,
-        'city': header.city,
-        'state': header.state,
-        'country': header.country,
-        'platform': header.platForm.platformText.toString(),
-        'latitude': header.latitude.toString(),
-        'longitude': header.longitude.toString(),
-        'x-tenant-id': AppConstants.tenantId,
-        'x-project-id': AppConstants.projectId,
-      },
-      isLoading,
-    );
-  }
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.postImpressions,
+          NetworkRequestType.post,
+          {'views_data': impressionMapList},
+          null,
+          headers,
+          isLoading,
+        ),
+      );
 }
