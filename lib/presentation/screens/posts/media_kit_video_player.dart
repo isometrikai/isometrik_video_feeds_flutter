@@ -127,10 +127,12 @@ class MediaKitVideoPlayerWrapper implements IVideoPlayerController {
   }
 
   @override
-  Duration get position => _position;
+  Duration get position =>
+      _position > Duration.zero ? _position : _player.state.position;
 
   @override
-  Duration get duration => _duration;
+  Duration get duration =>
+      _duration > Duration.zero ? _duration : _player.state.duration;
 
   @override
   bool get isPlaying => _player.state.playing;
