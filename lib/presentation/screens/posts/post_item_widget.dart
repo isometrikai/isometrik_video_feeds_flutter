@@ -252,8 +252,12 @@ class _PostItemWidgetState extends State<PostItemWidget>
     var updateState = false;
     if (state.isFollowing &&
         !_reelsDataList.any((element) => element.userId == state.userId)) {
-      final followedUserReels = _ismSocialActionCubit.getPostList(
-          filter: (post) => post.userId == state.userId);
+      final followedUserReels = await _ismSocialActionCubit.getUserPostList(state.userId,
+          forceMap: (post) => post.also((p) => p.isFollowing = true));
+      if (followedUserReels.isEmpty) {
+        followedUserReels.addAll(_ismSocialActionCubit.getPostList(
+            filter: (post) => post.userId == state.userId));
+      }
       if (followedUserReels.isNotEmpty) {
         _reelsDataList.addAll(followedUserReels
             .map((e) => getReelData(e, loggedInUserId: widget.loggedInUserId)));
