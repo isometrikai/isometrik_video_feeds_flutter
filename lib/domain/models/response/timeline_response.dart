@@ -88,6 +88,7 @@ class TimeLineData {
     this.isSaved,
     this.isFollowing,
     this.interests,
+    this.status,
     this.scheduledAt,
   });
 
@@ -129,6 +130,7 @@ class TimeLineData {
         isSaved: json['is_saved'] as bool? ?? false,
         isFollowing: json['is_following'] as bool? ?? false,
         scheduledAt: json['scheduled_at'] as String? ?? '',
+        status: json['status'] as String? ?? '',
         interests: json['interests'] == null || json['interests'] is String
             ? []
             : List<String>.from(json['interests'] as List)
@@ -155,6 +157,7 @@ class TimeLineData {
   bool? isSaved;
   bool? isFromLocal;
   bool? isFollowing;
+  String? status;
   List<String>? interests;
 
   Map<String, dynamic> toMap() => {
@@ -181,6 +184,7 @@ class TimeLineData {
         'is_saved': isSaved,
         'isFromLocal': isFromLocal,
         'is_following': isFollowing,
+        'status': status,
         'interests': interests == null
             ? []
             : List<dynamic>.from(interests!.map((x) => x)),

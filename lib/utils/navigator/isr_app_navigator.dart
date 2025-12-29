@@ -123,7 +123,7 @@ class IsrAppNavigator {
     required TabConfig tabConfig,
     required PostConfig postConfig,
     Function(String, String, double, double)? onTapPlace,
-    TransitionType? transitionType,
+    TransitionType transitionType = TransitionType.rightToLeft,
   }) {
     final tabData = TabDataModel(
       title: _getTabTitle(postSectionType),
