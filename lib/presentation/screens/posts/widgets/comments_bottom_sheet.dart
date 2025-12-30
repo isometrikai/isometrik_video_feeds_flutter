@@ -357,6 +357,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                   : comment.likeCount == 0
                                       ? 0
                                       : (comment.likeCount ?? 0) - 1;
+                              comment.isLiked = isLiked;
                             });
                             if (isLiked) {
                               _logLikeCommentEvent(
@@ -559,7 +560,15 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                 ? 0
                                 : likeCount - 1;
                         comment.likeCount = likeCount;
+                        comment.isLiked = isLiked;
                       });
+                      if (isLiked) {
+                        _logLikeCommentEvent(
+                          EventType.commentLiked.value,
+                          comment.id ?? '',
+                          comment.postId ?? '',
+                        );
+                      }
                     },
                   ),
                   8.responsiveHorizontalSpace,
