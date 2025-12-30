@@ -683,30 +683,30 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
               ),
             ),
 
-            // Close button above the dialog
-            Positioned(
-              right: 20,
-              top: -20, // Adjust as needed
-              child: GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.white.changeOpacity(0.2),
-                        spreadRadius: 1,
-                        blurRadius: 2,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  padding: const EdgeInsets.all(6),
-                  child: const Icon(Icons.close, size: 16, color: Colors.black),
-                ),
-              ),
-            ),
+            // // Close button above the dialog
+            // Positioned(
+            //   right: 20,
+            //   top: -20, // Adjust as needed
+            //   child: GestureDetector(
+            //     onTap: () => Navigator.pop(context),
+            //     child: Container(
+            //       decoration: BoxDecoration(
+            //         color: Colors.white,
+            //         shape: BoxShape.circle,
+            //         boxShadow: [
+            //           BoxShadow(
+            //             color: Colors.white.changeOpacity(0.2),
+            //             spreadRadius: 1,
+            //             blurRadius: 2,
+            //             offset: const Offset(0, 2),
+            //           ),
+            //         ],
+            //       ),
+            //       padding: const EdgeInsets.all(6),
+            //       child: const Icon(Icons.close, size: 16, color: Colors.black),
+            //     ),
+            //   ),
+            // ),
           ],
         ),
       );
