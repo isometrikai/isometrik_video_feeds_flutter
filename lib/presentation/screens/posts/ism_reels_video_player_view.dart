@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
@@ -360,15 +361,16 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           );
   }
 
+  double imageVisibilityFraction = 0;
   Widget _buildImageWithBlurredBackground({
     required String imageUrl,
   }) =>
       VisibilityDetector(
         key: ValueKey('image_${imageUrl.hashCode}'),
         onVisibilityChanged: (visibilityInfo) {
-          final visibleFraction = visibilityInfo.visibleFraction;
+          imageVisibilityFraction = visibilityInfo.visibleFraction;
 
-          if (visibleFraction == 1.0) {
+          if (imageVisibilityFraction == 1.0) {
             // Fully visible → play
             _startOrResumeImageProgress();
           } else {
@@ -376,15 +378,35 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             _pauseImageProgress();
           }
         },
-        child: Container(
-          color: Colors.black,
-          child: Center(
-            child: _getImageWidget(
-              imageUrl: imageUrl,
-              width: IsrDimens.getScreenWidth(context),
-              height: IsrDimens.getScreenHeight(context),
-              fit: BoxFit.contain,
-              filterQuality: FilterQuality.high,
+        child: BlocListener<SocialPostBloc, SocialPostState>(
+          listenWhen: (previous, current) => current is PlayPauseVideoState,
+          listener: (context, state) {
+            if (!mounted) return; // Safety check: Widget is disposed
+
+            if (state is PlayPauseVideoState) {
+              if (state.play) {
+                if (imageVisibilityFraction == 1.0) {
+                  // Fully visible → play
+                  _startOrResumeImageProgress();
+                } else {
+                  // Partially visible / not visible → pause
+                  _pauseImageProgress();
+                }
+              } else {
+                _pauseImageProgress();
+              }
+            }
+          },
+          child: Container(
+            color: Colors.black,
+            child: Center(
+              child: _getImageWidget(
+                imageUrl: imageUrl,
+                width: IsrDimens.getScreenWidth(context),
+                height: IsrDimens.getScreenHeight(context),
+                fit: BoxFit.contain,
+                filterQuality: FilterQuality.high,
+              ),
             ),
           ),
         ),
