@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:camera/camera.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:video_player/video_player.dart';
@@ -146,8 +147,22 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
         return;
       }
 
+      await _cameraController?.lockCaptureOrientation(DeviceOrientation.portraitUp);
+
+      if (_selectedMediaType == MediaType.photo) {
+        await prepareCameraForPhoto();
+      } else {
+        await prepareCameraForVideoRecording();
+      }
+
       final hasFlash = _cameraController!.description.lensDirection ==
           CameraLensDirection.back;
+      if (!hasFlash){
+        _isFlashOn = false;
+      }
+      await _cameraController!.setFlashMode(
+        _isFlashOn ? FlashMode.always : FlashMode.off,
+      );
       emit(CameraInitializedState(
           cameraController: _cameraController!,
           isFlashAvailable: hasFlash,
@@ -258,6 +273,8 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
         return;
       }
 
+      await _cameraController?.lockCaptureOrientation(DeviceOrientation.portraitUp);
+
       if (_selectedMediaType == MediaType.photo) {
         await prepareCameraForPhoto();
       } else {
@@ -266,6 +283,12 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
 
       final hasFlash = _cameraController!.description.lensDirection ==
           CameraLensDirection.back;
+      if (!hasFlash){
+        _isFlashOn = false;
+      }
+      await _cameraController!.setFlashMode(
+        _isFlashOn ? FlashMode.always : FlashMode.off,
+      );
       emit(CameraSwitchedState(
         cameraController: _cameraController!,
         isFlashAvailable: hasFlash,
@@ -292,7 +315,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     try {
       _isFlashOn = !_isFlashOn;
       await _cameraController!.setFlashMode(
-        _isFlashOn ? FlashMode.torch : FlashMode.off,
+        _isFlashOn ? FlashMode.always : FlashMode.off,
       );
 
       emit(CameraFlashToggledState(isFlashOn: _isFlashOn));
@@ -718,7 +741,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
       // Increase brightness
       final maxExposure = await _cameraController!.getMaxExposureOffset();
 
-      await _cameraController!.setExposureOffset(maxExposure * 0.6);
+      await _cameraController!.setExposureOffset(0.0);
 
       // Lock exposure so it doesn’t change during recording
       await _cameraController!.setExposureMode(ExposureMode.locked);
@@ -734,7 +757,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
       // Increase brightness
       final maxExposure = await _cameraController!.getMaxExposureOffset();
 
-      await _cameraController!.setExposureOffset(maxExposure * 0.3);
+      await _cameraController!.setExposureOffset(0.0);
     }
   }
 
