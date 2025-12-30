@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 
@@ -9,7 +10,7 @@ class VideoCacheManager implements IMediaCacheManager {
   }
 
   factory VideoCacheManager() => _instance;
-  VideoPlayerType _currentType = VideoPlayerType.mediaKit;
+  VideoPlayerType _currentType = Platform.isAndroid? VideoPlayerType.standard : VideoPlayerType.mediaKit;
 
   static final VideoCacheManager _instance = VideoCacheManager._internal();
 
