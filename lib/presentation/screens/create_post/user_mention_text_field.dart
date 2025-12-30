@@ -52,8 +52,7 @@ class _UserMentionTextFieldState extends State<UserMentionTextField> {
   bool _showLoading = false;
   bool _isSearching = false;
   String _currentSearchTerm = '';
-  SearchUserBloc get _searchUserBloc =>
-      BlocProvider.of<SearchUserBloc>(context);
+  SearchUserBloc get _searchUserBloc => BlocProvider.of<SearchUserBloc>(context);
   final List<MentionData> _addedHashtags = [];
   final List<MentionData> _addedMentions = [];
   bool _ignoreNextChange = false;
@@ -107,8 +106,7 @@ class _UserMentionTextFieldState extends State<UserMentionTextField> {
         if (lastAtIndex > lastHashIndex) {
           // @ is more recent
           final textFromAt = text.substring(lastAtIndex + 1, cursorPosition);
-          final hasMultipleAts =
-              lastAtIndex > 0 && textBeforeCursor[lastAtIndex - 1] == '@';
+          final hasMultipleAts = lastAtIndex > 0 && textBeforeCursor[lastAtIndex - 1] == '@';
 
           if (!textFromAt.contains(' ') &&
               !textFromAt.contains('\n') &&
@@ -120,10 +118,8 @@ class _UserMentionTextFieldState extends State<UserMentionTextField> {
           }
         } else {
           // # is more recent
-          final textFromHash =
-              text.substring(lastHashIndex + 1, cursorPosition);
-          final hasMultipleHashes =
-              lastHashIndex > 0 && textBeforeCursor[lastHashIndex - 1] == '#';
+          final textFromHash = text.substring(lastHashIndex + 1, cursorPosition);
+          final hasMultipleHashes = lastHashIndex > 0 && textBeforeCursor[lastHashIndex - 1] == '#';
 
           if (!textFromHash.contains(' ') &&
               !textFromHash.contains('\n') &&
@@ -137,8 +133,7 @@ class _UserMentionTextFieldState extends State<UserMentionTextField> {
       } else if (lastAtIndex != -1) {
         // Only @ trigger exists
         final textFromAt = text.substring(lastAtIndex + 1, cursorPosition);
-        final hasMultipleAts =
-            lastAtIndex > 0 && textBeforeCursor[lastAtIndex - 1] == '@';
+        final hasMultipleAts = lastAtIndex > 0 && textBeforeCursor[lastAtIndex - 1] == '@';
 
         if (!textFromAt.contains(' ') &&
             !textFromAt.contains('\n') &&
@@ -151,8 +146,7 @@ class _UserMentionTextFieldState extends State<UserMentionTextField> {
       } else if (lastHashIndex != -1) {
         // Only # trigger exists
         final textFromHash = text.substring(lastHashIndex + 1, cursorPosition);
-        final hasMultipleHashes =
-            lastHashIndex > 0 && textBeforeCursor[lastHashIndex - 1] == '#';
+        final hasMultipleHashes = lastHashIndex > 0 && textBeforeCursor[lastHashIndex - 1] == '#';
 
         if (!textFromHash.contains(' ') &&
             !textFromHash.contains('\n') &&
@@ -187,9 +181,7 @@ class _UserMentionTextFieldState extends State<UserMentionTextField> {
         }
       } else {
         // Check if we just finished hashtag search and user pressed space
-        if (_isHashtagSearchActive &&
-            _lastHashtagSearchTerm.isNotEmpty &&
-            text.endsWith(' ')) {
+        if (_isHashtagSearchActive && _lastHashtagSearchTerm.isNotEmpty && text.endsWith(' ')) {
           _addHashtagFromSearch(_lastHashtagSearchTerm);
         }
 
@@ -235,36 +227,13 @@ class _UserMentionTextFieldState extends State<UserMentionTextField> {
       );
 
       // Check if not already added
-      if (!_addedHashtags
-          .any((existing) => existing.tag == hashtagText.trim())) {
+      if (!_addedHashtags.any((existing) => existing.tag == hashtagText.trim())) {
         _addedHashtags.add(mentionData);
         widget.onAddHashTagData?.call(mentionData);
         debugPrint('Hashtag added: ${mentionData.tag}');
       }
     }
 
-    _hideSuggestions();
-  }
-
-  void _addHashtag() {
-    final start =
-        widget.controller.selection.baseOffset - _currentSearchTerm.length - 1;
-    final end =
-        start + _currentSearchTerm.length + 1; // +1 for the '#' character
-    final newTag = HashTagData(
-      hashtag: _currentSearchTerm.trim(),
-      slug: _currentSearchTerm.trim(),
-      usageCount: 0,
-      id: Utility.generateRandomId(6),
-    );
-
-    final mentionData = MentionData(
-      tag: newTag.hashtag,
-      textPosition: TaggedPosition(start: start, end: end),
-    );
-    _addedHashtags.add(mentionData);
-
-    widget.onAddHashTagData?.call(mentionData);
     _hideSuggestions();
   }
 
@@ -476,9 +445,7 @@ class _UserMentionTextFieldState extends State<UserMentionTextField> {
       // Calculate the position of the inserted mention
       final start = lastAtIndex;
       final end = start +
-          (tagText
-              .trim()
-              .length); // trim() to remove trailing space if you don't want it included
+          (tagText.trim().length); // trim() to remove trailing space if you don't want it included
 
       final mentionData = MentionData(
         tag: hashTag.hashtag,
@@ -502,8 +469,7 @@ class _UserMentionTextFieldState extends State<UserMentionTextField> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: IsrDimens.edgeInsetsSymmetric(
-                horizontal: 10.responsiveDimension),
+            padding: IsrDimens.edgeInsetsSymmetric(horizontal: 10.responsiveDimension),
             child: TextField(
               controller: widget.controller,
               maxLength: widget.maxLength,
@@ -577,8 +543,7 @@ class _UserMentionTextFieldState extends State<UserMentionTextField> {
             Container(
               margin: const EdgeInsets.only(top: 8),
               constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height *
-                    0.3, // Maximum 40% of screen height
+                maxHeight: MediaQuery.of(context).size.height * 0.3, // Maximum 40% of screen height
               ),
               child: ListView.separated(
                 shrinkWrap: true,
@@ -601,24 +566,15 @@ class _UserMentionTextFieldState extends State<UserMentionTextField> {
                                   height: 25.responsiveDimension,
                                   width: 25.responsiveDimension,
                                   border: Border.all(color: '979797'.toColor()),
-                                  name: user.username
-                                          ?.substring(0, 1)
-                                          .toUpperCase() ??
-                                      '',
+                                  name: user.username?.substring(0, 1).toUpperCase() ?? '',
                                 )
                               : CircleAvatar(
                                   radius: IsrDimens.twelve,
                                   backgroundColor: IsrColors.white,
                                   child: Text(
                                     Utility.getInitials(
-                                      firstName: user.displayName
-                                              ?.split(' ')
-                                              .firstOrNull ??
-                                          '',
-                                      lastName: user.displayName
-                                              ?.split(' ')
-                                              .lastOrNull ??
-                                          '',
+                                      firstName: user.displayName?.split(' ').firstOrNull ?? '',
+                                      lastName: user.displayName?.split(' ').lastOrNull ?? '',
                                     ),
                                     style: IsrStyles.primaryText12.copyWith(
                                       color: IsrColors.appColor,
@@ -670,66 +626,61 @@ class _UserMentionTextFieldState extends State<UserMentionTextField> {
         )
       : const SizedBox.shrink();
 
-  Widget _buildHashtagSuggestions() =>
-      _isSearching && _hashTagResults.isNotEmpty
-          ? Column(
-              children: [
-                const Divider(height: 1, thickness: 1),
-                Container(
-                  constraints: BoxConstraints(
-                    maxHeight: MediaQuery.of(context).size.height *
-                        0.4, // Maximum 40% of screen height
-                    // minHeight: 200, // Minimum height to show some items
-                  ),
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemCount: _hashTagResults.length,
-                    separatorBuilder: (context, index) => const Divider(
-                      height: 1,
-                      color: Colors.white,
-                      indent: 16,
-                      endIndent: 16,
-                    ),
-                    itemBuilder: (context, index) {
-                      final hasTag = _hashTagResults[index];
-                      return Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: () => _selectHashTag(hasTag),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 12, horizontal: 16),
-                            child: Row(
-                              children: [
-                                // Hashtag content
-                                Expanded(
-                                  child: Text(
-                                    '#${hasTag.hashtag ?? ''}',
-                                    style: IsrStyles.primaryText14
-                                        .copyWith(fontWeight: FontWeight.w600),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                // Post count on the right
-                                if (hasTag.usageCount != null &&
-                                    hasTag.usageCount! > 0)
-                                  Text(
-                                    '${hasTag.usageCount} Posts',
-                                    style: IsrStyles.primaryText14
-                                        .copyWith(color: '868686'.toColor()),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+  Widget _buildHashtagSuggestions() => _isSearching && _hashTagResults.isNotEmpty
+      ? Column(
+          children: [
+            const Divider(height: 1, thickness: 1),
+            Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.4, // Maximum 40% of screen height
+                // minHeight: 200, // Minimum height to show some items
+              ),
+              child: ListView.separated(
+                shrinkWrap: true,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                itemCount: _hashTagResults.length,
+                separatorBuilder: (context, index) => const Divider(
+                  height: 1,
+                  color: Colors.white,
+                  indent: 16,
+                  endIndent: 16,
                 ),
-              ],
-            )
-          : const SizedBox.shrink();
+                itemBuilder: (context, index) {
+                  final hasTag = _hashTagResults[index];
+                  return Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => _selectHashTag(hasTag),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        child: Row(
+                          children: [
+                            // Hashtag content
+                            Expanded(
+                              child: Text(
+                                '#${hasTag.hashtag ?? ''}',
+                                style:
+                                    IsrStyles.primaryText14.copyWith(fontWeight: FontWeight.w600),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            // Post count on the right
+                            if (hasTag.usageCount != null && hasTag.usageCount! > 0)
+                              Text(
+                                '${hasTag.usageCount} Posts',
+                                style: IsrStyles.primaryText14.copyWith(color: '868686'.toColor()),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        )
+      : const SizedBox.shrink();
 
   @override
   void dispose() {
