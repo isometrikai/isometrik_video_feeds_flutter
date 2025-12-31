@@ -257,10 +257,12 @@ class GetMentionedUserEvent extends SocialPostEvent {
 }
 
 class GetPostInsightDetailsEvent extends SocialPostEvent {
-  GetPostInsightDetailsEvent({this.postId, this.data});
+  GetPostInsightDetailsEvent({this.postId, this.data, this.isLoading = false, this.callPostDetailsApi = true});
 
   final String? postId;
   final TimeLineData? data;
+  final bool isLoading;
+  final bool callPostDetailsApi;
 }
 
 class GetTrendingSoundsEvent extends SocialPostEvent {

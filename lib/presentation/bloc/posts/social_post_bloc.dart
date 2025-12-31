@@ -21,6 +21,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     this._reportPostUseCase,
     this._getReportReasonsUseCase,
     this._getPostDetailsUseCase,
+    this._getPostInsightUseCase,
     this._getPostCommentUseCase,
     this._commentUseCase,
     this._getSocialProductsUseCase,
@@ -64,6 +65,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   final ReportPostUseCase _reportPostUseCase;
   final GetReportReasonsUseCase _getReportReasonsUseCase;
   final GetPostDetailsUseCase _getPostDetailsUseCase;
+  final GetPostInsightUseCase _getPostInsightUseCase;
   final GetPostCommentUseCase _getPostCommentUseCase;
   final CommentActionUseCase _commentUseCase;
   final GetSocialProductsUseCase _getSocialProductsUseCase;
@@ -732,17 +734,22 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       postId: event.postId ?? '',
       postData: event.data,
     ));
-    final apiResult = await _getPostDetailsUseCase.executeGetPostDetails(
+    final postDataResult = (!event.callPostDetailsApi)? null : await _getPostDetailsUseCase.executeGetPostDetails(
+      isLoading: false,
+      postId: event.postId ?? '',
+    );
+    final insightApiResult = await _getPostInsightUseCase.executeGetPostInsight(
       isLoading: false,
       postId: event.postId ?? '',
     );
     emit(PostInsightDetails(
       postId: event.postId ?? '',
-      postData: apiResult.data ?? event.data,
+      postData: postDataResult?.data ?? event.data,
+      insightData: insightApiResult.data,
     ));
-    if (apiResult.isError) {
+    if (insightApiResult.isError) {
       ErrorHandler.showAppError(
-          appError: apiResult.error,
+          appError: insightApiResult.error,
           isNeedToShowError: true,
           errorViewType: ErrorViewType.toast);
     }

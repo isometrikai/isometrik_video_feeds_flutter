@@ -25,7 +25,8 @@ class SocialPostInsightView extends StatefulWidget {
 }
 
 class _SocialPostInsightViewState extends State<SocialPostInsightView> {
-  late final TimeLineData? _postData;
+  TimeLineData? _postData;
+  InsightsData? _postInsight;
   late final String? _postId;
   final _socialPostBloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
 
@@ -63,6 +64,7 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
           listener: (context, state) {
             _postData =
                 (state is PostInsightDetails) ? state.postData : _postData;
+            _postInsight = (state is PostInsightDetails) ? state.insightData?.data : null;
             log('post insight data: ${_postData?.toMap()}');
           },
           builder: (context, state) => SafeArea(
@@ -97,9 +99,9 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
             _buildCircularGraphSection(
               title: IsrTranslationFile.views,
               mainLabel: IsrTranslationFile.views,
-              mainValue: _postData?.engagementMetrics?.views?.toDouble() ?? 0,
+              mainValue: _postInsight?.summary?.views ?? _postData?.engagementMetrics?.views ?? 0,
               selectedLabel: IsrTranslationFile.followers,
-              selectedValue: 0,
+              selectedValue: _postInsight?.followerSplit?.viewsFollowers ?? 0,
               // needed from API
               unselectedLabel: IsrTranslationFile.nonFollowers,
             ),
@@ -107,9 +109,9 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
             _buildCircularGraphSection(
               title: IsrTranslationFile.interactions,
               mainLabel: IsrTranslationFile.interactions,
-              mainValue: _calculateTotalInteractions(),
+              mainValue: _postInsight?.summary?.interactions ?? _calculateTotalInteractions(),
               selectedLabel: IsrTranslationFile.followers,
-              selectedValue: 0,
+              selectedValue: _postInsight?.followerSplit?.interactionsFollowers ?? 0,
               // needed from API
               unselectedLabel: IsrTranslationFile.nonFollowers,
             ),
@@ -179,10 +181,10 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
   }
 
   Widget _buildInteractionIcons() {
-    final likes = _postData?.engagementMetrics?.likeTypes?.like?.toInt() ?? 0;
-    final comments = _postData?.engagementMetrics?.comments?.toInt() ?? 0;
-    final shares = _postData?.engagementMetrics?.shares?.toInt() ?? 0;
-    final saves = _postData?.engagementMetrics?.saves?.toInt() ?? 0;
+    final likes = _postInsight?.summary?.likes ?? _postData?.engagementMetrics?.likeTypes?.like?.toInt() ?? 0;
+    final comments = _postInsight?.summary?.comments ?? _postData?.engagementMetrics?.comments?.toInt() ?? 0;
+    final shares = _postInsight?.summary?.shares ?? _postData?.engagementMetrics?.shares?.toInt() ?? 0;
+    final saves = _postInsight?.summary?.saves ?? _postData?.engagementMetrics?.saves?.toInt() ?? 0;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -227,9 +229,9 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
       );
 
   Widget _buildOverviewSection() {
-    final views = _postData?.engagementMetrics?.views?.toInt() ?? 0;
-    final interactions = _calculateTotalInteractions();
-    final profileActivity = 0;
+    final views = _postInsight?.summary?.views ?? _postData?.engagementMetrics?.views?.toInt() ?? 0;
+    final interactions = _postInsight?.summary?.interactions ?? _calculateTotalInteractions();
+    final profileActivity = (_postInsight?.summary?.profileActivity?.follows ?? 0) + (_postInsight?.summary?.profileActivity?.profileVisits ?? 0);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -399,11 +401,11 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
       );
 
   Widget _buildStatisticsSection() {
-    final likes = _postData?.engagementMetrics?.likeTypes?.like?.toInt() ?? 0;
-    final saves = _postData?.engagementMetrics?.saves?.toInt() ?? 0;
-    final shares = _postData?.engagementMetrics?.shares?.toInt() ?? 0;
-    final comments = _postData?.engagementMetrics?.comments?.toInt() ?? 0;
-    final accountEngaged = 0;
+    final likes = _postInsight?.summary?.likes ?? _postData?.engagementMetrics?.likeTypes?.like?.toInt() ?? 0;
+    final comments = _postInsight?.summary?.comments ?? _postData?.engagementMetrics?.comments?.toInt() ?? 0;
+    final shares = _postInsight?.summary?.shares ?? _postData?.engagementMetrics?.shares?.toInt() ?? 0;
+    final saves = _postInsight?.summary?.saves ?? _postData?.engagementMetrics?.saves?.toInt() ?? 0;
+    final accountEngaged = _postInsight?.summary?.accountsEngaged ?? 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -447,8 +449,8 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
       );
 
   Widget _buildProfileActivitySection() {
-    final profileVisits = _postData?.engagementMetrics?.views?.toInt() ?? 0;
-    final follows = 0;
+    final profileVisits = _postInsight?.summary?.profileActivity?.profileVisits ?? 0;
+    final follows = _postInsight?.summary?.profileActivity?.follows ?? 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

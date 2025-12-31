@@ -84,6 +84,11 @@ abstract class SocialRepository extends BaseRepository {
     required String postId,
   });
 
+  Future<CustomResponse<InsightsResponse?>> getPostInsight({
+    required bool isLoading,
+    required String postId,
+  });
+
   Future<CustomResponse<ResponseClass?>> doCommentAction({
     required bool isLoading,
     required Map<String, dynamic> commentRequest,

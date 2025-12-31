@@ -8,6 +8,7 @@ export 'get_for_you_post_use_case.dart';
 export 'get_mentioned_users_use_case.dart';
 export 'get_post_comment_use_case.dart';
 export 'get_post_details_use_case.dart';
+export 'get_post_insight_use_case.dart';
 export 'get_report_reasons_use_case.dart';
 export 'get_social_products_use_case.dart';
 export 'get_tagged_post_use_case.dart';

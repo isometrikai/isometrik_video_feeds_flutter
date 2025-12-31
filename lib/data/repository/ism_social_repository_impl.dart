@@ -295,6 +295,23 @@ class SocialRepositoryImpl implements SocialRepository {
   }
 
   @override
+  Future<CustomResponse<InsightsResponse?>> getPostInsight({
+    required bool isLoading,
+    required String postId,
+  }) async {
+    try {
+      final response = await _apiService.getPostInsight(
+        isLoading: isLoading,
+        postId: postId,
+        header: await _dataSource.getHeader(),
+      );
+      return _socialMapper.mapPostInsightResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
   Future<CustomResponse<ResponseClass?>> deletePost({
     required bool isLoading,
     required String postId,

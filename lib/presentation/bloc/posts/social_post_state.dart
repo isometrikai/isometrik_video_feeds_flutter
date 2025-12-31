@@ -79,9 +79,10 @@ class PostInsightDetailsLoading extends SocialPostState {
 }
 
 class PostInsightDetails extends SocialPostState {
-  PostInsightDetails({this.postId, this.postData});
+  PostInsightDetails({this.postId, this.postData, this.insightData});
   String? postId;
   TimeLineData? postData;
+  InsightsResponse? insightData;
 }
 
 class PlayPauseVideoState extends SocialPostState {
