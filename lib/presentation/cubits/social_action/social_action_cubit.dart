@@ -74,21 +74,27 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     return postData;
   }
 
-  Future<List<TimeLineData>> getUserPostList(String userId,{
+  Future<List<TimeLineData>> getUserPostList(
+    String userId, {
     bool isLoading = false,
     int page = 1,
     int pageSize = 20,
     TimeLineData Function(TimeLineData)? forceMap,
-  }) async => await _getUserPostDataUseCase.executeGetUserProfilePostData(
-      isLoading: isLoading,
-      page: page,
-      pageSize: pageSize,
-      memberId: userId,
-    ).then((v) {
-      final posts = (v.data?.data ?? []).map((post) => forceMap?.call(post) ?? post).toList();
-      updatePostList(posts);
-      return posts;
-  });
+  }) async =>
+      await _getUserPostDataUseCase
+          .executeGetUserProfilePostData(
+        isLoading: isLoading,
+        page: page,
+        pageSize: pageSize,
+        memberId: userId,
+      )
+          .then((v) {
+        final posts = (v.data?.data ?? [])
+            .map((post) => forceMap?.call(post) ?? post)
+            .toList();
+        updatePostList(posts);
+        return posts;
+      });
 
   Future<SocialUserProfileData?> _getSocialUserDetails(String userId,
       {bool showError = false}) async {

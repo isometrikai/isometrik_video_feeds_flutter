@@ -21,7 +21,8 @@ abstract class GoogleRepository extends BaseRepository {
     double? radius,
   });
 
-  Future<CustomResponse<AddressPlacesAutocompleteResponse?>> getAddressByAutoCompleteSearch({
+  Future<CustomResponse<AddressPlacesAutocompleteResponse?>>
+      getAddressByAutoCompleteSearch({
     required String searchText,
     required String placeType,
     required List<String>? countries,

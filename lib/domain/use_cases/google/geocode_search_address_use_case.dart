@@ -15,7 +15,8 @@ class GeocodeSearchAddressUseCase extends BaseUseCase {
           isLoading: isLoading,
           searchText: searchText,
         );
-        return ApiResult(data: response.responseCode == 200 ? response.data : null);
+        return ApiResult(
+            data: response.responseCode == 200 ? response.data : null);
       });
 
   Future<ApiResult<GoogleAddressResponse?>> executeGetPlaceWithTextSearch({
@@ -27,6 +28,7 @@ class GeocodeSearchAddressUseCase extends BaseUseCase {
           isLoading: isLoading,
           searchText: searchText,
         );
-        return ApiResult(data: response.responseCode == 200 ? response.data : null);
+        return ApiResult(
+            data: response.responseCode == 200 ? response.data : null);
       });
 }
