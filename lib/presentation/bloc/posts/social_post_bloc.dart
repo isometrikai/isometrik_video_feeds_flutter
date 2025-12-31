@@ -19,6 +19,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     this._savePostUseCase,
     this._likePostUseCase,
     this._reportPostUseCase,
+    this._reportUseCase,
     this._getReportReasonsUseCase,
     this._getPostDetailsUseCase,
     this._getPostInsightUseCase,
@@ -39,6 +40,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     on<SavePostEvent>(_savePost);
     on<GetReasonEvent>(_getReason);
     on<ReportPostEvent>(_reportPost);
+    on<ReportEvent>(_report);
     on<LikePostEvent>(_likePost);
     on<FollowUserEvent>(_followUser);
     on<DeletePostEvent>(_deletePost);
@@ -63,6 +65,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   final SavePostUseCase _savePostUseCase;
   final LikePostUseCase _likePostUseCase;
   final ReportPostUseCase _reportPostUseCase;
+  final ReportUseCase _reportUseCase;
   final GetReportReasonsUseCase _getReportReasonsUseCase;
   final GetPostDetailsUseCase _getPostDetailsUseCase;
   final GetPostInsightUseCase _getPostInsightUseCase;
@@ -330,6 +333,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       GetReasonEvent event, Emitter<SocialPostState> emit) async {
     final apiResult = await _getReportReasonsUseCase.executeGetReportReasons(
       isLoading: false,
+      reasonFor: event.reasonsFor
     );
 
     if (apiResult.isSuccess) {
@@ -354,6 +358,30 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     } else {
       ErrorHandler.showAppError(appError: apiResult.error);
       event.onComplete.call(false, event.reason);
+    }
+  }
+
+  FutureOr<void> _report(
+      ReportEvent event, Emitter<SocialPostState> emit) async {
+    final apiResult = await _reportUseCase.executeReport(
+        isLoading: false,
+        reportRequest: ReportRequest(
+          contentId: event.contentId,
+          additionalDetails: event.reportReason.description,
+          reasonId: event.reportReason.id,
+          type: event.reportReason.type,
+          reason: event.reportReason.name,
+        ));
+
+    if (apiResult.isSuccess) {
+      event.onComplete.call(true);
+      if (event.showToastOnSuccess) {
+        Utility.showToastMessage(IsrTranslationFile.reportedSuccessfully(
+            event.reportReason.type ?? '').trim());
+      }
+    } else {
+      ErrorHandler.showAppError(appError: apiResult.error);
+      event.onComplete.call(false);
     }
   }
 

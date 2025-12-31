@@ -89,10 +89,61 @@ extension ZeroOrNullExtension on double? {
   bool get isZeroOrNull => this == null || this == 0;
 }
 
-extension StringExtension on String {
-  String capitalize() => length > 1
-      ? '${this[0].toUpperCase()}${substring(1).toLowerCase()}'
-      : toUpperCase();
+extension StringExtensions on String {
+  /// Capitalize first letter, rest lowercase
+  /// "hELLo wORLD" -> "Hello world"
+  String capitalizeFirst() {
+    if (trim().isEmpty) return this;
+    return this[0].toUpperCase() + substring(1).toLowerCase();
+  }
+
+  /// Capitalize each word
+  /// "hello world" -> "Hello World"
+  String capitalizeWords() => split(' ')
+      .map((word) => word.isEmpty
+          ? word
+          : word[0].toUpperCase() + word.substring(1).toLowerCase())
+      .join(' ');
+
+  /// camelCase
+  /// "hello world_test" -> "helloWorldTest"
+  String toCamelCase() {
+    final words = _splitWords();
+    if (words.isEmpty) return this;
+
+    return words.first.toLowerCase() +
+        words.skip(1).map((w) => w.capitalizeFirst()).join();
+  }
+
+  /// PascalCase
+  /// "hello world_test" -> "HelloWorldTest"
+  String toPascalCase() =>
+      _splitWords().map((word) => word.capitalizeFirst()).join();
+
+  /// snake_case
+  /// "Hello WorldTest" -> "hello_world_test"
+  String toSnakeCase() => _splitWords().map((w) => w.toLowerCase()).join('_');
+
+  /// kebab-case
+  /// "Hello WorldTest" -> "hello-world-test"
+  String toKebabCase() => _splitWords().map((w) => w.toLowerCase()).join('-');
+
+  /// Remove extra spaces
+  /// "  hello   world  " -> "hello world"
+  String normalizeSpaces() => trim().replaceAll(RegExp(r'\s+'), ' ');
+
+  /// Check if string is numeric
+  bool get isNumeric => double.tryParse(this) != null;
+
+  /// Internal word splitter
+  List<String> _splitWords() => replaceAll(RegExp(r'([a-z])([A-Z])'), r'$1 $2')
+      .replaceAll(RegExp(r'[_\-]'), ' ')
+      .split(' ')
+      .where((e) => e.trim().isNotEmpty)
+      .toList();
+
+  /// if empty return null
+  String? takeIfNotEmpty() => trim().isNotEmpty ? this : null;
 }
 
 extension DurationExtension on Duration {
@@ -215,6 +266,16 @@ extension MediaTypeStringExtension on MediaType {
       };
 }
 
+extension ReasonsForExtension on ReasonsFor {
+  String get reasonsForString => switch (this) {
+        ReasonsFor.socialPost => 'post',
+        ReasonsFor.comment => 'comment',
+        ReasonsFor.socialUser => 'user',
+        ReasonsFor.sound => 'sound',
+        ReasonsFor.story => 'story',
+  };
+}
+
 extension ColorExtension on String {
   Color get color => Color(int.parse('0xFF${replaceFirst('#', '')}'));
 }
@@ -241,19 +302,6 @@ extension HexColor on String {
     final hexString = replaceFirst('#', '');
     return Color(int.parse(hexString, radix: 16) | 0xFF000000);
   }
-}
-
-extension StringCasingExtension on String {
-  String capitalizeEachWord() {
-    if (trim().isEmpty) return this;
-    return split(' ')
-        .map((word) => word.isNotEmpty
-            ? '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}'
-            : '')
-        .join(' ');
-  }
-
-  String? takeIfNotEmpty() => trim().isNotEmpty ? this : null;
 }
 
 extension MediaQueryExtensions on BuildContext {

@@ -1639,19 +1639,16 @@ class _PostAttributeViewState extends State<PostAttributeView>
   }
 
   Future<String?> _pickCoverPic() async {
-    final res = await Navigator.push<List<ms.MediaAssetData>>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ms.MediaSelectionView(
-          mediaSelectionConfig: mediaSelectionConfig.copyWith(
-              mediaListType: ms.MediaListType.image,
-              isMultiSelect: false,
-              selectMediaTitle: IsrTranslationFile.changeCover),
-          onCaptureMedia: _captureMedia,
-        ),
-      ),
+    final res = await IsrAppNavigator.goToMediaPickerScreen(
+        context,
+      mediaSelectionConfig: mediaSelectionConfig.copyWith(
+          mediaListType: ms.MediaListType.image,
+          isMultiSelect: false,
+          selectMediaTitle: IsrTranslationFile.changeCover),
+      onCaptureMedia: _captureMedia,
+      transitionType: TransitionType.rightToLeft,
     );
-    return res?.first.localPath;
+    return res?.firstOrNull?.localPath;
   }
 
   final mediaSelectionConfig = ms.MediaSelectionConfig(

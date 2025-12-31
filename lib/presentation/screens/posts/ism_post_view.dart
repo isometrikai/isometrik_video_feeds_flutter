@@ -749,36 +749,36 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     try {
       return await _showMoreOptionsDialog(
         tabData: tabData,
-        onPressReport: ({String message = '', String reason = ''}) async {
-          final result = await _showReportPostDialog(context);
-
-          if (result == true) {
-            final completer = Completer<bool>();
-            _socialPostBloc.add(
-              ReportPostEvent(
-                postId: postDataModel.id ?? '',
-                message: message,
-                reason: reason,
-                onComplete: (success, reportReason) {
-                  if (success) {
-                    Utility.showInSnackBar(
-                        IsrTranslationFile.postReportedSuccessfully, context,
-                        isSuccessIcon: true);
-                    _logReportEvent(postDataModel, reportReason, tabData);
-                  }
-                  completer.complete(success);
-                },
-              ),
-            );
-            return await completer.future;
-          } else {
-            return false;
+        onReportPost: () async {
+          final completer = Completer<dynamic>();
+          final result = await showDialog<dynamic>(
+            context: context,
+            builder: (_) => ReportReasonDialog(
+              reasonFor: ReasonsFor.socialPost,
+              contentId: postDataModel.id ?? '',
+              showToastOnSuccess: false,
+              onReportInvoked: (reason) {
+                completer.complete(true);
+              },
+              onReportCanceled: (reason) {
+                completer.complete(false);
+              },
+              onReportSuccess: (reason) {
+                Utility.showInSnackBar(
+                    IsrTranslationFile.postReportedSuccessfully, context,
+                    isSuccessIcon: true);
+                _logReportEvent(postDataModel, reason.name ?? '', tabData);
+              },
+            ),
+          );
+          if (!completer.isCompleted && result != true){
+            completer.complete(result);
           }
+          return completer.future;
         },
         onDeletePost: () async {
           final result = await _showDeletePostDialog(context);
           if (result == true) {
-            final completer = Completer<bool>();
             _socialPostBloc.add(
               DeletePostEvent(
                 postId: postDataModel.id ?? '',
@@ -787,20 +787,16 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                     Utility.showToastMessage(
                         IsrTranslationFile.postDeletedSuccessfully);
                   }
-                  completer.complete(success);
                 },
               ),
             );
-            return await completer.future;
           }
-          return false;
         },
         isSelfProfile: postDataModel.user?.id == _loggedInUserId,
         onEditPost: () async {
-          final postDataString = await _handleEditPost(postDataModel);
-          return postDataString ?? '';
+          unawaited(_handleEditPost(postDataModel));
         },
-        onShowPostInsight: () {
+        onShowPostInsight: () async {
           IsrAppNavigator.goToPostInsight(context,
               postId: postDataModel.id ?? '', postData: postDataModel);
         },
@@ -832,10 +828,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   // Additional handlers for likes, follows, etc.
   // ... (implement other handlers similarly)
   Future<dynamic> _showMoreOptionsDialog({
-    Future<bool> Function({String message, String reason})? onPressReport,
-    Future<bool> Function()? onDeletePost,
-    Future<String> Function()? onEditPost,
-    VoidCallback? onShowPostInsight,
+    Future<dynamic> Function()? onReportPost,
+    Future<dynamic> Function()? onDeletePost,
+    Future<dynamic> Function()? onEditPost,
+    Future<dynamic> Function()? onShowPostInsight,
     bool? isSelfProfile,
     required TabDataModel tabData,
   }) async {
@@ -843,42 +839,35 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     final result = await Utility.showBottomSheet<dynamic>(
       isDismissible: true,
       child: MoreOptionsBottomSheet(
-        onPressReport: ({String message = '', String reason = ''}) async {
-          try {
-            if (onPressReport != null) {
-              final isReported =
-                  await onPressReport(message: message, reason: reason);
-              if (!completer.isCompleted) {
-                completer.complete(isReported);
-              }
-              return isReported;
-            }
-            return false;
-          } catch (e) {
-            return false;
+        onReportPost: () async {
+          if (onReportPost != null) {
+            await onReportPost();
           }
+          completer.complete(true);
         },
         isSelfProfile: isSelfProfile == true,
         onDeletePost: () async {
           if (onDeletePost != null) {
-            final isDeleted = await onDeletePost();
-            return isDeleted;
+            await onDeletePost();
           }
-          return false;
+          completer.complete(true);
         },
         onEditPost: () async {
           if (onEditPost != null) {
-            final postDataString = await onEditPost();
-            debugPrint('Post data string: $postDataString');
-            return postDataString;
+            await onEditPost();
           }
-          return '';
+          completer.complete(true);
         },
-        onShowPostInsight: onShowPostInsight,
+        onShowPostInsight: () async {
+          if (onShowPostInsight != null) {
+            await onShowPostInsight();
+          }
+          completer.complete(true);
+        },
       ),
     );
     // If the bottom sheet was dismissed without any action, complete the completer with null
-    if (!completer.isCompleted) {
+    if (!completer.isCompleted && result != true) {
       completer.complete(result);
     }
     return completer.future;

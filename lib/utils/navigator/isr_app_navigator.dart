@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/models/models.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart' as ms;
 import 'package:ism_video_reel_player/utils/utils.dart';
 
 part 'isr_app_routes.dart';
@@ -299,6 +300,33 @@ class IsrAppNavigator {
 
     final result = await Navigator.of(context, rootNavigator: true)
         .push<List<MentionData>?>(
+      _buildRoute(page: page, transitionType: transitionType),
+    );
+    return result;
+  }
+
+  static Future<List<ms.MediaAssetData>?> goToMediaPickerScreen(
+    BuildContext context, {
+    ms.MediaSelectionConfig? mediaSelectionConfig,
+    List<ms.MediaAssetData>? selectedMedia,
+    Future<bool> Function(List<ms.MediaAssetData> selectedMedia)? onComplete,
+    Future<String?> Function(String? mediaType)? onCaptureMedia,
+    TransitionType? transitionType,
+  }) async {
+    final page = MultiBlocProvider(
+      providers: [
+        BlocProvider.value(value: context.getOrCreateBloc<CreatePostBloc>()),
+      ],
+      child: ms.MediaSelectionView(
+        mediaSelectionConfig: mediaSelectionConfig ?? ms.MediaSelectionConfig(),
+        onCaptureMedia: onCaptureMedia,
+        onComplete: onComplete,
+        selectedMedia: selectedMedia,
+      ),
+    );
+
+    final result = await Navigator.of(context, rootNavigator: true)
+        .push<List<ms.MediaAssetData>?>(
       _buildRoute(page: page, transitionType: transitionType),
     );
     return result;

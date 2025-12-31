@@ -8,8 +8,7 @@ class SocialApiEndPoints {
   static const postLike = '/api/v1/likes/post';
   static const postUnLike = '/api/v1/likes/post';
   static const String reportPost = '/api/v1/reports';
-  static const String getReportSocialPostReasons = '/api/v1/report-reasons';
-  static const String getReportCommentReasons = '/api/v1/report-reasons';
+  static const String getReportReasons = '/api/v1/report-reasons';
   static const String getCloudDetails = '/v1/cloudinary';
   static const String getPostComments = '/api/v1/comments/post';
   static const String postComment = '/api/v1/comments';

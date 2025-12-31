@@ -43,6 +43,8 @@ class UseCaseInjection {
         () => LikePostUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<ReportPostUseCase>(
         () => ReportPostUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<ReportUseCase>(
+            () => ReportUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<GetReportReasonsUseCase>(() =>
         GetReportReasonsUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<GetTimelinePostUseCase>(() =>

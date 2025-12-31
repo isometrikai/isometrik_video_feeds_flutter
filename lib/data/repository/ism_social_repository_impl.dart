@@ -174,9 +174,27 @@ class SocialRepositoryImpl implements SocialRepository {
   }
 
   @override
+  Future<CustomResponse<ResponseClass?>> report({
+    required bool isLoading,
+    required ReportRequest reportRequest,
+  }) async {
+    try {
+      final response = await _apiService.report(
+        isLoading: isLoading,
+        reportBody: reportRequest.toJson(),
+        header: await _dataSource.getHeader(),
+      );
+
+      return _mapper.mapResponseData(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
   Future<CustomResponse<List<ReportReason>?>> getReportReasons({
     required bool isLoading,
-    ReasonsFor? reasonFor,
+    required ReasonsFor reasonFor,
   }) async {
     try {
       final response = await _apiService.getReportReasons(
