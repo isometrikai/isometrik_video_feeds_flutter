@@ -268,28 +268,39 @@ class SocialApiServiceProvider extends SocialApiService {
       );
 
   @override
+  Future<ResponseModel> report({
+    required bool isLoading,
+    required Map<String, dynamic> reportBody,
+    required Header header,
+  }) =>
+      _getHeaders(header).then(
+            (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.reportPost,
+          NetworkRequestType.post,
+          reportBody,
+          null,
+          headers,
+          isLoading,
+        ),
+      );
+
+  @override
   Future<ResponseModel> getReportReasons({
     required bool isLoading,
-    ReasonsFor? reasonFor = ReasonsFor.socialPost,
+    required ReasonsFor reasonFor,
     required Header header,
-  }) {
-    final endPoint = reasonFor == ReasonsFor.socialPost
-        ? SocialApiEndPoints.getReportSocialPostReasons
-        : SocialApiEndPoints.getReportCommentReasons;
-    return _getHeaders(header).then(
+  }) => _getHeaders(header).then(
       (headers) => networkClient.makeRequest(
-        endPoint,
+        SocialApiEndPoints.getReportReasons,
         NetworkRequestType.get,
         null,
         {
-          'reason_type':
-              reasonFor == ReasonsFor.socialPost ? 'post' : 'comment',
+          'reason_type': reasonFor.reasonsForString,
         },
         headers,
         isLoading,
       ),
     );
-  }
 
   @override
   Future<ResponseModel> getCloudDetails({

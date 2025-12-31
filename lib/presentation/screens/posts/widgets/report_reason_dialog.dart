@@ -9,10 +9,20 @@ import 'package:ism_video_reel_player/utils/utils.dart';
 class ReportReasonDialog extends StatefulWidget {
   const ReportReasonDialog({
     Key? key,
-    required this.onConfirm,
+    required this.reasonFor,
+    required this.contentId,
+    this.showToastOnSuccess = true,
+    this.onReportSuccess,
+    this.onReportInvoked,
+    this.onReportCanceled,
   }) : super(key: key);
 
-  final Function(ReportReason) onConfirm;
+  final Function(ReportReason)? onReportSuccess;
+  final Function(ReportReason)? onReportInvoked;
+  final Function(ReportReason)? onReportCanceled;
+  final String contentId;
+  final ReasonsFor reasonFor;
+  final bool showToastOnSuccess;
 
   @override
   State<ReportReasonDialog> createState() => _ReportReasonDialogState();
@@ -41,7 +51,7 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
             _isLoading = false;
           });
         },
-        reasonsFor: ReasonsFor.comment,
+        reasonsFor: widget.reasonFor,
       ),
     );
   }
@@ -50,7 +60,6 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
   Widget build(BuildContext context) => Center(
         child: Container(
           constraints: BoxConstraints(maxHeight: 50.percentHeight),
-          height: null,
           padding: IsrDimens.edgeInsetsAll(IsrDimens.sixteen),
           margin: IsrDimens.edgeInsetsAll(IsrDimens.sixteen),
           decoration: BoxDecoration(
@@ -62,6 +71,31 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    IsrTranslationFile.report,
+                    style: IsrStyles.primaryText18.copyWith(
+                      fontWeight: FontWeight.w600,
+                      decoration: TextDecoration.none,
+                    ),
+                  ),
+                  TapHandler(
+                    padding: 5.responsiveDimension,
+                    onTap: () {
+                      context.pop();
+                    },
+                    child: AppImage.svg(
+                      AssetConstants.icCrossIcon,
+                      height: IsrDimens.sixteen,
+                      width: IsrDimens.sixteen,
+                      color: IsrColors.black,
+                    ),
+                  ),
+                ],
+              ),
+              24.responsiveVerticalSpace,
               _isLoading
                   ? Center(child: Utility.loaderWidget())
                   : SingleChildScrollView(
@@ -69,30 +103,6 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           // Header and reasons list
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                IsrTranslationFile.report,
-                                style: IsrStyles.primaryText18.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              TapHandler(
-                                padding: 5.responsiveDimension,
-                                onTap: () {
-                                  context.pop();
-                                },
-                                child: AppImage.svg(
-                                  AssetConstants.icCrossIcon,
-                                  height: IsrDimens.sixteen,
-                                  width: IsrDimens.sixteen,
-                                  color: IsrColors.black,
-                                ),
-                              ),
-                            ],
-                          ),
-                          24.responsiveVerticalSpace,
                           ...List.generate(
                             _reportReasons.length,
                             (index) => Padding(
@@ -155,9 +165,26 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
                     title: IsrTranslationFile.confirm,
                     onPress: _selectedReason == null
                         ? null
-                        : () {
-                            widget.onConfirm(_selectedReason!);
-                            Navigator.pop(context);
+                        : () async {
+                            Navigator.pop(context, true);
+                            final confirmation = await _showReportPostDialog(
+                              context,
+                              _selectedReason?.type ?? widget.reasonFor.reasonsForString,
+                            );
+                            if (confirmation == true) {
+                              widget.onReportInvoked?.call(_selectedReason!);
+                              _socialPostBloc.add(ReportEvent(
+                                contentId: widget.contentId,
+                                reportReason: _selectedReason!,
+                                showToastOnSuccess: widget.showToastOnSuccess,
+                                onComplete: (success) {
+                                  widget.onReportSuccess?.call(
+                                      _selectedReason!);
+                                },
+                              ));
+                            } else {
+                              widget.onReportCanceled?.call(_selectedReason!);
+                            }
                           },
                     isDisable: _selectedReason == null,
                     textColor: IsrColors.white,
@@ -169,4 +196,54 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
           ),
         ),
       );
+
+  Future<bool?> _showReportPostDialog(BuildContext context, String type) => showDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => Dialog(
+      shape:
+      RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      backgroundColor: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              IsrTranslationFile.reportAlertTitle(type),
+              style: IsrStyles.primaryText18
+                  .copyWith(fontWeight: FontWeight.w700),
+            ),
+            16.responsiveVerticalSpace,
+            Text(
+              IsrTranslationFile.reportConfirmation(type),
+              style: IsrStyles.primaryText14.copyWith(
+                color: '4A4A4A'.toColor(),
+              ),
+            ),
+            32.responsiveVerticalSpace,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                AppButton(
+                  title: IsrTranslationFile.report,
+                  width: 102.responsiveDimension,
+                  onPress: () => Navigator.of(context).pop(true),
+                  backgroundColor: 'E04755'.toColor(),
+                ),
+                AppButton(
+                  title: IsrTranslationFile.cancel,
+                  width: 102.responsiveDimension,
+                  onPress: () => Navigator.of(context).pop(false),
+                  backgroundColor: 'F6F6F6'.toColor(),
+                  textColor: Theme.of(context).primaryColor,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }

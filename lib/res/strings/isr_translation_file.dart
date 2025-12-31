@@ -1,4 +1,5 @@
 import 'package:ism_video_reel_player/res/res.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 
 class IsrTranslationFile {
   IsrTranslationFile._();
@@ -91,6 +92,7 @@ class IsrTranslationFile {
   static const String createPost = 'Create Post';
   static const moreOptions = 'More Options';
   static const reportPost = 'Report Post';
+  static String reportAlertTitle(String type) => 'Report ${type.capitalizeWords()}';
   static const postReportedSuccessfully = 'Post reported successfully';
   static const report = 'Report';
   static const confirm = 'Confirm';
@@ -118,6 +120,8 @@ class IsrTranslationFile {
       'Are you sure you want to Post Now?';
   static const String reportPostConfirmation =
       'Are you sure you want to report this post?';
+  static String reportConfirmation(String type) =>
+      'Are you sure you want to report this ${type.capitalizeWords()}?';
   static const String editPostConfirmation =
       'Are you sure you want to edit the post?';
   static const postDeletedSuccessfully = 'Post deleted successfully';
@@ -134,6 +138,8 @@ class IsrTranslationFile {
       'Be the first one to post a comment';
   static const String commentReportedSuccessfully =
       'Comment reported successfully';
+  static String reportedSuccessfully(String type) =>
+      '${type.capitalizeWords()} reported successfully';
   static const String failedToUpdateWishlistStatus =
       'Failed to update wishlist status';
   static const String justNow = 'Just now';

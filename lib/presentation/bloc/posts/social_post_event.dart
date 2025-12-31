@@ -109,11 +109,11 @@ class LikePostEvent extends SocialPostEvent {
 class GetReasonEvent extends SocialPostEvent {
   GetReasonEvent({
     required this.onComplete,
-    this.reasonsFor,
+    required this.reasonsFor,
   });
 
   final Function(List<ReportReason>?) onComplete;
-  final ReasonsFor? reasonsFor;
+  final ReasonsFor reasonsFor;
 }
 
 class ReportPostEvent extends SocialPostEvent {
@@ -128,6 +128,20 @@ class ReportPostEvent extends SocialPostEvent {
   final String message;
   final String reason;
   final Function(bool, String) onComplete;
+}
+
+class ReportEvent extends SocialPostEvent {
+  const ReportEvent({
+    required this.contentId,
+    required this.reportReason,
+    required this.onComplete,
+    this.showToastOnSuccess = true,
+  });
+
+  final String contentId;
+  final ReportReason reportReason;
+  final bool showToastOnSuccess;
+  final Function(bool isSuccess) onComplete;
 }
 
 class GetSocialProductsEvent extends SocialPostEvent {

@@ -108,6 +108,9 @@ enum CommentAction {
 enum ReasonsFor {
   socialPost,
   comment,
+  socialUser,
+  sound,
+  story,
 }
 
 enum PostTabType {

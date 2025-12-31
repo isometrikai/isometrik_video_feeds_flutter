@@ -52,9 +52,14 @@ abstract class SocialRepository extends BaseRepository {
     required String reason,
   });
 
+  Future<CustomResponse<ResponseClass?>> report({
+    required bool isLoading,
+    required ReportRequest reportRequest,
+  });
+
   Future<CustomResponse<List<ReportReason>?>> getReportReasons({
     required bool isLoading,
-    ReasonsFor? reasonFor,
+    required ReasonsFor reasonFor,
   });
 
   Future<CustomResponse<CloudDetailsResponse?>> getCloudDetails({

@@ -645,26 +645,13 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                     TapHandler(
                       onTap: () async {
                         context.pop();
-                        final data = await showDialog<int>(
+                        final data = await showDialog<dynamic>(
                           context: context,
                           builder: (_) => ReportReasonDialog(
-                            onConfirm: (reportReason) {
-                              _socialBloc.add(
-                                CommentActionEvent(
-                                    userId: comment.commentedByUserId,
-                                    commentId: comment.id ?? '',
-                                    commentAction: CommentAction.report,
-                                    reportReason: reportReason.id,
-                                    commentMessage: reportReason.name,
-                                    postDataModel: widget.postData,
-                                    tabDataModel: widget.tabData,
-                                    isLoading: false),
-                              );
-                            },
+                            reasonFor: ReasonsFor.comment,
+                            contentId: comment.id ?? '',
                           ),
                         );
-                        if (data == null) return;
-                        Navigator.pop(context, data);
                       },
                       child: Text(
                         IsrTranslationFile.report,

@@ -72,10 +72,16 @@ abstract class SocialApiService extends BaseService {
     required Header header,
   });
 
+  Future<ResponseModel> report({
+    required bool isLoading,
+    required Map<String, dynamic> reportBody,
+    required Header header,
+  });
+
   Future<ResponseModel> getReportReasons({
     required bool isLoading,
     required Header header,
-    ReasonsFor? reasonFor,
+    required ReasonsFor reasonFor,
   });
 
   Future<ResponseModel> getCloudDetails({
