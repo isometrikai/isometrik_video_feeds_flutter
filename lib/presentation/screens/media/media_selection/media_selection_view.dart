@@ -716,7 +716,7 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
           ),
 
           // Selection indicator (checkbox/counter)
-          if (isSelected)
+          if (isSelected || state.isMultiSelectMode)
             Positioned(
               top: 4,
               right: 4,
@@ -727,13 +727,17 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
                   width: 24,
                   height: 24,
                   decoration: BoxDecoration(
-                    color: widget.mediaSelectionConfig.primaryColor,
+                    color: isSelected ? widget.mediaSelectionConfig.primaryColor : Colors.white,
                     shape: state.isMultiSelectMode
                         ? BoxShape.circle
                         : BoxShape.rectangle,
                     borderRadius: state.isMultiSelectMode
                         ? null
                         : BorderRadius.circular(4),
+                    border: Border.all(
+                      color: !isSelected ? widget.mediaSelectionConfig.primaryColor : Colors.white,
+                      width: 1,
+                    )
                   ),
                   child: Center(
                     child: state.isMultiSelectMode
