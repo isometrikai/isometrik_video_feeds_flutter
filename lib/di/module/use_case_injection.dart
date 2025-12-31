@@ -50,6 +50,8 @@ class UseCaseInjection {
 
     IsmInjectionUtils.registerUseCase<GetPostDetailsUseCase>(() =>
         GetPostDetailsUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<GetPostInsightUseCase>(() =>
+        GetPostInsightUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<GoogleCloudStorageUploaderUseCase>(() =>
         GoogleCloudStorageUploaderUseCase(
             IsmInjectionUtils.getRepo<SocialRepository>()));

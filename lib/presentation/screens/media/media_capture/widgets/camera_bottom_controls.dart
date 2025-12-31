@@ -60,6 +60,7 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
   Widget build(BuildContext context) => Align(
         alignment: Alignment.bottomCenter,
         child: SafeArea(
+          bottom: false,
           child: BlocBuilder<CameraBloc, CameraState>(
             builder: (BuildContext context, CameraState state) {
               // Show loading state with progress indicator in place of record button

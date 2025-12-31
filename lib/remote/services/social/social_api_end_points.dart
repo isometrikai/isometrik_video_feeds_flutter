@@ -16,6 +16,7 @@ class SocialApiEndPoints {
   static const String postCommentLike = '/api/v1/likes/comment';
   static const String postReportComment = '/api/v1/reports';
   static const String getPostDetails = '/api/v1/posts/detail';
+  static String getPostInsights(String postId) => '/api/v1/posts/$postId/insights';
   static String get getSocialProducts => '/fast/api/v1/social-pdp/bulk';
   // static String get getSocialProducts => switch (appFlavour) {
   //   AppFlavor.production => '/v1/product/socialpost/details',
