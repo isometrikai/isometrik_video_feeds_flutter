@@ -480,10 +480,10 @@ class _PostItemWidgetState extends State<PostItemWidget>
           '🎯 MainWidget: Page changed to index $index (@${reelsData.userName})');
     }
 
-    // OPTIMIZATION: Platform-specific preloading to avoid Android memory issues
-    // Android: ONLY 1 ahead (very conservative to prevent NO_MEMORY decoder errors)
+    // OPTIMIZATION: Platform-specific preloading for smooth scrolling
+    // Android: 2 ahead (balanced for smooth experience with increased cache)
     // iOS: 3 ahead (more aggressive for smoother experience)
-    final preloadCount = Platform.isAndroid ? 1 : 3;
+    final preloadCount = Platform.isAndroid ? 2 : 3;
     final startIndex = math.max(0, index - 1); // 1 behind
     final endIndex = math.min(_reelsDataList.length - 1, index + preloadCount);
 

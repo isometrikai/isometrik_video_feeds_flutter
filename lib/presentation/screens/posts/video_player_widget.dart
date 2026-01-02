@@ -8,6 +8,11 @@ import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
+/// Configure VisibilityDetector for faster updates (smoother playback)
+void _configureVisibilityDetector() {
+  VisibilityDetectorController.instance.updateInterval = const Duration(milliseconds: 100);
+}
+
 /// Separate widget for video player with visibility detection and pooling
 class VideoPlayerWidget extends StatefulWidget {
   const VideoPlayerWidget({
@@ -57,10 +62,15 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   bool _hasLoggedVideoStarted = false;
   final Set<int> _loggedProgressMilestones =
       {}; // Track which milestones (25, 50, 75, 100) have been logged
+  
+  // OPTIMIZATION: Throttle progress callbacks for smoother performance
+  int _lastProgressCallbackTime = 0;
 
   @override
   void initState() {
     super.initState();
+    // OPTIMIZATION: Configure VisibilityDetector for faster updates
+    _configureVisibilityDetector();
     _initializeVideoPlayer();
   }
 
@@ -144,11 +154,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     }
 
     try {
-      // Set looping to false so video can complete
-      await _videoPlayerController!.setLooping(true);
-      await _videoPlayerController!.setVolume(widget.isMuted ? 0.0 : 1.0);
-      await _videoPlayerController!.seekTo(Duration.zero);
-
       // Reset completion flag, manual pause state, and analytics tracking
       _hasCompleted = false;
       _isManuallyPaused = false;
@@ -160,14 +165,18 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       // Add listener for video completion
       _videoPlayerController!.addListener(_handlePlaybackProgress);
 
+      // OPTIMIZATION: Run setup operations in parallel for faster playback start
+      await Future.wait([
+        _videoPlayerController!.setLooping(true),
+        _videoPlayerController!.setVolume(widget.isMuted ? 0.0 : 1.0),
+      ]);
+
       // If widget is visible when initialized, start playing immediately
-      debugPrint(
-          'VideoPlayerWidget:- url: ${widget.mediaUrl} - isVisible: $_isVisible');
       if (_isVisible) {
-        await _videoPlayerController!.play();
+        // Don't await play - let it start immediately
+        unawaited(_videoPlayerController!.play());
         widget.videoCacheManager.markAsVisible(widget.mediaUrl);
       } else {
-        await _videoPlayerController!.pause();
         widget.videoCacheManager.markAsNotVisible(widget.mediaUrl);
       }
     } catch (e) {
@@ -192,8 +201,13 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       _maxWatchPosition = position;
     }
 
-    widget.videoProgressCallBack
-        ?.call(duration.inMilliseconds, position.inMilliseconds);
+    // OPTIMIZATION: Throttle progress callbacks to every 200ms for smoother UI
+    final now = DateTime.now().millisecondsSinceEpoch;
+    if (now - _lastProgressCallbackTime >= 200) {
+      _lastProgressCallbackTime = now;
+      widget.videoProgressCallBack
+          ?.call(duration.inMilliseconds, position.inMilliseconds);
+    }
 
     // 1. Log "Video Started" event when video actually starts playing (position > 0)
     if (!_hasLoggedVideoStarted &&
@@ -275,9 +289,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     if (_isDisposed) return;
 
     final wasVisible = _isVisible;
-    _isVisible = info.visibleFraction > 0.9;
-    debugPrint(
-        'VideoPlayerWidget:- url: ${widget.mediaUrl} - VisibilityFraction: ${info.visibleFraction}');
+    // OPTIMIZATION: Lower threshold (0.5) for earlier video start like Instagram
+    _isVisible = info.visibleFraction > 0.5;
 
     // Only notify if visibility state actually changed
     if (wasVisible != _isVisible) {
@@ -294,19 +307,20 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         if (_isVisible &&
             !_videoPlayerController!.isPlaying &&
             !_isManuallyPaused) {
-          // Video is visible - play it (only if not manually paused)
-          _videoPlayerController!.play();
+          // OPTIMIZATION: Don't await - fire and forget for instant response
+          unawaited(_videoPlayerController!.play());
           widget.videoCacheManager.markAsVisible(widget.mediaUrl);
         } else if (!_isVisible && _videoPlayerController!.isPlaying) {
           // Video is not visible - pause it
-          _videoPlayerController!.pause();
+          unawaited(_videoPlayerController!.pause());
           widget.videoCacheManager.markAsNotVisible(widget.mediaUrl);
         }
       } catch (e) {
         debugPrint(
             '⚠️ VideoPlayerWidget: Error in visibility change handler: $e');
       }
-    } else {
+    } else if (_isVisible && !_isInitializing) {
+      // OPTIMIZATION: If visible but not initialized, start initialization immediately
       _isDisposed = false;
       _initializeVideoPlayer();
     }
