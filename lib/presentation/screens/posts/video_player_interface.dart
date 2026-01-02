@@ -31,6 +31,12 @@ abstract class IVideoPlayerController {
   /// Check if video is playing
   bool get isPlaying;
 
+  /// Check if video is buffering
+  bool get isBuffering;
+
+  /// Force resume playback if stuck (only for visible videos)
+  Future<void> forceResume();
+
   /// Check if video is initialized
   bool get isInitialized;
 

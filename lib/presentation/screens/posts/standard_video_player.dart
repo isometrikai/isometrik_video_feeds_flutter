@@ -77,6 +77,17 @@ class StandardVideoPlayerController implements IVideoPlayerController {
   bool get isPlaying => _controller.value.isPlaying;
 
   @override
+  bool get isBuffering => _controller.value.isBuffering;
+
+  @override
+  Future<void> forceResume() async {
+    if (_isDisposed) return;
+    if (!_controller.value.isPlaying) {
+      await _controller.play();
+    }
+  }
+
+  @override
   bool get isInitialized => _controller.value.isInitialized;
 
   @override
