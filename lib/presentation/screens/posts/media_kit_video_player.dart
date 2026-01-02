@@ -86,7 +86,8 @@ class MediaKitVideoPlayerWrapper implements IVideoPlayerController {
 
   @override
   Future<void> setLooping(bool looping) async {
-    await _player.setPlaylistMode(looping ? PlaylistMode.single : PlaylistMode.none);
+    await _player
+        .setPlaylistMode(looping ? PlaylistMode.single : PlaylistMode.none);
   }
 
   @override
@@ -114,10 +115,12 @@ class MediaKitVideoPlayerWrapper implements IVideoPlayerController {
   }
 
   @override
-  Duration get position => _position > Duration.zero ? _position : _player.state.position;
+  Duration get position =>
+      _position > Duration.zero ? _position : _player.state.position;
 
   @override
-  Duration get duration => _duration > Duration.zero ? _duration : _player.state.duration;
+  Duration get duration =>
+      _duration > Duration.zero ? _duration : _player.state.duration;
 
   @override
   bool get isPlaying => _player.state.playing;
@@ -222,7 +225,8 @@ class MediaKitCacheManager implements IVideoCacheManager {
 
   MediaKitCacheManager._internal();
 
-  static final MediaKitCacheManager _instance = MediaKitCacheManager._internal();
+  static final MediaKitCacheManager _instance =
+      MediaKitCacheManager._internal();
 
   static bool _isInitialized = false;
   static bool _isAudioSessionConfigured = false;
@@ -235,7 +239,8 @@ class MediaKitCacheManager implements IVideoCacheManager {
   }
 
   final Map<String, MediaKitVideoPlayerWrapper> _videoControllerCache = {};
-  final Map<String, Future<MediaKitVideoPlayerWrapper?>> _initializationCache = {};
+  final Map<String, Future<MediaKitVideoPlayerWrapper?>> _initializationCache =
+      {};
   final Queue<String> _lruQueue = Queue<String>();
   final Set<String> _visibleVideos = <String>{};
 
@@ -267,7 +272,8 @@ class MediaKitCacheManager implements IVideoCacheManager {
         avAudioSessionCategory: AVAudioSessionCategory.playback,
         avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.duckOthers,
         avAudioSessionMode: AVAudioSessionMode.moviePlayback,
-        avAudioSessionRouteSharingPolicy: AVAudioSessionRouteSharingPolicy.defaultPolicy,
+        avAudioSessionRouteSharingPolicy:
+            AVAudioSessionRouteSharingPolicy.defaultPolicy,
         avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.none,
         androidAudioAttributes: AndroidAudioAttributes(
           contentType: AndroidAudioContentType.movie,
@@ -296,7 +302,8 @@ class MediaKitCacheManager implements IVideoCacheManager {
     }
   }
 
-  Future<(Player, VideoController)> _createVideoPlayerController(String mediaUrl) async {
+  Future<(Player, VideoController)> _createVideoPlayerController(
+      String mediaUrl) async {
     var url = mediaUrl;
 
     // Handle local files
@@ -325,8 +332,10 @@ class MediaKitCacheManager implements IVideoCacheManager {
 
     // Native MPV properties for HLS speed
     if (player.platform is NativePlayer) {
-      unawaited((player.platform as NativePlayer).setProperty('demuxer-readahead-secs', '10'));
-      unawaited((player.platform as NativePlayer).setProperty('hls-bitrate', 'max'));
+      unawaited((player.platform as NativePlayer)
+          .setProperty('demuxer-readahead-secs', '10'));
+      unawaited(
+          (player.platform as NativePlayer).setProperty('hls-bitrate', 'max'));
     }
 
     // Set up headers for network requests
@@ -346,20 +355,14 @@ class MediaKitCacheManager implements IVideoCacheManager {
       );
     }
 
-    // Force play if it gets stuck in a buffering state
-    player.stream.buffering.listen((isBuffering) {
-      if (!isBuffering && !player.state.playing) {
-        player.play();
-      }
-    });
-
-    // Note: Removed auto-play on buffering end - this was causing unwanted playback
-    // Visibility-based play/pause is now the only playback control mechanism
+    // IMPORTANT: Do NOT auto-play on buffering end - this causes multiple videos to play audio
+    // Visibility-based play/pause in VideoPlayerWidget is the ONLY playback control mechanism
 
     return (player, videoController);
   }
 
-  Future<MediaKitVideoPlayerWrapper?> _initializeVideoController(String url) async {
+  Future<MediaKitVideoPlayerWrapper?> _initializeVideoController(
+      String url) async {
     // If already initializing, wait for existing initialization
     if (_initializationCache.containsKey(url)) {
       return _initializationCache[url];
@@ -393,7 +396,8 @@ class MediaKitCacheManager implements IVideoCacheManager {
     }
   }
 
-  Future<MediaKitVideoPlayerWrapper?> _createAndInitializeController(String url) async {
+  Future<MediaKitVideoPlayerWrapper?> _createAndInitializeController(
+      String url) async {
     try {
       // CRITICAL: Configure audio session BEFORE creating player (especially for iOS)
       await _configureAudioSession();
@@ -401,7 +405,8 @@ class MediaKitCacheManager implements IVideoCacheManager {
       // CRITICAL: Proactive cache management for Android BEFORE initialization
       if (Platform.isAndroid) {
         if (_videoControllerCache.length >= _maxCacheSize - 1) {
-          debugPrint('🔥 Proactive: Clearing cache before initialization (at limit)');
+          debugPrint(
+              '🔥 Proactive: Clearing cache before initialization (at limit)');
           // Non-blocking cache clear - don't wait for it
           unawaited(_clearNonVisibleVideos());
         }
@@ -425,7 +430,8 @@ class MediaKitCacheManager implements IVideoCacheManager {
           timeoutDuration,
           onTimeout: () {
             debugPrint('⚠️ MediaKit initialization timeout for: $url');
-            throw TimeoutException('Video initialization timeout', timeoutDuration);
+            throw TimeoutException(
+                'Video initialization timeout', timeoutDuration);
           },
         );
         player = result.$1;
@@ -440,7 +446,8 @@ class MediaKitCacheManager implements IVideoCacheManager {
 
         if (isMemoryError) {
           _memoryErrorCount++;
-          debugPrint('🔥 CRITICAL: Memory/Decoder error detected! (Count: $_memoryErrorCount)');
+          debugPrint(
+              '🔥 CRITICAL: Memory/Decoder error detected! (Count: $_memoryErrorCount)');
           debugPrint('🔥 Error: $e');
           debugPrint('🔥 Clearing cache and retrying...');
 
@@ -451,8 +458,10 @@ class MediaKitCacheManager implements IVideoCacheManager {
             final retryResult = await _createVideoPlayerController(url).timeout(
               timeoutDuration,
               onTimeout: () {
-                debugPrint('⚠️ MediaKit retry initialization timeout for: $url');
-                throw TimeoutException('Video retry initialization timeout', timeoutDuration);
+                debugPrint(
+                    '⚠️ MediaKit retry initialization timeout for: $url');
+                throw TimeoutException(
+                    'Video retry initialization timeout', timeoutDuration);
               },
             );
             player = retryResult.$1;
@@ -491,7 +500,8 @@ class MediaKitCacheManager implements IVideoCacheManager {
 
       if (!hasValidState) {
         debugPrint('❌ MediaKit not initialized properly for: $url');
-        debugPrint('❌ State: width=${player.state.width}, duration=${player.state.duration}');
+        debugPrint(
+            '❌ State: width=${player.state.width}, duration=${player.state.duration}');
         await wrapper.dispose();
         return null;
       }
@@ -566,7 +576,8 @@ class MediaKitCacheManager implements IVideoCacheManager {
   }
 
   /// Safely dispose a controller with proper cleanup sequence
-  Future<void> _safeDispose(MediaKitVideoPlayerWrapper controller, String url) async {
+  Future<void> _safeDispose(
+      MediaKitVideoPlayerWrapper controller, String url) async {
     try {
       await controller.dispose();
       debugPrint('🗑️ MediaKitCache: Evicted video from cache: $url');
@@ -576,7 +587,8 @@ class MediaKitCacheManager implements IVideoCacheManager {
   }
 
   @override
-  Future<void> precacheVideos(List<String> videoUrls, {bool highPriority = false}) async {
+  Future<void> precacheVideos(List<String> videoUrls,
+      {bool highPriority = false}) async {
     final futures = <Future<void>>[];
 
     for (final url in videoUrls) {
@@ -647,8 +659,9 @@ class MediaKitCacheManager implements IVideoCacheManager {
   @override
   void clearControllersOutsideRange(List<String> activeUrls) {
     final urlsToKeep = Set<String>.from(activeUrls);
-    final urlsToRemove =
-        _videoControllerCache.keys.where((url) => !urlsToKeep.contains(url)).toList();
+    final urlsToRemove = _videoControllerCache.keys
+        .where((url) => !urlsToKeep.contains(url))
+        .toList();
 
     for (final url in urlsToRemove) {
       clearVideo(url);
