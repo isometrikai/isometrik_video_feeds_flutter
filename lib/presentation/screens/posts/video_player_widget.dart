@@ -179,6 +179,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         // Don't await play - let it start immediately
         unawaited(_videoPlayerController!.play());
         widget.videoCacheManager.markAsVisible(widget.mediaUrl);
+        // Start stuck video detection to handle videos that don't start
+        _startStuckVideoDetection();
       } else {
         widget.videoCacheManager.markAsNotVisible(widget.mediaUrl);
       }
@@ -338,7 +340,16 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   /// Start periodic check for stuck videos (only for visible video)
   void _startStuckVideoDetection() {
     _stopStuckVideoDetection(); // Cancel any existing timer
-    _stuckVideoTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+    
+    // First check after 500ms (catch early stuck videos)
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (!_isDisposed && _isVisible) {
+        _checkAndRecoverStuckVideo();
+      }
+    });
+    
+    // Then check every 1 second (more aggressive than before)
+    _stuckVideoTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       _checkAndRecoverStuckVideo();
     });
   }
@@ -359,10 +370,15 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     if (_videoPlayerController != null &&
         _videoPlayerController!.isInitialized &&
         !_videoPlayerController!.isDisposed) {
-      // If video is visible but not playing and is buffering, try to recover
+      // If video is visible but not playing, try to recover
       if (!_videoPlayerController!.isPlaying) {
         debugPrint('🔄 Detected stuck video, attempting recovery...');
+        // Set volume and force resume
+        unawaited(_videoPlayerController!.setVolume(widget.isMuted ? 0.0 : 1.0));
         unawaited(_videoPlayerController!.forceResume());
+      } else {
+        // Video is playing, stop the detection timer
+        _stopStuckVideoDetection();
       }
     }
   }

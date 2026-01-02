@@ -113,20 +113,27 @@ class MediaKitVideoPlayerWrapper implements IVideoPlayerController {
   Future<void> forceResume() async {
     if (_isDisposed) return;
 
-    // If buffering for too long, try seeking to current position to unstick
-    if (_player.state.buffering && !_player.state.playing) {
-      debugPrint('🔄 Force resuming stuck video...');
-      try {
-        // Seek to current position can help unstick buffering
-        await _player.seek(_player.state.position);
-        await Future.delayed(const Duration(milliseconds: 100));
-        await _player.play();
-      } catch (e) {
-        debugPrint('⚠️ Error force resuming: $e');
+    debugPrint(
+        '🔄 Force resuming video... buffering=${_player.state.buffering}, playing=${_player.state.playing}');
+
+    try {
+      // Ensure audio session is active
+      await MediaKitCacheManager._configureAudioSession();
+
+      if (_player.state.buffering) {
+        // If stuck in buffering, seek to current position to unstick
+        final currentPos = _player.state.position;
+        await _player
+            .seek(currentPos > Duration.zero ? currentPos : Duration.zero);
+        await Future.delayed(const Duration(milliseconds: 50));
       }
-    } else if (!_player.state.playing) {
-      // Not buffering but not playing - just play
-      await _player.play();
+
+      // Always try to play if not already playing
+      if (!_player.state.playing) {
+        await _player.play();
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error force resuming: $e');
     }
   }
 
