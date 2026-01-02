@@ -66,6 +66,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   // OPTIMIZATION: Throttle progress callbacks for smoother performance
   int _lastProgressCallbackTime = 0;
 
+  // Timer to detect and recover stuck videos
+  Timer? _stuckVideoTimer;
+
   @override
   void initState() {
     super.initState();
@@ -312,10 +315,14 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           // OPTIMIZATION: Don't await - fire and forget for instant response
           unawaited(_videoPlayerController!.play());
           widget.videoCacheManager.markAsVisible(widget.mediaUrl);
+          // Start stuck video detection for visible video
+          _startStuckVideoDetection();
         } else if (!_isVisible && _videoPlayerController!.isPlaying) {
           // Video is not visible - pause it
           unawaited(_videoPlayerController!.pause());
           widget.videoCacheManager.markAsNotVisible(widget.mediaUrl);
+          // Stop stuck video detection when not visible
+          _stopStuckVideoDetection();
         }
       } catch (e) {
         debugPrint(
@@ -325,6 +332,38 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       // OPTIMIZATION: If visible but not initialized, start initialization immediately
       _isDisposed = false;
       _initializeVideoPlayer();
+    }
+  }
+
+  /// Start periodic check for stuck videos (only for visible video)
+  void _startStuckVideoDetection() {
+    _stopStuckVideoDetection(); // Cancel any existing timer
+    _stuckVideoTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+      _checkAndRecoverStuckVideo();
+    });
+  }
+
+  /// Stop stuck video detection
+  void _stopStuckVideoDetection() {
+    _stuckVideoTimer?.cancel();
+    _stuckVideoTimer = null;
+  }
+
+  /// Check if video is stuck and try to recover
+  void _checkAndRecoverStuckVideo() {
+    if (_isDisposed || !_isVisible || _isManuallyPaused) {
+      _stopStuckVideoDetection();
+      return;
+    }
+
+    if (_videoPlayerController != null &&
+        _videoPlayerController!.isInitialized &&
+        !_videoPlayerController!.isDisposed) {
+      // If video is visible but not playing and is buffering, try to recover
+      if (!_videoPlayerController!.isPlaying) {
+        debugPrint('🔄 Detected stuck video, attempting recovery...');
+        unawaited(_videoPlayerController!.forceResume());
+      }
     }
   }
 
@@ -421,6 +460,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   @override
   void dispose() {
     _isDisposed = true;
+    // Cancel stuck video detection timer
+    _stopStuckVideoDetection();
     // Log watch event when widget is disposed (user navigates away)
     _logWatchEventIfNeeded();
     // Safety check: ensure controller is valid and not already disposed
