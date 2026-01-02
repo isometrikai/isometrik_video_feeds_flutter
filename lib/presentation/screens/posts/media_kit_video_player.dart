@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:io';
 
+import 'package:audio_session/audio_session.dart';
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/video_player_interface.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -21,13 +22,10 @@ class MediaKitVideoPlayerWrapper implements IVideoPlayerController {
   bool _hasLoggedError = false;
   StreamSubscription<bool>? _playingSubscription;
   StreamSubscription<String>? _errorSubscription;
-  Size _videoSize = Size.zero;
   Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
   StreamSubscription<Duration>? _positionSubscription;
   StreamSubscription<Duration>? _durationSubscription;
-  StreamSubscription<int?>? _widthSubscription;
-  StreamSubscription<int?>? _heightSubscription;
 
   final List<VoidCallback> _listeners = [];
 
@@ -46,14 +44,15 @@ class MediaKitVideoPlayerWrapper implements IVideoPlayerController {
         _hasLoggedError = true;
         debugPrint('❌ MediaKit playback error detected during runtime');
         debugPrint('❌ Error description: $error');
-        debugPrint('❌ Video size: $_videoSize');
         debugPrint('❌ Position: $_position');
         debugPrint('❌ Duration: $_duration');
       }
     });
 
-    // Listen to position changes
-    _positionSubscription = _player.stream.position.listen((pos) {
+    // Listen to position changes - throttled to reduce UI overhead
+    _positionSubscription = _player.stream.position
+        .distinct((prev, next) => (next - prev).inMilliseconds.abs() < 250)
+        .listen((pos) {
       if (!_isDisposed) {
         _position = pos;
         _notifyListeners();
@@ -64,21 +63,6 @@ class MediaKitVideoPlayerWrapper implements IVideoPlayerController {
     _durationSubscription = _player.stream.duration.listen((dur) {
       if (!_isDisposed) {
         _duration = dur;
-        _notifyListeners();
-      }
-    });
-
-    // Listen to video dimensions
-    _widthSubscription = _player.stream.width.listen((width) {
-      if (!_isDisposed && width != null) {
-        _videoSize = Size(width.toDouble(), _videoSize.height);
-        _notifyListeners();
-      }
-    });
-
-    _heightSubscription = _player.stream.height.listen((height) {
-      if (!_isDisposed && height != null) {
-        _videoSize = Size(_videoSize.width, height.toDouble());
         _notifyListeners();
       }
     });
@@ -184,8 +168,6 @@ class MediaKitVideoPlayerWrapper implements IVideoPlayerController {
       await _errorSubscription?.cancel();
       await _positionSubscription?.cancel();
       await _durationSubscription?.cancel();
-      await _widthSubscription?.cancel();
-      await _heightSubscription?.cancel();
     } catch (e) {
       debugPrint('⚠️ Error cancelling subscriptions: $e');
     }
@@ -220,11 +202,14 @@ class MediaKitCacheManager implements IVideoCacheManager {
     _ensureInitialized();
     return _instance;
   }
+
   MediaKitCacheManager._internal();
+
   static final MediaKitCacheManager _instance =
       MediaKitCacheManager._internal();
 
   static bool _isInitialized = false;
+  static bool _isAudioSessionConfigured = false;
 
   final Map<String, MediaKitVideoPlayerWrapper> _videoControllerCache = {};
   final Map<String, Future<MediaKitVideoPlayerWrapper?>> _initializationCache =
@@ -233,7 +218,8 @@ class MediaKitCacheManager implements IVideoCacheManager {
   final Set<String> _visibleVideos = <String>{};
 
   // OPTIMIZATION: Platform-specific cache size for memory management
-  static int get _maxCacheSize => Platform.isAndroid ? 6 : 30;
+  // Increased Android cache for smoother scrolling (Instagram-like experience)
+  static int get _maxCacheSize => Platform.isAndroid ? 10 : 30;
 
   // Track memory errors to adaptively reduce cache
   int _memoryErrorCount = 0;
@@ -243,6 +229,43 @@ class MediaKitCacheManager implements IVideoCacheManager {
     if (!_isInitialized) {
       MediaKit.ensureInitialized();
       _isInitialized = true;
+    }
+  }
+
+  /// Configure audio session for iOS - MUST be called before playing audio
+  static Future<void> _configureAudioSession() async {
+    if (_isAudioSessionConfigured) return;
+
+    try {
+      final session = await AudioSession.instance;
+
+      // Configure for video playback with audio
+      // Using default options (no mixWithOthers) for better audio device initialization
+      await session.configure(const AudioSessionConfiguration(
+        avAudioSessionCategory: AVAudioSessionCategory.playback,
+        avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.none,
+        avAudioSessionMode: AVAudioSessionMode.defaultMode,
+        avAudioSessionRouteSharingPolicy:
+            AVAudioSessionRouteSharingPolicy.defaultPolicy,
+        avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.none,
+        androidAudioAttributes: AndroidAudioAttributes(
+          contentType: AndroidAudioContentType.movie,
+          usage: AndroidAudioUsage.media,
+        ),
+        androidAudioFocusGainType: AndroidAudioFocusGainType.gain,
+        androidWillPauseWhenDucked: true,
+      ));
+
+      // Activate the audio session
+      await session.setActive(true);
+
+      // Small delay to ensure audio device is ready
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      _isAudioSessionConfigured = true;
+      debugPrint('✅ Audio session configured successfully for video playback');
+    } catch (e) {
+      debugPrint('❌ Error configuring audio session: $e');
     }
   }
 
@@ -257,8 +280,21 @@ class MediaKitCacheManager implements IVideoCacheManager {
       url = url.replaceFirst('http:', 'https:');
     }
 
-    final player = Player();
-    final videoController = VideoController(player);
+    // OPTIMIZATION: Configure player for smooth playback
+    final player = Player(
+      configuration: const PlayerConfiguration(
+        // Buffer more video ahead for smoother playback
+        bufferSize: 32 * 1024 * 1024, // 32MB buffer
+      ),
+    );
+
+    final videoController = VideoController(
+      player,
+      configuration: const VideoControllerConfiguration(
+        // Enable hardware acceleration for smoother playback
+        enableHardwareAcceleration: true,
+      ),
+    );
 
     // Set up headers for network requests
     final headers = {
@@ -276,6 +312,9 @@ class MediaKitCacheManager implements IVideoCacheManager {
         play: false,
       );
     }
+
+    // Note: Removed auto-play on buffering end - this was causing unwanted playback
+    // Visibility-based play/pause is now the only playback control mechanism
 
     return (player, videoController);
   }
@@ -318,18 +357,21 @@ class MediaKitCacheManager implements IVideoCacheManager {
   Future<MediaKitVideoPlayerWrapper?> _createAndInitializeController(
       String url) async {
     try {
+      // CRITICAL: Configure audio session BEFORE creating player (especially for iOS)
+      await _configureAudioSession();
+
       // CRITICAL: Proactive cache management for Android BEFORE initialization
       if (Platform.isAndroid) {
         if (_videoControllerCache.length >= _maxCacheSize - 1) {
           debugPrint(
               '🔥 Proactive: Clearing cache before initialization (at limit)');
-          await _clearNonVisibleVideos();
-
-          await Future.delayed(const Duration(milliseconds: 300));
+          // Non-blocking cache clear - don't wait for it
+          unawaited(_clearNonVisibleVideos());
         }
 
         if (_memoryErrorCount > 0) {
-          final delay = 500 * _memoryErrorCount.clamp(1, 3);
+          // OPTIMIZATION: Reduced delay from 500ms to 100ms per error
+          final delay = 100 * _memoryErrorCount.clamp(1, 3);
           debugPrint(
               '⏳ Adding ${delay}ms delay before initialization (error count: $_memoryErrorCount)');
           await Future.delayed(Duration(milliseconds: delay));
@@ -393,36 +435,23 @@ class MediaKitCacheManager implements IVideoCacheManager {
         }
       }
 
-      // Wait for video to be ready - especially important for HLS streams
-      // Try to wait for width, but don't fail if it times out (HLS may take longer)
+      // Wait for video to actually be ready (width or duration available)
+      // HLS streams may take a moment to parse the manifest
       try {
-        await player.stream.width.where((w) => w != null).first.timeout(
-              const Duration(seconds: 5),
-              onTimeout: () => null,
-            );
+        await Future.any([
+          player.stream.width.where((w) => w != null).first,
+          player.stream.duration.where((d) => d > Duration.zero).first,
+        ]).timeout(
+          const Duration(seconds: 3),
+          onTimeout: () => null,
+        );
       } catch (_) {
-        // Ignore timeout - HLS streams may not have dimensions immediately
-      }
-
-      // Alternative: wait for duration to be available (works for HLS)
-      if (player.state.width == null) {
-        try {
-          await player.stream.duration
-              .where((d) => d > Duration.zero)
-              .first
-              .timeout(
-                const Duration(seconds: 5),
-                onTimeout: () => Duration.zero,
-              );
-        } catch (_) {
-          // Ignore - we'll check if player is usable below
-        }
+        // Ignore timeout - check state below
       }
 
       final wrapper = MediaKitVideoPlayerWrapper(player, videoController);
 
-      // For HLS streams, dimensions might not be available until playback starts
-      // Check if player is at least ready (has duration or tracks loaded)
+      // Check if video is actually ready to play
       final hasValidState = player.state.width != null ||
           player.state.duration > Duration.zero ||
           player.state.playlist.medias.isNotEmpty;
@@ -436,10 +465,13 @@ class MediaKitCacheManager implements IVideoCacheManager {
       }
 
       debugPrint(
-          '✅ MediaKit initialized successfully - Size: ${wrapper.videoSize}, Duration: ${wrapper.duration}, URL: $url');
+          '✅ MediaKit initialized - Width: ${player.state.width}, Duration: ${player.state.duration}, URL: $url');
 
-      await wrapper.setLooping(false);
-      await wrapper.setVolume(1.0);
+      // OPTIMIZATION: Run setup in parallel for faster ready state
+      await Future.wait([
+        wrapper.setLooping(false),
+        wrapper.setVolume(1.0),
+      ]);
       return wrapper;
     } catch (e, stackTrace) {
       debugPrint('❌ MediaKit Error creating video controller for URL: $url');
