@@ -24,11 +24,14 @@ class SocialPostInsightView extends StatefulWidget {
   State<StatefulWidget> createState() => _SocialPostInsightViewState();
 }
 
+enum LocationType { cities, states, countries }
+
 class _SocialPostInsightViewState extends State<SocialPostInsightView> {
   TimeLineData? _postData;
   InsightsData? _postInsight;
   late final String? _postId;
   final _socialPostBloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
+  LocationType _selectedLocationType = LocationType.countries;
 
   @override
   void initState() {
@@ -64,7 +67,8 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
           listener: (context, state) {
             _postData =
                 (state is PostInsightDetails) ? state.postData : _postData;
-            _postInsight = (state is PostInsightDetails) ? state.insightData?.data : null;
+            _postInsight =
+                (state is PostInsightDetails) ? state.insightData?.data : null;
             log('post insight data: ${_postData?.toMap()}');
           },
           builder: (context, state) => SafeArea(
@@ -99,7 +103,9 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
             _buildCircularGraphSection(
               title: IsrTranslationFile.views,
               mainLabel: IsrTranslationFile.views,
-              mainValue: _postInsight?.summary?.views ?? _postData?.engagementMetrics?.views ?? 0,
+              mainValue: _postInsight?.summary?.views ??
+                  _postData?.engagementMetrics?.views ??
+                  0,
               selectedLabel: IsrTranslationFile.followers,
               selectedValue: _postInsight?.followerSplit?.viewsFollowers ?? 0,
               // needed from API
@@ -109,9 +115,11 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
             _buildCircularGraphSection(
               title: IsrTranslationFile.interactions,
               mainLabel: IsrTranslationFile.interactions,
-              mainValue: _postInsight?.summary?.interactions ?? _calculateTotalInteractions(),
+              mainValue: _postInsight?.summary?.interactions ??
+                  _calculateTotalInteractions(),
               selectedLabel: IsrTranslationFile.followers,
-              selectedValue: _postInsight?.followerSplit?.interactionsFollowers ?? 0,
+              selectedValue:
+                  _postInsight?.followerSplit?.interactionsFollowers ?? 0,
               // needed from API
               unselectedLabel: IsrTranslationFile.nonFollowers,
             ),
@@ -119,6 +127,13 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
             _buildStatisticsSection(),
             IsrDimens.boxHeight(IsrDimens.twentyFour),
             _buildProfileActivitySection(),
+            IsrDimens.boxHeight(IsrDimens.twentyFour),
+            if (_postInsight?.locations?.cities?.isNotEmpty == true ||
+                _postInsight?.locations?.states?.isNotEmpty == true ||
+                _postInsight?.locations?.countries?.isNotEmpty == true) ...[
+              _buildLocationSectionSection(),
+              IsrDimens.boxHeight(IsrDimens.twentyFour),
+            ],
           ],
         ),
       );
@@ -181,10 +196,18 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
   }
 
   Widget _buildInteractionIcons() {
-    final likes = _postInsight?.summary?.likes ?? _postData?.engagementMetrics?.likeTypes?.like?.toInt() ?? 0;
-    final comments = _postInsight?.summary?.comments ?? _postData?.engagementMetrics?.comments?.toInt() ?? 0;
-    final shares = _postInsight?.summary?.shares ?? _postData?.engagementMetrics?.shares?.toInt() ?? 0;
-    final saves = _postInsight?.summary?.saves ?? _postData?.engagementMetrics?.saves?.toInt() ?? 0;
+    final likes = _postInsight?.summary?.likes ??
+        _postData?.engagementMetrics?.likeTypes?.like?.toInt() ??
+        0;
+    final comments = _postInsight?.summary?.comments ??
+        _postData?.engagementMetrics?.comments?.toInt() ??
+        0;
+    final shares = _postInsight?.summary?.shares ??
+        _postData?.engagementMetrics?.shares?.toInt() ??
+        0;
+    final saves = _postInsight?.summary?.saves ??
+        _postData?.engagementMetrics?.saves?.toInt() ??
+        0;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -229,9 +252,14 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
       );
 
   Widget _buildOverviewSection() {
-    final views = _postInsight?.summary?.views ?? _postData?.engagementMetrics?.views?.toInt() ?? 0;
-    final interactions = _postInsight?.summary?.interactions ?? _calculateTotalInteractions();
-    final profileActivity = (_postInsight?.summary?.profileActivity?.follows ?? 0) + (_postInsight?.summary?.profileActivity?.profileVisits ?? 0);
+    final views = _postInsight?.summary?.views ??
+        _postData?.engagementMetrics?.views?.toInt() ??
+        0;
+    final interactions =
+        _postInsight?.summary?.interactions ?? _calculateTotalInteractions();
+    final profileActivity =
+        (_postInsight?.summary?.profileActivity?.follows ?? 0) +
+            (_postInsight?.summary?.profileActivity?.profileVisits ?? 0);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -401,10 +429,18 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
       );
 
   Widget _buildStatisticsSection() {
-    final likes = _postInsight?.summary?.likes ?? _postData?.engagementMetrics?.likeTypes?.like?.toInt() ?? 0;
-    final comments = _postInsight?.summary?.comments ?? _postData?.engagementMetrics?.comments?.toInt() ?? 0;
-    final shares = _postInsight?.summary?.shares ?? _postData?.engagementMetrics?.shares?.toInt() ?? 0;
-    final saves = _postInsight?.summary?.saves ?? _postData?.engagementMetrics?.saves?.toInt() ?? 0;
+    final likes = _postInsight?.summary?.likes ??
+        _postData?.engagementMetrics?.likeTypes?.like?.toInt() ??
+        0;
+    final comments = _postInsight?.summary?.comments ??
+        _postData?.engagementMetrics?.comments?.toInt() ??
+        0;
+    final shares = _postInsight?.summary?.shares ??
+        _postData?.engagementMetrics?.shares?.toInt() ??
+        0;
+    final saves = _postInsight?.summary?.saves ??
+        _postData?.engagementMetrics?.saves?.toInt() ??
+        0;
     final accountEngaged = _postInsight?.summary?.accountsEngaged ?? 0;
 
     return Column(
@@ -449,7 +485,8 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
       );
 
   Widget _buildProfileActivitySection() {
-    final profileVisits = _postInsight?.summary?.profileActivity?.profileVisits ?? 0;
+    final profileVisits =
+        _postInsight?.summary?.profileActivity?.profileVisits ?? 0;
     final follows = _postInsight?.summary?.profileActivity?.follows ?? 0;
 
     return Column(
@@ -474,5 +511,179 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
     final shares = _postData?.engagementMetrics?.shares?.toInt() ?? 0;
     final saves = _postData?.engagementMetrics?.saves?.toInt() ?? 0;
     return likes + comments + shares + saves;
+  }
+
+  Widget _buildLocationSectionSection() {
+    final totalViews = _postInsight?.summary?.views ?? 0;
+    final countryList = _postInsight?.locations?.countries ?? [];
+    final statesLst = _postInsight?.locations?.states ?? [];
+    final cityList = _postInsight?.locations?.cities ?? [];
+
+    var currentList = <PlaceViews>[];
+    switch (_selectedLocationType) {
+      case LocationType.countries:
+        currentList = countryList;
+        break;
+      case LocationType.states:
+        currentList = statesLst;
+        break;
+      case LocationType.cities:
+        currentList = cityList;
+        break;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              IsrTranslationFile.topLocations,
+              style: IsrStyles.primaryText14Bold,
+            ),
+            IsrDimens.boxHeight(IsrDimens.sixteen),
+            Expanded(
+                child: _buildLocationTypeSelector(
+                    currentList.length, statesLst.length, cityList.length)),
+          ],
+        ),
+        IsrDimens.boxHeight(IsrDimens.sixteen),
+        ...switch (_selectedLocationType) {
+          LocationType.countries =>
+            countryList.map((e) => _buildLocationBar(e, totalViews)),
+          LocationType.states =>
+            statesLst.map((e) => _buildLocationBar(e, totalViews)),
+          LocationType.cities =>
+            cityList.map((e) => _buildLocationBar(e, totalViews)),
+        },
+      ],
+    );
+  }
+
+  Widget _buildLocationTypeSelector(
+          int countriesLength, int statesLength, int citiesLength) =>
+      Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        spacing: 12.responsiveDimension,
+        children: [
+          if (citiesLength > 0)
+            _buildLocationTab(
+              label: 'Cities',
+              type: LocationType.cities,
+            ),
+          if (statesLength > 0)
+            _buildLocationTab(
+              label: 'States',
+              type: LocationType.states,
+            ),
+          if (countriesLength > 0)
+            _buildLocationTab(
+              label: 'Countries',
+              type: LocationType.countries,
+            ),
+        ],
+      );
+
+  Widget _buildLocationTab({
+    required String label,
+    required LocationType type,
+  }) {
+    final isSelected = _selectedLocationType == type;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedLocationType = type;
+        });
+      },
+      child: Text(
+        label,
+        style: IsrStyles.primaryText12.copyWith(
+          color: isSelected ? IsrColors.appColor : '#767676'.color,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLocationBar(PlaceViews location, num totalViews) {
+    var locationName = '';
+    switch (_selectedLocationType) {
+      case LocationType.countries:
+        locationName = location.country ?? '';
+        break;
+      case LocationType.states:
+        locationName = location.state ?? '';
+        break;
+      case LocationType.cities:
+        // For cities, the name might be in country field or state field
+        locationName = location.city ?? '';
+        break;
+    }
+
+    final progress = (location.views?.toDouble() ?? 0.0) /
+        (totalViews.toDouble().takeIf((e) => e > 0) ?? 1);
+    final percentage = progress * 100;
+
+    return Row(
+      mainAxisSize: MainAxisSize.max,
+      mainAxisAlignment: MainAxisAlignment.center,
+      spacing: 28.responsiveDimension,
+      children: [
+        SizedBox(
+          width: 90.responsiveDimension,
+          child: Text(
+            locationName,
+            style: IsrStyles.primaryText12.copyWith(
+              fontWeight: FontWeight.w500,
+              color: '767676'.toColor(),
+            ),
+            textAlign: TextAlign.end,
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
+        ),
+        Expanded(
+          child: SizedBox(
+            height: 13.responsiveDimension,
+            child: Stack(
+              children: [
+                Container(
+                  width: double.infinity,
+                  height: 13.responsiveDimension,
+                  decoration: BoxDecoration(
+                    color: IsrColors.appColor.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(2.responsiveDimension),
+                  ),
+                ),
+                FractionallySizedBox(
+                  widthFactor: progress.clamp(0.0, 1.0),
+                  child: Container(
+                    height: 13.responsiveDimension,
+                    decoration: BoxDecoration(
+                      color: IsrColors.appColor,
+                      borderRadius:
+                          BorderRadius.circular(2.responsiveDimension),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        SizedBox(
+          width: 45.responsiveDimension,
+          child: Text(
+            '${percentage.toStringAsFixed(1)}%',
+            style: IsrStyles.primaryText12.copyWith(
+              color: '767676'.toColor(),
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.end,
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
+        ),
+      ],
+    );
   }
 }
