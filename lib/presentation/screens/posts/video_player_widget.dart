@@ -307,6 +307,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         if (_isVisible &&
             !_videoPlayerController!.isPlaying &&
             !_isManuallyPaused) {
+          // Ensure volume is set correctly before playing
+          unawaited(_videoPlayerController!.setVolume(widget.isMuted ? 0.0 : 1.0));
           // OPTIMIZATION: Don't await - fire and forget for instant response
           unawaited(_videoPlayerController!.play());
           widget.videoCacheManager.markAsVisible(widget.mediaUrl);
