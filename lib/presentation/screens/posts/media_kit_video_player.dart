@@ -91,11 +91,15 @@ class MediaKitVideoPlayerWrapper implements IVideoPlayerController {
 
   @override
   Future<void> setVolume(double volume) async {
-    await _player.setVolume(volume * 100); // media_kit uses 0-100 scale
+    final mediaKitVolume = volume * 100; // media_kit uses 0-100 scale
+    await _player.setVolume(mediaKitVolume);
+    debugPrint('🔊 Volume set to: $mediaKitVolume (input: $volume)');
   }
 
   @override
   Future<void> play() async {
+    // Ensure audio session is active before playing
+    await MediaKitCacheManager._configureAudioSession();
     await _player.play();
   }
 
@@ -161,6 +165,22 @@ class MediaKitVideoPlayerWrapper implements IVideoPlayerController {
     _isDisposed = true;
 
     try {
+      // CRITICAL FIX: Stop playback BEFORE cancelling subscriptions
+      // This prevents mpv from sending property changes after disposal
+      if (_player.state.playing) {
+        await _player.pause();
+      }
+
+      // Stop the player to terminate mpv's playback loop
+      await _player.stop();
+
+      // Small delay to let mpv core thread finish sending pending events
+      await Future.delayed(const Duration(milliseconds: 50));
+    } catch (e) {
+      debugPrint('⚠️ Error stopping player: $e');
+    }
+
+    try {
       await _playingSubscription?.cancel();
       await _errorSubscription?.cancel();
       await _positionSubscription?.cancel();
@@ -207,6 +227,13 @@ class MediaKitCacheManager implements IVideoCacheManager {
   static bool _isInitialized = false;
   static bool _isAudioSessionConfigured = false;
 
+  /// Reset audio session configuration to allow reconfiguration
+  /// Call this if audio is not working
+  static void resetAudioSession() {
+    _isAudioSessionConfigured = false;
+    debugPrint('🔄 Audio session reset - will reconfigure on next video');
+  }
+
   final Map<String, MediaKitVideoPlayerWrapper> _videoControllerCache = {};
   final Map<String, Future<MediaKitVideoPlayerWrapper?>> _initializationCache = {};
   final Queue<String> _lruQueue = Queue<String>();
@@ -235,11 +262,11 @@ class MediaKitCacheManager implements IVideoCacheManager {
       final session = await AudioSession.instance;
 
       // Configure for video playback with audio
-      // Using default options (no mixWithOthers) for better audio device initialization
+      // moviePlayback mode is optimized for video content with audio
       await session.configure(const AudioSessionConfiguration(
         avAudioSessionCategory: AVAudioSessionCategory.playback,
-        avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.none,
-        avAudioSessionMode: AVAudioSessionMode.defaultMode,
+        avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.duckOthers,
+        avAudioSessionMode: AVAudioSessionMode.moviePlayback,
         avAudioSessionRouteSharingPolicy: AVAudioSessionRouteSharingPolicy.defaultPolicy,
         avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.none,
         androidAudioAttributes: AndroidAudioAttributes(
@@ -247,19 +274,25 @@ class MediaKitCacheManager implements IVideoCacheManager {
           usage: AndroidAudioUsage.media,
         ),
         androidAudioFocusGainType: AndroidAudioFocusGainType.gain,
-        androidWillPauseWhenDucked: true,
+        androidWillPauseWhenDucked: false,
       ));
 
       // Activate the audio session
-      await session.setActive(true);
+      final activated = await session.setActive(true);
+
+      if (!activated) {
+        debugPrint('⚠️ Audio session activation returned false');
+        return; // Don't mark as configured if activation failed
+      }
 
       // Small delay to ensure audio device is ready
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future.delayed(const Duration(milliseconds: 100));
 
       _isAudioSessionConfigured = true;
       debugPrint('✅ Audio session configured successfully for video playback');
     } catch (e) {
       debugPrint('❌ Error configuring audio session: $e');
+      // Don't mark as configured on error - allow retry
     }
   }
 
@@ -290,6 +323,12 @@ class MediaKitCacheManager implements IVideoCacheManager {
       ),
     );
 
+    // Native MPV properties for HLS speed
+    if (player.platform is NativePlayer) {
+      unawaited((player.platform as NativePlayer).setProperty('demuxer-readahead-secs', '10'));
+      unawaited((player.platform as NativePlayer).setProperty('hls-bitrate', 'max'));
+    }
+
     // Set up headers for network requests
     final headers = {
       'User-Agent': 'FlutterVideoPlayer',
@@ -306,6 +345,13 @@ class MediaKitCacheManager implements IVideoCacheManager {
         play: false,
       );
     }
+
+    // Force play if it gets stuck in a buffering state
+    player.stream.buffering.listen((isBuffering) {
+      if (!isBuffering && !player.state.playing) {
+        player.play();
+      }
+    });
 
     // Note: Removed auto-play on buffering end - this was causing unwanted playback
     // Visibility-based play/pause is now the only playback control mechanism
@@ -481,9 +527,7 @@ class MediaKitCacheManager implements IVideoCacheManager {
     for (final url in urlsToRemove) {
       final controller = _videoControllerCache.remove(url);
       if (controller != null) {
-        disposeFutures.add(controller.dispose().catchError((e) {
-          debugPrint('⚠️ Error disposing controller for $url: $e');
-        }));
+        disposeFutures.add(_safeDispose(controller, url));
         _lruQueue.remove(url);
         debugPrint('🗑️ Emergency: Clearing video from cache: $url');
       }
@@ -515,9 +559,19 @@ class MediaKitCacheManager implements IVideoCacheManager {
 
       final controller = _videoControllerCache.remove(url);
       if (controller != null) {
-        unawaited(controller.dispose());
-        debugPrint('🗑️ MediaKitCache: Evicted video from cache: $url');
+        // Schedule disposal on next microtask to avoid blocking
+        unawaited(_safeDispose(controller, url));
       }
+    }
+  }
+
+  /// Safely dispose a controller with proper cleanup sequence
+  Future<void> _safeDispose(MediaKitVideoPlayerWrapper controller, String url) async {
+    try {
+      await controller.dispose();
+      debugPrint('🗑️ MediaKitCache: Evicted video from cache: $url');
+    } catch (e) {
+      debugPrint('⚠️ Error disposing controller for $url: $e');
     }
   }
 
@@ -572,14 +626,17 @@ class MediaKitCacheManager implements IVideoCacheManager {
     _visibleVideos.remove(url);
     _lruQueue.remove(url);
     final controller = _videoControllerCache.remove(url);
-    controller?.dispose();
+    if (controller != null) {
+      unawaited(_safeDispose(controller, url));
+    }
     _initializationCache.remove(url);
   }
 
   @override
   void clearControllers() {
-    for (final controller in _videoControllerCache.values) {
-      controller.dispose();
+    // Dispose all controllers safely
+    for (final entry in _videoControllerCache.entries) {
+      unawaited(_safeDispose(entry.value, entry.key));
     }
     _videoControllerCache.clear();
     _initializationCache.clear();
