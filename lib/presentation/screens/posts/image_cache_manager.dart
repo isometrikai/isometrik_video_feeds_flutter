@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:collection';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
+import 'package:ism_video_reel_player/utils/utility.dart';
 
 /// Cache manager implementation for images
 class ImageCacheManager implements IMediaCacheManager {
@@ -146,14 +148,24 @@ class ImageCacheManager implements IMediaCacheManager {
   /// Preload image into Flutter's image cache for instant display
   Future<void> _preloadIntoFlutterCache(String url) async {
     try {
-      final provider = NetworkImage(url);
-      // Use the global image cache directly
-      provider.resolve(ImageConfiguration.empty);
-      debugPrint(
-          '✅ ImageCacheManager: Successfully preloaded image into Flutter cache: $url');
+      final provider = CachedNetworkImageProvider(
+        url,
+        cacheKey: url, // MUST match widget cacheKey
+      );
+
+      await precacheImage(provider, Utility.context!);
+
+      debugPrint('⚡ Memory cached (instant load): $url');
     } catch (e) {
-      debugPrint(
-          '❌ ImageCacheManager: Error preloading image into Flutter cache: $e');
+      debugPrint('⚠️ Error precaching image: $url');
+      try {
+        final provider = NetworkImage(url);
+        // Use the global image cache directly
+        provider.resolve(ImageConfiguration.empty);
+      } catch (e) {
+        debugPrint('❌ Memory preload failed: $url');
+        debugPrint('$e');
+      }
     }
   }
 

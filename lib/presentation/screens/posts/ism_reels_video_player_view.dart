@@ -265,8 +265,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     if (nextVideos.isNotEmpty) {
       // Preload videos and thumbnails together (non-blocking)
-      final allMedia = [...nextVideos, ...nextThumbnails];
-      MediaCacheFactory.precacheMedia(allMedia, highPriority: false).then((_) {
+      final allMedia = [...nextThumbnails, ...nextVideos, ];
+      MediaCacheFactory.precacheMedia(allMedia, highPriority: true).then((_) {
         debugPrint(
             '✅ VideoPlayer: Successfully preloaded ${nextVideos.length} videos and ${nextThumbnails.length} thumbnails');
       }).catchError((error) {

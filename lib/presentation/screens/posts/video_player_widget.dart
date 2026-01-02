@@ -580,13 +580,18 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                               !_videoPlayerController!.isInitialized ||
                               _videoPlayerController!.isDisposed) {
                             // Return thumbnail as fallback if controller becomes invalid
-                            return _getImageWidget(
-                              imageUrl: widget.thumbnailUrl,
-                              width: IsrDimens.getScreenWidth(context),
-                              height: IsrDimens.getScreenHeight(context),
-                              fit: BoxFit.fill,
-                              filterQuality: FilterQuality.low,
-                              showError: false,
+                            return Container(
+                              color: Colors.black,
+                              child: Center(
+                                child: _getImageWidget(
+                                  imageUrl: widget.thumbnailUrl,
+                                  width: IsrDimens.getScreenWidth(context),
+                                  height: IsrDimens.getScreenHeight(context),
+                                  fit: BoxFit.fill,
+                                  filterQuality: FilterQuality.low,
+                                  showError: false,
+                                ),
+                              ),
                             );
                           }
                           final size = _videoPlayerController!.videoSize;
@@ -614,13 +619,18 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                 ),
               ] else ...[
                 // Video is not ready, show thumbnail
-                _getImageWidget(
-                  imageUrl: widget.thumbnailUrl,
-                  width: IsrDimens.getScreenWidth(context),
-                  height: IsrDimens.getScreenHeight(context),
-                  fit: BoxFit.fill,
-                  filterQuality: FilterQuality.low,
-                  showError: false,
+                Container(
+                  color: Colors.black,
+                  child: Center(
+                    child: _getImageWidget(
+                      imageUrl: widget.thumbnailUrl,
+                      width: IsrDimens.getScreenWidth(context),
+                      height: IsrDimens.getScreenHeight(context),
+                      fit: BoxFit.fill,
+                      filterQuality: FilterQuality.low,
+                      showError: false,
+                    ),
+                  ),
                 ),
               ]
             ],
