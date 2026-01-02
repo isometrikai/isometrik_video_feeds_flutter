@@ -71,6 +71,7 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Header row - fixed at top
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -96,67 +97,74 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
                 ],
               ),
               24.responsiveVerticalSpace,
-              _isLoading
-                  ? Center(child: Utility.loaderWidget())
-                  : SingleChildScrollView(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Header and reasons list
-                          ...List.generate(
-                            _reportReasons.length,
-                            (index) => Padding(
-                              padding: IsrDimens.edgeInsets(
-                                  bottom: IsrDimens.twelve),
-                              child: TapHandler(
-                                onTap: () {
-                                  setState(() {
-                                    _selectedReason = _reportReasons[index];
-                                  });
-                                },
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 24.responsiveDimension,
-                                      height: 24.responsiveDimension,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: _selectedReason ==
-                                                  _reportReasons[index]
-                                              ? Theme.of(context).primaryColor
-                                              : '838383'.toColor(),
-                                          width: 2.responsiveDimension,
+              // Scrollable content - wrapped in Flexible to prevent overflow
+              Flexible(
+                child: _isLoading
+                    ? Center(child: Utility.loaderWidget())
+                    : SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Header and reasons list
+                            ...List.generate(
+                              _reportReasons.length,
+                              (index) => Padding(
+                                padding: IsrDimens.edgeInsets(
+                                    bottom: IsrDimens.twelve),
+                                child: TapHandler(
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedReason = _reportReasons[index];
+                                    });
+                                  },
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 24.responsiveDimension,
+                                        height: 24.responsiveDimension,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: _selectedReason ==
+                                                    _reportReasons[index]
+                                                ? Theme.of(context).primaryColor
+                                                : '838383'.toColor(),
+                                            width: 2.responsiveDimension,
+                                          ),
+                                        ),
+                                        child: _selectedReason ==
+                                                _reportReasons[index]
+                                            ? Center(
+                                                child: Container(
+                                                  width: 12.responsiveDimension,
+                                                  height:
+                                                      12.responsiveDimension,
+                                                  decoration: BoxDecoration(
+                                                    shape: BoxShape.circle,
+                                                    color: Theme.of(context)
+                                                        .primaryColor,
+                                                  ),
+                                                ),
+                                              )
+                                            : null,
+                                      ),
+                                      12.responsiveHorizontalSpace,
+                                      Expanded(
+                                        child: Text(
+                                          _reportReasons[index].name ?? '',
+                                          style: IsrStyles.primaryText14,
                                         ),
                                       ),
-                                      child: _selectedReason ==
-                                              _reportReasons[index]
-                                          ? Center(
-                                              child: Container(
-                                                width: 12.responsiveDimension,
-                                                height: 12.responsiveDimension,
-                                                decoration: BoxDecoration(
-                                                  shape: BoxShape.circle,
-                                                  color: Theme.of(context)
-                                                      .primaryColor,
-                                                ),
-                                              ),
-                                            )
-                                          : null,
-                                    ),
-                                    12.responsiveHorizontalSpace,
-                                    Text(
-                                      _reportReasons[index].name ?? '',
-                                      style: IsrStyles.primaryText14,
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
+              ),
+              // Button section - fixed at bottom
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -169,7 +177,8 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
                             Navigator.pop(context, true);
                             final confirmation = await _showReportPostDialog(
                               context,
-                              _selectedReason?.type ?? widget.reasonFor.reasonsForString,
+                              _selectedReason?.type ??
+                                  widget.reasonFor.reasonsForString,
                             );
                             if (confirmation == true) {
                               widget.onReportInvoked?.call(_selectedReason!);
@@ -178,8 +187,8 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
                                 reportReason: _selectedReason!,
                                 showToastOnSuccess: widget.showToastOnSuccess,
                                 onComplete: (success) {
-                                  widget.onReportSuccess?.call(
-                                      _selectedReason!);
+                                  widget.onReportSuccess
+                                      ?.call(_selectedReason!);
                                 },
                               ));
                             } else {
@@ -197,53 +206,54 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
         ),
       );
 
-  Future<bool?> _showReportPostDialog(BuildContext context, String type) => showDialog<bool>(
-    context: context,
-    barrierDismissible: false,
-    builder: (context) => Dialog(
-      shape:
-      RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      backgroundColor: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              IsrTranslationFile.reportAlertTitle(type),
-              style: IsrStyles.primaryText18
-                  .copyWith(fontWeight: FontWeight.w700),
-            ),
-            16.responsiveVerticalSpace,
-            Text(
-              IsrTranslationFile.reportConfirmation(type),
-              style: IsrStyles.primaryText14.copyWith(
-                color: '4A4A4A'.toColor(),
-              ),
-            ),
-            32.responsiveVerticalSpace,
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+  Future<bool?> _showReportPostDialog(BuildContext context, String type) =>
+      showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Dialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppButton(
-                  title: IsrTranslationFile.report,
-                  width: 102.responsiveDimension,
-                  onPress: () => Navigator.of(context).pop(true),
-                  backgroundColor: 'E04755'.toColor(),
+                Text(
+                  IsrTranslationFile.reportAlertTitle(type),
+                  style: IsrStyles.primaryText18
+                      .copyWith(fontWeight: FontWeight.w700),
                 ),
-                AppButton(
-                  title: IsrTranslationFile.cancel,
-                  width: 102.responsiveDimension,
-                  onPress: () => Navigator.of(context).pop(false),
-                  backgroundColor: 'F6F6F6'.toColor(),
-                  textColor: Theme.of(context).primaryColor,
+                16.responsiveVerticalSpace,
+                Text(
+                  IsrTranslationFile.reportConfirmation(type),
+                  style: IsrStyles.primaryText14.copyWith(
+                    color: '4A4A4A'.toColor(),
+                  ),
+                ),
+                32.responsiveVerticalSpace,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    AppButton(
+                      title: IsrTranslationFile.report,
+                      width: 102.responsiveDimension,
+                      onPress: () => Navigator.of(context).pop(true),
+                      backgroundColor: 'E04755'.toColor(),
+                    ),
+                    AppButton(
+                      title: IsrTranslationFile.cancel,
+                      width: 102.responsiveDimension,
+                      onPress: () => Navigator.of(context).pop(false),
+                      backgroundColor: 'F6F6F6'.toColor(),
+                      textColor: Theme.of(context).primaryColor,
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
         ),
-      ),
-    ),
-  );
+      );
 }

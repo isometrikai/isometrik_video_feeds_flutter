@@ -141,16 +141,17 @@ class _PostItemWidgetState extends State<PostItemWidget>
 
     if (!mounted) return;
 
-    // OPTIMIZATION: Animate to target page without blocking
+    // OPTIMIZATION: Animate to target page after PageView is built
+    // Must use post-frame callback because PageController is not attached yet in initState
     final targetPage = _pageController.initialPage >= _reelsDataList.length
         ? _reelsDataList.length - 1
         : _pageController.initialPage;
     if (targetPage > 0) {
-      unawaited(_pageController.animateToPage(
-        targetPage,
-        duration: const Duration(milliseconds: 1),
-        curve: Curves.easeIn,
-      ));
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _pageController.hasClients) {
+          _pageController.jumpToPage(targetPage);
+        }
+      });
     }
   }
 
