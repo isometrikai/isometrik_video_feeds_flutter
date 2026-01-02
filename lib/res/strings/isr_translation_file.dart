@@ -155,6 +155,7 @@ class IsrTranslationFile {
   static const String nonFollowers = 'Non-Followers';
   static const String overview = 'Overview';
   static const String profileActivity = 'Profile activity';
+  static const String topLocations = 'Top Locations';
   static const String statistics = 'Statistics';
   static const String profileVisits = 'Profile visits';
   static const String comments = 'Comments';

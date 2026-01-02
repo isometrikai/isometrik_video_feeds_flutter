@@ -45,6 +45,7 @@ class InsightsData {
     this.id,
     this.summary,
     this.timeseries,
+    this.locations,
     this.followerSplit,
   });
 
@@ -64,6 +65,9 @@ class InsightsData {
         ),
       ),
     ),
+    locations: json['locations'] == null
+        ? null
+        : Locations.fromMap(json['locations'] as Map<String, dynamic>),
     followerSplit: json['follower_split'] == null
         ? null
         : FollowerSplit.fromMap(
@@ -74,6 +78,7 @@ class InsightsData {
   String? id;
   InsightsSummary? summary;
   List<InsightsTimeSeries>? timeseries;
+  Locations? locations;
   FollowerSplit? followerSplit;
 
   Map<String, dynamic> toMap() => {
@@ -82,6 +87,7 @@ class InsightsData {
     'timeseries': timeseries == null
         ? []
         : List<dynamic>.from(timeseries!.map((x) => x.toMap())),
+    'locations': locations?.toMap(),
     'follower_split': followerSplit?.toMap(),
   };
 }
@@ -206,6 +212,77 @@ class InsightsTimeSeries {
     'saves': saves,
     'shares': shares,
     'comments': comments,
+  };
+}
+
+class Locations {
+  Locations({
+    this.countries,
+    this.states,
+    this.cities,
+  });
+
+  factory Locations.fromMap(Map<String, dynamic> json) => Locations(
+    countries: json['countries'] == null
+        ? []
+        : List<PlaceViews>.from(
+        (json['countries'] as List).map((x) => PlaceViews.fromMap(x as Map<String,dynamic>))),
+    states: json['states'] == null
+        ? []
+        : List<PlaceViews>.from(
+        (json['states'] as List).map((x) => PlaceViews.fromMap(x as Map<String,dynamic>))),
+    cities: json['cities'] == null
+        ? []
+        : List<PlaceViews>.from(
+        (json['cities'] as List).map((x) => PlaceViews.fromMap(x as Map<String,dynamic>))),
+  );
+
+  List<PlaceViews>? countries;
+  List<PlaceViews>? states;
+  List<PlaceViews>? cities;
+
+  Map<String, dynamic> toMap() => {
+    'countries': countries == null
+        ? []
+        : List<dynamic>.from(countries!.map((x) => x.toMap())),
+    'states': states == null
+        ? []
+        : List<dynamic>.from(states!.map((x) => x.toMap())),
+    'cities': cities == null
+        ? []
+        : List<dynamic>.from(cities!.map((x) => x.toMap())),
+  };
+}
+
+class PlaceViews {
+  PlaceViews({
+    this.country,
+    this.state,
+    this.city,
+    this.views,
+    this.pct,
+  });
+
+  factory PlaceViews.fromMap(Map<String, dynamic> json) => PlaceViews(
+    country: json['country'] as String? ?? '',
+    state: json['state'] as String? ?? '',
+    city: json['city'] as String? ?? '',
+    views: json['views'] as num? ?? 0,
+    pct: json['pct'] as num? ?? 0,
+  );
+
+  String? country;
+  String? state;
+  String? city;
+  num? views;
+  num? pct;
+
+  Map<String, dynamic> toMap() => {
+    'country': country,
+    'state': state,
+    'city': city,
+    'views': views,
+    'pct': pct,
   };
 }
 
