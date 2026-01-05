@@ -31,7 +31,7 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
   InsightsData? _postInsight;
   late final String? _postId;
   final _socialPostBloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
-  LocationType _selectedLocationType = LocationType.countries;
+  LocationType _selectedLocationType = LocationType.cities;
 
   @override
   void initState() {
