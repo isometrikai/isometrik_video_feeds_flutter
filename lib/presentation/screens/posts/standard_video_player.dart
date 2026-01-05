@@ -82,8 +82,31 @@ class StandardVideoPlayerController implements IVideoPlayerController {
   @override
   Future<void> forceResume() async {
     if (_isDisposed) return;
-    if (!_controller.value.isPlaying) {
-      await _controller.play();
+    
+    debugPrint('🔄 StandardVideoPlayer force resuming... isPlaying=${_controller.value.isPlaying}, isBuffering=${_controller.value.isBuffering}, position=${_controller.value.position}');
+    
+    try {
+      // Check if video is stuck at the beginning
+      final isStuckAtStart = _controller.value.position == Duration.zero && 
+                             !_controller.value.isPlaying;
+      
+      if (_controller.value.isBuffering || isStuckAtStart) {
+        // Seek to unstick the video
+        final currentPos = _controller.value.position;
+        if (currentPos == Duration.zero) {
+          await _controller.seekTo(const Duration(milliseconds: 100));
+        } else {
+          await _controller.seekTo(currentPos);
+        }
+        await Future.delayed(const Duration(milliseconds: 50));
+      }
+      
+      if (!_controller.value.isPlaying) {
+        await _controller.play();
+        debugPrint('▶️ StandardVideoPlayer force play triggered');
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error in StandardVideoPlayer forceResume: $e');
     }
   }
 
@@ -234,12 +257,13 @@ class StandardVideoCacheManager implements IVideoCacheManager {
       final controller = _createVideoPlayerController(url);
 
       // OPTIMIZATION: Add timeout to prevent hanging on slow networks
+      // Increased timeout to 15 seconds for slow network connections
       await controller.initialize().timeout(
-        const Duration(seconds: 10),
+        const Duration(seconds: 15),
         onTimeout: () {
           debugPrint('⚠️ StandardVideoPlayer initialization timeout for: $url');
           throw TimeoutException(
-              'Video initialization timeout', const Duration(seconds: 10));
+              'Video initialization timeout', const Duration(seconds: 15));
         },
       );
 

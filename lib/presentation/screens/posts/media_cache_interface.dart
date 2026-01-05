@@ -55,13 +55,32 @@ class MediaTypeUtil {
     final cleanUrl = url.split('?').first.split('#').first;
     final extension = cleanUrl.split('.').last.toLowerCase();
 
-    // Video extensions
-    if (['mp4', 'mov', 'avi', 'mkv', 'm3u8', 'webm'].contains(extension)) {
+    // Video extensions - include HLS, DASH, and other streaming formats
+    if (['mp4', 'mov', 'avi', 'mkv', 'm3u8', 'webm', 'ts', 'mpd', '3gp', 'flv', 'wmv'].contains(extension)) {
       return MediaType.video;
     }
 
     // Image extensions
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].contains(extension)) {
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic', 'heif', 'avif'].contains(extension)) {
+      return MediaType.photo;
+    }
+
+    // Check URL path for video indicators (CDN URLs may not have file extensions)
+    final lowerUrl = url.toLowerCase();
+    if (lowerUrl.contains('/video/') || 
+        lowerUrl.contains('/videos/') ||
+        lowerUrl.contains('video_') ||
+        lowerUrl.contains('/stream/') ||
+        lowerUrl.contains('/hls/') ||
+        lowerUrl.contains('/media/') && !lowerUrl.contains('/image/')) {
+      return MediaType.video;
+    }
+
+    // Check URL path for image indicators
+    if (lowerUrl.contains('/image/') || 
+        lowerUrl.contains('/images/') ||
+        lowerUrl.contains('/thumb/') ||
+        lowerUrl.contains('/thumbnail/')) {
       return MediaType.photo;
     }
 
