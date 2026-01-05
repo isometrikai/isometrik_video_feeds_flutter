@@ -68,6 +68,12 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   // Timer to detect and recover stuck videos
   Timer? _stuckVideoTimer;
+  
+  // Timer to check if controller is ready (for async initialization)
+  Timer? _controllerReadyCheckTimer;
+  
+  // Track if we've received valid video dimensions
+  bool _hasValidVideoSize = false;
 
   @override
   void initState() {
@@ -75,6 +81,63 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     // OPTIMIZATION: Configure VisibilityDetector for faster updates
     _configureVisibilityDetector();
     _initializeVideoPlayer();
+    // Start checking if controller becomes ready asynchronously
+    _startControllerReadyCheck();
+  }
+
+  /// Called when the video playing state changes
+  void _onPlayingStateChanged() {
+    if (_isDisposed || !mounted) return;
+    
+    // If video started playing, ensure UI shows the video player
+    if (_videoPlayerController != null && 
+        _videoPlayerController!.isPlaying) {
+      if (!_isInitialized) {
+        debugPrint('🎬 VideoPlayerWidget: Video started playing, updating UI...');
+        setState(() {
+          _isInitialized = true;
+        });
+      } else {
+        // Video is playing, trigger rebuild to update layout if size changed
+        setState(() {});
+      }
+    }
+  }
+
+  /// Periodically check if the controller has become ready (initialized async in cache)
+  void _startControllerReadyCheck() {
+    _controllerReadyCheckTimer?.cancel();
+    _controllerReadyCheckTimer = Timer.periodic(const Duration(milliseconds: 200), (_) {
+      if (_isDisposed) {
+        _controllerReadyCheckTimer?.cancel();
+        return;
+      }
+      
+      // If already initialized, stop checking
+      if (_isInitialized && _videoPlayerController != null) {
+        _controllerReadyCheckTimer?.cancel();
+        return;
+      }
+      
+      // Check if controller is now available in cache
+      final cachedController = widget.videoCacheManager
+          .getCachedMedia(widget.mediaUrl) as IVideoPlayerController?;
+      
+      if (cachedController != null && 
+          cachedController.isInitialized && 
+          !cachedController.isDisposed) {
+        debugPrint('✅ VideoPlayerWidget: Controller became ready (async check) for: ${widget.mediaUrl}');
+        _controllerReadyCheckTimer?.cancel();
+        _videoPlayerController = cachedController;
+        _setupVideoController().then((_) {
+          if (mounted) {
+            setState(() {
+              _isInitialized = true;
+            });
+          }
+        });
+      }
+    });
   }
 
   // @override
@@ -95,6 +158,11 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     if (_isInitializing || widget.mediaUrl.isEmpty) return;
 
     _isInitializing = true;
+    
+    // Trigger UI update to show loading indicator
+    if (mounted) {
+      setState(() {});
+    }
 
     try {
       // OPTIMIZATION: Try to get already cached and initialized controller first
@@ -103,7 +171,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
       // If controller exists and is already initialized, use it directly
       if (_videoPlayerController != null &&
-          _videoPlayerController!.isInitialized) {
+          _videoPlayerController!.isInitialized &&
+          !_videoPlayerController!.isDisposed) {
         debugPrint(
             '✅ VideoPlayerWidget: Using cached initialized controller for: ${widget.mediaUrl}');
         await _setupVideoController();
@@ -117,19 +186,20 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       }
 
       // OPTIMIZATION: If no cached controller, trigger precaching ONCE
-      // precacheMedia will handle initialization internally
+      // Use video cache manager directly to avoid media type detection issues
       if (_videoPlayerController == null) {
         debugPrint(
             '🔄 VideoPlayerWidget: Precaching video for: ${widget.mediaUrl}');
-        await MediaCacheFactory.precacheMedia([widget.mediaUrl],
-            highPriority: true);
+        // Use video cache manager directly (bypasses MediaTypeUtil)
+        await widget.videoCacheManager.precacheMedia([widget.mediaUrl], highPriority: true);
         _videoPlayerController = widget.videoCacheManager
             .getCachedMedia(widget.mediaUrl) as IVideoPlayerController?;
       }
 
       // Setup only if controller is now initialized
       if (_videoPlayerController != null &&
-          _videoPlayerController!.isInitialized) {
+          _videoPlayerController!.isInitialized &&
+          !_videoPlayerController!.isDisposed) {
         await _setupVideoController();
         if (mounted) {
           setState(() {
@@ -140,11 +210,34 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       } else {
         debugPrint(
             '⚠️ VideoPlayerWidget: Failed to initialize video: ${widget.mediaUrl}');
+        // If visible, schedule a retry
+        if (_isVisible && mounted) {
+          debugPrint('🔄 VideoPlayerWidget: Scheduling retry for visible video...');
+          Future.delayed(const Duration(seconds: 1), () {
+            if (!_isDisposed && _isVisible && !_isInitialized) {
+              _isInitializing = false;
+              _initializeVideoPlayer();
+            }
+          });
+        }
       }
     } catch (e) {
       debugPrint('❌ VideoPlayerWidget: Error initializing video: $e');
+      // If visible, schedule a retry on error
+      if (_isVisible && mounted) {
+        debugPrint('🔄 VideoPlayerWidget: Scheduling retry after error...');
+        Future.delayed(const Duration(seconds: 2), () {
+          if (!_isDisposed && _isVisible && !_isInitialized) {
+            _isInitializing = false;
+            _initializeVideoPlayer();
+          }
+        });
+      }
     } finally {
       _isInitializing = false;
+      if (mounted) {
+        setState(() {});
+      }
     }
   }
 
@@ -165,8 +258,11 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       _hasLoggedVideoStarted = false;
       _loggedProgressMilestones.clear();
 
-      // Add listener for video completion
+      // Add listener for video completion and playback progress
       _videoPlayerController!.addListener(_handlePlaybackProgress);
+      
+      // Listen to playing state changes to update UI
+      _videoPlayerController!.playingStateNotifier.addListener(_onPlayingStateChanged);
 
       // OPTIMIZATION: Run setup operations in parallel for faster playback start
       await Future.wait([
@@ -196,6 +292,18 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         !_videoPlayerController!.isInitialized ||
         _videoPlayerController!.isDisposed) {
       return;
+    }
+
+    // Check if video size became valid - trigger rebuild to update layout
+    if (!_hasValidVideoSize && _videoPlayerController != null) {
+      final size = _videoPlayerController!.videoSize;
+      if (size.width > 0 && size.height > 0) {
+        _hasValidVideoSize = true;
+        debugPrint('📐 VideoPlayerWidget: Video size now valid: $size');
+        if (mounted) {
+          setState(() {});
+        }
+      }
     }
 
     final position = _videoPlayerController!.position;
@@ -330,26 +438,34 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         debugPrint(
             '⚠️ VideoPlayerWidget: Error in visibility change handler: $e');
       }
-    } else if (_isVisible && !_isInitializing) {
-      // OPTIMIZATION: If visible but not initialized, start initialization immediately
-      _isDisposed = false;
-      _initializeVideoPlayer();
+    } else if (_isVisible) {
+      // OPTIMIZATION: If visible but not initialized/initializing, start initialization immediately
+      if (!_isInitializing && !_isInitialized) {
+        debugPrint('🔄 VideoPlayerWidget: Visible but not initialized, starting initialization...');
+        _isDisposed = false;
+        _initializeVideoPlayer();
+      }
     }
   }
+
+  // Track recovery attempts
+  int _recoveryAttempts = 0;
+  static const int _maxRecoveryAttempts = 5;
 
   /// Start periodic check for stuck videos (only for visible video)
   void _startStuckVideoDetection() {
     _stopStuckVideoDetection(); // Cancel any existing timer
+    _recoveryAttempts = 0; // Reset recovery attempts
     
-    // First check after 500ms (catch early stuck videos)
-    Future.delayed(const Duration(milliseconds: 500), () {
+    // First check after 300ms (catch early stuck videos faster)
+    Future.delayed(const Duration(milliseconds: 300), () {
       if (!_isDisposed && _isVisible) {
         _checkAndRecoverStuckVideo();
       }
     });
     
-    // Then check every 1 second (more aggressive than before)
-    _stuckVideoTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+    // Then check every 500ms (more aggressive for faster recovery)
+    _stuckVideoTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
       _checkAndRecoverStuckVideo();
     });
   }
@@ -372,14 +488,49 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         !_videoPlayerController!.isDisposed) {
       // If video is visible but not playing, try to recover
       if (!_videoPlayerController!.isPlaying) {
-        debugPrint('🔄 Detected stuck video, attempting recovery...');
+        _recoveryAttempts++;
+        debugPrint('🔄 Detected stuck video, recovery attempt $_recoveryAttempts/$_maxRecoveryAttempts...');
+        
         // Set volume and force resume
         unawaited(_videoPlayerController!.setVolume(widget.isMuted ? 0.0 : 1.0));
         unawaited(_videoPlayerController!.forceResume());
+        
+        // If too many recovery attempts, try re-initializing the video
+        if (_recoveryAttempts >= _maxRecoveryAttempts) {
+          debugPrint('⚠️ Max recovery attempts reached, re-initializing video...');
+          _stopStuckVideoDetection();
+          _reinitializeVideo();
+        }
       } else {
         // Video is playing, stop the detection timer
+        debugPrint('✅ Video started playing after $_recoveryAttempts attempts');
         _stopStuckVideoDetection();
       }
+    } else if (!_isInitializing && _isVisible) {
+      // Controller is not ready but video is visible - try to initialize
+      debugPrint('🔄 Controller not ready, reinitializing...');
+      _reinitializeVideo();
+    }
+  }
+
+  /// Re-initialize video when stuck
+  Future<void> _reinitializeVideo() async {
+    if (_isDisposed || !_isVisible) return;
+    
+    debugPrint('🔄 Re-initializing video: ${widget.mediaUrl}');
+    
+    // Clear the cached controller
+    widget.videoCacheManager.clearMedia(widget.mediaUrl);
+    
+    // Reset state
+    _isInitialized = false;
+    _videoPlayerController = null;
+    
+    // Small delay before reinitializing
+    await Future.delayed(const Duration(milliseconds: 100));
+    
+    if (!_isDisposed && _isVisible) {
+      await _initializeVideoPlayer();
     }
   }
 
@@ -476,8 +627,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   @override
   void dispose() {
     _isDisposed = true;
-    // Cancel stuck video detection timer
+    // Cancel timers
     _stopStuckVideoDetection();
+    _controllerReadyCheckTimer?.cancel();
     // Log watch event when widget is disposed (user navigates away)
     _logWatchEventIfNeeded();
     // Safety check: ensure controller is valid and not already disposed
@@ -486,6 +638,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         !_videoPlayerController!.isDisposed) {
       try {
         _videoPlayerController!.removeListener(_handlePlaybackProgress);
+        _videoPlayerController!.playingStateNotifier.removeListener(_onPlayingStateChanged);
         _videoPlayerController!.pause();
         widget.videoCacheManager.markAsNotVisible(widget.mediaUrl);
       } catch (e) {
@@ -569,34 +722,39 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                   _videoPlayerController!.isInitialized &&
                   !_videoPlayerController!.isDisposed) ...[
                 // Video is ready, show the player
-                RepaintBoundary(
-                  child: FittedBox(
-                    fit: BoxFit.cover,
-                    child: SizedBox(
-                      child: Builder(
-                        builder: (context) {
-                          // Safety check: verify controller is still valid before building
-                          if (_videoPlayerController == null ||
-                              !_videoPlayerController!.isInitialized ||
-                              _videoPlayerController!.isDisposed) {
-                            // Return thumbnail as fallback if controller becomes invalid
-                            return Container(
-                              color: Colors.black,
-                              child: Center(
-                                child: _getImageWidget(
-                                  imageUrl: widget.thumbnailUrl,
-                                  width: IsrDimens.getScreenWidth(context),
-                                  height: IsrDimens.getScreenHeight(context),
-                                  fit: BoxFit.fill,
-                                  filterQuality: FilterQuality.low,
-                                  showError: false,
-                                ),
-                              ),
-                            );
-                          }
-                          final size = _videoPlayerController!.videoSize;
-                          final aspect = _videoPlayerController!.aspectRatio;
-                          return SizedBox(
+                // Use SizedBox.expand to fill available space when video size is 0
+                Builder(
+                  builder: (context) {
+                    // Safety check: verify controller is still valid before building
+                    if (_videoPlayerController == null ||
+                        !_videoPlayerController!.isInitialized ||
+                        _videoPlayerController!.isDisposed) {
+                      // Return thumbnail as fallback if controller becomes invalid
+                      return Container(
+                        color: Colors.black,
+                        child: Center(
+                          child: _getImageWidget(
+                            imageUrl: widget.thumbnailUrl,
+                            width: IsrDimens.getScreenWidth(context),
+                            height: IsrDimens.getScreenHeight(context),
+                            fit: BoxFit.fill,
+                            filterQuality: FilterQuality.low,
+                            showError: false,
+                          ),
+                        ),
+                      );
+                    }
+                    
+                    final size = _videoPlayerController!.videoSize;
+                    final hasValidSize = size.width > 0 && size.height > 0;
+                    
+                    // If video size is valid, use FittedBox for proper scaling
+                    if (hasValidSize) {
+                      final aspect = _videoPlayerController!.aspectRatio;
+                      return RepaintBoundary(
+                        child: FittedBox(
+                          fit: BoxFit.cover,
+                          child: SizedBox(
                             height: size.height,
                             width: size.width,
                             child: AspectRatio(
@@ -611,25 +769,50 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                                 ),
                               ),
                             ),
-                          );
-                        },
+                          ),
+                        ),
+                      );
+                    }
+                    
+                    // Fallback: Video size not available yet, fill the available space
+                    // This ensures video is visible even if dimensions aren't reported
+                    debugPrint('🎬 VideoPlayerWidget: Using fallback layout (size: $size)');
+                    return SizedBox.expand(
+                      child: Container(
+                        color: Colors.black,
+                        child: RepaintBoundary(
+                          child: _videoPlayerController!.buildVideoPlayerWidget(),
+                        ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
               ] else ...[
-                // Video is not ready, show thumbnail
+                // Video is not ready, show thumbnail with loading indicator
                 Container(
                   color: Colors.black,
-                  child: Center(
-                    child: _getImageWidget(
-                      imageUrl: widget.thumbnailUrl,
-                      width: IsrDimens.getScreenWidth(context),
-                      height: IsrDimens.getScreenHeight(context),
-                      fit: BoxFit.fill,
-                      filterQuality: FilterQuality.low,
-                      showError: false,
-                    ),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Center(
+                        child: _getImageWidget(
+                          imageUrl: widget.thumbnailUrl,
+                          width: IsrDimens.getScreenWidth(context),
+                          height: IsrDimens.getScreenHeight(context),
+                          fit: BoxFit.fill,
+                          filterQuality: FilterQuality.low,
+                          showError: false,
+                        ),
+                      ),
+                      // Show loading indicator when initializing
+                      if (_isInitializing || (_isVisible && !_isInitialized))
+                        const Center(
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ]

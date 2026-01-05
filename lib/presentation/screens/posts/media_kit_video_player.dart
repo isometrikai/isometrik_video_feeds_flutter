@@ -46,6 +46,20 @@ class MediaKitVideoPlayerWrapper implements IVideoPlayerController {
         debugPrint('❌ Error description: $error');
         debugPrint('❌ Position: $_position');
         debugPrint('❌ Duration: $_duration');
+        final lower = error.toLowerCase();
+        if (lower.contains('audio') && lower.contains('device')) {
+          unawaited(() async {
+            try {
+              MediaKitCacheManager.resetAudioSession();
+              await MediaKitCacheManager._configureAudioSession();
+              if (!_player.state.playing) {
+                await _player.play();
+              }
+            } catch (e) {
+              debugPrint('⚠️ Audio recovery attempt failed: $e');
+            }
+          }());
+        }
       }
     });
 
@@ -114,23 +128,32 @@ class MediaKitVideoPlayerWrapper implements IVideoPlayerController {
     if (_isDisposed) return;
 
     debugPrint(
-        '🔄 Force resuming video... buffering=${_player.state.buffering}, playing=${_player.state.playing}');
+        '🔄 Force resuming video... buffering=${_player.state.buffering}, playing=${_player.state.playing}, position=${_player.state.position}');
 
     try {
       // Ensure audio session is active
       await MediaKitCacheManager._configureAudioSession();
 
-      if (_player.state.buffering) {
-        // If stuck in buffering, seek to current position to unstick
+      // Check if video is stuck at the beginning (never started playing)
+      final isStuckAtStart = _player.state.position == Duration.zero && 
+                             !_player.state.playing;
+      
+      if (_player.state.buffering || isStuckAtStart) {
+        // If stuck in buffering or at start, seek to unstick
         final currentPos = _player.state.position;
-        await _player
-            .seek(currentPos > Duration.zero ? currentPos : Duration.zero);
-        await Future.delayed(const Duration(milliseconds: 50));
+        if (currentPos == Duration.zero) {
+          // If at zero, try seeking to a tiny offset to trigger playback
+          await _player.seek(const Duration(milliseconds: 100));
+        } else {
+          await _player.seek(currentPos);
+        }
+        await Future.delayed(const Duration(milliseconds: 100));
       }
 
       // Always try to play if not already playing
       if (!_player.state.playing) {
         await _player.play();
+        debugPrint('▶️ Force play triggered');
       }
     } catch (e) {
       debugPrint('⚠️ Error force resuming: $e');
@@ -190,6 +213,10 @@ class MediaKitVideoPlayerWrapper implements IVideoPlayerController {
   Widget buildVideoPlayerWidget() => Video(
         controller: _videoController,
         controls: null, // No controls - handled externally
+        fill: Colors.black, // Fill background with black
+        fit: BoxFit.contain, // Ensure video fits within bounds
+        filterQuality: FilterQuality.low, // Better performance
+        wakelock: true, // Keep screen awake during playback
       );
 
   @override
@@ -200,29 +227,36 @@ class MediaKitVideoPlayerWrapper implements IVideoPlayerController {
 
     _isDisposed = true;
 
+    // CRITICAL: Cancel subscriptions FIRST to prevent callbacks during disposal
     try {
-      // CRITICAL FIX: Stop playback BEFORE cancelling subscriptions
-      // This prevents mpv from sending property changes after disposal
-      if (_player.state.playing) {
-        await _player.pause();
-      }
-
-      // Stop the player to terminate mpv's playback loop
-      await _player.stop();
-
-      // Small delay to let mpv core thread finish sending pending events
-      await Future.delayed(const Duration(milliseconds: 50));
+      _playingSubscription?.cancel();
+      _errorSubscription?.cancel();
+      _positionSubscription?.cancel();
+      _durationSubscription?.cancel();
     } catch (e) {
-      debugPrint('⚠️ Error stopping player: $e');
+      debugPrint('⚠️ Error cancelling subscriptions: $e');
     }
 
     try {
-      await _playingSubscription?.cancel();
-      await _errorSubscription?.cancel();
-      await _positionSubscription?.cancel();
-      await _durationSubscription?.cancel();
+      // CRITICAL FIX: Stop playback BEFORE disposing
+      // This prevents mpv from sending property changes after disposal
+      if (_player.state.playing) {
+        await _player.pause().timeout(
+          const Duration(milliseconds: 100),
+          onTimeout: () {},
+        );
+      }
+
+      // Stop the player to terminate mpv's playback loop
+      await _player.stop().timeout(
+        const Duration(milliseconds: 100),
+        onTimeout: () {},
+      );
+
+      // Longer delay to let mpv core thread finish sending pending events
+      await Future.delayed(const Duration(milliseconds: 100));
     } catch (e) {
-      debugPrint('⚠️ Error cancelling subscriptions: $e');
+      debugPrint('⚠️ Error stopping player: $e');
     }
 
     try {
@@ -232,7 +266,10 @@ class MediaKitVideoPlayerWrapper implements IVideoPlayerController {
     }
 
     try {
-      await _player.dispose();
+      await _player.dispose().timeout(
+        const Duration(milliseconds: 200),
+        onTimeout: () {},
+      );
     } catch (e) {
       debugPrint('⚠️ Error disposing media_kit player: $e');
     }
@@ -263,12 +300,51 @@ class MediaKitCacheManager implements IVideoCacheManager {
 
   static bool _isInitialized = false;
   static bool _isAudioSessionConfigured = false;
+  static bool _isDisposing = false;
 
   /// Reset audio session configuration to allow reconfiguration
   /// Call this if audio is not working
   static void resetAudioSession() {
     _isAudioSessionConfigured = false;
     debugPrint('🔄 Audio session reset - will reconfigure on next video');
+  }
+
+  /// Call this before hot restart to safely dispose all players
+  /// This helps prevent crashes during hot restart
+  static Future<void> disposeAll() async {
+    if (_isDisposing) return;
+    _isDisposing = true;
+    
+    debugPrint('🔥 MediaKitCacheManager: Disposing all players before restart...');
+    
+    try {
+      // Clear all controllers synchronously to prevent callbacks
+      final controllers = Map<String, MediaKitVideoPlayerWrapper>.from(
+          _instance._videoControllerCache);
+      _instance._videoControllerCache.clear();
+      _instance._initializationCache.clear();
+      _instance._lruQueue.clear();
+      _instance._visibleVideos.clear();
+      
+      // Dispose each controller with timeout
+      for (final entry in controllers.entries) {
+        try {
+          await entry.value.dispose().timeout(
+            const Duration(milliseconds: 300),
+            onTimeout: () {},
+          );
+        } catch (e) {
+          debugPrint('⚠️ Error disposing ${entry.key}: $e');
+        }
+      }
+      
+      _isAudioSessionConfigured = false;
+      debugPrint('✅ MediaKitCacheManager: All players disposed');
+    } catch (e) {
+      debugPrint('❌ Error in disposeAll: $e');
+    } finally {
+      _isDisposing = false;
+    }
   }
 
   final Map<String, MediaKitVideoPlayerWrapper> _videoControllerCache = {};
@@ -346,12 +422,12 @@ class MediaKitCacheManager implements IVideoCacheManager {
       url = url.replaceFirst('http:', 'https:');
     }
 
-    // OPTIMIZATION: Configure player for smooth playback
+    // OPTIMIZATION: Configure player for smooth and fast playback
     final player = Player(
       configuration: const PlayerConfiguration(
         // Buffer more video ahead for smoother playback
-        bufferSize: 64 * 1024 * 1024, // 32MB buffer
-        logLevel: MPVLogLevel.debug,
+        bufferSize: 64 * 1024 * 1024, // 64MB buffer
+        logLevel: MPVLogLevel.warn, // Reduce log level for better performance
       ),
     );
 
@@ -363,12 +439,32 @@ class MediaKitCacheManager implements IVideoCacheManager {
       ),
     );
 
-    // Native MPV properties for HLS speed
+    // Native MPV properties for faster HLS playback
     if (player.platform is NativePlayer) {
-      unawaited((player.platform as NativePlayer)
-          .setProperty('demuxer-readahead-secs', '10'));
-      unawaited(
-          (player.platform as NativePlayer).setProperty('hls-bitrate', 'max'));
+      final nativePlayer = player.platform as NativePlayer;
+      
+      // Aggressive buffering for faster start
+      unawaited(nativePlayer.setProperty('demuxer-readahead-secs', '15'));
+      
+      // Use highest quality available for better experience
+      unawaited(nativePlayer.setProperty('hls-bitrate', 'max'));
+      
+      // Cache more data for network streams
+      unawaited(nativePlayer.setProperty('cache', 'yes'));
+      unawaited(nativePlayer.setProperty('cache-secs', '30'));
+      
+      // Faster network timeouts
+      unawaited(nativePlayer.setProperty('network-timeout', '10'));
+      
+      // Prefetch next segment for smoother playback
+      unawaited(nativePlayer.setProperty('prefetch-playlist', 'yes'));
+      
+      // Lower audio/video buffer for faster start
+      unawaited(nativePlayer.setProperty('audio-buffer', '0.5'));
+      unawaited(nativePlayer.setProperty('vd-lavc-threads', '0')); // Auto-detect threads
+      
+      // Force start even if buffer isn't full
+      unawaited(nativePlayer.setProperty('demuxer-lavf-o', 'fflags=+nobuffer'));
     }
 
     // Set up headers for network requests
@@ -396,6 +492,12 @@ class MediaKitCacheManager implements IVideoCacheManager {
 
   Future<MediaKitVideoPlayerWrapper?> _initializeVideoController(
       String url) async {
+    // Don't initialize during disposal
+    if (_isDisposing) {
+      debugPrint('⚠️ Skipping initialization during disposal: $url');
+      return null;
+    }
+    
     // If already initializing, wait for existing initialization
     if (_initializationCache.containsKey(url)) {
       return _initializationCache[url];
@@ -453,7 +555,8 @@ class MediaKitCacheManager implements IVideoCacheManager {
         }
       }
 
-      final timeoutDuration = Duration(seconds: Platform.isAndroid ? 3 : 20);
+      // Increased timeout for slow network connections
+      final timeoutDuration = Duration(seconds: Platform.isAndroid ? 8 : 20);
 
       late Player player;
       late VideoController videoController;
@@ -612,7 +715,13 @@ class MediaKitCacheManager implements IVideoCacheManager {
   Future<void> _safeDispose(
       MediaKitVideoPlayerWrapper controller, String url) async {
     try {
-      await controller.dispose();
+      // Add timeout to prevent hanging during hot restart
+      await controller.dispose().timeout(
+        const Duration(milliseconds: 500),
+        onTimeout: () {
+          debugPrint('⏰ Dispose timeout for: $url');
+        },
+      );
       debugPrint('🗑️ MediaKitCache: Evicted video from cache: $url');
     } catch (e) {
       debugPrint('⚠️ Error disposing controller for $url: $e');

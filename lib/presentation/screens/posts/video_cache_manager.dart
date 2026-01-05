@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:ism_video_reel_player/presentation/presentation.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/media_kit_video_player.dart';
 
 class VideoCacheManager implements IMediaCacheManager {
   VideoCacheManager._internal() {
@@ -15,6 +16,14 @@ class VideoCacheManager implements IMediaCacheManager {
   static final VideoCacheManager _instance = VideoCacheManager._internal();
 
   late IVideoCacheManager _cacheManager;
+
+  /// Dispose all video players - call this before hot restart to prevent crashes
+  /// Only needed for MediaKit player on iOS
+  static Future<void> disposeAll() async {
+    if (!Platform.isAndroid) {
+      await MediaKitCacheManager.disposeAll();
+    }
+  }
 
   /// Switch video player type
   void setVideoPlayerType(VideoPlayerType type) {

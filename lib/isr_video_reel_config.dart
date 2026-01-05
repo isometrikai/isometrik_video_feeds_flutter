@@ -88,6 +88,14 @@ class IsrVideoReelConfig {
     await MediaCacheFactory.precacheMedia(mediaUrls, highPriority: false);
   }
 
+  /// Dispose all video players - call this before hot restart to prevent crashes
+  /// This is only needed during development when using hot restart on iOS with MediaKit
+  static Future<void> disposeVideoPlayers() async {
+    debugPrint('IsrVideoReelConfig: Disposing all video players...');
+    await VideoCacheManager.disposeAll();
+    debugPrint('IsrVideoReelConfig: Video players disposed');
+  }
+
   static Future<void> _initializeHive() async {
     debugPrint('IsrVideoReelConfig: Initializing Hive...');
     await Hive.initFlutter();
