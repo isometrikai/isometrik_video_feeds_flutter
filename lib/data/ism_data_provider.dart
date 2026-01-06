@@ -16,11 +16,9 @@ class IsmDataProvider {
   static IsmDataProvider get instance => _instance;
 
   /// Get UseCases from DI
-  CollectionUseCase get _collectionUseCase =>
-      IsmInjectionUtils.getUseCase<CollectionUseCase>();
+  CollectionUseCase get _collectionUseCase => IsmInjectionUtils.getUseCase<CollectionUseCase>();
 
-  SavePostUseCase get _savedPostUseCase =>
-      IsmInjectionUtils.getUseCase<SavePostUseCase>();
+  SavePostUseCase get _savedPostUseCase => IsmInjectionUtils.getUseCase<SavePostUseCase>();
 
   GetTaggedPostsUseCase get _getTaggedPostUseCase =>
       IsmInjectionUtils.getUseCase<GetTaggedPostsUseCase>();
@@ -28,11 +26,9 @@ class IsmDataProvider {
   GetUserPostDataUseCase get _userPostDataUseCase =>
       IsmInjectionUtils.getUseCase<GetUserPostDataUseCase>();
 
-  CreatePostUseCase get _createPostUseCase =>
-      IsmInjectionUtils.getUseCase<CreatePostUseCase>();
+  CreatePostUseCase get _createPostUseCase => IsmInjectionUtils.getUseCase<CreatePostUseCase>();
 
-  DeletePostUseCase get _deletePostUseCase =>
-      IsmInjectionUtils.getUseCase<DeletePostUseCase>();
+  DeletePostUseCase get _deletePostUseCase => IsmInjectionUtils.getUseCase<DeletePostUseCase>();
 
   /// Private generic handler to reduce code duplication
   Future<void> _executeApiCall<T>({
@@ -90,6 +86,23 @@ class IsmDataProvider {
         page: page,
         pageSize: pageSize,
         collectionId: collectionId,
+      ),
+      toJson: (data) => data?.toMap() ?? {},
+      onSuccess: onSuccess,
+      onError: onError,
+    );
+  }
+
+  Future<void> removePostFromCollection({
+    required String postId,
+    Function(String, int)? onSuccess,
+    Function(String, int)? onError,
+  }) async {
+    await _executeApiCall(
+      apiCall: () => _savedPostUseCase.executeSavePost(
+        isLoading: false,
+        postId: postId,
+        socialPostAction: SocialPostAction.unSave,
       ),
       toJson: (data) => data?.toMap() ?? {},
       onSuccess: onSuccess,
