@@ -360,7 +360,7 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
               child: CircularPercentIndicator(
                 radius: 32.responsiveDimension,
                 lineWidth: 10.responsiveDimension,
-                percent: selectedPercentage / 100,
+                percent: (selectedPercentage / 100).clamp(0.0, 1.0),
                 circularStrokeCap: CircularStrokeCap.square,
                 progressColor: 'C548BD'.toColor(),
                 backgroundColor: '967AE3'.toColor(),

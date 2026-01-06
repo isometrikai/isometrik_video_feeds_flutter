@@ -76,7 +76,7 @@ class IsmDataProvider {
     required int page,
     required int pageSize,
     bool isLoading = false,
-    String collectionId = '',
+    required String collectionId,
     Function(String, int)? onSuccess,
     Function(String, int)? onError,
   }) async {
