@@ -37,7 +37,7 @@ class CreateCollectionRequestModel {
   Map<String, dynamic> toJson() => {
         'image_url': imageUrl,
         'name': name,
-        'isPrivate': isPrivate,
+        'is_private': isPrivate,
         'description': description,
       };
 }

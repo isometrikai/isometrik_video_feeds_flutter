@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:ism_video_reel_player/utils/extensions.dart';
+
 CollectionResponseModel collectionResponseModelFromJson(String str) =>
     CollectionResponseModel.fromJson(json.decode(str) as Map<String, dynamic>);
 
@@ -29,17 +31,18 @@ class CollectionResponseModel {
 
 class CollectionData {
   factory CollectionData.fromJson(Map<String, dynamic> json) => CollectionData(
-        id: json['id'] as String? ?? '',
+        id: json['id'] as String? ?? json['_id'] as String? ?? '',
         userId: json['userId'] as String? ?? '',
         name: json['name'] as String? ?? '',
-        image: json['image'] as String? ?? '',
+        image: json['image_url'] as String? ?? json['image'] as String? ?? '',
         productIds: (json['productIds'] as List<dynamic>?)
                 ?.map((e) => CollectionItem.fromJson(e as Map<String, dynamic>))
                 .toList() ??
             [],
         timestamp: json['timestamp'] as num? ?? 0,
+        createdAt: json['created_at'] as String? ?? '',
         updatedTimeStamp: json['updatedTimeStamp'] as num? ?? 0,
-        isPrivate: json['isPrivate'] as bool? ?? false,
+        isPrivate: json['is_private'] as bool? ?? json['isPrivate'] as bool? ?? false,
         description: json['description'] as String? ?? '',
         previewImages: (json['previewImages'] as List<dynamic>?)
                 ?.map((e) => e as String)
@@ -57,6 +60,7 @@ class CollectionData {
     this.image,
     this.productIds,
     this.timestamp,
+    this.createdAt,
     this.updatedTimeStamp,
     this.isPrivate,
     this.description,
@@ -72,6 +76,7 @@ class CollectionData {
   final String? image;
   final List<CollectionItem>? productIds;
   final num? timestamp;
+  final String? createdAt;
   final num? updatedTimeStamp;
   final bool? isPrivate;
   final String? description;
@@ -82,13 +87,17 @@ class CollectionData {
 
   Map<String, dynamic> toJson() => {
         'id': id,
+        '_id': id,
         'userId': userId,
         'name': name,
         'image': image,
+        'image_url': image,
         'productIds': productIds?.map((e) => e.toJson()).toList(),
         'timestamp': timestamp,
+        'created_at': createdAt,
         'updatedTimeStamp': updatedTimeStamp,
         'isPrivate': isPrivate,
+        'is_private': isPrivate,
         'description': description,
         'previewImages': previewImages,
         'postCount': postCount,
