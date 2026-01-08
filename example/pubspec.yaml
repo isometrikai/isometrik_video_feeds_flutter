@@ -20,7 +20,7 @@ dependencies:
   flutter_bloc: ^9.1.1
   flutter_image_compress: ^2.4.0
   flutter_screenutil: ^5.9.3
-  flutter_secure_storage: ^9.2.4
+  flutter_secure_storage: ^10.0.0
   flutter_svg: ^2.2.3
   fluttertoast: ^9.0.0
   get_it: ^9.2.0
