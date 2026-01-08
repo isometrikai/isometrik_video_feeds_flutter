@@ -33,6 +33,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
     required this.index,
     required this.reelsConfig,
     this.postSectionType = PostSectionType.following,
+    required this.currentIndex,
   });
 
   final VideoCacheManager? videoCacheManager;
@@ -47,6 +48,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
   final Function(List<MentionMetaData>)? onTapMentionTag;
   final Function(String)? onTapCartIcon;
   final int index;
+  final ValueNotifier<int> currentIndex;
   final ReelsConfig reelsConfig;
   final PostSectionType postSectionType;
 
@@ -155,7 +157,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   @override
   void initState() {
     _onStartInit();
-    debugPrint('ism_reels_player: initState called desc: ${_reelData.description}');
+    debugPrint('ism_reels_video_player_view: initState index: ${widget.index}, visibleIndex: ${widget.currentIndex.value}, tabType: ${widget.postSectionType}');
     super.initState();
     WidgetsBinding.instance.addObserver(this);
   }
@@ -165,21 +167,25 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     super.didChangeDependencies();
     // Capture the BuildContext for SDK use
     IsrVideoReelConfig.buildContext = context;
+    debugPrint('ism_reels_video_player_view: didChangeDependencies index: ${widget.index}, visibleIndex: ${widget.currentIndex.value}, tabType: ${widget.postSectionType}');
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    debugPrint('ism_reels_video_player_view: didChangeAppLifecycleState index: ${widget.index}, visibleIndex: ${widget.currentIndex.value}, tabType: ${widget.postSectionType}');
     // Lifecycle is handled by individual VideoPlayerWidgets
   }
 
   // RouteAware methods for navigation detection
   @override
   void didPopNext() {
+    debugPrint('ism_reels_video_player_view: didPopNext index: ${widget.index}, visibleIndex: ${widget.currentIndex.value}, tabType: ${widget.postSectionType}');
     // Navigation is handled by individual VideoPlayerWidgets
   }
 
   @override
   void didPushNext() {
+    debugPrint('ism_reels_video_player_view: didPushNext index: ${widget.index}, visibleIndex: ${widget.currentIndex.value}, tabType: ${widget.postSectionType}');
     // Navigation is handled by individual VideoPlayerWidgets
   }
 
@@ -316,7 +322,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _videoProgress.dispose();
     // Analytics logging is now handled by VideoPlayerWidget
     _logImagePostEvent();
-    debugPrint('ism_reels_player: dispose called desc: ${_reelData.description}');
+    debugPrint('ism_reels_video_player_view: dispose index: ${widget.index}, visibleIndex: ${widget.currentIndex.value}, tabType: ${widget.postSectionType}');
     super.dispose();
   }
 
@@ -830,122 +836,146 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   @override
-  Widget build(BuildContext context) => Stack(
-        fit: StackFit.expand,
-        children: [
-          // Only the main GestureDetector as child of the outer Stack
-          GestureDetector(
-            onTap: _toggleMuteAndUnMute,
-            onLongPressStart: (_) => _togglePlayPause(),
-            onDoubleTap: _triggerLikeAnimation,
-            onLongPressEnd: (_) => _resumePlayback(),
-            child: Stack(
-              fit: StackFit.expand,
-              alignment: Alignment.center,
-              children: [
-                _buildMediaContent(),
-                if (_showLikeAnimation)
-                  Center(
-                    child: Lottie.asset(
-                      AssetConstants.heartAnimation,
-                      width: 250,
-                      height: 250,
-                      repeat: false,
-                    ),
+  Widget build(BuildContext context) {
+    debugPrint(
+        'ism_reels_video_player_view: build index: ${widget.index}, visibleIndex: ${widget.currentIndex.value}, tabType: ${widget.postSectionType}');
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // Only the main GestureDetector as child of the outer Stack
+        GestureDetector(
+          onTap: _toggleMuteAndUnMute,
+          onLongPressStart: (_) => _togglePlayPause(),
+          onDoubleTap: _triggerLikeAnimation,
+          onLongPressEnd: (_) => _resumePlayback(),
+          child: Stack(
+            fit: StackFit.expand,
+            alignment: Alignment.center,
+            children: [
+              _buildMediaContent(),
+              if (_showLikeAnimation)
+                Center(
+                  child: Lottie.asset(
+                    AssetConstants.heartAnimation,
+                    width: 250,
+                    height: 250,
+                    repeat: false,
                   ),
-                if (_showMuteAnimation &&
-                    _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kVideoType)
-                  Center(
-                    child: AnimatedScale(
-                      scale: _muteIconScale,
-                      duration: const Duration(milliseconds: 200),
-                      curve: Curves.elasticOut,
-                      child: Container(
-                        padding: const EdgeInsets.all(24),
-                        child: AppImage.svg(
-                          _isMuted ? AssetConstants.icMuteIcon : AssetConstants.icUnMuteIcon,
-                        ),
+                ),
+              if (_showMuteAnimation &&
+                  _reelData.mediaMetaDataList[_currentPageNotifier.value]
+                          .mediaType ==
+                      kVideoType)
+                Center(
+                  child: AnimatedScale(
+                    scale: _muteIconScale,
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.elasticOut,
+                    child: Container(
+                      padding: const EdgeInsets.all(24),
+                      child: AppImage.svg(
+                        _isMuted
+                            ? AssetConstants.icMuteIcon
+                            : AssetConstants.icUnMuteIcon,
                       ),
                     ),
                   ),
+                ),
 
-                // show progress indicator if there are multiple videos or single media is video or autoMoveNextMedia is true
-                if (_reelData.mediaMetaDataList.isNotEmpty ||
-                    _reelData.mediaMetaDataList.firstOrNull?.mediaType == kVideoType ||
-                    widget.onVideoCompleted != null)
-                  Positioned(
-                    bottom: widget.reelsConfig.overlayPadding?.resolve(TextDirection.ltr).bottom ??
-                        0 + 3,
-                    left: 0,
-                    right: 0,
-                    child: ValueListenableBuilder<int>(
-                      valueListenable: _currentPageNotifier,
-                      builder: (context, value, child) => _buildMediaIndicators(value),
-                    ),
-                  ),
-
-                // Bottom gradient overlay for text readability
+              // show progress indicator if there are multiple videos or single media is video or autoMoveNextMedia is true
+              if (_reelData.mediaMetaDataList.isNotEmpty ||
+                  _reelData.mediaMetaDataList.firstOrNull?.mediaType ==
+                      kVideoType ||
+                  widget.onVideoCompleted != null)
                 Positioned(
+                  bottom: widget.reelsConfig.overlayPadding
+                          ?.resolve(TextDirection.ltr)
+                          .bottom ??
+                      0 + 3,
                   left: 0,
                   right: 0,
-                  bottom: 0,
-                  child: IgnorePointer(
-                    child: RepaintBoundary(
-                      child: Container(
-                        height: IsrDimens.getScreenHeight(context) * 0.45,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withValues(alpha: 0.05),
-                              Colors.black.withValues(alpha: 0.2),
-                              Colors.black.withValues(alpha: 0.5),
-                              Colors.black.withValues(alpha: 0.7),
-                            ],
-                            stops: const [0.0, 0.2, 0.5, 0.8, 1.0],
-                          ),
+                  child: ValueListenableBuilder<int>(
+                    valueListenable: _currentPageNotifier,
+                    builder: (context, value, child) =>
+                        _buildMediaIndicators(value),
+                  ),
+                ),
+
+              // Bottom gradient overlay for text readability
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: IgnorePointer(
+                  child: RepaintBoundary(
+                    child: Container(
+                      height: IsrDimens.getScreenHeight(context) * 0.45,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.05),
+                            Colors.black.withValues(alpha: 0.2),
+                            Colors.black.withValues(alpha: 0.5),
+                            Colors.black.withValues(alpha: 0.7),
+                          ],
+                          stops: const [0.0, 0.2, 0.5, 0.8, 1.0],
                         ),
                       ),
                     ),
                   ),
                 ),
+              ),
 
-                //right action
-                //kept separate so that it does not bloc touch/gesture to underlying widgets
-                Positioned(
-                  right: widget.reelsConfig.overlayPadding?.resolve(TextDirection.ltr).right ?? 0,
-                  bottom: widget.reelsConfig.overlayPadding?.resolve(TextDirection.ltr).bottom ?? 0,
-                  child: widget.reelsConfig.actionWidget?.call(_reelData).child ??
-                      _buildRightSideActions(),
-                ),
+              //right action
+              //kept separate so that it does not bloc touch/gesture to underlying widgets
+              Positioned(
+                right: widget.reelsConfig.overlayPadding
+                        ?.resolve(TextDirection.ltr)
+                        .right ??
+                    0,
+                bottom: widget.reelsConfig.overlayPadding
+                        ?.resolve(TextDirection.ltr)
+                        .bottom ??
+                    0,
+                child: widget.reelsConfig.actionWidget?.call(_reelData).child ??
+                    _buildRightSideActions(),
+              ),
 
-                //bottom section
-                //kept separate so that it does not bloc touch/gesture to underlying widgets
-                Positioned(
-                  right: 40,
-                  bottom: widget.reelsConfig.overlayPadding?.resolve(TextDirection.ltr).bottom ?? 0,
-                  left: widget.reelsConfig.overlayPadding?.resolve(TextDirection.ltr).left ?? 0,
-                  child: widget.reelsConfig.footerWidget?.call(_reelData).child ??
-                      _buildBottomSectionWithoutOverlay(),
-                ),
-                // Persistent mute icon indicator in top-right (placed last to be on top)
-                // if (_isMuted &&
-                //     _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kVideoType)
-                //   Align(
-                //     alignment: Alignment.center,
-                //     child: GestureDetector(
-                //       behavior: HitTestBehavior.opaque,
-                //       onTap: _toggleMuteAndUnMute,
-                //       child: const AppImage.svg(AssetConstants.icMuteIcon),
-                //     ),
-                //   ),
-              ],
-            ),
+              //bottom section
+              //kept separate so that it does not bloc touch/gesture to underlying widgets
+              Positioned(
+                right: 40,
+                bottom: widget.reelsConfig.overlayPadding
+                        ?.resolve(TextDirection.ltr)
+                        .bottom ??
+                    0,
+                left: widget.reelsConfig.overlayPadding
+                        ?.resolve(TextDirection.ltr)
+                        .left ??
+                    0,
+                child: widget.reelsConfig.footerWidget?.call(_reelData).child ??
+                    _buildBottomSectionWithoutOverlay(),
+              ),
+              // Persistent mute icon indicator in top-right (placed last to be on top)
+              // if (_isMuted &&
+              //     _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kVideoType)
+              //   Align(
+              //     alignment: Alignment.center,
+              //     child: GestureDetector(
+              //       behavior: HitTestBehavior.opaque,
+              //       onTap: _toggleMuteAndUnMute,
+              //       child: const AppImage.svg(AssetConstants.icMuteIcon),
+              //     ),
+              //   ),
+            ],
           ),
-        ],
-      );
+        ),
+      ],
+    );
+  }
 
   Widget _buildRightSideActions() => RepaintBoundary(
         child: Padding(
@@ -1771,6 +1801,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   /// Starts the image view timer if current media is an image
   void _startOrResumeImageProgress() {
+    if (widget.currentIndex.value != widget.index) { // to check if the reel is preloaded or not
+      return;
+    }
     final shouldAutoMove = widget.reelsConfig.autoMoveNextMedia || widget.onVideoCompleted != null;
 
     _imageViewTimer?.cancel();

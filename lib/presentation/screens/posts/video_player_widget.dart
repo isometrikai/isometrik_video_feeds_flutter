@@ -26,6 +26,7 @@ class VideoPlayerWidget extends StatefulWidget {
     this.onVideoCompleted,
     this.postHelperCallBacks,
     this.videoProgressCallBack,
+    this.isPreloaded = false,
   });
 
   final String mediaUrl;
@@ -36,6 +37,7 @@ class VideoPlayerWidget extends StatefulWidget {
   final double? aspectRatio;
   final VoidCallback? onVideoCompleted;
   final PostHelperCallBacks? postHelperCallBacks;
+  final bool isPreloaded;
   final Function(int, int)? videoProgressCallBack;
 
   @override
@@ -271,7 +273,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       ]);
 
       // If widget is visible when initialized, start playing immediately
-      if (_isVisible) {
+      if (_isVisible && !widget.isPreloaded) {
         // Don't await play - let it start immediately
         unawaited(_videoPlayerController!.play());
         widget.videoCacheManager.markAsVisible(widget.mediaUrl);
@@ -419,7 +421,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       try {
         if (_isVisible &&
             !_videoPlayerController!.isPlaying &&
-            !_isManuallyPaused) {
+            !_isManuallyPaused &&
+            !widget.isPreloaded ) {
           // Ensure volume is set correctly before playing
           unawaited(_videoPlayerController!.setVolume(widget.isMuted ? 0.0 : 1.0));
           // OPTIMIZATION: Don't await - fire and forget for instant response
@@ -559,7 +562,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         !_videoPlayerController!.isPlaying) {
       _isManuallyPaused = false;
       // Only play if visible
-      if (_isVisible) {
+      if (_isVisible && !widget.isPreloaded) {
         _videoPlayerController!.play();
       }
       _logVideoStartedEvent();
@@ -704,7 +707,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
             if (state is PlayPauseVideoState) {
               if (state.play) {
-                if (_isVisible && mounted && _isManuallyPaused) {
+                if (_isVisible && mounted && _isManuallyPaused && !widget.isPreloaded) {
                   play();
                 }
               } else {
