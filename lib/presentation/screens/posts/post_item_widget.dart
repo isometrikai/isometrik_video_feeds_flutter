@@ -8,6 +8,7 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
+import 'package:preload_page_view/preload_page_view.dart';
 
 class PostItemWidget extends StatefulWidget {
   const PostItemWidget({
@@ -45,11 +46,12 @@ class PostItemWidget extends StatefulWidget {
 
 class _PostItemWidgetState extends State<PostItemWidget>
     with AutomaticKeepAliveClientMixin {
-  late PageController _pageController;
+  late PreloadPageController _pageController;
   final Set<String> _cachedImages = {};
   late final VideoCacheManager _videoCacheManager;
   List<ReelsData> _reelsDataList = [];
   late final IsmSocialActionCubit _ismSocialActionCubit;
+  final ValueNotifier<int> _currentIndex = ValueNotifier<int>(0);
 
   bool _isInitialized = false;
 
@@ -68,7 +70,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
     _videoCacheManager = widget.videoCacheManager ?? VideoCacheManager();
     _reelsDataList = widget.reelsDataList;
     _pageController =
-        PageController(initialPage: widget.startingPostIndex ?? 0);
+        PreloadPageController(initialPage: widget.startingPostIndex ?? 0);
     _initializeContent();
   }
 
@@ -325,13 +327,15 @@ class _PostItemWidgetState extends State<PostItemWidget>
               onRefresh: () async {
                 await _refreshPost();
               },
-              child: PageView.builder(
+              child: PreloadPageView.builder(
+                preloadPagesCount: 1,
                 // key: _pageStorageKey,
-                allowImplicitScrolling: widget.allowImplicitScrolling ?? true,
+                // allowImplicitScrolling: widget.allowImplicitScrolling ?? true,
                 controller: _pageController,
                 physics: const AlwaysScrollableScrollPhysics(
                     parent: ClampingScrollPhysics()),
                 onPageChanged: (index) {
+                  _currentIndex.value = index;
                   _doMediaCaching(index);
                   final post = _reelsDataList[index];
 
@@ -372,6 +376,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
                   return RepaintBoundary(
                     child: IsmReelsVideoPlayerView(
                       index: index,
+                      currentIndex: _currentIndex,
                       reelsData: reelsData,
                       postSectionType:
                           widget.postSectionType ?? PostSectionType.following,
