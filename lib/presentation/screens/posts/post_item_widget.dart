@@ -160,6 +160,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
   @override
   void dispose() {
     _pageController.dispose();
+    _currentIndex.dispose();
     // Don't clear all cache on dispose, only clear controllers
     // _videoCacheManager.clearControllers();
     super.dispose();
