@@ -80,6 +80,9 @@ abstract class IVideoCacheManager {
   /// Mark video as not visible (allows disposal)
   void markAsNotVisible(String url);
 
+  /// Pause all videos except the specified URL (prevents sound overlap)
+  Future<void> pauseAllExcept(String activeUrl);
+
   /// Check if video is cached and ready
   bool isVideoCached(String url);
 

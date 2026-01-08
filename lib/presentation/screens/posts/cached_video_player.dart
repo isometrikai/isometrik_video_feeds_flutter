@@ -99,17 +99,18 @@ class CachedVideoPlayerWrapper implements IVideoPlayerController {
   @override
   Future<void> forceResume() async {
     if (_isDisposed) return;
-    
-    debugPrint('🔄 CachedVideoPlayer force resuming... isPlaying=${_controller.value.isPlaying}, isBuffering=${_controller.value.isBuffering}, position=${_controller.value.position}');
-    
+
+    debugPrint(
+        '🔄 CachedVideoPlayer force resuming... isPlaying=${_controller.value.isPlaying}, isBuffering=${_controller.value.isBuffering}, position=${_controller.value.position}');
+
     try {
       // Ensure player is initialized
       await _player.initialize();
-      
+
       // Check if video is stuck at the beginning
-      final isStuckAtStart = _controller.value.position == Duration.zero && 
-                             !_controller.value.isPlaying;
-      
+      final isStuckAtStart = _controller.value.position == Duration.zero &&
+          !_controller.value.isPlaying;
+
       if (_controller.value.isBuffering || isStuckAtStart) {
         // Seek to unstick the video
         final currentPos = _controller.value.position;
@@ -120,7 +121,7 @@ class CachedVideoPlayerWrapper implements IVideoPlayerController {
         }
         await Future.delayed(const Duration(milliseconds: 50));
       }
-      
+
       if (!_controller.value.isPlaying) {
         await _controller.play();
         debugPrint('▶️ CachedVideoPlayer force play triggered');
@@ -521,6 +522,36 @@ class CachedVideoCacheManager implements IVideoCacheManager {
 
   @override
   void markAsNotVisible(String url) => _visibleVideos.remove(url);
+
+  @override
+  Future<void> pauseAllExcept(String activeUrl) async {
+    final pauseFutures = <Future<void>>[];
+
+    for (final entry in _videoControllerCache.entries) {
+      final url = entry.key;
+      final controller = entry.value;
+
+      // Skip the active video
+      if (url == activeUrl) continue;
+
+      // Only pause if it's playing and initialized
+      if (controller.isInitialized &&
+          !controller.isDisposed &&
+          controller.isPlaying) {
+        pauseFutures.add(
+          controller.pause().catchError((e) {
+            debugPrint('⚠️ Error pausing video $url: $e');
+          }),
+        );
+      }
+    }
+
+    if (pauseFutures.isNotEmpty) {
+      await Future.wait(pauseFutures);
+      debugPrint(
+          '🔇 CachedVideoPlayer: Paused ${pauseFutures.length} other videos');
+    }
+  }
 
   @override
   bool isVideoCached(String url) {

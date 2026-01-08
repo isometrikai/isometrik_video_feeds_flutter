@@ -186,8 +186,18 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     if (!isFromPagination) {
       tabAssistData.currentPage = 1;
       tabAssistData.hasMoreData = true;
-    } else if (tabAssistData.isLoadingMore || !tabAssistData.hasMoreData) {
-      return;
+    } else {
+      // PAGINATION FIX: Better handling of pagination state
+      // Don't return immediately - check if we should retry after error
+      if (tabAssistData.isLoadingMore) {
+        debugPrint(
+            '⏸️ Pagination: Already loading more for ${postSectionType.name}, skipping');
+        return;
+      }
+      if (!tabAssistData.hasMoreData) {
+        debugPrint('⏸️ Pagination: No more data for ${postSectionType.name}');
+        return;
+      }
     }
 
     tabAssistData.isLoadingMore = true;
@@ -246,6 +256,16 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
             tagValue: tabAssistData.tagValue!,
             tagType: tabAssistData.tagType!,
           );
+        } else {
+          // Missing required parameters - mark as no more data
+          debugPrint(
+              '⚠️ Pagination: tagPost missing tagType or tagValue, marking as no more data');
+          tabAssistData.hasMoreData = false;
+          tabAssistData.isLoadingMore = false;
+          if (onComplete != null) {
+            onComplete([]);
+          }
+          return;
         }
         break;
       case PostSectionType.myTaggedPost:
@@ -274,42 +294,249 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
             pageSize: tabAssistData.pageSize,
             memberId: tabAssistData.userId!,
           );
+        } else {
+          // Missing required userId - mark as no more data
+          debugPrint(
+              '⚠️ Pagination: otherUserPost missing userId, marking as no more data');
+          tabAssistData.hasMoreData = false;
+          tabAssistData.isLoadingMore = false;
+          if (onComplete != null) {
+            onComplete([]);
+          }
+          return;
         }
         break;
-      default:
-        break;
+      case PostSectionType.singlePost:
+        // Single post doesn't support pagination - mark as no more data
+        debugPrint('⚠️ Pagination: singlePost doesn\'t support pagination');
+        tabAssistData.hasMoreData = false;
+        tabAssistData.isLoadingMore = false;
+        if (onComplete != null) {
+          onComplete([]);
+        }
+        return;
     }
     var postDataList = <TimeLineData>[];
     if (postIdPostData != null) {
       postDataList.add(postIdPostData);
     }
     if (tabAssistData.postSectionType == PostSectionType.following) {
-      apiResult?.data?.data?.forEach((_) => _.isFollowing = true);
+      apiResult.data?.data?.forEach((_) => _.isFollowing = true);
     }
-    postDataList.addAll(apiResult?.data?.data ?? []);
-    if (postDataList.isNotEmpty) {
-      _socialActionCubit.updatePostList(postDataList);
-      if (postDataList.length < tabAssistData.pageSize) {
+    postDataList.addAll(apiResult.data?.data ?? []);
+
+    // PAGINATION FIX: Better error handling and state management
+    if (apiResult.isSuccess) {
+      if (postDataList.isNotEmpty) {
+        _socialActionCubit.updatePostList(postDataList);
+
+        // PAGINATION FIX: Compare API response count, not postDataList count
+        // postDataList includes postIdPostData which skews the count
+        final apiResponseCount = apiResult.data?.data?.length ?? 0;
+        debugPrint(
+            '📊 Pagination: API returned $apiResponseCount items (pageSize: ${tabAssistData.pageSize}) for ${postSectionType.name}');
+
+        // PAGINATION FIX: Determine hasMoreData with fallback verification
+        if (apiResponseCount < tabAssistData.pageSize) {
+          // Fewer items than requested - definitely no more data
+          tabAssistData.hasMoreData = false;
+          debugPrint(
+              '⚠️ Pagination: No more data for ${postSectionType.name} (API returned $apiResponseCount < ${tabAssistData.pageSize})');
+        } else if (apiResponseCount == tabAssistData.pageSize) {
+          // Exactly pageSize items - verify by checking next page (fallback)
+          debugPrint(
+              '🔍 Pagination: API returned exactly ${tabAssistData.pageSize} items, verifying next page availability for ${postSectionType.name}');
+          // Set optimistic value first, then verify
+          tabAssistData.hasMoreData = true;
+          // Verify next page asynchronously (non-blocking)
+          unawaited(
+              _verifyNextPageAvailability(tabAssistData, postSectionType));
+        } else {
+          // More items than pageSize (shouldn't happen, but handle it)
+          tabAssistData.hasMoreData = true;
+          debugPrint(
+              '✅ Pagination: More data available for ${postSectionType.name} (API returned $apiResponseCount > ${tabAssistData.pageSize})');
+        }
+
+        if (isFromPagination) {
+          tabAssistData.postList.addAll(postDataList);
+        } else {
+          tabAssistData.postList
+            ..clear()
+            ..addAll(postDataList);
+        }
+        tabAssistData.currentPage++;
+
+        if (onComplete != null) {
+          onComplete(postDataList);
+        }
+      } else {
+        // Empty results - no more data
         tabAssistData.hasMoreData = false;
+        debugPrint('⚠️ Pagination: No more data for ${postSectionType.name}');
+        if (onComplete != null) {
+          onComplete(postDataList);
+        }
+      }
+    } else {
+      // PAGINATION FIX: Handle network errors properly - don't mark as no more data
+      // Allow retry on next pagination attempt
+      debugPrint(
+          '❌ Pagination: Error loading ${postSectionType.name} - ${apiResult.error}');
+      ErrorHandler.showAppError(appError: apiResult.error);
+
+      // PAGINATION FIX: Don't increment page on error, allow retry
+      // Network errors will allow retry, server errors mark as no more data
+      if (apiResult.error != null) {
+        final errorMessage = apiResult.error!.message.toLowerCase();
+        if (errorMessage.contains('server') || errorMessage.contains('500')) {
+          tabAssistData.hasMoreData = false;
+        }
       }
 
-      if (isFromPagination) {
-        tabAssistData.postList.addAll(postDataList);
-      } else {
-        tabAssistData.postList
-          ..clear()
-          ..addAll(postDataList);
+      if (onComplete != null) {
+        onComplete(postDataList);
       }
-      tabAssistData.currentPage++;
-    } else {
-      tabAssistData.hasMoreData = false;
-      ErrorHandler.showAppError(appError: apiResult?.error);
-    }
-    if (onComplete != null) {
-      onComplete(postDataList);
     }
 
     tabAssistData.isLoadingMore = false;
+  }
+
+  /// PAGINATION FALLBACK: Verify if next page has data by actually fetching it
+  /// This ensures we don't stop pagination prematurely when API returns exactly pageSize items
+  Future<void> _verifyNextPageAvailability(
+    PostTabAssistData tabAssistData,
+    PostSectionType postSectionType,
+  ) async {
+    // Don't verify if already determined no more data
+    if (!tabAssistData.hasMoreData) return;
+
+    // Store original page - we want to check the NEXT page (currentPage + 1)
+    // Note: currentPage was already incremented in _callGetTabPost, so nextPage = currentPage
+    final nextPage = tabAssistData.currentPage;
+
+    debugPrint(
+        '🔍 Pagination Fallback: Verifying next page ($nextPage) for ${postSectionType.name}');
+
+    try {
+      // Make a lightweight API call to check next page
+      ApiResult<TimelineResponse?>? apiResult;
+
+      switch (postSectionType) {
+        case PostSectionType.trending:
+          apiResult = await _getTrendingPostUseCase.executeGetTrendingPost(
+            isLoading: false, // Don't show loading indicator for verification
+            page: nextPage,
+            pageLimit: tabAssistData.pageSize,
+          );
+          break;
+        case PostSectionType.forYou:
+          apiResult = await _getForYouPostUseCase.executeGetForYouPost(
+            isLoading: false,
+            page: nextPage,
+            pageLimit: tabAssistData.pageSize,
+          );
+          break;
+        case PostSectionType.following:
+          apiResult = await _getTimelinePostUseCase.executeTimeLinePost(
+            isLoading: false,
+            page: nextPage,
+            pageLimit: tabAssistData.pageSize,
+          );
+          break;
+        case PostSectionType.savedPost:
+          apiResult = await _savePostUseCase.executeGetProfileSavedPostData(
+            isLoading: false,
+            page: nextPage,
+            pageSize: tabAssistData.pageSize,
+          );
+          break;
+        case PostSectionType.tagPost:
+          if (tabAssistData.tagType != null && tabAssistData.tagValue != null) {
+            apiResult = await _getTaggedPostsUseCase.executeGetTaggedPosts(
+              isLoading: false,
+              page: nextPage,
+              pageLimit: tabAssistData.pageSize,
+              tagValue: tabAssistData.tagValue!,
+              tagType: tabAssistData.tagType!,
+            );
+          } else {
+            // Missing required parameters - can't verify
+            debugPrint(
+                '⚠️ Pagination Fallback: tagPost missing tagType or tagValue, skipping verification');
+            return;
+          }
+          break;
+        case PostSectionType.myTaggedPost:
+          apiResult = await _getTaggedPostsUseCase.executeGetTaggedPosts(
+            isLoading: false,
+            page: nextPage,
+            pageLimit: tabAssistData.pageSize,
+            tagValue: await _localDataUseCase.getUserId(),
+            tagType: TagType.mention,
+          );
+          break;
+        case PostSectionType.myPost:
+          apiResult =
+              await _getUserPostDataUseCase.executeGetUserProfilePostData(
+            isLoading: false,
+            page: nextPage,
+            pageSize: tabAssistData.pageSize,
+            memberId:
+                tabAssistData.userId ?? await _localDataUseCase.getUserId(),
+          );
+          break;
+        case PostSectionType.otherUserPost:
+          if (tabAssistData.userId != null) {
+            apiResult =
+                await _getUserPostDataUseCase.executeGetUserProfilePostData(
+              isLoading: false,
+              page: nextPage,
+              pageSize: tabAssistData.pageSize,
+              memberId: tabAssistData.userId!,
+            );
+          } else {
+            // Missing required userId - can't verify
+            debugPrint(
+                '⚠️ Pagination Fallback: otherUserPost missing userId, skipping verification');
+            return;
+          }
+          break;
+        case PostSectionType.singlePost:
+          // Single post doesn't support pagination - no need to verify
+          debugPrint(
+              '⚠️ Pagination Fallback: singlePost doesn\'t support pagination, skipping verification');
+          tabAssistData.hasMoreData = false;
+          return;
+      }
+
+      if (apiResult.isSuccess) {
+        final nextPageCount = apiResult.data?.data?.length ?? 0;
+        if (nextPageCount == 0) {
+          // Next page is empty - no more data
+          tabAssistData.hasMoreData = false;
+          debugPrint(
+              '⚠️ Pagination Fallback: Next page ($nextPage) is empty for ${postSectionType.name} - no more data');
+        } else {
+          // Next page has data - more data available
+          tabAssistData.hasMoreData = true;
+          debugPrint(
+              '✅ Pagination Fallback: Next page ($nextPage) has $nextPageCount items for ${postSectionType.name} - more data available');
+        }
+      } else {
+        // Error checking next page - assume there might be more data (don't block pagination)
+        debugPrint(
+            '⚠️ Pagination Fallback: Error verifying next page for ${postSectionType.name} - ${apiResult.error}. Keeping hasMoreData=true');
+        tabAssistData.hasMoreData =
+            true; // Optimistic - allow pagination to continue
+      }
+    } catch (e) {
+      // Exception during verification - assume there might be more data
+      debugPrint(
+          '❌ Pagination Fallback: Exception verifying next page for ${postSectionType.name}: $e. Keeping hasMoreData=true');
+      tabAssistData.hasMoreData =
+          true; // Optimistic - allow pagination to continue
+    }
   }
 
   FutureOr<void> _savePost(
@@ -332,9 +559,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   FutureOr<void> _getReason(
       GetReasonEvent event, Emitter<SocialPostState> emit) async {
     final apiResult = await _getReportReasonsUseCase.executeGetReportReasons(
-      isLoading: false,
-      reasonFor: event.reasonsFor
-    );
+        isLoading: false, reasonFor: event.reasonsFor);
 
     if (apiResult.isSuccess) {
       event.onComplete.call(apiResult.data);
@@ -377,7 +602,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       event.onComplete.call(true);
       if (event.showToastOnSuccess) {
         Utility.showToastMessage(IsrTranslationFile.reportedSuccessfully(
-            event.reportReason.type ?? '').trim());
+                event.reportReason.type ?? '')
+            .trim());
       }
     } else {
       ErrorHandler.showAppError(appError: apiResult.error);
@@ -762,10 +988,12 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       postId: event.postId ?? '',
       postData: event.data,
     ));
-    final postDataResult = (!event.callPostDetailsApi)? null : await _getPostDetailsUseCase.executeGetPostDetails(
-      isLoading: false,
-      postId: event.postId ?? '',
-    );
+    final postDataResult = (!event.callPostDetailsApi)
+        ? null
+        : await _getPostDetailsUseCase.executeGetPostDetails(
+            isLoading: false,
+            postId: event.postId ?? '',
+          );
     final insightApiResult = await _getPostInsightUseCase.executeGetPostInsight(
       isLoading: false,
       postId: event.postId ?? '',

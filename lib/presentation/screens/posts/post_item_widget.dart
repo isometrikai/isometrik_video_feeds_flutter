@@ -57,6 +57,10 @@ class _PostItemWidgetState extends State<PostItemWidget>
 
   // Track refresh count for each index to force rebuild
   final Map<int, int> _refreshCounts = {};
+  
+  // PAGINATION FIX: Track pagination state to prevent duplicate requests
+  bool _isLoadingMore = false;
+  Timer? _paginationDebounceTimer;
 
   @override
   void initState() {
@@ -159,6 +163,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
 
   @override
   void dispose() {
+    _paginationDebounceTimer?.cancel();
     _pageController.dispose();
     _currentIndex.dispose();
     // Don't clear all cache on dispose, only clear controllers
@@ -346,25 +351,38 @@ class _PostItemWidgetState extends State<PostItemWidget>
                   //   'userId': widget.loggedInUserId,
                   //   'timestamp': DateTime.now().toUtc().toIso8601String(),
                   // });
-                  // Check if we're at 65% of the list
-                  final threshold = (_reelsDataList.length * 0.65).floor();
-                  if (index >= threshold ||
-                      index == _reelsDataList.length - 1) {
-                    if (widget.onLoadMore != null) {
-                      widget.onLoadMore!().then(
-                        (value) {
-                          if (value.isListEmptyOrNull) return;
-                          final newReels = value.where((newReel) =>
-                              !_reelsDataList.any((existingReel) =>
-                                  existingReel.postId == newReel.postId));
-                          _reelsDataList.addAll(newReels);
-                          if (_reelsDataList.isNotEmpty) {
-                            _doMediaCaching(0);
-                          }
-                          _updateState();
-                        },
-                      );
-                    }
+                  // PAGINATION FIX: Improved pagination logic with debouncing and better threshold
+                  final threshold = (_reelsDataList.length * 0.7).floor(); // Increased to 70% for earlier trigger
+                  final isNearEnd = index >= threshold || index == _reelsDataList.length - 1;
+                  
+                  if (isNearEnd && widget.onLoadMore != null) {
+                    // PAGINATION FIX: Debounce pagination requests to prevent multiple simultaneous calls
+                    _paginationDebounceTimer?.cancel();
+                    _paginationDebounceTimer = Timer(const Duration(milliseconds: 300), () {
+                      if (widget.onLoadMore != null && !_isLoadingMore) {
+                        _isLoadingMore = true;
+                        widget.onLoadMore!().then(
+                          (value) {
+                            _isLoadingMore = false;
+                            if (value.isListEmptyOrNull) return;
+                            final newReels = value.where((newReel) =>
+                                !_reelsDataList.any((existingReel) =>
+                                    existingReel.postId == newReel.postId));
+                            if (newReels.isNotEmpty) {
+                              _reelsDataList.addAll(newReels);
+                              if (_reelsDataList.isNotEmpty) {
+                                _doMediaCaching(0);
+                              }
+                              _updateState();
+                            }
+                          },
+                        ).catchError((error) {
+                          // PAGINATION FIX: Handle errors and allow retry
+                          debugPrint('❌ PostItemWidget: Error loading more posts: $error');
+                          _isLoadingMore = false;
+                        });
+                      }
+                    });
                   }
                   if (widget.reelsConfig.onReelsChange != null) {
                     widget.reelsConfig.onReelsChange?.call(post, index);
@@ -475,7 +493,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
     }
   }
 
-  // Handle media caching for both images and videos - OPTIMIZED FOR PERFORMANCE
+  // Handle media caching for both images and videos - ADAPTIVE FOR NETWORK QUALITY
   Future<void> _doMediaCaching(int index) async {
     if (_reelsDataList.isEmpty || index >= _reelsDataList.length) return;
 
@@ -487,10 +505,14 @@ class _PostItemWidgetState extends State<PostItemWidget>
           '🎯 MainWidget: Page changed to index $index (@${reelsData.userName})');
     }
 
-    // OPTIMIZATION: Platform-specific preloading for smooth scrolling
-    // Android: 2 ahead (balanced for smooth experience with increased cache)
-    // iOS: 3 ahead (more aggressive for smoother experience)
-    final preloadCount = Platform.isAndroid ? 2 : 3;
+    // ADAPTIVE: Get network quality-based preload count
+    final networkDetector = NetworkQualityDetector();
+    final adaptiveConfig = networkDetector.adaptiveConfig;
+    final preloadCount = adaptiveConfig.preloadCount;
+    
+    debugPrint(
+        '📡 PostItemWidget: Using ${adaptiveConfig.quality.name} network quality, preloading $preloadCount videos');
+
     final startIndex = math.max(0, index - 1); // 1 behind
     final endIndex = math.min(_reelsDataList.length - 1, index + preloadCount);
 

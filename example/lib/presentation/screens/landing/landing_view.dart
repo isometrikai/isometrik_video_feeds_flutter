@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:ism_video_reel_player_example/di/di.dart';
 import 'package:ism_video_reel_player_example/presentation/presentation.dart';
 import 'package:ism_video_reel_player_example/res/res.dart';
 import 'package:ism_video_reel_player_example/utils/utils.dart';
@@ -36,8 +35,9 @@ class _LandingViewState extends State<LandingView> {
 
   @override
   void dispose() {
+    textEditingController.dispose();
+    // Don't manually close BLoC - BlocProvider handles disposal automatically
     super.dispose();
-    kGetIt<LandingBloc>().close();
   }
 
   Future<bool> _onWillPop() async {
@@ -150,10 +150,25 @@ class _LandingViewState extends State<LandingView> {
                         unselectedLabelStyle: state == NavbarType.home
                             ? Styles.white12
                             : Styles.primaryText12,
-                        onTap: (index) async {
-                          InjectionUtils.getBloc<LandingBloc>().add(
-                              LandingNavigationEvent(
-                                  navbarType: NavbarType.visibleItems[index]));
+                        onTap: (index) {
+                          // Safety check: Only add event if widget is still mounted
+                          if (!mounted) return;
+
+                          // Use context.read instead of service locator for safer access
+                          final landingBloc = context.read<LandingBloc>();
+
+                          // Check if BLoC is closed before adding event
+                          if (landingBloc.isClosed) {
+                            debugPrint(
+                                '⚠️ LandingBloc is closed, skipping navigation event');
+                            return;
+                          }
+
+                          landingBloc.add(
+                            LandingNavigationEvent(
+                              navbarType: NavbarType.visibleItems[index],
+                            ),
+                          );
                         },
                         items: NavbarType.visibleItems
                             .map(

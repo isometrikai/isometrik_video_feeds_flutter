@@ -1767,8 +1767,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       }
     } else if (!_hasMultipleMedia ||
         _currentPageNotifier.value == _reelData.mediaMetaDataList.length - 1) {
-      // Single video, notify parent to move to next post
-      widget.onVideoCompleted?.call();
+      // LOOPING FIX: Only move to next post if autoMoveNextMedia is enabled
+      // Otherwise, let the video loop (it's already set to loop)
+      if (widget.reelsConfig.autoMoveNextMedia || widget.onVideoCompleted != null) {
+        // Single video, notify parent to move to next post
+        widget.onVideoCompleted?.call();
+      } else {
+        // Video should loop - don't move to next post
+        debugPrint('🔄 Video completed but looping is enabled, staying on current video');
+      }
     }
   }
 

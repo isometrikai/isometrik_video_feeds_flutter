@@ -10,7 +10,8 @@ import 'package:visibility_detector/visibility_detector.dart';
 
 /// Configure VisibilityDetector for faster updates (smoother playback)
 void _configureVisibilityDetector() {
-  VisibilityDetectorController.instance.updateInterval = const Duration(milliseconds: 100);
+  VisibilityDetectorController.instance.updateInterval =
+      const Duration(milliseconds: 100);
 }
 
 /// Separate widget for video player with visibility detection and pooling
@@ -60,20 +61,26 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   bool _hasLoggedWatchEvent = false; // Track if watch event has been logged
   Duration _maxWatchPosition = Duration.zero; // Track maximum watch position
 
+  // RACE CONDITION FIX: Track play/pause operations to prevent overlapping calls
+  bool _isPlayOperationInProgress = false;
+  bool _isPauseOperationInProgress = false;
+  Completer<void>? _pendingPlayOperation;
+  Completer<void>? _pendingPauseOperation;
+
   // Track video start and progress milestones
   bool _hasLoggedVideoStarted = false;
   final Set<int> _loggedProgressMilestones =
       {}; // Track which milestones (25, 50, 75, 100) have been logged
-  
+
   // OPTIMIZATION: Throttle progress callbacks for smoother performance
   int _lastProgressCallbackTime = 0;
 
   // Timer to detect and recover stuck videos
   Timer? _stuckVideoTimer;
-  
+
   // Timer to check if controller is ready (for async initialization)
   Timer? _controllerReadyCheckTimer;
-  
+
   // Track if we've received valid video dimensions
   bool _hasValidVideoSize = false;
 
@@ -90,12 +97,12 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   /// Called when the video playing state changes
   void _onPlayingStateChanged() {
     if (_isDisposed || !mounted) return;
-    
+
     // If video started playing, ensure UI shows the video player
-    if (_videoPlayerController != null && 
-        _videoPlayerController!.isPlaying) {
+    if (_videoPlayerController != null && _videoPlayerController!.isPlaying) {
       if (!_isInitialized) {
-        debugPrint('🎬 VideoPlayerWidget: Video started playing, updating UI...');
+        debugPrint(
+            '🎬 VideoPlayerWidget: Video started playing, updating UI...');
         setState(() {
           _isInitialized = true;
         });
@@ -109,26 +116,28 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   /// Periodically check if the controller has become ready (initialized async in cache)
   void _startControllerReadyCheck() {
     _controllerReadyCheckTimer?.cancel();
-    _controllerReadyCheckTimer = Timer.periodic(const Duration(milliseconds: 200), (_) {
+    _controllerReadyCheckTimer =
+        Timer.periodic(const Duration(milliseconds: 200), (_) {
       if (_isDisposed) {
         _controllerReadyCheckTimer?.cancel();
         return;
       }
-      
+
       // If already initialized, stop checking
       if (_isInitialized && _videoPlayerController != null) {
         _controllerReadyCheckTimer?.cancel();
         return;
       }
-      
+
       // Check if controller is now available in cache
       final cachedController = widget.videoCacheManager
           .getCachedMedia(widget.mediaUrl) as IVideoPlayerController?;
-      
-      if (cachedController != null && 
-          cachedController.isInitialized && 
+
+      if (cachedController != null &&
+          cachedController.isInitialized &&
           !cachedController.isDisposed) {
-        debugPrint('✅ VideoPlayerWidget: Controller became ready (async check) for: ${widget.mediaUrl}');
+        debugPrint(
+            '✅ VideoPlayerWidget: Controller became ready (async check) for: ${widget.mediaUrl}');
         _controllerReadyCheckTimer?.cancel();
         _videoPlayerController = cachedController;
         _setupVideoController().then((_) {
@@ -159,12 +168,43 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   Future<void> _initializeVideoPlayer() async {
     if (_isInitializing || widget.mediaUrl.isEmpty) return;
 
-    _isInitializing = true;
-    
-    // Trigger UI update to show loading indicator
-    if (mounted) {
-      setState(() {});
+    // FLICKERING FIX: Check retry limit first
+    if (_initializationRetryCount >= _maxInitializationRetries) {
+      debugPrint(
+          '⚠️ VideoPlayerWidget: Max initialization retries reached, stopping retries');
+      _updateLoadingIndicator(false);
+      return;
     }
+
+    // FLICKERING FIX: Prevent too frequent retry attempts with exponential backoff
+    final now = DateTime.now();
+    if (_lastInitializationAttempt != null && _initializationRetryCount > 0) {
+      final timeSinceLastAttempt = now.difference(_lastInitializationAttempt!);
+      // Use current retry count for delay calculation (before increment)
+      final requiredDelay =
+          _getRetryDelay(retryCount: _initializationRetryCount);
+      if (timeSinceLastAttempt < requiredDelay) {
+        final remainingSeconds =
+            (requiredDelay - timeSinceLastAttempt).inSeconds;
+        debugPrint(
+            '⏸️ VideoPlayerWidget: Skipping retry - need to wait ${remainingSeconds}s more (attempt $_initializationRetryCount)');
+        return;
+      }
+    }
+
+    _isInitializing = true;
+
+    // FLICKERING FIX: Increment retry count (starts at 0, so first attempt is 1)
+    if (_lastInitializationAttempt == null) {
+      _initializationRetryCount = 1; // First attempt
+    } else {
+      _initializationRetryCount++; // Subsequent retry
+    }
+
+    _lastInitializationAttempt = now;
+
+    // FLICKERING FIX: Debounce loading indicator update
+    _updateLoadingIndicator(true);
 
     try {
       // OPTIMIZATION: Try to get already cached and initialized controller first
@@ -184,6 +224,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           });
           _checkInitialVisibility();
         }
+        _initializationRetryCount = 0; // Reset on success
+        _updateLoadingIndicator(false);
         return; // Early return - no need to initialize again
       }
 
@@ -193,7 +235,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         debugPrint(
             '🔄 VideoPlayerWidget: Precaching video for: ${widget.mediaUrl}');
         // Use video cache manager directly (bypasses MediaTypeUtil)
-        await widget.videoCacheManager.precacheMedia([widget.mediaUrl], highPriority: true);
+        await widget.videoCacheManager
+            .precacheMedia([widget.mediaUrl], highPriority: true);
         _videoPlayerController = widget.videoCacheManager
             .getCachedMedia(widget.mediaUrl) as IVideoPlayerController?;
       }
@@ -209,37 +252,79 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           });
           _checkInitialVisibility();
         }
+        _initializationRetryCount = 0; // Reset on success
+        _updateLoadingIndicator(false);
       } else {
         debugPrint(
-            '⚠️ VideoPlayerWidget: Failed to initialize video: ${widget.mediaUrl}');
-        // If visible, schedule a retry
-        if (_isVisible && mounted) {
-          debugPrint('🔄 VideoPlayerWidget: Scheduling retry for visible video...');
-          Future.delayed(const Duration(seconds: 1), () {
+            '⚠️ VideoPlayerWidget: Failed to initialize video: ${widget.mediaUrl} (attempt $_initializationRetryCount/$_maxInitializationRetries)');
+        // FLICKERING FIX: Only retry if under limit and visible with exponential backoff
+        if (_isVisible &&
+            mounted &&
+            _initializationRetryCount < _maxInitializationRetries) {
+          // Use current retry count (already incremented) for delay calculation
+          final retryDelay =
+              _getRetryDelay(retryCount: _initializationRetryCount);
+          debugPrint(
+              '🔄 VideoPlayerWidget: Scheduling retry for visible video in ${retryDelay.inSeconds}s... (attempt $_initializationRetryCount/$_maxInitializationRetries)');
+          Future.delayed(retryDelay, () {
             if (!_isDisposed && _isVisible && !_isInitialized) {
               _isInitializing = false;
               _initializeVideoPlayer();
             }
           });
+        } else {
+          _updateLoadingIndicator(false);
         }
       }
     } catch (e) {
       debugPrint('❌ VideoPlayerWidget: Error initializing video: $e');
-      // If visible, schedule a retry on error
-      if (_isVisible && mounted) {
-        debugPrint('🔄 VideoPlayerWidget: Scheduling retry after error...');
-        Future.delayed(const Duration(seconds: 2), () {
+      // FLICKERING FIX: Only retry if under limit and visible with exponential backoff
+      if (_isVisible &&
+          mounted &&
+          _initializationRetryCount < _maxInitializationRetries) {
+        // Use current retry count (already incremented) for delay calculation
+        final retryDelay =
+            _getRetryDelay(retryCount: _initializationRetryCount);
+        debugPrint(
+            '🔄 VideoPlayerWidget: Scheduling retry after error in ${retryDelay.inSeconds}s... (attempt $_initializationRetryCount/$_maxInitializationRetries)');
+        Future.delayed(retryDelay, () {
           if (!_isDisposed && _isVisible && !_isInitialized) {
             _isInitializing = false;
             _initializeVideoPlayer();
           }
         });
+      } else {
+        _updateLoadingIndicator(false);
       }
     } finally {
       _isInitializing = false;
-      if (mounted) {
-        setState(() {});
-      }
+    }
+  }
+
+  /// FLICKERING FIX: Debounce loading indicator updates to prevent flickering
+  void _updateLoadingIndicator(bool show) {
+    _loadingIndicatorDebounceTimer?.cancel();
+
+    if (show) {
+      // Show after a small delay to prevent flickering on quick success
+      _loadingIndicatorDebounceTimer =
+          Timer(const Duration(milliseconds: 500), () {
+        if (!_showLoadingIndicator && mounted && !_isInitialized) {
+          setState(() {
+            _showLoadingIndicator = true;
+          });
+        }
+      });
+    } else {
+      // Hide after a delay to prevent flickering
+      _loadingIndicatorDebounceTimer =
+          Timer(const Duration(milliseconds: 500), () {
+        if (_showLoadingIndicator && mounted) {
+          setState(() {
+            _showLoadingIndicator = false;
+          });
+        }
+      });
     }
   }
 
@@ -259,12 +344,23 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       _maxWatchPosition = Duration.zero;
       _hasLoggedVideoStarted = false;
       _loggedProgressMilestones.clear();
+      _isAtVideoEnd = false;
+      _hasPlaybackError = false;
+      _timeoutRecoveryAttempts = 0;
+      _isSeekingToStart = false;
+      _initializationRetryCount = 0;
+      _lastInitializationAttempt = null;
+      _updateLoadingIndicator(false);
 
       // Add listener for video completion and playback progress
       _videoPlayerController!.addListener(_handlePlaybackProgress);
-      
+
       // Listen to playing state changes to update UI
-      _videoPlayerController!.playingStateNotifier.addListener(_onPlayingStateChanged);
+      _videoPlayerController!.playingStateNotifier
+          .addListener(_onPlayingStateChanged);
+
+      // TIMEOUT FIX: Monitor for playback errors and timeouts
+      _startPlaybackErrorMonitoring();
 
       // OPTIMIZATION: Run setup operations in parallel for faster playback start
       await Future.wait([
@@ -274,11 +370,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
       // If widget is visible when initialized, start playing immediately
       if (_isVisible && !widget.isPreloaded) {
-        // Don't await play - let it start immediately
-        unawaited(_videoPlayerController!.play());
-        widget.videoCacheManager.markAsVisible(widget.mediaUrl);
-        // Start stuck video detection to handle videos that don't start
-        _startStuckVideoDetection();
+        // RACE CONDITION FIX: Use proper play control instead of direct play
+        // This ensures other videos are paused first
+        unawaited(_performPlayPauseControl());
       } else {
         widget.videoCacheManager.markAsNotVisible(widget.mediaUrl);
       }
@@ -316,6 +410,79 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       _maxWatchPosition = position;
     }
 
+    // STUCK VIDEO DETECTION: Detect if video frame is stuck (audio playing but video not updating)
+    // Also detect timeout/stall during playback - IMPROVED DETECTION
+    if (_videoPlayerController!.isPlaying &&
+        _isVisible &&
+        duration.inMilliseconds > 0 &&
+        !_isAtVideoEnd) {
+      // Check if video position is updating
+      if (_lastVideoPosition != null) {
+        final positionDiff =
+            (position.inMilliseconds - _lastVideoPosition!.inMilliseconds)
+                .abs();
+
+        // STUCK VIDEO FIX: More aggressive detection - check if position hasn't changed for multiple callbacks
+        // Also check if video is at start and not progressing (common stuck scenario)
+        final isAtStart = position.inMilliseconds < 500;
+        final isStuckAtStart =
+            isAtStart && _stuckFrameCount >= 3; // Faster detection at start
+
+        // If position hasn't changed significantly (less than 100ms) for multiple checks, video might be stuck
+        if (positionDiff < 100) {
+          _stuckFrameCount++;
+
+          // Also check if video size is invalid (0x0) which indicates video isn't rendering
+          final videoSize = _videoPlayerController!.videoSize;
+          final hasInvalidSize = videoSize.width == 0 || videoSize.height == 0;
+
+          // Check if video is buffering (potential timeout)
+          final isBuffering = _videoPlayerController!.isBuffering;
+
+          // STUCK VIDEO FIX: More aggressive detection - trigger recovery sooner
+          if (_stuckFrameCount >= _maxStuckFrameCount ||
+              hasInvalidSize ||
+              isStuckAtStart ||
+              (isBuffering && _stuckFrameCount >= 5)) {
+            // Faster detection for buffering
+            debugPrint(
+                '⚠️ VideoPlayerWidget: Detected stuck video - Position stuck: ${_stuckFrameCount >= _maxStuckFrameCount}, Invalid size: $hasInvalidSize, Buffering: $isBuffering, Stuck at start: $isStuckAtStart, Size: $videoSize, Pos: ${position.inMilliseconds}ms');
+
+            // Prioritize recovery based on issue type
+            if (hasInvalidSize) {
+              // Audio-only playback - recover frame
+              _recoverStuckVideoFrame();
+            } else if (isStuckAtStart ||
+                (isBuffering && _stuckFrameCount >= 5)) {
+              // Stuck at start or buffering - recover from timeout immediately
+              if (!_hasPlaybackError) {
+                _hasPlaybackError = true;
+                _recoverFromPlaybackTimeout();
+              }
+            } else if (_stuckFrameCount >= _maxStuckFrameCount) {
+              // General stuck frame - recover
+              _recoverStuckVideoFrame();
+            }
+
+            _stuckFrameCount = 0; // Reset counter
+          }
+        } else {
+          // Video position is updating - reset counter
+          _stuckFrameCount = 0;
+          _lastVideoPosition = position;
+        }
+      } else {
+        // First position update - store it
+        _lastVideoPosition = position;
+      }
+    } else {
+      // Not playing or not visible or at end - reset tracking
+      _stuckFrameCount = 0;
+      if (!_isAtVideoEnd) {
+        _lastVideoPosition = null;
+      }
+    }
+
     // OPTIMIZATION: Throttle progress callbacks to every 200ms for smoother UI
     final now = DateTime.now().millisecondsSinceEpoch;
     if (now - _lastProgressCallbackTime >= 200) {
@@ -348,15 +515,129 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       }
     }
 
+    // TIMEOUT FIX: Detect if video stops playing mid-stream (timeout/error)
+    // This is handled in the stuck video detection above, but we also check here for timeout-specific cases
+    if (_videoPlayerController!.isPlaying &&
+        _isVisible &&
+        duration.inMilliseconds > 0 &&
+        !_isAtVideoEnd) {
+      // Check if video position is advancing
+      if (_lastVideoPosition != null) {
+        final positionDiff =
+            (position.inMilliseconds - _lastVideoPosition!.inMilliseconds)
+                .abs();
+        final timeSinceLastUpdate = DateTime.now().millisecondsSinceEpoch -
+            (_lastProgressCallbackTime > 0
+                ? _lastProgressCallbackTime
+                : DateTime.now().millisecondsSinceEpoch);
+
+        // If position hasn't changed for more than 2 seconds and video should be playing, it might be timed out
+        if (positionDiff < 100 && timeSinceLastUpdate > 2000) {
+          if (!_hasPlaybackError) {
+            _hasPlaybackError = true;
+            debugPrint(
+                '⚠️ VideoPlayerWidget: Detected playback timeout/stall - position not advancing');
+            _recoverFromPlaybackTimeout();
+          }
+        } else if (positionDiff >= 100) {
+          // Position is advancing - reset error flags
+          if (_hasPlaybackError) {
+            _hasPlaybackError = false;
+            _timeoutRecoveryAttempts = 0;
+            debugPrint(
+                '✅ VideoPlayerWidget: Playback recovered, position advancing');
+          }
+        }
+      }
+    }
+
     // 3. Check if video has completed (with small threshold to account for timing)
     if (duration.inMilliseconds > 0 &&
         position.inMilliseconds >= duration.inMilliseconds - 100 &&
         !_hasCompleted) {
       _hasCompleted = true;
-      // Video completed - notify callback
+      _isAtVideoEnd = true;
+
+      // LOOPING FIX: Call onVideoCompleted callback
+      // The callback will handle whether to move to next video or let it loop
+      // based on autoMoveNextMedia configuration
       widget.onVideoCompleted?.call();
+
       // Log watch event when video completes
       // _logWatchEventIfNeeded();
+    }
+
+    // LOOPING FIX: Detect when video loops back to start and reset completion flag
+    // This allows the video to loop continuously without getting stuck
+    if (_hasCompleted &&
+        duration.inMilliseconds > 0 &&
+        position.inMilliseconds < 500) {
+      // Reset when back near start (500ms threshold)
+      // Video has looped back to start - reset completion flag so it can complete again
+      _hasCompleted = false;
+      _isAtVideoEnd = false;
+      _maxWatchPosition =
+          Duration.zero; // Reset max watch position for next loop
+      _hasLoggedVideoStarted = false; // Reset so we can log start event again
+      _loggedProgressMilestones.clear(); // Reset milestones for next loop
+      debugPrint('🔄 Video looped back to start, resetting completion flag');
+    }
+
+    // LOOPING FIX: If video reaches end and looping is enabled but hasn't looped yet,
+    // manually seek to start to ensure looping works
+    if (duration.inMilliseconds > 0 &&
+        position.inMilliseconds >= duration.inMilliseconds - 50 &&
+        _hasCompleted &&
+        _isAtVideoEnd &&
+        !_isSeekingToStart) {
+      // Check if we should loop (no completion callback means infinite loop)
+      final shouldLoop = widget.onVideoCompleted == null;
+
+      if (shouldLoop) {
+        // Video reached end but hasn't looped - manually seek to start
+        _isSeekingToStart = true;
+        Future.delayed(const Duration(milliseconds: 200), () async {
+          if (!_isDisposed &&
+              _videoPlayerController != null &&
+              _videoPlayerController!.isInitialized &&
+              !_videoPlayerController!.isDisposed) {
+            final currentPos = _videoPlayerController!.position;
+            final currentDuration = _videoPlayerController!.duration;
+
+            // Double check we're still at the end
+            if (currentDuration.inMilliseconds > 0 &&
+                currentPos.inMilliseconds >=
+                    currentDuration.inMilliseconds - 100) {
+              // Still at end - seek to start to force loop
+              try {
+                await _videoPlayerController!.pause();
+                await Future.delayed(const Duration(milliseconds: 50));
+                await _videoPlayerController!.seekTo(Duration.zero);
+                _hasCompleted = false;
+                _isAtVideoEnd = false;
+                _maxWatchPosition = Duration.zero;
+                _hasLoggedVideoStarted = false;
+                _loggedProgressMilestones.clear();
+
+                await Future.delayed(const Duration(milliseconds: 50));
+                if (!_isDisposed && _isVisible && !_isManuallyPaused) {
+                  await _videoPlayerController!.play();
+                }
+                debugPrint('🔄 Manually seeking video to start for looping');
+              } catch (e) {
+                debugPrint('❌ Error seeking to start: $e');
+              } finally {
+                _isSeekingToStart = false;
+              }
+            } else {
+              // Video has already looped or moved
+              _isSeekingToStart = false;
+            }
+          } else {
+            _isSeekingToStart = false;
+          }
+        });
+      }
     }
   }
 
@@ -412,42 +693,143 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       widget.onVisibilityChanged(_isVisible);
     }
 
-    // Control playback based on visibility (only if not manually paused)
+    // STUCK VIDEO FIX: Reset recovery state when scrolling back to video
+    if (!wasVisible && _isVisible) {
+      // Video became visible again - reset all recovery states
+      debugPrint(
+          '🔄 VideoPlayerWidget: Video became visible again, resetting recovery state');
+      _hasPlaybackError = false;
+      _timeoutRecoveryAttempts = 0;
+      _stuckFrameCount = 0;
+      _lastVideoPosition = null;
+      _isAtVideoEnd = false;
+      _isSeekingToStart = false;
+      // Reset retry count when scrolling back (give it a fresh chance)
+      _initializationRetryCount = 0;
+      _lastInitializationAttempt = null;
+    }
+
+    // RACE CONDITION FIX: Use debounced play/pause to prevent overlapping operations
+    if (_isVisible != wasVisible) {
+      _debouncedPlayPauseControl();
+    }
+  }
+
+  // RACE CONDITION FIX: Debounced play/pause control to prevent race conditions
+  Timer? _playPauseDebounceTimer;
+  void _debouncedPlayPauseControl() {
+    _playPauseDebounceTimer?.cancel();
+    _playPauseDebounceTimer =
+        Timer(const Duration(milliseconds: 50), _performPlayPauseControl);
+  }
+
+  /// Perform play/pause control with race condition protection
+  Future<void> _performPlayPauseControl() async {
+    if (_isDisposed) return;
+
     // Safety check: ensure controller is valid and not disposed
-    if (!_isDisposed &&
-        _videoPlayerController != null &&
-        _videoPlayerController!.isInitialized &&
-        !_videoPlayerController!.isDisposed) {
-      try {
-        if (_isVisible &&
-            !_videoPlayerController!.isPlaying &&
-            !_isManuallyPaused &&
-            !widget.isPreloaded ) {
-          // Ensure volume is set correctly before playing
-          unawaited(_videoPlayerController!.setVolume(widget.isMuted ? 0.0 : 1.0));
-          // OPTIMIZATION: Don't await - fire and forget for instant response
-          unawaited(_videoPlayerController!.play());
-          widget.videoCacheManager.markAsVisible(widget.mediaUrl);
-          // Start stuck video detection for visible video
-          _startStuckVideoDetection();
-        } else if (!_isVisible && _videoPlayerController!.isPlaying) {
-          // Video is not visible - pause it
-          unawaited(_videoPlayerController!.pause());
-          widget.videoCacheManager.markAsNotVisible(widget.mediaUrl);
-          // Stop stuck video detection when not visible
-          _stopStuckVideoDetection();
-        }
-      } catch (e) {
+    if (_videoPlayerController == null ||
+        !_videoPlayerController!.isInitialized ||
+        _videoPlayerController!.isDisposed) {
+      // If visible but not initialized, start initialization
+      if (_isVisible && !_isInitializing && !_isInitialized) {
         debugPrint(
-            '⚠️ VideoPlayerWidget: Error in visibility change handler: $e');
-      }
-    } else if (_isVisible) {
-      // OPTIMIZATION: If visible but not initialized/initializing, start initialization immediately
-      if (!_isInitializing && !_isInitialized) {
-        debugPrint('🔄 VideoPlayerWidget: Visible but not initialized, starting initialization...');
+            '🔄 VideoPlayerWidget: Visible but not initialized, starting initialization...');
         _isDisposed = false;
         _initializeVideoPlayer();
       }
+      return;
+    }
+
+    try {
+      // RACE CONDITION FIX: Check if we need to play
+      if (_isVisible &&
+          !_videoPlayerController!.isPlaying &&
+          !_isManuallyPaused &&
+          !widget.isPreloaded) {
+        // Cancel any pending pause operation
+        if (_isPauseOperationInProgress) {
+          _pendingPauseOperation?.complete();
+          _isPauseOperationInProgress = false;
+        }
+
+        // Wait for any pending play operation to complete
+        if (_isPlayOperationInProgress && _pendingPlayOperation != null) {
+          await _pendingPlayOperation!.future;
+        }
+
+        // Mark play operation in progress
+        _isPlayOperationInProgress = true;
+        _pendingPlayOperation = Completer<void>();
+
+        try {
+          // CRITICAL: Pause all other videos first to prevent sound overlap
+          // This ensures only one video plays at a time
+          await widget.videoCacheManager.pauseAllExcept(widget.mediaUrl);
+          widget.videoCacheManager.markAsVisible(widget.mediaUrl);
+
+          // Ensure volume is set correctly before playing
+          await _videoPlayerController!.setVolume(widget.isMuted ? 0.0 : 1.0);
+
+          // Play the video
+          await _videoPlayerController!.play();
+
+          // STUCK VIDEO FIX: Reset recovery state before starting monitoring
+          _hasPlaybackError = false;
+          _timeoutRecoveryAttempts = 0;
+          _stuckFrameCount = 0;
+          _lastVideoPosition = null;
+
+          // Start stuck video detection for visible video
+          _startStuckVideoDetection();
+          // Start playback error monitoring
+          _startPlaybackErrorMonitoring();
+        } finally {
+          _isPlayOperationInProgress = false;
+          _pendingPlayOperation?.complete();
+          _pendingPlayOperation = null;
+        }
+      }
+      // RACE CONDITION FIX: Check if we need to pause
+      else if (!_isVisible && _videoPlayerController!.isPlaying) {
+        // Cancel any pending play operation
+        if (_isPlayOperationInProgress) {
+          _pendingPlayOperation?.complete();
+          _isPlayOperationInProgress = false;
+        }
+
+        // Wait for any pending pause operation to complete
+        if (_isPauseOperationInProgress && _pendingPauseOperation != null) {
+          await _pendingPauseOperation!.future;
+        }
+
+        // Mark pause operation in progress
+        _isPauseOperationInProgress = true;
+        _pendingPauseOperation = Completer<void>();
+
+        try {
+          // Pause the video
+          await _videoPlayerController!.pause();
+
+          // Mark as not visible
+          widget.videoCacheManager.markAsNotVisible(widget.mediaUrl);
+
+          // Stop stuck video detection when not visible
+          _stopStuckVideoDetection();
+          _stopPlaybackErrorMonitoring();
+        } finally {
+          _isPauseOperationInProgress = false;
+          _pendingPauseOperation?.complete();
+          _pendingPauseOperation = null;
+        }
+      }
+    } catch (e) {
+      debugPrint('⚠️ VideoPlayerWidget: Error in play/pause control: $e');
+      // Reset flags on error
+      _isPlayOperationInProgress = false;
+      _isPauseOperationInProgress = false;
+      _pendingPlayOperation?.complete();
+      _pendingPauseOperation?.complete();
     }
   }
 
@@ -455,18 +837,54 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   int _recoveryAttempts = 0;
   static const int _maxRecoveryAttempts = 5;
 
+  // Track video frame updates to detect stuck video
+  Duration? _lastVideoPosition;
+  int _stuckFrameCount = 0;
+  static const int _maxStuckFrameCount = 10; // ~5 seconds at 500ms intervals
+
+  // LOOPING FIX: Track if we're currently seeking to start
+  bool _isSeekingToStart = false;
+
+  // TIMEOUT FIX: Track playback errors and timeout recovery
+  bool _hasPlaybackError = false;
+  int _timeoutRecoveryAttempts = 0;
+  static const int _maxTimeoutRecoveryAttempts = 3;
+  Timer? _playbackErrorTimer;
+
+  // LOOPING FIX: Track if video is at end and should loop
+  bool _isAtVideoEnd = false;
+
+  // FLICKERING FIX: Track initialization retry attempts to prevent infinite retries
+  int _initializationRetryCount = 0;
+  static const int _maxInitializationRetries = 3;
+  DateTime? _lastInitializationAttempt;
+
+  // LOADING INDICATOR FIX: Track loading state to prevent flickering
+  bool _showLoadingIndicator = false;
+  Timer? _loadingIndicatorDebounceTimer;
+
+  // RETRY LOGIC FIX: Calculate exponential backoff delay
+  Duration _getRetryDelay({int? retryCount}) {
+    // Start at 3 seconds, increase by 2 seconds for each retry
+    // Retry 1: 3s, Retry 2: 5s, Retry 3: 7s
+    final baseDelay = 3;
+    final count = retryCount ?? _initializationRetryCount;
+    final additionalDelay = count * 2;
+    return Duration(seconds: baseDelay + additionalDelay);
+  }
+
   /// Start periodic check for stuck videos (only for visible video)
   void _startStuckVideoDetection() {
     _stopStuckVideoDetection(); // Cancel any existing timer
     _recoveryAttempts = 0; // Reset recovery attempts
-    
+
     // First check after 300ms (catch early stuck videos faster)
     Future.delayed(const Duration(milliseconds: 300), () {
       if (!_isDisposed && _isVisible) {
         _checkAndRecoverStuckVideo();
       }
     });
-    
+
     // Then check every 500ms (more aggressive for faster recovery)
     _stuckVideoTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
       _checkAndRecoverStuckVideo();
@@ -489,24 +907,54 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     if (_videoPlayerController != null &&
         _videoPlayerController!.isInitialized &&
         !_videoPlayerController!.isDisposed) {
+      // Check if video is playing but frame is stuck (audio-only playback)
+      final videoSize = _videoPlayerController!.videoSize;
+      final hasInvalidSize = videoSize.width == 0 || videoSize.height == 0;
+
       // If video is visible but not playing, try to recover
       if (!_videoPlayerController!.isPlaying) {
         _recoveryAttempts++;
-        debugPrint('🔄 Detected stuck video, recovery attempt $_recoveryAttempts/$_maxRecoveryAttempts...');
-        
+        debugPrint(
+            '🔄 Detected stuck video (not playing), recovery attempt $_recoveryAttempts/$_maxRecoveryAttempts...');
+
         // Set volume and force resume
-        unawaited(_videoPlayerController!.setVolume(widget.isMuted ? 0.0 : 1.0));
+        unawaited(
+            _videoPlayerController!.setVolume(widget.isMuted ? 0.0 : 1.0));
         unawaited(_videoPlayerController!.forceResume());
-        
+
         // If too many recovery attempts, try re-initializing the video
         if (_recoveryAttempts >= _maxRecoveryAttempts) {
-          debugPrint('⚠️ Max recovery attempts reached, re-initializing video...');
+          debugPrint(
+              '⚠️ Max recovery attempts reached, re-initializing video...');
+          _stopStuckVideoDetection();
+          _reinitializeVideo();
+        }
+      }
+      // STUCK FRAME DETECTION: Check if video is playing but frame is invalid (audio-only)
+      else if (_videoPlayerController!.isPlaying &&
+          hasInvalidSize &&
+          _isInitialized) {
+        _recoveryAttempts++;
+        debugPrint(
+            '🔄 Detected stuck video frame (audio playing but video not rendering), recovery attempt $_recoveryAttempts/$_maxRecoveryAttempts...');
+
+        // Try to recover stuck frame
+        unawaited(_recoverStuckVideoFrame());
+
+        // If too many recovery attempts, try re-initializing the video
+        if (_recoveryAttempts >= _maxRecoveryAttempts) {
+          debugPrint(
+              '⚠️ Max recovery attempts reached for stuck frame, re-initializing video...');
           _stopStuckVideoDetection();
           _reinitializeVideo();
         }
       } else {
-        // Video is playing, stop the detection timer
-        debugPrint('✅ Video started playing after $_recoveryAttempts attempts');
+        // Video is playing and rendering correctly, stop the detection timer
+        if (_recoveryAttempts > 0) {
+          debugPrint(
+              '✅ Video started playing correctly after $_recoveryAttempts attempts');
+        }
+        _recoveryAttempts = 0; // Reset recovery attempts
         _stopStuckVideoDetection();
       }
     } else if (!_isInitializing && _isVisible) {
@@ -516,30 +964,84 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     }
   }
 
+  /// Recover from stuck video frame (audio playing but video not updating)
+  Future<void> _recoverStuckVideoFrame() async {
+    if (_isDisposed || !_isVisible || _videoPlayerController == null) return;
+
+    debugPrint(
+        '🔄 VideoPlayerWidget: Attempting to recover stuck video frame...');
+
+    try {
+      // Method 1: Try seeking to current position to force video refresh
+      final currentPos = _videoPlayerController!.position;
+      await _videoPlayerController!.seekTo(currentPos);
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      // Check if video is still stuck after seek
+      if (_videoPlayerController!.isPlaying &&
+          _videoPlayerController!.position == currentPos) {
+        // Still stuck - try pause and play
+        debugPrint(
+            '🔄 VideoPlayerWidget: Seek didn\'t help, trying pause/play...');
+        await _videoPlayerController!.pause();
+        await Future.delayed(const Duration(milliseconds: 50));
+        await _videoPlayerController!.play();
+
+        // If still stuck after pause/play, reinitialize
+        await Future.delayed(const Duration(milliseconds: 500));
+        if (_videoPlayerController!.isPlaying &&
+            _videoPlayerController!.position == currentPos) {
+          debugPrint(
+              '🔄 VideoPlayerWidget: Pause/play didn\'t help, reinitializing...');
+          await _reinitializeVideo();
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ VideoPlayerWidget: Error recovering stuck video frame: $e');
+      // Fallback to reinitialization
+      await _reinitializeVideo();
+    }
+  }
+
   /// Re-initialize video when stuck
   Future<void> _reinitializeVideo() async {
     if (_isDisposed || !_isVisible) return;
-    
+
     debugPrint('🔄 Re-initializing video: ${widget.mediaUrl}');
-    
+
     // Clear the cached controller
     widget.videoCacheManager.clearMedia(widget.mediaUrl);
-    
+
     // Reset state
     _isInitialized = false;
     _videoPlayerController = null;
-    
+    _hasValidVideoSize = false;
+    _stuckFrameCount = 0;
+    _lastVideoPosition = null;
+    _hasPlaybackError = false;
+    _timeoutRecoveryAttempts = 0;
+    _isAtVideoEnd = false;
+    _isSeekingToStart = false;
+    _initializationRetryCount = 0; // Reset retry count when reinitializing
+    _lastInitializationAttempt = null;
+    _updateLoadingIndicator(false);
+
     // Small delay before reinitializing
     await Future.delayed(const Duration(milliseconds: 100));
-    
+
     if (!_isDisposed && _isVisible) {
       await _initializeVideoPlayer();
     }
   }
 
-  // Public methods to control playback
-  void pause() {
+  // Public methods to control playback with race condition protection
+  Future<void> pause() async {
     if (_isDisposed) return; // Safety check: Don't operate on disposed widget
+
+    // RACE CONDITION FIX: Wait for any pending operations
+    if (_isPlayOperationInProgress && _pendingPlayOperation != null) {
+      await _pendingPlayOperation!.future;
+    }
 
     // Safety check: ensure controller is valid and not disposed
     if (_videoPlayerController != null &&
@@ -547,13 +1049,30 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         !_videoPlayerController!.isDisposed &&
         _videoPlayerController!.isPlaying) {
       _isManuallyPaused = true;
-      _videoPlayerController!.pause();
-      _logVideoStartedEvent();
+
+      // Mark pause operation in progress
+      _isPauseOperationInProgress = true;
+      _pendingPauseOperation = Completer<void>();
+
+      try {
+        await _videoPlayerController!.pause();
+        widget.videoCacheManager.markAsNotVisible(widget.mediaUrl);
+        _logVideoStartedEvent();
+      } finally {
+        _isPauseOperationInProgress = false;
+        _pendingPauseOperation?.complete();
+        _pendingPauseOperation = null;
+      }
     }
   }
 
-  void play() {
+  Future<void> play() async {
     if (_isDisposed) return; // Safety check: Don't operate on disposed widget
+
+    // RACE CONDITION FIX: Wait for any pending operations
+    if (_isPauseOperationInProgress && _pendingPauseOperation != null) {
+      await _pendingPauseOperation!.future;
+    }
 
     // Safety check: ensure controller is valid and not disposed
     if (_videoPlayerController != null &&
@@ -561,11 +1080,35 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         !_videoPlayerController!.isDisposed &&
         !_videoPlayerController!.isPlaying) {
       _isManuallyPaused = false;
+
       // Only play if visible
       if (_isVisible && !widget.isPreloaded) {
-        _videoPlayerController!.play();
+        // Mark play operation in progress
+        _isPlayOperationInProgress = true;
+        _pendingPlayOperation = Completer<void>();
+
+        try {
+          // CRITICAL: Pause all other videos first to prevent sound overlap
+          await widget.videoCacheManager.pauseAllExcept(widget.mediaUrl);
+          widget.videoCacheManager.markAsVisible(widget.mediaUrl);
+          await _videoPlayerController!.setVolume(widget.isMuted ? 0.0 : 1.0);
+          await _videoPlayerController!.play();
+
+          // STUCK VIDEO FIX: Reset recovery state before starting monitoring
+          _hasPlaybackError = false;
+          _timeoutRecoveryAttempts = 0;
+          _stuckFrameCount = 0;
+          _lastVideoPosition = null;
+
+          _startStuckVideoDetection();
+          _startPlaybackErrorMonitoring();
+          _logVideoStartedEvent();
+        } finally {
+          _isPlayOperationInProgress = false;
+          _pendingPlayOperation?.complete();
+          _pendingPlayOperation = null;
+        }
       }
-      _logVideoStartedEvent();
     }
   }
 
@@ -623,7 +1166,95 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     if (oldWidget.mediaUrl != widget.mediaUrl) {
       _isInitialized = false;
       _hasCompleted = false;
+      _initializationRetryCount = 0; // Reset retry count for new video
+      _lastInitializationAttempt = null;
       _initializeVideoPlayer();
+    }
+  }
+
+  /// Start monitoring for playback errors and timeouts
+  void _startPlaybackErrorMonitoring() {
+    _playbackErrorTimer?.cancel();
+    _playbackErrorTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+      if (_isDisposed || !_isVisible) {
+        _playbackErrorTimer?.cancel();
+        return;
+      }
+
+      if (_videoPlayerController != null &&
+          _videoPlayerController!.isInitialized &&
+          !_videoPlayerController!.isDisposed &&
+          _videoPlayerController!.isPlaying &&
+          !_isManuallyPaused) {
+        // Check if video is buffering for too long (potential timeout)
+        if (_videoPlayerController!.isBuffering) {
+          _hasPlaybackError = true;
+          debugPrint(
+              '⚠️ VideoPlayerWidget: Video buffering detected, may be timed out');
+        }
+      }
+    });
+  }
+
+  /// Stop playback error monitoring
+  void _stopPlaybackErrorMonitoring() {
+    _playbackErrorTimer?.cancel();
+    _playbackErrorTimer = null;
+  }
+
+  /// Recover from playback timeout
+  Future<void> _recoverFromPlaybackTimeout() async {
+    if (_isDisposed ||
+        !_isVisible ||
+        _timeoutRecoveryAttempts >= _maxTimeoutRecoveryAttempts) {
+      return;
+    }
+
+    _timeoutRecoveryAttempts++;
+    debugPrint(
+        '🔄 VideoPlayerWidget: Recovering from playback timeout (attempt $_timeoutRecoveryAttempts/$_maxTimeoutRecoveryAttempts)');
+
+    try {
+      if (_videoPlayerController != null &&
+          _videoPlayerController!.isInitialized &&
+          !_videoPlayerController!.isDisposed) {
+        // Method 1: Try seeking slightly back to restart playback
+        final currentPos = _videoPlayerController!.position;
+        final seekBackPos = Duration(
+          milliseconds: (currentPos.inMilliseconds - 500)
+              .clamp(0, currentPos.inMilliseconds),
+        );
+
+        await _videoPlayerController!.pause();
+        await Future.delayed(const Duration(milliseconds: 100));
+        await _videoPlayerController!.seekTo(seekBackPos);
+        await Future.delayed(const Duration(milliseconds: 100));
+        await _videoPlayerController!.play();
+
+        // Check if recovery worked after delay
+        await Future.delayed(const Duration(milliseconds: 1000));
+        if (_videoPlayerController!.isPlaying &&
+            _videoPlayerController!.position.inMilliseconds >
+                seekBackPos.inMilliseconds) {
+          debugPrint(
+              '✅ VideoPlayerWidget: Playback timeout recovered successfully');
+          _hasPlaybackError = false;
+          _timeoutRecoveryAttempts = 0;
+          return;
+        }
+
+        // Method 2: If seek didn't work, try reinitializing
+        if (_timeoutRecoveryAttempts >= _maxTimeoutRecoveryAttempts) {
+          debugPrint(
+              '⚠️ VideoPlayerWidget: Max timeout recovery attempts reached, reinitializing...');
+          await _reinitializeVideo();
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ VideoPlayerWidget: Error recovering from timeout: $e');
+      if (_timeoutRecoveryAttempts >= _maxTimeoutRecoveryAttempts) {
+        await _reinitializeVideo();
+      }
     }
   }
 
@@ -632,7 +1263,14 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     _isDisposed = true;
     // Cancel timers
     _stopStuckVideoDetection();
+    _stopPlaybackErrorMonitoring();
     _controllerReadyCheckTimer?.cancel();
+    _playPauseDebounceTimer?.cancel();
+    _loadingIndicatorDebounceTimer?.cancel();
+
+    // Complete any pending operations
+    _pendingPlayOperation?.complete();
+    _pendingPauseOperation?.complete();
     // Log watch event when widget is disposed (user navigates away)
     _logWatchEventIfNeeded();
     // Safety check: ensure controller is valid and not already disposed
@@ -641,7 +1279,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         !_videoPlayerController!.isDisposed) {
       try {
         _videoPlayerController!.removeListener(_handlePlaybackProgress);
-        _videoPlayerController!.playingStateNotifier.removeListener(_onPlayingStateChanged);
+        _videoPlayerController!.playingStateNotifier
+            .removeListener(_onPlayingStateChanged);
         _videoPlayerController!.pause();
         widget.videoCacheManager.markAsNotVisible(widget.mediaUrl);
       } catch (e) {
@@ -707,7 +1346,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
             if (state is PlayPauseVideoState) {
               if (state.play) {
-                if (_isVisible && mounted && _isManuallyPaused && !widget.isPreloaded) {
+                if (_isVisible &&
+                    mounted &&
+                    _isManuallyPaused &&
+                    !widget.isPreloaded) {
                   play();
                 }
               } else {
@@ -747,10 +1389,65 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                         ),
                       );
                     }
-                    
+
                     final size = _videoPlayerController!.videoSize;
                     final hasValidSize = size.width > 0 && size.height > 0;
-                    
+
+                    // STUCK FRAME FIX: If video is playing but size is invalid, show thumbnail
+                    // This handles the case where audio plays but video frame is stuck
+                    if (_videoPlayerController!.isPlaying &&
+                        !hasValidSize &&
+                        _isInitialized) {
+                      debugPrint(
+                          '⚠️ VideoPlayerWidget: Video playing but invalid size detected, showing thumbnail');
+                      // Trigger recovery in background
+                      unawaited(_recoverStuckVideoFrame());
+                      // Show thumbnail while recovering
+                      return Container(
+                        color: Colors.black,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            Center(
+                              child: _getImageWidget(
+                                imageUrl: widget.thumbnailUrl,
+                                width: IsrDimens.getScreenWidth(context),
+                                height: IsrDimens.getScreenHeight(context),
+                                fit: BoxFit.contain,
+                                filterQuality: FilterQuality.low,
+                                showError: false,
+                              ),
+                            ),
+                            // LOADING INDICATOR FIX: Show small grey progress indicator at bottom while recovering
+                            if (_showLoadingIndicator)
+                              Positioned(
+                                bottom: 20,
+                                left: 0,
+                                right: 0,
+                                child: Center(
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.6),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: const SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.grey,
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                    }
+
                     // If video size is valid, use FittedBox for proper scaling
                     if (hasValidSize) {
                       final aspect = _videoPlayerController!.aspectRatio;
@@ -776,18 +1473,40 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                         ),
                       );
                     }
-                    
+
                     // Fallback: Video size not available yet, fill the available space
                     // This ensures video is visible even if dimensions aren't reported
-                    debugPrint('🎬 VideoPlayerWidget: Using fallback layout (size: $size)');
-                    return SizedBox.expand(
-                      child: Container(
-                        color: Colors.black,
-                        child: RepaintBoundary(
-                          child: _videoPlayerController!.buildVideoPlayerWidget(),
+                    // But only if video is not playing (initializing)
+                    if (!_videoPlayerController!.isPlaying) {
+                      debugPrint(
+                          '🎬 VideoPlayerWidget: Using fallback layout (size: $size, not playing)');
+                      return SizedBox.expand(
+                        child: Container(
+                          color: Colors.black,
+                          child: RepaintBoundary(
+                            child: _videoPlayerController!
+                                .buildVideoPlayerWidget(),
+                          ),
                         ),
-                      ),
-                    );
+                      );
+                    } else {
+                      // Video is playing but size is invalid - show thumbnail
+                      debugPrint(
+                          '⚠️ VideoPlayerWidget: Video playing but size invalid, showing thumbnail');
+                      return Container(
+                        color: Colors.black,
+                        child: Center(
+                          child: _getImageWidget(
+                            imageUrl: widget.thumbnailUrl,
+                            width: IsrDimens.getScreenWidth(context),
+                            height: IsrDimens.getScreenHeight(context),
+                            fit: BoxFit.contain,
+                            filterQuality: FilterQuality.low,
+                            showError: false,
+                          ),
+                        ),
+                      );
+                    }
                   },
                 ),
               ] else ...[
@@ -807,12 +1526,29 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                           showError: false,
                         ),
                       ),
-                      // Show loading indicator when initializing
-                      if (_isInitializing || (_isVisible && !_isInitialized))
-                        const Center(
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
+                      // LOADING INDICATOR FIX: Show small grey progress indicator at bottom
+                      if (_showLoadingIndicator)
+                        Positioned(
+                          bottom: 20,
+                          left: 0,
+                          right: 0,
+                          child: Center(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.6),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  color: Colors.grey,
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                     ],

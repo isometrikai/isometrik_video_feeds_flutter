@@ -384,6 +384,35 @@ class StandardVideoCacheManager implements IVideoCacheManager {
   void markAsNotVisible(String url) => _visibleVideos.remove(url);
 
   @override
+  Future<void> pauseAllExcept(String activeUrl) async {
+    final pauseFutures = <Future<void>>[];
+    
+    for (final entry in _videoControllerCache.entries) {
+      final url = entry.key;
+      final controller = entry.value;
+      
+      // Skip the active video
+      if (url == activeUrl) continue;
+      
+      // Only pause if it's playing and initialized
+      if (controller.isInitialized &&
+          !controller.isDisposed &&
+          controller.isPlaying) {
+        pauseFutures.add(
+          controller.pause().catchError((e) {
+            debugPrint('⚠️ Error pausing video $url: $e');
+          }),
+        );
+      }
+    }
+    
+    if (pauseFutures.isNotEmpty) {
+      await Future.wait(pauseFutures);
+      debugPrint('🔇 StandardVideoPlayer: Paused ${pauseFutures.length} other videos');
+    }
+  }
+
+  @override
   bool isVideoCached(String url) {
     final controller = _videoControllerCache[url];
     return controller != null && controller.isInitialized;

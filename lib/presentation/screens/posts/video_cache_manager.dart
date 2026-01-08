@@ -51,6 +51,10 @@ class VideoCacheManager implements IMediaCacheManager {
   @override
   void markAsNotVisible(String url) => _cacheManager.markAsNotVisible(url);
 
+  /// Pause all videos except the specified URL (prevents sound overlap)
+  Future<void> pauseAllExcept(String activeUrl) =>
+      _cacheManager.pauseAllExcept(activeUrl);
+
   @override
   bool isMediaCached(String url) => _cacheManager.isVideoCached(url);
 
