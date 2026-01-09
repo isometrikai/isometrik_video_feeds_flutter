@@ -109,7 +109,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         if (tabData.postSectionType.isUserDependent) {
           var isUserLoggedIn = await _socialPostBloc.isUserLoggedIn;
           if (!isUserLoggedIn) {
-            await IsrVideoReelConfig.socialConfig?.socialCallBackConfig?.onLoginInvoked?.call();
+            await IsrVideoReelConfig
+                .socialConfig?.socialCallBackConfig?.onLoginInvoked
+                ?.call();
             isUserLoggedIn = await _socialPostBloc.isUserLoggedIn;
           }
           if (!isUserLoggedIn) {
@@ -191,7 +193,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                   state.postData != null) {
                 _replacePostFromList(state.postData!);
               } else if (state is IsmUserChangedActionListenerState) {
-                _onUerChanged(state.userId);
+                _onUserChanged(state.userId);
               }
             },
             child: BlocConsumer<SocialPostBloc, SocialPostState>(
@@ -390,7 +392,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         _socialPostBloc.add(PlayPauseVideoEvent(play: false));
         var isUserLoggedIn = await _socialActionCubit.isUserLoggedIn;
         if (!isUserLoggedIn) {
-          await IsrVideoReelConfig.socialConfig?.socialCallBackConfig?.onLoginInvoked?.call();
+          await IsrVideoReelConfig
+              .socialConfig?.socialCallBackConfig?.onLoginInvoked
+              ?.call();
         }
         isUserLoggedIn = await _socialActionCubit.isUserLoggedIn;
         if (!isUserLoggedIn) return totalCommentsCount;
@@ -792,7 +796,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
               },
             ),
           );
-          if (!completer.isCompleted && result != true){
+          if (!completer.isCompleted && result != true) {
             completer.complete(result);
           }
           return completer.future;
@@ -828,7 +832,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     }
   }
 
-  void _onUerChanged(String userId) {
+  void _onUserChanged(String userId) {
     var updateState = false;
     debugPrint('ism_post_view: user changed: $userId');
     //data update
@@ -837,7 +841,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       if (tabData.postSectionType.isUserDependent) {
         tabData.reelsDataList.clear();
         updateState = true;
-        debugPrint('ism_post_view: user changed: $userId, reels cleared ${tabData.title} ');
+        debugPrint(
+            'ism_post_view: user changed: $userId, reels cleared ${tabData.title} ');
       }
     }
 
@@ -848,8 +853,24 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         var index = _tabDataModelList
             .indexWhere((tab) => !tab.postSectionType.isUserDependent);
         if (index >= 0) {
-          _postTabController?.animateTo(_currentIndex);
-          debugPrint('ism_post_view: user changed: $userId, tab changed to ${_tabDataModelList[index].title}');
+          // Store the new index
+          _currentIndex = index;
+          _currentPostSectionType = _tabDataModelList[index].postSectionType;
+
+          // Use post-frame callback to ensure tab change happens when widget is visible
+          // This handles the case when the page is in background
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && _postTabController != null) {
+              // Check if controller is still attached and index is valid
+              if (_postTabController!.index != index &&
+                  index >= 0 &&
+                  index < _postTabController!.length) {
+                _postTabController!.animateTo(index);
+                debugPrint(
+                    'ism_post_view: user changed: $userId, tab changed to ${_tabDataModelList[index].title}');
+              }
+            }
+          });
         }
       }
       if (updateState) {
