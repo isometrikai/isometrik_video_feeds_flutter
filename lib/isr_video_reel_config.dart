@@ -18,6 +18,10 @@ class IsrVideoReelConfig {
   static var isSdkInitialize = false;
   static BuildContext? Function()? getBuildContext;
   static String? googleServiceJsonPath;
+  static SocialConfig? socialConfig;
+  static IsmSocialActionCubit get socialActionCubit =>
+      IsmInjectionUtils.getBloc<IsmSocialActionCubit>();
+
 
   /// Helper method to check if context is available
   static bool get isContextAvailable => buildContext != null;
@@ -28,12 +32,16 @@ class IsrVideoReelConfig {
     required String rudderStackDataPlaneUrl,
     UserInfoClass? userInfoClass,
     required Map<String, dynamic> defaultHeaders,
+    required SocialConfig socialConfig,
     String? googleServiceJsonPath,
     BuildContext? Function()? getCurrentBuildContext,
   }) async {
     if (isSdkInitialize) {
       await _storeHeaderValues(defaultHeaders);
       await _saveUserInformation(userInfoClass: userInfoClass);
+      IsrVideoReelConfig.socialConfig = socialConfig;
+      debugPrint('IsrVideoReelConfig: initializeSdk: ${userInfoClass?.userId}');
+      socialActionCubit.onSdkReinitializeChanged(userId: userInfoClass?.userId, userInfoClass: userInfoClass);
       return;
     }
     IsrVideoReelConfig.googleServiceJsonPath = googleServiceJsonPath;
@@ -78,8 +86,8 @@ class IsrVideoReelConfig {
         userInfoClass?.mobileNumber, SavedValueDataType.string);
     await localStorageManager.saveValue(LocalStorageKeys.dialCode,
         userInfoClass?.dialCode, SavedValueDataType.string);
-    await localStorageManager.saveValue(
-        LocalStorageKeys.isLoggedIn, true, SavedValueDataType.bool);
+    await localStorageManager.saveValue(LocalStorageKeys.isLoggedIn,
+        userInfoClass?.userId?.trim().isNotEmpty == true, SavedValueDataType.bool);
   }
 
   static void precacheVideos(List<String> mediaUrls) async {

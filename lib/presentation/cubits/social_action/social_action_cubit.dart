@@ -9,7 +9,9 @@ import 'package:ism_video_reel_player/utils/extensions.dart';
 part 'social_action_state.dart';
 
 class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
-  IsmSocialActionCubit._() : super(IsmSocialActionState());
+  IsmSocialActionCubit._() : super(IsmSocialActionState()) {
+    debugPrint('IsmSocialActionCubit hashCode -> $hashCode');
+  }
   static IsmSocialActionCubit? _instance;
 
   static IsmSocialActionCubit instance() {
@@ -31,6 +33,16 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
       IsmInjectionUtils.getUseCase<SavePostUseCase>();
   final GetUserPostDataUseCase _getUserPostDataUseCase =
       IsmInjectionUtils.getUseCase<GetUserPostDataUseCase>();
+  final IsmLocalDataUseCase _localDataUseCase =
+  IsmInjectionUtils.getUseCase<IsmLocalDataUseCase>();
+
+  Future<bool> get isUserLoggedIn => _localDataUseCase.isLoggedIn();
+  Future<String> get getStoredUserId => _localDataUseCase.getUserId();
+  String userId = '';
+
+  updateLocalUserData() async {
+    userId = await getStoredUserId;
+  }
 
   final _uniquePostList = <String, TimeLineData>{};
 
@@ -561,6 +573,15 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     debugPrint('IsmSocialActionCubit onPostDeleted -> postId: $postId');
     emit(IsmDeletedPostActionListenerState(postId: postId));
     _uniquePostList.remove(postId);
+  }
+
+  void onSdkReinitializeChanged({String? userId, UserInfoClass? userInfoClass}) {
+    debugPrint('IsmSocialActionCubit onSdkReinitializeChanged -> userId: $userId');
+    if (userId != this.userId) {
+      _uniquePostList.clear();
+      updateLocalUserData();
+      emit(IsmUserChangedActionListenerState(userId: userId ?? '', userInfoClass: userInfoClass));
+    }
   }
 
   void _logFollowEvent(

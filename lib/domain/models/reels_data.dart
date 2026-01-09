@@ -268,15 +268,19 @@ class PlaceMetaData {
 }
 
 enum PostSectionType {
-  forYou,
-  following,
-  trending,
-  myPost,
-  otherUserPost,
-  savedPost,
-  myTaggedPost,
-  tagPost,
-  singlePost,
+  forYou(isUserDependent: true),
+  following(isUserDependent: true),
+  trending(isUserDependent: false),
+  myPost(isUserDependent: true),
+  otherUserPost(isUserDependent: false),
+  savedPost(isUserDependent: true),
+  myTaggedPost(isUserDependent: true),
+  tagPost(isUserDependent: false),
+  singlePost(isUserDependent: false);
+
+  const PostSectionType({required this.isUserDependent});
+
+  final bool isUserDependent;
 }
 
 extension PostSectionTypeExtension on PostSectionType {

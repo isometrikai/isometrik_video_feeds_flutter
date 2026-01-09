@@ -139,7 +139,7 @@ class IsrAppNavigator {
       create: (_) => IsmInjectionUtils.getBloc<SocialPostBloc>(),
       child: IsmPostView(
         tabDataModelList: [tabData],
-        currentIndex: 0,
+        startTabIndex: 0,
         onTapPlace: onTapPlace,
         tabConfig: tabConfig,
         postConfig: postConfig,

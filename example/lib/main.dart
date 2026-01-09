@@ -64,7 +64,7 @@ Future<void> _initializeReelsSdk() async {
       'longitude': DefaultValues.defaultLongitude,
       'x-tenant-id': AppConstants.tenantId,
       'x-project-id': AppConstants.projectId,
-    },
+    }, socialConfig: const isr.SocialConfig(),
   );
 }
 

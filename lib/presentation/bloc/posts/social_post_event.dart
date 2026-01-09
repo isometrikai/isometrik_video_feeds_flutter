@@ -15,8 +15,10 @@ class StartPost extends SocialPostEvent {
 class LoadPostData extends SocialPostEvent {
   const LoadPostData({
     required this.postSections,
+    this.startTabIndex = 0,
   });
 
+  final int startTabIndex;
   final List<PostTabAssistData> postSections;
 }
 

@@ -230,10 +230,28 @@ class IsmDeletedPostActionListenerState extends IsmSocialActionState {
   final String? postId;
 
   IsmDeletedPostActionListenerState copyWith({
-    TimeLineData? postData,
     String? postId,
   }) =>
       IsmDeletedPostActionListenerState(
         postId: postId ?? this.postId,
+      );
+}
+
+class IsmUserChangedActionListenerState extends IsmSocialActionState {
+  IsmUserChangedActionListenerState({
+    required this.userId,
+    this.userInfoClass,
+  });
+
+  final String userId;
+  final UserInfoClass? userInfoClass;
+
+  IsmUserChangedActionListenerState copyWith({
+    String? userId,
+    UserInfoClass? userInfoClass,
+  }) =>
+      IsmUserChangedActionListenerState(
+        userId: userId ?? this.userId,
+        userInfoClass: userInfoClass ?? this.userInfoClass,
       );
 }

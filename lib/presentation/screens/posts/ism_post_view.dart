@@ -18,7 +18,7 @@ class IsmPostView extends StatefulWidget {
   const IsmPostView({
     super.key,
     required this.tabDataModelList,
-    this.currentIndex = 0,
+    this.startTabIndex = 0,
     this.allowImplicitScrolling = false,
     this.onTapPlace,
     this.onLinkProduct,
@@ -27,7 +27,7 @@ class IsmPostView extends StatefulWidget {
   });
 
   final List<TabDataModel> tabDataModelList;
-  final num? currentIndex;
+  final num? startTabIndex;
   final bool? allowImplicitScrolling;
   final Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
       onLinkProduct;
@@ -71,7 +71,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   void _onStartInit() async {
     _tabDataModelList = widget.tabDataModelList;
-    _currentIndex = widget.currentIndex?.toInt() ?? 0;
+    _currentIndex = widget.startTabIndex?.toInt() ?? 0;
     _currentPostSectionType = _tabDataModelList[_currentIndex].postSectionType;
     if (_currentIndex >= _tabDataModelList.length) {
       _currentIndex = 0;
@@ -106,6 +106,19 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       final newIndex = _postTabController?.index ?? 0;
       if (_currentIndex != newIndex) {
         final tabData = _tabDataModelList[newIndex];
+        if (tabData.postSectionType.isUserDependent) {
+          var isUserLoggedIn = await _socialPostBloc.isUserLoggedIn;
+          if (!isUserLoggedIn) {
+            await IsrVideoReelConfig
+                .socialConfig?.socialCallBackConfig?.onLoginInvoked
+                ?.call();
+            isUserLoggedIn = await _socialPostBloc.isUserLoggedIn;
+          }
+          if (!isUserLoggedIn) {
+            _postTabController?.animateTo(_currentIndex);
+            return;
+          }
+        }
         _currentPostSectionType = tabData.postSectionType;
         widget.tabConfig.tabCallBackConfig?.onChangeOfTab?.call(tabData);
         // Handle tab change if we have a user
@@ -128,6 +141,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       }
     });
     _socialPostBloc.add(LoadPostData(
+        startTabIndex: _currentIndex,
         postSections: widget.tabDataModelList
             .map((_) => PostTabAssistData(
                 postSectionType: _.postSectionType,
@@ -167,7 +181,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           child: BlocListener<IsmSocialActionCubit, IsmSocialActionState>(
             listenWhen: (previousState, currentState) =>
                 currentState is IsmDeletedPostActionListenerState ||
-                currentState is IsmEditPostActionListenerState,
+                currentState is IsmEditPostActionListenerState ||
+                currentState is IsmUserChangedActionListenerState,
             listener: (context, state) {
               // Do Not setState to prevent reels to start from first
               // this is only to update data to update ui it is done in post_item_widget
@@ -177,6 +192,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
               } else if (state is IsmEditPostActionListenerState &&
                   state.postData != null) {
                 _replacePostFromList(state.postData!);
+              } else if (state is IsmUserChangedActionListenerState) {
+                _onUserChanged(state.userId);
               }
             },
             child: BlocConsumer<SocialPostBloc, SocialPostState>(
@@ -373,6 +390,14 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       },
       onTapComment: (reelsData, totalCommentsCount) async {
         _socialPostBloc.add(PlayPauseVideoEvent(play: false));
+        var isUserLoggedIn = await _socialActionCubit.isUserLoggedIn;
+        if (!isUserLoggedIn) {
+          await IsrVideoReelConfig
+              .socialConfig?.socialCallBackConfig?.onLoginInvoked
+              ?.call();
+        }
+        isUserLoggedIn = await _socialActionCubit.isUserLoggedIn;
+        if (!isUserLoggedIn) return totalCommentsCount;
         final result = await _handleCommentAction(
             reelsData.postId ?? '',
             totalCommentsCount,
@@ -771,7 +796,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
               },
             ),
           );
-          if (!completer.isCompleted && result != true){
+          if (!completer.isCompleted && result != true) {
             completer.complete(result);
           }
           return completer.future;
@@ -804,6 +829,55 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     } catch (e) {
       debugPrint('Error handling more options: $e');
       return false;
+    }
+  }
+
+  void _onUserChanged(String userId) {
+    var updateState = false;
+    debugPrint('ism_post_view: user changed: $userId');
+    //data update
+    _loggedInUserId = userId;
+    for (var tabData in _tabDataModelList) {
+      if (tabData.postSectionType.isUserDependent) {
+        tabData.reelsDataList.clear();
+        updateState = true;
+        debugPrint(
+            'ism_post_view: user changed: $userId, reels cleared ${tabData.title} ');
+      }
+    }
+
+    if (mounted) {
+      debugPrint('ism_post_view: user changed: $userId, ui updatable ');
+      // Ui update
+      if (_currentPostSectionType.isUserDependent) {
+        var index = _tabDataModelList
+            .indexWhere((tab) => !tab.postSectionType.isUserDependent);
+        if (index >= 0) {
+          // Store the new index
+          _currentIndex = index;
+          _currentPostSectionType = _tabDataModelList[index].postSectionType;
+
+          // Use post-frame callback to ensure tab change happens when widget is visible
+          // This handles the case when the page is in background
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && _postTabController != null) {
+              // Check if controller is still attached and index is valid
+              if (_postTabController!.index != index &&
+                  index >= 0 &&
+                  index < _postTabController!.length) {
+                _postTabController!.animateTo(index);
+                debugPrint(
+                    'ism_post_view: user changed: $userId, tab changed to ${_tabDataModelList[index].title}');
+              }
+            }
+          });
+        }
+      }
+      if (updateState) {
+        setState(() {
+          debugPrint('ism_post_view: user changed: $userId, state update');
+        });
+      }
     }
   }
 

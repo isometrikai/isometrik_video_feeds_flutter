@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/utils/extensions.dart';
 
@@ -59,6 +60,12 @@ class _SaveActionWidgetState extends State<SaveActionWidget> {
     Future<bool> Function()? apiCallBack,
   }) async {
     if (isLoading) return false;
+    var isUserLoggedIn = await cubit.isUserLoggedIn;
+    if (!isUserLoggedIn) {
+      await IsrVideoReelConfig.socialConfig?.socialCallBackConfig?.onLoginInvoked?.call();
+    }
+    isUserLoggedIn = await cubit.isUserLoggedIn;
+    if (!isUserLoggedIn) return false;
     if (isSaved) {
       return await cubit.unSavePost(
         postId,
