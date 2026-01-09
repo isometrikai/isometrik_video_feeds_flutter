@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/utils/extensions.dart';
 
@@ -74,14 +75,20 @@ class _FollowActionWidgetState extends State<FollowActionWidget> {
     }
   }
 
-  void _onTap({
+  Future<void> _onTap({
     ReelsData? reelData,
     PostSectionType? postSectionType,
     int? watchDuration,
     Future<bool> Function()? apiCallBack,
-  }) {
+  }) async {
     debugPrint('IsmSocialActionCubit hashCode -> ${cubit.hashCode}');
     if (isLoading) return;
+    var isUserLoggedIn = await cubit.isUserLoggedIn;
+    if (!isUserLoggedIn) {
+      await IsrVideoReelConfig.socialConfig?.socialCallBackConfig?.onLoginInvoked?.call();
+    }
+    isUserLoggedIn = await cubit.isUserLoggedIn;
+    if (!isUserLoggedIn) return;
     if (isFollowing) {
       cubit.unfollowUser(userId,
           reelData: reelData,

@@ -105,6 +105,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   void _onStartPost(StartPost event, Emitter<SocialPostState> emit) async {}
 
   Future<String> get userId => _localDataUseCase.getUserId();
+  Future<bool> get isUserLoggedIn => _localDataUseCase.isLoggedIn();
 
   Future<void> _onLoadHomeData(
     LoadPostData event,
@@ -115,7 +116,13 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       emit(PostLoadingState(isLoading: true));
       _postsByTab.clear();
       _postsByTab.addAll(event.postSections);
-      for (final postTab in event.postSections) {
+      final tabList = _postsByTab.toList();
+      if (event.startTabIndex > 0 && event.startTabIndex< tabList.length) {
+        final startTab = tabList.removeAt(event.startTabIndex);
+        tabList.insert(0, startTab);
+      }
+      final isUserLoggedIn = await this.isUserLoggedIn;
+      for (final postTab in tabList) {
         if (postTab.postList.isEmpty) {
           if (postTab.postId?.trim().isNotEmpty == true &&
               postTab.postList.isEmpty) {
@@ -127,7 +134,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
                       MapEntry(value.postSectionType, value.postList))));
             }
           }
-          await _callGetTabPost(postTab, false, false, false, null);
+          if (!postTab.postSectionType.isUserDependent || isUserLoggedIn) {
+            await _callGetTabPost(postTab, false, false, false, null);
+          }
         }
         add(LoadPostsEvent(
             postsByTab: _postsByTab.asMap().map((key, value) =>
