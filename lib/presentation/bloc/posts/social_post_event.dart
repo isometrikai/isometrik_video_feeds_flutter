@@ -24,10 +24,12 @@ class LoadPostData extends SocialPostEvent {
 
 class LoadPostsEvent extends SocialPostEvent {
   LoadPostsEvent({
-    required this.postsByTab,
+    required this.postType,
+    required this.postList,
   });
 
-  final Map<PostSectionType, List<TimeLineData>> postsByTab;
+  final PostSectionType postType;
+  final List<TimeLineData> postList;
 }
 
 class GetTimeLinePostEvent extends SocialPostEvent {

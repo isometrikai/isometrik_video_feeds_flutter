@@ -123,6 +123,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       }
       final isUserLoggedIn = await this.isUserLoggedIn;
       for (final postTab in tabList) {
+        emit(PostLoadingState(isLoading: true, postType: postTab.postSectionType));
         if (postTab.postList.isEmpty) {
           if (postTab.postId?.trim().isNotEmpty == true &&
               postTab.postList.isEmpty) {
@@ -130,8 +131,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
             if (postIdData != null) {
               postTab.postList.add(postIdData);
               add(LoadPostsEvent(
-                  postsByTab: _postsByTab.asMap().map((key, value) =>
-                      MapEntry(value.postSectionType, value.postList))));
+                postType: postTab.postSectionType,
+                postList: postTab.postList,
+              ));
             }
           }
           if (!postTab.postSectionType.isUserDependent || isUserLoggedIn) {
@@ -139,8 +141,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
           }
         }
         add(LoadPostsEvent(
-            postsByTab: _postsByTab.asMap().map((key, value) =>
-                MapEntry(value.postSectionType, value.postList))));
+          postType: postTab.postSectionType,
+          postList: postTab.postList,
+        ));
         _socialActionCubit.updatePostList(postTab.postList);
       }
     } catch (error) {
@@ -446,9 +449,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         .any((_) => _.postSectionType == PostSectionType.following)) {
       await _callGetTabPost(_getTabAssistData(PostSectionType.following), true,
           false, false, null);
-      add(LoadPostsEvent(
-          postsByTab: _postsByTab.asMap().map((key, value) =>
-              MapEntry(value.postSectionType, value.postList))));
+      // add(LoadPostsEvent(
+      //     postsByTab: _postsByTab.asMap().map((key, value) =>
+      //         MapEntry(value.postSectionType, value.postList))));
     }
   }
 
@@ -754,11 +757,10 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
 
   FutureOr<void> _loadPosts(
       LoadPostsEvent event, Emitter<SocialPostState> emit) async {
-    event.postsByTab.forEach((tab, posts) => debugPrint(
-        'social_post_bloc => _loadPosts: $tab , postcount: ${posts.length}'));
     final myUserId = await _localDataUseCase.getUserId();
     emit(SocialPostLoadedState(
-      postsByTab: event.postsByTab,
+      postType: event.postType,
+      postList: event.postList,
       userId: myUserId,
     ));
   }

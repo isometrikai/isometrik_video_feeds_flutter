@@ -50,7 +50,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   var _currentIndex = 1;
   var _loggedInUserId = '';
   final ValueNotifier<bool> _tabsVisibilityNotifier = ValueNotifier<bool>(true);
-  List<TabDataModel> _tabDataModelList = [];
+  List<TabStateModel> _tabDataModelList = [];
   VideoCacheManager? _videoCacheManager;
   late SocialPostBloc _socialPostBloc; // Will be initialized from context
   late IsmSocialActionCubit _socialActionCubit;
@@ -70,9 +70,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   }
 
   void _onStartInit() async {
-    _tabDataModelList = widget.tabDataModelList;
+    _tabDataModelList = widget.tabDataModelList.map((tab) => TabStateModel(isLoading: tab.reelsDataList.isEmpty, tabDataModel: tab)).toList();
     _currentIndex = widget.startTabIndex?.toInt() ?? 0;
-    _currentPostSectionType = _tabDataModelList[_currentIndex].postSectionType;
+    _currentPostSectionType = _tabDataModelList[_currentIndex].tabDataModel.postSectionType;
     if (_currentIndex >= _tabDataModelList.length) {
       _currentIndex = 0;
     }
@@ -101,12 +101,13 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     if (_isFollowingPostsEmpty()) {
       // _tabsVisibilityNotifier.value = false;
     }
+    _loggedInUserId = await _socialPostBloc.userId;
     _postTabController?.addListener(() async {
       if (!mounted) return;
       final newIndex = _postTabController?.index ?? 0;
       if (_currentIndex != newIndex) {
         final tabData = _tabDataModelList[newIndex];
-        if (tabData.postSectionType.isUserDependent) {
+        if (tabData.tabDataModel.postSectionType.isUserDependent) {
           var isUserLoggedIn = await _socialPostBloc.isUserLoggedIn;
           if (!isUserLoggedIn) {
             await IsrVideoReelConfig
@@ -119,8 +120,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
             return;
           }
         }
-        _currentPostSectionType = tabData.postSectionType;
-        widget.tabConfig.tabCallBackConfig?.onChangeOfTab?.call(tabData);
+        _currentPostSectionType = tabData.tabDataModel.postSectionType;
+        widget.tabConfig.tabCallBackConfig?.onChangeOfTab?.call(tabData.tabDataModel);
         // Handle tab change if we have a user
         if (_loggedInUserId.isNotEmpty) {
           try {
@@ -132,7 +133,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         setState(() {
           _currentIndex = newIndex;
         });
-        if (tabData.reelsDataList.isEmpty) {
+        if (tabData.tabDataModel.reelsDataList.isEmpty && !tabData.isLoading) {
           final result = await _handlePostRefresh(tabData);
           if (result) {
             setState(() {});
@@ -196,68 +197,52 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                 _onUserChanged(state.userId);
               }
             },
-            child: BlocConsumer<SocialPostBloc, SocialPostState>(
-              bloc: _socialPostBloc,
-              listenWhen: (previousState, currentState) =>
-                  currentState is SocialPostLoadedState,
-              listener: (context, state) {
-                // ✅ Update _socialPostBloc reference if needed
-                debugPrint('ism_post_view: listener called with state: $state');
-                if (state is SocialPostLoadedState) {
-                  state.postsByTab.forEach((sectionType, posts) {
-                    _tabDataModelList
-                        .where((_) => _.postSectionType == sectionType)
-                        .firstOrNull
-                        ?.let((tabData) =>
-                            {tabData.reelsDataList = posts.toList()});
-                  });
-                }
-              },
-              buildWhen: (previousState, currentState) =>
-                  currentState is SocialPostLoadedState ||
-                  currentState is PostLoadingState,
-              builder: (context, state) {
-                final newUserId =
-                    state is SocialPostLoadedState ? state.userId : '';
-                if (newUserId.isNotEmpty && _loggedInUserId.isEmpty) {
-                  _videoCacheManager = VideoCacheManager();
-                } else if (newUserId.isEmpty && _loggedInUserId.isNotEmpty) {
-                  _videoCacheManager?.clearCache();
-                  _videoCacheManager = null;
-                }
-                _loggedInUserId = newUserId;
-
-                return state is PostLoadingState
-                    ? state.isLoading == true
-                        ? _buildInitialLoadingView()
-                        : const SizedBox.shrink()
-                    : state is SocialPostLoadedState
-                        ? DefaultTabController(
-                            length: _tabDataModelList.isListEmptyOrNull
-                                ? 0
-                                : _tabDataModelList.length,
-                            initialIndex: _currentIndex,
-                            child: Stack(
-                              children: [
-                                TabBarView(
-                                  controller: _postTabController,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  children: _tabDataModelList
-                                      .map((tabData) => _buildTabBarView(
-                                          tabData,
-                                          _tabDataModelList.indexOf(tabData)))
-                                      .toList(),
-                                ),
-                                if (_tabDataModelList.length > 1) ...[
-                                  _buildTabBar()
-                                ] else ...[
-                                  _buildBackButton()
-                                ],
-                              ],
-                            ),
-                          )
-                        : const SizedBox.shrink();
-              },
+            child: Stack(
+              children: [
+                BlocListener<SocialPostBloc, SocialPostState>(
+                  bloc: _socialPostBloc,
+                  listenWhen: (previousState, currentState) =>
+                      currentState is SocialPostLoadedState ||
+                      currentState is PostLoadingState,
+                  listener: (context, state) {
+                    // ✅ Update _socialPostBloc reference if needed
+                    debugPrint(
+                        'ism_post_view: listener called with state: $state');
+                    if (state is SocialPostLoadedState) {
+                      final tabStateData = _tabDataModelList
+                          .where((_) =>
+                              _.tabDataModel.postSectionType == state.postType)
+                          .firstOrNull;
+                      tabStateData?.tabDataModel.reelsDataList =
+                          state.postList.toList();
+                      tabStateData?.isLoading = false;
+                    } else if (state is PostLoadingState &&
+                        state.postType != null) {
+                      final tabStateData = _tabDataModelList
+                          .where((_) =>
+                              _.tabDataModel.postSectionType == state.postType)
+                          .firstOrNull;
+                      tabStateData?.isLoading = true;
+                    }
+                  },
+                  child: DefaultTabController(
+                    length: _tabDataModelList.isListEmptyOrNull
+                        ? 0
+                        : _tabDataModelList.length,
+                    initialIndex: _currentIndex,
+                    child: TabBarView(
+                      controller: _postTabController,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: _tabDataModelList.map(_buildTabView).toList(),
+                    ),
+                  ),
+                ),
+                if (_tabDataModelList.length > 1) ...[
+                  _buildTabBar()
+                ] else ...[
+                  _buildBackButton()
+                ],
+              ],
             ),
           ),
         ),
@@ -280,15 +265,30 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         ),
       );
 
-  Widget _buildTabBarView(TabDataModel tabData, int index) => PostItemWidget(
-        key: ValueKey(_getUniqueKey(tabData, index)),
+  Widget _buildTabView(TabStateModel tab) =>
+      BlocBuilder<SocialPostBloc, SocialPostState>(
+          buildWhen: (previousState, currentState) =>
+              currentState is SocialPostLoadedState &&
+                  currentState.postType == tab.tabDataModel.postSectionType ||
+              currentState is PostLoadingState &&
+                  currentState.postType == tab.tabDataModel.postSectionType,
+          builder: (BuildContext context, SocialPostState state) =>
+              ValueListenableBuilder(
+                valueListenable: tab.loadingNotifier,
+                builder: (context, value, child) =>
+                    value ? _buildInitialLoadingView()
+                        : _buildTabBarView(tab, _tabDataModelList.indexOf(tab)),
+              ));
+
+  Widget _buildTabBarView(TabStateModel tabState, int index) => PostItemWidget(
+        key: ValueKey(_getUniqueKey(tabState.tabDataModel, index)),
         videoCacheManager:
             _loggedInUserId.isNotEmpty ? _videoCacheManager : null,
         onTapPlaceHolder: () {
           if ((_postTabController?.length ?? 0) > 1) {
             _tabsVisibilityNotifier.value = true;
             final trendingTabIndex = _tabDataModelList.indexWhere((tabData) =>
-                tabData.postSectionType == PostSectionType.trending);
+                tabData.tabDataModel.postSectionType == PostSectionType.trending);
             if (trendingTabIndex != -1) {
               _postTabController?.animateTo(trendingTabIndex);
             }
@@ -296,14 +296,14 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         },
         loggedInUserId: _loggedInUserId,
         allowImplicitScrolling: widget.allowImplicitScrolling,
-        reelsDataList: tabData.reelsDataList
+        reelsDataList: tabState.tabDataModel.reelsDataList
             .map((_) => getReelData(_, loggedInUserId: _loggedInUserId))
             .toList(),
-        reelsConfig: _getReelsConfig(tabData),
+        reelsConfig: _getReelsConfig(tabState.tabDataModel),
         tabConfig: widget.tabConfig,
-        onLoadMore: () async => await _handleLoadMore(tabData),
+        onLoadMore: () async => await _handleLoadMore(tabState.tabDataModel),
         onRefresh: () async {
-          var result = await _handlePostRefresh(tabData);
+          var result = await _handlePostRefresh(tabState);
           // Increment refresh count to force rebuild
           if (result) {
             setState(() {
@@ -312,8 +312,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           }
           return result;
         },
-        startingPostIndex: tabData.startingPostIndex,
-        postSectionType: tabData.postSectionType,
+        startingPostIndex: tabState.tabDataModel.startingPostIndex,
+        postSectionType: tabState.tabDataModel.postSectionType,
       );
 
   ReelsConfig _getReelsConfig(TabDataModel tabData) => ReelsConfig(
@@ -616,7 +616,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                             .map(
                               (tab) => Tab(
                                 child: Text(
-                                  tab.title,
+                                  tab.tabDataModel.title,
                                   textAlign: TextAlign.center,
                                 ),
                               ),
@@ -750,8 +750,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       );
 
   /// Handles refresh for user posts
-  Future<bool> _handlePostRefresh(TabDataModel tabData) async {
+  Future<bool> _handlePostRefresh(TabStateModel tabState) async {
     final completer = Completer<bool>();
+    tabState.isLoading = true;
     _socialPostBloc.add(GetMorePostEvent(
       isLoading: false,
       isPagination: false,
@@ -759,9 +760,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       postSectionType: _currentPostSectionType,
       memberUserId: '',
       onComplete: (postDataList) async {
-        tabData.reelsDataList
+        tabState.tabDataModel.reelsDataList
           ..clear()
           ..addAll(postDataList);
+        tabState.isLoading = false;
         completer.complete(true);
       },
     ));
@@ -836,13 +838,20 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     var updateState = false;
     debugPrint('ism_post_view: user changed: $userId');
     //data update
+    if (userId.isNotEmpty && _loggedInUserId != userId) {
+      _videoCacheManager = VideoCacheManager();
+    } else if (userId.isEmpty &&
+        _loggedInUserId.isNotEmpty) {
+      _videoCacheManager?.clearCache();
+      _videoCacheManager = null;
+    }
     _loggedInUserId = userId;
     for (var tabData in _tabDataModelList) {
-      if (tabData.postSectionType.isUserDependent) {
-        tabData.reelsDataList.clear();
+      if (tabData.tabDataModel.postSectionType.isUserDependent) {
+        tabData.tabDataModel.reelsDataList.clear();
         updateState = true;
         debugPrint(
-            'ism_post_view: user changed: $userId, reels cleared ${tabData.title} ');
+            'ism_post_view: user changed: $userId, reels cleared ${tabData.tabDataModel.title} ');
       }
     }
 
@@ -851,11 +860,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       // Ui update
       if (_currentPostSectionType.isUserDependent) {
         var index = _tabDataModelList
-            .indexWhere((tab) => !tab.postSectionType.isUserDependent);
+            .indexWhere((tab) => !tab.tabDataModel.postSectionType.isUserDependent);
         if (index >= 0) {
           // Store the new index
           _currentIndex = index;
-          _currentPostSectionType = _tabDataModelList[index].postSectionType;
+          _currentPostSectionType = _tabDataModelList[index].tabDataModel.postSectionType;
 
           // Use post-frame callback to ensure tab change happens when widget is visible
           // This handles the case when the page is in background
@@ -867,7 +876,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                   index < _postTabController!.length) {
                 _postTabController!.animateTo(index);
                 debugPrint(
-                    'ism_post_view: user changed: $userId, tab changed to ${_tabDataModelList[index].title}');
+                    'ism_post_view: user changed: $userId, tab changed to ${_tabDataModelList[index].tabDataModel.title}');
               }
             }
           });
@@ -883,18 +892,18 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   void _removePostFromList(String postId) {
     for (var tabData in _tabDataModelList) {
-      tabData.reelsDataList.removeWhere((element) => element.id == postId);
+      tabData.tabDataModel.reelsDataList.removeWhere((element) => element.id == postId);
     }
   }
 
   void _replacePostFromList(TimeLineData postData) {
     for (var tabData in _tabDataModelList) {
-      final index = tabData.reelsDataList.indexWhere(
+      final index = tabData.tabDataModel.reelsDataList.indexWhere(
         (element) => element.id == postData.id,
       );
 
       if (index != -1) {
-        tabData.reelsDataList[index] = postData; // replace
+        tabData.tabDataModel.reelsDataList[index] = postData; // replace
       }
     }
   }
