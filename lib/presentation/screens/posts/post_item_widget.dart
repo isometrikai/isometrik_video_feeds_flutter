@@ -659,7 +659,6 @@ class _PostItemWidgetState extends State<PostItemWidget>
   }
 
   Future<void> _refreshPost() async {
-    if (widget.loggedInUserId.isStringEmptyOrNull == true) return;
     try {
       if (widget.onRefresh != null) {
         final result = await widget.onRefresh?.call();

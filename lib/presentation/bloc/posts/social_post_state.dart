@@ -3,18 +3,24 @@ part of 'social_post_bloc.dart';
 abstract class SocialPostState {}
 
 class PostLoadingState extends SocialPostState {
-  PostLoadingState({required this.isLoading});
+  PostLoadingState({
+    required this.isLoading,
+    this.postType,
+  });
 
   final bool? isLoading;
+  final PostSectionType? postType;
 }
 
 class SocialPostLoadedState extends SocialPostState {
   SocialPostLoadedState({
-    required this.postsByTab,
+    required this.postType,
+    required this.postList,
     required this.userId,
   });
 
-  final Map<PostSectionType, List<TimeLineData>> postsByTab;
+  final PostSectionType postType;
+  final List<TimeLineData> postList;
   final String userId;
 }
 

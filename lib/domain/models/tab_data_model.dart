@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 
 class TabDataModel {
@@ -21,6 +22,7 @@ class TabDataModel {
               )
             : null,
       );
+
   TabDataModel({
     required this.title,
     required this.reelsDataList,
@@ -72,4 +74,25 @@ class TabDataModel {
         'tagValue': tagValue,
         'tagType': tagType?.name,
       };
+}
+
+class TabStateModel {
+
+  TabStateModel({
+    required this.tabDataModel,
+    bool isLoading = false,
+  }) {
+    _isLoading = ValueNotifier<bool>(isLoading && tabDataModel.reelsDataList.isEmpty);
+  }
+
+  set isLoading(bool value) {
+    _isLoading.value = value && tabDataModel.reelsDataList.isEmpty;
+  }
+
+  bool get isLoading => _isLoading.value;
+
+  ValueNotifier<bool> get loadingNotifier => _isLoading;
+
+  final TabDataModel tabDataModel;
+  late ValueNotifier<bool> _isLoading;
 }
