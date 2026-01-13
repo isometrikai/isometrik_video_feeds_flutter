@@ -1,5 +1,6 @@
 import 'dart:developer';
 
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -26,12 +27,15 @@ class SocialPostInsightView extends StatefulWidget {
 
 enum LocationType { cities, states, countries }
 
+enum TimeSeriesMetric { views, interactions, likes, comments, saves, shares }
+
 class _SocialPostInsightViewState extends State<SocialPostInsightView> {
   TimeLineData? _postData;
   InsightsData? _postInsight;
   late final String? _postId;
   final _socialPostBloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
   LocationType _selectedLocationType = LocationType.cities;
+  TimeSeriesMetric _selectedMetric = TimeSeriesMetric.views;
 
   @override
   void initState() {
@@ -134,6 +138,10 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
               _buildLocationSectionSection(),
               IsrDimens.boxHeight(IsrDimens.twentyFour),
             ],
+            if ((_postInsight?.timeSeries?.length ?? 0) > 1) ...[
+              _buildTimeSeriesSection(),
+              IsrDimens.boxHeight(IsrDimens.twentyFour),
+            ],
           ],
         ),
       );
@@ -208,28 +216,31 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
     final saves = _postInsight?.summary?.saves ??
         _postData?.engagementMetrics?.saves?.toInt() ??
         0;
+    final reports = _postInsight?.summary?.reports ?? 0;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
+      spacing: IsrDimens.twentyFour,
       children: [
         _buildInteractionIcon(
           AssetConstants.icHeartIconSelected,
           likes.toString(),
         ),
-        IsrDimens.twentyFour.responsiveHorizontalSpace,
         _buildInteractionIcon(
           AssetConstants.icCommentIcon,
           comments.toString(),
         ),
-        IsrDimens.twentyFour.responsiveHorizontalSpace,
         _buildInteractionIcon(
           AssetConstants.icSharePostIcon,
           shares.toString(),
         ),
-        IsrDimens.twentyFour.responsiveHorizontalSpace,
         _buildInteractionIcon(
           AssetConstants.icSaveSelectedIcon,
           saves.toString(),
+        ),
+        _buildInteractionIcon(
+          AssetConstants.icReportIcon,
+          reports.toString(),
         ),
       ],
     );
@@ -441,6 +452,7 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
     final saves = _postInsight?.summary?.saves ??
         _postData?.engagementMetrics?.saves?.toInt() ??
         0;
+    final report = _postInsight?.summary?.reports ?? 0;
     final accountEngaged = _postInsight?.summary?.accountsEngaged ?? 0;
 
     return Column(
@@ -458,6 +470,8 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
         _buildStatisticItem(IsrTranslationFile.shares, shares.toString()),
         IsrDimens.boxHeight(IsrDimens.sixteen),
         _buildStatisticItem(IsrTranslationFile.comments, comments.toString()),
+        IsrDimens.boxHeight(IsrDimens.sixteen),
+        _buildStatisticItem(IsrTranslationFile.reports, report.toString()),
         IsrDimens.boxHeight(IsrDimens.sixteen),
         Divider(
             height: 1.responsiveDimension,
@@ -511,6 +525,230 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
     final shares = _postData?.engagementMetrics?.shares?.toInt() ?? 0;
     final saves = _postData?.engagementMetrics?.saves?.toInt() ?? 0;
     return likes + comments + shares + saves;
+  }
+
+  Widget _buildTimeSeriesSection() {
+    final timeSeries = _postInsight?.timeSeries ?? [];
+
+    if (timeSeries.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              IsrTranslationFile.timeSeries,
+              style: IsrStyles.primaryText14Bold,
+            ),
+            IsrDimens.boxHeight(IsrDimens.sixteen),
+            _buildMetricSelector(),
+          ],
+        ),
+        IsrDimens.boxHeight(IsrDimens.sixteen),
+        _buildTimeSeriesChart(timeSeries),
+      ],
+    );
+  }
+
+  Widget _buildMetricSelector() => Container(
+    constraints: BoxConstraints(maxWidth: 50.percentWidth),
+    child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            spacing: IsrDimens.eight,
+            children: [
+              _buildMetricChip(TimeSeriesMetric.views, IsrTranslationFile.views),
+              _buildMetricChip(
+                  TimeSeriesMetric.interactions, IsrTranslationFile.interactions),
+              _buildMetricChip(TimeSeriesMetric.likes, IsrTranslationFile.likes),
+              _buildMetricChip(
+                  TimeSeriesMetric.comments, IsrTranslationFile.comments),
+              _buildMetricChip(TimeSeriesMetric.saves, IsrTranslationFile.saves),
+              _buildMetricChip(
+                  TimeSeriesMetric.shares, IsrTranslationFile.shares),
+            ],
+          ),
+        ),
+  );
+
+  Widget _buildMetricChip(TimeSeriesMetric metric, String label) {
+    final isSelected = _selectedMetric == metric;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedMetric = metric;
+        });
+      },
+      child: Text(
+        label,
+        style: IsrStyles.primaryText12.copyWith(
+          color: isSelected ? IsrColors.appColor : '#767676'.color,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimeSeriesChart(List<InsightsTimeSeries> timeSeries) {
+    if (timeSeries.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final spots = <FlSpot>[];
+    final maxValue = _getMaxValueForMetric(timeSeries, _selectedMetric);
+    final minValue = 0.0;
+
+    for (var i = 0; i < timeSeries.length; i++) {
+      final value = _getValueForMetric(timeSeries[i], _selectedMetric);
+      spots.add(FlSpot(i.toDouble(), value));
+    }
+
+    return Container(
+      height: 200.responsiveDimension,
+      padding: IsrDimens.edgeInsetsAll(IsrDimens.sixteen),
+      decoration: BoxDecoration(
+        color: IsrColors.colorF5F5F5,
+        borderRadius: BorderRadius.circular(12.responsiveDimension),
+      ),
+      child: LineChart(
+        LineChartData(
+          gridData: FlGridData(
+            show: true,
+            drawVerticalLine: false,
+            horizontalInterval: maxValue > 0 ? maxValue / 4 : 1,
+            getDrawingHorizontalLine: (value) => const FlLine(
+              color: IsrColors.colorDBDBDB,
+              strokeWidth: 1,
+            ),
+          ),
+          titlesData: FlTitlesData(
+            show: true,
+            rightTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            topTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 30,
+                interval: (timeSeries.length / 4).ceil().toDouble(),
+                getTitlesWidget: (value, meta) {
+                  if (value.toInt() >= 0 && value.toInt() < timeSeries.length) {
+                    final item = timeSeries[value.toInt()];
+                    if (item.bucket != null && item.bucket!.isNotEmpty) {
+                      try {
+                        final dateTime = DateTime.parse(item.bucket!);
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Text(
+                            DateFormat('MMM d').format(dateTime),
+                            style: IsrStyles.primaryText10.copyWith(
+                              color: '767676'.toColor(),
+                            ),
+                          ),
+                        );
+                      } catch (e) {
+                        return const SizedBox.shrink();
+                      }
+                    }
+                  }
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 40,
+                interval: maxValue > 0 ? maxValue / 4 : 1,
+                getTitlesWidget: (value, meta) => Text(
+                  value.toInt().toString(),
+                  style: IsrStyles.primaryText10.copyWith(
+                    color: '767676'.toColor(),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          borderData: FlBorderData(
+            show: true,
+            border: const Border(
+              bottom: BorderSide(
+                color: IsrColors.colorDBDBDB,
+                width: 1,
+              ),
+              left: BorderSide(
+                color: IsrColors.colorDBDBDB,
+                width: 1,
+              ),
+            ),
+          ),
+          minX: 0,
+          maxX: (timeSeries.length - 1).toDouble(),
+          minY: minValue,
+          maxY: maxValue > 0 ? maxValue * 1.1 : 10,
+          lineBarsData: [
+            LineChartBarData(
+              spots: spots,
+              isCurved: true,
+              color: IsrColors.appColor,
+              barWidth: 3,
+              isStrokeCapRound: true,
+              dotData: FlDotData(
+                show: true,
+                getDotPainter: (spot, percent, barData, index) =>
+                    FlDotCirclePainter(
+                  radius: 4,
+                  color: IsrColors.appColor,
+                  strokeWidth: 2,
+                  strokeColor: IsrColors.white,
+                ),
+              ),
+              belowBarData: BarAreaData(
+                show: true,
+                color: IsrColors.appColor.withValues(alpha: 0.1),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  double _getValueForMetric(InsightsTimeSeries item, TimeSeriesMetric metric) {
+    switch (metric) {
+      case TimeSeriesMetric.views:
+        return item.views?.toDouble() ?? 0.0;
+      case TimeSeriesMetric.interactions:
+        return item.interactions?.toDouble() ?? 0.0;
+      case TimeSeriesMetric.likes:
+        return item.likes?.toDouble() ?? 0.0;
+      case TimeSeriesMetric.comments:
+        return item.comments?.toDouble() ?? 0.0;
+      case TimeSeriesMetric.saves:
+        return item.saves?.toDouble() ?? 0.0;
+      case TimeSeriesMetric.shares:
+        return item.shares?.toDouble() ?? 0.0;
+    }
+  }
+
+  double _getMaxValueForMetric(
+      List<InsightsTimeSeries> timeSeries, TimeSeriesMetric metric) {
+    if (timeSeries.isEmpty) return 10.0;
+    var maxValue = 0.0;
+    for (var item in timeSeries) {
+      final value = _getValueForMetric(item, metric);
+      if (value > maxValue) {
+        maxValue = value;
+      }
+    }
+    return maxValue > 0 ? maxValue : 10.0;
   }
 
   Widget _buildLocationSectionSection() {
