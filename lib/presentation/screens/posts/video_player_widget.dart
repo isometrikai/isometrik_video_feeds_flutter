@@ -54,7 +54,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   bool _isInitializing = false;
   bool _isVisible = false;
   bool _isDisposed = false;
-  bool _hasCompleted = false; // Track if video has already completed
   bool _isManuallyPaused =
       false; // Track if video was manually paused (e.g., long press)
   bool _hasLoggedWatchEvent = false; // Track if watch event has been logged
@@ -76,6 +75,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   
   // Track if we've received valid video dimensions
   bool _hasValidVideoSize = false;
+
+  num _remainingDuration = 0;
 
   @override
   void initState() {
@@ -253,7 +254,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
     try {
       // Reset completion flag, manual pause state, and analytics tracking
-      _hasCompleted = false;
       _isManuallyPaused = false;
       _hasLoggedWatchEvent = false;
       _maxWatchPosition = Duration.zero;
@@ -349,15 +349,16 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     }
 
     // 3. Check if video has completed (with small threshold to account for timing)
-    if (duration.inMilliseconds > 0 &&
-        position.inMilliseconds >= duration.inMilliseconds - 100 &&
-        !_hasCompleted) {
-      _hasCompleted = true;
+    debugPrint('⏳ VideoPlayerWidget: Video position: $position, duration: $duration');
+    final remainingDuration = duration.inMilliseconds - position.inMilliseconds;
+    debugPrint('⏳ VideoPlayerWidget: Remaining duration: $remainingDuration > $_remainingDuration = ${remainingDuration > _remainingDuration}');
+    if (_remainingDuration > 0 && remainingDuration > _remainingDuration) { // remainingDuration is greater then _remainingDuration then video has restarted after completing
       // Video completed - notify callback
       widget.onVideoCompleted?.call();
       // Log watch event when video completes
       // _logWatchEventIfNeeded();
     }
+    _remainingDuration = remainingDuration;
   }
 
   /// Log "Video Started" event when playback begins
@@ -622,7 +623,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     // Handle media URL changes
     if (oldWidget.mediaUrl != widget.mediaUrl) {
       _isInitialized = false;
-      _hasCompleted = false;
       _initializeVideoPlayer();
     }
   }
