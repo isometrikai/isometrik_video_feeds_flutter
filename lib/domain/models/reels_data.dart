@@ -12,7 +12,6 @@ class ReelsData {
     this.lastName,
     this.profilePhoto,
     this.isVerifiedUser,
-    this.isSelfProfile = false,
     this.description,
     required this.mediaMetaDataList,
     this.isFollow,
@@ -44,7 +43,6 @@ class ReelsData {
   final String? lastName;
   final String? profilePhoto;
   final bool? isVerifiedUser;
-  final bool? isSelfProfile;
   final String? description;
   final String? createOn;
 
@@ -87,7 +85,6 @@ class ReelsData {
         lastName: lastName,
         profilePhoto: profilePhoto,
         isVerifiedUser: isVerifiedUser,
-        isSelfProfile: isSelfProfile,
         description: description,
         mediaMetaDataList: mediaMetaDataList,
         hasTags: hasTags,
