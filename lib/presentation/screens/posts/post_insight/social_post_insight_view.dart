@@ -208,28 +208,31 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
     final saves = _postInsight?.summary?.saves ??
         _postData?.engagementMetrics?.saves?.toInt() ??
         0;
+    final reports = _postInsight?.summary?.reports ?? 0;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
+      spacing: IsrDimens.twentyFour,
       children: [
         _buildInteractionIcon(
           AssetConstants.icHeartIconSelected,
           likes.toString(),
         ),
-        IsrDimens.twentyFour.responsiveHorizontalSpace,
         _buildInteractionIcon(
           AssetConstants.icCommentIcon,
           comments.toString(),
         ),
-        IsrDimens.twentyFour.responsiveHorizontalSpace,
         _buildInteractionIcon(
           AssetConstants.icSharePostIcon,
           shares.toString(),
         ),
-        IsrDimens.twentyFour.responsiveHorizontalSpace,
         _buildInteractionIcon(
           AssetConstants.icSaveSelectedIcon,
           saves.toString(),
+        ),
+        _buildInteractionIcon(
+          AssetConstants.icReportIcon,
+          reports.toString(),
         ),
       ],
     );
@@ -441,6 +444,7 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
     final saves = _postInsight?.summary?.saves ??
         _postData?.engagementMetrics?.saves?.toInt() ??
         0;
+    final report = _postInsight?.summary?.reports ?? 0;
     final accountEngaged = _postInsight?.summary?.accountsEngaged ?? 0;
 
     return Column(
@@ -458,6 +462,8 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
         _buildStatisticItem(IsrTranslationFile.shares, shares.toString()),
         IsrDimens.boxHeight(IsrDimens.sixteen),
         _buildStatisticItem(IsrTranslationFile.comments, comments.toString()),
+        IsrDimens.boxHeight(IsrDimens.sixteen),
+        _buildStatisticItem(IsrTranslationFile.reports, report.toString()),
         IsrDimens.boxHeight(IsrDimens.sixteen),
         Divider(
             height: 1.responsiveDimension,

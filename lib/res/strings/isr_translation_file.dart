@@ -95,6 +95,7 @@ class IsrTranslationFile {
   static String reportAlertTitle(String type) => 'Report ${type.capitalizeWords()}';
   static const postReportedSuccessfully = 'Post reported successfully';
   static const report = 'Report';
+  static const reports = 'Reports';
   static const confirm = 'Confirm';
   static const failedToLoadReportReasons = 'Failed to load report reasons';
   static const selectDate = 'Select Date';

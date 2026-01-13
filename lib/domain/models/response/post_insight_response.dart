@@ -44,7 +44,7 @@ class InsightsData {
   InsightsData({
     this.id,
     this.summary,
-    this.timeseries,
+    this.timeSeries,
     this.locations,
     this.followerSplit,
   });
@@ -56,7 +56,7 @@ class InsightsData {
         : InsightsSummary.fromMap(
       json['summary'] as Map<String, dynamic>,
     ),
-    timeseries: json['timeseries'] == null
+    timeSeries: json['timeseries'] == null
         ? []
         : List<InsightsTimeSeries>.from(
       (json['timeseries'] as List).map(
@@ -77,16 +77,16 @@ class InsightsData {
 
   String? id;
   InsightsSummary? summary;
-  List<InsightsTimeSeries>? timeseries;
+  List<InsightsTimeSeries>? timeSeries;
   Locations? locations;
   FollowerSplit? followerSplit;
 
   Map<String, dynamic> toMap() => {
     'id': id,
     'summary': summary?.toMap(),
-    'timeseries': timeseries == null
+    'timeseries': timeSeries == null
         ? []
-        : List<dynamic>.from(timeseries!.map((x) => x.toMap())),
+        : List<dynamic>.from(timeSeries!.map((x) => x.toMap())),
     'locations': locations?.toMap(),
     'follower_split': followerSplit?.toMap(),
   };
