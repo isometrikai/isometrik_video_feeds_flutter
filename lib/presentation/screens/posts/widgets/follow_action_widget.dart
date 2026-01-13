@@ -41,6 +41,7 @@ class _FollowActionWidgetState extends State<FollowActionWidget> {
   bool isFollowing = false;
   late String userId;
   late String? postId;
+  late String loggedInUserId;
 
   @override
   void initState() {
@@ -48,6 +49,7 @@ class _FollowActionWidgetState extends State<FollowActionWidget> {
     cubit = context.getOrCreateBloc<IsmSocialActionCubit>();
     userId = widget.userId;
     postId = widget.postId;
+    loggedInUserId = cubit.userId;
     isFollowing = widget.isFollowing ?? false;
     if (postId != null) {
       cubit.loadPostFollowState(postId!);
@@ -66,6 +68,7 @@ class _FollowActionWidgetState extends State<FollowActionWidget> {
         oldWidget.isFollowing != widget.isFollowing) {
       userId = widget.userId;
       postId = widget.postId;
+      loggedInUserId = cubit.userId;
       isFollowing = widget.isFollowing ?? false;
       if (postId != null) {
         cubit.loadPostFollowState(postId!);
@@ -107,7 +110,7 @@ class _FollowActionWidgetState extends State<FollowActionWidget> {
   @override
   Widget build(BuildContext context) =>
       context.attachBlocIfNeeded<IsmSocialActionCubit>(
-        child: BlocBuilder<IsmSocialActionCubit, IsmSocialActionState>(
+        child: BlocConsumer<IsmSocialActionCubit, IsmSocialActionState>(
           buildWhen: (previous, current) {
             // Listen to IsmFollowUserState, IsmFollowActionListenerState, and IsmFollowErrorState
             // This ensures updates from outside the package (like profile page) are reflected
@@ -121,7 +124,17 @@ class _FollowActionWidgetState extends State<FollowActionWidget> {
             if (current is IsmFollowErrorState && current.userId == userId) {
               return true;
             }
+            if (current is IsmUserChangedActionListenerState) {
+              return true;
+            }
             return false;
+          },
+          listenWhen: (previous, current) => current is IsmUserChangedActionListenerState,
+          listener: (context, state) {
+            if (state is IsmUserChangedActionListenerState) {
+              loggedInUserId = state.userId;
+              debugPrint('FollowActionWidget IsmUserChangedActionListenerState -> ${state.userId}');
+            }
           },
           builder: (context, state) {
             if (state is IsmFollowUserState) {
@@ -139,6 +152,9 @@ class _FollowActionWidgetState extends State<FollowActionWidget> {
               debugPrint('❌ Follow/Unfollow error: ${state.errorMessage}');
             }
             debugPrint('IsmSocialActionCubit hashCode -> ${cubit.hashCode}');
+            if (userId == loggedInUserId) { // self user
+                return const SizedBox.shrink();
+            }
             return GestureDetector(
               onTap: isLoading ? null : _onTap,
               child: widget.builder(isLoading, isFollowing, _onTap),

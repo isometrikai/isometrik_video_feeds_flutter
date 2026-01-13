@@ -1429,11 +1429,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         ),
       );
 
-  Widget _buildFollowButton() {
-    // Hide if it's self profile
-    if (_reelData.isSelfProfile == true) return const SizedBox.shrink();
-
-    return FollowActionWidget(
+  Widget _buildFollowButton() => FollowActionWidget(
       postId: _reelData.postId ?? '',
       userId: _reelData.userId ?? '',
       builder: (isLoading, isFollowing, onTap) {
@@ -1517,7 +1513,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         return const SizedBox.shrink();
       },
     );
-  }
 
   Future<void> _triggerLikeAnimation() async {
     _likeAnimationTimer?.cancel();
