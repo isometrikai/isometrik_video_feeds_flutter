@@ -188,6 +188,7 @@ class IsrTranslationFile {
   static const String saveChanges = 'Save changes';
   static const String outOfStock = 'Out of stock';
   static const String notifyMe = 'Notify me';
+  static const String timeSeries = 'Time Series';
   static const String earn = 'Earn';
   static const String talents = 'talents';
   static const String choosePhoto = 'Choose photo';
