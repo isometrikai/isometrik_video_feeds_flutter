@@ -48,7 +48,7 @@ class VideoPlayerWidget extends StatefulWidget {
       key.currentState as _VideoPlayerWidgetState?;
 }
 
-class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
+class _VideoPlayerWidgetState extends State<VideoPlayerWidget> with WidgetsBindingObserver {
   IVideoPlayerController? _videoPlayerController;
   bool _isInitialized = false;
   bool _isInitializing = false;
@@ -82,9 +82,69 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     super.initState();
     // OPTIMIZATION: Configure VisibilityDetector for faster updates
     _configureVisibilityDetector();
+    // Observe app lifecycle for foreground/background handling
+    WidgetsBinding.instance.addObserver(this);
     _initializeVideoPlayer();
     // Start checking if controller becomes ready asynchronously
     _startControllerReadyCheck();
+  }
+  
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    
+    // Handle foreground/background transitions
+    if (state == AppLifecycleState.resumed) {
+      // App came to foreground - resume visible videos
+      debugPrint('📱 App resumed - checking visible videos');
+      if (_isVisible && !_isDisposed) {
+        _handleAppResumed();
+      }
+    } else if (state == AppLifecycleState.paused || 
+               state == AppLifecycleState.inactive) {
+      // App went to background - pause videos
+      debugPrint('📱 App paused/inactive - pausing videos');
+      if (_videoPlayerController != null && 
+          _videoPlayerController!.isInitialized &&
+          !_videoPlayerController!.isDisposed &&
+          _videoPlayerController!.isPlaying) {
+        unawaited(_videoPlayerController!.pause());
+      }
+    }
+  }
+  
+  /// Handle app resume - re-initialize and play visible videos
+  Future<void> _handleAppResumed() async {
+    if (_isDisposed || !mounted) return;
+    
+    // Check if controller is still valid
+    if (_videoPlayerController == null || 
+        _videoPlayerController!.isDisposed ||
+        !_videoPlayerController!.isInitialized) {
+      // Controller was disposed - re-initialize
+      debugPrint('🔄 VideoPlayerWidget: Controller disposed, re-initializing after app resume');
+      _isInitialized = false;
+      _videoPlayerController = null;
+      await _initializeVideoPlayer();
+    } else if (_isVisible && 
+               !_videoPlayerController!.isPlaying && 
+               !_isManuallyPaused &&
+               !widget.isPreloaded) {
+      // Controller is valid - resume playback
+      debugPrint('▶️ VideoPlayerWidget: Resuming playback after app resume');
+      try {
+        await _videoPlayerController!.setVolume(widget.isMuted ? 0.0 : 1.0);
+        await _videoPlayerController!.play();
+        widget.videoCacheManager.markAsVisible(widget.mediaUrl);
+        _startStuckVideoDetection();
+      } catch (e) {
+        debugPrint('⚠️ VideoPlayerWidget: Error resuming after app resume: $e');
+        // If resume fails, try re-initializing
+        _isInitialized = false;
+        _videoPlayerController = null;
+        await _initializeVideoPlayer();
+      }
+    }
   }
 
   /// Called when the video playing state changes
@@ -171,20 +231,27 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       _videoPlayerController = widget.videoCacheManager
           .getCachedMedia(widget.mediaUrl) as IVideoPlayerController?;
 
-      // If controller exists and is already initialized, use it directly
-      if (_videoPlayerController != null &&
-          _videoPlayerController!.isInitialized &&
-          !_videoPlayerController!.isDisposed) {
-        debugPrint(
-            '✅ VideoPlayerWidget: Using cached initialized controller for: ${widget.mediaUrl}');
-        await _setupVideoController();
-        if (mounted) {
-          setState(() {
-            _isInitialized = true;
-          });
-          _checkInitialVisibility();
+      // CRITICAL: Check if controller is valid and not disposed
+      // If controller was disposed (e.g., cache eviction), we need to re-initialize
+      if (_videoPlayerController != null) {
+        // Check if controller is actually valid (not disposed and initialized)
+        if (_videoPlayerController!.isInitialized && !_videoPlayerController!.isDisposed) {
+          debugPrint(
+              '✅ VideoPlayerWidget: Using cached initialized controller for: ${widget.mediaUrl}');
+          await _setupVideoController();
+          if (mounted) {
+            setState(() {
+              _isInitialized = true;
+            });
+            _checkInitialVisibility();
+          }
+          return; // Early return - no need to initialize again
+        } else {
+          // Controller exists but is disposed or not initialized - clear it
+          debugPrint(
+              '⚠️ VideoPlayerWidget: Cached controller is disposed/uninitialized, will re-initialize');
+          _videoPlayerController = null;
         }
-        return; // Early return - no need to initialize again
       }
 
       // OPTIMIZATION: If no cached controller, trigger precaching ONCE
@@ -413,11 +480,12 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     }
 
     // Control playback based on visibility (only if not manually paused)
-    // Safety check: ensure controller is valid and not disposed
-    if (!_isDisposed &&
-        _videoPlayerController != null &&
+    // CRITICAL: Check if controller is disposed and needs re-initialization
+    final isControllerValid = _videoPlayerController != null &&
         _videoPlayerController!.isInitialized &&
-        !_videoPlayerController!.isDisposed) {
+        !_videoPlayerController!.isDisposed;
+    
+    if (!_isDisposed && isControllerValid) {
       try {
         if (_isVisible &&
             !_videoPlayerController!.isPlaying &&
@@ -440,13 +508,36 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       } catch (e) {
         debugPrint(
             '⚠️ VideoPlayerWidget: Error in visibility change handler: $e');
+        // If error occurs, controller might be invalid - reset state
+        if (_isVisible) {
+          _isInitialized = false;
+          _videoPlayerController = null;
+          _initializeVideoPlayer();
+        }
       }
     } else if (_isVisible) {
-      // OPTIMIZATION: If visible but not initialized/initializing, start initialization immediately
+      // CRITICAL: If visible but controller is null/disposed/invalid, re-initialize
+      // This handles cases where controller was disposed (e.g., tab switch, cache eviction)
       if (!_isInitializing && !_isInitialized) {
-        debugPrint('🔄 VideoPlayerWidget: Visible but not initialized, starting initialization...');
-        _isDisposed = false;
+        debugPrint('🔄 VideoPlayerWidget: Visible but controller invalid/disposed, re-initializing...');
+        debugPrint('🔄 Controller state: null=${_videoPlayerController == null}, '
+            'disposed=${_videoPlayerController?.isDisposed ?? true}, '
+            'initialized=${_videoPlayerController?.isInitialized ?? false}');
+        // Reset state to allow re-initialization
+        _isInitialized = false;
+        _videoPlayerController = null;
+        _isDisposed = false; // Reset disposed flag to allow initialization
         _initializeVideoPlayer();
+      } else if (_videoPlayerController != null && 
+                 (_videoPlayerController!.isDisposed || !_videoPlayerController!.isInitialized)) {
+        // Controller exists but is disposed or not initialized - reset and re-init
+        debugPrint('🔄 VideoPlayerWidget: Controller exists but invalid, resetting...');
+        _isInitialized = false;
+        _videoPlayerController = null;
+        _isDisposed = false;
+        if (!_isInitializing) {
+          _initializeVideoPlayer();
+        }
       }
     }
   }
@@ -630,6 +721,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   @override
   void dispose() {
     _isDisposed = true;
+    // Remove app lifecycle observer
+    WidgetsBinding.instance.removeObserver(this);
     // Cancel timers
     _stopStuckVideoDetection();
     _controllerReadyCheckTimer?.cancel();

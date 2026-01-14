@@ -123,9 +123,14 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         _currentPostSectionType = tabData.tabDataModel.postSectionType;
         widget.tabConfig.tabCallBackConfig?.onChangeOfTab?.call(tabData.tabDataModel);
         // Handle tab change if we have a user
+        // CRITICAL: Reuse existing VideoCacheManager singleton instead of creating new instance
+        // VideoCacheManager is a singleton, so just ensure it exists
         if (_loggedInUserId.isNotEmpty) {
           try {
+            // VideoCacheManager is a singleton factory, so this just gets the existing instance
             _videoCacheManager = VideoCacheManager();
+            // Don't clear cache on tab change - this breaks video loading
+            // The cache manager will handle eviction automatically via LRU
           } catch (e) {
             debugPrint('Error during tab change: $e');
           }
@@ -839,9 +844,13 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     debugPrint('ism_post_view: user changed: $userId');
     //data update
     if (userId.isNotEmpty && _loggedInUserId != userId) {
+      // CRITICAL: Clear cache before switching users to free memory
+      _videoCacheManager?.clearCache();
+      // VideoCacheManager is singleton, but clear ensures fresh state
       _videoCacheManager = VideoCacheManager();
     } else if (userId.isEmpty &&
         _loggedInUserId.isNotEmpty) {
+      // CRITICAL: Clear all cache when user logs out to free memory
       _videoCacheManager?.clearCache();
       _videoCacheManager = null;
     }

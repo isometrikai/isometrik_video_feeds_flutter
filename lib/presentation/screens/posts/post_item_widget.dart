@@ -52,6 +52,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
   List<ReelsData> _reelsDataList = [];
   late final IsmSocialActionCubit _ismSocialActionCubit;
   final ValueNotifier<int> _currentIndex = ValueNotifier<int>(0);
+  int _previousIndex = 0; // Track previous index to determine scroll direction
 
   bool _isInitialized = false;
 
@@ -135,7 +136,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
       }
 
       // Start caching other media in parallel (non-blocking)
-      unawaited(_doMediaCaching(0));
+      unawaited(_doMediaCaching(0, 0)); // 0 = no direction on initial load
 
       // Start background preloading of remaining posts (low priority)
       unawaited(_backgroundPreloadPosts());
@@ -248,7 +249,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
     _refreshCounts[currentIndex] = (_refreshCounts[currentIndex] ?? 0) + 1;
     _updateState();
     // Re-initialize caching for current index after successful refresh
-    await _doMediaCaching(currentIndex);
+    await _doMediaCaching(currentIndex, 0); // 0 = no direction on refresh
   }
 
   Future<void> _updateWithFollowAction(
@@ -329,7 +330,9 @@ class _PostItemWidgetState extends State<PostItemWidget>
                 await _refreshPost();
               },
               child: PreloadPageView.builder(
-                preloadPagesCount: 1,
+                // CRITICAL: Keep 3 pages active (Previous, Current, Next) for smooth scrolling
+                // This ensures videos are preloaded and ready before user swipes
+                preloadPagesCount: 2, // Preload 2 pages ahead (Current + Next + Previous = 3 total)
                 // key: _pageStorageKey,
                 // allowImplicitScrolling: widget.allowImplicitScrolling ?? true,
                 controller: _pageController,
@@ -337,7 +340,19 @@ class _PostItemWidgetState extends State<PostItemWidget>
                     parent: ClampingScrollPhysics()),
                 onPageChanged: (index) {
                   _currentIndex.value = index;
-                  _doMediaCaching(index);
+                  
+                  // Determine scroll direction for smart preloading
+                  // Compare with _previousIndex to detect direction
+                  final scrollDirection = index > _previousIndex ? 1 : (index < _previousIndex ? -1 : 0);
+                  _previousIndex = index;
+                  
+                  // SMART CACHING: Preload based on scroll direction
+                  _doMediaCaching(index, scrollDirection);
+                  
+                  // CRITICAL: Bidirectional background preloading
+                  // Preload videos in both directions for smooth scrolling
+                  _triggerBidirectionalPreloading(index, scrollDirection);
+                  
                   final post = _reelsDataList[index];
 
                   // EventQueueProvider.instance.addEvent({
@@ -359,7 +374,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
                                   existingReel.postId == newReel.postId));
                           _reelsDataList.addAll(newReels);
                           if (_reelsDataList.isNotEmpty) {
-                            _doMediaCaching(0);
+                            _doMediaCaching(0, 0); // 0 = no direction on load more
                           }
                           _updateState();
                         },
@@ -439,17 +454,18 @@ class _PostItemWidgetState extends State<PostItemWidget>
       );
 
   /// Background preloading of posts that are not immediately visible
+  /// Called once on initialization
   Future<void> _backgroundPreloadPosts() async {
     if (_reelsDataList.length <= 5) return; // Skip if not enough posts
 
     final backgroundUrls = <String>[];
 
-    // OPTIMIZATION: Platform-specific background preloading
-    // Android: Only preload 5-7 positions away (conservative)
-    // iOS: Preload 5-10 positions away (more aggressive)
-    final startIndex = 5;
+    // OPTIMIZATION: Reduced background preloading to prevent memory spikes
+    // Android: Only preload 3-5 positions away (very conservative)
+    // iOS: Preload 4-7 positions away (moderate)
+    final startIndex = 3;
     final endIndex =
-        math.min(_reelsDataList.length - 1, Platform.isAndroid ? 7 : 10);
+        math.min(_reelsDataList.length - 1, Platform.isAndroid ? 5 : 7);
 
     for (var i = startIndex; i <= endIndex; i++) {
       final post = _reelsDataList[i];
@@ -475,8 +491,88 @@ class _PostItemWidgetState extends State<PostItemWidget>
     }
   }
 
-  // Handle media caching for both images and videos - OPTIMIZED FOR PERFORMANCE
-  Future<void> _doMediaCaching(int index) async {
+  /// SMART BIDIRECTIONAL PRELOADING: Preload videos in both directions
+  /// Prioritizes preloading in scroll direction while also preloading opposite direction
+  void _triggerBidirectionalPreloading(int currentIndex, int scrollDirection) {
+    final backgroundUrls = <String>[];
+    
+    // SMART PRELOADING: Preload more aggressively in scroll direction
+    // Forward scroll: Preload more ahead, less behind
+    // Backward scroll: Preload more behind, less ahead
+    
+    if (scrollDirection > 0) {
+      // Scrolling forward - prioritize preloading ahead
+      // Preload 3-7 positions ahead (high priority)
+      final forwardStart = currentIndex + 3;
+      final forwardEnd = math.min(
+          _reelsDataList.length - 1,
+          currentIndex + (Platform.isAndroid ? 6 : 8));
+      
+      // Also preload 1-3 positions behind (low priority, for back navigation)
+      final backwardStart = math.max(0, currentIndex - 3);
+      final backwardEnd = math.max(0, currentIndex - 1);
+      
+      _collectMediaUrls(forwardStart, forwardEnd, backgroundUrls, highPriority: true);
+      if (backwardStart <= backwardEnd) {
+        _collectMediaUrls(backwardStart, backwardEnd, backgroundUrls, highPriority: false);
+      }
+    } else {
+      // Scrolling backward - prioritize preloading behind
+      // Preload 1-4 positions behind (high priority)
+      final backwardStart = math.max(0, currentIndex - 4);
+      final backwardEnd = math.max(0, currentIndex - 1);
+      
+      // Also preload 2-5 positions ahead (low priority, for forward navigation)
+      final forwardStart = currentIndex + 2;
+      final forwardEnd = math.min(
+          _reelsDataList.length - 1,
+          currentIndex + (Platform.isAndroid ? 4 : 6));
+      
+      if (backwardStart <= backwardEnd) {
+        _collectMediaUrls(backwardStart, backwardEnd, backgroundUrls, highPriority: true);
+      }
+      _collectMediaUrls(forwardStart, forwardEnd, backgroundUrls, highPriority: false);
+    }
+
+    if (backgroundUrls.isNotEmpty) {
+      debugPrint(
+          '🔄 Bidirectional preloading: ${backgroundUrls.length} media items (index $currentIndex, direction: ${scrollDirection > 0 ? "forward" : "backward"})');
+      // Use low priority to not interfere with current video loading
+      unawaited(
+          MediaCacheFactory.precacheMedia(backgroundUrls, highPriority: false));
+    }
+  }
+  
+  /// Helper method to collect media URLs from a range of posts
+  void _collectMediaUrls(int startIndex, int endIndex, List<String> urls, {bool highPriority = false}) {
+    for (var i = startIndex; i <= endIndex; i++) {
+      if (i < 0 || i >= _reelsDataList.length) continue;
+      
+      final post = _reelsDataList[i];
+      for (var mediaItem in post.mediaMetaDataList) {
+        if (mediaItem.mediaUrl.isEmpty) continue;
+
+        if (mediaItem.mediaType == MediaType.video.value) {
+          // CRITICAL: Only preload if not already cached
+          if (!MediaCacheFactory.isMediaCached(mediaItem.mediaUrl)) {
+            urls.add(mediaItem.mediaUrl);
+            if (mediaItem.thumbnailUrl.isNotEmpty &&
+                !MediaCacheFactory.isMediaCached(mediaItem.thumbnailUrl)) {
+              urls.add(mediaItem.thumbnailUrl);
+            }
+          }
+        } else {
+          if (!MediaCacheFactory.isMediaCached(mediaItem.mediaUrl)) {
+            urls.add(mediaItem.mediaUrl);
+          }
+        }
+      }
+    }
+  }
+
+  // SMART MEDIA CACHING: Preload based on scroll direction
+  // Handles both forward and backward scrolling intelligently
+  Future<void> _doMediaCaching(int index, int scrollDirection) async {
     if (_reelsDataList.isEmpty || index >= _reelsDataList.length) return;
 
     final reelsData = _reelsDataList[index];
@@ -484,15 +580,21 @@ class _PostItemWidgetState extends State<PostItemWidget>
     // Only log every 5th scroll to reduce performance impact
     if (index % 5 == 0) {
       debugPrint(
-          '🎯 MainWidget: Page changed to index $index (@${reelsData.userName})');
+          '🎯 MainWidget: Page changed to index $index (@${reelsData.userName}), direction: ${scrollDirection > 0 ? "forward" : "backward"}');
     }
 
-    // OPTIMIZATION: Platform-specific preloading for smooth scrolling
-    // Android: 2 ahead (balanced for smooth experience with increased cache)
-    // iOS: 3 ahead (more aggressive for smoother experience)
-    final preloadCount = Platform.isAndroid ? 2 : 3;
-    final startIndex = math.max(0, index - 1); // 1 behind
-    final endIndex = math.min(_reelsDataList.length - 1, index + preloadCount);
+    // SMART PRELOADING: Adjust range based on scroll direction
+    // Forward scroll: Preload more ahead, less behind
+    // Backward scroll: Preload more behind, less ahead
+    final preloadAhead = scrollDirection > 0 
+        ? (Platform.isAndroid ? 2 : 3)  // More ahead when scrolling forward
+        : (Platform.isAndroid ? 1 : 2);  // Less ahead when scrolling backward
+    final preloadBehind = scrollDirection < 0
+        ? 2  // More behind when scrolling backward
+        : 1; // Less behind when scrolling forward
+    
+    final startIndex = math.max(0, index - preloadBehind);
+    final endIndex = math.min(_reelsDataList.length - 1, index + preloadAhead);
 
     // Collect media URLs for current post only (high priority)
     final currentPostMedia = <String>[];
@@ -650,7 +752,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
               .any((existingReel) => existingReel.postId == newReel.postId));
           _reelsDataList.addAll(newReels);
           if (_reelsDataList.isNotEmpty) {
-            _doMediaCaching(0);
+            _doMediaCaching(0, 0); // 0 = no direction on load more
           }
           _updateState();
         });
@@ -672,7 +774,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
               (_refreshCounts[currentIndex] ?? 0) + 1;
           _updateState();
           // Re-initialize caching for current index after successful refresh
-          await _doMediaCaching(currentIndex);
+          await _doMediaCaching(currentIndex, 0); // 0 = no direction on refresh
           debugPrint(
               '✅ MainWidget: Posts refreshed successfully with count: ${_refreshCounts[currentIndex]}');
         } else {

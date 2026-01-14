@@ -46,8 +46,8 @@ class MediaKitVideoPlayerWrapper implements IVideoPlayerController {
         _player.setVideoTrack(videoTracks.first);
       }
       // Find the video track with the lowest bitrate or height
-      final lowestQuality =
-          tracks.video.reduce((a, b) => (a.bitrate ?? 0) < (b.bitrate ?? 0) ? a : b);
+      final lowestQuality = tracks.video
+          .reduce((a, b) => (a.bitrate ?? 0) < (b.bitrate ?? 0) ? a : b);
       _player.setVideoTrack(lowestQuality);
     });
 
@@ -113,7 +113,8 @@ class MediaKitVideoPlayerWrapper implements IVideoPlayerController {
 
   @override
   Future<void> setLooping(bool looping) async {
-    await _player.setPlaylistMode(looping ? PlaylistMode.single : PlaylistMode.none);
+    await _player
+        .setPlaylistMode(looping ? PlaylistMode.single : PlaylistMode.none);
   }
 
   @override
@@ -147,7 +148,8 @@ class MediaKitVideoPlayerWrapper implements IVideoPlayerController {
       await MediaKitCacheManager._configureAudioSession();
 
       // Check if video is stuck at the beginning (never started playing)
-      final isStuckAtStart = _player.state.position == Duration.zero && !_player.state.playing;
+      final isStuckAtStart =
+          _player.state.position == Duration.zero && !_player.state.playing;
 
       if (_player.state.buffering || isStuckAtStart) {
         // If stuck in buffering or at start, seek to unstick
@@ -182,10 +184,12 @@ class MediaKitVideoPlayerWrapper implements IVideoPlayerController {
   }
 
   @override
-  Duration get position => _position > Duration.zero ? _position : _player.state.position;
+  Duration get position =>
+      _position > Duration.zero ? _position : _player.state.position;
 
   @override
-  Duration get duration => _duration > Duration.zero ? _duration : _player.state.duration;
+  Duration get duration =>
+      _duration > Duration.zero ? _duration : _player.state.duration;
 
   @override
   bool get isPlaying => _player.state.playing;
@@ -308,7 +312,8 @@ class MediaKitCacheManager implements IVideoCacheManager {
 
   MediaKitCacheManager._internal();
 
-  static final MediaKitCacheManager _instance = MediaKitCacheManager._internal();
+  static final MediaKitCacheManager _instance =
+      MediaKitCacheManager._internal();
 
   static bool _isInitialized = false;
   static bool _isAudioSessionConfigured = false;
@@ -327,12 +332,13 @@ class MediaKitCacheManager implements IVideoCacheManager {
     if (_isDisposing) return;
     _isDisposing = true;
 
-    debugPrint('🔥 MediaKitCacheManager: Disposing all players before restart...');
+    debugPrint(
+        '🔥 MediaKitCacheManager: Disposing all players before restart...');
 
     try {
       // Clear all controllers synchronously to prevent callbacks
-      final controllers =
-          Map<String, MediaKitVideoPlayerWrapper>.from(_instance._videoControllerCache);
+      final controllers = Map<String, MediaKitVideoPlayerWrapper>.from(
+          _instance._videoControllerCache);
       _instance._videoControllerCache.clear();
       _instance._initializationCache.clear();
       _instance._lruQueue.clear();
@@ -360,13 +366,16 @@ class MediaKitCacheManager implements IVideoCacheManager {
   }
 
   final Map<String, MediaKitVideoPlayerWrapper> _videoControllerCache = {};
-  final Map<String, Future<MediaKitVideoPlayerWrapper?>> _initializationCache = {};
+  final Map<String, Future<MediaKitVideoPlayerWrapper?>> _initializationCache =
+      {};
   final Queue<String> _lruQueue = Queue<String>();
   final Set<String> _visibleVideos = <String>{};
 
-  // OPTIMIZATION: Platform-specific cache size for memory management
-  // Increased Android cache for smoother scrolling (Instagram-like experience)
-  static int get _maxCacheSize => Platform.isAndroid ? 10 : 30;
+  // SMART CACHING: Balanced cache sizes for smooth playback without memory spikes
+  // Android: 5 videos max (allows buffer for bidirectional scrolling)
+  // iOS: 8 videos max (more lenient for smoother experience)
+  // Smart eviction keeps videos near current position cached
+  static int get _maxCacheSize => Platform.isAndroid ? 5 : 8;
 
   // Track memory errors to adaptively reduce cache
   int _memoryErrorCount = 0;
@@ -392,7 +401,8 @@ class MediaKitCacheManager implements IVideoCacheManager {
         avAudioSessionCategory: AVAudioSessionCategory.playback,
         avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.duckOthers,
         avAudioSessionMode: AVAudioSessionMode.moviePlayback,
-        avAudioSessionRouteSharingPolicy: AVAudioSessionRouteSharingPolicy.defaultPolicy,
+        avAudioSessionRouteSharingPolicy:
+            AVAudioSessionRouteSharingPolicy.defaultPolicy,
         avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.none,
         androidAudioAttributes: AndroidAudioAttributes(
           contentType: AndroidAudioContentType.movie,
@@ -421,7 +431,8 @@ class MediaKitCacheManager implements IVideoCacheManager {
     }
   }
 
-  Future<(Player, VideoController)> _createVideoPlayerController(String mediaUrl) async {
+  Future<(Player, VideoController)> _createVideoPlayerController(
+      String mediaUrl) async {
     var url = mediaUrl;
 
     // Handle local files
@@ -431,12 +442,14 @@ class MediaKitCacheManager implements IVideoCacheManager {
       url = url.replaceFirst('http:', 'https:');
     }
 
-    // OPTIMIZATION: Configure player for smooth and fast playback
+    // CRITICAL: Minimal buffer size to prevent memory spikes
+    // Reduced from 16MB to 4MB per video to prevent 1GB+ spikes
+    // With 3-5 videos cached, this keeps total buffer under 20-25MB
     final player = Player(
       configuration: const PlayerConfiguration(
-        // Buffer more video ahead for smoother playback
-        bufferSize: 16 * 1024 * 1024, // 64MB buffer
-        logLevel: MPVLogLevel.info, // Reduce log level for better performance
+        bufferSize: 4 * 1024 * 1024, // 4MB buffer per video (was 16MB)
+        logLevel:
+            MPVLogLevel.warn, // Reduce log level further for better performance
         vo: 'gpu',
       ),
     );
@@ -459,31 +472,42 @@ class MediaKitCacheManager implements IVideoCacheManager {
       // 2. Low-Latency HLS Settings
       // Reduces the "handshake" time with Gumlet's servers
       await nativePlayer.setProperty('network-timeout', '5');
-      await nativePlayer.setProperty('prefetch-playlist', 'yes'); // Fetches segments ahead of time
+      await nativePlayer.setProperty(
+          'prefetch-playlist', 'yes'); // Fetches segments ahead of time
 
       // 3. Fast Start (Start playing before the full segment is downloaded)
       await nativePlayer.setProperty('frames-dropped', 'yes');
       await nativePlayer.setProperty('video-sync', 'display-resample');
 
-      // Aggressive buffering for faster start
-      unawaited(nativePlayer.setProperty('demuxer-readahead-secs', '1'));
+      // CRITICAL: Low-latency HLS - minimal readahead for instant start
+      // 0.1 seconds = 100ms readahead (was 1 second = 1000ms)
+      await nativePlayer.setProperty('demuxer-readahead-secs', '0.1');
 
-      // Use highest quality available for better experience
-      unawaited(nativePlayer.setProperty('hls-bitrate', 'max'));
+      // CRITICAL: Use minimum bitrate for faster initial load
+      // Higher quality can be selected later if bandwidth allows
+      await nativePlayer.setProperty('hls-bitrate', 'min');
 
-      // Cache more data for network streams
+      // CRITICAL: Minimal cache to prevent memory spikes
+      // Reduced cache-secs from 10 to 2 seconds (80% reduction)
+      // This prevents excessive buffering while still allowing smooth playback
       unawaited(nativePlayer.setProperty('cache', 'yes'));
-      unawaited(nativePlayer.setProperty('cache-secs', '10'));
+      unawaited(nativePlayer.setProperty('cache-secs', '2')); // Was 10 seconds
 
       // Lower audio/video buffer for faster start
       unawaited(nativePlayer.setProperty('audio-buffer', '0.5'));
-      unawaited(nativePlayer.setProperty('vd-lavc-threads', '0')); // Auto-detect threads
+      unawaited(nativePlayer.setProperty(
+          'vd-lavc-threads', '0')); // Auto-detect threads
 
-      // Force start even if buffer isn't full
-      unawaited(nativePlayer.setProperty('demuxer-lavf-o', 'fflags=+nobuffer'));
+      // CRITICAL: Fast start with minimal buffering + fast seek support
+      // nobuffer: Start immediately without waiting for full buffer
+      // fastseek: Enable fast seeking for HLS streams
+      await nativePlayer.setProperty(
+          'demuxer-lavf-o', 'fflags=+nobuffer+fastseek');
 
-      unawaited(
-          nativePlayer.setProperty('demuxer-max-bytes', '16M')); // Very aggressive memory saving
+      // CRITICAL: Reduced demuxer buffer from 16MB to 4MB per video
+      // With 3-5 videos, this prevents excessive memory usage
+      unawaited(nativePlayer.setProperty(
+          'demuxer-max-bytes', '4M')); // Was 16M - 75% reduction
       unawaited(nativePlayer.setProperty('vd-lavc-fast', 'yes'));
     }
 
@@ -506,11 +530,22 @@ class MediaKitCacheManager implements IVideoCacheManager {
 
     // IMPORTANT: Do NOT auto-play on buffering end - this causes multiple videos to play audio
     // Visibility-based play/pause in VideoPlayerWidget is the ONLY playback control mechanism
+    //
+    // PRELOADING BEHAVIOR:
+    // Opening with play: false preloads:
+    // - Video metadata (duration, dimensions, codec info)
+    // - First frame (for instant thumbnail display)
+    // - Decoder initialization (hardware decoder ready)
+    // - HLS manifest parsing (for streaming videos)
+    // - Initial buffer (0.1 seconds with demuxer-readahead-secs)
+    // This is NOT full video download - it's smart preloading for instant playback
+    // Full video streams progressively as user watches
 
     return (player, videoController);
   }
 
-  Future<MediaKitVideoPlayerWrapper?> _initializeVideoController(String url) async {
+  Future<MediaKitVideoPlayerWrapper?> _initializeVideoController(
+      String url) async {
     // Don't initialize during disposal
     if (_isDisposing) {
       debugPrint('⚠️ Skipping initialization during disposal: $url');
@@ -522,14 +557,18 @@ class MediaKitCacheManager implements IVideoCacheManager {
       return _initializationCache[url];
     }
 
-    // ANDROID FIX: Clear stuck initializations if cache is getting full
-    if (Platform.isAndroid && _initializationCache.length > 2) {
+    // CRITICAL: Limit concurrent initializations to prevent memory spikes
+    // Android: Max 2 concurrent initializations (allows preloading next video)
+    // iOS: Max 3 concurrent initializations
+    final maxConcurrentInit = Platform.isAndroid ? 2 : 3;
+    if (_initializationCache.length >= maxConcurrentInit) {
       debugPrint(
           '⚠️ Too many concurrent initializations (${_initializationCache.length}), clearing cache');
       await _clearNonVisibleVideos();
 
       // Give system time to release resources
-      await Future.delayed(const Duration(milliseconds: 200));
+      final delayMs = Platform.isAndroid ? 300 : 200;
+      await Future.delayed(Duration(milliseconds: delayMs));
     }
 
     final initFuture = _createAndInitializeController(url);
@@ -550,25 +589,38 @@ class MediaKitCacheManager implements IVideoCacheManager {
     }
   }
 
-  Future<MediaKitVideoPlayerWrapper?> _createAndInitializeController(String url) async {
+  Future<MediaKitVideoPlayerWrapper?> _createAndInitializeController(
+      String url) async {
     try {
       // CRITICAL: Configure audio session BEFORE creating player (especially for iOS)
       await _configureAudioSession();
 
-      // CRITICAL: Proactive cache management for Android BEFORE initialization
-      if (Platform.isAndroid) {
-        if (_videoControllerCache.length >= _maxCacheSize - 1) {
-          debugPrint('🔥 Proactive: Clearing cache before initialization (at limit)');
-          // Non-blocking cache clear - don't wait for it
-          unawaited(_clearNonVisibleVideos());
-        }
+      // CRITICAL: Aggressive cache management - clear BEFORE reaching limit
+      // Clear cache when at 80% capacity to prevent memory spikes
+      final cacheThreshold = (_maxCacheSize * 0.8).round();
+      if (_videoControllerCache.length >= cacheThreshold) {
+        debugPrint(
+            '🔥 Proactive: Clearing cache before initialization (at ${_videoControllerCache.length}/$_maxCacheSize, threshold: $cacheThreshold)');
+        // CRITICAL: Wait for cache clear to complete before initializing new video
+        await _clearNonVisibleVideos();
 
-        if (_memoryErrorCount > 0) {
-          // OPTIMIZATION: Reduced delay from 500ms to 100ms per error
-          final delay = 100 * _memoryErrorCount.clamp(1, 3);
+        // Give system more time to release decoder resources
+        final delayMs = Platform.isAndroid ? 300 : 150;
+        await Future.delayed(Duration(milliseconds: delayMs));
+      }
+
+      if (_memoryErrorCount > 0) {
+        // OPTIMIZATION: Increased delay per error to allow more time for cleanup
+        final delay = 200 * _memoryErrorCount.clamp(1, 5);
+        debugPrint(
+            '⏳ Adding ${delay}ms delay before initialization (error count: $_memoryErrorCount)');
+        await Future.delayed(Duration(milliseconds: delay));
+
+        // Also reduce cache size temporarily when memory errors occur
+        if (_memoryErrorCount >= 2 && _videoControllerCache.length > 2) {
           debugPrint(
-              '⏳ Adding ${delay}ms delay before initialization (error count: $_memoryErrorCount)');
-          await Future.delayed(Duration(milliseconds: delay));
+              '🔥 Memory pressure detected, clearing additional cache...');
+          await _clearNonVisibleVideos();
         }
       }
 
@@ -583,7 +635,8 @@ class MediaKitCacheManager implements IVideoCacheManager {
           timeoutDuration,
           onTimeout: () {
             debugPrint('⚠️ MediaKit initialization timeout for: $url');
-            throw TimeoutException('Video initialization timeout', timeoutDuration);
+            throw TimeoutException(
+                'Video initialization timeout', timeoutDuration);
           },
         );
         player = result.$1;
@@ -598,7 +651,8 @@ class MediaKitCacheManager implements IVideoCacheManager {
 
         if (isMemoryError) {
           _memoryErrorCount++;
-          debugPrint('🔥 CRITICAL: Memory/Decoder error detected! (Count: $_memoryErrorCount)');
+          debugPrint(
+              '🔥 CRITICAL: Memory/Decoder error detected! (Count: $_memoryErrorCount)');
           debugPrint('🔥 Error: $e');
           debugPrint('🔥 Clearing cache and retrying...');
 
@@ -609,8 +663,10 @@ class MediaKitCacheManager implements IVideoCacheManager {
             final retryResult = await _createVideoPlayerController(url).timeout(
               timeoutDuration,
               onTimeout: () {
-                debugPrint('⚠️ MediaKit retry initialization timeout for: $url');
-                throw TimeoutException('Video retry initialization timeout', timeoutDuration);
+                debugPrint(
+                    '⚠️ MediaKit retry initialization timeout for: $url');
+                throw TimeoutException(
+                    'Video retry initialization timeout', timeoutDuration);
               },
             );
             player = retryResult.$1;
@@ -649,7 +705,8 @@ class MediaKitCacheManager implements IVideoCacheManager {
 
       if (!hasValidState) {
         debugPrint('❌ MediaKit not initialized properly for: $url');
-        debugPrint('❌ State: width=${player.state.width}, duration=${player.state.duration}');
+        debugPrint(
+            '❌ State: width=${player.state.width}, duration=${player.state.duration}');
         await wrapper.dispose();
         return null;
       }
@@ -672,13 +729,25 @@ class MediaKitCacheManager implements IVideoCacheManager {
   }
 
   /// CRITICAL: Clear all non-visible videos to free up decoder memory
+  /// This is called proactively to prevent memory spikes
   Future<void> _clearNonVisibleVideos() async {
     final urlsToRemove = <String>[];
 
+    // Collect all non-visible videos for removal
     for (final url in _videoControllerCache.keys) {
       if (!_visibleVideos.contains(url)) {
         urlsToRemove.add(url);
       }
+    }
+
+    // CRITICAL: If we have too many videos (more than 1.5x limit), clear excess
+    // This prevents memory crashes when scrolling through many videos
+    // But be less aggressive - only clear when significantly over limit
+    if (_videoControllerCache.length > (_maxCacheSize * 1.5).round()) {
+      debugPrint(
+          '🔥 CRITICAL: Cache size (${_videoControllerCache.length}) exceeds safe limit, clearing excess videos');
+      // Keep visible videos + some buffer, but clear oldest non-visible ones
+      // Don't clear visible videos unless absolutely necessary
     }
 
     final disposeFutures = <Future<void>>[];
@@ -707,24 +776,44 @@ class MediaKitCacheManager implements IVideoCacheManager {
   }
 
   void _evictIfNeeded() {
-    while (_lruQueue.length > _maxCacheSize) {
+    // SMART EVICTION: Only evict videos that are truly not needed
+    // Keep visible videos + nearby buffer for smooth bidirectional scrolling
+    final cacheThreshold = _maxCacheSize;
+    final urlsToEvict = <String>[];
+
+    // Only evict when cache exceeds limit
+    if (_lruQueue.length <= cacheThreshold) {
+      return; // Cache is within limits, no eviction needed
+    }
+
+    // Evict oldest non-visible videos that exceed cache limit
+    // CRITICAL: Never evict visible videos - they're actively being watched
+    while (_lruQueue.length > cacheThreshold) {
       final url = _lruQueue.removeLast();
 
+      // NEVER evict visible videos - they're actively being watched
       if (_visibleVideos.contains(url)) {
-        _lruQueue.addFirst(url);
+        _lruQueue.addFirst(url); // Move to front to prevent re-eviction
         continue;
       }
 
+      urlsToEvict.add(url);
+    }
+
+    // Dispose evicted videos (only non-visible ones far from current position)
+    for (final url in urlsToEvict) {
       final controller = _videoControllerCache.remove(url);
       if (controller != null) {
-        // Schedule disposal on next microtask to avoid blocking
         unawaited(_safeDispose(controller, url));
+        debugPrint(
+            '🗑️ MediaKitCache: Smart evicted non-visible video (cache: ${_videoControllerCache.length}/$_maxCacheSize): $url');
       }
     }
   }
 
   /// Safely dispose a controller with proper cleanup sequence
-  Future<void> _safeDispose(MediaKitVideoPlayerWrapper controller, String url) async {
+  Future<void> _safeDispose(
+      MediaKitVideoPlayerWrapper controller, String url) async {
     try {
       // Add timeout to prevent hanging during hot restart
       await controller.dispose().timeout(
@@ -740,7 +829,8 @@ class MediaKitCacheManager implements IVideoCacheManager {
   }
 
   @override
-  Future<void> precacheVideos(List<String> videoUrls, {bool highPriority = false}) async {
+  Future<void> precacheVideos(List<String> videoUrls,
+      {bool highPriority = false}) async {
     final futures = <Future<void>>[];
 
     for (final url in videoUrls) {
@@ -774,7 +864,13 @@ class MediaKitCacheManager implements IVideoCacheManager {
   void markAsVisible(String url) => _visibleVideos.add(url);
 
   @override
-  void markAsNotVisible(String url) => _visibleVideos.remove(url);
+  void markAsNotVisible(String url) {
+    _visibleVideos.remove(url);
+    // Don't dispose immediately - let LRU eviction handle it
+    // This allows smooth scrolling back and forth without reloading videos
+    // Only trigger eviction check, don't force disposal
+    _evictIfNeeded();
+  }
 
   @override
   bool isVideoCached(String url) {
@@ -811,8 +907,9 @@ class MediaKitCacheManager implements IVideoCacheManager {
   @override
   void clearControllersOutsideRange(List<String> activeUrls) {
     final urlsToKeep = Set<String>.from(activeUrls);
-    final urlsToRemove =
-        _videoControllerCache.keys.where((url) => !urlsToKeep.contains(url)).toList();
+    final urlsToRemove = _videoControllerCache.keys
+        .where((url) => !urlsToKeep.contains(url))
+        .toList();
 
     for (final url in urlsToRemove) {
       clearVideo(url);

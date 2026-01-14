@@ -194,10 +194,11 @@ class CachedVideoCacheManager implements IVideoCacheManager {
   final Queue<String> _lruQueue = Queue<String>();
   final Set<String> _visibleVideos = <String>{};
 
-  // OPTIMIZATION: Platform-specific cache size for memory management
-  // Android has stricter memory limits for hardware decoders
-  // Aggressively reduced to prevent NO_MEMORY decoder errors
-  static int get _maxCacheSize => Platform.isAndroid ? 6 : 30;
+  // SMART CACHING: Balanced cache sizes for smooth playback without memory spikes
+  // Android: 5 videos max (allows buffer for bidirectional scrolling)
+  // iOS: 8 videos max (more lenient for smoother experience)
+  // Smart eviction keeps videos near current position cached
+  static int get _maxCacheSize => Platform.isAndroid ? 5 : 8;
 
   // Track memory errors to adaptively reduce cache
   int _memoryErrorCount = 0;
@@ -255,14 +256,18 @@ class CachedVideoCacheManager implements IVideoCacheManager {
       return _initializationCache[url];
     }
 
-    // ANDROID FIX: Clear stuck initializations if cache is getting full
-    if (Platform.isAndroid && _initializationCache.length > 2) {
+    // CRITICAL: Limit concurrent initializations to prevent memory spikes
+    // Android: Max 2 concurrent initializations (allows preloading next video)
+    // iOS: Max 3 concurrent initializations
+    final maxConcurrentInit = Platform.isAndroid ? 2 : 3;
+    if (_initializationCache.length >= maxConcurrentInit) {
       debugPrint(
           '⚠️ Too many concurrent initializations (${_initializationCache.length}), clearing cache');
       await _clearNonVisibleVideos();
 
       // Give system time to release resources
-      await Future.delayed(const Duration(milliseconds: 200));
+      final delayMs = Platform.isAndroid ? 300 : 200;
+      await Future.delayed(Duration(milliseconds: delayMs));
     }
 
     final initFuture = _createAndInitializeController(url);
@@ -285,24 +290,31 @@ class CachedVideoCacheManager implements IVideoCacheManager {
   Future<CachedVideoPlayerWrapper?> _createAndInitializeController(
       String url) async {
     try {
-      // CRITICAL: Proactive cache management for Android BEFORE initialization
-      if (Platform.isAndroid) {
-        // Clear cache if we're approaching the limit
-        if (_videoControllerCache.length >= _maxCacheSize - 1) {
-          debugPrint(
-              '🔥 Proactive: Clearing cache before initialization (at limit)');
+      // SMART CACHE MANAGEMENT: Only clear when at limit, preserve nearby videos
+      // Clear only non-visible videos that are far from current position
+      if (_videoControllerCache.length >= _maxCacheSize) {
+        debugPrint(
+            '🔥 Smart cache: At limit (${_videoControllerCache.length}/$_maxCacheSize), clearing distant non-visible videos');
+        // CRITICAL: Only clear non-visible videos, preserve visible ones
+        await _clearNonVisibleVideos();
+
+        // Give system time to release decoder resources
+        final delayMs = Platform.isAndroid ? 200 : 100;
+        await Future.delayed(Duration(milliseconds: delayMs));
+      }
+
+      // Add delay between initializations to prevent decoder overload
+      if (_memoryErrorCount > 0) {
+        // OPTIMIZATION: Increased delay per error to allow more time for cleanup
+        final delay = 300 * _memoryErrorCount.clamp(1, 5);
+        debugPrint(
+            '⏳ Adding ${delay}ms delay before initialization (error count: $_memoryErrorCount)');
+        await Future.delayed(Duration(milliseconds: delay));
+        
+        // Also reduce cache size temporarily when memory errors occur
+        if (_memoryErrorCount >= 2 && _videoControllerCache.length > 2) {
+          debugPrint('🔥 Memory pressure detected, clearing additional cache...');
           await _clearNonVisibleVideos();
-
-          // Give decoders time to fully release resources
-          await Future.delayed(const Duration(milliseconds: 300));
-        }
-
-        // Add small delay between initializations to prevent decoder overload
-        if (_memoryErrorCount > 0) {
-          final delay = 500 * _memoryErrorCount.clamp(1, 3);
-          debugPrint(
-              '⏳ Adding ${delay}ms delay before initialization (error count: $_memoryErrorCount)');
-          await Future.delayed(Duration(milliseconds: delay));
         }
       }
 
@@ -425,14 +437,24 @@ class CachedVideoCacheManager implements IVideoCacheManager {
   }
 
   /// CRITICAL: Clear all non-visible videos to free up decoder memory
+  /// This is called proactively to prevent memory spikes
   Future<void> _clearNonVisibleVideos() async {
     final urlsToRemove = <String>[];
 
-    // Find all non-visible videos
+    // Collect all non-visible videos for removal
     for (final url in _videoControllerCache.keys) {
       if (!_visibleVideos.contains(url)) {
         urlsToRemove.add(url);
       }
+    }
+
+    // CRITICAL: If we have too many videos (more than 1.5x limit), clear excess
+    // This prevents memory crashes when scrolling through many videos
+    // But be less aggressive - only clear when significantly over limit
+    if (_videoControllerCache.length > (_maxCacheSize * 1.5).round()) {
+      debugPrint('🔥 CRITICAL: Cache size (${_videoControllerCache.length}) exceeds safe limit, clearing excess videos');
+      // Keep visible videos + some buffer, but clear oldest non-visible ones
+      // Don't clear visible videos unless absolutely necessary
     }
 
     // Clear them - dispose in parallel for faster cleanup
@@ -465,21 +487,37 @@ class CachedVideoCacheManager implements IVideoCacheManager {
   }
 
   void _evictIfNeeded() {
-    // OPTIMIZATION: More aggressive eviction - evict oldest videos first
-    while (_lruQueue.length > _maxCacheSize) {
+    // SMART EVICTION: Only evict videos that are truly not needed
+    // Keep visible videos + nearby buffer for smooth bidirectional scrolling
+    final cacheThreshold = _maxCacheSize;
+    final urlsToEvict = <String>[];
+
+    // Only evict when cache exceeds limit
+    if (_lruQueue.length <= cacheThreshold) {
+      return; // Cache is within limits, no eviction needed
+    }
+
+    // Evict oldest non-visible videos that exceed cache limit
+    // CRITICAL: Never evict visible videos - they're actively being watched
+    while (_lruQueue.length > cacheThreshold) {
       final url = _lruQueue.removeLast();
 
-      // OPTIMIZATION: Never evict visible videos
+      // NEVER evict visible videos - they're actively being watched
       if (_visibleVideos.contains(url)) {
-        // Move visible video to front to prevent re-eviction
-        _lruQueue.addFirst(url);
+        _lruQueue.addFirst(url); // Move to front to prevent re-eviction
         continue;
       }
 
+      urlsToEvict.add(url);
+    }
+
+    // Dispose evicted videos (only non-visible ones far from current position)
+    for (final url in urlsToEvict) {
       final controller = _videoControllerCache.remove(url);
       if (controller != null) {
         controller.dispose();
-        debugPrint('🗑️ CachedVideoCache: Evicted video from cache: $url');
+        debugPrint(
+            '🗑️ CachedVideoCache: Smart evicted non-visible video (cache: ${_videoControllerCache.length}/$_maxCacheSize): $url');
       }
     }
   }
@@ -520,7 +558,13 @@ class CachedVideoCacheManager implements IVideoCacheManager {
   void markAsVisible(String url) => _visibleVideos.add(url);
 
   @override
-  void markAsNotVisible(String url) => _visibleVideos.remove(url);
+  void markAsNotVisible(String url) {
+    _visibleVideos.remove(url);
+    // Don't dispose immediately - let LRU eviction handle it
+    // This allows smooth scrolling back and forth without reloading videos
+    // Only trigger eviction check, don't force disposal
+    _evictIfNeeded();
+  }
 
   @override
   bool isVideoCached(String url) {

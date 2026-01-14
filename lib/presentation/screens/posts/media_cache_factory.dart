@@ -66,4 +66,10 @@ class MediaCacheFactory {
       manager.clearOutsideRange(activeUrls);
     }
   }
+
+  /// Check if media is cached (checks both video and image caches)
+  static bool isMediaCached(String url) {
+    final type = MediaTypeUtil.getMediaType(url);
+    return getCacheManager(type).isMediaCached(url);
+  }
 }
