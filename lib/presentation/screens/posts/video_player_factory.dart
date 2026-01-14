@@ -1,9 +1,6 @@
 import 'dart:io';
 
-import 'package:ism_video_reel_player/presentation/screens/posts/cached_video_player.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/media_kit_video_player.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/standard_video_player.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/video_player_interface.dart';
+import 'package:ism_video_reel_player/presentation/presentation.dart';
 
 /// Enum to specify the video player type
 enum VideoPlayerType {
@@ -15,7 +12,8 @@ enum VideoPlayerType {
 /// Factory class to create appropriate video cache manager
 class VideoPlayerFactory {
   /// Default video player type - change this to switch implementations
-  static final VideoPlayerType defaultType = Platform.isAndroid? VideoPlayerType.standard : VideoPlayerType.mediaKit;
+  static final VideoPlayerType defaultType =
+      Platform.isAndroid ? VideoPlayerType.standard : VideoPlayerType.mediaKit;
 
   static IVideoCacheManager create([VideoPlayerType? type]) {
     final playerType = type ?? defaultType;

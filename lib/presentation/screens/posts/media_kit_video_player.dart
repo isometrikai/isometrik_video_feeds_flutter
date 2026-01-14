@@ -126,7 +126,7 @@ class MediaKitVideoPlayerWrapper implements IVideoPlayerController {
   @override
   Future<void> play() async {
     // Ensure audio session is active before playing
-    await MediaKitCacheManager._configureAudioSession();
+    // await MediaKitCacheManager._configureAudioSession();
     await _player.play();
   }
 
@@ -390,7 +390,9 @@ class MediaKitCacheManager implements IVideoCacheManager {
       // moviePlayback mode is optimized for video content with audio
       await session.configure(const AudioSessionConfiguration(
         avAudioSessionCategory: AVAudioSessionCategory.playback,
-        avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.duckOthers,
+        // Change duckOthers to allow full volume priority
+        avAudioSessionCategoryOptions:
+            AVAudioSessionCategoryOptions.interruptSpokenAudioAndMixWithOthers,
         avAudioSessionMode: AVAudioSessionMode.moviePlayback,
         avAudioSessionRouteSharingPolicy: AVAudioSessionRouteSharingPolicy.defaultPolicy,
         avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.none,
@@ -453,7 +455,12 @@ class MediaKitCacheManager implements IVideoCacheManager {
     if (player.platform is NativePlayer) {
       final nativePlayer = player.platform as NativePlayer;
 
-      // 1. Enable Hardware Decoding (Critical for 60fps scrolling)
+      // Force the audio output driver for better compatibility
+      if (Platform.isAndroid) {
+        await nativePlayer.setProperty('ao', 'opensles');
+      }
+
+      // Standard high-performance HLS settings
       await nativePlayer.setProperty('hwdec', 'auto-safe');
 
       // 2. Low-Latency HLS Settings
@@ -486,26 +493,8 @@ class MediaKitCacheManager implements IVideoCacheManager {
           nativePlayer.setProperty('demuxer-max-bytes', '16M')); // Very aggressive memory saving
       unawaited(nativePlayer.setProperty('vd-lavc-fast', 'yes'));
     }
-
-    // Set up headers for network requests
-    final headers = {
-      'Foo': 'Bar',
-      'Accept': '*/*',
-      'Range': 'bytes=0-',
-    };
-
-    // Open the media
-    if (Utility.isLocalUrl(mediaUrl)) {
-      await player.open(Media(url), play: false);
-    } else {
-      await player.open(
-        Media(url, httpHeaders: headers),
-        play: false,
-      );
-    }
-
-    // IMPORTANT: Do NOT auto-play on buffering end - this causes multiple videos to play audio
-    // Visibility-based play/pause in VideoPlayerWidget is the ONLY playback control mechanism
+    await player.setVolume(100.0);
+    await player.open(Media(url), play: false);
 
     return (player, videoController);
   }
