@@ -541,6 +541,7 @@ class MediaKitCacheManager implements IVideoCacheManager {
 
   Future<MediaKitVideoPlayerWrapper?> _createAndInitializeController(String url) async {
     try {
+      final isHls = url.toLowerCase().endsWith('.m3u8');
       // CRITICAL: Configure audio session BEFORE creating player (especially for iOS)
       await _configureAudioSession();
 
@@ -651,6 +652,24 @@ class MediaKitCacheManager implements IVideoCacheManager {
         wrapper.setLooping(false),
         wrapper.setVolume(1.0),
       ]);
+
+      // Preload the first frame (best-effort) to reduce "black loader" time.
+      // For HLS, opening the media may not decode a frame until playback starts.
+      if (isHls) {
+        try {
+          await wrapper.setVolume(0.0);
+          await wrapper.play();
+          await Future.delayed(const Duration(milliseconds: 180));
+          await wrapper.pause();
+          await wrapper.seekTo(Duration.zero);
+        } catch (_) {
+          // Best-effort warmup.
+        } finally {
+          try {
+            await wrapper.setVolume(1.0);
+          } catch (_) {}
+        }
+      }
       return wrapper;
     } catch (e, stackTrace) {
       debugPrint('❌ MediaKit Error creating video controller for URL: $url');

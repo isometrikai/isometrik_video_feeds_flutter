@@ -6,16 +6,26 @@ import 'package:ism_video_reel_player_example/utils/utils.dart';
 
 part 'app_routes.dart';
 
+// Set to true via: `--dart-define=START_DEBUG_REELS=true`
+const bool kStartDebugHardcodedReels =
+    bool.fromEnvironment('START_DEBUG_REELS', defaultValue: false);
+
 class AppRouter {
   AppRouter._();
 
   static GoRouter router = GoRouter(
-    initialLocation: AppRoutes.splash,
+    initialLocation:
+        kStartDebugHardcodedReels ? AppRoutes.debugHardcodedReels : AppRoutes.splash,
     navigatorKey: exNavigatorKey,
     routes: [
       GoRoute(
         path: AppRoutes.splash,
         builder: (_, __) => const SplashScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.debugHardcodedReels,
+        name: RouteNames.debugHardcodedReels,
+        builder: (_, __) => const HardcodedReelsDebugScreen(),
       ),
       GoRoute(
         path: AppRoutes.login,

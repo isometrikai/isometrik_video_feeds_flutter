@@ -255,6 +255,7 @@ class StandardVideoCacheManager implements IVideoCacheManager {
         'StandardVideoCacheManager: _createAndInitializeController: $url');
     try {
       final controller = _createVideoPlayerController(url);
+      final isHls = url.toLowerCase().endsWith('.m3u8');
 
       // OPTIMIZATION: Add timeout to prevent hanging on slow networks
       // Increased timeout to 15 seconds for slow network connections
@@ -299,6 +300,10 @@ class StandardVideoCacheManager implements IVideoCacheManager {
         controller.setVolume(1.0),
       ]);
 
+      // Preload the first frame (best-effort) to avoid showing a blank loader.
+      // HLS streams often need a short warm-up to decode the first video frame.
+      await _warmUpFirstFrame(controller, isHls: isHls);
+
       return StandardVideoPlayerController(controller);
     } catch (e, stackTrace) {
       debugPrintStack(
@@ -306,6 +311,28 @@ class StandardVideoCacheManager implements IVideoCacheManager {
           stackTrace: stackTrace);
       debugPrint('❌ Error creating video controller for URL: $url - Error: $e');
       return null;
+    }
+  }
+
+  Future<void> _warmUpFirstFrame(
+    VideoPlayerController controller, {
+    required bool isHls,
+  }) async {
+    if (!isHls) return;
+    try {
+      // Mute during warmup to avoid audio blips.
+      await controller.setVolume(0.0);
+      await controller.play();
+      await Future.delayed(const Duration(milliseconds: 150));
+      await controller.pause();
+      await controller.seekTo(Duration.zero);
+    } catch (_) {
+      // Best-effort warmup: ignore failures.
+    } finally {
+      // Restore volume.
+      try {
+        await controller.setVolume(1.0);
+      } catch (_) {}
     }
   }
 

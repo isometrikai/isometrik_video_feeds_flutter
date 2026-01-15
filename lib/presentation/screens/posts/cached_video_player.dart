@@ -285,6 +285,7 @@ class CachedVideoCacheManager implements IVideoCacheManager {
   Future<CachedVideoPlayerWrapper?> _createAndInitializeController(
       String url) async {
     try {
+      final isHls = url.toLowerCase().endsWith('.m3u8');
       // CRITICAL: Proactive cache management for Android BEFORE initialization
       if (Platform.isAndroid) {
         // Clear cache if we're approaching the limit
@@ -414,6 +415,9 @@ class CachedVideoCacheManager implements IVideoCacheManager {
 
       await wrapper.setLooping(false);
       await wrapper.setVolume(1.0);
+
+      // Preload the first frame (best-effort) to reduce "black loader" time.
+      await _warmUpFirstFrame(controller.controller, isHls: isHls);
       return wrapper;
     } catch (e, stackTrace) {
       debugPrint(
@@ -421,6 +425,26 @@ class CachedVideoCacheManager implements IVideoCacheManager {
       debugPrint('❌ CachedVideoPlayer Error details: $e');
       debugPrint('❌ CachedVideoPlayer Stack trace: $stackTrace');
       return null;
+    }
+  }
+
+  Future<void> _warmUpFirstFrame(
+    VideoPlayerController controller, {
+    required bool isHls,
+  }) async {
+    if (!isHls) return;
+    try {
+      await controller.setVolume(0.0);
+      await controller.play();
+      await Future.delayed(const Duration(milliseconds: 150));
+      await controller.pause();
+      await controller.seekTo(Duration.zero);
+    } catch (_) {
+      // Best-effort warmup: ignore failures.
+    } finally {
+      try {
+        await controller.setVolume(1.0);
+      } catch (_) {}
     }
   }
 

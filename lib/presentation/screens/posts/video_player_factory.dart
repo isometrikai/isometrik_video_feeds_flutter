@@ -13,7 +13,7 @@ enum VideoPlayerType {
 class VideoPlayerFactory {
   /// Default video player type - change this to switch implementations
   static final VideoPlayerType defaultType =
-      Platform.isAndroid ? VideoPlayerType.standard : VideoPlayerType.mediaKit;
+      Platform.isAndroid ? VideoPlayerType.standard : VideoPlayerType.standard;
 
   static IVideoCacheManager create([VideoPlayerType? type]) {
     final playerType = type ?? defaultType;
