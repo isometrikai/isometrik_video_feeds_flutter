@@ -42,7 +42,7 @@ class TabDataModel {
   final PostSectionType? postSectionType;
   final Future<num>? Function(String, int)? onTapComment;
   final Function(String)? onTapShare;
-  final Function(String)? onTapUserProfile;
+  final Function(String, String, PostSectionType)? onTapUserProfile;
   final bool? isCreatePostButtonVisible;
   final int? startingPostIndex;
   final Function(String tag, String postId)? onTapTag;

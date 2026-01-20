@@ -16,12 +16,14 @@ class IsmPostView extends StatefulWidget {
     this.currentIndex = 0,
     this.allowImplicitScrolling = false,
     this.onPageChanged,
+    this.onTabChange,
   });
 
   final List<TabDataModel> tabDataModelList;
   final num? currentIndex;
   final bool? allowImplicitScrolling;
   final Function(int, String)? onPageChanged;
+  final Future<bool> Function(TabDataModel, int)? onTabChange;
 
   @override
   State<IsmPostView> createState() => _PostViewState();
@@ -105,6 +107,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                       ),
                       child: TabBar(
                         controller: _postTabController,
+                        onTap: _onTabTapped,
                         labelColor: _isFollowingPostsEmpty() ? IsrColors.black : IsrColors.white,
                         unselectedLabelColor: _isFollowingPostsEmpty()
                             ? IsrColors.black
@@ -172,17 +175,27 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     if (_isFollowingPostsEmpty()) {
       // _tabsVisibilityNotifier.value = false;
     }
-    _postTabController?.addListener(() {
-      final newIndex = _postTabController?.index ?? 0;
-      if (_isFollowingPostsEmpty()) {
-        // _tabsVisibilityNotifier.value = false;
-        _postTabController?.animateTo(0);
+    postBloc.add(const StartPost());
+  }
+
+  void _onTabTapped(int index) async {
+    // If tapping the same tab, do nothing
+    if (index == _currentIndex) return;
+
+    // Immediately reset to current tab to prevent animation
+    _postTabController?.index = _currentIndex;
+
+    final success = await widget.onTabChange?.call(widget.tabDataModelList[index], index);
+
+    if (success == true) {
+      if (index == 0 && _isFollowingPostsEmpty()) {
         return;
       }
-      _currentIndex = newIndex;
+      _currentIndex = index;
+      _postTabController?.animateTo(index);
+      final postBloc = IsmInjectionUtils.getBloc<PostBloc>();
       postBloc.add(PostsLoadedEvent(widget.tabDataModelList[_currentIndex].postList));
-    });
-    postBloc.add(const StartPost());
+    }
   }
 
   @override
@@ -217,9 +230,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         onTapShare: tabData.onTapShare,
         isCreatePostButtonVisible: tabData.isCreatePostButtonVisible,
         startingPostIndex: tabData.startingPostIndex,
-        onTapUserProfilePic: (userId) {
+        onTapUserProfilePic: (userId, postId) {
           if (tabData.onTapUserProfile == null) return;
-          tabData.onTapUserProfile!(userId);
+          tabData.onTapUserProfile!(
+              userId, postId, tabData.postSectionType ?? PostSectionType.trending);
         },
         loggedInUserId: _loggedInUserId,
         allowImplicitScrolling: widget.allowImplicitScrolling,
