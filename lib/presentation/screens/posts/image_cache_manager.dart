@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:collection';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -17,11 +16,8 @@ class ImageCacheManager implements IMediaCacheManager {
 
   final Map<String, ImageProvider> _imageCache = {};
   final Map<String, Future<void>> _initializationCache = {};
-  final Queue<String> _lruQueue = Queue<String>();
   final Set<String> _visibleImages = <String>{};
   final DefaultCacheManager _diskCache = DefaultCacheManager();
-  static const int _maxCacheSize =
-      20; // More images can be cached compared to videos
 
   @override
   Future<void> precacheMedia(List<String> mediaUrls,
@@ -169,26 +165,6 @@ class ImageCacheManager implements IMediaCacheManager {
     }
   }
 
-  void _addToCache(String url, ImageProvider provider) {
-    // Since we're using CachedNetworkImage, we don't need to maintain our own memory cache
-    // Just track URLs for statistics
-    _lruQueue.remove(url);
-    _lruQueue.addFirst(url);
-    _imageCache[url] =
-        provider; // Keep for compatibility but CachedNetworkImage handles the real caching
-    _evictIfNeeded();
-  }
-
-  void _evictIfNeeded() {
-    while (_lruQueue.length > _maxCacheSize) {
-      final url = _lruQueue.removeLast();
-      if (_visibleImages.contains(url)) continue;
-
-      _imageCache.remove(url);
-      // No need to dispose ImageProvider
-    }
-  }
-
   @override
   dynamic getCachedMedia(String url) => _imageCache[url];
 
@@ -211,7 +187,6 @@ class ImageCacheManager implements IMediaCacheManager {
   @override
   void clearMedia(String url) {
     _imageCache.remove(url);
-    _lruQueue.remove(url);
     _visibleImages.remove(url);
     _diskCache.removeFile(url); // Clean disk cache too
   }
@@ -219,7 +194,6 @@ class ImageCacheManager implements IMediaCacheManager {
   @override
   void clearCache() {
     _imageCache.clear();
-    _lruQueue.clear();
     _visibleImages.clear();
     _diskCache.emptyCache(); // Clean disk cache
   }
@@ -240,7 +214,6 @@ class ImageCacheManager implements IMediaCacheManager {
         'totalCached': _imageCache.length,
         'visibleCount': _visibleImages.length,
         'initializingCount': _initializationCache.length,
-        'lruQueueSize': _lruQueue.length,
       };
 
   /// Check if image is already cached on disk by CachedNetworkImage

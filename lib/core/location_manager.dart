@@ -2,12 +2,26 @@ import 'package:geolocator/geolocator.dart';
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
+/// Helper responsible for obtaining and persisting device location.
+///
+/// This class:
+/// - checks location service availability
+/// - requests permissions when needed
+/// - saves the latest latitude/longitude into [LocalStorageManager]
 class LocationManager with AppMixin {
+  /// Creates a [LocationManager] using the provided [_localStorageManager].
   LocationManager(this._localStorageManager);
 
   final LocalStorageManager _localStorageManager;
 
-  ///checks whether current location is fetched or not
+  /// Fetches the current location and persists it locally.
+  ///
+  /// Returns `true` when:
+  /// - location services are enabled,
+  /// - permissions are granted, and
+  /// - the SDK successfully reads + stores coordinates.
+  ///
+  /// Returns `false` otherwise.
   Future<bool> getCurrentLocation() async {
     bool serviceEnabled;
     LocationPermission permission;
@@ -33,12 +47,20 @@ class LocationManager with AppMixin {
 
     /// Get the current position
     final position = await Geolocator.getCurrentPosition(
-        locationSettings:
-            const LocationSettings(accuracy: LocationAccuracy.medium));
-    await _localStorageManager.saveValue(LocalStorageKeys.latitude,
-        position.latitude, SavedValueDataType.double);
-    await _localStorageManager.saveValue(LocalStorageKeys.longitude,
-        position.longitude, SavedValueDataType.double);
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.medium,
+      ),
+    );
+    await _localStorageManager.saveValue(
+      LocalStorageKeys.latitude,
+      position.latitude,
+      SavedValueDataType.double,
+    );
+    await _localStorageManager.saveValue(
+      LocalStorageKeys.longitude,
+      position.longitude,
+      SavedValueDataType.double,
+    );
 
     printLog(
       this,

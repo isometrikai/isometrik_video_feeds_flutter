@@ -909,54 +909,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     return completer.future;
   }
 
-  Future<bool?> _showReportPostDialog(BuildContext context) => showDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          backgroundColor: Colors.white,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  IsrTranslationFile.reportPost,
-                  style: IsrStyles.primaryText18.copyWith(fontWeight: FontWeight.w700),
-                ),
-                16.responsiveVerticalSpace,
-                Text(
-                  IsrTranslationFile.reportPostConfirmation,
-                  style: IsrStyles.primaryText14.copyWith(
-                    color: '4A4A4A'.toColor(),
-                  ),
-                ),
-                32.responsiveVerticalSpace,
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    AppButton(
-                      title: IsrTranslationFile.report,
-                      width: 102.responsiveDimension,
-                      onPress: () => Navigator.of(context).pop(true),
-                      backgroundColor: 'E04755'.toColor(),
-                    ),
-                    AppButton(
-                      title: IsrTranslationFile.cancel,
-                      width: 102.responsiveDimension,
-                      onPress: () => Navigator.of(context).pop(false),
-                      backgroundColor: 'F6F6F6'.toColor(),
-                      textColor: Theme.of(context).primaryColor,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-
   Future<bool?> _showDeletePostDialog(BuildContext context) => showDialog<bool>(
         context: context,
         barrierDismissible: false,

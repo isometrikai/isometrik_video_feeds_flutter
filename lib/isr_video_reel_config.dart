@@ -1,4 +1,3 @@
-// sdk_config.dart
 import 'dart:async';
 import 'dart:convert';
 
@@ -13,19 +12,57 @@ import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
+/// SDK configuration and initialization entrypoint.
+///
+/// Call [initializeSdk] once during app startup (before rendering the SDK UI).
+/// You may call it again later to refresh headers/user context; repeated calls
+/// are treated as re-initialization.
 class IsrVideoReelConfig {
+  /// A fallback context reference used by parts of the SDK.
+  ///
+  /// Prefer passing [getBuildContext] (via [initializeSdk]) instead of storing
+  /// a global [BuildContext], to reduce the risk of retaining disposed contexts.
   static BuildContext? buildContext;
+
+  /// Whether the SDK has completed one-time initialization.
   static var isSdkInitialize = false;
+
+  /// Optional callback used by the SDK to resolve a current [BuildContext].
+  ///
+  /// This is useful when the host app maintains navigation/context outside the
+  /// SDK modules.
   static BuildContext? Function()? getBuildContext;
+
+  /// Optional path to `google-services.json` (Android) used by some integrations.
   static String? googleServiceJsonPath;
+
+  /// Social configuration used by SDK modules.
   static SocialConfig? socialConfig;
+
+  /// Convenience accessor for the SDK's singleton [IsmSocialActionCubit].
   static IsmSocialActionCubit get socialActionCubit =>
       IsmInjectionUtils.getBloc<IsmSocialActionCubit>();
-
 
   /// Helper method to check if context is available
   static bool get isContextAvailable => buildContext != null;
 
+  /// Initializes the SDK.
+  ///
+  /// Required parameters:
+  /// - [baseUrl]: Base URL used for SDK API calls.
+  /// - [rudderStackWriteKey]: RudderStack write key for analytics/event tracking.
+  /// - [rudderStackDataPlaneUrl]: RudderStack dataplane URL.
+  /// - [defaultHeaders]: Default headers to be persisted for SDK requests
+  ///   (for example `Authorization`, `x-tenant-id`, etc.).
+  /// - [socialConfig]: Social module configuration.
+  ///
+  /// Optional parameters:
+  /// - [userInfoClass]: Initial user context persisted by the SDK.
+  /// - [googleServiceJsonPath]: Optional path to Google services config.
+  /// - [getCurrentBuildContext]: Callback to resolve the current [BuildContext].
+  ///
+  /// If called again after initialization, the SDK will update stored headers
+  /// and user info, and notify internal state to refresh.
   static Future<void> initializeSdk({
     required String baseUrl,
     required String rudderStackWriteKey,
@@ -41,7 +78,10 @@ class IsrVideoReelConfig {
       await _saveUserInformation(userInfoClass: userInfoClass);
       IsrVideoReelConfig.socialConfig = socialConfig;
       debugPrint('IsrVideoReelConfig: initializeSdk: ${userInfoClass?.userId}');
-      socialActionCubit.onSdkReinitializeChanged(userId: userInfoClass?.userId, userInfoClass: userInfoClass);
+      socialActionCubit.onSdkReinitializeChanged(
+        userId: userInfoClass?.userId,
+        userInfoClass: userInfoClass,
+      );
       return;
     }
     IsrVideoReelConfig.googleServiceJsonPath = googleServiceJsonPath;
@@ -62,6 +102,7 @@ class IsrVideoReelConfig {
     isSdkInitialize = true;
   }
 
+  /// Persists [userInfoClass] (if provided) to local storage.
   static Future<void> _saveUserInformation({
     UserInfoClass? userInfoClass,
   }) async {
@@ -90,10 +131,16 @@ class IsrVideoReelConfig {
         userInfoClass?.userId?.trim().isNotEmpty == true, SavedValueDataType.bool);
   }
 
-  static void precacheVideos(List<String> mediaUrls) async {
+  /// Triggers background precaching for the given [mediaUrls].
+  ///
+  /// Notes:
+  /// - This is a best-effort optimization. It may be skipped depending on cache
+  ///   policy, network conditions, or platform capabilities.
+  /// - The operation is started asynchronously; callers don't need to await it.
+  static void precacheVideos(List<String> mediaUrls) {
     debugPrint('IsrVideoReelConfig: precacheVideos: $mediaUrls');
     if (mediaUrls.isEmpty) return;
-    await MediaCacheFactory.precacheMedia(mediaUrls, highPriority: false);
+    unawaited(MediaCacheFactory.precacheMedia(mediaUrls, highPriority: false));
   }
 
   /// Dispose all video players - call this before hot restart to prevent crashes
@@ -171,11 +218,18 @@ class IsrVideoReelConfig {
         LocalStorageKeys.xProjectId, xProjectId, SavedValueDataType.string);
   }
 
-  static void logEvent(String eventName, Map<String, dynamic> eventData) async {
-    EventQueueProvider.instance
-        .logEvent(eventName, eventData.removeEmptyValues());
+  /// Logs an analytics/event entry via the configured event provider.
+  ///
+  /// - [eventName]: Logical name of the event (for example `"post_viewed"`).
+  /// - [eventData]: Event payload. Empty values are removed before sending.
+  static void logEvent(String eventName, Map<String, dynamic> eventData) {
+    EventQueueProvider.instance.logEvent(
+      eventName,
+      eventData.removeEmptyValues(),
+    );
   }
 
+  /// Returns SDK-wide singleton [BlocProvider] instances required by the SDK.
   static List<BlocProvider> getIsmSingletonBlocProviders() => [
         BlocProvider(
             create: (_) => IsmInjectionUtils.getBloc<IsmSocialActionCubit>()),
