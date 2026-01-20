@@ -82,21 +82,6 @@ class _HomeScreenState extends State<HomeScreen> {
             startingPostIndex: 0,
           ),
         ], // ✅ Already working!
-        tabConfig: isr.TabConfig(
-          autoMoveToNextPost: true,
-          tabCallBackConfig: isr.TabCallBackConfig(
-            onChangeOfTab: (tabDataModel) {
-              //   isr.IsmDataProvider.instance.fetchCollectionList(
-              //     page: 1,
-              //     pageSize: 10,
-              //     onSuccess: (result, statusCode) {
-              //       debugPrint('result.......$result');
-              //     },
-              //   );
-            },
-          ),
-        ),
-        postConfig: const isr.PostConfig(autoMoveToNextMedia: true),
       );
 
   isr.ReelsWidgetBuilder buildFooter(TimeLineData postData) =>

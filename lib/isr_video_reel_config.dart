@@ -37,7 +37,14 @@ class IsrVideoReelConfig {
   static String? googleServiceJsonPath;
 
   /// Social configuration used by SDK modules.
-  static SocialConfig? socialConfig;
+  static SocialConfig socialConfig = const SocialConfig();
+
+  /// Post configuration used by SDK modules.
+  static PostConfig postConfig = const PostConfig();
+
+  /// Tab configuration used by SDK modules.
+  static TabConfig tabConfig = const TabConfig();
+
 
   /// Convenience accessor for the SDK's singleton [IsmSocialActionCubit].
   static IsmSocialActionCubit get socialActionCubit =>
@@ -70,36 +77,37 @@ class IsrVideoReelConfig {
     UserInfoClass? userInfoClass,
     required Map<String, dynamic> defaultHeaders,
     required SocialConfig socialConfig,
+    required PostConfig postConfig,
+    required TabConfig tabConfig,
     String? googleServiceJsonPath,
     BuildContext? Function()? getCurrentBuildContext,
   }) async {
-    if (isSdkInitialize) {
-      await _storeHeaderValues(defaultHeaders);
-      await _saveUserInformation(userInfoClass: userInfoClass);
-      IsrVideoReelConfig.socialConfig = socialConfig;
-      debugPrint('IsrVideoReelConfig: initializeSdk: ${userInfoClass?.userId}');
-      socialActionCubit.onSdkReinitializeChanged(
-        userId: userInfoClass?.userId,
-        userInfoClass: userInfoClass,
+    if (!isSdkInitialize) {
+      WidgetsFlutterBinding.ensureInitialized();
+      await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+      isrConfigureInjection();
+      // ✅ Initialize SDK router
+      await _initializeHive();
+      Bloc.observer = IsrAppBlocObserver();
+      await _initializeRudderStack(
+        rudderStackWriteKey: rudderStackWriteKey,
+        rudderStackDataPlaneUrl: rudderStackDataPlaneUrl,
       );
-      return;
+      isSdkInitialize = true;
     }
-    IsrVideoReelConfig.googleServiceJsonPath = googleServiceJsonPath;
+    await _storeHeaderValues(defaultHeaders);
+    await _saveUserInformation(userInfoClass: userInfoClass);
+    IsrVideoReelConfig.socialConfig = socialConfig;
+    IsrVideoReelConfig.postConfig = postConfig;
+    IsrVideoReelConfig.tabConfig = tabConfig;
+    debugPrint('IsrVideoReelConfig: initializeSdk: ${userInfoClass?.userId}');
+    socialActionCubit.onSdkReinitializeChanged(
+      userId: userInfoClass?.userId,
+      userInfoClass: userInfoClass,
+    );
     getBuildContext = getCurrentBuildContext;
     AppUrl.appBaseUrl = baseUrl;
-    WidgetsFlutterBinding.ensureInitialized();
-    await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-    isrConfigureInjection();
-    // ✅ Initialize SDK router
-    await _storeHeaderValues(defaultHeaders);
-    await _initializeHive();
-    Bloc.observer = IsrAppBlocObserver();
-    await _saveUserInformation(userInfoClass: userInfoClass);
-    await _initializeRudderStack(
-      rudderStackWriteKey: rudderStackWriteKey,
-      rudderStackDataPlaneUrl: rudderStackDataPlaneUrl,
-    );
-    isSdkInitialize = true;
+    IsrVideoReelConfig.googleServiceJsonPath = googleServiceJsonPath;
   }
 
   /// Persists [userInfoClass] (if provided) to local storage.

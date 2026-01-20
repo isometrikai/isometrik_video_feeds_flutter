@@ -33,6 +33,8 @@ Future<void> _initializeReelsSdk() async {
   final appVersion = await Utility.getAppVersion();
   await isr.IsrVideoReelConfig.initializeSdk(
     baseUrl: AppUrl.appBaseUrl,
+    postConfig: const isr.PostConfig(autoMoveToNextMedia: true,),
+    tabConfig: const isr.TabConfig(autoMoveToNextPost: true,),
     userInfoClass: isr.UserInfoClass(
       userId: userId,
       userName: userName,

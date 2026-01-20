@@ -141,8 +141,6 @@ class IsrAppNavigator {
         tabDataModelList: [tabData],
         startTabIndex: 0,
         onTapPlace: onTapPlace,
-        tabConfig: tabConfig,
-        postConfig: postConfig,
       ),
     );
 

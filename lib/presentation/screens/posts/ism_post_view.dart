@@ -22,16 +22,18 @@ class IsmPostView extends StatefulWidget {
     this.allowImplicitScrolling = false,
     this.onTapPlace,
     this.onLinkProduct,
-    this.tabConfig = const TabConfig(),
-    this.postConfig = const PostConfig(),
+    this.tabConfig,
+    this.postConfig,
+    this.socialConfig,
   });
 
   final List<TabDataModel> tabDataModelList;
   final num? startTabIndex;
   final bool? allowImplicitScrolling;
   final Future<List<ProductDataModel>?> Function(List<ProductDataModel>)? onLinkProduct;
-  final TabConfig tabConfig;
-  final PostConfig postConfig;
+  final TabConfig? tabConfig;
+  final PostConfig? postConfig;
+  final SocialConfig? socialConfig;
 
   /// Optional callback to override default place navigation
   /// If not provided, SDK will navigate to PlaceDetailsView automatically
@@ -53,6 +55,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   late SocialPostBloc _socialPostBloc; // Will be initialized from context
   late IsmSocialActionCubit _socialActionCubit;
   var _currentPostSectionType = PostSectionType.forYou;
+  PostConfig get _postConfig => widget.postConfig ?? IsrVideoReelConfig.postConfig;
+  TabConfig get _tabConfig => widget.tabConfig ??  IsrVideoReelConfig.tabConfig;
+  SocialConfig get _socialConfig => widget.socialConfig ?? IsrVideoReelConfig.socialConfig;
 
   @override
   void initState() {
@@ -109,7 +114,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         if (tabData.tabDataModel.postSectionType.isUserDependent) {
           var isUserLoggedIn = await _socialPostBloc.isUserLoggedIn;
           if (!isUserLoggedIn) {
-            await IsrVideoReelConfig.socialConfig?.socialCallBackConfig?.onLoginInvoked?.call();
+            await _socialConfig.socialCallBackConfig?.onLoginInvoked?.call();
             isUserLoggedIn = await _socialPostBloc.isUserLoggedIn;
           }
           if (!isUserLoggedIn) {
@@ -118,7 +123,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           }
         }
         _currentPostSectionType = tabData.tabDataModel.postSectionType;
-        widget.tabConfig.tabCallBackConfig?.onChangeOfTab?.call(tabData.tabDataModel);
+        _tabConfig.tabCallBackConfig?.onChangeOfTab?.call(tabData.tabDataModel);
         // Handle tab change if we have a user
         if (_loggedInUserId.isNotEmpty) {
           try {
@@ -280,7 +285,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
             .map((_) => getReelData(_, loggedInUserId: _loggedInUserId))
             .toList(),
         reelsConfig: _getReelsConfig(tabState.tabDataModel),
-        tabConfig: widget.tabConfig,
+        tabConfig: _tabConfig,
         onLoadMore: () async => await _handleLoadMore(tabState.tabDataModel),
         onRefresh: () async {
           var result = await _handlePostRefresh(tabState);
@@ -297,9 +302,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       );
 
   ReelsConfig _getReelsConfig(TabDataModel tabData) => ReelsConfig(
-      overlayPadding: widget.postConfig.postUIConfig?.overlayPadding,
+      overlayPadding: _postConfig.postUIConfig?.overlayPadding,
       autoMoveNextMedia:
-          widget.postConfig.autoMoveToNextMedia || widget.tabConfig.autoMoveToNextPost,
+          _postConfig.autoMoveToNextMedia || _tabConfig.autoMoveToNextPost,
       onTapPlace: (reelData, placeList) async {
         if (placeList.isListEmptyOrNull) return;
         if (placeList.length == 1) {
@@ -316,7 +321,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       onTaggedProduct: (reelsData) async {
         if (reelsData.postData is TimeLineData) {
           _socialPostBloc.add(PlayPauseVideoEvent(play: false));
-          await widget.postConfig.postCallBackConfig?.onTagProductClick
+          await _postConfig.postCallBackConfig?.onTagProductClick
               ?.call(reelsData.postData as TimeLineData);
           _socialPostBloc.add(PlayPauseVideoEvent(play: true));
         }
@@ -324,7 +329,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       onTapShare: (reelsData) async {
         if (reelsData.postData is TimeLineData) {
           _socialPostBloc.add(PlayPauseVideoEvent(play: false));
-          await widget.postConfig.postCallBackConfig?.onShareClicked
+          await _postConfig.postCallBackConfig?.onShareClicked
               ?.call(reelsData.postData as TimeLineData);
           _socialPostBloc.add(PlayPauseVideoEvent(play: true));
         }
@@ -342,7 +347,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
             return null;
           } else {
             if (mention.userId.isStringEmptyOrNull == false) {
-              widget.postConfig.postCallBackConfig?.onProfileClick?.call(
+              _postConfig.postCallBackConfig?.onProfileClick?.call(
                   reelData.postData is TimeLineData ? reelData.postData as TimeLineData : null,
                   mention.userId!,
                   null);
@@ -358,7 +363,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       onCreatePost: (reelsData) async => await _handleCreatePost(tabData),
       onTapUserProfile: (reelsData) async {
         final postData = await _socialActionCubit.getAsyncPostById(reelsData.postId ?? '');
-        widget.postConfig.postCallBackConfig?.onProfileClick?.call(
+        _postConfig.postCallBackConfig?.onProfileClick?.call(
           postData,
           reelsData.userId ?? '',
           postData?.isFollowing,
@@ -369,7 +374,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         _socialPostBloc.add(PlayPauseVideoEvent(play: false));
         var isUserLoggedIn = await _socialActionCubit.isUserLoggedIn;
         if (!isUserLoggedIn) {
-          await IsrVideoReelConfig.socialConfig?.socialCallBackConfig?.onLoginInvoked?.call();
+          await _socialConfig.socialCallBackConfig?.onLoginInvoked?.call();
         }
         isUserLoggedIn = await _socialActionCubit.isUserLoggedIn;
         if (!isUserLoggedIn) return totalCommentsCount;
@@ -388,37 +393,37 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           _socialPostBloc.add(PlayPauseVideoEvent(play: true));
         }
       },
-      onPressLike: widget.postConfig.postCallBackConfig?.onLikeClick == null
+      onPressLike: _postConfig.postCallBackConfig?.onLikeClick == null
           ? null
           : (reelsData, isLiked) async {
               _socialPostBloc.add(PlayPauseVideoEvent(play: false));
               final postData =
                   reelsData.postData is TimeLineData ? reelsData.postData as TimeLineData : null;
               final result =
-                  await widget.postConfig.postCallBackConfig?.onLikeClick?.call(postData, isLiked);
+                  await _postConfig.postCallBackConfig?.onLikeClick?.call(postData, isLiked);
               _socialPostBloc.add(PlayPauseVideoEvent(play: true));
               return result ?? false;
             },
       onPressSave: (reelsData, currentSaved) async {
-        if (widget.postConfig.postCallBackConfig?.onSaveClicked == null) {
+        if (_postConfig.postCallBackConfig?.onSaveClicked == null) {
           return await _handleCollection(reelsData, currentSaved);
         } else {
           _socialPostBloc.add(PlayPauseVideoEvent(play: false));
           final postData =
               reelsData.postData is TimeLineData ? reelsData.postData as TimeLineData : null;
-          final result = await widget.postConfig.postCallBackConfig?.onSaveClicked
+          final result = await _postConfig.postCallBackConfig?.onSaveClicked
               ?.call(postData, currentSaved);
           _socialPostBloc.add(PlayPauseVideoEvent(play: true));
           return result ?? false;
         }
       },
-      onPressFollow: widget.postConfig.postCallBackConfig?.onFollowClick == null
+      onPressFollow: _postConfig.postCallBackConfig?.onFollowClick == null
           ? null
           : (reelsData, isFollowed) async {
               _socialPostBloc.add(PlayPauseVideoEvent(play: false));
               final postData =
                   reelsData.postData is TimeLineData ? reelsData.postData as TimeLineData : null;
-              final result = await widget.postConfig.postCallBackConfig?.onFollowClick
+              final result = await _postConfig.postCallBackConfig?.onFollowClick
                   ?.call(postData, isFollowed);
               _socialPostBloc.add(PlayPauseVideoEvent(play: true));
               return result ?? false;
@@ -456,8 +461,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         placeName: placeMetaData.placeName,
         latitude: lat,
         longitude: long,
-        tabConfig: widget.tabConfig,
-        postConfig: widget.postConfig,
+        tabConfig: _tabConfig,
+        postConfig: _postConfig,
       );
     } catch (e) {
       debugPrint('Navigation failed: $e');
@@ -632,7 +637,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           totalCommentsCount: totalCommentsCount,
           onTapProfile: (userId) {
             context.pop(totalCommentsCount);
-            widget.postConfig.postCallBackConfig?.onProfileClick?.call(postData, userId, null);
+            _postConfig.postCallBackConfig?.onProfileClick?.call(postData, userId, null);
             _logProfileEvent(userId, postData?.user?.username ?? '');
           },
           onTapHasTag: (hashTag) {
@@ -671,8 +676,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       context,
       tagValue: tagValue,
       tagType: tagType,
-      tabConfig: widget.tabConfig,
-      postConfig: widget.postConfig,
+      tabConfig: _tabConfig,
+      postConfig: _postConfig,
     );
   }
 
@@ -690,7 +695,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         myUserId: userid,
         onTapUserProfile: (userId, isFollowing) {
           context.pop();
-          widget.postConfig.postCallBackConfig?.onProfileClick?.call(postData, userId, isFollowing);
+          _postConfig.postCallBackConfig?.onProfileClick?.call(postData, userId, isFollowing);
           _logProfileEvent(userId, postData.user?.username ?? '');
         },
       ),

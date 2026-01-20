@@ -62,7 +62,7 @@ class _SaveActionWidgetState extends State<SaveActionWidget> {
     if (isLoading) return false;
     var isUserLoggedIn = await cubit.isUserLoggedIn;
     if (!isUserLoggedIn) {
-      await IsrVideoReelConfig.socialConfig?.socialCallBackConfig?.onLoginInvoked?.call();
+      await IsrVideoReelConfig.socialConfig.socialCallBackConfig?.onLoginInvoked?.call();
     }
     isUserLoggedIn = await cubit.isUserLoggedIn;
     if (!isUserLoggedIn) return false;
