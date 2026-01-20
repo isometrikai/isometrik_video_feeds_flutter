@@ -738,9 +738,6 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
       await _cameraController!.setFocusMode(FocusMode.auto);
       await _cameraController!.setExposureMode(ExposureMode.auto);
 
-      // Increase brightness
-      final maxExposure = await _cameraController!.getMaxExposureOffset();
-
       await _cameraController!.setExposureOffset(0.0);
 
       // Lock exposure so it doesn’t change during recording
@@ -753,9 +750,6 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
       // Auto focus & exposure
       await _cameraController!.setFocusMode(FocusMode.auto);
       await _cameraController!.setExposureMode(ExposureMode.auto);
-
-      // Increase brightness
-      final maxExposure = await _cameraController!.getMaxExposureOffset();
 
       await _cameraController!.setExposureOffset(0.0);
     }

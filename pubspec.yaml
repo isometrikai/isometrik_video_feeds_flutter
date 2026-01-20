@@ -26,7 +26,7 @@ dependencies:
   flutter_svg: ^2.2.3
   flutter_web_plugins:
     sdk: flutter
-  fluttertoast: ^9.0.0
+  flutter toast: ^9.0.0
   fl_chart: ^0.69.0
   geolocator: ^14.0.2
   get_it: ^9.2.0

@@ -39,14 +39,6 @@ class BlocInjection {
           InjectionUtils.getUseCase<CommentActionUseCase>(),
         ));
 
-    InjectionUtils.registerBloc<CreatePostBloc>(() => CreatePostBloc(
-          InjectionUtils.getUseCase<CreatePostUseCase>(),
-          InjectionUtils.getUseCase<GetPostDetailsUseCase>(),
-          _localDataUseCase,
-          InjectionUtils.getUseCase<GoogleCloudStorageUploaderUseCase>(),
-          InjectionUtils.getUseCase<MediaProcessingUseCase>(),
-        ));
-
     InjectionUtils.registerBloc<UploadProgressCubit>(
       UploadProgressCubit.new,
     );
@@ -54,16 +46,6 @@ class BlocInjection {
     InjectionUtils.registerBloc<CommentActionCubit>(() => CommentActionCubit(
           _localDataUseCase,
           InjectionUtils.getUseCase<CommentActionUseCase>(),
-        ));
-
-    InjectionUtils.registerBloc<SearchUserBloc>(() => SearchUserBloc(
-          _localDataUseCase,
-          InjectionUtils.getUseCase<SearchUserUseCase>(),
-          InjectionUtils.getUseCase<SearchTagUseCase>(),
-        ));
-    InjectionUtils.registerBloc<SearchLocationBloc>(() => SearchLocationBloc(
-          InjectionUtils.getUseCase<GeocodeSearchAddressUseCase>(),
-          InjectionUtils.getUseCase<GetPlaceDetailsUseCase>(),
         ));
   }
 }

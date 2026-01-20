@@ -1,6 +1,4 @@
 export 'camera/camera.dart';
-export 'create_post/create_post.dart';
-export 'debug/debug.dart';
 export 'home/home.dart';
 export 'landing/landing.dart';
 export 'login/login.dart';
