@@ -645,7 +645,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                     TapHandler(
                       onTap: () async {
                         context.pop();
-                        final data = await showDialog<dynamic>(
+                        await showDialog<dynamic>(
                           context: context,
                           builder: (_) => ReportReasonDialog(
                             reasonFor: ReasonsFor.comment,

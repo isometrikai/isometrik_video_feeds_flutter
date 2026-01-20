@@ -34,14 +34,6 @@ class RouteManagement {
     _navigationService.pushNamed(RouteNames.otp, arguments: arguments);
   }
 
-  Future<String?> goToCreatePostView({TimeLineData? postData}) async {
-    final result = await _navigationService
-        .pushNamed(RouteNames.createPostView, arguments: {
-      'postData': postData,
-    }) as String?;
-    return result;
-  }
-
   Future<MediaInfoClass?> goToCameraView({
     required BuildContext context,
     MediaType mediaType = MediaType.photo,
@@ -51,39 +43,5 @@ class RouteManagement {
       arguments: {'mediaType': mediaType},
     ) as MediaInfoClass?;
     return result;
-  }
-
-  Future<PostAttributeClass?> goToPostAttributionView({
-    PostAttributeClass? postAttributeClass,
-  }) async =>
-      await _navigationService.pushNamed<PostAttributeClass>(
-        RouteNames.postAttributeView,
-        arguments: {
-          'postAttributeClass': postAttributeClass,
-        },
-      );
-
-  Future<PostAttributeClass?> goToTagPeopleScreen({
-    PostAttributeClass? postAttributeClass,
-  }) async =>
-      await _navigationService.pushNamed<PostAttributeClass>(
-        RouteNames.tagPeopleScreen,
-        arguments: {
-          'postAttributeClass': postAttributeClass,
-        },
-      );
-
-  Future<List<dynamic>> goToSearchUserScreen(
-      {List<SocialUserData>? socialUserList}) async {
-    final result = await _navigationService.pushNamed(
-        RouteNames.searchUserScreen,
-        arguments: {'socialUserList': socialUserList}) as List<dynamic>?;
-    return result == null ? [] : result;
-  }
-
-  Future<List<TaggedPlace>?> goToSearchLocationScreen() async {
-    final result =
-        await _navigationService.pushNamed(RouteNames.searchLocationScreen);
-    return result as List<TaggedPlace>?;
   }
 }

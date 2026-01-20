@@ -79,8 +79,6 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (context) => InjectionUtils.getBloc<AuthBloc>()),
           BlocProvider(create: (context) => InjectionUtils.getBloc<HomeBloc>()),
           BlocProvider(
-              create: (context) => InjectionUtils.getBloc<CreatePostBloc>()),
-          BlocProvider(
               create: (context) => InjectionUtils.getBloc<NavItemCubit>()),
           BlocProvider(
               create: (context) => InjectionUtils.getBloc<ProfileBloc>()),
@@ -90,11 +88,6 @@ class MyApp extends StatelessWidget {
           BlocProvider(
               create: (context) =>
                   InjectionUtils.getBloc<CommentActionCubit>()),
-          BlocProvider(
-              create: (context) => InjectionUtils.getBloc<SearchUserBloc>()),
-          BlocProvider(
-              create: (context) =>
-                  InjectionUtils.getBloc<SearchLocationBloc>()),
           ...isr.IsrVideoReelConfig.getIsmSingletonBlocProviders(),
         ],
         child: ScreenUtilInit(

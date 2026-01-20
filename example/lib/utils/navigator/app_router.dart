@@ -1,5 +1,4 @@
 import 'package:go_router/go_router.dart';
-import 'package:ism_video_reel_player_example/domain/domain.dart';
 import 'package:ism_video_reel_player_example/main.dart';
 import 'package:ism_video_reel_player_example/presentation/presentation.dart';
 import 'package:ism_video_reel_player_example/utils/utils.dart';
@@ -44,18 +43,6 @@ class AppRouter {
       //   builder: (_, __) => const HomeScreen(),
       // ),
       GoRoute(
-        path: AppRoutes.createPostView,
-        name: RouteNames.createPostView,
-        pageBuilder: (context, state) {
-          final extras = state.extra as Map<String, dynamic>;
-          final postData = extras['postData'] as TimeLineData?;
-          return PageTransition(
-            child: CreatePostView(postData: postData),
-            transitionType: TransitionType.bottomToTop,
-          );
-        },
-      ),
-      GoRoute(
         path: AppRoutes.cameraView,
         name: RouteNames.cameraView,
         builder: (_, state) {
@@ -64,51 +51,6 @@ class AppRouter {
               extras['mediaType'] as MediaType? ?? MediaType.photo;
           return CameraView(mediaType: mediaType);
         },
-      ),
-      GoRoute(
-        path: AppRoutes.postAttributeView,
-        name: RouteNames.postAttributeView,
-        builder: (_, state) {
-          final extraMap = state.extra as Map;
-          return PostAttributeView(
-            postAttributeClass:
-                extraMap['postAttributeClass'] as PostAttributeClass?,
-          );
-        },
-      ),
-      GoRoute(
-        path: AppRoutes.searchUserScreen,
-        name: RouteNames.searchUserScreen,
-        pageBuilder: (context, state) {
-          final extraMap = state.extra as Map;
-          final socialUserList =
-              extraMap['socialUserList'] as List<SocialUserData>? ?? [];
-          return PageTransition(
-            child: SearchUserView(socialUserList: socialUserList),
-            transitionType: TransitionType.rightToLeft,
-          );
-        },
-      ),
-      GoRoute(
-        path: AppRoutes.tagPeopleScreen,
-        name: RouteNames.tagPeopleScreen,
-        pageBuilder: (context, state) {
-          final extraMap = state.extra as Map;
-          final postAttributeClass =
-              extraMap['postAttributeClass'] as PostAttributeClass;
-          return PageTransition(
-            child: TagPeopleScreen(postAttributeClass: postAttributeClass),
-            transitionType: TransitionType.rightToLeft,
-          );
-        },
-      ),
-      GoRoute(
-        path: AppRoutes.searchLocationScreen,
-        name: RouteNames.searchLocationScreen,
-        pageBuilder: (context, state) => PageTransition(
-          child: const SearchLocationScreen(),
-          transitionType: TransitionType.rightToLeft,
-        ),
       ),
       ..._landingRoutes,
     ],
