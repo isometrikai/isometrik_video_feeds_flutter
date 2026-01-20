@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:ism_video_reel_player/utils/extensions.dart';
 
 CollectionResponseModel collectionResponseModelFromJson(String str) =>
     CollectionResponseModel.fromJson(json.decode(str) as Map<String, dynamic>);
