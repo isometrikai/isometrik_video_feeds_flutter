@@ -1000,7 +1000,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                             await widget.onCreatePost!();
                           }
                         },
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.add,
                           color: IsrColors.white,
                         ),
@@ -1445,13 +1445,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               color: Theme.of(context).primaryColor.withValues(alpha: 0.7),
               borderRadius: BorderRadius.circular(IsrDimens.twenty),
             ),
-            child: const Center(
+            child: Center(
               child: SizedBox(
                 width: 16,
                 height: 16,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(IsrColors.white),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    IsrColors.white,
+                  ),
                 ),
               ),
             ),

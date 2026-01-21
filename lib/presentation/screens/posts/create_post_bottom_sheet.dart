@@ -42,7 +42,7 @@ class CreatePostBottomSheet extends StatelessWidget {
                   padding: IsrDimens.five,
                   child: Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.post_add,
                         color: IsrColors.black,
                       ),
@@ -64,7 +64,7 @@ class CreatePostBottomSheet extends StatelessWidget {
                   padding: IsrDimens.five,
                   child: Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.format_list_bulleted,
                         color: IsrColors.black,
                       ),
@@ -95,7 +95,7 @@ class CreatePostBottomSheet extends StatelessWidget {
                     color: IsrColors.white,
                     borderRadius: IsrDimens.borderRadiusAll(IsrDimens.fifty),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.close_rounded,
                     color: IsrColors.black,
                   ),

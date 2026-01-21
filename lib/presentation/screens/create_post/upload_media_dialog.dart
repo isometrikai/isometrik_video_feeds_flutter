@@ -1,6 +1,7 @@
 // Create a new file: lib/presentation/widgets/dialogs/upload_media_dialog.dart
 
 import 'package:flutter/material.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -26,13 +27,20 @@ class UploadMediaDialog extends StatelessWidget {
   final Function(UploadMediaResult result) onMediaSelected;
 
   @override
-  Widget build(BuildContext context) => Dialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Padding(
-          padding: IsrDimens.edgeInsetsAll(IsrDimens.twentyFour),
+  Widget build(BuildContext context) {
+    final dialogConfig = IsrVideoReelConfig.socialConfig.dialogConfig;
+    final borderRadius = dialogConfig?.borderRadius ?? 12.0;
+    final backgroundColor = dialogConfig?.backgroundColor ?? Colors.white;
+    final padding = dialogConfig?.padding ??
+        IsrDimens.edgeInsetsAll(IsrDimens.twentyFour);
+
+    return Dialog(
+      backgroundColor: backgroundColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(borderRadius),
+      ),
+      child: Padding(
+        padding: padding,
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -130,6 +138,7 @@ class UploadMediaDialog extends StatelessWidget {
           ),
         ),
       );
+  }
 
   Widget _buildOptionItem({
     required BuildContext context,

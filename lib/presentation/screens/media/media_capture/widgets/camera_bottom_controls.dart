@@ -78,7 +78,7 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
                         height: IsrDimens.sixtyFour,
                         child: CircularProgressIndicator(
                           strokeWidth: IsrDimens.four,
-                          valueColor: const AlwaysStoppedAnimation<Color>(
+                          valueColor: AlwaysStoppedAnimation<Color>(
                             IsrColors.white,
                           ),
                         ),

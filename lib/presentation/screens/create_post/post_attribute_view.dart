@@ -1560,7 +1560,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
     VoidCallback? onTap,
     VoidCallback? onTrailingTap,
     Widget? trailing,
-    Color color = IsrColors.primaryTextColor,
+    Color? color,
   }) =>
       Material(
         color: Colors.transparent,
@@ -1609,7 +1609,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
                   child: (trailing != null)
                       ? trailing
                       : (onTap != null)
-                          ? const Icon(
+                          ? Icon(
                               Icons.chevron_right,
                               color: IsrColors.primaryTextColor,
                               size: 20,

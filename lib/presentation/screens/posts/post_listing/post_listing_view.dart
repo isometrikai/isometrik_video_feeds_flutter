@@ -229,9 +229,9 @@ class _PostListingViewState extends State<PostListingView> {
 
   Widget _buildTabNavigation() => Container(
         height: IsrDimens.fifty,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: IsrColors.white,
-          border: Border(
+          border: const Border(
             bottom: BorderSide(
               color: IsrColors.colorEFEFEF,
               width: 1,
@@ -257,7 +257,7 @@ class _PostListingViewState extends State<PostListingView> {
                 child: Container(
                   decoration: BoxDecoration(
                     border: isSelected
-                        ? const Border(
+                        ? Border(
                             bottom: BorderSide(
                               color: IsrColors.appColor,
                               width: 2,
@@ -1039,7 +1039,7 @@ class _PostListingViewState extends State<PostListingView> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const AppImage.svg(
+              AppImage.svg(
                 AssetConstants.icCartIcon,
                 color: IsrColors.white,
               ),

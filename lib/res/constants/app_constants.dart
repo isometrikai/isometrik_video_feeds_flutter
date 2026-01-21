@@ -1,3 +1,5 @@
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
+
 class AppConstants {
   AppConstants._();
 
@@ -14,8 +16,10 @@ class AppConstants {
 
   static const int pinCodeLength = 6;
   static const int couponCodeLength = 5;
-  static const String primaryFontFamily = 'Inter';
-  static const String secondaryFontFamily = 'Inter';
+  static String get primaryFontFamily =>
+      IsrVideoReelConfig.socialConfig.fontConfig?.primaryFontFamily ?? 'Inter';
+  static String get secondaryFontFamily =>
+      IsrVideoReelConfig.socialConfig.fontConfig?.secondaryFontFamily ?? 'Inter';
 
   static const String emailPattern =
       r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';

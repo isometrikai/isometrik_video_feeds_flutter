@@ -1,29 +1,49 @@
 import 'package:flutter/material.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 
 class IsrColors {
   IsrColors._();
 
-  static const Color appColor = Color(0xFF006CD8);
-  static const Color secondaryColor = Color(0xFF851E91);
+  static Color get appColor =>
+      IsrVideoReelConfig.socialConfig.themeConfig?.primaryColor ??
+      const Color(0xFF006CD8);
+  static Color get secondaryColor =>
+      IsrVideoReelConfig.socialConfig.themeConfig?.secondaryColor ??
+      const Color(0xFF851E91);
 
-  static const Color primaryTextColor = Color(0xFF333333);
+  static Color get primaryTextColor =>
+      IsrVideoReelConfig.socialConfig.colorsConfig?.primaryTextColor ??
+      const Color(0xFF333333);
 
-  static const Color secondaryTextColor = Color(0xFF505050);
+  static Color get secondaryTextColor =>
+      IsrVideoReelConfig.socialConfig.colorsConfig?.secondaryTextColor ??
+      const Color(0xFF505050);
 
   /// colors for button
-  // static const Color buttonBackgroundColor = Color(0xFFF27C73);
-  static const Color buttonBackgroundColor = appColor;
-  static const Color buttonDisabledBackgroundColor = Color(0xFF808688);
-  static const Color buttonTextColor = Color(0xFFFFFFFF);
+  static Color get buttonBackgroundColor =>
+      IsrVideoReelConfig.socialConfig.colorsConfig?.buttonBackgroundColor ??
+      appColor;
+  static Color get buttonDisabledBackgroundColor =>
+      IsrVideoReelConfig.socialConfig.colorsConfig
+          ?.buttonDisabledBackgroundColor ??
+      const Color(0xFF808688);
+  static Color get buttonTextColor =>
+      IsrVideoReelConfig.socialConfig.colorsConfig?.buttonTextColor ??
+      const Color(0xFFFFFFFF);
 
   /// colors for status bar and navigation bar background
-  static const Color appBarColor = Color(0xFFFFFFFF);
+  static Color get appBarColor =>
+      IsrVideoReelConfig.socialConfig.themeConfig?.appBarColor ??
+      const Color(0xFFFFFFFF);
   static const Color navigationBar = Color(0xFFFFFFFF);
 
   static const Color paymentBackgroundColor = Color(0xFFFFEAE8);
 
   /// colors for dialog
-  static const Color dialogColor = Color(0xFFFFFFFF);
+  static Color get dialogColor =>
+      IsrVideoReelConfig.socialConfig.colorsConfig?.dialogColor ??
+      IsrVideoReelConfig.socialConfig.dialogConfig?.backgroundColor ??
+      const Color(0xFFFFFFFF);
 
   static const Color accent = Color(0xFFE8424A);
 
@@ -61,7 +81,9 @@ class IsrColors {
 
   static const Color colorEFEFEF = Color(0xFFEFEFEF);
 
-  static const Color dividerColor = Color(0xFFEFEFEF);
+  static Color get dividerColor =>
+      IsrVideoReelConfig.socialConfig.colorsConfig?.dividerColor ??
+      const Color(0xFFEFEFEF);
 
   static const Color colorGreen = Color(0xFFF27C73);
 
@@ -83,18 +105,35 @@ class IsrColors {
     900: Color(0xFF4C6680),
   });
 
-  static const MaterialColor success = MaterialColor(0xFF00A86B, {
-    300: Color(0xFF34C759),
-    500: Color(0xFF00A86B),
-  });
+  static MaterialColor get success {
+    final configColor = IsrVideoReelConfig.socialConfig.colorsConfig?.successColor;
+    if (configColor != null) {
+      return MaterialColor(configColor.toARGB32(), {
+        300: configColor,
+        500: configColor,
+      });
+    }
+    return const MaterialColor(0xFF00A86B, {
+      300: Color(0xFF34C759),
+      500: Color(0xFF00A86B),
+    });
+  }
 
-  static const Color error = Color(0xFFE30000);
+  static Color get error =>
+      IsrVideoReelConfig.socialConfig.colorsConfig?.errorColor ??
+      const Color(0xFFE30000);
 
-  static const Color black = Color(0xFF182028);
+  static Color get black =>
+      IsrVideoReelConfig.socialConfig.colorsConfig?.black ??
+      const Color(0xFF182028);
 
-  static const Color white = Color(0xFFFFFFFF);
+  static Color get white =>
+      IsrVideoReelConfig.socialConfig.colorsConfig?.white ??
+      const Color(0xFFFFFFFF);
 
-  static const Color scaffoldColor = Color(0xFFFFFFFF);
+  static Color get scaffoldColor =>
+      IsrVideoReelConfig.socialConfig.themeConfig?.scaffoldBackgroundColor ??
+      const Color(0xFFFFFFFF);
 
   static const Color headline = Color(0xffA3F4FF);
 

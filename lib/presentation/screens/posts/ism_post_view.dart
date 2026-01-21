@@ -23,7 +23,6 @@ class IsmPostView extends StatefulWidget {
     this.onTapPlace,
     this.tabConfig,
     this.postConfig,
-    this.socialConfig,
   });
 
   final List<TabDataModel> tabDataModelList;
@@ -31,7 +30,6 @@ class IsmPostView extends StatefulWidget {
   final bool? allowImplicitScrolling;
   final TabConfig? tabConfig;
   final PostConfig? postConfig;
-  final SocialConfig? socialConfig;
 
   /// Optional callback to override default place navigation
   /// If not provided, SDK will navigate to PlaceDetailsView automatically
@@ -55,7 +53,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   var _currentPostSectionType = PostSectionType.forYou;
   PostConfig get _postConfig => widget.postConfig ?? IsrVideoReelConfig.postConfig;
   TabConfig get _tabConfig => widget.tabConfig ??  IsrVideoReelConfig.tabConfig;
-  SocialConfig get _socialConfig => widget.socialConfig ?? IsrVideoReelConfig.socialConfig;
+  SocialConfig get _socialConfig => IsrVideoReelConfig.socialConfig;
 
   @override
   void initState() {
@@ -912,45 +910,59 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     return completer.future;
   }
 
-  Future<bool?> _showDeletePostDialog(BuildContext context) => showDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          backgroundColor: Colors.white,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  IsrTranslationFile.deletePost,
-                  style: IsrStyles.primaryText18.copyWith(fontWeight: FontWeight.w700),
-                ),
-                16.responsiveVerticalSpace,
-                Text(
-                  IsrTranslationFile.deletePostConfirmation,
-                  style: IsrStyles.primaryText14.copyWith(
-                    color: '4A4A4A'.toColor(),
-                  ),
-                ),
+  Future<bool?> _showDeletePostDialog(BuildContext context) {
+    final dialogConfig = IsrVideoReelConfig.socialConfig.dialogConfig;
+    final borderRadius = dialogConfig?.borderRadius ?? 20.0;
+    final backgroundColor = dialogConfig?.backgroundColor ?? Colors.white;
+    final padding = dialogConfig?.padding ??
+        const EdgeInsets.symmetric(horizontal: 24, vertical: 28);
+    final titleStyle = dialogConfig?.titleTextStyle ??
+        IsrStyles.primaryText18.copyWith(fontWeight: FontWeight.w700);
+    final messageStyle = dialogConfig?.messageTextStyle ??
+        IsrStyles.primaryText14.copyWith(color: '4A4A4A'.toColor());
+
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(borderRadius),
+        ),
+        backgroundColor: backgroundColor,
+        child: Padding(
+          padding: padding,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                IsrTranslationFile.deletePost,
+                style: titleStyle,
+              ),
+              16.responsiveVerticalSpace,
+              Text(
+                IsrTranslationFile.deletePostConfirmation,
+                style: messageStyle,
+              ),
                 32.responsiveVerticalSpace,
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    AppButton(
+                    _buildDialogButton(
+                      context: context,
                       title: IsrTranslationFile.delete,
-                      width: 102.responsiveDimension,
+                      buttonConfig: IsrVideoReelConfig.socialConfig.primaryButton,
                       onPress: () => Navigator.of(context).pop(true),
-                      backgroundColor: 'E04755'.toColor(),
+                      defaultBackgroundColor: 'E04755'.toColor(),
                     ),
-                    AppButton(
+                    _buildDialogButton(
+                      context: context,
                       title: IsrTranslationFile.cancel,
-                      width: 102.responsiveDimension,
+                      buttonConfig: IsrVideoReelConfig.socialConfig.secondaryButton,
+                      buttonType: ButtonType.secondary,
                       onPress: () => Navigator.of(context).pop(false),
-                      backgroundColor: 'F6F6F6'.toColor(),
-                      textColor: Theme.of(context).primaryColor,
+                      defaultBackgroundColor: 'F6F6F6'.toColor(),
+                      defaultTextColor: Theme.of(context).primaryColor,
                     ),
                   ],
                 ),
@@ -959,6 +971,26 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           ),
         ),
       );
+  }
+
+  Widget _buildDialogButton({
+    required BuildContext context,
+    required String title,
+    ButtonConfig? buttonConfig,
+    ButtonType buttonType = ButtonType.primary,
+    required VoidCallback? onPress,
+    Color? defaultBackgroundColor,
+    Color? defaultTextColor,
+  }) => AppButton(
+      title: title,
+      width: 102.responsiveDimension,
+      type: buttonType,
+      onPress: onPress,
+      backgroundColor: buttonConfig?.backgroundColor ?? defaultBackgroundColor,
+      textColor: buttonConfig?.textColor ?? defaultTextColor,
+      borderColor: buttonConfig?.borderColor,
+      borderRadius: buttonConfig?.borderRadius,
+    );
 
   Future<String?> _handleEditPost(TimeLineData postDataModel) async {
     final postDataString = await IsrAppNavigator.goToEditPostView(context,

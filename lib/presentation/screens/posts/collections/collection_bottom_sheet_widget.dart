@@ -596,7 +596,7 @@ class _CollectionBottomSheetWidgetState
                                     child: CircularProgressIndicator.adaptive(
                                       strokeWidth: IsrDimens.two,
                                       valueColor:
-                                          const AlwaysStoppedAnimation<Color>(
+                                          AlwaysStoppedAnimation<Color>(
                                         IsrColors.appColor,
                                       ),
                                     ),
@@ -644,7 +644,7 @@ class _CollectionBottomSheetWidgetState
                         width: 16.responsiveDimension,
                         child: CircularProgressIndicator.adaptive(
                           strokeWidth: IsrDimens.two,
-                          valueColor: const AlwaysStoppedAnimation<Color>(
+                          valueColor: AlwaysStoppedAnimation<Color>(
                             IsrColors.appColor,
                           ),
                         ),

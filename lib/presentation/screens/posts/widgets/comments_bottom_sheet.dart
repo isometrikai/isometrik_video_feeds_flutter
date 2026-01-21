@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -373,7 +374,9 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                           padding: 5.responsiveDimension,
                           onTap: () async => await showDialog(
                             context: context,
-                            builder: (context) => _buildMoreOptionUI(comment),
+                            builder: (context) => _buildDialogWrapper(
+                              child: _buildMoreOptionUI(comment),
+                            ),
                           ),
                           child: const AppImage.svg(
                             AssetConstants.icVerticalMoreMenu,
@@ -577,7 +580,9 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                     onTap: () async {
                       await showDialog(
                         context: context,
-                        builder: (context) => _buildMoreOptionUI(comment),
+                        builder: (context) => _buildDialogWrapper(
+                          child: _buildMoreOptionUI(comment),
+                        ),
                       );
                     },
                     child:
@@ -707,6 +712,20 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
         ),
       );
 
+  Widget _buildDialogWrapper({required Widget child}) {
+    final dialogConfig = IsrVideoReelConfig.socialConfig.dialogConfig;
+    final borderRadius = dialogConfig?.borderRadius ?? IsrDimens.twenty;
+
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(borderRadius),
+      ),
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      child: child,
+    );
+  }
+
   void _setReplyComment(CommentDataItem? comment) {
     setState(() {
       _replyComment = comment;
@@ -753,7 +772,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                   ),
                   TapHandler(
                     onTap: () => _setReplyComment(null),
-                    child: const AppImage.svg(
+                    child: AppImage.svg(
                       AssetConstants.icClose,
                       color: IsrColors.white,
                     ),

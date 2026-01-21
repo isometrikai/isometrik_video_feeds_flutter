@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
@@ -67,12 +69,16 @@ class AppButton extends StatelessWidget {
             : ButtonType.disabled
         : type;
 
+    // Get button config from SocialConfig based on button type
+    final buttonConfig = _getButtonConfigForType(effectiveType);
+
     switch (effectiveType) {
       case ButtonType.primary:
         return FilledButton(
           onPressed: effectiveOnPressed,
           style: _getPrimaryStyle(
             context: context,
+            buttonConfig: buttonConfig,
             backgroundColor: backgroundColor,
             textColor: textColor,
             borderWidth: borderWidth,
@@ -85,13 +91,18 @@ class AppButton extends StatelessWidget {
       case ButtonType.secondary:
         return OutlinedButton(
             onPressed: effectiveOnPressed,
-            style: _getSecondaryStyle(context, borderColor),
+            style: _getSecondaryStyle(
+              context,
+              buttonConfig: buttonConfig,
+              borderColor: borderColor,
+            ),
             child: _buildButtonContent(context, loaderColor: borderColor));
       case ButtonType.tertiary:
         return TextButton(
           onPressed: effectiveOnPressed,
           style: _getTertiaryStyle(
             context: context,
+            buttonConfig: buttonConfig,
             backgroundColor: backgroundColor,
             textColor: textColor,
             borderWidth: borderWidth,
@@ -138,56 +149,91 @@ class AppButton extends StatelessWidget {
     }
   }
 
+  /// Get button config from SocialConfig based on button type
+  ButtonConfig? _getButtonConfigForType(ButtonType buttonType) {
+    final socialConfig = IsrVideoReelConfig.socialConfig;
+    return switch (buttonType) {
+      ButtonType.primary => socialConfig.primaryButton,
+      ButtonType.secondary => socialConfig.secondaryButton,
+      ButtonType.tertiary => socialConfig.tertiaryButton,
+      _ => null,
+    };
+  }
+
   ButtonStyle _getPrimaryStyle({
     required BuildContext context,
+    ButtonConfig? buttonConfig,
     Color? backgroundColor,
     Color? textColor,
     Color? borderColor,
     double? borderRadius,
     double? borderWidth,
     TextStyle? textStyle,
-  }) =>
-      FilledButton.styleFrom(
-        backgroundColor: isDisable
-            ? backgroundColor?.changeOpacity(0.5) ??
-                Theme.of(context).primaryColor.changeOpacity(0.5)
-            : backgroundColor ?? Theme.of(context).primaryColor,
-        disabledBackgroundColor: backgroundColor?.changeOpacity(0.5) ??
-            Theme.of(context).primaryColor.changeOpacity(0.5),
-        foregroundColor: isDisable
-            ? const Color(0xFF999999) // Grey text for disabled
-            : textColor ?? IsrColors.primaryTextColor,
-        // White text for enabled
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(borderRadius ?? IsrDimens.eight),
-        ),
-        side: BorderSide(
-          color: borderColor ?? Colors.transparent,
-          width: 1,
-        ),
-        padding: EdgeInsets.symmetric(horizontal: _getPadding()),
-      );
+  }) {
+    final configBgColor = buttonConfig?.backgroundColor ?? backgroundColor;
+    final configTextColor = buttonConfig?.textColor ?? textColor;
+    final configBorderColor = buttonConfig?.borderColor ?? borderColor;
+    final configBorderRadius = buttonConfig?.borderRadius ?? borderRadius;
 
-  ButtonStyle _getSecondaryStyle(BuildContext context, Color? borderColor) =>
-      OutlinedButton.styleFrom(
-        backgroundColor: Colors.transparent,
-        foregroundColor:
-            isDisable ? Colors.grey : Theme.of(context).primaryColor,
-        side: BorderSide(
-          color: borderColor ?? Theme.of(context).primaryColor,
-          width: 1,
+    return FilledButton.styleFrom(
+      backgroundColor: isDisable
+          ? configBgColor?.changeOpacity(0.5) ??
+              Theme.of(context).primaryColor.changeOpacity(0.5)
+          : configBgColor ?? Theme.of(context).primaryColor,
+      disabledBackgroundColor: configBgColor?.changeOpacity(0.5) ??
+          Theme.of(context).primaryColor.changeOpacity(0.5),
+      foregroundColor: isDisable
+          ? const Color(0xFF999999)
+          : configTextColor ?? IsrColors.primaryTextColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(
+          configBorderRadius ?? IsrDimens.eight,
         ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(borderRadius ?? IsrDimens.eight),
+      ),
+      side: BorderSide(
+        color: configBorderColor ?? Colors.transparent,
+        width: borderWidth ?? 1,
+      ),
+      padding: EdgeInsets.symmetric(horizontal: _getPadding()),
+      elevation: buttonConfig?.elevation,
+    );
+  }
+
+  ButtonStyle _getSecondaryStyle(
+    BuildContext context, {
+    ButtonConfig? buttonConfig,
+    Color? borderColor,
+  }) {
+    final configTextColor = buttonConfig?.textColor ?? textColor;
+    final configBorderColor = buttonConfig?.borderColor ?? borderColor;
+    final configBorderRadius = buttonConfig?.borderRadius ?? borderRadius;
+
+    return OutlinedButton.styleFrom(
+      backgroundColor: buttonConfig?.backgroundColor ?? Colors.transparent,
+      foregroundColor: isDisable
+          ? Colors.grey
+          : configTextColor ?? Theme.of(context).primaryColor,
+      side: BorderSide(
+        color: isDisable
+            ? Colors.grey
+            : configBorderColor ?? Theme.of(context).primaryColor,
+        width: borderWidth ?? 1,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(
+          configBorderRadius ?? IsrDimens.eight,
         ),
-        padding: EdgeInsets.symmetric(
-          horizontal: switch (size) {
-            ButtonSize.small => IsrDimens.twelve,
-            ButtonSize.medium => IsrDimens.sixteen,
-            ButtonSize.large => IsrDimens.twenty,
-          },
-        ),
-      );
+      ),
+      padding: EdgeInsets.symmetric(
+        horizontal: switch (size) {
+          ButtonSize.small => IsrDimens.twelve,
+          ButtonSize.medium => IsrDimens.sixteen,
+          ButtonSize.large => IsrDimens.twenty,
+        },
+      ),
+      elevation: buttonConfig?.elevation,
+    );
+  }
 
   ButtonStyle _getTextButtonStyle({
     required BuildContext context,
@@ -205,26 +251,39 @@ class AppButton extends StatelessWidget {
 
   ButtonStyle _getTertiaryStyle({
     required BuildContext context,
+    ButtonConfig? buttonConfig,
     Color? backgroundColor,
     Color? textColor,
     Color? borderColor,
     double? borderRadius,
     double? borderWidth,
     TextStyle? textStyle,
-  }) =>
-      TextButton.styleFrom(
-        backgroundColor: backgroundColor ?? Colors.transparent,
-        foregroundColor: textColor ?? IsrColors.primaryTextColor,
-        disabledForegroundColor: IsrColors.grey,
-        padding: EdgeInsets.symmetric(horizontal: IsrDimens.eight),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(borderRadius ?? IsrDimens.eight),
-          side: BorderSide(
-              color: borderColor ?? Theme.of(context).primaryColor,
-              width: borderWidth ?? 0.5),
+  }) {
+    final configBgColor = buttonConfig?.backgroundColor ?? backgroundColor;
+    final configTextColor = buttonConfig?.textColor ?? textColor;
+    final configBorderColor = buttonConfig?.borderColor ?? borderColor;
+    final configBorderRadius = buttonConfig?.borderRadius ?? borderRadius;
+
+    return TextButton.styleFrom(
+      backgroundColor: configBgColor ?? Colors.transparent,
+      foregroundColor: configTextColor ?? IsrColors.primaryTextColor,
+      disabledForegroundColor: IsrColors.grey,
+      padding: EdgeInsets.symmetric(horizontal: IsrDimens.eight),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(
+          configBorderRadius ?? IsrDimens.eight,
         ),
-        textStyle: textStyle,
-      );
+        side: BorderSide(
+          color: isDisable
+              ? IsrColors.grey
+              : configBorderColor ?? Theme.of(context).primaryColor,
+          width: borderWidth ?? 0.5,
+        ),
+      ),
+      textStyle: textStyle,
+      elevation: buttonConfig?.elevation,
+    );
+  }
 
   ButtonStyle _getDangerStyle(BuildContext context) => FilledButton.styleFrom(
         backgroundColor: IsrColors.error,
@@ -295,10 +354,19 @@ class AppButton extends StatelessWidget {
   }
 
   TextStyle _getTextStyle(BuildContext context) {
+    // Use provided textStyle if available
+    if (textStyle != null) {
+      return textStyle!;
+    }
+
+    final textSizeConfig = IsrVideoReelConfig.socialConfig.textSizeConfig;
     final fontSize = switch (size) {
-      ButtonSize.small => IsrDimens.twelve,
-      ButtonSize.medium => IsrDimens.fourteen,
-      ButtonSize.large => IsrDimens.sixteen,
+      ButtonSize.small =>
+          textSizeConfig?.textSize12 ?? IsrDimens.twelve,
+      ButtonSize.medium =>
+          textSizeConfig?.textSize14 ?? IsrDimens.fourteen,
+      ButtonSize.large =>
+          textSizeConfig?.textSize16 ?? IsrDimens.sixteen,
     };
 
     final baseStyle = TextStyle(

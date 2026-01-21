@@ -477,7 +477,7 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const AppImage.svg(
+              AppImage.svg(
                 AssetConstants.icCartIcon,
                 color: IsrColors.white,
               ),

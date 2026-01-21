@@ -131,7 +131,7 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
                         padding: IsrDimens.edgeInsetsSymmetric(
                           vertical: IsrDimens.forty,
                         ),
-                        child: const Center(
+                        child: Center(
                           child: CircularProgressIndicator(
                             color: IsrColors.appColor,
                           ),
