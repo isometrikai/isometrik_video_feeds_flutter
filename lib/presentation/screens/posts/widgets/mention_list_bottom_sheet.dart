@@ -269,37 +269,8 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
     var isLoading = false;
 
     return StatefulBuilder(
-      builder: (context, setState) => userId == widget.myUserId
-          ? AppButton(
-              height: 36.responsiveDimension,
-              width: 95.responsiveDimension,
-              type: ButtonType.secondary,
-              borderRadius: 40.responsiveDimension,
-              title: IsrTranslationFile.remove,
-              isLoading: isLoading,
-              textStyle: IsrStyles.primaryText12.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-              onPress: isLoading == true
-                  ? null
-                  : () {
-                      isLoading = true;
-                      setState.call(() {});
-                      _socialPostBloc.add(RemoveMentionEvent(
-                        postId:
-                            postId, // This should be the actual post ID, not user ID
-                        onComplete: (isSuccess) {
-                          isLoading = false;
-                          if (isSuccess) {
-                            // Remove the mention from the list
-                            _removeMentionFromList(userId);
-                          }
-                          setState.call(() {});
-                        },
-                      ));
-                    },
-            )
-          : FollowActionWidget(
+      builder: (context, setState) => userId != widget.myUserId
+          ? FollowActionWidget(
               userId: userId,
               isFollowing: socialUserData?.isFollowing == true,
               builder: (isLoading, isFollowing, onTap) {
@@ -323,7 +294,8 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
                   ),
                 );
               },
-            ),
+            )
+          : const SizedBox.shrink(),
     );
   }
 }
