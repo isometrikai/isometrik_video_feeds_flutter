@@ -45,6 +45,8 @@ class IsrVideoReelConfig {
   /// Tab configuration used by SDK modules.
   static TabConfig tabConfig = const TabConfig();
 
+  /// Create, edit post configuration used by SDK modules.
+  static CreateEditPostConfig createEditPostConfig = const CreateEditPostConfig();
 
   /// Convenience accessor for the SDK's singleton [IsmSocialActionCubit].
   static IsmSocialActionCubit get socialActionCubit =>
@@ -74,13 +76,14 @@ class IsrVideoReelConfig {
     required String baseUrl,
     required String rudderStackWriteKey,
     required String rudderStackDataPlaneUrl,
-    UserInfoClass? userInfoClass,
+    required UserInfoClass? userInfoClass,
     required Map<String, dynamic> defaultHeaders,
     required SocialConfig socialConfig,
     required PostConfig postConfig,
     required TabConfig tabConfig,
-    String? googleServiceJsonPath,
-    BuildContext? Function()? getCurrentBuildContext,
+    required CreateEditPostConfig createEditPostConfig,
+    required String? googleServiceJsonPath,
+    required BuildContext? Function()? getCurrentBuildContext,
   }) async {
     if (!isSdkInitialize) {
       WidgetsFlutterBinding.ensureInitialized();
@@ -100,6 +103,8 @@ class IsrVideoReelConfig {
     IsrVideoReelConfig.socialConfig = socialConfig;
     IsrVideoReelConfig.postConfig = postConfig;
     IsrVideoReelConfig.tabConfig = tabConfig;
+    IsrVideoReelConfig.createEditPostConfig = createEditPostConfig;
+    buildContext = getCurrentBuildContext?.call();
     debugPrint('IsrVideoReelConfig: initializeSdk: ${userInfoClass?.userId}');
     socialActionCubit.onSdkReinitializeChanged(
       userId: userInfoClass?.userId,

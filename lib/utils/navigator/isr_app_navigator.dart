@@ -46,14 +46,10 @@ class IsrAppNavigator {
   static void navigateToSchedulePostListing(
     BuildContext context, {
     TransitionType? transitionType,
-    Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
-        onTagProduct,
   }) {
     final page = BlocProvider<PostListingBloc>(
       create: (_) => IsmInjectionUtils.getBloc<PostListingBloc>(),
-      child: SchedulePostView(
-        onLinkProduct: onTagProduct,
-      ),
+      child: const SchedulePostView(),
     );
 
     Navigator.of(context, rootNavigator: true).push(
@@ -171,8 +167,6 @@ class IsrAppNavigator {
 
   static Future<String?> goToCreatePostView(
     BuildContext context, {
-    Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
-        onTagProduct,
     TransitionType? transitionType,
   }) async {
     final page = MultiBlocProvider(
@@ -187,9 +181,7 @@ class IsrAppNavigator {
           create: (_) => IsmInjectionUtils.getBloc<UploadProgressCubit>(),
         ),
       ],
-      child: CreatePostMultimediaWrapper(
-        onTagProduct: onTagProduct,
-      ),
+      child: const CreatePostMultimediaWrapper(),
     );
 
     final result =
@@ -202,8 +194,6 @@ class IsrAppNavigator {
   static Future<String?> goToEditPostView(
     BuildContext context, {
     required TimeLineData postData,
-    Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
-        onTagProduct,
     TransitionType? transitionType,
   }) async {
     final page = MultiBlocProvider(
@@ -216,7 +206,6 @@ class IsrAppNavigator {
       child: PostAttributeView(
         postData: postData,
         isEditMode: true,
-        onTagProduct: onTagProduct,
       ),
     );
 
@@ -229,8 +218,6 @@ class IsrAppNavigator {
 
   static Future<String?> goToCreatePostAttributionView(
     BuildContext context, {
-    Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
-        onTagProduct,
     List<MediaData>? newMediaDataList,
     TransitionType transitionType = TransitionType.bottomToTop,
   }) async {
@@ -244,7 +231,6 @@ class IsrAppNavigator {
       child: PostAttributeView(
         newMediaDataList: newMediaDataList,
         isEditMode: false,
-        onTagProduct: onTagProduct,
       ),
     );
 

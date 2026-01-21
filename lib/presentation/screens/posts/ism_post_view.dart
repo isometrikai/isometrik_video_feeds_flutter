@@ -21,7 +21,6 @@ class IsmPostView extends StatefulWidget {
     this.startTabIndex = 0,
     this.allowImplicitScrolling = false,
     this.onTapPlace,
-    this.onLinkProduct,
     this.tabConfig,
     this.postConfig,
     this.socialConfig,
@@ -30,7 +29,6 @@ class IsmPostView extends StatefulWidget {
   final List<TabDataModel> tabDataModelList;
   final num? startTabIndex;
   final bool? allowImplicitScrolling;
-  final Future<List<ProductDataModel>?> Function(List<ProductDataModel>)? onLinkProduct;
   final TabConfig? tabConfig;
   final PostConfig? postConfig;
   final SocialConfig? socialConfig;
@@ -964,7 +962,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   Future<String?> _handleEditPost(TimeLineData postDataModel) async {
     final postDataString = await IsrAppNavigator.goToEditPostView(context,
-        postData: postDataModel, onTagProduct: widget.onLinkProduct);
+        postData: postDataModel);
     return postDataString;
   }
 

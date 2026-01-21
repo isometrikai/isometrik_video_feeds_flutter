@@ -5,8 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:ism_video_reel_player/domain/domain.dart';
-import 'package:ism_video_reel_player/presentation/presentation.dart';
+import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart'
     as mc;
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart'
@@ -20,15 +19,12 @@ class PostAttributeView extends StatefulWidget {
   const PostAttributeView({
     super.key,
     required this.isEditMode,
-    this.onTagProduct,
     this.postData,
     this.newMediaDataList,
   });
 
   final bool? isEditMode;
   final List<MediaData>? newMediaDataList;
-  final Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
-      onTagProduct;
   final TimeLineData? postData;
 
   @override
@@ -658,7 +654,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Link Products
-                        if (widget.onTagProduct != null)
+                        if (IsrVideoReelConfig.createEditPostConfig.createEditPostCallBackConfig?.onLinkProduct != null)
                           _buildOptionTile(
                             icon: AssetConstants.icCartIcon,
                             title: IsrTranslationFile.linkProducts,
@@ -1476,7 +1472,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
   /// Get linked products from product selection screen
   void _getLinkedProducts() async {
     _descriptionFocusNode.unfocus();
-    final result = await widget.onTagProduct?.call(_linkedProducts.toList());
+    final result = await IsrVideoReelConfig.createEditPostConfig.createEditPostCallBackConfig?.onLinkProduct?.call(_linkedProducts.toList());
     setState(() {
       _linkedProducts.clear();
       _linkedProducts.addAll(result ?? []);

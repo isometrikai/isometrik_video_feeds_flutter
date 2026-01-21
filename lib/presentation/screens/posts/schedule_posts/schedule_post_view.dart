@@ -11,9 +11,7 @@ import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
 class SchedulePostView extends StatefulWidget {
-  const SchedulePostView({Key? key, this.onLinkProduct}) : super(key: key);
-  final Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
-      onLinkProduct;
+  const SchedulePostView({Key? key}) : super(key: key);
 
   @override
   State<SchedulePostView> createState() => _SchedulePostViewState();
@@ -400,8 +398,7 @@ class _SchedulePostViewState extends State<SchedulePostView> {
   }
 
   void _handleEditPost(TimeLineData data) async {
-    final postDataString = await IsrAppNavigator.goToEditPostView(context,
-        postData: data, onTagProduct: widget.onLinkProduct);
+    final postDataString = await IsrAppNavigator.goToEditPostView(context, postData: data);
     try {
       final postData = TimeLineData.fromMap(
           jsonDecode(postDataString!) as Map<String, dynamic>);
