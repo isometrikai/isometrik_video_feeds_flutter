@@ -1,3 +1,4 @@
+export 'comment_config.dart';
 export 'create_edit_post_config.dart';
 export 'isr_reels_properties.dart';
 export 'media_info_class.dart';

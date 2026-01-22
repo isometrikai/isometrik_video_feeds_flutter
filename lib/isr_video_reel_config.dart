@@ -45,6 +45,9 @@ class IsrVideoReelConfig {
   /// Tab configuration used by SDK modules.
   static TabConfig tabConfig = const TabConfig();
 
+  /// comment configuration used by SDK modules.
+  static CommentConfig commentConfig = const CommentConfig();
+
   /// Create, edit post configuration used by SDK modules.
   static CreateEditPostConfig createEditPostConfig = const CreateEditPostConfig();
 
@@ -78,10 +81,11 @@ class IsrVideoReelConfig {
     required String rudderStackDataPlaneUrl,
     required UserInfoClass? userInfoClass,
     required Map<String, dynamic> defaultHeaders,
-    required SocialConfig socialConfig,
-    required PostConfig postConfig,
-    required TabConfig tabConfig,
-    required CreateEditPostConfig createEditPostConfig,
+    SocialConfig? socialConfig,
+    PostConfig? postConfig,
+    TabConfig? tabConfig,
+    CommentConfig? commentConfig,
+    CreateEditPostConfig? createEditPostConfig,
     required String? googleServiceJsonPath,
     required BuildContext? Function()? getCurrentBuildContext,
   }) async {
@@ -100,10 +104,11 @@ class IsrVideoReelConfig {
     }
     await _storeHeaderValues(defaultHeaders);
     await _saveUserInformation(userInfoClass: userInfoClass);
-    IsrVideoReelConfig.socialConfig = socialConfig;
-    IsrVideoReelConfig.postConfig = postConfig;
-    IsrVideoReelConfig.tabConfig = tabConfig;
-    IsrVideoReelConfig.createEditPostConfig = createEditPostConfig;
+    IsrVideoReelConfig.socialConfig = socialConfig ?? IsrVideoReelConfig.socialConfig;
+    IsrVideoReelConfig.postConfig = postConfig ?? IsrVideoReelConfig.postConfig;
+    IsrVideoReelConfig.tabConfig = tabConfig ?? IsrVideoReelConfig.tabConfig;
+    IsrVideoReelConfig.commentConfig = commentConfig ?? IsrVideoReelConfig.commentConfig;
+    IsrVideoReelConfig.createEditPostConfig = createEditPostConfig ?? IsrVideoReelConfig.createEditPostConfig;;
     buildContext = getCurrentBuildContext?.call();
     debugPrint('IsrVideoReelConfig: initializeSdk: ${userInfoClass?.userId}');
     socialActionCubit.onSdkReinitializeChanged(
