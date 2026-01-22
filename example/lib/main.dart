@@ -35,10 +35,9 @@ Future<void> _initializeReelsSdk() async {
     baseUrl: AppUrl.appBaseUrl,
     postConfig: const isr.PostConfig(
       autoMoveToNextMedia: true,
-    ),
-    tabConfig: const isr.TabConfig(
       autoMoveToNextPost: true,
     ),
+    tabConfig: const isr.TabConfig(),
     createEditPostConfig: const isr.CreateEditPostConfig(),
     userInfoClass: isr.UserInfoClass(
       userId: userId,

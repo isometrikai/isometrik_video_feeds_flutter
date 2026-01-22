@@ -22,16 +22,12 @@ class IsrAppNavigator {
     required String tagValue,
     required TagType tagType,
     TransitionType? transitionType,
-    required TabConfig tabConfig,
-    required PostConfig postConfig,
   }) {
     final page = BlocProvider<PostListingBloc>(
       create: (_) => IsmInjectionUtils.getBloc<PostListingBloc>(),
       child: PostListingView(
         tagValue: tagValue,
         tagType: tagType,
-        tabConfig: tabConfig,
-        postConfig: postConfig,
       ),
     );
 
@@ -66,8 +62,6 @@ class IsrAppNavigator {
     required double latitude,
     required double longitude,
     TransitionType? transitionType,
-    required TabConfig tabConfig,
-    required PostConfig postConfig,
   }) {
     final page = BlocProvider<PlaceDetailsBloc>(
       create: (_) => IsmInjectionUtils.getBloc<PlaceDetailsBloc>(),
@@ -76,8 +70,6 @@ class IsrAppNavigator {
         placeName: placeName,
         latitude: latitude,
         longitude: longitude,
-        tabConfig: tabConfig,
-        postConfig: postConfig,
       ),
     );
 
@@ -90,8 +82,6 @@ class IsrAppNavigator {
     BuildContext context, {
     required String tagValue,
     required TagType tagType,
-    required TabConfig tabConfig,
-    required PostConfig postConfig,
     TransitionType? transitionType,
   }) {
     final page = BlocProvider<TagDetailsBloc>(
@@ -99,8 +89,6 @@ class IsrAppNavigator {
       child: TagDetailsView(
         tagValue: tagValue,
         tagType: tagType,
-        tabConfig: tabConfig,
-        postConfig: postConfig,
       ),
     );
 
@@ -117,8 +105,8 @@ class IsrAppNavigator {
     required PostSectionType postSectionType,
     String? tagValue,
     TagType? tagType,
-    required TabConfig tabConfig,
-    required PostConfig postConfig,
+    TabConfig? tabConfig,
+    PostConfig? postConfig,
     Function(String, String, double, double)? onTapPlace,
     TransitionType transitionType = TransitionType.rightToLeft,
   }) {
@@ -137,6 +125,8 @@ class IsrAppNavigator {
         tabDataModelList: [tabData],
         startTabIndex: 0,
         onTapPlace: onTapPlace,
+        tabConfig: tabConfig,
+        postConfig: postConfig,
       ),
     );
 

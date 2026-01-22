@@ -2,9 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:ism_video_reel_player/data/managers/local_event_manager.dart';
-import 'package:ism_video_reel_player/domain/domain.dart';
-import 'package:ism_video_reel_player/presentation/presentation.dart';
+import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
@@ -14,15 +12,11 @@ class PostListingView extends StatefulWidget {
     required this.tagValue,
     required this.tagType,
     this.searchQuery,
-    this.tabConfig = const TabConfig(),
-    this.postConfig = const PostConfig(),
   });
 
   final String tagValue;
   TagType tagType;
   final String? searchQuery;
-  final TabConfig tabConfig;
-  final PostConfig postConfig;
 
   @override
   State<PostListingView> createState() => _PostListingViewState();
@@ -653,8 +647,6 @@ class _PostListingViewState extends State<PostListingView> {
                         postSectionType: PostSectionType.tagPost,
                         tagValue: widget.tagValue,
                         tagType: widget.tagType,
-                        tabConfig: widget.tabConfig,
-                        postConfig: widget.postConfig,
                       );
                     },
                     child: _buildPostCard(post, index),
@@ -1101,8 +1093,7 @@ class _PostListingViewState extends State<PostListingView> {
     IsrAppNavigator.navigateTagDetails(context,
         tagValue: tagText,
         tagType: TagType.hashtag,
-        tabConfig: widget.tabConfig,
-        postConfig: widget.postConfig);
+    );
   }
 
   void _handlePlaceTap(String placeId, String placeName) {
@@ -1130,8 +1121,6 @@ class _PostListingViewState extends State<PostListingView> {
       placeName: result?.name ?? '',
       latitude: lat,
       longitude: long,
-      tabConfig: widget.tabConfig,
-      postConfig: widget.postConfig,
     );
   }
 
@@ -1139,8 +1128,8 @@ class _PostListingViewState extends State<PostListingView> {
     // Log profile viewed event
     _logSearchProfileEvent(user.id ?? '', user.username ?? '');
 
-    if (widget.postConfig.postCallBackConfig?.onProfileClick != null) {
-      widget.postConfig.postCallBackConfig?.onProfileClick
+    if (IsrVideoReelConfig.postConfig.postCallBackConfig?.onProfileClick != null) {
+      IsrVideoReelConfig.postConfig.postCallBackConfig?.onProfileClick
           ?.call(null, user.id ?? '', user.isFollowing);
     }
 

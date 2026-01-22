@@ -386,7 +386,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
                       // Add refresh count to force rebuild
                       key: ValueKey(
                           '${reelsData.postId}_${_refreshCounts[index] ?? 0}'),
-                      onVideoCompleted: (widget.tabConfig.autoMoveToNextPost)
+                      onVideoCompleted: (widget.reelsConfig.postConfig.autoMoveToNextPost)
                           ? () => _handleVideoCompletion(index)
                           : null,
                       reelsConfig: widget.reelsConfig,

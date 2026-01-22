@@ -298,9 +298,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       );
 
   ReelsConfig _getReelsConfig(TabDataModel tabData) => ReelsConfig(
+      postConfig: _postConfig,
       overlayPadding: _postConfig.postUIConfig?.overlayPadding,
       autoMoveNextMedia:
-          _postConfig.autoMoveToNextMedia || _tabConfig.autoMoveToNextPost,
+          _postConfig.autoMoveToNextMedia || _postConfig.autoMoveToNextPost,
       onTapPlace: (reelData, placeList) async {
         if (placeList.isListEmptyOrNull) return;
         if (placeList.length == 1) {
@@ -457,8 +458,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         placeName: placeMetaData.placeName,
         latitude: lat,
         longitude: long,
-        tabConfig: _tabConfig,
-        postConfig: _postConfig,
       );
     } catch (e) {
       debugPrint('Navigation failed: $e');
@@ -672,8 +671,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       context,
       tagValue: tagValue,
       tagType: tagType,
-      tabConfig: _tabConfig,
-      postConfig: _postConfig,
     );
   }
 

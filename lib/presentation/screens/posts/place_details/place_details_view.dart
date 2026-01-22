@@ -19,16 +19,12 @@ class PlaceDetailsView extends StatefulWidget {
     this.placeName,
     this.latitude,
     this.longitude,
-    this.tabConfig = const TabConfig(),
-    this.postConfig = const PostConfig(),
   });
 
   final String? placeId;
   final String? placeName;
   final double? latitude;
   final double? longitude;
-  final TabConfig tabConfig;
-  final PostConfig postConfig;
 
   @override
   State<PlaceDetailsView> createState() => _PlaceDetailsViewState();
@@ -312,8 +308,6 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
                     postSectionType: PostSectionType.tagPost,
                     tagValue: widget.placeId,
                     tagType: TagType.place,
-                    tabConfig: widget.tabConfig,
-                    postConfig: widget.postConfig,
                   );
                 },
                 child: _buildPostCard(post, index),
