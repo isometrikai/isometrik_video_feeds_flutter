@@ -24,7 +24,6 @@ class PostItemWidget extends StatefulWidget {
     required this.reelsDataList,
     this.videoCacheManager,
     required this.reelsConfig,
-    required this.tabConfig,
   });
 
   final Future<List<ReelsData>> Function()? onLoadMore;
@@ -38,7 +37,6 @@ class PostItemWidget extends StatefulWidget {
   final List<ReelsData> reelsDataList;
   final VideoCacheManager? videoCacheManager;
   final ReelsConfig reelsConfig;
-  final TabConfig tabConfig;
 
   @override
   State<PostItemWidget> createState() => _PostItemWidgetState();
