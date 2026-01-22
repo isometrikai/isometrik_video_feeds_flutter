@@ -437,11 +437,17 @@ class MediaKitCacheManager implements IVideoCacheManager {
     final player = Player(
       configuration: const PlayerConfiguration(
         // Buffer more video ahead for smoother playback
-        bufferSize: 16 * 1024 * 1024, // 64MB buffer
+        bufferSize: 32 * 1024 * 1024, // 32MB buffer
         logLevel: MPVLogLevel.info, // Reduce log level for better performance
         vo: 'gpu',
       ),
     );
+
+    player.stream.buffering.listen((bool buffering) {
+      if (buffering) {
+        debugPrint('Video is stalling/loading..........');
+      }
+    });
 
     final videoController = VideoController(
       player,

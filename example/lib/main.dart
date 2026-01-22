@@ -47,6 +47,7 @@ Future<void> _initializeReelsSdk() async {
     rudderStackWriteKey: '360M58NTcDMelJWL0b5F4hYE4av',
     googleServiceJsonPath: AssetConstants.googleServiceJson,
     getCurrentBuildContext: () => exNavigatorKey.currentContext,
+    enableVideoCaching: false,
     defaultHeaders: {
       'Authorization': accessToken,
       'Accept': 'application/json',
@@ -64,7 +65,8 @@ Future<void> _initializeReelsSdk() async {
       'longitude': DefaultValues.defaultLongitude,
       'x-tenant-id': AppConstants.tenantId,
       'x-project-id': AppConstants.projectId,
-    }, socialConfig: const isr.SocialConfig(),
+    },
+    socialConfig: const isr.SocialConfig(),
   );
 }
 
@@ -72,22 +74,14 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => MultiBlocProvider(
         providers: [
-          BlocProvider(
-              create: (context) => InjectionUtils.getBloc<SplashBloc>()),
-          BlocProvider(
-              create: (context) => InjectionUtils.getBloc<LandingBloc>()),
+          BlocProvider(create: (context) => InjectionUtils.getBloc<SplashBloc>()),
+          BlocProvider(create: (context) => InjectionUtils.getBloc<LandingBloc>()),
           BlocProvider(create: (context) => InjectionUtils.getBloc<AuthBloc>()),
           BlocProvider(create: (context) => InjectionUtils.getBloc<HomeBloc>()),
-          BlocProvider(
-              create: (context) => InjectionUtils.getBloc<NavItemCubit>()),
-          BlocProvider(
-              create: (context) => InjectionUtils.getBloc<ProfileBloc>()),
-          BlocProvider(
-              create: (context) =>
-                  InjectionUtils.getBloc<UploadProgressCubit>()),
-          BlocProvider(
-              create: (context) =>
-                  InjectionUtils.getBloc<CommentActionCubit>()),
+          BlocProvider(create: (context) => InjectionUtils.getBloc<NavItemCubit>()),
+          BlocProvider(create: (context) => InjectionUtils.getBloc<ProfileBloc>()),
+          BlocProvider(create: (context) => InjectionUtils.getBloc<UploadProgressCubit>()),
+          BlocProvider(create: (context) => InjectionUtils.getBloc<CommentActionCubit>()),
           ...isr.IsrVideoReelConfig.getIsmSingletonBlocProviders(),
         ],
         child: ScreenUtilInit(

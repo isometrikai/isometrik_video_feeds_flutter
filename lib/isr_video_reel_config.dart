@@ -43,6 +43,16 @@ class IsrVideoReelConfig {
   static IsmSocialActionCubit get socialActionCubit =>
       IsmInjectionUtils.getBloc<IsmSocialActionCubit>();
 
+  /// Controls whether the SDK will cache video controllers for feed playback.
+  ///
+  /// - When `true` (default), the SDK uses pooled/cached controllers for smoother
+  ///   scrolling and faster playback start.
+  /// - When `false`, the SDK avoids caching and plays videos using per-widget
+  ///   controllers (lower memory use, but less smooth preloading).
+  ///
+  /// You can set this via [initializeSdk] using [enableVideoCaching].
+  static bool enableVideoCaching = true;
+
   /// Helper method to check if context is available
   static bool get isContextAvailable => buildContext != null;
 
@@ -72,7 +82,11 @@ class IsrVideoReelConfig {
     required SocialConfig socialConfig,
     String? googleServiceJsonPath,
     BuildContext? Function()? getCurrentBuildContext,
+    bool enableVideoCaching = true,
   }) async {
+    IsrVideoReelConfig.enableVideoCaching = enableVideoCaching;
+    VideoCacheManager.setCachingEnabled(enableVideoCaching);
+
     if (isSdkInitialize) {
       await _storeHeaderValues(defaultHeaders);
       await _saveUserInformation(userInfoClass: userInfoClass);

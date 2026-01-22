@@ -27,7 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) => isr.IsmPostView(
-        startTabIndex: 3,
+        startTabIndex: 0,
         tabDataModelList: [
           isr.TabDataModel(
             postSectionType: isr.PostSectionType.forYou,
@@ -99,8 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
         postConfig: const isr.PostConfig(autoMoveToNextMedia: true),
       );
 
-  isr.ReelsWidgetBuilder buildFooter(TimeLineData postData) =>
-      isr.ReelsWidgetBuilder(
+  isr.ReelsWidgetBuilder buildFooter(TimeLineData postData) => isr.ReelsWidgetBuilder(
         alignment: Alignment.bottomLeft,
         child: Padding(
           padding: const EdgeInsets.all(8.0),
@@ -123,8 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   decoration: BoxDecoration(
                     color: Colors.white, // Set to white for the background
-                    borderRadius:
-                        BorderRadius.circular(Dimens.ten), // Rounded corners
+                    borderRadius: BorderRadius.circular(Dimens.ten), // Rounded corners
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.applyOpacity(0.1), // Light shadow
@@ -144,14 +142,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           Text(
                             'Shop',
-                            style: Styles.primaryText12
-                                .copyWith(fontWeight: FontWeight.w700),
+                            style: Styles.primaryText12.copyWith(fontWeight: FontWeight.w700),
                           ),
                           Dimens.boxHeight(Dimens.four),
                           Text(
                             '3 products',
-                            style: Styles.primaryText10
-                                .copyWith(fontWeight: FontWeight.w500),
+                            style: Styles.primaryText10.copyWith(fontWeight: FontWeight.w500),
                           ),
                         ],
                       ),
@@ -317,8 +313,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
 
-  isr.ReelsWidgetBuilder buildActionButtons(TimeLineData postData) =>
-      isr.ReelsWidgetBuilder(
+  isr.ReelsWidgetBuilder buildActionButtons(TimeLineData postData) => isr.ReelsWidgetBuilder(
         alignment: Alignment.bottomRight,
         child: Padding(
           padding: Dimens.edgeInsetsAll(8),
@@ -468,8 +463,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     height: Dimens.twentyFour,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                          Theme.of(context).primaryColor),
+                      valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
                     ),
                   )
                 : AppImage.svg(icon),
@@ -486,8 +480,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       );
 
-  Future<void> _callLikeFunction(
-      TimeLineData postData, StateSetter setState) async {
+  Future<void> _callLikeFunction(TimeLineData postData, StateSetter setState) async {
     _isLikeLoading = true;
     setState.call(() {});
     var success = false;
@@ -498,8 +491,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _homeBloc.add(LikePostEvent(
             postId: postData.id ?? '',
             userId: postData.user?.id ?? '',
-            likeAction:
-                postData.isLiked == true ? LikeAction.unlike : LikeAction.like,
+            likeAction: postData.isLiked == true ? LikeAction.unlike : LikeAction.like,
             onComplete: (success) {
               completer.complete(success);
             }));
@@ -517,8 +509,7 @@ class _HomeScreenState extends State<HomeScreen> {
         if (postData.isLiked == true) {
           postData.engagementMetrics?.likeTypes?.like = currentCount + 1;
         } else {
-          postData.engagementMetrics?.likeTypes?.like =
-              (currentCount > 0) ? currentCount - 1 : 0;
+          postData.engagementMetrics?.likeTypes?.like = (currentCount > 0) ? currentCount - 1 : 0;
         }
       }
       setState.call(() {});

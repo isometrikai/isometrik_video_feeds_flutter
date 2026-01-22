@@ -326,6 +326,8 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
 
   bool _isInitialized = false;
 
+  bool get _isVideoCachingEnabled => VideoCacheManager.isCachingEnabled;
+
   // Track refresh count for each index to force rebuild
   final Map<int, int> _refreshCounts = {};
 
@@ -433,7 +435,9 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
             criticalUrls.add(mediaItem.thumbnailUrl);
             debugPrint('🚀 MainWidget: Prioritizing thumbnail: ${mediaItem.thumbnailUrl}');
           }
-          nonCriticalUrls.add(mediaItem.mediaUrl);
+          if (_isVideoCachingEnabled) {
+            nonCriticalUrls.add(mediaItem.mediaUrl);
+          }
         } else {
           // Image - critical to show immediately
           criticalUrls.add(mediaItem.mediaUrl);
@@ -453,7 +457,7 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
       }
 
       // OPTIMIZATION: Start video loading immediately but don't wait for it
-      if (nonCriticalUrls.isNotEmpty) {
+      if (_isVideoCachingEnabled && nonCriticalUrls.isNotEmpty) {
         unawaited(MediaCacheFactory.precacheMedia(nonCriticalUrls, highPriority: true).then((_) {
           debugPrint('✅ MainWidget: Videos loaded (${nonCriticalUrls.length} items)');
         }));
@@ -771,7 +775,9 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
         if (mediaItem.mediaUrl.isEmpty) continue;
 
         if (mediaItem.mediaType == MediaType.video.value) {
-          backgroundUrls.add(mediaItem.mediaUrl);
+          if (_isVideoCachingEnabled) {
+            backgroundUrls.add(mediaItem.mediaUrl);
+          }
           if (mediaItem.thumbnailUrl.isNotEmpty) {
             backgroundUrls.add(mediaItem.thumbnailUrl);
           }
@@ -818,7 +824,9 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
         if (mediaItem.thumbnailUrl.isNotEmpty) {
           currentPostThumbnails.add(mediaItem.thumbnailUrl);
         }
-        currentPostMedia.add(mediaItem.mediaUrl);
+        if (_isVideoCachingEnabled) {
+          currentPostMedia.add(mediaItem.mediaUrl);
+        }
       } else {
         // Image - high priority
         currentPostMedia.add(mediaItem.mediaUrl);
@@ -851,7 +859,9 @@ class _PostItemWidgetState extends State<PostItemWidget> with AutomaticKeepAlive
         if (mediaItem.mediaUrl.isEmpty) continue;
 
         if (mediaItem.mediaType == MediaType.video.value) {
-          nearbyMedia.add(mediaItem.mediaUrl);
+          if (_isVideoCachingEnabled) {
+            nearbyMedia.add(mediaItem.mediaUrl);
+          }
           if (mediaItem.thumbnailUrl.isNotEmpty) {
             nearbyMedia.add(mediaItem.thumbnailUrl);
           }

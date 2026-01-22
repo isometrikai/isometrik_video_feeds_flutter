@@ -106,21 +106,17 @@ class CachedVideoPlayerWrapper implements IVideoPlayerController {
       // Ensure player is initialized
       await _player.initialize();
       
-      // Check if video is stuck at the beginning
-      final isStuckAtStart = _controller.value.position == Duration.zero && 
-                             !_controller.value.isPlaying;
-      
-      if (_controller.value.isBuffering || isStuckAtStart) {
-        // Seek to unstick the video
-        final currentPos = _controller.value.position;
-        if (currentPos == Duration.zero) {
-          await _controller.seekTo(const Duration(milliseconds: 100));
-        } else {
-          await _controller.seekTo(currentPos);
-        }
+      // When this is called, we already believe playback is stuck.
+      // Nudge seek + ensure play is triggered.
+      final currentPos = _controller.value.position;
+      if (currentPos == Duration.zero) {
+        await _controller.seekTo(const Duration(milliseconds: 120));
+      } else {
+        await _controller.seekTo(currentPos);
         await Future.delayed(const Duration(milliseconds: 50));
+        await _controller.seekTo(currentPos + const Duration(milliseconds: 250));
       }
-      
+
       if (!_controller.value.isPlaying) {
         await _controller.play();
         debugPrint('▶️ CachedVideoPlayer force play triggered');

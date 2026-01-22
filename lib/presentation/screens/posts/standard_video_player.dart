@@ -86,21 +86,19 @@ class StandardVideoPlayerController implements IVideoPlayerController {
     debugPrint('🔄 StandardVideoPlayer force resuming... isPlaying=${_controller.value.isPlaying}, isBuffering=${_controller.value.isBuffering}, position=${_controller.value.position}');
     
     try {
-      // Check if video is stuck at the beginning
-      final isStuckAtStart = _controller.value.position == Duration.zero && 
-                             !_controller.value.isPlaying;
-      
-      if (_controller.value.isBuffering || isStuckAtStart) {
-        // Seek to unstick the video
-        final currentPos = _controller.value.position;
-        if (currentPos == Duration.zero) {
-          await _controller.seekTo(const Duration(milliseconds: 100));
-        } else {
-          await _controller.seekTo(currentPos);
-        }
+      // When this is called, we already believe playback is stuck.
+      // Be aggressive but safe: nudge seek + ensure play is triggered.
+      final currentPos = _controller.value.position;
+      if (currentPos == Duration.zero) {
+        await _controller.seekTo(const Duration(milliseconds: 120));
+      } else {
+        // Seek to current position (refresh pipeline), then nudge slightly forward.
+        await _controller.seekTo(currentPos);
         await Future.delayed(const Duration(milliseconds: 50));
+        await _controller.seekTo(currentPos + const Duration(milliseconds: 250));
       }
-      
+
+      // Restart playback if needed.
       if (!_controller.value.isPlaying) {
         await _controller.play();
         debugPrint('▶️ StandardVideoPlayer force play triggered');
@@ -193,17 +191,13 @@ class StandardVideoCacheManager implements IVideoCacheManager {
       url = url.replaceFirst('http:', 'https:');
     }
 
-    // For HLS streams, add specific headers and format hint
+    // For HLS streams, keep headers minimal to avoid edge-case server behavior.
     final isHls = url.toLowerCase().endsWith('.m3u8');
-    final headers = {
+    final headers = <String, String>{
+      'User-Agent': 'FlutterVideoPlayer',
       'Accept': '*/*',
-      'Accept-Language': 'en-US,en;q=0.9',
-      'Accept-Encoding': 'gzip, deflate, br',
-      'Connection': 'keep-alive',
-      'Cache-Control': 'no-cache',
       if (isHls)
-        'X-Playback-Session-Id':
-            DateTime.now().millisecondsSinceEpoch.toString(),
+        'X-Playback-Session-Id': DateTime.now().millisecondsSinceEpoch.toString(),
     };
 
     return VideoPlayerController.networkUrl(

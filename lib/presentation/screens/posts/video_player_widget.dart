@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -6,6 +7,9 @@ import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
+import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 /// Configure VisibilityDetector for faster updates (smoother playback)
@@ -55,6 +59,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   bool _isInitializing = false;
   bool _isVisible = false;
   bool _isDisposed = false;
+  bool _ownsController = false;
   bool _isManuallyPaused =
       false; // Track if video was manually paused (e.g., long press)
   bool _hasLoggedWatchEvent = false; // Track if watch event has been logged
@@ -79,14 +84,81 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   num _remainingDuration = 0;
 
+  // HLS (.m3u8) stuck detection: track whether playback position advances.
+  int _lastPositionMs = -1;
+  int _lastPositionChangeAtMs = 0;
+  int _lastRecoveryAttemptAtMs = 0;
+
+  // "Browser/VLC-style" retry state:
+  // - Retry initial load with exponential backoff.
+  // - When reloading, resume near the last known position.
+  int _initRetryAttempts = 0;
+  static const int _maxInitRetryAttempts = 4;
+  Timer? _initRetryTimer;
+  Duration? _pendingResumePosition;
+
   @override
   void initState() {
     super.initState();
     // OPTIMIZATION: Configure VisibilityDetector for faster updates
     _configureVisibilityDetector();
-    _initializeVideoPlayer();
-    // Start checking if controller becomes ready asynchronously
-    _startControllerReadyCheck();
+    if (VideoCacheManager.isCachingEnabled) {
+      _initializeVideoPlayer();
+      // Start checking if controller becomes ready asynchronously
+      _startControllerReadyCheck();
+    } else {
+      _initializeVideoPlayerWithoutCaching();
+    }
+  }
+
+  Duration _computeBackoffDelay(int attempt) {
+    // Exponential backoff: 300ms, 600ms, 1200ms, 2400ms...
+    final baseMs = 300 * (1 << (attempt.clamp(0, 5)));
+    return Duration(milliseconds: baseMs);
+  }
+
+  void _scheduleInitRetry({required String reason}) {
+    if (_isDisposed || !_isVisible || widget.isPreloaded) return;
+    if (_initRetryAttempts >= _maxInitRetryAttempts) return;
+    if (_isInitializing) return;
+
+    _initRetryTimer?.cancel();
+    final delay = _computeBackoffDelay(_initRetryAttempts);
+    debugPrint(
+      '🔁 VideoPlayerWidget: init retry scheduled (attempt ${_initRetryAttempts + 1}/$_maxInitRetryAttempts, delay=$delay) reason=$reason url=${widget.mediaUrl}',
+    );
+
+    _initRetryTimer = Timer(delay, () {
+      if (_isDisposed || !_isVisible || _isInitialized) return;
+      _initRetryAttempts++;
+      // Clear cached controller before retry to mimic browser reload.
+      if (VideoCacheManager.isCachingEnabled) {
+        widget.videoCacheManager.clearMedia(widget.mediaUrl);
+      }
+      _isInitializing = false;
+      _initializeVideoPlayer();
+    });
+  }
+
+  Future<void> _seekToPendingResumeIfAny() async {
+    final controller = _videoPlayerController;
+    final resume = _pendingResumePosition;
+    if (_isDisposed || controller == null || resume == null) return;
+    if (!controller.isInitialized || controller.isDisposed) return;
+
+    _pendingResumePosition = null;
+    if (resume <= Duration.zero) return;
+
+    // Seek slightly back to avoid landing on a bad boundary/segment.
+    final target = resume > const Duration(milliseconds: 700)
+        ? resume - const Duration(milliseconds: 700)
+        : Duration.zero;
+    try {
+      await controller.seekTo(target);
+      debugPrint('⏪ VideoPlayerWidget: resumed near $target');
+    } catch (e) {
+      debugPrint('⚠️ VideoPlayerWidget: resume seek failed: $e');
+    }
   }
 
   /// Called when the video playing state changes
@@ -110,6 +182,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   /// Periodically check if the controller has become ready (initialized async in cache)
   void _startControllerReadyCheck() {
+    if (!VideoCacheManager.isCachingEnabled) return;
     _controllerReadyCheckTimer?.cancel();
     _controllerReadyCheckTimer =
         Timer.periodic(const Duration(milliseconds: 200), (_) {
@@ -161,6 +234,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   // }
 
   Future<void> _initializeVideoPlayer() async {
+    if (!VideoCacheManager.isCachingEnabled) {
+      return _initializeVideoPlayerWithoutCaching();
+    }
     if (_isInitializing || widget.mediaUrl.isEmpty) return;
 
     _isInitializing = true;
@@ -171,6 +247,12 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     }
 
     try {
+      // Reset init retry counter once we begin a fresh initialization pass.
+      if (_initRetryAttempts > 0 && _isVisible) {
+        debugPrint(
+            '🔁 VideoPlayerWidget: attempting init retry #$_initRetryAttempts');
+      }
+
       // OPTIMIZATION: Try to get already cached and initialized controller first
       _videoPlayerController = widget.videoCacheManager
           .getCachedMedia(widget.mediaUrl) as IVideoPlayerController?;
@@ -182,6 +264,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         debugPrint(
             '✅ VideoPlayerWidget: Using cached initialized controller for: ${widget.mediaUrl}');
         await _setupVideoController();
+        await _seekToPendingResumeIfAny();
         if (mounted) {
           setState(() {
             _isInitialized = true;
@@ -208,6 +291,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           _videoPlayerController!.isInitialized &&
           !_videoPlayerController!.isDisposed) {
         await _setupVideoController();
+        await _seekToPendingResumeIfAny();
         if (mounted) {
           setState(() {
             _isInitialized = true;
@@ -217,36 +301,103 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       } else {
         debugPrint(
             '⚠️ VideoPlayerWidget: Failed to initialize video: ${widget.mediaUrl}');
-        // If visible, schedule a retry
-        if (_isVisible && mounted) {
-          debugPrint(
-              '🔄 VideoPlayerWidget: Scheduling retry for visible video...');
-          Future.delayed(const Duration(seconds: 1), () {
-            if (!_isDisposed && _isVisible && !_isInitialized) {
-              _isInitializing = false;
-              _initializeVideoPlayer();
-            }
-          });
-        }
+        _scheduleInitRetry(reason: 'cache-init-failed');
       }
     } catch (e) {
       debugPrint('❌ VideoPlayerWidget: Error initializing video: $e');
-      // If visible, schedule a retry on error
-      if (_isVisible && mounted) {
-        debugPrint('🔄 VideoPlayerWidget: Scheduling retry after error...');
-        Future.delayed(const Duration(seconds: 2), () {
-          if (!_isDisposed && _isVisible && !_isInitialized) {
-            _isInitializing = false;
-            _initializeVideoPlayer();
-          }
-        });
-      }
+      _scheduleInitRetry(reason: 'exception:$e');
     } finally {
       _isInitializing = false;
       if (mounted) {
         setState(() {});
       }
     }
+  }
+
+  Future<void> _initializeVideoPlayerWithoutCaching() async {
+    if (_isInitializing || widget.mediaUrl.isEmpty) return;
+
+    _isInitializing = true;
+    if (mounted) {
+      setState(() {});
+    }
+
+    try {
+      // Dispose any previously owned controller when re-initializing.
+      if (_ownsController &&
+          _videoPlayerController != null &&
+          !_videoPlayerController!.isDisposed) {
+        await _videoPlayerController!.dispose();
+      }
+      _ownsController = false;
+      _videoPlayerController = null;
+
+      final controller = await _createUncachedController(widget.mediaUrl);
+      if (controller == null) {
+        debugPrint(
+            '⚠️ VideoPlayerWidget: Failed to create uncached controller for: ${widget.mediaUrl}');
+        return;
+      }
+
+      _videoPlayerController = controller;
+      _ownsController = true;
+
+      await _setupVideoController();
+      await _seekToPendingResumeIfAny();
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+        _checkInitialVisibility();
+      }
+    } catch (e) {
+      debugPrint('❌ VideoPlayerWidget: Error initializing uncached video: $e');
+    } finally {
+      _isInitializing = false;
+      if (mounted) {
+        setState(() {});
+      }
+    }
+  }
+
+  Future<IVideoPlayerController?> _createUncachedController(
+      String mediaUrl) async {
+    // Prefer the cache manager's player type to keep behavior consistent across the SDK.
+    final type = widget.videoCacheManager.currentPlayerType;
+
+    // Local file support.
+    if (Utility.isLocalUrl(mediaUrl)) {
+      final file = File(mediaUrl);
+      final controller = VideoPlayerController.file(file);
+      await controller.initialize();
+      return StandardVideoPlayerController(controller);
+    }
+
+    // Normalize scheme.
+    var url = mediaUrl;
+    if (url.startsWith('http:')) {
+      url = url.replaceFirst('http:', 'https:');
+    }
+
+    // Android: use `video_player` for lowest overhead.
+    if (Platform.isAndroid || type == VideoPlayerType.standard) {
+      final controller = VideoPlayerController.networkUrl(Uri.parse(url));
+      await controller.initialize().timeout(
+            const Duration(seconds: 15),
+            onTimeout: () => throw TimeoutException(
+              'Video initialization timeout',
+              const Duration(seconds: 15),
+            ),
+          );
+      return StandardVideoPlayerController(controller);
+    }
+
+    // iOS/macOS: use `media_kit` (same player family as cached mode), but without caching.
+    MediaKit.ensureInitialized();
+    final player = Player();
+    final videoController = VideoController(player);
+    await player.open(Media(url), play: false);
+    return MediaKitVideoPlayerWrapper(player, videoController);
   }
 
   Future<void> _setupVideoController() async {
@@ -317,15 +468,24 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     final position = _videoPlayerController!.position;
     final duration = _videoPlayerController!.duration;
 
+    // Update "position is advancing" tracking for stuck detection.
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    final posMs = position.inMilliseconds;
+    if (_lastPositionMs != posMs) {
+      _lastPositionMs = posMs;
+      _lastPositionChangeAtMs = nowMs;
+    } else if (_lastPositionChangeAtMs == 0) {
+      _lastPositionChangeAtMs = nowMs;
+    }
+
     // Track maximum watch position for analytics
     if (position.inMilliseconds > _maxWatchPosition.inMilliseconds) {
       _maxWatchPosition = position;
     }
 
     // OPTIMIZATION: Throttle progress callbacks to every 200ms for smoother UI
-    final now = DateTime.now().millisecondsSinceEpoch;
-    if (now - _lastProgressCallbackTime >= 200) {
-      _lastProgressCallbackTime = now;
+    if (nowMs - _lastProgressCallbackTime >= 200) {
+      _lastProgressCallbackTime = nowMs;
       widget.videoProgressCallBack
           ?.call(duration.inMilliseconds, position.inMilliseconds);
     }
@@ -470,7 +630,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   void _startStuckVideoDetection() {
     _stopStuckVideoDetection(); // Cancel any existing timer
     _recoveryAttempts = 0; // Reset recovery attempts
-
+_lastRecoveryAttemptAtMs = 0;
     // First check after 300ms (catch early stuck videos faster)
     Future.delayed(const Duration(milliseconds: 300), () {
       if (!_isDisposed && _isVisible) {
@@ -500,17 +660,43 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     if (_videoPlayerController != null &&
         _videoPlayerController!.isInitialized &&
         !_videoPlayerController!.isDisposed) {
-      // If video is visible but not playing, try to recover
-      if (!_videoPlayerController!.isPlaying) {
+      final controller = _videoPlayerController!;
+      final nowMs = DateTime.now().millisecondsSinceEpoch;
+
+      // Prevent over-aggressive recovery loops (can worsen HLS).
+      if (_lastRecoveryAttemptAtMs != 0 &&
+          nowMs - _lastRecoveryAttemptAtMs < 900) {
+        return;
+      }
+
+      final posMs = controller.position.inMilliseconds;
+      final durMs = controller.duration.inMilliseconds;
+      final timeSincePosChangeMs =
+          _lastPositionChangeAtMs == 0 ? 0 : (nowMs - _lastPositionChangeAtMs);
+
+      // HLS may report "playing" while effectively stalled/buffering.
+      final isStalledWhileVisible = controller.isBuffering ||
+          (controller.isPlaying && timeSincePosChangeMs >= 1500);
+
+      // If video is visible but not playing OR stalled, try to recover.
+      if (!controller.isPlaying || isStalledWhileVisible) {
         _recoveryAttempts++;
         debugPrint(
             '🔄 Detected stuck video, recovery attempt $_recoveryAttempts/$_maxRecoveryAttempts...');
-
+        _lastRecoveryAttemptAtMs = nowMs;
         // Set volume and force resume
         unawaited(
-            _videoPlayerController!.setVolume(widget.isMuted ? 0.0 : 1.0));
-        unawaited(_videoPlayerController!.forceResume());
+            controller.setVolume(widget.isMuted ? 0.0 : 1.0));
+        unawaited(controller.forceResume());
 
+        // If we’re stuck mid-stream (position > 0), nudge the seek forward slightly.
+        // This often unsticks HLS pipelines that stall on a boundary/segment.
+        if (posMs > 500 && durMs > 0) {
+          final nudgeToMs = (posMs + 300).clamp(0, durMs - 200);
+          if (nudgeToMs != posMs) {
+            unawaited(controller.seekTo(Duration(milliseconds: nudgeToMs)));
+          }
+        }
         // If too many recovery attempts, try re-initializing the video
         if (_recoveryAttempts >= _maxRecoveryAttempts) {
           debugPrint(
@@ -536,9 +722,27 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
     debugPrint('🔄 Re-initializing video: ${widget.mediaUrl}');
 
-    // Clear the cached controller
-    widget.videoCacheManager.clearMedia(widget.mediaUrl);
+    // Capture resume position before clearing controllers (best-effort).
+    if (_videoPlayerController != null &&
+        _videoPlayerController!.isInitialized &&
+        !_videoPlayerController!.isDisposed) {
+      _pendingResumePosition = _videoPlayerController!.position;
+      debugPrint(
+          '⏯️ VideoPlayerWidget: will resume from $_pendingResumePosition');
+    }
 
+    // Clear the cached controller (if caching is enabled)
+    if (VideoCacheManager.isCachingEnabled) {
+      widget.videoCacheManager.clearMedia(widget.mediaUrl);
+    } else {
+      // Dispose owned controller in non-caching mode.
+      if (_ownsController &&
+          _videoPlayerController != null &&
+          !_videoPlayerController!.isDisposed) {
+        await _videoPlayerController!.dispose();
+      }
+      _ownsController = false;
+    }
     // Reset state
     _isInitialized = false;
     _videoPlayerController = null;
@@ -547,7 +751,11 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     await Future.delayed(const Duration(milliseconds: 100));
 
     if (!_isDisposed && _isVisible) {
-      await _initializeVideoPlayer();
+      if (VideoCacheManager.isCachingEnabled) {
+        await _initializeVideoPlayer();
+      } else {
+        await _initializeVideoPlayerWithoutCaching();
+      }
     }
   }
 
@@ -636,7 +844,11 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     // Handle media URL changes
     if (oldWidget.mediaUrl != widget.mediaUrl) {
       _isInitialized = false;
-      _initializeVideoPlayer();
+      if (VideoCacheManager.isCachingEnabled) {
+        _initializeVideoPlayer();
+      } else {
+        _initializeVideoPlayerWithoutCaching();
+      }
     }
   }
 
@@ -646,6 +858,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     // Cancel timers
     _stopStuckVideoDetection();
     _controllerReadyCheckTimer?.cancel();
+    _initRetryTimer?.cancel();
+    _initRetryTimer = null;
     // Log watch event when widget is disposed (user navigates away)
     _logWatchEventIfNeeded();
     // Safety check: ensure controller is valid and not already disposed
@@ -662,6 +876,14 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         debugPrint('⚠️ VideoPlayerWidget: Error during dispose: $e');
       }
       // Don't dispose controller here - let cache manager handle it
+    }
+
+    // In non-caching mode, this widget owns the controller and must dispose it.
+    if (_ownsController &&
+        _videoPlayerController != null &&
+        _videoPlayerController!.isInitialized &&
+        !_videoPlayerController!.isDisposed) {
+      unawaited(_videoPlayerController!.dispose());
     }
     super.dispose();
   }

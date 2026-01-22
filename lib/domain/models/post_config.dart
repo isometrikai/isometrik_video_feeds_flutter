@@ -18,7 +18,7 @@ class PostConfig {
   }) =>
       PostConfig(
         postUIConfig: postUIConfig ?? this.postUIConfig,
-        postCallBackConfig: postCallBackConfig ?? postCallBackConfig,
+        postCallBackConfig: postCallBackConfig ?? this.postCallBackConfig,
       );
 }
 
