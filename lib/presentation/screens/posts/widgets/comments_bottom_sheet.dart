@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -16,6 +17,7 @@ class CommentsBottomSheet extends StatefulWidget {
     this.onTapHasTag,
     this.postData,
     this.tabData,
+    this.commentConfig,
     Key? key,
   }) : super(key: key);
 
@@ -25,6 +27,7 @@ class CommentsBottomSheet extends StatefulWidget {
   final Function(String)? onTapHasTag;
   final TimeLineData? postData;
   final TabDataModel? tabData;
+  final CommentConfig? commentConfig;
 
   @override
   State<CommentsBottomSheet> createState() => _CommentsBottomSheetState();
@@ -43,6 +46,18 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   var _isLoadingMore = false;
   final _scrollController = ScrollController();
   final Map<String, GlobalKey> _commentItemKeys = {};
+  CommentConfig get _commentConfig =>
+      widget.commentConfig ?? IsrVideoReelConfig.commentConfig;
+
+  // Config helper getters
+  CommentUIConfig? get _uiConfig => _commentConfig.commentUIConfig;
+  BottomSheetConfig? get _bottomSheetConfig => _uiConfig?.bottomSheetConfig;
+  CommentHeaderConfig? get _headerConfig => _uiConfig?.headerConfig;
+  CommentItemConfig? get _commentItemConfig => _uiConfig?.commentItemConfig;
+  ReplyFieldConfig? get _replyFieldConfig => _uiConfig?.replyFieldConfig;
+  CommentPlaceholderConfig? get _placeholderConfig =>
+      _uiConfig?.placeholderConfig;
+  MoreOptionsConfig? get _moreOptionsConfig => _uiConfig?.moreOptionsConfig;
 
   @override
   void initState() {
@@ -151,11 +166,16 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
             padding: EdgeInsets.only(
               bottom: MediaQuery.of(context).viewInsets.bottom,
             ),
-            constraints: BoxConstraints(maxHeight: 80.percentHeight),
+            constraints: BoxConstraints(
+              maxHeight: (_bottomSheetConfig?.maxHeight ?? 80.0).percentHeight,
+            ),
             decoration: BoxDecoration(
-              color: IsrColors.white,
+              color: _bottomSheetConfig?.backgroundColor ?? IsrColors.white,
               borderRadius: BorderRadius.vertical(
-                top: Radius.circular(20.responsiveDimension),
+                top: Radius.circular(
+                  (_bottomSheetConfig?.borderRadius ?? 20.0)
+                      .responsiveDimension,
+                ),
               ),
             ),
             child: Column(
@@ -163,24 +183,31 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
               children: [
                 // Header
                 Padding(
-                  padding: IsrDimens.edgeInsetsSymmetric(
-                    horizontal: 16.responsiveDimension,
-                    vertical: 20.responsiveDimension,
-                  ),
+                  padding: _headerConfig?.headerPadding ??
+                      IsrDimens.edgeInsetsSymmetric(
+                        horizontal: 16.responsiveDimension,
+                        vertical: 20.responsiveDimension,
+                      ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
                         IsrTranslationFile.allComments,
-                        style: IsrStyles.primaryText18.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: _headerConfig?.titleStyle ??
+                            IsrStyles.primaryText18.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
                       ),
                       TapHandler(
                         onTap: () {
                           context.pop(_totalCommentsCount);
                         },
-                        child: const AppImage.svg(AssetConstants.icClose),
+                        child: AppImage.svg(
+                          _headerConfig?.closeIcon ?? AssetConstants.icClose,
+                          width: _headerConfig?.closeIconSize,
+                          height: _headerConfig?.closeIconSize,
+                          color: _headerConfig?.closeIconColor,
+                        ),
                       ),
                     ],
                   ),
@@ -192,12 +219,15 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                     if (_postCommentList.isNotEmpty == true)
                       ListView.separated(
                         controller: _scrollController,
-                        padding: IsrDimens.edgeInsetsAll(IsrDimens.sixteen),
+                        padding: _bottomSheetConfig?.padding ??
+                            IsrDimens.edgeInsetsAll(IsrDimens.sixteen),
                         itemCount: _postCommentList.length,
                         cacheExtent: 500,
                         addAutomaticKeepAlives: true,
                         addRepaintBoundaries: true,
-                        separatorBuilder: (_, __) => 16.responsiveVerticalSpace,
+                        separatorBuilder: (_, __) =>
+                            (_commentItemConfig?.commentSpacing ?? 16.0)
+                                .responsiveVerticalSpace,
                         itemBuilder: (context, index) =>
                             _buildCommentItem(_postCommentList[index]),
                       )
@@ -251,14 +281,16 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                           comment.commentedByUserId ?? '');
                                     }
                                   },
-                                style: IsrStyles.primaryText14.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                style: _commentItemConfig?.usernameStyle ??
+                                    IsrStyles.primaryText14.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
                               ),
                               const TextSpan(text: ' '),
                               ...Utility.buildCommentTextSpans(
                                 '${comment.comment ?? ''}',
-                                IsrStyles.primaryText14,
+                                _commentItemConfig?.commentTextStyle ??
+                                    IsrStyles.primaryText14,
                                 comment.tags,
                                 onUsernameTap: (userId) {
                                   widget.onTapProfile?.call(userId);
@@ -279,16 +311,18 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                               Utility.getTimeAgoFromDateTime(
                                   comment.commentedOn,
                                   showJustNow: true),
-                              style: IsrStyles.primaryText12.copyWith(
-                                color: '828282'.toColor(),
-                              ),
+                              style: _commentItemConfig?.timestampStyle ??
+                                  IsrStyles.primaryText12.copyWith(
+                                    color: '828282'.toColor(),
+                                  ),
                             ),
                             if (comment.id != null && comment.id!.isNotEmpty)
                               Text(
                                 '${comment.likeCount} ${(comment.likeCount ?? 0) <= 1 ? IsrTranslationFile.like : IsrTranslationFile.likes}',
-                                style: IsrStyles.primaryText12.copyWith(
-                                  color: '828282'.toColor(),
-                                ),
+                                style: _commentItemConfig?.likeCountStyle ??
+                                    IsrStyles.primaryText12.copyWith(
+                                      color: '828282'.toColor(),
+                                    ),
                               ),
                             if (comment.id != null && comment.id!.isNotEmpty)
                               TapHandler(
@@ -302,10 +336,11 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                 },
                                 child: Text(
                                   IsrTranslationFile.reply,
-                                  style: IsrStyles.primaryText12.copyWith(
-                                    color: Theme.of(context).primaryColor,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  style: _commentItemConfig?.replyButtonStyle ??
+                                      IsrStyles.primaryText12.copyWith(
+                                        color: Theme.of(context).primaryColor,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                 ),
                               ),
                             if (!comment.showReply &&
@@ -330,9 +365,10 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                 },
                                 child: Text(
                                   IsrTranslationFile.viewReplies,
-                                  style: IsrStyles.primaryText12.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                      color: '94A0AF'.toColor()),
+                                  style: _commentItemConfig?.viewRepliesStyle ??
+                                      IsrStyles.primaryText12.copyWith(
+                                          fontWeight: FontWeight.w700,
+                                          color: '94A0AF'.toColor()),
                                 ),
                               )
                           ],
@@ -373,10 +409,16 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                           padding: 5.responsiveDimension,
                           onTap: () async => await showDialog(
                             context: context,
-                            builder: (context) => _buildMoreOptionUI(comment),
+                            builder: (context) => _buildDialogWrapper(
+                              child: _buildMoreOptionUI(comment),
+                            ),
                           ),
-                          child: const AppImage.svg(
-                            AssetConstants.icVerticalMoreMenu,
+                          child: AppImage.svg(
+                            _commentItemConfig?.moreIcon ??
+                                AssetConstants.icVerticalMoreMenu,
+                            width: _commentItemConfig?.moreIconSize,
+                            height: _commentItemConfig?.moreIconSize,
+                            color: _commentItemConfig?.moreIconColor,
                           ),
                         ),
                       ],
@@ -419,9 +461,14 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                     ...List.generate(
                                       comment.childComments?.length ?? 0,
                                       (index) => Padding(
-                                        padding: IsrDimens.edgeInsets(
-                                            left: 32.responsiveDimension,
-                                            top: 16.responsiveDimension),
+                                        padding: _commentItemConfig
+                                                ?.childCommentPadding ??
+                                            IsrDimens.edgeInsets(
+                                                left: (_commentItemConfig
+                                                            ?.childCommentIndent ??
+                                                        32.0)
+                                                    .responsiveDimension,
+                                                top: 16.responsiveDimension),
                                         child: _buildChildCommentItem(
                                             comment.childComments![index],
                                             false),
@@ -435,15 +482,24 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                       },
                                       child: Container(
                                         alignment: Alignment.centerLeft,
-                                        padding: IsrDimens.edgeInsets(
-                                            left: 32.responsiveDimension,
-                                            top: 16.responsiveDimension),
+                                        padding: _commentItemConfig
+                                                ?.childCommentPadding ??
+                                            IsrDimens.edgeInsets(
+                                                left: (_commentItemConfig
+                                                            ?.childCommentIndent ??
+                                                        32.0)
+                                                    .responsiveDimension,
+                                                top: 16.responsiveDimension),
                                         child: Text(
                                           IsrTranslationFile.hideReplies,
-                                          style: IsrStyles.secondaryText12
-                                              .copyWith(
-                                                  fontWeight: FontWeight.w700,
-                                                  color: '94A0AF'.toColor()),
+                                          style: _commentItemConfig
+                                                  ?.hideRepliesStyle ??
+                                              IsrStyles.secondaryText12
+                                                  .copyWith(
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                      color:
+                                                          '94A0AF'.toColor()),
                                         ),
                                       ),
                                     )
@@ -485,14 +541,16 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                     comment.commentedByUserId ?? '');
                               }
                             },
-                          style: IsrStyles.primaryText14.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: _commentItemConfig?.usernameStyle ??
+                              IsrStyles.primaryText14.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
                         ),
                         const TextSpan(text: ' '),
                         ...Utility.buildCommentTextSpans(
                           '${comment.comment ?? ''}',
-                          IsrStyles.primaryText14,
+                          _commentItemConfig?.commentTextStyle ??
+                              IsrStyles.primaryText14,
                           comment.tags,
                           onUsernameTap: (userId) {
                             widget.onTapProfile?.call(userId);
@@ -512,16 +570,18 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                       Text(
                         Utility.getTimeAgoFromDateTime(comment.commentedOn,
                             showJustNow: true),
-                        style: IsrStyles.primaryText12.copyWith(
-                          color: '828282'.toColor(),
-                        ),
+                        style: _commentItemConfig?.timestampStyle ??
+                            IsrStyles.primaryText12.copyWith(
+                              color: '828282'.toColor(),
+                            ),
                       ),
                       if (comment.id != null && comment.id!.isNotEmpty)
                         Text(
                           '$likeCount ${likeCount <= 1 ? IsrTranslationFile.like : IsrTranslationFile.likes}',
-                          style: IsrStyles.primaryText12.copyWith(
-                            color: '828282'.toColor(),
-                          ),
+                          style: _commentItemConfig?.likeCountStyle ??
+                              IsrStyles.primaryText12.copyWith(
+                                color: '828282'.toColor(),
+                              ),
                         ),
                       if (isReply) ...[
                         TapHandler(
@@ -530,10 +590,11 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                           },
                           child: Text(
                             IsrTranslationFile.reply,
-                            style: IsrStyles.primaryText12.copyWith(
-                              color: Theme.of(context).primaryColor,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: _commentItemConfig?.replyButtonStyle ??
+                                IsrStyles.primaryText12.copyWith(
+                                  color: Theme.of(context).primaryColor,
+                                  fontWeight: FontWeight.w600,
+                                ),
                           ),
                         ),
                       ],
@@ -577,11 +638,18 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                     onTap: () async {
                       await showDialog(
                         context: context,
-                        builder: (context) => _buildMoreOptionUI(comment),
+                        builder: (context) => _buildDialogWrapper(
+                          child: _buildMoreOptionUI(comment),
+                        ),
                       );
                     },
-                    child:
-                        const AppImage.svg(AssetConstants.icVerticalMoreMenu),
+                    child: AppImage.svg(
+                      _commentItemConfig?.moreIcon ??
+                          AssetConstants.icVerticalMoreMenu,
+                      width: _commentItemConfig?.moreIconSize,
+                      height: _commentItemConfig?.moreIconSize,
+                      color: _commentItemConfig?.moreIconColor,
+                    ),
                   ),
                 ],
               ),
@@ -598,17 +666,22 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
             // Dialog box
             Container(
               constraints: BoxConstraints(
-                maxWidth: 300.responsiveDimension,
-                maxHeight: 200.responsiveDimension,
+                maxWidth:
+                    (_moreOptionsConfig?.maxWidth ?? 300.0).responsiveDimension,
+                maxHeight: (_moreOptionsConfig?.maxHeight ?? 200.0)
+                    .responsiveDimension,
               ),
-              padding: IsrDimens.edgeInsetsAll(IsrDimens.sixteen),
-              margin: IsrDimens.edgeInsetsAll(IsrDimens.sixteen),
-              decoration: BoxDecoration(
-                color: IsrColors.white,
-                borderRadius: BorderRadius.all(
-                  Radius.circular(IsrDimens.twenty),
-                ),
-              ),
+              padding: _moreOptionsConfig?.dialogPadding ??
+                  IsrDimens.edgeInsetsAll(IsrDimens.sixteen),
+              margin: _moreOptionsConfig?.dialogMargin ??
+                  IsrDimens.edgeInsetsAll(IsrDimens.sixteen),
+              decoration: _moreOptionsConfig?.dialogDecoration ??
+                  BoxDecoration(
+                    color: IsrColors.white,
+                    borderRadius: BorderRadius.all(
+                      Radius.circular(IsrDimens.twenty),
+                    ),
+                  ),
               child: Column(
                 spacing: 10.responsiveDimension,
                 mainAxisSize: MainAxisSize.min,
@@ -634,9 +707,11 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                       },
                       child: Text(
                         IsrTranslationFile.delete,
-                        style: IsrStyles.primaryText18.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
+                        style: _moreOptionsConfig?.deleteTextStyle ??
+                            _moreOptionsConfig?.optionTextStyle ??
+                            IsrStyles.primaryText18.copyWith(
+                              fontWeight: FontWeight.w500,
+                            ),
                         textAlign: TextAlign.center,
                       ),
                     ),
@@ -655,9 +730,11 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                       },
                       child: Text(
                         IsrTranslationFile.report,
-                        style: IsrStyles.primaryText18.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
+                        style: _moreOptionsConfig?.reportTextStyle ??
+                            _moreOptionsConfig?.optionTextStyle ??
+                            IsrStyles.primaryText18.copyWith(
+                              fontWeight: FontWeight.w500,
+                            ),
                         textAlign: TextAlign.center,
                       ),
                     ),
@@ -669,9 +746,11 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                     },
                     child: Text(
                       IsrTranslationFile.cancel,
-                      style: IsrStyles.primaryText18.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style: _moreOptionsConfig?.cancelTextStyle ??
+                          _moreOptionsConfig?.optionTextStyle ??
+                          IsrStyles.primaryText18.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -707,6 +786,20 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
         ),
       );
 
+  Widget _buildDialogWrapper({required Widget child}) {
+    final dialogConfig = IsrVideoReelConfig.socialConfig.dialogConfig;
+    final borderRadius = dialogConfig?.borderRadius ?? IsrDimens.twenty;
+
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(borderRadius),
+      ),
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      child: child,
+    );
+  }
+
   void _setReplyComment(CommentDataItem? comment) {
     setState(() {
       _replyComment = comment;
@@ -730,7 +823,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
           if (commentDataItem?.commentedBy.isStringEmptyOrNull == false)
             Container(
               padding: IsrDimens.edgeInsetsAll(16.responsiveDimension),
-              color: '001E57'.toColor(),
+              color: _replyFieldConfig?.replyingToBackgroundColor ??
+                  '001E57'.toColor(),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -740,12 +834,14 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                         children: [
                           TextSpan(
                             text: '${IsrTranslationFile.replyingTo} ',
-                            style: IsrStyles.white14,
+                            style: _replyFieldConfig?.replyingToTextStyle ??
+                                IsrStyles.white14,
                           ),
                           TextSpan(
                             text: commentDataItem?.commentedBy ?? '',
-                            style: IsrStyles.white14
-                                .copyWith(fontWeight: FontWeight.w600),
+                            style: _replyFieldConfig?.replyingToNameStyle ??
+                                IsrStyles.white14
+                                    .copyWith(fontWeight: FontWeight.w600),
                           ),
                         ],
                       ),
@@ -753,9 +849,13 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                   ),
                   TapHandler(
                     onTap: () => _setReplyComment(null),
-                    child: const AppImage.svg(
-                      AssetConstants.icClose,
-                      color: IsrColors.white,
+                    child: AppImage.svg(
+                      _replyFieldConfig?.closeReplyIcon ??
+                          AssetConstants.icClose,
+                      width: _replyFieldConfig?.closeReplyIconSize,
+                      height: _replyFieldConfig?.closeReplyIconSize,
+                      color: _replyFieldConfig?.closeReplyIconColor ??
+                          IsrColors.white,
                     ),
                   ),
                 ],
@@ -763,8 +863,9 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
             ),
           const Divider(height: 1),
           Padding(
-            padding: IsrDimens.edgeInsetsSymmetric(
-                horizontal: 10.responsiveDimension),
+            padding: _replyFieldConfig?.replyFieldPadding ??
+                IsrDimens.edgeInsetsSymmetric(
+                    horizontal: 10.responsiveDimension),
             child: Row(
               mainAxisSize: MainAxisSize.max,
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -776,12 +877,14 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                     minLines: 1,
                     autoFocus: true,
                     hintText: IsrTranslationFile.addAComment,
-                    decoration: const InputDecoration(
-                      hintText: IsrTranslationFile.addAComment,
-                      border: InputBorder.none,
-                      floatingLabelBehavior: FloatingLabelBehavior.never,
-                      alignLabelWithHint: true,
-                    ),
+                    style: _replyFieldConfig?.inputTextStyle,
+                    decoration: _replyFieldConfig?.inputDecoration ??
+                        const InputDecoration(
+                          hintText: IsrTranslationFile.addAComment,
+                          border: InputBorder.none,
+                          floatingLabelBehavior: FloatingLabelBehavior.never,
+                          alignLabelWithHint: true,
+                        ),
                     onRemoveHashTagData: (mentionData) {
                       tagMentions.removeWhere(
                           (_) => _.toJson() == mentionData.toJson());
@@ -809,12 +912,15 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                   builder: (context, value, child) => AppButton(
                     width: 70.responsiveDimension,
                     title: IsrTranslationFile.post,
-                    textStyle: IsrStyles.primaryText14.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: value.text.isStringEmptyOrNull
-                          ? Theme.of(context).primaryColor.changeOpacity(0.5)
-                          : Theme.of(context).primaryColor,
-                    ),
+                    textStyle: _replyFieldConfig?.postButtonStyle ??
+                        IsrStyles.primaryText14.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: value.text.isStringEmptyOrNull
+                              ? Theme.of(context)
+                                  .primaryColor
+                                  .changeOpacity(0.5)
+                              : Theme.of(context).primaryColor,
+                        ),
                     isDisable: value.text.isStringEmptyOrNull,
                     type: ButtonType.text,
                     onPress: () async {
@@ -878,21 +984,29 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const AppImage.svg(AssetConstants.icCommentsPlaceHolder),
+                  AppImage.svg(
+                    _placeholderConfig?.placeholderIcon ??
+                        AssetConstants.icCommentsPlaceHolder,
+                    width: _placeholderConfig?.placeholderIconSize,
+                    height: _placeholderConfig?.placeholderIconSize,
+                    color: _placeholderConfig?.placeholderIconColor,
+                  ),
                   10.responsiveVerticalSpace,
                   Text(
                     IsrTranslationFile.noCommentsYet,
-                    style: IsrStyles.primaryText14.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: _placeholderConfig?.titleStyle ??
+                        IsrStyles.primaryText14.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
                     textAlign: TextAlign.center,
                   ),
                   10.responsiveVerticalSpace,
                   Text(
                     IsrTranslationFile.beTheFirstOneToPostAComment,
-                    style: IsrStyles.primaryText12.copyWith(
-                      color: '606060'.toColor(),
-                    ),
+                    style: _placeholderConfig?.subtitleStyle ??
+                        IsrStyles.primaryText12.copyWith(
+                          color: '606060'.toColor(),
+                        ),
                     textAlign: TextAlign.center,
                   ),
                 ],

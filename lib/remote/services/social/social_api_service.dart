@@ -220,6 +220,12 @@ abstract class SocialApiService extends BaseService {
     required String postId,
   });
 
+  Future<ResponseModel> onShareSuccessLog({
+    required bool isLoading,
+    required Header header,
+    required Map<String, dynamic> requestMap,
+  });
+
   Future<ResponseModel> createCollection({
     required bool isLoading,
     required Header header,

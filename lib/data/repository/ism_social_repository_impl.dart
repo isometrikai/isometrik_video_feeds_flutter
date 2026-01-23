@@ -623,6 +623,24 @@ class SocialRepositoryImpl implements SocialRepository {
   }
 
   @override
+  Future<CustomResponse<ResponseClass?>> onShareSuccessLog({
+    required bool isLoading,
+    required OnShareRequest request,
+  }) async {
+    try {
+      final header = await _dataSource.getHeader();
+      final response = await _apiService.onShareSuccessLog(
+        isLoading: isLoading,
+        header: header,
+        requestMap: request.toJson(),
+      );
+      return _mapper.mapResponseData(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
   Future<CustomResponse<ResponseClass?>> createCollection({
     required bool isLoading,
     required Map<String, dynamic> requestMap,

@@ -27,6 +27,8 @@ class UseCaseInjection {
             IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<RemoveMentionUseCase>(() =>
         RemoveMentionUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<OnShareSuccessLogUseCase>(() =>
+        OnShareSuccessLogUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<FollowUnFollowUserUseCase>(() =>
         FollowUnFollowUserUseCase(
             IsmInjectionUtils.getRepo<SocialRepository>()));

@@ -1,148 +1,190 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 
 /// A chunk of styles used in the application.
 /// Will be ignored for test since all are static values and would not change.
 abstract class IsrStyles {
-  static TextStyle primaryText10 = TextStyle(
-    color: IsrColors.primaryTextColor,
-    fontSize: IsrDimens.ten,
-    fontFamily: AppConstants.primaryFontFamily,
-    fontWeight: FontWeight.w400,
-  );
+  static TextStyle get primaryText10 => TextStyle(
+        color: IsrColors.primaryTextColor,
+        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize10 ??
+                IsrDimens.ten)
+            .sp,
+        fontFamily: AppConstants.primaryFontFamily,
+        fontWeight: FontWeight.w400,
+      );
 
-  static TextStyle primaryText12 = TextStyle(
-    color: IsrColors.primaryTextColor,
-    fontSize: IsrDimens.twelve,
-    fontFamily: AppConstants.primaryFontFamily,
-    fontWeight: FontWeight.w400,
-  );
+  static TextStyle get primaryText12 => TextStyle(
+        color: IsrColors.primaryTextColor,
+        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize12 ??
+                IsrDimens.twelve)
+            .sp,
+        fontFamily: AppConstants.primaryFontFamily,
+        fontWeight: FontWeight.w400,
+      );
 
-  static TextStyle primaryText14 = TextStyle(
-    color: IsrColors.primaryTextColor,
-    fontSize: IsrDimens.fourteen,
-    fontFamily: AppConstants.primaryFontFamily,
-    fontWeight: FontWeight.w400,
-  );
+  static TextStyle get primaryText14 => TextStyle(
+        color: IsrColors.primaryTextColor,
+        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize14 ??
+                IsrDimens.fourteen)
+            .sp,
+        fontFamily: AppConstants.primaryFontFamily,
+        fontWeight: FontWeight.w400,
+      );
 
-  static TextStyle primaryText14Bold = TextStyle(
-    color: IsrColors.primaryTextColor,
-    fontSize: IsrDimens.fourteen,
-    fontWeight: FontWeight.bold,
-    fontFamily: AppConstants.primaryFontFamily,
-  );
+  static TextStyle get primaryText14Bold => TextStyle(
+        color: IsrColors.primaryTextColor,
+        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize14 ??
+                IsrDimens.fourteen)
+            .sp,
+        fontWeight: FontWeight.bold,
+        fontFamily: AppConstants.primaryFontFamily,
+      );
 
-  static TextStyle primaryText16 = TextStyle(
-    color: IsrColors.primaryTextColor,
-    fontSize: IsrDimens.sixteen,
-    fontFamily: AppConstants.primaryFontFamily,
-    fontWeight: FontWeight.w400,
-  );
+  static TextStyle get primaryText16 => TextStyle(
+        color: IsrColors.primaryTextColor,
+        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize16 ??
+                IsrDimens.sixteen)
+            .sp,
+        fontFamily: AppConstants.primaryFontFamily,
+        fontWeight: FontWeight.w400,
+      );
 
-  static TextStyle primaryText16Bold = TextStyle(
-    color: IsrColors.primaryTextColor,
-    fontSize: IsrDimens.sixteen,
-    fontFamily: AppConstants.primaryFontFamily,
-    fontWeight: FontWeight.bold,
-  );
+  static TextStyle get primaryText16Bold => TextStyle(
+        color: IsrColors.primaryTextColor,
+        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize16 ??
+                IsrDimens.sixteen)
+            .sp,
+        fontFamily: AppConstants.primaryFontFamily,
+        fontWeight: FontWeight.bold,
+      );
 
-  static TextStyle primaryText18 = TextStyle(
-    color: IsrColors.primaryTextColor,
-    fontSize: IsrDimens.eighteen,
-    fontFamily: AppConstants.primaryFontFamily,
-    fontWeight: FontWeight.w400,
-  );
+  static TextStyle get primaryText18 => TextStyle(
+        color: IsrColors.primaryTextColor,
+        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize18 ??
+                IsrDimens.eighteen)
+            .sp,
+        fontFamily: AppConstants.primaryFontFamily,
+        fontWeight: FontWeight.w400,
+      );
 
-  static TextStyle primaryText20 = TextStyle(
-    color: IsrColors.primaryTextColor,
-    fontSize: IsrDimens.twenty,
-    fontFamily: AppConstants.primaryFontFamily,
-    fontWeight: FontWeight.w400,
-  );
+  static TextStyle get primaryText20 => TextStyle(
+        color: IsrColors.primaryTextColor,
+        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize20 ??
+                IsrDimens.twenty)
+            .sp,
+        fontFamily: AppConstants.primaryFontFamily,
+        fontWeight: FontWeight.w400,
+      );
 
-  static TextStyle primaryText20Bold = TextStyle(
-    color: IsrColors.primaryTextColor,
-    fontSize: IsrDimens.twenty,
-    fontFamily: AppConstants.primaryFontFamily,
-    fontWeight: FontWeight.bold,
-  );
+  static TextStyle get primaryText20Bold => TextStyle(
+        color: IsrColors.primaryTextColor,
+        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize20 ??
+                IsrDimens.twenty)
+            .sp,
+        fontFamily: AppConstants.primaryFontFamily,
+        fontWeight: FontWeight.bold,
+      );
 
-  static TextStyle secondaryText10 = TextStyle(
-    color: IsrColors.secondaryTextColor,
-    fontSize: IsrDimens.ten,
-    fontFamily: AppConstants.primaryFontFamily,
-    fontWeight: FontWeight.w400,
-  );
+  static TextStyle get secondaryText10 => TextStyle(
+        color: IsrColors.secondaryTextColor,
+        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize10 ??
+                IsrDimens.ten)
+            .sp,
+        fontFamily: AppConstants.primaryFontFamily,
+        fontWeight: FontWeight.w400,
+      );
 
-  static TextStyle secondaryText8 = TextStyle(
-    color: IsrColors.secondaryTextColor,
-    fontSize: IsrDimens.eight,
-    fontFamily: AppConstants.primaryFontFamily,
-    fontWeight: FontWeight.w400,
-  );
+  static TextStyle get secondaryText8 => TextStyle(
+        color: IsrColors.secondaryTextColor,
+        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize8 ??
+                IsrDimens.eight)
+            .sp,
+        fontFamily: AppConstants.primaryFontFamily,
+        fontWeight: FontWeight.w400,
+      );
 
-  static TextStyle secondaryText12 = TextStyle(
-    color: IsrColors.secondaryTextColor,
-    fontSize: IsrDimens.twelve,
-    fontFamily: AppConstants.primaryFontFamily,
-    fontWeight: FontWeight.w400,
-  );
+  static TextStyle get secondaryText12 => TextStyle(
+        color: IsrColors.secondaryTextColor,
+        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize12 ??
+                IsrDimens.twelve)
+            .sp,
+        fontFamily: AppConstants.primaryFontFamily,
+        fontWeight: FontWeight.w400,
+      );
 
-  static TextStyle secondaryText14 = TextStyle(
-    color: IsrColors.secondaryTextColor,
-    fontSize: IsrDimens.fourteen,
-    fontFamily: AppConstants.primaryFontFamily,
-    fontWeight: FontWeight.w400,
-  );
+  static TextStyle get secondaryText14 => TextStyle(
+        color: IsrColors.secondaryTextColor,
+        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize14 ??
+                IsrDimens.fourteen)
+            .sp,
+        fontFamily: AppConstants.primaryFontFamily,
+        fontWeight: FontWeight.w400,
+      );
 
-  static TextStyle secondaryText16 = TextStyle(
-    color: IsrColors.secondaryTextColor,
-    fontSize: IsrDimens.sixteen,
-    fontFamily: AppConstants.primaryFontFamily,
-    fontWeight: FontWeight.w400,
-  );
+  static TextStyle get secondaryText16 => TextStyle(
+        color: IsrColors.secondaryTextColor,
+        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize16 ??
+                IsrDimens.sixteen)
+            .sp,
+        fontFamily: AppConstants.primaryFontFamily,
+        fontWeight: FontWeight.w400,
+      );
 
-  static TextStyle secondaryText18 = TextStyle(
-    color: IsrColors.secondaryTextColor,
-    fontSize: IsrDimens.eighteen,
-    fontFamily: AppConstants.primaryFontFamily,
-    fontWeight: FontWeight.w400,
-  );
+  static TextStyle get secondaryText18 => TextStyle(
+        color: IsrColors.secondaryTextColor,
+        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize18 ??
+                IsrDimens.eighteen)
+            .sp,
+        fontFamily: AppConstants.primaryFontFamily,
+        fontWeight: FontWeight.w400,
+      );
 
-  static TextStyle secondaryText20 = TextStyle(
-    color: IsrColors.secondaryTextColor,
-    fontSize: IsrDimens.twenty,
-    fontFamily: AppConstants.primaryFontFamily,
-    fontWeight: FontWeight.w400,
-  );
+  static TextStyle get secondaryText20 => TextStyle(
+        color: IsrColors.secondaryTextColor,
+        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize20 ??
+                IsrDimens.twenty)
+            .sp,
+        fontFamily: AppConstants.primaryFontFamily,
+        fontWeight: FontWeight.w400,
+      );
 
-  static TextStyle white10 = TextStyle(
-    color: IsrColors.white,
-    fontSize: IsrDimens.ten,
-    fontFamily: AppConstants.primaryFontFamily,
-    fontWeight: FontWeight.w400,
-  );
+  static TextStyle get white10 => TextStyle(
+        color: IsrColors.white,
+        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize10 ??
+                IsrDimens.ten)
+            .sp,
+        fontFamily: AppConstants.primaryFontFamily,
+        fontWeight: FontWeight.w400,
+      );
 
-  static TextStyle white12 = TextStyle(
-    color: IsrColors.white,
-    fontSize: IsrDimens.twelve,
-    fontFamily: AppConstants.primaryFontFamily,
-    fontWeight: FontWeight.w400,
-  );
+  static TextStyle get white12 => TextStyle(
+        color: IsrColors.white,
+        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize12 ??
+                IsrDimens.twelve)
+            .sp,
+        fontFamily: AppConstants.primaryFontFamily,
+        fontWeight: FontWeight.w400,
+      );
 
-  static TextStyle white14 = TextStyle(
-    color: IsrColors.white,
-    fontSize: IsrDimens.fourteen,
-    fontFamily: AppConstants.primaryFontFamily,
-    fontWeight: FontWeight.w400,
-  );
+  static TextStyle get white14 => TextStyle(
+        color: IsrColors.white,
+        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize14 ??
+                IsrDimens.fourteen)
+            .sp,
+        fontFamily: AppConstants.primaryFontFamily,
+        fontWeight: FontWeight.w400,
+      );
 
-  static TextStyle white16 = TextStyle(
-    color: IsrColors.white,
-    fontSize: IsrDimens.sixteen,
-    fontFamily: AppConstants.primaryFontFamily,
-    fontWeight: FontWeight.w400,
-  );
+  static TextStyle get white16 => TextStyle(
+        color: IsrColors.white,
+        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize16 ??
+                IsrDimens.sixteen)
+            .sp,
+        fontFamily: AppConstants.primaryFontFamily,
+        fontWeight: FontWeight.w400,
+      );
 
   static TextStyle getTextStyles({
     Color? color,
@@ -160,17 +202,21 @@ abstract class IsrStyles {
       );
 
   /// app button text styles
-  static TextStyle appButtonStyle = TextStyle(
-    color: IsrColors.buttonTextColor,
-    fontSize: IsrDimens.fourteen,
-    fontFamily: AppConstants.primaryFontFamily,
-    fontWeight: FontWeight.w400,
-  );
+  static TextStyle get appButtonStyle => TextStyle(
+        color: IsrColors.buttonTextColor,
+        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize14 ??
+                IsrDimens.fourteen)
+            .sp,
+        fontFamily: AppConstants.primaryFontFamily,
+        fontWeight: FontWeight.w400,
+      );
 
-  static TextStyle appButtonDisableStyle = TextStyle(
-    color: IsrColors.buttonTextColor,
-    fontSize: IsrDimens.fourteen,
-    fontFamily: AppConstants.primaryFontFamily,
-    fontWeight: FontWeight.w400,
-  );
+  static TextStyle get appButtonDisableStyle => TextStyle(
+        color: IsrColors.buttonTextColor,
+        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize14 ??
+                IsrDimens.fourteen)
+            .sp,
+        fontFamily: AppConstants.primaryFontFamily,
+        fontWeight: FontWeight.w400,
+      );
 }

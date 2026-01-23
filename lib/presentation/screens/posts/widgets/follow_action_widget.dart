@@ -88,7 +88,7 @@ class _FollowActionWidgetState extends State<FollowActionWidget> {
     if (isLoading) return;
     var isUserLoggedIn = await cubit.isUserLoggedIn;
     if (!isUserLoggedIn) {
-      await IsrVideoReelConfig.socialConfig?.socialCallBackConfig?.onLoginInvoked?.call();
+      await IsrVideoReelConfig.socialConfig.socialCallBackConfig?.onLoginInvoked?.call();
     }
     isUserLoggedIn = await cubit.isUserLoggedIn;
     if (!isUserLoggedIn) return;

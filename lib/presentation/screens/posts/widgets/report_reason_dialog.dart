@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -213,7 +214,8 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
         builder: (context) => Dialog(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          backgroundColor: Colors.white,
+          backgroundColor: IsrVideoReelConfig
+              .socialConfig.dialogConfig?.backgroundColor ?? Colors.white,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
             child: Column(
@@ -222,32 +224,39 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
               children: [
                 Text(
                   IsrTranslationFile.reportAlertTitle(type),
-                  style: IsrStyles.primaryText18
-                      .copyWith(fontWeight: FontWeight.w700),
+                  style: IsrVideoReelConfig
+                          .socialConfig.dialogConfig?.titleTextStyle ??
+                      IsrStyles.primaryText18
+                          .copyWith(fontWeight: FontWeight.w700),
                 ),
                 16.responsiveVerticalSpace,
                 Text(
                   IsrTranslationFile.reportConfirmation(type),
-                  style: IsrStyles.primaryText14.copyWith(
-                    color: '4A4A4A'.toColor(),
-                  ),
+                  style: IsrVideoReelConfig
+                          .socialConfig.dialogConfig?.titleTextStyle ??
+                      IsrStyles.primaryText14.copyWith(
+                        color: '4A4A4A'.toColor(),
+                      ),
                 ),
                 32.responsiveVerticalSpace,
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    AppButton(
+                    _buildDialogButton(
+                      context: context,
                       title: IsrTranslationFile.report,
-                      width: 102.responsiveDimension,
+                      buttonConfig: IsrVideoReelConfig.socialConfig.primaryButton,
                       onPress: () => Navigator.of(context).pop(true),
-                      backgroundColor: 'E04755'.toColor(),
+                      defaultBackgroundColor: 'E04755'.toColor(),
                     ),
-                    AppButton(
+                    _buildDialogButton(
+                      context: context,
                       title: IsrTranslationFile.cancel,
-                      width: 102.responsiveDimension,
+                      buttonConfig: IsrVideoReelConfig.socialConfig.secondaryButton,
+                      buttonType: ButtonType.secondary,
                       onPress: () => Navigator.of(context).pop(false),
-                      backgroundColor: 'F6F6F6'.toColor(),
-                      textColor: Theme.of(context).primaryColor,
+                      defaultBackgroundColor: 'F6F6F6'.toColor(),
+                      defaultTextColor: Theme.of(context).primaryColor,
                     ),
                   ],
                 ),
@@ -256,4 +265,23 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
           ),
         ),
       );
+
+  Widget _buildDialogButton({
+    required BuildContext context,
+    required String title,
+    ButtonConfig? buttonConfig,
+    ButtonType buttonType = ButtonType.primary,
+    required VoidCallback? onPress,
+    Color? defaultBackgroundColor,
+    Color? defaultTextColor,
+  }) => AppButton(
+      title: title,
+      width: 102.responsiveDimension,
+      type: buttonType,
+      onPress: onPress,
+      backgroundColor: buttonConfig?.backgroundColor ?? defaultBackgroundColor,
+      textColor: buttonConfig?.textColor ?? defaultTextColor,
+      borderColor: buttonConfig?.borderColor,
+      borderRadius: buttonConfig?.borderRadius,
+    );
 }

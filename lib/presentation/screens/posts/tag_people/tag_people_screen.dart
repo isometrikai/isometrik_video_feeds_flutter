@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -37,6 +38,13 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
       {}; // Unique keys for each video
   var _mediaDataList = <MediaData>[];
   var _mentionDataList = <MentionData>[];
+
+  // Configuration getters
+  TagPeopleScreenConfig? get _tagPeopleConfig => IsrVideoReelConfig
+      .createEditPostConfig
+      .createEditPostUIConfig
+      ?.tagPeopleUIConfig
+      ?.tagPeopleScreenConfig;
 
   // Video player state
   final Map<String, VideoPlayerController> _videoControllers = {};
@@ -180,7 +188,8 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
   Widget build(BuildContext context) => Scaffold(
         backgroundColor: Colors.white,
         appBar: IsmCustomAppBarWidget(
-          backgroundColor: Colors.white,
+          backgroundColor:
+              _tagPeopleConfig?.appBarConfig?.backgroundColor ?? Colors.white,
           leading: IconButton(
             icon: Icon(Icons.close,
                 color: Colors.black, size: 24.responsiveDimension),
@@ -190,6 +199,7 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
           isCrossIcon: true,
           centerTitle: true,
           showActions: true,
+          titleStyle: _tagPeopleConfig?.appBarConfig?.titleStyle,
           actions: [
             TapHandler(
               onTap: _setData,
@@ -206,17 +216,19 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                 flex: 2,
                 child: Container(
                   margin: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.changeOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
+                  decoration: _tagPeopleConfig
+                          ?.mediaCarouselConfig?.containerDecoration ??
+                      BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.changeOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: Stack(
@@ -256,15 +268,44 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                                 _mediaDataList.length,
                                 (index) => AnimatedContainer(
                                   duration: const Duration(milliseconds: 300),
-                                  margin:
-                                      const EdgeInsets.symmetric(horizontal: 4),
-                                  width: _currentIndex == index ? 24 : 8,
-                                  height: 8,
+                                  margin: EdgeInsets.symmetric(
+                                      horizontal: _tagPeopleConfig
+                                              ?.mediaCarouselConfig
+                                              ?.pageIndicatorConfig
+                                              ?.spacing ??
+                                          4),
+                                  width: _currentIndex == index
+                                      ? (_tagPeopleConfig
+                                              ?.mediaCarouselConfig
+                                              ?.pageIndicatorConfig
+                                              ?.activeWidth ??
+                                          24)
+                                      : (_tagPeopleConfig
+                                              ?.mediaCarouselConfig
+                                              ?.pageIndicatorConfig
+                                              ?.inactiveWidth ??
+                                          8),
+                                  height: _tagPeopleConfig?.mediaCarouselConfig
+                                          ?.pageIndicatorConfig?.height ??
+                                      8,
                                   decoration: BoxDecoration(
                                     color: _currentIndex == index
-                                        ? Colors.white
-                                        : Colors.white.changeOpacity(0.5),
-                                    borderRadius: BorderRadius.circular(4),
+                                        ? (_tagPeopleConfig
+                                                ?.mediaCarouselConfig
+                                                ?.pageIndicatorConfig
+                                                ?.activeColor ??
+                                            Colors.white)
+                                        : (_tagPeopleConfig
+                                                ?.mediaCarouselConfig
+                                                ?.pageIndicatorConfig
+                                                ?.inactiveColor ??
+                                            Colors.white.changeOpacity(0.5)),
+                                    borderRadius: BorderRadius.circular(
+                                        _tagPeopleConfig
+                                                ?.mediaCarouselConfig
+                                                ?.pageIndicatorConfig
+                                                ?.borderRadius ??
+                                            4),
                                   ),
                                 ),
                               ),
@@ -277,19 +318,30 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                             top: 16,
                             right: 16,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 6),
+                              padding: _tagPeopleConfig?.mediaCarouselConfig
+                                      ?.mediaCounterConfig?.padding ??
+                                  const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
-                                color: Colors.black.applyOpacity(0.7),
-                                borderRadius: BorderRadius.circular(16),
+                                color: _tagPeopleConfig?.mediaCarouselConfig
+                                        ?.mediaCounterConfig?.backgroundColor ??
+                                    Colors.black.applyOpacity(0.7),
+                                borderRadius: BorderRadius.circular(
+                                    _tagPeopleConfig
+                                            ?.mediaCarouselConfig
+                                            ?.mediaCounterConfig
+                                            ?.borderRadius ??
+                                        16),
                               ),
                               child: Text(
                                 '${_currentIndex + 1}/${_mediaDataList.length}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                                style: _tagPeopleConfig?.mediaCarouselConfig
+                                        ?.mediaCounterConfig?.textStyle ??
+                                    const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                               ),
                             ),
                           ),
@@ -300,25 +352,45 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                             top: 16,
                             left: 16,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 6),
+                              padding: _tagPeopleConfig?.mediaCarouselConfig
+                                      ?.tagCountIndicatorConfig?.padding ??
+                                  const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
-                                color: Colors.blue.applyOpacity(0.9),
-                                borderRadius: BorderRadius.circular(16),
+                                color: _tagPeopleConfig
+                                        ?.mediaCarouselConfig
+                                        ?.tagCountIndicatorConfig
+                                        ?.backgroundColor ??
+                                    Colors.blue.applyOpacity(0.9),
+                                borderRadius: BorderRadius.circular(
+                                    _tagPeopleConfig
+                                            ?.mediaCarouselConfig
+                                            ?.tagCountIndicatorConfig
+                                            ?.borderRadius ??
+                                        16),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(Icons.person,
-                                      color: Colors.white, size: 16),
+                                  Icon(Icons.person,
+                                      color: _tagPeopleConfig
+                                              ?.mediaCarouselConfig
+                                              ?.tagCountIndicatorConfig
+                                              ?.iconColor ??
+                                          Colors.white,
+                                      size: 16),
                                   const SizedBox(width: 4),
                                   Text(
                                     '${currentMentions.length}',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                    ),
+                                    style: _tagPeopleConfig
+                                            ?.mediaCarouselConfig
+                                            ?.tagCountIndicatorConfig
+                                            ?.textStyle ??
+                                        const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
                                   ),
                                 ],
                               ),
@@ -343,9 +415,20 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                       AppButton(
                         title: IsrTranslationFile.tagPeople,
                         type: ButtonType.secondary,
-                        borderColor: '006CD8'.toColor(),
-                        textColor: '006CD8'.toColor(),
-                        borderWidth: 1.responsiveDimension,
+                        borderColor:
+                            _tagPeopleConfig?.tagButtonConfig?.borderColor ??
+                                '006CD8'.toColor(),
+                        textColor: _tagPeopleConfig
+                                ?.tagButtonConfig?.textStyle?.color ??
+                            '006CD8'.toColor(),
+                        borderWidth:
+                            _tagPeopleConfig?.tagButtonConfig?.borderWidth ??
+                                1.responsiveDimension,
+                        borderRadius:
+                            _tagPeopleConfig?.tagButtonConfig?.borderRadius,
+                        height: _tagPeopleConfig?.tagButtonConfig?.height,
+                        backgroundColor:
+                            _tagPeopleConfig?.tagButtonConfig?.backgroundColor,
                         onPress: () {
                           _handleImageTap(null, null, 0);
                         },
@@ -379,14 +462,18 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                               // Header
                               Text(
                                 IsrTranslationFile.taggedPeople,
-                                style: IsrStyles.primaryText14
-                                    .copyWith(fontWeight: FontWeight.w600),
+                                style: _tagPeopleConfig?.taggedPeopleListConfig
+                                        ?.headerTitleStyle ??
+                                    IsrStyles.primaryText14
+                                        .copyWith(fontWeight: FontWeight.w600),
                               ),
                               4.verticalSpace,
                               Text(
                                 IsrTranslationFile.listOfPeopleLinkedToThePost,
-                                style: IsrStyles.primaryText12
-                                    .copyWith(color: '909090'.toColor()),
+                                style: _tagPeopleConfig?.taggedPeopleListConfig
+                                        ?.headerSubtitleStyle ??
+                                    IsrStyles.primaryText12
+                                        .copyWith(color: '909090'.toColor()),
                               ),
                               16.verticalSpace,
 

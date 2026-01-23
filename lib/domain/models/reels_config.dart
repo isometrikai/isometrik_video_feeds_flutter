@@ -23,8 +23,10 @@ class ReelsConfig {
     this.onTapMentionTag,
     this.onTapPlace,
     this.autoMoveNextMedia = true,
+    required this.postConfig,
   });
 
+  final PostConfig postConfig;
   // UI Elements
   final ReelsWidgetBuilder Function(ReelsData reelsData)? footerWidget;
   final ReelsWidgetBuilder Function(ReelsData reelsData)? actionWidget;

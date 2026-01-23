@@ -37,7 +37,19 @@ class IsrVideoReelConfig {
   static String? googleServiceJsonPath;
 
   /// Social configuration used by SDK modules.
-  static SocialConfig? socialConfig;
+  static SocialConfig socialConfig = const SocialConfig();
+
+  /// Post configuration used by SDK modules.
+  static PostConfig postConfig = const PostConfig();
+
+  /// Tab configuration used by SDK modules.
+  static TabConfig tabConfig = const TabConfig();
+
+  /// comment configuration used by SDK modules.
+  static CommentConfig commentConfig = const CommentConfig();
+
+  /// Create, edit post configuration used by SDK modules.
+  static CreateEditPostConfig createEditPostConfig = const CreateEditPostConfig();
 
   /// Convenience accessor for the SDK's singleton [IsmSocialActionCubit].
   static IsmSocialActionCubit get socialActionCubit =>
@@ -67,39 +79,45 @@ class IsrVideoReelConfig {
     required String baseUrl,
     required String rudderStackWriteKey,
     required String rudderStackDataPlaneUrl,
-    UserInfoClass? userInfoClass,
+    required UserInfoClass? userInfoClass,
     required Map<String, dynamic> defaultHeaders,
-    required SocialConfig socialConfig,
-    String? googleServiceJsonPath,
-    BuildContext? Function()? getCurrentBuildContext,
+    SocialConfig? socialConfig,
+    PostConfig? postConfig,
+    TabConfig? tabConfig,
+    CommentConfig? commentConfig,
+    CreateEditPostConfig? createEditPostConfig,
+    required String? googleServiceJsonPath,
+    required BuildContext? Function()? getCurrentBuildContext,
   }) async {
-    if (isSdkInitialize) {
-      await _storeHeaderValues(defaultHeaders);
-      await _saveUserInformation(userInfoClass: userInfoClass);
-      IsrVideoReelConfig.socialConfig = socialConfig;
-      debugPrint('IsrVideoReelConfig: initializeSdk: ${userInfoClass?.userId}');
-      socialActionCubit.onSdkReinitializeChanged(
-        userId: userInfoClass?.userId,
-        userInfoClass: userInfoClass,
+    if (!isSdkInitialize) {
+      WidgetsFlutterBinding.ensureInitialized();
+      await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+      isrConfigureInjection();
+      // ✅ Initialize SDK router
+      await _initializeHive();
+      Bloc.observer = IsrAppBlocObserver();
+      await _initializeRudderStack(
+        rudderStackWriteKey: rudderStackWriteKey,
+        rudderStackDataPlaneUrl: rudderStackDataPlaneUrl,
       );
-      return;
+      isSdkInitialize = true;
     }
-    IsrVideoReelConfig.googleServiceJsonPath = googleServiceJsonPath;
+    await _storeHeaderValues(defaultHeaders);
+    await _saveUserInformation(userInfoClass: userInfoClass);
+    IsrVideoReelConfig.socialConfig = socialConfig ?? IsrVideoReelConfig.socialConfig;
+    IsrVideoReelConfig.postConfig = postConfig ?? IsrVideoReelConfig.postConfig;
+    IsrVideoReelConfig.tabConfig = tabConfig ?? IsrVideoReelConfig.tabConfig;
+    IsrVideoReelConfig.commentConfig = commentConfig ?? IsrVideoReelConfig.commentConfig;
+    IsrVideoReelConfig.createEditPostConfig = createEditPostConfig ?? IsrVideoReelConfig.createEditPostConfig;;
+    buildContext = getCurrentBuildContext?.call();
+    debugPrint('IsrVideoReelConfig: initializeSdk: ${userInfoClass?.userId}');
+    socialActionCubit.onSdkReinitializeChanged(
+      userId: userInfoClass?.userId,
+      userInfoClass: userInfoClass,
+    );
     getBuildContext = getCurrentBuildContext;
     AppUrl.appBaseUrl = baseUrl;
-    WidgetsFlutterBinding.ensureInitialized();
-    await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-    isrConfigureInjection();
-    // ✅ Initialize SDK router
-    await _storeHeaderValues(defaultHeaders);
-    await _initializeHive();
-    Bloc.observer = IsrAppBlocObserver();
-    await _saveUserInformation(userInfoClass: userInfoClass);
-    await _initializeRudderStack(
-      rudderStackWriteKey: rudderStackWriteKey,
-      rudderStackDataPlaneUrl: rudderStackDataPlaneUrl,
-    );
-    isSdkInitialize = true;
+    IsrVideoReelConfig.googleServiceJsonPath = googleServiceJsonPath;
   }
 
   /// Persists [userInfoClass] (if provided) to local storage.

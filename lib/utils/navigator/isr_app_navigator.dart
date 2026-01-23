@@ -22,16 +22,12 @@ class IsrAppNavigator {
     required String tagValue,
     required TagType tagType,
     TransitionType? transitionType,
-    required TabConfig tabConfig,
-    required PostConfig postConfig,
   }) {
     final page = BlocProvider<PostListingBloc>(
       create: (_) => IsmInjectionUtils.getBloc<PostListingBloc>(),
       child: PostListingView(
         tagValue: tagValue,
         tagType: tagType,
-        tabConfig: tabConfig,
-        postConfig: postConfig,
       ),
     );
 
@@ -46,14 +42,10 @@ class IsrAppNavigator {
   static void navigateToSchedulePostListing(
     BuildContext context, {
     TransitionType? transitionType,
-    Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
-        onTagProduct,
   }) {
     final page = BlocProvider<PostListingBloc>(
       create: (_) => IsmInjectionUtils.getBloc<PostListingBloc>(),
-      child: SchedulePostView(
-        onLinkProduct: onTagProduct,
-      ),
+      child: const SchedulePostView(),
     );
 
     Navigator.of(context, rootNavigator: true).push(
@@ -70,8 +62,6 @@ class IsrAppNavigator {
     required double latitude,
     required double longitude,
     TransitionType? transitionType,
-    required TabConfig tabConfig,
-    required PostConfig postConfig,
   }) {
     final page = BlocProvider<PlaceDetailsBloc>(
       create: (_) => IsmInjectionUtils.getBloc<PlaceDetailsBloc>(),
@@ -80,8 +70,6 @@ class IsrAppNavigator {
         placeName: placeName,
         latitude: latitude,
         longitude: longitude,
-        tabConfig: tabConfig,
-        postConfig: postConfig,
       ),
     );
 
@@ -94,8 +82,6 @@ class IsrAppNavigator {
     BuildContext context, {
     required String tagValue,
     required TagType tagType,
-    required TabConfig tabConfig,
-    required PostConfig postConfig,
     TransitionType? transitionType,
   }) {
     final page = BlocProvider<TagDetailsBloc>(
@@ -103,8 +89,6 @@ class IsrAppNavigator {
       child: TagDetailsView(
         tagValue: tagValue,
         tagType: tagType,
-        tabConfig: tabConfig,
-        postConfig: postConfig,
       ),
     );
 
@@ -121,8 +105,8 @@ class IsrAppNavigator {
     required PostSectionType postSectionType,
     String? tagValue,
     TagType? tagType,
-    required TabConfig tabConfig,
-    required PostConfig postConfig,
+    TabConfig? tabConfig,
+    PostConfig? postConfig,
     Function(String, String, double, double)? onTapPlace,
     TransitionType transitionType = TransitionType.rightToLeft,
   }) {
@@ -173,8 +157,6 @@ class IsrAppNavigator {
 
   static Future<String?> goToCreatePostView(
     BuildContext context, {
-    Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
-        onTagProduct,
     TransitionType? transitionType,
   }) async {
     final page = MultiBlocProvider(
@@ -189,9 +171,7 @@ class IsrAppNavigator {
           create: (_) => IsmInjectionUtils.getBloc<UploadProgressCubit>(),
         ),
       ],
-      child: CreatePostMultimediaWrapper(
-        onTagProduct: onTagProduct,
-      ),
+      child: const CreatePostMultimediaWrapper(),
     );
 
     final result =
@@ -204,8 +184,6 @@ class IsrAppNavigator {
   static Future<String?> goToEditPostView(
     BuildContext context, {
     required TimeLineData postData,
-    Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
-        onTagProduct,
     TransitionType? transitionType,
   }) async {
     final page = MultiBlocProvider(
@@ -218,7 +196,6 @@ class IsrAppNavigator {
       child: PostAttributeView(
         postData: postData,
         isEditMode: true,
-        onTagProduct: onTagProduct,
       ),
     );
 
@@ -231,8 +208,6 @@ class IsrAppNavigator {
 
   static Future<String?> goToCreatePostAttributionView(
     BuildContext context, {
-    Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
-        onTagProduct,
     List<MediaData>? newMediaDataList,
     TransitionType transitionType = TransitionType.bottomToTop,
   }) async {
@@ -246,7 +221,6 @@ class IsrAppNavigator {
       child: PostAttributeView(
         newMediaDataList: newMediaDataList,
         isEditMode: false,
-        onTagProduct: onTagProduct,
       ),
     );
 

@@ -15,9 +15,7 @@ import 'package:ism_video_reel_player/utils/extensions.dart';
 import 'package:path/path.dart' as path;
 
 class CreatePostMultimediaWrapper extends StatefulWidget {
-  const CreatePostMultimediaWrapper({super.key, this.onTagProduct});
-  final Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
-      onTagProduct;
+  const CreatePostMultimediaWrapper({super.key});
   @override
   State<CreatePostMultimediaWrapper> createState() =>
       _CreatePostMultimediaWrapperState();
@@ -182,8 +180,7 @@ class _CreatePostMultimediaWrapperState
               fileExtension: _getFileExtension(
                   editItem.editedPath ?? editItem.originalPath)))
           .toList();
-      await IsrAppNavigator.goToCreatePostAttributionView(context,
-          onTagProduct: widget.onTagProduct, newMediaDataList: _mediaDataList);
+      await IsrAppNavigator.goToCreatePostAttributionView(context, newMediaDataList: _mediaDataList);
       // _createPostBloc.goToPostAttributeView(context,
       //     newMediaDataList: _mediaDataList, onTagProduct: widget.onTagProduct);
       return false;

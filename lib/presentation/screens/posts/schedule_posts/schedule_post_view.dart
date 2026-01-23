@@ -6,14 +6,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
 class SchedulePostView extends StatefulWidget {
-  const SchedulePostView({Key? key, this.onLinkProduct}) : super(key: key);
-  final Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
-      onLinkProduct;
+  const SchedulePostView({Key? key}) : super(key: key);
 
   @override
   State<SchedulePostView> createState() => _SchedulePostViewState();
@@ -400,8 +399,7 @@ class _SchedulePostViewState extends State<SchedulePostView> {
   }
 
   void _handleEditPost(TimeLineData data) async {
-    final postDataString = await IsrAppNavigator.goToEditPostView(context,
-        postData: data, onTagProduct: widget.onLinkProduct);
+    final postDataString = await IsrAppNavigator.goToEditPostView(context, postData: data);
     try {
       final postData = TimeLineData.fromMap(
           jsonDecode(postDataString!) as Map<String, dynamic>);
@@ -435,97 +433,59 @@ class _SchedulePostViewState extends State<SchedulePostView> {
     }
   }
 
-  Future<bool?> _showDeletePostDialog(BuildContext context) => showDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => Dialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          backgroundColor: Colors.white,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  IsrTranslationFile.deletePost,
-                  style: IsrStyles.primaryText18
-                      .copyWith(fontWeight: FontWeight.w700),
-                ),
-                16.responsiveVerticalSpace,
-                Text(
-                  IsrTranslationFile.deletePostConfirmation,
-                  style: IsrStyles.primaryText14.copyWith(
-                    color: '4A4A4A'.toColor(),
-                  ),
-                ),
-                32.responsiveVerticalSpace,
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    AppButton(
-                      title: IsrTranslationFile.delete,
-                      width: 102.responsiveDimension,
-                      onPress: () => Navigator.of(context).pop(true),
-                      backgroundColor: 'E04755'.toColor(),
-                    ),
-                    AppButton(
-                      title: IsrTranslationFile.cancel,
-                      width: 102.responsiveDimension,
-                      onPress: () => Navigator.of(context).pop(false),
-                      backgroundColor: 'F6F6F6'.toColor(),
-                      textColor: Theme.of(context).primaryColor,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
+  Future<bool?> _showDeletePostDialog(BuildContext context) {
+    final dialogConfig = IsrVideoReelConfig.socialConfig.dialogConfig;
+    final borderRadius = dialogConfig?.borderRadius ?? 20.0;
+    final backgroundColor = dialogConfig?.backgroundColor ?? Colors.white;
+    final padding = dialogConfig?.padding ??
+        const EdgeInsets.symmetric(horizontal: 24, vertical: 28);
+    final titleStyle = dialogConfig?.titleTextStyle ??
+        IsrStyles.primaryText18.copyWith(fontWeight: FontWeight.w700);
+    final messageStyle = dialogConfig?.messageTextStyle ??
+        IsrStyles.primaryText14.copyWith(color: '4A4A4A'.toColor());
 
-  Future<bool?> _showPostNowDialog(BuildContext context) => showDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => Dialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          backgroundColor: Colors.white,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  IsrTranslationFile.postNow,
-                  style: IsrStyles.primaryText18
-                      .copyWith(fontWeight: FontWeight.w700),
-                ),
-                16.responsiveVerticalSpace,
-                Text(
-                  IsrTranslationFile.postNowConfirmation,
-                  style: IsrStyles.primaryText14.copyWith(
-                    color: '4A4A4A'.toColor(),
-                  ),
-                ),
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(borderRadius),
+        ),
+        backgroundColor: backgroundColor,
+        child: Padding(
+          padding: padding,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                IsrTranslationFile.deletePost,
+                style: titleStyle,
+              ),
+              16.responsiveVerticalSpace,
+              Text(
+                IsrTranslationFile.deletePostConfirmation,
+                style: messageStyle,
+              ),
                 32.responsiveVerticalSpace,
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    AppButton(
-                      title: IsrTranslationFile.cancel,
-                      width: 102.responsiveDimension,
-                      onPress: () => Navigator.of(context).pop(false),
-                      backgroundColor: 'F6F6F6'.toColor(),
-                      textColor: Theme.of(context).primaryColor,
-                    ),
-                    AppButton(
-                      title: IsrTranslationFile.post,
-                      width: 102.responsiveDimension,
+                    _buildDialogButton(
+                      context: context,
+                      title: IsrTranslationFile.delete,
+                      buttonConfig: IsrVideoReelConfig.socialConfig.primaryButton,
                       onPress: () => Navigator.of(context).pop(true),
-                      backgroundColor: Theme.of(context).primaryColor,
+                      defaultBackgroundColor: 'E04755'.toColor(),
+                    ),
+                    _buildDialogButton(
+                      context: context,
+                      title: IsrTranslationFile.cancel,
+                      buttonConfig: IsrVideoReelConfig.socialConfig.secondaryButton,
+                      buttonType: ButtonType.secondary,
+                      onPress: () => Navigator.of(context).pop(false),
+                      defaultBackgroundColor: 'F6F6F6'.toColor(),
+                      defaultTextColor: Theme.of(context).primaryColor,
                     ),
                   ],
                 ),
@@ -534,6 +494,89 @@ class _SchedulePostViewState extends State<SchedulePostView> {
           ),
         ),
       );
+  }
+
+  Widget _buildDialogButton({
+    required BuildContext context,
+    required String title,
+    ButtonConfig? buttonConfig,
+    ButtonType buttonType = ButtonType.primary,
+    required VoidCallback? onPress,
+    Color? defaultBackgroundColor,
+    Color? defaultTextColor,
+  }) => AppButton(
+      title: title,
+      width: 102.responsiveDimension,
+      type: buttonType,
+      onPress: onPress,
+      backgroundColor: buttonConfig?.backgroundColor ?? defaultBackgroundColor,
+      textColor: buttonConfig?.textColor ?? defaultTextColor,
+      borderColor: buttonConfig?.borderColor,
+      borderRadius: buttonConfig?.borderRadius,
+    );
+
+  Future<bool?> _showPostNowDialog(BuildContext context) {
+    final dialogConfig = IsrVideoReelConfig.socialConfig.dialogConfig;
+    final borderRadius = dialogConfig?.borderRadius ?? 20.0;
+    final backgroundColor = dialogConfig?.backgroundColor ?? Colors.white;
+    final padding = dialogConfig?.padding ??
+        const EdgeInsets.symmetric(horizontal: 24, vertical: 28);
+    final titleStyle = dialogConfig?.titleTextStyle ??
+        IsrStyles.primaryText18.copyWith(fontWeight: FontWeight.w700);
+    final messageStyle = dialogConfig?.messageTextStyle ??
+        IsrStyles.primaryText14.copyWith(color: '4A4A4A'.toColor());
+
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(borderRadius),
+        ),
+        backgroundColor: backgroundColor,
+        child: Padding(
+          padding: padding,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                IsrTranslationFile.postNow,
+                style: titleStyle,
+              ),
+              16.responsiveVerticalSpace,
+              Text(
+                IsrTranslationFile.postNowConfirmation,
+                style: messageStyle,
+              ),
+              32.responsiveVerticalSpace,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildDialogButton(
+                    context: context,
+                    title: IsrTranslationFile.cancel,
+                    buttonConfig: IsrVideoReelConfig.socialConfig.secondaryButton,
+                    buttonType: ButtonType.secondary,
+                    onPress: () => Navigator.of(context).pop(false),
+                    defaultBackgroundColor: 'F6F6F6'.toColor(),
+                    defaultTextColor: Theme.of(context).primaryColor,
+                  ),
+                  _buildDialogButton(
+                    context: context,
+                    title: IsrTranslationFile.post,
+                    buttonConfig: IsrVideoReelConfig.socialConfig.primaryButton,
+                    onPress: () => Navigator.of(context).pop(true),
+                    defaultBackgroundColor: Theme.of(context).primaryColor,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   DateTime getBufferedDate() {
     final now = DateTime.now();

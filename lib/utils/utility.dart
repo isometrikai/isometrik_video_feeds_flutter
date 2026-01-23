@@ -133,15 +133,25 @@ class Utility {
     Function()? onPressPositiveButton,
     Function()? onPressNegativeButton,
   }) {
+    final dialogConfig = IsrVideoReelConfig.socialConfig.dialogConfig;
+    final borderRadius = dialogConfig?.borderRadius ?? IsrDimens.twelve;
+    final backgroundColor = dialogConfig?.backgroundColor ??
+        IsrColors.dialogColor;
+    final padding = dialogConfig?.padding ??
+        IsrDimens.edgeInsetsAll(IsrDimens.fourteen);
+    final titleStyle = dialogConfig?.titleTextStyle ??
+        IsrStyles.secondaryText14.copyWith(fontWeight: FontWeight.w700);
+    final messageStyle = dialogConfig?.messageTextStyle ?? IsrStyles.primaryText14;
+
     showDialog(
       context: context ?? IsrVideoReelConfig.buildContext!,
       builder: (_) => Dialog(
         shape: RoundedRectangleBorder(
-          borderRadius: IsrDimens.borderRadiusAll(IsrDimens.twelve),
+          borderRadius: IsrDimens.borderRadiusAll(borderRadius),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: backgroundColor,
         child: Padding(
-          padding: IsrDimens.edgeInsetsAll(IsrDimens.fourteen),
+          padding: padding,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -161,14 +171,13 @@ class Utility {
               if (isToShowTitle == true)
                 Text(
                   titleText ?? IsrTranslationFile.alert,
-                  style: IsrStyles.secondaryText14
-                      .copyWith(fontWeight: FontWeight.w700),
+                  style: titleStyle,
                 ),
               if (message.isStringEmptyOrNull == false) ...[
                 IsrDimens.boxHeight(IsrDimens.eight),
                 Text(
                   message.toString(),
-                  style: IsrStyles.primaryText14,
+                  style: messageStyle,
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -177,9 +186,9 @@ class Utility {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   Expanded(
-                    child: AppButton(
-                      width: IsrDimens.twoHundredFifty,
+                    child: _buildDialogButton(
                       title: positiveButtonText ?? IsrTranslationFile.ok,
+                      buttonConfig: IsrVideoReelConfig.socialConfig.primaryButton,
                       onPress: () {
                         closeOpenDialog();
                         if (onPressPositiveButton != null) {
@@ -191,10 +200,10 @@ class Utility {
                   if (isTwoButtons == true) ...[
                     IsrDimens.boxWidth(IsrDimens.five),
                     Expanded(
-                      child: AppButton(
-                        width: IsrDimens.twoHundredFifty,
+                      child: _buildDialogButton(
                         title: negativeButtonText ?? IsrTranslationFile.cancel,
-                        type: ButtonType.secondary,
+                        buttonConfig: IsrVideoReelConfig.socialConfig.secondaryButton,
+                        buttonType: ButtonType.secondary,
                         onPress: () {
                           closeOpenDialog();
                           if (onPressNegativeButton != null) {
@@ -214,6 +223,23 @@ class Utility {
       barrierDismissible: true,
     );
   }
+
+  /// Helper method to build dialog button with ButtonConfig
+  static Widget _buildDialogButton({
+    required String title,
+    ButtonConfig? buttonConfig,
+    ButtonType buttonType = ButtonType.primary,
+    required VoidCallback? onPress,
+  }) => AppButton(
+      width: IsrDimens.twoHundredFifty,
+      title: title,
+      type: buttonType,
+      onPress: onPress,
+      backgroundColor: buttonConfig?.backgroundColor,
+      textColor: buttonConfig?.textColor,
+      borderColor: buttonConfig?.borderColor,
+      borderRadius: buttonConfig?.borderRadius,
+    );
 
   /// shows bottom sheet
   static Future<T?> showBottomSheet<T>({
@@ -241,6 +267,12 @@ class Utility {
       );
     }
 
+    final defaultBackgroundColor = isDarkBG
+        ? Theme.of(contextToUse).primaryColor
+        : (IsrVideoReelConfig.socialConfig.colorsConfig
+                ?.bottomSheetBackgroundColor ??
+            IsrColors.white);
+
     return showModalBottomSheet<T>(
       context: contextToUse,
       builder: (_) => isSafeArea
@@ -262,8 +294,7 @@ class Utility {
       showDragHandle: false,
       isDismissible: isDismissible,
       isScrollControlled: isScrollControlled,
-      backgroundColor: backgroundColor ??
-          (isDarkBG ? Theme.of(contextToUse).primaryColor : IsrColors.white),
+      backgroundColor: backgroundColor ?? defaultBackgroundColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(IsrDimens.sixteen),
@@ -497,14 +528,40 @@ class Utility {
     String msg, {
     ToastGravity? gravity,
   }) {
+    final toastConfig = IsrVideoReelConfig.socialConfig.toastConfig;
+    final toastGravity = _mapToastGravity(
+      gravity ?? _mapToastGravityType(toastConfig?.gravity),
+    );
+    final backgroundColor = toastConfig?.backgroundColor ?? IsrColors.black;
+    final textColor = toastConfig?.textColor ?? IsrColors.white;
+    final duration = toastConfig?.duration;
+
     Fluttertoast.showToast(
       msg: msg,
-      toastLength: Toast.LENGTH_SHORT,
-      gravity: gravity ?? ToastGravity.BOTTOM,
-      backgroundColor: IsrColors.black,
-      textColor: IsrColors.white,
+      toastLength: duration != null
+          ? (duration.inSeconds >= 3 ? Toast.LENGTH_LONG : Toast.LENGTH_SHORT)
+          : Toast.LENGTH_SHORT,
+      gravity: toastGravity,
+      backgroundColor: backgroundColor,
+      textColor: textColor,
     );
   }
+
+  static ToastGravity? _mapToastGravityType(
+      ToastGravityType? gravityType) {
+    if (gravityType == null) return null;
+    switch (gravityType) {
+      case ToastGravityType.top:
+        return ToastGravity.TOP;
+      case ToastGravityType.bottom:
+        return ToastGravity.BOTTOM;
+      case ToastGravityType.center:
+        return ToastGravity.CENTER;
+    }
+  }
+
+  static ToastGravity _mapToastGravity(ToastGravity? gravity) =>
+      gravity ?? ToastGravity.BOTTOM;
 
   static BuildContext? get context =>
       IsrVideoReelConfig.getBuildContext?.call() ??
@@ -576,35 +633,43 @@ class Utility {
 
   ///show custom widget dialog
   static Future<void> showCustomDialog(
-          {required BuildContext context, required Widget child}) =>
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          contentPadding: IsrDimens.edgeInsetsAll(IsrDimens.twelve),
-          shape: RoundedRectangleBorder(
-            borderRadius: IsrDimens.borderRadiusAll(IsrDimens.twelve),
-          ),
-          backgroundColor: IsrColors.dialogColor,
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Align(
-                alignment: Alignment.topRight,
-                child: TapHandler(
-                  padding: IsrDimens.four,
-                  onTap: Utility.closeOpenDialog,
-                  child: AppImage.svg(
-                    AssetConstants.icCrossIcon,
-                    height: IsrDimens.twelve,
-                    width: IsrDimens.twelve,
-                  ),
+          {required BuildContext context, required Widget child}) {
+    final dialogConfig = IsrVideoReelConfig.socialConfig.dialogConfig;
+    final borderRadius = dialogConfig?.borderRadius ?? IsrDimens.twelve;
+    final backgroundColor = dialogConfig?.backgroundColor ??
+        IsrColors.dialogColor;
+    final padding = dialogConfig?.padding ??
+        IsrDimens.edgeInsetsAll(IsrDimens.twelve);
+
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        contentPadding: padding,
+        shape: RoundedRectangleBorder(
+          borderRadius: IsrDimens.borderRadiusAll(borderRadius),
+        ),
+        backgroundColor: backgroundColor,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Align(
+              alignment: Alignment.topRight,
+              child: TapHandler(
+                padding: IsrDimens.four,
+                onTap: Utility.closeOpenDialog,
+                child: AppImage.svg(
+                  AssetConstants.icCrossIcon,
+                  height: IsrDimens.twelve,
+                  width: IsrDimens.twelve,
                 ),
               ),
-              child,
-            ],
-          ),
+            ),
+            child,
+          ],
         ),
-      );
+      ),
+    );
+  }
 
   static bool _isErrorShowing =
       false; // Flag to track if an error is currently displayed

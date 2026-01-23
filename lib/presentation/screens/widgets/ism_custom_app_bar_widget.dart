@@ -9,12 +9,12 @@ class IsmCustomAppBarWidget extends StatelessWidget
     implements PreferredSizeWidget {
   const IsmCustomAppBarWidget({
     super.key,
-    this.statusBarColor = IsrColors.appBarColor,
+    this.statusBarColor,
     this.statusBarIconBrightness = Brightness.dark,
     this.statusBarBrightness = Brightness.light,
-    this.navigationBarColor = IsrColors.navigationBar,
+    this.navigationBarColor,
     this.navigationBarIconBrightness = Brightness.dark,
-    this.backgroundColor = IsrColors.appBarColor,
+    this.backgroundColor,
     this.height,
     this.titleText,
     this.titleColor,
@@ -39,12 +39,12 @@ class IsmCustomAppBarWidget extends StatelessWidget
     this.showTitleWidget = true,
   });
 
-  final Color statusBarColor;
+  final Color? statusBarColor;
   final Brightness statusBarIconBrightness;
   final Brightness statusBarBrightness;
-  final Color navigationBarColor;
+  final Color? navigationBarColor;
   final Brightness navigationBarIconBrightness;
-  final Color backgroundColor;
+  final Color? backgroundColor;
   final double? height;
   final String? titleText;
   final Color? titleColor;
@@ -76,14 +76,14 @@ class IsmCustomAppBarWidget extends StatelessWidget
   Widget build(BuildContext context) => AppBar(
         elevation: 0,
         scrolledUnderElevation: 0,
-        backgroundColor: backgroundColor,
+        backgroundColor: backgroundColor ?? IsrColors.appBarColor,
         iconTheme: Theme.of(context).appBarTheme.iconTheme,
         actionsIconTheme: Theme.of(context).appBarTheme.actionsIconTheme,
         systemOverlayStyle: SystemUiOverlayStyle(
-          statusBarColor: statusBarColor,
+          statusBarColor: statusBarColor ?? IsrColors.appBarColor,
           statusBarIconBrightness: statusBarIconBrightness,
           statusBarBrightness: statusBarBrightness,
-          systemNavigationBarColor: navigationBarColor,
+          systemNavigationBarColor: navigationBarColor ?? IsrColors.navigationBar,
           systemNavigationBarIconBrightness: navigationBarIconBrightness,
         ),
         leadingWidth: isBackButtonVisible == false

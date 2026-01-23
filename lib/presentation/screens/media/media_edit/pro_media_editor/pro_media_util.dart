@@ -86,7 +86,7 @@ StickerEditorConfigs stickerEditorConfigs(MediaEditConfig mediaEditConfig) =>
       builder: _buildStickerPicker,
     );
 
-final uiOverLay = const SystemUiOverlayStyle(
+final uiOverLay = SystemUiOverlayStyle(
   statusBarColor: IsrColors.appBarColor,
   statusBarIconBrightness: Brightness.dark,
   statusBarBrightness: Brightness.light,
@@ -157,7 +157,7 @@ MainEditorConfigs mainEditorConfig(MediaEditConfig mediaEditConfig) =>
 ProImageEditorConfigs proImageEditorConfigs(MediaEditConfig mediaEditConfig) =>
     ProImageEditorConfigs(
       theme: ThemeData.light(),
-      dialogConfigs: const DialogConfigs(
+      dialogConfigs: DialogConfigs(
           style: DialogStyle(
               loadingDialog:
                   LoadingDialogStyle(textColor: IsrColors.primaryTextColor))),
