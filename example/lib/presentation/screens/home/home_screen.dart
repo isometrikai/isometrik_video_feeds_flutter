@@ -27,7 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) => isr.IsmPostView(
-        startTabIndex: 3,
+        startTabIndex: 2,
         tabDataModelList: [
           isr.TabDataModel(
             postSectionType: isr.PostSectionType.forYou,
