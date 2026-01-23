@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -34,6 +35,10 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
   bool _isLocationServiceEnabled = false;
   bool _isCheckingLocation = false;
   SearchLocationBloc get _searchLocationBloc => context.getOrCreateBloc();
+
+  // Configuration getters
+  SearchLocationUIConfig? get _searchLocationConfig => IsrVideoReelConfig
+      .createEditPostConfig.createEditPostUIConfig?.searchLocationUIConfig;
 
   @override
   void initState() {
@@ -392,11 +397,14 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
           },
           builder: (context, state) => Scaffold(
             backgroundColor: Colors.white,
-            appBar: const IsmCustomAppBarWidget(
-              backgroundColor: Colors.white,
+            appBar: IsmCustomAppBarWidget(
+              backgroundColor:
+                  _searchLocationConfig?.appBarConfig?.backgroundColor ??
+                      Colors.white,
               isCrossIcon: true,
               titleText: IsrTranslationFile.selectALocation,
               centerTitle: true,
+              titleStyle: _searchLocationConfig?.appBarConfig?.titleStyle,
             ),
             body: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

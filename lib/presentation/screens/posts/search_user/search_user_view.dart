@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
-import 'package:ism_video_reel_player/domain/models/response/timeline_response.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -32,6 +32,13 @@ class _SearchUserViewState extends State<SearchUserView>
   Timer? _debounce;
   String _currentSearchText = '';
   bool _isSelectingUser = false;
+
+  // Configuration getters
+  SearchUserScreenConfig? get _searchUserConfig => IsrVideoReelConfig
+      .createEditPostConfig
+      .createEditPostUIConfig
+      ?.tagPeopleUIConfig
+      ?.searchUserScreenConfig;
 
   @override
   void initState() {
@@ -131,11 +138,13 @@ class _SearchUserViewState extends State<SearchUserView>
   Widget build(BuildContext context) => Scaffold(
         backgroundColor: Colors.white,
         appBar: IsmCustomAppBarWidget(
-          backgroundColor: Colors.white,
+          backgroundColor:
+              _searchUserConfig?.appBarConfig?.backgroundColor ?? Colors.white,
           isCrossIcon: true,
           titleText: IsrTranslationFile.tagPeople,
           centerTitle: true,
           showActions: true,
+          titleStyle: _searchUserConfig?.appBarConfig?.titleStyle,
           actions: [
             TapHandler(
               onTap: () => Navigator.pop(context, _selectedUsers.toList()),

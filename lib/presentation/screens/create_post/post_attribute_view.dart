@@ -64,6 +64,10 @@ class _PostAttributeViewState extends State<PostAttributeView>
   late final UploadProgressCubit _progressCubit;
   late final IsmSocialActionCubit _socialActionCubit;
 
+  // Configuration getters
+  PostAttributeUIConfig? get _postAttributeConfig => IsrVideoReelConfig
+      .createEditPostConfig.createEditPostUIConfig?.postAttributeUIConfig;
+
   @override
   void initState() {
     _createPostBloc = context.getOrCreateBloc();
@@ -525,11 +529,14 @@ class _PostAttributeViewState extends State<PostAttributeView>
   Widget _buildPage() => Scaffold(
         backgroundColor: Colors.white,
         appBar: IsmCustomAppBarWidget(
-          backgroundColor: Colors.white,
+          backgroundColor:
+              _postAttributeConfig?.appBarConfig?.backgroundColor ??
+                  Colors.white,
           titleText: widget.isEditMode == true
               ? IsrTranslationFile.editPost
               : IsrTranslationFile.newPost,
           centerTitle: true,
+          titleStyle: _postAttributeConfig?.appBarConfig?.titleStyle,
         ),
         body: Column(
           children: [
@@ -582,8 +589,9 @@ class _PostAttributeViewState extends State<PostAttributeView>
                     // Media Preview Section
                     if (_mediaDataList.isNotEmpty)
                       Container(
-                        height: 220
-                            .responsiveDimension, // Increased height for reels-like aspect ratio
+                        height:
+                            _postAttributeConfig?.mediaPreviewConfig?.height ??
+                                220.responsiveDimension,
                         width: double.infinity,
                         padding: EdgeInsetsGeometry.symmetric(
                             horizontal: 5.responsiveDimension),
@@ -594,13 +602,25 @@ class _PostAttributeViewState extends State<PostAttributeView>
                               margin: IsrDimens.edgeInsetsAll(
                                   7.responsiveDimension),
                               child: AspectRatio(
-                                aspectRatio: 9 / 16,
+                                aspectRatio: _postAttributeConfig
+                                        ?.mediaPreviewConfig?.aspectRatio ??
+                                    9 / 16,
                                 child: Container(
                                   decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(8),
-                                      color: IsrColors.blackColor),
+                                      borderRadius: BorderRadius.circular(
+                                          _postAttributeConfig
+                                                  ?.mediaPreviewConfig
+                                                  ?.borderRadius ??
+                                              8),
+                                      color: _postAttributeConfig
+                                              ?.mediaPreviewConfig
+                                              ?.backgroundColor ??
+                                          IsrColors.blackColor),
                                   child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(
+                                        _postAttributeConfig?.mediaPreviewConfig
+                                                ?.borderRadius ??
+                                            8),
                                     child: Stack(
                                       children: [
                                         _buildImage(_postAttributeClass
@@ -621,16 +641,23 @@ class _PostAttributeViewState extends State<PostAttributeView>
                                           child: Container(
                                             width: double.infinity,
                                             height: 28.responsiveDimension,
-                                            color: IsrColors.black
+                                            color: (_postAttributeConfig
+                                                        ?.mediaPreviewConfig
+                                                        ?.changeCoverOverlayColor ??
+                                                    IsrColors.black)
                                                 .withValues(alpha: 0.3),
                                             child: Center(
                                               child: Text(
                                                 IsrTranslationFile.changeCover,
-                                                style: IsrStyles.primaryText12
-                                                    .copyWith(
-                                                  color: IsrColors.white,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
+                                                style: _postAttributeConfig
+                                                        ?.mediaPreviewConfig
+                                                        ?.changeCoverTextStyle ??
+                                                    IsrStyles.primaryText12
+                                                        .copyWith(
+                                                      color: IsrColors.white,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
                                               ),
                                             ),
                                           ),
@@ -654,7 +681,9 @@ class _PostAttributeViewState extends State<PostAttributeView>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Link Products
-                        if (IsrVideoReelConfig.createEditPostConfig.createEditPostCallBackConfig?.onLinkProduct != null)
+                        if (IsrVideoReelConfig.createEditPostConfig
+                                .createEditPostCallBackConfig?.onLinkProduct !=
+                            null)
                           _buildOptionTile(
                             icon: AssetConstants.icCartIcon,
                             title: IsrTranslationFile.linkProducts,
@@ -766,7 +795,8 @@ class _PostAttributeViewState extends State<PostAttributeView>
 
             // Fixed Post Button at bottom
             Container(
-              padding: IsrDimens.edgeInsetsAll(20.responsiveDimension),
+              padding: _postAttributeConfig?.postButtonConfig?.padding ??
+                  IsrDimens.edgeInsetsAll(20.responsiveDimension),
               decoration: BoxDecoration(
                 color: Colors.white,
                 boxShadow: [
@@ -783,8 +813,14 @@ class _PostAttributeViewState extends State<PostAttributeView>
                   title: IsrTranslationFile.post,
                   isDisable: !_isPostButtonEnabled,
                   onPress: _isPostButtonEnabled ? _createPost : null,
-                  borderRadius: 25.responsiveDimension,
-                  height: 44.responsiveDimension,
+                  borderRadius:
+                      _postAttributeConfig?.postButtonConfig?.borderRadius ??
+                          25.responsiveDimension,
+                  height: _postAttributeConfig?.postButtonConfig?.height ??
+                      44.responsiveDimension,
+                  backgroundColor:
+                      _postAttributeConfig?.postButtonConfig?.backgroundColor,
+                  textStyle: _postAttributeConfig?.postButtonConfig?.textStyle,
                 ),
               ),
             ),
@@ -887,10 +923,13 @@ class _PostAttributeViewState extends State<PostAttributeView>
         key: _captionInputKey,
         child: UserMentionTextField(
           controller: _descriptionController,
-          hintText: '${IsrTranslationFile.addCaption}...',
-          maxLength: _maxLength,
-          style: IsrStyles.primaryText14,
-          hintStyle:
+          hintText: _postAttributeConfig?.captionInputConfig?.hintText ??
+              '${IsrTranslationFile.addCaption}...',
+          maxLength:
+              _postAttributeConfig?.captionInputConfig?.maxLength ?? _maxLength,
+          style: _postAttributeConfig?.captionInputConfig?.textStyle ??
+              IsrStyles.primaryText14,
+          hintStyle: _postAttributeConfig?.captionInputConfig?.hintStyle ??
               IsrStyles.secondaryText14.copyWith(color: IsrColors.colorBBBBBB),
           focusNode: _descriptionFocusNode,
           onChanged: (value) {
@@ -1472,7 +1511,9 @@ class _PostAttributeViewState extends State<PostAttributeView>
   /// Get linked products from product selection screen
   void _getLinkedProducts() async {
     _descriptionFocusNode.unfocus();
-    final result = await IsrVideoReelConfig.createEditPostConfig.createEditPostCallBackConfig?.onLinkProduct?.call(_linkedProducts.toList());
+    final result = await IsrVideoReelConfig
+        .createEditPostConfig.createEditPostCallBackConfig?.onLinkProduct
+        ?.call(_linkedProducts.toList());
     setState(() {
       _linkedProducts.clear();
       _linkedProducts.addAll(result ?? []);
@@ -1567,18 +1608,22 @@ class _PostAttributeViewState extends State<PostAttributeView>
         child: InkWell(
           onTap: onTap,
           child: Container(
-            margin:
+            margin: _postAttributeConfig?.optionTileConfig?.margin ??
                 IsrDimens.edgeInsetsSymmetric(vertical: 4.responsiveDimension),
-            padding: IsrDimens.edgeInsetsSymmetric(
-                horizontal: 20.responsiveDimension,
-                vertical: 12.responsiveDimension),
+            padding: _postAttributeConfig?.optionTileConfig?.padding ??
+                IsrDimens.edgeInsetsSymmetric(
+                    horizontal: 20.responsiveDimension,
+                    vertical: 12.responsiveDimension),
             child: Row(
               children: [
                 AppImage.svg(
                   icon,
-                  height: 20.responsiveDimension,
-                  width: 20.responsiveDimension,
-                  color: color,
+                  height: _postAttributeConfig?.optionTileConfig?.iconSize ??
+                      20.responsiveDimension,
+                  width: _postAttributeConfig?.optionTileConfig?.iconSize ??
+                      20.responsiveDimension,
+                  color: color ??
+                      _postAttributeConfig?.optionTileConfig?.iconColor,
                 ),
                 8.horizontalSpace,
                 Expanded(
@@ -1588,17 +1633,21 @@ class _PostAttributeViewState extends State<PostAttributeView>
                     children: [
                       Text(
                         title,
-                        style: IsrStyles.primaryText14.copyWith(
-                          fontWeight: FontWeight.w500,
-                          color: color,
-                        ),
+                        style: _postAttributeConfig
+                                ?.optionTileConfig?.titleStyle ??
+                            IsrStyles.primaryText14.copyWith(
+                              fontWeight: FontWeight.w500,
+                              color: color,
+                            ),
                       ),
                       if (subtitle != null) ...[
                         4.horizontalSpace,
                         Text(
                           subtitle,
-                          style: IsrStyles.primaryText12
-                              .copyWith(color: IsrColors.grey),
+                          style: _postAttributeConfig
+                                  ?.optionTileConfig?.subtitleStyle ??
+                              IsrStyles.primaryText12
+                                  .copyWith(color: IsrColors.grey),
                         ),
                       ],
                     ],
@@ -1611,7 +1660,9 @@ class _PostAttributeViewState extends State<PostAttributeView>
                       : (onTap != null)
                           ? Icon(
                               Icons.chevron_right,
-                              color: IsrColors.primaryTextColor,
+                              color: _postAttributeConfig
+                                      ?.optionTileConfig?.trailingIconColor ??
+                                  IsrColors.primaryTextColor,
                               size: 20,
                             )
                           : const SizedBox(),
@@ -1636,7 +1687,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
 
   Future<String?> _pickCoverPic() async {
     final res = await IsrAppNavigator.goToMediaPickerScreen(
-        context,
+      context,
       mediaSelectionConfig: mediaSelectionConfig.copyWith(
           mediaListType: ms.MediaListType.image,
           isMultiSelect: false,
@@ -1692,28 +1743,44 @@ class _PostAttributeViewState extends State<PostAttributeView>
         child: InkWell(
           onTap: () => onChanged(!value),
           child: Container(
-            margin:
+            margin: _postAttributeConfig?.switchTileConfig?.margin ??
                 IsrDimens.edgeInsetsSymmetric(vertical: 4.responsiveDimension),
-            padding: IsrDimens.edgeInsetsSymmetric(
-                horizontal: 20.responsiveDimension),
+            padding: _postAttributeConfig?.switchTileConfig?.padding ??
+                IsrDimens.edgeInsetsSymmetric(
+                    horizontal: 20.responsiveDimension),
             child: Row(
               children: [
-                AppImage.svg(icon),
+                AppImage.svg(
+                  icon,
+                  height: _postAttributeConfig?.switchTileConfig?.iconSize ??
+                      20.responsiveDimension,
+                  width: _postAttributeConfig?.switchTileConfig?.iconSize ??
+                      20.responsiveDimension,
+                ),
                 8.horizontalSpace,
                 Expanded(
                   child: Text(
                     title,
-                    style: IsrStyles.primaryText14
-                        .copyWith(fontWeight: FontWeight.w500),
+                    style: _postAttributeConfig?.switchTileConfig?.titleStyle ??
+                        IsrStyles.primaryText14
+                            .copyWith(fontWeight: FontWeight.w500),
                   ),
                 ),
                 Switch(
                   value: value,
                   onChanged: onChanged,
-                  activeThumbColor: IsrColors.white,
-                  inactiveThumbColor: IsrColors.white,
-                  activeTrackColor: Theme.of(context).primaryColor,
-                  inactiveTrackColor: 'C6C6CC'.toColor(),
+                  activeThumbColor: _postAttributeConfig
+                          ?.switchTileConfig?.activeThumbColor ??
+                      IsrColors.white,
+                  inactiveThumbColor: _postAttributeConfig
+                          ?.switchTileConfig?.inactiveThumbColor ??
+                      IsrColors.white,
+                  activeTrackColor: _postAttributeConfig
+                          ?.switchTileConfig?.activeTrackColor ??
+                      Theme.of(context).primaryColor,
+                  inactiveTrackColor: _postAttributeConfig
+                          ?.switchTileConfig?.inactiveTrackColor ??
+                      'C6C6CC'.toColor(),
                 ),
               ],
             ),
