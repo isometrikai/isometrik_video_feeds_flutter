@@ -194,6 +194,11 @@ abstract class SocialRepository extends BaseRepository {
     required String postId,
   });
 
+  Future<CustomResponse<ResponseClass?>> onShareSuccessLog({
+    required bool isLoading,
+    required OnShareRequest request,
+  });
+
   Future<CustomResponse<ResponseClass?>> createCollection({
     required bool isLoading,
     required Map<String, dynamic> requestMap,

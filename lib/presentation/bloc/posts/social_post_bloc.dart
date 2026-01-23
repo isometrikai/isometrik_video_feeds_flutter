@@ -32,6 +32,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     this._getUserPostDataUseCase,
     this._deletePostUseCase,
     this.postImpressionUseCase,
+    this._onShareSuccessLogUseCase
   ) : super(PostLoadingState(isLoading: true)) {
     on<StartPost>(_onStartPost);
     on<LoadPostData>(_onLoadHomeData);
@@ -54,6 +55,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     on<GetMentionedUserEvent>(_getMentionedUser);
     on<RemoveMentionEvent>(_removeMention);
     on<PlayPauseVideoEvent>(_playPauseVideo);
+    on<OnShareSuccessEvent>(_onShareSuccess);
   }
 
   final IsmLocalDataUseCase _localDataUseCase;
@@ -74,6 +76,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   final GetSocialProductsUseCase _getSocialProductsUseCase;
   final GetMentionedUsersUseCase _getMentionedUsersUseCase;
   final RemoveMentionUseCase _removeMentionUseCase;
+  final OnShareSuccessLogUseCase _onShareSuccessLogUseCase;
   final GetTaggedPostsUseCase _getTaggedPostsUseCase;
   final GetUserPostDataUseCase _getUserPostDataUseCase;
   final PostImpressionUseCase postImpressionUseCase;
@@ -738,6 +741,16 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   FutureOr<void> _playPauseVideo(
       PlayPauseVideoEvent event, Emitter<SocialPostState> emit) async {
     emit(PlayPauseVideoState(play: event.play));
+  }
+
+  FutureOr<void> _onShareSuccess(
+      OnShareSuccessEvent event, Emitter<SocialPostState> emit) async {
+    debugPrint(
+        'SocialPostBloc: _onShareSuccess:- invoked, request:- ${event.shareSuccessData.toJson()}');
+    final res = await _onShareSuccessLogUseCase.executeOnShareSuccessLog(
+        isLoading: false, request: event.shareSuccessData);
+    debugPrint(
+        'SocialPostBloc: _onShareSuccess:- API result, request:- ${res.data?.data}');
   }
 
   FutureOr<void> _removeMention(

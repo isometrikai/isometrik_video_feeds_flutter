@@ -323,3 +323,8 @@ class PlayPauseVideoEvent extends SocialPostEvent {
   PlayPauseVideoEvent({required this.play});
   bool play;
 }
+
+class OnShareSuccessEvent extends SocialPostEvent {
+  OnShareSuccessEvent({required this.shareSuccessData});
+  final OnShareRequest shareSuccessData;
+}

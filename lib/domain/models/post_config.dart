@@ -559,7 +559,7 @@ class PostCallBackConfig {
   final Future<bool> Function(TimeLineData? postData, bool isFollow)?
       onFollowClick;
 
-  final Function(TimeLineData postData)? onShareClicked;
+  final Future<OnShareRequest?> Function(TimeLineData postData)? onShareClicked;
   final Function(TimeLineData postData)? onCommentClick;
   final Function(TimeLineData? postData, String userId, bool? isFollowing)?
       onProfileClick;
@@ -573,7 +573,7 @@ class PostCallBackConfig {
     Future<bool> Function(TimeLineData? postData, bool isLiked)?
         onFollowClicked,
     Future<bool> Function(TimeLineData? postData, bool isSaved)? onSaveClicked,
-    Function(TimeLineData postData)? onShareClicked,
+    Future<OnShareRequest?> Function(TimeLineData postData)? onShareClicked,
     Function(TimeLineData postData)? onCommentClick,
     Function(TimeLineData? postData, String userId, bool? isFollowing)?
         onProfileClick,

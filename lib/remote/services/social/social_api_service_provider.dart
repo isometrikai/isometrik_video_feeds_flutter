@@ -755,6 +755,23 @@ class SocialApiServiceProvider extends SocialApiService {
       );
 
   @override
+  Future<ResponseModel> onShareSuccessLog({
+    required bool isLoading,
+    required Header header,
+    required Map<String, dynamic> requestMap,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.onShareSuccess,
+          NetworkRequestType.post,
+          requestMap,
+          null,
+          headers,
+          isLoading,
+        ),
+      );
+
+  @override
   Future<ResponseModel> createCollection({
     required bool isLoading,
     required Header header,

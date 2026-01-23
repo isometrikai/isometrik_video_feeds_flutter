@@ -366,9 +366,12 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       onTapShare: (reelsData) async {
         if (reelsData.postData is TimeLineData) {
           _socialPostBloc.add(PlayPauseVideoEvent(play: false));
-          await _postConfig.postCallBackConfig?.onShareClicked
+          final shareRes = await _postConfig.postCallBackConfig?.onShareClicked
               ?.call(reelsData.postData as TimeLineData);
           _socialPostBloc.add(PlayPauseVideoEvent(play: true));
+          if (shareRes != null){
+            _socialPostBloc.add(OnShareSuccessEvent(shareSuccessData: shareRes));
+          }
         }
       },
       onTapMentionTag: (reelData, mentionList) async {

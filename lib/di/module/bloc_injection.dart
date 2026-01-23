@@ -41,6 +41,7 @@ class BlocInjection {
         IsmInjectionUtils.getUseCase<GetUserPostDataUseCase>(),
         IsmInjectionUtils.getUseCase<DeletePostUseCase>(),
         IsmInjectionUtils.getUseCase<PostImpressionUseCase>(),
+        IsmInjectionUtils.getUseCase<OnShareSuccessLogUseCase>(),
       ),
     );
 
