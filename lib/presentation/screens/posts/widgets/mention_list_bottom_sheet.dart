@@ -57,18 +57,6 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
     // }
   }
 
-  void _removeMentionFromList(String userId) {
-    // If this is the last mention, dismiss immediately without updating UI
-    // if (_socialUserList.length == 1 && _socialUserList.first.userId == userId) {
-    //   context.pop(_socialUserList); // Return empty list
-    //   return;
-    // }
-
-    setState(() {
-      _socialUserList.removeWhere((mention) => mention.id == userId);
-    });
-  }
-
   @override
   Widget build(BuildContext context) => PopScope(
         canPop: false,
@@ -266,7 +254,6 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
     String postId,
   ) {
     final userId = socialUserData?.id ?? '';
-    var isLoading = false;
 
     return StatefulBuilder(
       builder: (context, setState) => userId != widget.myUserId
