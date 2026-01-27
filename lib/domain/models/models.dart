@@ -9,6 +9,7 @@ export 'reels_config.dart';
 export 'reels_data.dart';
 export 'request/request.dart';
 export 'response/response.dart';
+export 'search_screen_config.dart';
 export 'social_config.dart';
 export 'tab_config.dart';
 export 'tab_data_model.dart';
