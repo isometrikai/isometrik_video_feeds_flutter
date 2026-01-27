@@ -40,6 +40,19 @@ class CreateCollectionRequestModel {
         'is_private': isPrivate,
         'description': description,
       };
+
+  // Create a new instance with modified fields
+  CreateCollectionRequestModel copyWith({
+    String? imageUrl,
+    String? name,
+    bool? isPrivate,
+    String? description,
+  }) => CreateCollectionRequestModel(
+    imageUrl: imageUrl ?? this.imageUrl,
+    name: name ?? this.name,
+    isPrivate: isPrivate ?? this.isPrivate,
+    description: description ?? this.description,
+  );
 }
 
 class EditCollectionRequestModel {
