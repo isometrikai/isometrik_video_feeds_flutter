@@ -12,5 +12,6 @@ export 'response/response.dart';
 export 'social_config.dart';
 export 'tab_config.dart';
 export 'tab_data_model.dart';
+export 'tag_details_config.dart';
 export 'unified_location_item.dart';
 export 'user_info_class.dart';

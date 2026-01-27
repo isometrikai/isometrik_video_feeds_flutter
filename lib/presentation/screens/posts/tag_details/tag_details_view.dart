@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:ism_video_reel_player/di/di.dart';
-import 'package:ism_video_reel_player/domain/domain.dart';
-import 'package:ism_video_reel_player/presentation/presentation.dart';
+import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
@@ -29,6 +27,10 @@ class _TagDetailsViewState extends State<TagDetailsView> {
   final List<TimeLineData> _postsList = [];
   final ValueNotifier<int> _postCountNotifier = ValueNotifier<int>(0);
   var _hasMoreData = true;
+
+  // Configuration getters
+  TagDetailsUIConfig? get _tagDetailsUIConfig =>
+      IsrVideoReelConfig.tagDetailsConfig.tagDetailsUIConfig;
 
   @override
   void initState() {
@@ -77,7 +79,8 @@ class _TagDetailsViewState extends State<TagDetailsView> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: _tagDetailsUIConfig?.scaffoldConfig?.backgroundColor ??
+            Colors.white,
         body: SafeArea(
           child: Stack(
             children: [
@@ -120,28 +123,39 @@ class _TagDetailsViewState extends State<TagDetailsView> {
 
               // Fixed Back Button - Always visible
               Positioned(
-                top: 10.responsiveDimension,
-                left: 16.responsiveDimension,
+                top: _tagDetailsUIConfig?.backButtonConfig?.topOffset ??
+                    10.responsiveDimension,
+                left: _tagDetailsUIConfig?.backButtonConfig?.leftOffset ??
+                    16.responsiveDimension,
                 child: GestureDetector(
                   onTap: () => context.pop(),
                   child: Container(
-                    width: 40.responsiveDimension,
-                    height: 40.responsiveDimension,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.applyOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
+                    width: _tagDetailsUIConfig?.backButtonConfig?.width ??
+                        40.responsiveDimension,
+                    height: _tagDetailsUIConfig?.backButtonConfig?.height ??
+                        40.responsiveDimension,
+                    decoration: _tagDetailsUIConfig
+                            ?.backButtonConfig?.decoration ??
+                        BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow:
+                              _tagDetailsUIConfig?.backButtonConfig?.shadow ??
+                                  [
+                                    BoxShadow(
+                                      color: Colors.black.applyOpacity(0.3),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
                         ),
-                      ],
-                    ),
                     child: Icon(
-                      Icons.arrow_back,
-                      color: Colors.black,
-                      size: 20.responsiveDimension,
+                      _tagDetailsUIConfig?.backButtonConfig?.icon ??
+                          Icons.arrow_back,
+                      color: _tagDetailsUIConfig?.backButtonConfig?.iconColor ??
+                          Colors.black,
+                      size: _tagDetailsUIConfig?.backButtonConfig?.iconSize ??
+                          20.responsiveDimension,
                     ),
                   ),
                 ),
@@ -153,9 +167,14 @@ class _TagDetailsViewState extends State<TagDetailsView> {
 
   Widget _buildPostsContent(TagDetailsState state) {
     if (state is TagDetailsLoadingState && state.isLoading) {
-      return const SliverFillRemaining(
+      return SliverFillRemaining(
         child: Center(
-          child: CircularProgressIndicator(),
+          child: _tagDetailsUIConfig?.loadingConfig?.indicator ??
+              CircularProgressIndicator(
+                color: _tagDetailsUIConfig?.loadingConfig?.color,
+                strokeWidth:
+                    _tagDetailsUIConfig?.loadingConfig?.strokeWidth ?? 4.0,
+              ),
         ),
       );
     } else if (state is TagDetailsErrorState) {
@@ -173,25 +192,36 @@ class _TagDetailsViewState extends State<TagDetailsView> {
   }
 
   Widget _buildTagProfile() => Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: 16.responsiveDimension,
-          vertical: 24.responsiveDimension,
-        ),
+        padding: _tagDetailsUIConfig?.tagProfileConfig?.padding ??
+            EdgeInsets.symmetric(
+              horizontal: 16.responsiveDimension,
+              vertical: 24.responsiveDimension,
+            ),
         child: Column(
           children: [
             // Tag Icon
-            const AppImage.svg(AssetConstants.icHashTagIcon),
+            _tagDetailsUIConfig?.tagProfileConfig?.icon != null
+                ? AppImage.svg(
+                    _tagDetailsUIConfig!.tagProfileConfig!.icon!,
+                    height: _tagDetailsUIConfig?.tagProfileConfig?.iconSize,
+                    width: _tagDetailsUIConfig?.tagProfileConfig?.iconSize,
+                    color: _tagDetailsUIConfig?.tagProfileConfig?.iconColor,
+                  )
+                : const AppImage.svg(AssetConstants.icHashTagIcon),
 
-            SizedBox(height: 16.responsiveDimension),
+            SizedBox(
+                height: _tagDetailsUIConfig?.tagProfileConfig?.spacing ??
+                    16.responsiveDimension),
 
             // Tag Text
             Text(
               _getTagDisplayText(),
-              style: TextStyle(
-                fontSize: 24.responsiveDimension,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
+              style: _tagDetailsUIConfig?.tagProfileConfig?.tagTextStyle ??
+                  TextStyle(
+                    fontSize: 24.responsiveDimension,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
             ),
 
             SizedBox(height: 8.responsiveDimension),
@@ -201,11 +231,13 @@ class _TagDetailsViewState extends State<TagDetailsView> {
               valueListenable: _postCountNotifier,
               builder: (context, value, child) => Text(
                 '$value Posts',
-                style: TextStyle(
-                  fontSize: 16.responsiveDimension,
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w500,
-                ),
+                style:
+                    _tagDetailsUIConfig?.tagProfileConfig?.postCountTextStyle ??
+                        TextStyle(
+                          fontSize: 16.responsiveDimension,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
               ),
             ),
           ],
@@ -234,26 +266,33 @@ class _TagDetailsViewState extends State<TagDetailsView> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              _getEmptyStateIcon(),
-              size: 64.responsiveDimension,
-              color: Colors.grey[400],
+              _tagDetailsUIConfig?.emptyStateConfig?.icon ??
+                  _getEmptyStateIcon(),
+              size: _tagDetailsUIConfig?.emptyStateConfig?.iconSize ??
+                  64.responsiveDimension,
+              color: _tagDetailsUIConfig?.emptyStateConfig?.iconColor ??
+                  Colors.grey[400],
             ),
-            SizedBox(height: 16.responsiveDimension),
+            SizedBox(
+                height: _tagDetailsUIConfig?.emptyStateConfig?.spacing ??
+                    16.responsiveDimension),
             Text(
               _getEmptyStateMessage(),
-              style: TextStyle(
-                fontSize: 16.responsiveDimension,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
+              style: _tagDetailsUIConfig?.emptyStateConfig?.messageStyle ??
+                  TextStyle(
+                    fontSize: 16.responsiveDimension,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
             ),
             SizedBox(height: 8.responsiveDimension),
             Text(
               _getEmptyStateDescription(),
-              style: TextStyle(
-                fontSize: 14.responsiveDimension,
-                color: Colors.grey[500],
-              ),
+              style: _tagDetailsUIConfig?.emptyStateConfig?.descriptionStyle ??
+                  TextStyle(
+                    fontSize: 14.responsiveDimension,
+                    color: Colors.grey[500],
+                  ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -300,22 +339,40 @@ class _TagDetailsViewState extends State<TagDetailsView> {
   }
 
   Widget _buildPostsSliverGrid(List<TimeLineData> postList) => SliverPadding(
-        padding: IsrDimens.edgeInsetsAll(IsrDimens.eight),
+        padding: _tagDetailsUIConfig?.postsGridConfig?.padding ??
+            IsrDimens.edgeInsetsAll(IsrDimens.eight),
         sliver: SliverGrid(
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3, // 3 columns as shown in design
-            crossAxisSpacing: IsrDimens.four,
-            mainAxisSpacing: IsrDimens.four,
-            childAspectRatio: 0.75,
+            crossAxisCount:
+                _tagDetailsUIConfig?.postsGridConfig?.crossAxisCount ??
+                    3, // 3 columns as shown in design
+            crossAxisSpacing:
+                _tagDetailsUIConfig?.postsGridConfig?.crossAxisSpacing ??
+                    IsrDimens.four,
+            mainAxisSpacing:
+                _tagDetailsUIConfig?.postsGridConfig?.mainAxisSpacing ??
+                    IsrDimens.four,
+            childAspectRatio:
+                _tagDetailsUIConfig?.postsGridConfig?.childAspectRatio ?? 0.75,
           ),
           delegate: SliverChildBuilderDelegate(
             (context, index) {
               if (index == postList.length) {
                 return _isLoadingMore
-                    ? const Center(
+                    ? Center(
                         child: Padding(
-                          padding: EdgeInsets.all(16.0),
-                          child: CircularProgressIndicator(),
+                          padding:
+                              _tagDetailsUIConfig?.loadingConfig?.padding ??
+                                  const EdgeInsets.all(16.0),
+                          child:
+                              _tagDetailsUIConfig?.loadingConfig?.indicator ??
+                                  CircularProgressIndicator(
+                                    color: _tagDetailsUIConfig
+                                        ?.loadingConfig?.color,
+                                    strokeWidth: _tagDetailsUIConfig
+                                            ?.loadingConfig?.strokeWidth ??
+                                        4.0,
+                                  ),
                         ),
                       )
                     : const SizedBox.shrink();
@@ -345,12 +402,18 @@ class _TagDetailsViewState extends State<TagDetailsView> {
       );
 
   Widget _buildPostCard(TimeLineData post, int index) => Container(
-        decoration: BoxDecoration(
-          color: IsrColors.white,
-          borderRadius: BorderRadius.circular(8.responsiveDimension),
-        ),
+        decoration: _tagDetailsUIConfig?.postCardConfig?.decoration ??
+            BoxDecoration(
+              color: _tagDetailsUIConfig?.postCardConfig?.backgroundColor ??
+                  IsrColors.white,
+              borderRadius: BorderRadius.circular(
+                  _tagDetailsUIConfig?.postCardConfig?.borderRadius ??
+                      8.responsiveDimension),
+            ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(8.responsiveDimension),
+          borderRadius: BorderRadius.circular(
+              _tagDetailsUIConfig?.postCardConfig?.borderRadius ??
+                  8.responsiveDimension),
           child: Stack(
             children: [
               _buildPostImage(post),
@@ -379,11 +442,18 @@ class _TagDetailsViewState extends State<TagDetailsView> {
 
     if (coverUrl.isEmptyOrNull) {
       return Container(
-        color: IsrColors.colorF5F5F5,
+        color: _tagDetailsUIConfig
+                ?.postCardConfig?.placeholderConfig?.backgroundColor ??
+            IsrColors.colorF5F5F5,
         child: Icon(
-          Icons.image,
-          color: IsrColors.color9B9B9B,
-          size: IsrDimens.forty,
+          _tagDetailsUIConfig?.postCardConfig?.placeholderConfig?.icon ??
+              Icons.image,
+          color: _tagDetailsUIConfig
+                  ?.postCardConfig?.placeholderConfig?.iconColor ??
+              IsrColors.color9B9B9B,
+          size: _tagDetailsUIConfig
+                  ?.postCardConfig?.placeholderConfig?.iconSize ??
+              IsrDimens.forty,
         ),
       );
     }
@@ -402,23 +472,39 @@ class _TagDetailsViewState extends State<TagDetailsView> {
         left: 0,
         right: 0,
         child: Container(
-          padding: IsrDimens.edgeInsetsSymmetric(
-            horizontal: IsrDimens.eight,
-            vertical: IsrDimens.four,
-          ),
-          decoration: BoxDecoration(
-            color: IsrColors.black.applyOpacity(0.7),
-            borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(8.responsiveDimension),
-              bottomRight: Radius.circular(8.responsiveDimension),
-            ),
-          ),
+          padding: _tagDetailsUIConfig
+                  ?.postCardConfig?.productsOverlayConfig?.padding ??
+              IsrDimens.edgeInsetsSymmetric(
+                horizontal: IsrDimens.eight,
+                vertical: IsrDimens.four,
+              ),
+          decoration: _tagDetailsUIConfig
+                  ?.postCardConfig?.productsOverlayConfig?.decoration ??
+              BoxDecoration(
+                color: _tagDetailsUIConfig?.postCardConfig
+                        ?.productsOverlayConfig?.backgroundColor ??
+                    IsrColors.black.applyOpacity(0.7),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(_tagDetailsUIConfig
+                          ?.postCardConfig
+                          ?.productsOverlayConfig
+                          ?.borderRadius ??
+                      8.responsiveDimension),
+                  bottomRight: Radius.circular(_tagDetailsUIConfig
+                          ?.postCardConfig
+                          ?.productsOverlayConfig
+                          ?.borderRadius ??
+                      8.responsiveDimension),
+                ),
+              ),
           child: Text(
             '${post.tags?.products?.length ?? 0} Products',
-            style: IsrStyles.primaryText10.copyWith(
-              color: IsrColors.white,
-              fontWeight: FontWeight.w600,
-            ),
+            style: _tagDetailsUIConfig
+                    ?.postCardConfig?.productsOverlayConfig?.textStyle ??
+                IsrStyles.primaryText10.copyWith(
+                  color: IsrColors.white,
+                  fontWeight: FontWeight.w600,
+                ),
             textAlign: TextAlign.center,
           ),
         ),
@@ -431,15 +517,28 @@ class _TagDetailsViewState extends State<TagDetailsView> {
         bottom: 0,
         child: Center(
           child: Container(
-            padding: IsrDimens.edgeInsetsAll(IsrDimens.eight),
-            decoration: BoxDecoration(
-              color: IsrColors.black.applyOpacity(0.3),
-              borderRadius: BorderRadius.circular(IsrDimens.twentyFour),
-            ),
+            padding:
+                _tagDetailsUIConfig?.postCardConfig?.videoIconConfig?.padding ??
+                    IsrDimens.edgeInsetsAll(IsrDimens.eight),
+            decoration: _tagDetailsUIConfig
+                    ?.postCardConfig?.videoIconConfig?.decoration ??
+                BoxDecoration(
+                  color: _tagDetailsUIConfig
+                          ?.postCardConfig?.videoIconConfig?.backgroundColor ??
+                      IsrColors.black.applyOpacity(0.3),
+                  borderRadius: BorderRadius.circular(_tagDetailsUIConfig
+                          ?.postCardConfig?.videoIconConfig?.borderRadius ??
+                      IsrDimens.twentyFour),
+                ),
             child: Icon(
-              Icons.play_arrow,
-              color: IsrColors.white,
-              size: IsrDimens.twentyFour,
+              _tagDetailsUIConfig?.postCardConfig?.videoIconConfig?.icon ??
+                  Icons.play_arrow,
+              color: _tagDetailsUIConfig
+                      ?.postCardConfig?.videoIconConfig?.iconColor ??
+                  IsrColors.white,
+              size: _tagDetailsUIConfig
+                      ?.postCardConfig?.videoIconConfig?.iconSize ??
+                  IsrDimens.twentyFour,
             ),
           ),
         ),
@@ -450,26 +549,33 @@ class _TagDetailsViewState extends State<TagDetailsView> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.error_outline,
-              size: 64.responsiveDimension,
-              color: Colors.red[400],
+              _tagDetailsUIConfig?.errorStateConfig?.icon ??
+                  Icons.error_outline,
+              size: _tagDetailsUIConfig?.errorStateConfig?.iconSize ??
+                  64.responsiveDimension,
+              color: _tagDetailsUIConfig?.errorStateConfig?.iconColor ??
+                  Colors.red[400],
             ),
-            SizedBox(height: 16.responsiveDimension),
+            SizedBox(
+                height: _tagDetailsUIConfig?.errorStateConfig?.spacing ??
+                    16.responsiveDimension),
             Text(
               'Something went wrong',
-              style: TextStyle(
-                fontSize: 16.responsiveDimension,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
+              style: _tagDetailsUIConfig?.errorStateConfig?.titleStyle ??
+                  TextStyle(
+                    fontSize: 16.responsiveDimension,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
             ),
             SizedBox(height: 8.responsiveDimension),
             Text(
               error,
-              style: TextStyle(
-                fontSize: 14.responsiveDimension,
-                color: Colors.grey[500],
-              ),
+              style: _tagDetailsUIConfig?.errorStateConfig?.errorTextStyle ??
+                  TextStyle(
+                    fontSize: 14.responsiveDimension,
+                    color: Colors.grey[500],
+                  ),
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 16.responsiveDimension),
@@ -480,7 +586,26 @@ class _TagDetailsViewState extends State<TagDetailsView> {
                   tagType: widget.tagType,
                 ));
               },
-              child: const Text('Retry'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _tagDetailsUIConfig
+                    ?.errorStateConfig?.retryButtonConfig?.backgroundColor,
+                foregroundColor: _tagDetailsUIConfig
+                    ?.errorStateConfig?.retryButtonConfig?.foregroundColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(_tagDetailsUIConfig
+                          ?.errorStateConfig?.retryButtonConfig?.borderRadius ??
+                      4.0),
+                ),
+                padding: _tagDetailsUIConfig
+                    ?.errorStateConfig?.retryButtonConfig?.padding,
+              ),
+              child: Text(
+                _tagDetailsUIConfig
+                        ?.errorStateConfig?.retryButtonConfig?.text ??
+                    'Retry',
+                style: _tagDetailsUIConfig
+                    ?.errorStateConfig?.retryButtonConfig?.textStyle,
+              ),
             ),
           ],
         ),
