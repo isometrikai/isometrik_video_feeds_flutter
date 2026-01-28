@@ -628,6 +628,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
             IsrTranslationFile.commentReportedSuccessfully);
       } else if (event.commentAction == CommentAction.delete &&
           event.commentId?.trim().isNotEmpty == true) {
+        emit(CommentCountModified(postId: event.postId ?? '', modifiedValue: -1));
         final myUserId = await _localDataUseCase.getUserId();
         final commentList = event.postCommentList?.toList() ?? [];
         if (event.parentCommentId?.trim().isNotEmpty == true) {
@@ -735,6 +736,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     );
 
     if (apiResult.isSuccess) {
+      emit(CommentCountModified(postId: event.postId ?? '', modifiedValue: 1));
       _sendAnalyticsEvent(
           EventType.commentCreated.value,
           event.commentId ?? '',

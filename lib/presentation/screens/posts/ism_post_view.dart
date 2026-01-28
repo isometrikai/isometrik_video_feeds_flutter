@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -710,7 +711,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         ],
         child: CommentsBottomSheet(
           postId: postId,
-          totalCommentsCount: totalCommentsCount,
           onTapProfile: (userId) {
             context.pop(totalCommentsCount);
             _postConfig.postCallBackConfig?.onProfileClick
@@ -728,8 +728,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       isDarkBG: true,
       backgroundColor: Colors.black,
     );
-    completer.complete(result ?? 0);
-
+    completer.complete(max(totalCommentsCount + (result ?? 0), 0));
     return completer.future;
   }
 
