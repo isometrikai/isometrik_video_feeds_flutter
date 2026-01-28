@@ -306,12 +306,20 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                         Row(
                           spacing: 12.responsiveDimension,
                           children: [
-                            // Always show timestamp for all comments (synced and unsynced)
-                            Text(
-                              Utility.getTimeAgoFromDateTime(
-                                  comment.commentedOn,
-                                  showJustNow: true),
-                              style: _commentItemConfig?.timestampStyle ??
+                            if (comment.id.isStringEmptyOrNull &&
+                                !comment.status.isStringEmptyOrNull)
+                              Text(
+                                comment.status ?? '',
+                                style: IsrStyles.primaryText12.copyWith(
+                                  color: '828282'.toColor(),
+                                ),
+                              ),
+                            if (comment.id != null && comment.id!.isNotEmpty)
+                              Text(
+                                Utility.getTimeAgoFromDateTime(
+                                    comment.commentedOn,
+                                    showJustNow: true),
+                                style: _commentItemConfig?.timestampStyle ??
                                   IsrStyles.primaryText12.copyWith(
                                     color: '828282'.toColor(),
                                   ),
@@ -566,11 +574,18 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                   Row(
                     spacing: 12.responsiveDimension,
                     children: [
-                      // Always show timestamp for all comments (synced and unsynced)
-                      Text(
-                        Utility.getTimeAgoFromDateTime(comment.commentedOn,
-                            showJustNow: true),
-                        style: _commentItemConfig?.timestampStyle ??
+                      if (comment.id.isStringEmptyOrNull &&
+                          !comment.status.isStringEmptyOrNull)
+                        Text(
+                          comment.status ?? '',
+                          style: IsrStyles.primaryText12.copyWith(
+                            color: '828282'.toColor(),
+                          ),
+                        ),
+                      if (comment.id != null && comment.id!.isNotEmpty)
+                        Text(
+                          Utility.getTimeAgoFromDateTime(comment.commentedOn, showJustNow: true),
+                          style: _commentItemConfig?.timestampStyle ??
                             IsrStyles.primaryText12.copyWith(
                               color: '828282'.toColor(),
                             ),
