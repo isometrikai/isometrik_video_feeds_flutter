@@ -51,6 +51,12 @@ class IsrVideoReelConfig {
   /// Create, edit post configuration used by SDK modules.
   static CreateEditPostConfig createEditPostConfig = const CreateEditPostConfig();
 
+  /// Tag people configuration used by SDK modules.
+  static TagDetailsConfig tagDetailsConfig = const TagDetailsConfig();
+
+  /// Search Screen configuration used by SDK modules.
+  static SearchScreenConfig searchScreenConfig = const SearchScreenConfig();
+
   /// Convenience accessor for the SDK's singleton [IsmSocialActionCubit].
   static IsmSocialActionCubit get socialActionCubit =>
       IsmInjectionUtils.getBloc<IsmSocialActionCubit>();
@@ -86,6 +92,8 @@ class IsrVideoReelConfig {
     TabConfig? tabConfig,
     CommentConfig? commentConfig,
     CreateEditPostConfig? createEditPostConfig,
+    TagDetailsConfig? tagDetailsConfig,
+    SearchScreenConfig? searchScreenConfig,
     required String? googleServiceJsonPath,
     required BuildContext? Function()? getCurrentBuildContext,
   }) async {
@@ -108,7 +116,9 @@ class IsrVideoReelConfig {
     IsrVideoReelConfig.postConfig = postConfig ?? IsrVideoReelConfig.postConfig;
     IsrVideoReelConfig.tabConfig = tabConfig ?? IsrVideoReelConfig.tabConfig;
     IsrVideoReelConfig.commentConfig = commentConfig ?? IsrVideoReelConfig.commentConfig;
-    IsrVideoReelConfig.createEditPostConfig = createEditPostConfig ?? IsrVideoReelConfig.createEditPostConfig;;
+    IsrVideoReelConfig.createEditPostConfig = createEditPostConfig ?? IsrVideoReelConfig.createEditPostConfig;
+    IsrVideoReelConfig.tagDetailsConfig = tagDetailsConfig ?? IsrVideoReelConfig.tagDetailsConfig;
+    IsrVideoReelConfig.searchScreenConfig = searchScreenConfig ?? IsrVideoReelConfig.searchScreenConfig;
     buildContext = getCurrentBuildContext?.call();
     debugPrint('IsrVideoReelConfig: initializeSdk: ${userInfoClass?.userId}');
     socialActionCubit.onSdkReinitializeChanged(

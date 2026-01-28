@@ -60,7 +60,7 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
   @override
   Widget build(BuildContext context) => Center(
         child: Container(
-          constraints: BoxConstraints(maxHeight: 50.percentHeight),
+          height: 40.percentHeight,
           padding: IsrDimens.edgeInsetsAll(IsrDimens.sixteen),
           margin: IsrDimens.edgeInsetsAll(IsrDimens.sixteen),
           decoration: BoxDecoration(

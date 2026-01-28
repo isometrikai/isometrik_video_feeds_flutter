@@ -12,7 +12,6 @@ import 'package:ism_video_reel_player/utils/utils.dart';
 class CommentsBottomSheet extends StatefulWidget {
   const CommentsBottomSheet({
     required this.postId,
-    required this.totalCommentsCount,
     this.onTapProfile,
     this.onTapHasTag,
     this.postData,
@@ -22,7 +21,6 @@ class CommentsBottomSheet extends StatefulWidget {
   }) : super(key: key);
 
   final String postId;
-  final int totalCommentsCount;
   final Function(String)? onTapProfile;
   final Function(String)? onTapHasTag;
   final TimeLineData? postData;
@@ -39,7 +37,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   var _myUserId = '';
   var _isCommentsLoaded = false;
   CommentDataItem? _replyComment;
-  var _totalCommentsCount = 0;
+  var _commentModifiedCount = 0;
   final _replyController = TextEditingController();
   final _replyFocusNode = FocusNode();
   var _hasMoreComments = true;
@@ -66,7 +64,6 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   }
 
   void _onStartInit() {
-    _totalCommentsCount = widget.totalCommentsCount;
     _socialBloc
         .add(GetPostCommentsEvent(isLoading: true, postId: widget.postId));
     _scrollController.addListener(_onScroll);
@@ -97,7 +94,6 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                   _hasMoreComments = false;
                 }
                 _isLoadingMore = false;
-                _totalCommentsCount = _postCommentList.length;
               });
             }
           },
@@ -134,13 +130,14 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
         canPop: false,
         onPopInvokedWithResult: (didPop, _) async {
           if (!didPop) {
-            Navigator.pop(context, _totalCommentsCount);
+            Navigator.pop(context, _commentModifiedCount);
           }
         },
         child: BlocConsumer<SocialPostBloc, SocialPostState>(
           listenWhen: (previousState, currentState) =>
               currentState is LoadPostCommentState ||
-              currentState is LoadingPostComment,
+              currentState is LoadingPostComment ||
+              currentState is CommentCountModified,
           listener: (context, state) {
             if (state is LoadPostCommentState) {
               if (!_isCommentsLoaded) {
@@ -157,9 +154,10 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                     ..clear()
                     ..addAll(
                         state.postCommentsList as Iterable<CommentDataItem>);
-                  _totalCommentsCount = _postCommentList.length;
                 });
               }
+            } else if (state is CommentCountModified && state.postId == widget.postId) {
+              _commentModifiedCount = _commentModifiedCount + state.modifiedValue;
             }
           },
           builder: (context, state) => Container(
@@ -200,7 +198,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                       ),
                       TapHandler(
                         onTap: () {
-                          context.pop(_totalCommentsCount);
+                          context.pop(_commentModifiedCount);
                         },
                         child: AppImage.svg(
                           _headerConfig?.closeIcon ?? AssetConstants.icClose,
@@ -306,12 +304,20 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                         Row(
                           spacing: 12.responsiveDimension,
                           children: [
-                            // Always show timestamp for all comments (synced and unsynced)
-                            Text(
-                              Utility.getTimeAgoFromDateTime(
-                                  comment.commentedOn,
-                                  showJustNow: true),
-                              style: _commentItemConfig?.timestampStyle ??
+                            if (comment.id.isStringEmptyOrNull &&
+                                !comment.status.isStringEmptyOrNull)
+                              Text(
+                                comment.status ?? '',
+                                style: IsrStyles.primaryText12.copyWith(
+                                  color: '828282'.toColor(),
+                                ),
+                              ),
+                            if (comment.id != null && comment.id!.isNotEmpty)
+                              Text(
+                                Utility.getTimeAgoFromDateTime(
+                                    comment.commentedOn,
+                                    showJustNow: true),
+                                style: _commentItemConfig?.timestampStyle ??
                                   IsrStyles.primaryText12.copyWith(
                                     color: '828282'.toColor(),
                                   ),
@@ -566,11 +572,18 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                   Row(
                     spacing: 12.responsiveDimension,
                     children: [
-                      // Always show timestamp for all comments (synced and unsynced)
-                      Text(
-                        Utility.getTimeAgoFromDateTime(comment.commentedOn,
-                            showJustNow: true),
-                        style: _commentItemConfig?.timestampStyle ??
+                      if (comment.id.isStringEmptyOrNull &&
+                          !comment.status.isStringEmptyOrNull)
+                        Text(
+                          comment.status ?? '',
+                          style: IsrStyles.primaryText12.copyWith(
+                            color: '828282'.toColor(),
+                          ),
+                        ),
+                      if (comment.id != null && comment.id!.isNotEmpty)
+                        Text(
+                          Utility.getTimeAgoFromDateTime(comment.commentedOn, showJustNow: true),
+                          style: _commentItemConfig?.timestampStyle ??
                             IsrStyles.primaryText12.copyWith(
                               color: '828282'.toColor(),
                             ),

@@ -50,6 +50,10 @@ class _PostListingViewState extends State<PostListingView> {
   // Flag to prevent multiple initializations
   bool _isInitialized = false;
 
+  // Configuration getters
+  SearchScreenUIConfig? get _searchScreenUIConfig =>
+      IsrVideoReelConfig.searchScreenConfig.searchScreenUIConfig;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -209,7 +213,9 @@ class _PostListingViewState extends State<PostListingView> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        backgroundColor: IsrColors.white,
+        backgroundColor:
+            _searchScreenUIConfig?.scaffoldConfig?.backgroundColor ??
+                IsrColors.white,
         appBar: _buildAppBar(),
         body: SafeArea(
           child: Column(
@@ -222,13 +228,17 @@ class _PostListingViewState extends State<PostListingView> {
       );
 
   Widget _buildTabNavigation() => Container(
-        height: IsrDimens.fifty,
+        height: _searchScreenUIConfig?.tabNavigationConfig?.height ??
+            IsrDimens.fifty,
         decoration: BoxDecoration(
-          color: IsrColors.white,
-          border: const Border(
+          color: _searchScreenUIConfig?.tabNavigationConfig?.backgroundColor ??
+              IsrColors.white,
+          border: Border(
             bottom: BorderSide(
-              color: IsrColors.colorEFEFEF,
-              width: 1,
+              color: _searchScreenUIConfig?.tabNavigationConfig?.borderColor ??
+                  IsrColors.colorEFEFEF,
+              width:
+                  _searchScreenUIConfig?.tabNavigationConfig?.borderWidth ?? 1,
             ),
           ),
         ),
@@ -253,8 +263,12 @@ class _PostListingViewState extends State<PostListingView> {
                     border: isSelected
                         ? Border(
                             bottom: BorderSide(
-                              color: IsrColors.appColor,
-                              width: 2,
+                              color: _searchScreenUIConfig
+                                      ?.tabNavigationConfig?.indicatorColor ??
+                                  IsrColors.appColor,
+                              width: _searchScreenUIConfig
+                                      ?.tabNavigationConfig?.indicatorWidth ??
+                                  2,
                             ),
                           )
                         : null,
@@ -262,13 +276,25 @@ class _PostListingViewState extends State<PostListingView> {
                   child: Center(
                     child: Text(
                       tab.displayName,
-                      style: IsrStyles.primaryText14.copyWith(
-                        color: isSelected
-                            ? IsrColors.appColor
-                            : IsrColors.color9B9B9B,
-                        fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.normal,
-                      ),
+                      style: isSelected
+                          ? (_searchScreenUIConfig
+                                  ?.tabNavigationConfig?.selectedTextStyle ??
+                              IsrStyles.primaryText14.copyWith(
+                                color: _searchScreenUIConfig
+                                        ?.tabNavigationConfig
+                                        ?.selectedTextColor ??
+                                    IsrColors.appColor,
+                                fontWeight: FontWeight.bold,
+                              ))
+                          : (_searchScreenUIConfig
+                                  ?.tabNavigationConfig?.unselectedTextStyle ??
+                              IsrStyles.primaryText14.copyWith(
+                                color: _searchScreenUIConfig
+                                        ?.tabNavigationConfig
+                                        ?.unselectedTextColor ??
+                                    IsrColors.color9B9B9B,
+                                fontWeight: FontWeight.normal,
+                              )),
                     ),
                   ),
                 ),
@@ -280,11 +306,13 @@ class _PostListingViewState extends State<PostListingView> {
 
   PreferredSizeWidget _buildAppBar() => IsmCustomAppBarWidget(
         isBackButtonVisible: true,
-        backgroundColor: IsrColors.white,
+        backgroundColor: _searchScreenUIConfig?.appBarConfig?.backgroundColor ??
+            IsrColors.white,
         titleWidget: _buildHashtagSearchBar(),
         showTitleWidget: true,
-        showDivider: true,
-        dividerColor: IsrColors.colorEFEFEF,
+        showDivider: _searchScreenUIConfig?.appBarConfig?.showDivider ?? true,
+        dividerColor: _searchScreenUIConfig?.appBarConfig?.dividerColor ??
+            IsrColors.colorEFEFEF,
       );
 
   Widget _buildHashtagSearchBar() => Container(
@@ -296,30 +324,61 @@ class _PostListingViewState extends State<PostListingView> {
               children: [
                 Expanded(
                   child: Container(
-                    decoration: BoxDecoration(
-                      color: IsrColors.colorF5F5F5,
-                      borderRadius: BorderRadius.circular(IsrDimens.twenty),
-                      border: Border.all(
-                        color: IsrColors.colorDBDBDB,
-                        width: 1,
-                      ),
-                    ),
+                    decoration:
+                        _searchScreenUIConfig?.searchBarConfig?.decoration ??
+                            BoxDecoration(
+                              color: _searchScreenUIConfig
+                                      ?.searchBarConfig?.backgroundColor ??
+                                  IsrColors.colorF5F5F5,
+                              borderRadius: BorderRadius.circular(
+                                  _searchScreenUIConfig
+                                          ?.searchBarConfig?.borderRadius ??
+                                      IsrDimens.twenty),
+                              border: Border.all(
+                                color: _searchScreenUIConfig
+                                        ?.searchBarConfig?.borderColor ??
+                                    IsrColors.colorDBDBDB,
+                                width: _searchScreenUIConfig
+                                        ?.searchBarConfig?.borderWidth ??
+                                    1,
+                              ),
+                            ),
                     child: TextField(
                       controller: _hashtagController,
                       textInputAction: TextInputAction.search,
                       decoration: InputDecoration(
-                        hintText: '#viral',
-                        hintStyle: IsrStyles.primaryText14.copyWith(
-                          color: IsrColors.color9B9B9B,
-                        ),
+                        hintText:
+                            _searchScreenUIConfig?.searchBarConfig?.hintText ??
+                                '#viral',
+                        hintStyle:
+                            _searchScreenUIConfig?.searchBarConfig?.hintStyle ??
+                                IsrStyles.primaryText14.copyWith(
+                                  color: IsrColors.color9B9B9B,
+                                ),
                         prefixIcon: Padding(
                           padding: IsrDimens.edgeInsetsAll(IsrDimens.twelve),
-                          child: AppImage.svg(
-                            AssetConstants.icSearchIcon,
-                            color: IsrColors.color9B9B9B,
-                            width: 14.responsiveDimension,
-                            height: 14.responsiveDimension,
-                          ),
+                          child: _searchScreenUIConfig?.searchBarConfig
+                                      ?.prefixIconConfig?.icon !=
+                                  null
+                              ? AppImage.svg(
+                                  _searchScreenUIConfig!
+                                      .searchBarConfig!.prefixIconConfig!.icon!,
+                                  color: _searchScreenUIConfig?.searchBarConfig
+                                          ?.prefixIconConfig?.color ??
+                                      IsrColors.color9B9B9B,
+                                  width: _searchScreenUIConfig?.searchBarConfig
+                                          ?.prefixIconConfig?.size ??
+                                      14.responsiveDimension,
+                                  height: _searchScreenUIConfig?.searchBarConfig
+                                          ?.prefixIconConfig?.size ??
+                                      14.responsiveDimension,
+                                )
+                              : AppImage.svg(
+                                  AssetConstants.icSearchIcon,
+                                  color: IsrColors.color9B9B9B,
+                                  width: 14.responsiveDimension,
+                                  height: 14.responsiveDimension,
+                                ),
                         ),
                         suffixIcon: _hashtagController.text.isNotEmpty
                             ? IconButton(
@@ -329,19 +388,29 @@ class _PostListingViewState extends State<PostListingView> {
                                   _clearSearch();
                                 },
                                 icon: Icon(
-                                  Icons.clear,
-                                  color: IsrColors.color9B9B9B,
-                                  size: 16.responsiveDimension,
+                                  _searchScreenUIConfig?.searchBarConfig
+                                          ?.suffixIconConfig?.iconData ??
+                                      Icons.clear,
+                                  color: _searchScreenUIConfig?.searchBarConfig
+                                          ?.suffixIconConfig?.color ??
+                                      IsrColors.color9B9B9B,
+                                  size: _searchScreenUIConfig?.searchBarConfig
+                                          ?.suffixIconConfig?.size ??
+                                      16.responsiveDimension,
                                 ),
                               )
                             : null,
                         border: InputBorder.none,
-                        contentPadding: IsrDimens.edgeInsetsSymmetric(
-                          horizontal: 8.responsiveDimension,
-                          vertical: 10.responsiveDimension,
-                        ),
+                        contentPadding: _searchScreenUIConfig
+                                ?.searchBarConfig?.contentPadding ??
+                            IsrDimens.edgeInsetsSymmetric(
+                              horizontal: 8.responsiveDimension,
+                              vertical: 10.responsiveDimension,
+                            ),
                       ),
-                      style: IsrStyles.primaryText14,
+                      style:
+                          _searchScreenUIConfig?.searchBarConfig?.textStyle ??
+                              IsrStyles.primaryText14,
                       onSubmitted: (value) {
                         _debounceTimer?.cancel();
                         final hashtag = _getHasTagValue();
@@ -441,7 +510,10 @@ class _PostListingViewState extends State<PostListingView> {
           if (state is PostListingLoadingState &&
               state.isLoading &&
               !isAnyTabLoadingMore) {
-            return const Center(child: AppLoader());
+            return Center(
+              child: _searchScreenUIConfig?.loadingConfig?.indicator ??
+                  const AppLoader(),
+            );
           }
 
           // Show content based on selected tab
@@ -498,7 +570,8 @@ class _PostListingViewState extends State<PostListingView> {
     if (isLoading && !isLoadingMore && results.isEmpty) {
       return Center(
         key: ValueKey('loader_${tab.name}'),
-        child: const AppLoader(),
+        child: _searchScreenUIConfig?.loadingConfig?.indicator ??
+            const AppLoader(),
       );
     }
 
@@ -511,7 +584,8 @@ class _PostListingViewState extends State<PostListingView> {
     if (results.isEmpty && !hasQuery) {
       return Center(
         key: ValueKey('initial_loader_${tab.name}'),
-        child: const AppLoader(),
+        child: _searchScreenUIConfig?.loadingConfig?.indicator ??
+            const AppLoader(),
       );
     }
 
@@ -625,13 +699,21 @@ class _PostListingViewState extends State<PostListingView> {
         physics: const BouncingScrollPhysics(),
         slivers: [
           SliverPadding(
-            padding: IsrDimens.edgeInsetsAll(IsrDimens.eight),
+            padding: _searchScreenUIConfig?.postsGridConfig?.padding ??
+                IsrDimens.edgeInsetsAll(IsrDimens.eight),
             sliver: SliverGrid(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: IsrDimens.four,
-                mainAxisSpacing: IsrDimens.four,
-                childAspectRatio: 0.75,
+                crossAxisCount:
+                    _searchScreenUIConfig?.postsGridConfig?.crossAxisCount ?? 2,
+                crossAxisSpacing:
+                    _searchScreenUIConfig?.postsGridConfig?.crossAxisSpacing ??
+                        IsrDimens.four,
+                mainAxisSpacing:
+                    _searchScreenUIConfig?.postsGridConfig?.mainAxisSpacing ??
+                        IsrDimens.four,
+                childAspectRatio:
+                    _searchScreenUIConfig?.postsGridConfig?.childAspectRatio ??
+                        0.75,
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
@@ -728,27 +810,43 @@ class _PostListingViewState extends State<PostListingView> {
           final placeName = result.title;
           return Container(
             key: ValueKey('place_${result.placeId}'),
-            margin: IsrDimens.edgeInsetsSymmetric(
-                vertical: 4.responsiveDimension,
-                horizontal: 8.responsiveDimension),
+            margin: _searchScreenUIConfig?.placesListConfig?.margin ??
+                IsrDimens.edgeInsetsSymmetric(
+                    vertical: 4.responsiveDimension,
+                    horizontal: 8.responsiveDimension),
             child: TapHandler(
               onTap: () => _handlePlaceTap(
                 result.placeId,
                 placeName,
               ),
               child: Padding(
-                padding: IsrDimens.edgeInsetsSymmetric(
-                  horizontal: 16.responsiveDimension,
-                  vertical: 12.responsiveDimension,
-                ),
+                padding: _searchScreenUIConfig?.placesListConfig?.padding ??
+                    IsrDimens.edgeInsetsSymmetric(
+                      horizontal: 16.responsiveDimension,
+                      vertical: 12.responsiveDimension,
+                    ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(
                       padding: EdgeInsets.only(top: 4.responsiveDimension),
-                      child: const AppImage.svg(AssetConstants.icPlacesIcon),
+                      child: _searchScreenUIConfig?.placesListConfig?.icon !=
+                              null
+                          ? AppImage.svg(
+                              _searchScreenUIConfig!.placesListConfig!.icon!,
+                              width: _searchScreenUIConfig
+                                  ?.placesListConfig?.iconSize,
+                              height: _searchScreenUIConfig
+                                  ?.placesListConfig?.iconSize,
+                              color: _searchScreenUIConfig
+                                  ?.placesListConfig?.iconColor,
+                            )
+                          : const AppImage.svg(AssetConstants.icPlacesIcon),
                     ),
-                    12.responsiveHorizontalSpace,
+                    SizedBox(
+                        width:
+                            _searchScreenUIConfig?.placesListConfig?.spacing ??
+                                12.responsiveDimension),
                     Expanded(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -756,17 +854,24 @@ class _PostListingViewState extends State<PostListingView> {
                         children: [
                           Text(
                             placeName,
-                            style: IsrStyles.primaryText14Bold,
+                            style: _searchScreenUIConfig
+                                    ?.placesListConfig?.titleStyle ??
+                                IsrStyles.primaryText14Bold,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           if (result.subtitle?.isNotEmpty == true) ...[
-                            4.responsiveVerticalSpace,
+                            SizedBox(
+                                height: _searchScreenUIConfig
+                                        ?.placesListConfig?.spacing ??
+                                    4.responsiveDimension),
                             Text(
                               result.subtitle ?? '',
-                              style: IsrStyles.primaryText12.copyWith(
-                                color: IsrColors.color9B9B9B,
-                              ),
+                              style: _searchScreenUIConfig
+                                      ?.placesListConfig?.subtitleStyle ??
+                                  IsrStyles.primaryText12.copyWith(
+                                    color: IsrColors.color9B9B9B,
+                                  ),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -790,42 +895,60 @@ class _PostListingViewState extends State<PostListingView> {
           final user = accounts[index] as SocialUserData;
           return Container(
             key: ValueKey('account_${user.id}'),
-            height: 80.responsiveDimension,
-            margin: IsrDimens.edgeInsetsSymmetric(
-              vertical: 4.responsiveDimension,
-              horizontal: 8.responsiveDimension,
-            ),
+            height: _searchScreenUIConfig?.accountsListConfig?.itemHeight ??
+                80.responsiveDimension,
+            margin: _searchScreenUIConfig?.accountsListConfig?.margin ??
+                IsrDimens.edgeInsetsSymmetric(
+                  vertical: 4.responsiveDimension,
+                  horizontal: 8.responsiveDimension,
+                ),
             child: TapHandler(
               onTap: () => _handleAccountTap(user),
               child: Padding(
-                padding: IsrDimens.edgeInsetsSymmetric(
-                  horizontal: 16.responsiveDimension,
-                  vertical: 12.responsiveDimension,
-                ),
+                padding: _searchScreenUIConfig?.accountsListConfig?.padding ??
+                    IsrDimens.edgeInsetsSymmetric(
+                      horizontal: 16.responsiveDimension,
+                      vertical: 12.responsiveDimension,
+                    ),
                 child: Row(
                   children: [
                     Container(
-                      width: 56.responsiveDimension,
-                      height: 56.responsiveDimension,
+                      width: _searchScreenUIConfig
+                              ?.accountsListConfig?.avatarSize ??
+                          56.responsiveDimension,
+                      height: _searchScreenUIConfig
+                              ?.accountsListConfig?.avatarSize ??
+                          56.responsiveDimension,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: IsrColors.colorDBDBDB,
-                          width: 1,
+                          color: _searchScreenUIConfig
+                                  ?.accountsListConfig?.avatarBorderColor ??
+                              IsrColors.colorDBDBDB,
+                          width: _searchScreenUIConfig
+                                  ?.accountsListConfig?.avatarBorderWidth ??
+                              1,
                         ),
                       ),
                       child: ClipOval(
                         child: AppImage.network(
                           user.avatarUrl ?? '',
-                          height: 56.responsiveDimension,
-                          width: 56.responsiveDimension,
+                          height: _searchScreenUIConfig
+                                  ?.accountsListConfig?.avatarSize ??
+                              56.responsiveDimension,
+                          width: _searchScreenUIConfig
+                                  ?.accountsListConfig?.avatarSize ??
+                              56.responsiveDimension,
                           fit: BoxFit.cover,
                           isProfileImage: true,
                           name: user.fullName ?? '',
                         ),
                       ),
                     ),
-                    12.responsiveHorizontalSpace,
+                    SizedBox(
+                        width: _searchScreenUIConfig
+                                ?.accountsListConfig?.spacing ??
+                            12.responsiveDimension),
                     Expanded(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -833,9 +956,11 @@ class _PostListingViewState extends State<PostListingView> {
                         children: [
                           Text(
                             user.username ?? 'Unknown User',
-                            style: IsrStyles.primaryText16Bold.copyWith(
-                              color: IsrColors.color242424,
-                            ),
+                            style: _searchScreenUIConfig
+                                    ?.accountsListConfig?.usernameStyle ??
+                                IsrStyles.primaryText16Bold.copyWith(
+                                  color: IsrColors.color242424,
+                                ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -844,9 +969,11 @@ class _PostListingViewState extends State<PostListingView> {
                             user.fullName ??
                                 user.displayName ??
                                 'No description',
-                            style: IsrStyles.primaryText14.copyWith(
-                              color: IsrColors.color9B9B9B,
-                            ),
+                            style: _searchScreenUIConfig
+                                    ?.accountsListConfig?.fullNameStyle ??
+                                IsrStyles.primaryText14.copyWith(
+                                  color: IsrColors.color9B9B9B,
+                                ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -866,25 +993,39 @@ class _PostListingViewState extends State<PostListingView> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            AppImage.svg(
-              AssetConstants.icNoProductsAvailable,
-              width: IsrDimens.eighty,
-              height: IsrDimens.eighty,
-              color: IsrColors.color9B9B9B,
-            ),
-            IsrDimens.sixteen.responsiveVerticalSpace,
+            _searchScreenUIConfig?.emptyStateConfig?.icon != null
+                ? AppImage.svg(
+                    _searchScreenUIConfig!.emptyStateConfig!.icon!,
+                    width: _searchScreenUIConfig?.emptyStateConfig?.iconSize ??
+                        IsrDimens.eighty,
+                    height: _searchScreenUIConfig?.emptyStateConfig?.iconSize ??
+                        IsrDimens.eighty,
+                    color: _searchScreenUIConfig?.emptyStateConfig?.iconColor ??
+                        IsrColors.color9B9B9B,
+                  )
+                : AppImage.svg(
+                    AssetConstants.icNoProductsAvailable,
+                    width: IsrDimens.eighty,
+                    height: IsrDimens.eighty,
+                    color: IsrColors.color9B9B9B,
+                  ),
+            SizedBox(
+                height: _searchScreenUIConfig?.emptyStateConfig?.spacing ??
+                    IsrDimens.sixteen.responsiveDimension),
             Text(
               _getEmptyStateTitle(tabType),
-              style: IsrStyles.primaryText16Bold.copyWith(
-                color: IsrColors.color242424,
-              ),
+              style: _searchScreenUIConfig?.emptyStateConfig?.titleStyle ??
+                  IsrStyles.primaryText16Bold.copyWith(
+                    color: IsrColors.color242424,
+                  ),
             ),
             IsrDimens.eight.responsiveVerticalSpace,
             Text(
               _getEmptyStateMessage(tabType),
-              style: IsrStyles.primaryText14.copyWith(
-                color: IsrColors.color9B9B9B,
-              ),
+              style: _searchScreenUIConfig?.emptyStateConfig?.messageStyle ??
+                  IsrStyles.primaryText14.copyWith(
+                    color: IsrColors.color9B9B9B,
+                  ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -918,12 +1059,18 @@ class _PostListingViewState extends State<PostListingView> {
   }
 
   Widget _buildPostCard(TimeLineData post, int index) => Container(
-        decoration: BoxDecoration(
-          color: IsrColors.white,
-          borderRadius: BorderRadius.circular(8.responsiveDimension),
-        ),
+        decoration: _searchScreenUIConfig?.postCardConfig?.decoration ??
+            BoxDecoration(
+              color: _searchScreenUIConfig?.postCardConfig?.backgroundColor ??
+                  IsrColors.white,
+              borderRadius: BorderRadius.circular(
+                  _searchScreenUIConfig?.postCardConfig?.borderRadius ??
+                      8.responsiveDimension),
+            ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(8.responsiveDimension),
+          borderRadius: BorderRadius.circular(
+              _searchScreenUIConfig?.postCardConfig?.borderRadius ??
+                  8.responsiveDimension),
           child: Stack(
             children: [
               _buildPostImage(post),
@@ -953,11 +1100,18 @@ class _PostListingViewState extends State<PostListingView> {
 
     if (coverUrl.isEmptyOrNull) {
       return Container(
-        color: IsrColors.colorF5F5F5,
+        color: _searchScreenUIConfig
+                ?.postCardConfig?.placeholderConfig?.backgroundColor ??
+            IsrColors.colorF5F5F5,
         child: Icon(
-          Icons.image,
-          color: IsrColors.color9B9B9B,
-          size: IsrDimens.forty,
+          _searchScreenUIConfig?.postCardConfig?.placeholderConfig?.icon ??
+              Icons.image,
+          color: _searchScreenUIConfig
+                  ?.postCardConfig?.placeholderConfig?.iconColor ??
+              IsrColors.color9B9B9B,
+          size: _searchScreenUIConfig
+                  ?.postCardConfig?.placeholderConfig?.iconSize ??
+              IsrDimens.forty,
         ),
       );
     }
@@ -976,25 +1130,37 @@ class _PostListingViewState extends State<PostListingView> {
         left: 0,
         right: 0,
         child: Container(
-          padding: IsrDimens.edgeInsetsAll(IsrDimens.eight),
+          padding: _searchScreenUIConfig
+                  ?.postCardConfig?.userProfileOverlayConfig?.padding ??
+              IsrDimens.edgeInsetsAll(IsrDimens.eight),
           child: Row(
             children: [
               AppImage.network(
                 post.user?.avatarUrl ?? '',
-                height: 20.responsiveDimension,
-                width: 20.responsiveDimension,
+                height: _searchScreenUIConfig?.postCardConfig
+                        ?.userProfileOverlayConfig?.avatarSize ??
+                    20.responsiveDimension,
+                width: _searchScreenUIConfig?.postCardConfig
+                        ?.userProfileOverlayConfig?.avatarSize ??
+                    20.responsiveDimension,
                 name: post.user?.fullName ?? '',
                 isProfileImage: true,
-                textColor: IsrColors.white,
+                textColor: _searchScreenUIConfig
+                        ?.postCardConfig?.userProfileOverlayConfig?.textColor ??
+                    IsrColors.white,
               ),
               IsrDimens.eight.responsiveHorizontalSpace,
               Expanded(
                 child: Text(
                   post.user?.fullName ?? 'Unknown User',
-                  style: IsrStyles.primaryText12.copyWith(
-                    color: IsrColors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: _searchScreenUIConfig?.postCardConfig
+                          ?.userProfileOverlayConfig?.textStyle ??
+                      IsrStyles.primaryText12.copyWith(
+                        color: _searchScreenUIConfig?.postCardConfig
+                                ?.userProfileOverlayConfig?.textColor ??
+                            IsrColors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -1067,15 +1233,28 @@ class _PostListingViewState extends State<PostListingView> {
         bottom: 0,
         child: Center(
           child: Container(
-            padding: IsrDimens.edgeInsetsAll(IsrDimens.eight),
-            decoration: BoxDecoration(
-              color: IsrColors.black.applyOpacity(0.3),
-              borderRadius: BorderRadius.circular(IsrDimens.twentyFour),
-            ),
+            padding: _searchScreenUIConfig
+                    ?.postCardConfig?.videoIconConfig?.padding ??
+                IsrDimens.edgeInsetsAll(IsrDimens.eight),
+            decoration: _searchScreenUIConfig
+                    ?.postCardConfig?.videoIconConfig?.decoration ??
+                BoxDecoration(
+                  color: _searchScreenUIConfig
+                          ?.postCardConfig?.videoIconConfig?.backgroundColor ??
+                      IsrColors.black.applyOpacity(0.3),
+                  borderRadius: BorderRadius.circular(_searchScreenUIConfig
+                          ?.postCardConfig?.videoIconConfig?.borderRadius ??
+                      IsrDimens.twentyFour),
+                ),
             child: Icon(
-              Icons.play_arrow,
-              color: IsrColors.white,
-              size: IsrDimens.twentyFour,
+              _searchScreenUIConfig?.postCardConfig?.videoIconConfig?.icon ??
+                  Icons.play_arrow,
+              color: _searchScreenUIConfig
+                      ?.postCardConfig?.videoIconConfig?.iconColor ??
+                  IsrColors.white,
+              size: _searchScreenUIConfig
+                      ?.postCardConfig?.videoIconConfig?.iconSize ??
+                  IsrDimens.twentyFour,
             ),
           ),
         ),
@@ -1090,9 +1269,10 @@ class _PostListingViewState extends State<PostListingView> {
     // Log hashtag clicked event
     _logHashtagEvent(tagText);
 
-    IsrAppNavigator.navigateTagDetails(context,
-        tagValue: tagText,
-        tagType: TagType.hashtag,
+    IsrAppNavigator.navigateTagDetails(
+      context,
+      tagValue: tagText,
+      tagType: TagType.hashtag,
     );
   }
 
@@ -1128,7 +1308,8 @@ class _PostListingViewState extends State<PostListingView> {
     // Log profile viewed event
     _logSearchProfileEvent(user.id ?? '', user.username ?? '');
 
-    if (IsrVideoReelConfig.postConfig.postCallBackConfig?.onProfileClick != null) {
+    if (IsrVideoReelConfig.postConfig.postCallBackConfig?.onProfileClick !=
+        null) {
       IsrVideoReelConfig.postConfig.postCallBackConfig?.onProfileClick
           ?.call(null, user.id ?? '', user.isFollowing);
     }
@@ -1212,14 +1393,28 @@ class _PostListingViewState extends State<PostListingView> {
     }
 
     return AppButton(
-      height: 30.responsiveDimension,
-      width: 80.responsiveDimension,
-      borderRadius: 20,
-      title: IsrTranslationFile.follow,
-      textStyle: IsrStyles.primaryText12.copyWith(
-        color: IsrColors.white,
-        fontWeight: FontWeight.w600,
-      ),
+      height: _searchScreenUIConfig
+              ?.accountsListConfig?.followButtonConfig?.height ??
+          30.responsiveDimension,
+      width: _searchScreenUIConfig
+              ?.accountsListConfig?.followButtonConfig?.width ??
+          80.responsiveDimension,
+      borderRadius: _searchScreenUIConfig
+              ?.accountsListConfig?.followButtonConfig?.borderRadius ??
+          20,
+      title:
+          _searchScreenUIConfig?.accountsListConfig?.followButtonConfig?.text ??
+              IsrTranslationFile.follow,
+      backgroundColor: _searchScreenUIConfig
+          ?.accountsListConfig?.followButtonConfig?.backgroundColor,
+      textStyle: _searchScreenUIConfig
+              ?.accountsListConfig?.followButtonConfig?.textStyle ??
+          IsrStyles.primaryText12.copyWith(
+            color: _searchScreenUIConfig
+                    ?.accountsListConfig?.followButtonConfig?.textColor ??
+                IsrColors.white,
+            fontWeight: FontWeight.w600,
+          ),
       onPress: () {
         _handleFollowUser(user);
       },
