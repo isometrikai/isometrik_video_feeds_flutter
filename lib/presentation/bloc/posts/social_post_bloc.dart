@@ -755,7 +755,6 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     Function(TimeLineData data)? onSuccess,
     bool showError = true,
   }) async {
-    return null;
     final result = await _getPostDetailsUseCase.executeGetPostDetails(
       isLoading: false,
       postId: postId,

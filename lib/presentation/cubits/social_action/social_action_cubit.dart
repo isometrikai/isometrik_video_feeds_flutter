@@ -61,7 +61,6 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
       _uniquePostList[postId] ?? await _getPostDetails(postId);
 
   Future<TimeLineData?> _getPostDetails(String postId, {bool showError = false}) async {
-    return null;
     final result = await _getPostDetailsUseCase.executeGetPostDetails(
       isLoading: false,
       postId: postId,

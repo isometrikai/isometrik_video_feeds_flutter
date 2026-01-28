@@ -451,9 +451,9 @@ class MediaKitCacheManager implements IVideoCacheManager {
 
     final videoController = VideoController(
       player,
-      configuration: const VideoControllerConfiguration(
+      configuration: VideoControllerConfiguration(
         // Enable hardware acceleration for smoother playback
-        enableHardwareAcceleration: true,
+        enableHardwareAcceleration: Platform.isAndroid,
       ),
     );
 

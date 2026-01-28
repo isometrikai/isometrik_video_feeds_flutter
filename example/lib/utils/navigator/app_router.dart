@@ -13,18 +13,12 @@ class AppRouter {
   AppRouter._();
 
   static GoRouter router = GoRouter(
-    initialLocation:
-        kStartDebugHardcodedReels ? AppRoutes.debugHardcodedReels : AppRoutes.splash,
+    initialLocation: kStartDebugHardcodedReels ? AppRoutes.debugHardcodedReels : AppRoutes.splash,
     navigatorKey: exNavigatorKey,
     routes: [
       GoRoute(
         path: AppRoutes.splash,
         builder: (_, __) => const SplashScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.debugHardcodedReels,
-        name: RouteNames.debugHardcodedReels,
-        builder: (_, __) => const HardcodedReelsDebugScreen(),
       ),
       GoRoute(
         path: AppRoutes.login,
@@ -41,10 +35,7 @@ class AppRouter {
           final countryCode = extras['countryCode'] as String;
           final loginType = extras['loginType'] as String;
           return OtpScreen(
-              mobile: mobileNumber,
-              countryCode: countryCode,
-              loginType: loginType,
-              otpId: otpId);
+              mobile: mobileNumber, countryCode: countryCode, loginType: loginType, otpId: otpId);
         },
       ),
       // GoRoute(
@@ -57,8 +48,7 @@ class AppRouter {
         name: RouteNames.cameraView,
         builder: (_, state) {
           final extras = state.extra as Map<String, dynamic>;
-          final mediaType =
-              extras['mediaType'] as MediaType? ?? MediaType.photo;
+          final mediaType = extras['mediaType'] as MediaType? ?? MediaType.photo;
           return CameraView(mediaType: mediaType);
         },
       ),
