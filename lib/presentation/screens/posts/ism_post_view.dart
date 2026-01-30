@@ -118,7 +118,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     _postTabController?.addListener(() async {
       if (!mounted) return;
       final newIndex = _postTabController?.index ?? 0;
+      final lastIndex = _currentIndex;
       if (_currentIndex != newIndex) {
+        _currentIndex = newIndex;
         final tabData = _tabDataModelList[newIndex];
         if (tabData.tabDataModel.postSectionType.isUserDependent) {
           var isUserLoggedIn = await _socialPostBloc.isUserLoggedIn;
@@ -127,6 +129,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
             isUserLoggedIn = await _socialPostBloc.isUserLoggedIn;
           }
           if (!isUserLoggedIn) {
+            _currentIndex = lastIndex;
             _postTabController?.animateTo(_currentIndex);
             return;
           }
@@ -141,9 +144,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
             debugPrint('Error during tab change: $e');
           }
         }
-        setState(() {
-          _currentIndex = newIndex;
-        });
+        setState(() {});
         if (tabData.tabDataModel.reelsDataList.isEmpty && !tabData.isLoading) {
           final result = await _handlePostRefresh(tabData);
           if (result) {
