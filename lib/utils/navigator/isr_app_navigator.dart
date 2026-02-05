@@ -333,7 +333,7 @@ class IsrAppNavigator {
   static void goToPostInsight(
     BuildContext context, {
     required String postId,
-    required TimeLineData postData,
+    TimeLineData? postData,
     TransitionType? transitionType,
   }) {
     final page = BlocProvider<TagDetailsBloc>(
