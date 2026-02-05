@@ -399,8 +399,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
             }
           }
         } else if (reelData.postData is TimeLineData) {
-          return _showMentionList(mentionList, tabData.postSectionType,
+          _socialPostBloc.add(PlayPauseVideoEvent(play: false));
+          final res = await _showMentionList(mentionList, tabData.postSectionType,
               reelData.postData as TimeLineData);
+          _socialPostBloc.add(PlayPauseVideoEvent(play: true));
+          return res;
         }
         return mentionList;
       },
