@@ -46,6 +46,6 @@ class SocialApiEndPoints {
   static const String putCollection = '/api/v1/posts/collections';
   static const String deleteCollection = '/api/v1/posts/collections';
   static const String postImpressions = '/api/v1/views';
-  static const String onShareSuccess = '/api/v1/share';
+  static const String onShareSuccess = '/api/v1/shares';
 
 }
