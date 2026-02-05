@@ -257,8 +257,10 @@ class IsrAppNavigator {
     BuildContext context, {
     List<MentionData>? mentionDataList,
     List<MediaData>? mediaDataList,
+    String? postId,
     TransitionType? transitionType,
   }) async {
+    debugPrint('goToTagPeopleScreen:- MentionDataList: ${mentionDataList?.map((e) => e.toJson()).toList()}');
     final page = MultiBlocProvider(
       providers: [
         BlocProvider.value(value: context.getOrCreateBloc<CreatePostBloc>()),
@@ -269,6 +271,7 @@ class IsrAppNavigator {
       child: TagPeopleScreen(
         mentionDataList: mentionDataList ?? [],
         mediaDataList: mediaDataList ?? [],
+        postId: postId,
       ),
     );
 
@@ -333,7 +336,7 @@ class IsrAppNavigator {
   static void goToPostInsight(
     BuildContext context, {
     required String postId,
-    required TimeLineData postData,
+    TimeLineData? postData,
     TransitionType? transitionType,
   }) {
     final page = BlocProvider<TagDetailsBloc>(

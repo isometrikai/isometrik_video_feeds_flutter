@@ -69,16 +69,13 @@ class AppButton extends StatelessWidget {
             : ButtonType.disabled
         : type;
 
-    // Get button config from SocialConfig based on button type
-    final buttonConfig = _getButtonConfigForType(effectiveType);
-
     switch (effectiveType) {
       case ButtonType.primary:
         return FilledButton(
           onPressed: effectiveOnPressed,
           style: _getPrimaryStyle(
             context: context,
-            buttonConfig: buttonConfig,
+            buttonConfig: IsrVideoReelConfig.socialConfig.primaryButton,
             backgroundColor: backgroundColor,
             textColor: textColor,
             borderWidth: borderWidth,
@@ -93,7 +90,7 @@ class AppButton extends StatelessWidget {
             onPressed: effectiveOnPressed,
             style: _getSecondaryStyle(
               context,
-              buttonConfig: buttonConfig,
+              buttonConfig: IsrVideoReelConfig.socialConfig.secondaryButton,
               borderColor: borderColor,
             ),
             child: _buildButtonContent(context, loaderColor: borderColor));
@@ -102,7 +99,7 @@ class AppButton extends StatelessWidget {
           onPressed: effectiveOnPressed,
           style: _getTertiaryStyle(
             context: context,
-            buttonConfig: buttonConfig,
+            buttonConfig: IsrVideoReelConfig.socialConfig.tertiaryButton,
             backgroundColor: backgroundColor,
             textColor: textColor,
             borderWidth: borderWidth,
@@ -147,17 +144,6 @@ class AppButton extends StatelessWidget {
           child: _buildButtonContent(context),
         );
     }
-  }
-
-  /// Get button config from SocialConfig based on button type
-  ButtonConfig? _getButtonConfigForType(ButtonType buttonType) {
-    final socialConfig = IsrVideoReelConfig.socialConfig;
-    return switch (buttonType) {
-      ButtonType.primary => socialConfig.primaryButton,
-      ButtonType.secondary => socialConfig.secondaryButton,
-      ButtonType.tertiary => socialConfig.tertiaryButton,
-      _ => null,
-    };
   }
 
   ButtonStyle _getPrimaryStyle({

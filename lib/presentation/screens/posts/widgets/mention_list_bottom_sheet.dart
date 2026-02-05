@@ -267,6 +267,7 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
                   height: 36.responsiveDimension,
                   width: 100.responsiveDimension,
                   borderRadius: 40.responsiveDimension,
+                  type: isFollowing ? ButtonType.secondary : ButtonType.primary,
                   borderColor:
                       isFollowing ? IsrColors.appColor : IsrColors.transparent,
                   backgroundColor:

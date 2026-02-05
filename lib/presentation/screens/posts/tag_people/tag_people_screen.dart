@@ -16,10 +16,12 @@ class TagPeopleScreen extends StatefulWidget {
     Key? key,
     required this.mentionDataList,
     required this.mediaDataList,
+    this.postId,
   }) : super(key: key);
 
   final List<MentionData> mentionDataList;
   final List<MediaData> mediaDataList;
+  final String? postId;
 
   @override
   State<TagPeopleScreen> createState() => _TagPeopleScreenState();
@@ -74,11 +76,41 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
         initializeVideoPlayer(mediaData);
       }
     }
+    updateMentionListWithPostMentionListFromAPI();
   }
+
+  var _isPostMentionedApiLoading = false;
+  /// if the mention list is from edit post they will not have all mention data
+  /// so we call a separate api to update the mention list with the post mention list
+  updateMentionListWithPostMentionListFromAPI() {
+    if (widget.postId?.trim().isNotEmpty == true && _mentionDataList.any((mention) => mention.name?.trim().isNotEmpty != true)) {
+      final _socialPostBloc = context.getOrCreateBloc<SocialPostBloc>();
+      _isPostMentionedApiLoading = true;
+      _socialPostBloc.add(GetMentionedUserEvent(
+          postId: widget.postId ?? '',
+          onComplete: (userList) {
+            if (mounted) {
+              setState(() {
+                for (var user in userList) {
+                  final mention = _mentionDataList
+                      .where((element) => element.userId == user.id)
+                      .firstOrNull;
+                  mention?.name = user.fullName;
+                  mention?.avatarUrl = user.avatarUrl;
+                }
+              });
+            }
+            _isPostMentionedApiLoading = false;
+          }));
+    }
+  }
+
+  /// Check if the mention data is loading
+  bool _isMentionLoading(MentionData mention) => _isPostMentionedApiLoading && mention.name?.trim().isEmpty == true && _mentionDataList.any((element) => element.userId == mention.userId);
 
   // List<MentionData> get currentMentions => _mediaMentionedMap[_currentIndex + 1] ?? [];
 
-  List<MentionData> get currentMentions => _mediaMentionedMap[1] ?? [];
+  List<MentionData> get currentMentions => _mediaMentionedMap.values.expand((list) => list).toSet().toList();
 
   List<MentionData> get currentTags => _mediaTaggedMap[_currentIndex] ?? [];
 
@@ -492,53 +524,64 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                                     final person = currentMentions[index];
                                     return ListTile(
                                       contentPadding: EdgeInsets.zero,
-                                      leading: !person.avatarUrl.isEmptyOrNull
-                                          ? AppImage.network(
-                                              person.avatarUrl ?? '',
-                                              height: 48.responsiveDimension,
-                                              width: 48.responsiveDimension,
-                                              border: Border.all(
-                                                  color: '#DBDBDB'.toColor()),
-                                              name: person.name ??
-                                                  person.username ??
-                                                  'User',
-                                              isProfileImage: true,
+                                      leading: _isMentionLoading(person)
+                                          ? CircularProgressIndicator(
+                                              color: Theme.of(context)
+                                                  .primaryColor,
                                             )
-                                          : CircleAvatar(
-                                              radius: IsrDimens.twentyFour,
-                                              backgroundColor: '#E5F0FB'.color,
-                                              child: Text(
-                                                Utility.getInitials(
-                                                  firstName: person.name
-                                                          ?.split(' ')
-                                                          .firstOrNull ??
-                                                      '',
-                                                  lastName: person.name
-                                                          ?.split(' ')
-                                                          .lastOrNull ??
-                                                      '',
-                                                ),
-                                                style: IsrStyles.primaryText14
-                                                    .copyWith(
-                                                  color: IsrColors.appColor,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                            ),
+                                          : (!person.avatarUrl.isEmptyOrNull
+                                              ? AppImage.network(
+                                                  person.avatarUrl ?? '',
+                                                  height:
+                                                      48.responsiveDimension,
+                                                  width: 48.responsiveDimension,
+                                                  border: Border.all(
+                                                      color:
+                                                          '#DBDBDB'.toColor()),
+                                                  name: person.name ??
+                                                      person.username ??
+                                                      'User',
+                                                  isProfileImage: true,
+                                                )
+                                              : CircleAvatar(
+                                                  radius: IsrDimens.twentyFour,
+                                                  backgroundColor:
+                                                      '#E5F0FB'.color,
+                                                  child: Text(
+                                                    Utility.getInitials(
+                                                      firstName: person.name
+                                                              ?.split(' ')
+                                                              .firstOrNull ??
+                                                          '',
+                                                      lastName: person.name
+                                                              ?.split(' ')
+                                                              .lastOrNull ??
+                                                          '',
+                                                    ),
+                                                    style: IsrStyles
+                                                        .primaryText14
+                                                        .copyWith(
+                                                      color: IsrColors.appColor,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                )),
                                       title: Text(
                                         person.name ??
                                             person.username ??
                                             'Unknown User',
                                         style: IsrStyles.primaryText14.copyWith(
                                             fontWeight: FontWeight.w600),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                       subtitle: person.username != null
                                           ? Text(
                                               person.username!,
-                                              style: IsrStyles.primaryText12
-                                                  .copyWith(
-                                                      color:
-                                                          '#767676'.toColor()),
+                                              style: IsrStyles.secondaryText12,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
                                             )
                                           : null,
                                       trailing: TapHandler(
