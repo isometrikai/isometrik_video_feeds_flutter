@@ -720,6 +720,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
                               context,
                               mentionDataList: _mentionedUsers,
                               mediaDataList: mediaDataList,
+                              postId: widget.postData?.id
                             );
                             if (result.isEmptyOrNull == false) {
                               for (var mentionData
