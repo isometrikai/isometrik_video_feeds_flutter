@@ -401,7 +401,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       final eventMap = <String, dynamic>{
         'view_source': 'feed',
         'status': _videoPlayerController?.isPlaying == true ? 'playing' : 'paused',
-        'view_duration': totalSeconds,
+        'view_duration': watchedSeconds,
         'view_completion_rate': viewCompletionRate,
       };
 
@@ -695,7 +695,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         }
 
         final eventMap = <String, dynamic>{
-          'view_duration': totalSeconds,
+          'view_duration': watchedSeconds,
           'view_completion_rate': completionRate,
         };
 
