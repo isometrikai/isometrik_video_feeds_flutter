@@ -233,7 +233,7 @@ class SocialApiServiceProvider extends SocialApiService {
           likeAction == LikeAction.like
               ? {
                   'post_id': postId,
-                  'like_type': 'love',
+                  'like_type': 'like',
                 }
               : null,
           (likeAction == LikeAction.unlike) ? {'post_id': postId} : null,
