@@ -26,6 +26,7 @@ class MediaKitVideoPlayerWrapper implements IVideoPlayerController {
   Duration _position = Duration.zero;
   StreamSubscription<Duration>? _positionSubscription;
   StreamSubscription<Duration>? _durationSubscription;
+  StreamSubscription<Tracks>? _tracksSubscription;
 
   final List<VoidCallback> _listeners = [];
 
@@ -39,7 +40,7 @@ class MediaKitVideoPlayerWrapper implements IVideoPlayerController {
     });
 
     // Listen for track
-    _player.stream.tracks.listen((tracks) {
+    _tracksSubscription = _player.stream.tracks.listen((tracks) {
       final videoTracks = tracks.video;
       if (videoTracks.length > 1) {
         // Sort and pick the lightest (lowest height)    videoTracks.sort((a, b) => (a.height ?? 0).compareTo(b.height ?? 0));
@@ -246,6 +247,7 @@ class MediaKitVideoPlayerWrapper implements IVideoPlayerController {
       unawaited(_errorSubscription?.cancel());
       unawaited(_positionSubscription?.cancel());
       unawaited(_durationSubscription?.cancel());
+      unawaited(_tracksSubscription?.cancel());
     } catch (e) {
       debugPrint('⚠️ Error cancelling subscriptions: $e');
     }

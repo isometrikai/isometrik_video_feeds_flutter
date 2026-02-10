@@ -26,10 +26,8 @@ class EventQueueProvider {
     required String rudderStackWriteKey,
     required String rudderStackDataPlaneUrl,
   }) async {
-    final localDataUseCase =
-        IsmInjectionUtils.getUseCase<IsmLocalDataUseCase>();
-    final deviceInfoManager =
-        IsmInjectionUtils.getOtherClass<DeviceInfoManager>();
+    final localDataUseCase = IsmInjectionUtils.getUseCase<IsmLocalDataUseCase>();
+    final deviceInfoManager = IsmInjectionUtils.getOtherClass<DeviceInfoManager>();
 
     // Fetch all required data
     final userId = await localDataUseCase.getUserId();
@@ -75,8 +73,7 @@ class EventQueueProvider {
         'os': deviceInfoManager.deviceOs,
         'os_version': deviceInfoManager.deviceOsVersion,
         'type': deviceInfoManager.deviceType,
-        'name':
-            '${deviceInfoManager.deviceManufacturer} ${deviceInfoManager.deviceModel}',
+        'name': '${deviceInfoManager.deviceManufacturer} ${deviceInfoManager.deviceModel}',
       },
       'location': {
         'city': city,
@@ -116,6 +113,7 @@ class LocalEventQueue with WidgetsBindingObserver {
 
   static const _boxName = 'local_events';
   static const _batchSize = 10;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
 
   Future<void> init() async {
     try {
@@ -135,7 +133,8 @@ class LocalEventQueue with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
 
     // observe connectivity changes
-    Connectivity().onConnectivityChanged.listen((status) async {
+    _connectivitySubscription?.cancel();
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((status) async {
       if (status.contains(ConnectivityResult.none)) {
         await flush();
       }
@@ -180,8 +179,7 @@ class LocalEventQueue with WidgetsBindingObserver {
           eventPayLoadList.add(event.payload);
         }
         if (eventPayLoadList.isEmpty) return;
-        final result =
-            await socialPostBloc.sendEventsToBackend(eventPayLoadList);
+        final result = await socialPostBloc.sendEventsToBackend(eventPayLoadList);
 
         if (result == false) {
           return;
@@ -230,20 +228,20 @@ class LocalEventQueue with WidgetsBindingObserver {
       return;
     }
     final box = Hive.box<LocalEvent>(_boxName);
-    debugPrint(
-        '${runtimeType.toString()} Box length before flushing: ${box.length}');
+    debugPrint('${runtimeType.toString()} Box length before flushing: ${box.length}');
 
     final events = box.values.toList();
 
     if (events.isEmpty) return;
 
     await box.clear();
-    debugPrint(
-        '${runtimeType.toString()} Box length after flushing: ${box.length}');
+    debugPrint('${runtimeType.toString()} Box length after flushing: ${box.length}');
   }
 
   /// cleanup
   void dispose() {
+    _connectivitySubscription?.cancel();
+    _connectivitySubscription = null;
     WidgetsBinding.instance.removeObserver(this);
   }
 }
