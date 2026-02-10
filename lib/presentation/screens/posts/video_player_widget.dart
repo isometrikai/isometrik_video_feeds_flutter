@@ -729,27 +729,99 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
               }
             }
           },
-          child: Stack(
-            fit: StackFit.expand,
-            alignment: Alignment.center,
-            children: [
-              // Note: Don't check _isDisposed here - build() is only called when widget is active
-              if (_isInitialized &&
-                  _videoPlayerController != null &&
-                  _videoPlayerController!.isInitialized &&
-                  !_videoPlayerController!.isDisposed) ...[
-                // Video is ready, show the player
-                // Use SizedBox.expand to fill available space when video size is 0
-                Builder(
-                  builder: (context) {
-                    // Safety check: verify controller is still valid before building
-                    if (_videoPlayerController == null ||
-                        !_videoPlayerController!.isInitialized ||
-                        _videoPlayerController!.isDisposed) {
-                      // Return thumbnail as fallback if controller becomes invalid
-                      return Container(
-                        color: Colors.black,
-                        child: Center(
+          child: Container(
+            color: Colors.black,
+            child: Stack(
+              fit: StackFit.expand,
+              alignment: Alignment.center,
+              children: [
+                // Note: Don't check _isDisposed here - build() is only called when widget is active
+                if (_isInitialized &&
+                    _videoPlayerController != null &&
+                    _videoPlayerController!.isInitialized &&
+                    !_videoPlayerController!.isDisposed) ...[
+                  // Video is ready, show the player
+                  // Use SizedBox.expand to fill available space when video size is 0
+                  Builder(
+                    builder: (context) {
+                      // Safety check: verify controller is still valid before building
+                      if (_videoPlayerController == null ||
+                          !_videoPlayerController!.isInitialized ||
+                          _videoPlayerController!.isDisposed) {
+                        // Return thumbnail as fallback if controller becomes invalid
+                        return Container(
+                          color: Colors.black,
+                          child: Center(
+                            child: _getImageWidget(
+                              imageUrl: widget.thumbnailUrl,
+                              width: IsrDimens.getScreenWidth(context),
+                              height: IsrDimens.getScreenHeight(context),
+                              fit: BoxFit.fill,
+                              filterQuality: FilterQuality.low,
+                              showError: false,
+                            ),
+                          ),
+                        );
+                      }
+
+                      final size = _videoPlayerController!.videoSize;
+                      final hasValidSize = size.width > 0 && size.height > 0;
+
+                      // If video size is valid, use FittedBox for proper scaling
+                      // Portrait (h > w) -> fill screen; square/landscape (h <= w) -> fit screen
+                      if (hasValidSize) {
+                        final aspect = _videoPlayerController!.aspectRatio;
+                        final isPortrait = size.height > size.width;
+                        final videoFit =
+                            isPortrait ? BoxFit.cover : BoxFit.contain;
+                        return RepaintBoundary(
+                          child: FittedBox(
+                            fit: videoFit,
+                            child: SizedBox(
+                              height: size.height,
+                              width: size.width,
+                              child: AspectRatio(
+                                aspectRatio: aspect,
+                                child: Container(
+                                  color: Colors.black,
+                                  child: Center(
+                                    child: RepaintBoundary(
+                                      child: _videoPlayerController!
+                                          .buildVideoPlayerWidget(),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+
+                      // Fallback: Video size not available yet, fill the available space
+                      // This ensures video is visible even if dimensions aren't reported
+                      if (kDebugMode) {
+                        debugPrint(
+                            '🎬 VideoPlayerWidget: Using fallback layout (size: $size)');
+                      }
+                      return SizedBox.expand(
+                        child: Container(
+                          color: Colors.black,
+                          child: RepaintBoundary(
+                            child: _videoPlayerController!
+                                .buildVideoPlayerWidget(),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ] else ...[
+                  // Video is not ready, show thumbnail with loading indicator
+                  Container(
+                    color: Colors.black,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Center(
                           child: _getImageWidget(
                             imageUrl: widget.thumbnailUrl,
                             width: IsrDimens.getScreenWidth(context),
@@ -759,82 +831,20 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                             showError: false,
                           ),
                         ),
-                      );
-                    }
-
-                    final size = _videoPlayerController!.videoSize;
-                    final hasValidSize = size.width > 0 && size.height > 0;
-
-                    // If video size is valid, use FittedBox for proper scaling
-                    if (hasValidSize) {
-                      final aspect = _videoPlayerController!.aspectRatio;
-                      return RepaintBoundary(
-                        child: FittedBox(
-                          fit: BoxFit.cover,
-                          child: SizedBox(
-                            height: size.height,
-                            width: size.width,
-                            child: AspectRatio(
-                              aspectRatio: aspect,
-                              child: Container(
-                                color: Colors.black,
-                                child: Center(
-                                  child: RepaintBoundary(
-                                    child: _videoPlayerController!.buildVideoPlayerWidget(),
-                                  ),
-                                ),
-                              ),
+                        // Show loading indicator when initializing
+                        if (_isInitializing || (_isVisible && !_isInitialized))
+                          const Center(
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
                             ),
                           ),
-                        ),
-                      );
-                    }
-
-                    // Fallback: Video size not available yet, fill the available space
-                    // This ensures video is visible even if dimensions aren't reported
-                    if (kDebugMode) {
-                      debugPrint('🎬 VideoPlayerWidget: Using fallback layout (size: $size)');
-                    }
-                    return SizedBox.expand(
-                      child: Container(
-                        color: Colors.black,
-                        child: RepaintBoundary(
-                          child: _videoPlayerController!.buildVideoPlayerWidget(),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ] else ...[
-                // Video is not ready, show thumbnail with loading indicator
-                Container(
-                  color: Colors.black,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Center(
-                        child: _getImageWidget(
-                          imageUrl: widget.thumbnailUrl,
-                          width: IsrDimens.getScreenWidth(context),
-                          height: IsrDimens.getScreenHeight(context),
-                          fit: BoxFit.fill,
-                          filterQuality: FilterQuality.low,
-                          showError: false,
-                        ),
-                      ),
-                      // Show loading indicator when initializing
-                      if (_isInitializing || (_isVisible && !_isInitialized))
-                        const Center(
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ]
-            ],
+                ],
+              ],
+            ),
           ),
         ),
       );

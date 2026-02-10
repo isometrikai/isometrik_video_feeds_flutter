@@ -1204,7 +1204,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       ),
                   decoration: _shopUIConfig?.shopContainerDecoration ??
                       BoxDecoration(
-                        color: Colors.white,
+                        color: Colors.black,
                         borderRadius: BorderRadius.circular(IsrDimens.ten),
                         boxShadow: [
                           BoxShadow(
