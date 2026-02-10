@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -342,8 +343,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _audioDebounceTimer?.cancel();
     _imageViewTimer?.cancel();
     _videoProgress.dispose();
-    // Analytics logging is now handled by VideoPlayerWidget
-    _logImagePostEvent();
     debugPrint(
         'ism_reels_video_player_view: dispose index: ${widget.index}, visibleIndex: ${widget.currentIndex.value}, tabType: ${widget.postSectionType}');
     super.dispose();
@@ -1205,7 +1204,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       ),
                   decoration: _shopUIConfig?.shopContainerDecoration ??
                       BoxDecoration(
-                        color: Colors.white,
+                        color: Colors.black,
                         borderRadius: BorderRadius.circular(IsrDimens.ten),
                         boxShadow: [
                           BoxShadow(
@@ -1895,6 +1894,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       final progress = _imageElapsed.inMilliseconds / _imageTotalDuration.inMilliseconds;
 
       _videoProgress.value = progress.clamp(0.0, 1.0);
+      _updateMaxWatch();
 
       if (_imageElapsed >= _imageTotalDuration) {
         timer.cancel();
@@ -1913,14 +1913,26 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   void _pauseImageProgress() {
     _isImagePaused = true;
+    _logImagePostEvent();
+  }
+
+  int maxWatchDuration = 0;
+  int maxWatchPercentage = 0;
+
+  void _updateMaxWatch() {
+    maxWatchDuration = max(maxWatchDuration, _imageElapsed.inSeconds);
+    maxWatchPercentage = max(maxWatchPercentage, (_videoProgress.value * 100).toInt());
   }
 
   /// log image post event if user has watched for at least 2 seconds
   void _logImagePostEvent() {
     final isImage =
         _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kPictureType;
-    if (!_hasLoggedImageViewEvent && isImage) {
-      sendAnalyticsEvent(EventType.postViewed.value, {});
+    if (!_hasLoggedImageViewEvent && isImage && (maxWatchDuration >= 3 || maxWatchPercentage >= 25)) {
+      sendAnalyticsEvent(EventType.postViewed.value, {
+        'view_duration': maxWatchDuration,
+        'view_completion_rate': maxWatchPercentage
+      });
       _hasLoggedImageViewEvent = true;
     }
   }
