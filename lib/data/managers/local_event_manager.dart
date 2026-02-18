@@ -171,26 +171,30 @@ class LocalEventQueue with WidgetsBindingObserver {
           '${runtimeType.toString()}:Event Name: $eventName added with\n Event Data : ${jsonEncode(payload)}');
       debugPrint('${runtimeType.toString()}:Box length: ${box.length}');
 
-      if (box.length >= _batchSize) {
-        final events = box.values.toList();
-        final socialPostBloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
-        final eventPayLoadList = <Map<String, dynamic>>[];
-        for (final event in events) {
-          eventPayLoadList.add(event.payload);
-        }
-        if (eventPayLoadList.isEmpty) return;
-        final result = await socialPostBloc.sendEventsToBackend(eventPayLoadList);
+      if (eventName == EventType.postViewed.value) {
+        if (box.length >= _batchSize) {
+          final events = box.values.toList();
+          final socialPostBloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
+          final eventPayLoadList = <Map<String, dynamic>>[];
+          for (final event in events) {
+            eventPayLoadList.add(event.payload);
+          }
+          if (eventPayLoadList.isEmpty) return;
+          final result = await socialPostBloc.sendEventsToBackend(eventPayLoadList);
 
-        if (result == false) {
-          return;
+          if (result == false) {
+            return;
+          }
+          try {
+            unawaited(flush());
+          } catch (e) {
+            debugPrint(
+              '${runtimeType.toString()} Error in callback: $e, skipping flush',
+            );
+          }
         }
-        try {
-          unawaited(flush());
-        } catch (e) {
-          debugPrint(
-            '${runtimeType.toString()} Error in callback: $e, skipping flush',
-          );
-        }
+      } else {
+        logEvent(eventName, payload);
       }
     } catch (e, stackTrace) {
       debugPrint('LocalEventQueue.addEvent: Error adding event: $e');
@@ -213,7 +217,7 @@ class LocalEventQueue with WidgetsBindingObserver {
     ];
     if (excludedEvents.contains(eventName)) return;
     debugPrint(
-        '${runtimeType.toString()}:Event Name: $eventName\n Event Data : ${jsonEncode(payload)}');
+        '${runtimeType.toString()}:Event Triggered: $eventName\n Event Data : ${jsonEncode(payload)}');
     final rudderProperties = RudderProperty();
     rudderProperties.putValue(map: payload);
     RudderController.instance.track(
