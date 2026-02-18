@@ -631,6 +631,7 @@ class SocialProductData {
     required this.productUrl,
     required this.productImage,
     required this.mediaPosition,
+    required this.productSlug,
   });
 
   factory SocialProductData.fromJson(Map<String, dynamic> json) =>
@@ -650,6 +651,7 @@ class SocialProductData {
             ? null
             : ProductPosition.fromJson(
                 json['media_position'] as Map<String, dynamic>),
+        productSlug: json['product_slug'] as String? ?? '',
       );
   String? productId;
   String? productName;
@@ -660,6 +662,7 @@ class SocialProductData {
   Currency? currency;
   String? productUrl;
   String? productImage;
+  String? productSlug;
   ProductPosition? mediaPosition;
 
   Map<String, dynamic> toJson() => {
@@ -672,6 +675,7 @@ class SocialProductData {
         'product_url': productUrl,
         'product_image': productImage,
         'media_position': mediaPosition?.toJson(),
+        'product_slug': productSlug,
       };
 }
 
