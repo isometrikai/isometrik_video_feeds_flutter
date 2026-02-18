@@ -772,6 +772,44 @@ class SocialApiServiceProvider extends SocialApiService {
       );
 
   @override
+  Future<ResponseModel> getSoundsList({
+    required bool isLoading,
+    required Header header,
+    required int page,
+    required int pageSize,
+    String? search,
+    SoundListTypes soundListTypes = SoundListTypes.sound,
+  }) => _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+      switch (soundListTypes) {
+        SoundListTypes.sound => SocialApiEndPoints.getSoundsList,
+        SoundListTypes.trending => SocialApiEndPoints.getTrendingSoundsList,
+        SoundListTypes.recent => SocialApiEndPoints.getRecentSoundsList,
+        SoundListTypes.recommended => SocialApiEndPoints.getRecommendedSoundsList,
+        SoundListTypes.saved => SocialApiEndPoints.getSavedSoundsList,
+      },
+      NetworkRequestType.get,
+      null,
+      {
+        if (soundListTypes == SoundListTypes.saved)
+          ...{
+            'skip': ((page -1) * pageSize).toString(),
+            'limit': pageSize.toString(),
+          }
+        else
+          ...{
+            'page': page.toString(),
+            'page_size': pageSize.toString(),
+          },
+        if (search?.isNotEmpty == true)
+          'search': search,
+      },
+      headers,
+      isLoading,
+    ),
+  );
+
+  @override
   Future<ResponseModel> createCollection({
     required bool isLoading,
     required Header header,

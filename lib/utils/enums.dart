@@ -96,6 +96,17 @@ enum SaveAction {
   unsave,
 }
 
+enum SoundListTypes {
+  trending('trending'),
+  recent('recent'),
+  recommended('for you'),
+  saved('saved'),
+  sound('sound');
+
+  const SoundListTypes(this.value);
+  final String value;
+}
+
 enum CommentAction {
   like,
   dislike,

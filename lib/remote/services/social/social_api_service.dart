@@ -226,6 +226,15 @@ abstract class SocialApiService extends BaseService {
     required Map<String, dynamic> requestMap,
   });
 
+  Future<ResponseModel> getSoundsList({
+    required bool isLoading,
+    required Header header,
+    required int page,
+    required int pageSize,
+    String? search,
+    SoundListTypes soundListTypes = SoundListTypes.sound,
+  });
+
   Future<ResponseModel> createCollection({
     required bool isLoading,
     required Header header,

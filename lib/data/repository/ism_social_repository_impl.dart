@@ -641,6 +641,30 @@ class SocialRepositoryImpl implements SocialRepository {
   }
 
   @override
+  Future<CustomResponse<SoundListResponseModel?>> getSoundList({
+    required bool isLoading,
+    required int page,
+    required int pageSize,
+    String? search,
+    SoundListTypes soundListTypes = SoundListTypes.sound,
+  }) async {
+    try {
+      final header = await _dataSource.getHeader();
+      final response = await _apiService.getSoundsList(
+        isLoading: isLoading,
+        header: header,
+        page: page,
+        pageSize: pageSize,
+        search: search,
+        soundListTypes: soundListTypes,
+      );
+      return _socialMapper.mapSoundsListResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
   Future<CustomResponse<ResponseClass?>> createCollection({
     required bool isLoading,
     required Map<String, dynamic> requestMap,

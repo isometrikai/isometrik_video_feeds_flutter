@@ -211,6 +211,14 @@ abstract class SocialRepository extends BaseRepository {
     required bool isPublicOnly,
   });
 
+  Future<CustomResponse<SoundListResponseModel?>> getSoundList({
+    required bool isLoading,
+    required int page,
+    required int pageSize,
+    String? search,
+    SoundListTypes soundListTypes = SoundListTypes.sound,
+  });
+
   Future<CustomResponse<ResponseClass?>> movePostToCollection({
     required bool isLoading,
     required String postId,

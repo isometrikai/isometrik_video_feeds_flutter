@@ -48,4 +48,10 @@ class SocialApiEndPoints {
   static const String postImpressions = '/api/v1/views';
   static const String onShareSuccess = '/api/v1/shares';
 
+  //sounds
+  static const String getSoundsList = '/api/v1/sounds';
+  static const String getTrendingSoundsList = '/api/v1/sounds/trending';
+  static const String getRecentSoundsList = '/api/v1/sounds/recent';
+  static const String getRecommendedSoundsList = '/api/v1/sounds/recommended';
+  static const String getSavedSoundsList = '/api/v1/sounds/saved';
 }

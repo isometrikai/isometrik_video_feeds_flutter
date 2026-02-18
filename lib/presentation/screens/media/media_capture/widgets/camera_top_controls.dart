@@ -53,6 +53,24 @@ class CameraTopControls extends StatelessWidget {
                   ),
                 ),
               ),
+              TapHandler(
+                onTap: () async {
+                  await SoundSelectorBottomSheet.show(context);
+                },
+                child: Container(
+                  padding: IsrDimens.edgeInsetsAll(7.responsiveDimension),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.black.withValues(alpha: 0.25),
+                  ),
+                  child: Icon(
+                    Icons.music_note,
+                    color: Colors.white,
+                    size: 24.responsiveDimension,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 40),
             ],
           ),
         ),

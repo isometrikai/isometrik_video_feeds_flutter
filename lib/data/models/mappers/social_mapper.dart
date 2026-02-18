@@ -100,4 +100,10 @@ class SocialMapper {
       CustomResponse(
           data: collectionResponseModelFromJson(response.data),
           responseCode: response.statusCode);
+
+  CustomResponse<SoundListResponseModel?> mapSoundsListResponse(
+      ResponseModel response) =>
+      CustomResponse(
+          data: soundListResponseModelFromJson(response.data),
+          responseCode: response.statusCode);
 }
