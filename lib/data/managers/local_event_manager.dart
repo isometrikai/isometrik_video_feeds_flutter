@@ -5,6 +5,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:hive/hive.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
+import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:rudder_sdk_flutter/RudderController.dart';
 import 'package:rudder_sdk_flutter_platform_interface/platform.dart';
@@ -113,7 +114,10 @@ class LocalEventQueue with WidgetsBindingObserver {
 
   static const _boxName = 'local_events';
   static const _batchSize = 10;
+  static const _batchTimerDuration = AppConstants.impressionDataApiLogTimeDuration; // need to change to 10 mins
+
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+  Timer? _batchTimer;
 
   Future<void> init() async {
     try {
@@ -172,24 +176,18 @@ class LocalEventQueue with WidgetsBindingObserver {
       debugPrint('${runtimeType.toString()}:Box length: ${box.length}');
 
       if (box.length >= _batchSize) {
-        final events = box.values.toList();
-        final socialPostBloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
-        final eventPayLoadList = <Map<String, dynamic>>[];
-        for (final event in events) {
-          eventPayLoadList.add(event.payload);
-        }
-        if (eventPayLoadList.isEmpty) return;
-        final result = await socialPostBloc.sendEventsToBackend(eventPayLoadList);
+        await _sendPendingEventsToBackend();
+        return;
+      }
 
-        if (result.isSuccess || result.statusCode == 422) { // data is flushed on success or the data is corrupted
-          try {
-            unawaited(flush());
-          } catch (e) {
-            debugPrint(
-              '${runtimeType.toString()} Error in callback: $e, skipping flush',
-            );
-          }
-        }
+      if (box.length > 0 && _batchTimer == null) {
+        _batchTimer = Timer(_batchTimerDuration, () async {
+          _batchTimer = null;
+          await _sendPendingEventsToBackend();
+        });
+        debugPrint(
+          '${runtimeType.toString()}: Started 5-min batch timer',
+        );
       }
     } catch (e, stackTrace) {
       debugPrint('LocalEventQueue.addEvent: Error adding event: $e');
@@ -221,7 +219,36 @@ class LocalEventQueue with WidgetsBindingObserver {
     );
   }
 
+  Future<void> _sendPendingEventsToBackend() async {
+    _batchTimer?.cancel();
+    _batchTimer = null;
+    if (!Hive.isBoxOpen(_boxName)) return;
+    final box = Hive.box<LocalEvent>(_boxName);
+    final events = box.values.toList();
+    if (events.isEmpty) return;
+    final eventPayLoadList = <Map<String, dynamic>>[
+      for (final event in events) event.payload,
+    ];
+    try {
+      final socialPostBloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
+      final result = await socialPostBloc.sendEventsToBackend(eventPayLoadList);
+      if (result.isSuccess || result.statusCode == 422) {
+        try {
+          await flush();
+        } catch (e) {
+          debugPrint(
+            '${runtimeType.toString()} Error in callback: $e, skipping flush',
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('${runtimeType.toString()} _sendPendingEventsToBackend: $e');
+    }
+  }
+
   Future<void> flush() async {
+    _batchTimer?.cancel();
+    _batchTimer = null;
     // Ensure box is open before accessing
     if (!Hive.isBoxOpen(_boxName)) {
       return;
@@ -239,6 +266,8 @@ class LocalEventQueue with WidgetsBindingObserver {
 
   /// cleanup
   void dispose() {
+    _batchTimer?.cancel();
+    _batchTimer = null;
     _connectivitySubscription?.cancel();
     _connectivitySubscription = null;
     WidgetsBinding.instance.removeObserver(this);

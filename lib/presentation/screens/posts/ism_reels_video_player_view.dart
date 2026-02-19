@@ -1976,7 +1976,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   /// Only sends once per view and if watch was meaningful (≥25% or ≥3s).
   void _logWatchPostEvent() {
     if (_finalWatchProgress >= 0.25 || _finalWatchDurationSeconds >= 3) {
-      debugPrint('IsmReelsVideoPlayerView: log Post View {Post Duration: $_finalWatchDurationSeconds, Progress: $_finalWatchProgress}');
+      debugPrint('IsmReelsVideoPlayerView: log Post View {PostId: ${_reelData.postId}, Post Duration: $_finalWatchDurationSeconds, Progress: $_finalWatchProgress}, TotalDuration: $_postTotalDurationSeconds');
       sendAnalyticsEvent(EventType.postViewed.value, {
         'view_duration': _finalWatchDurationSeconds,
         'view_completion_rate': (_finalWatchProgress * 100).toInt()
