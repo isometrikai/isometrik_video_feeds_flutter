@@ -1915,7 +1915,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _postWatchDuration = Duration(seconds: completedSeconds) + _currentMediaWatchDuration;
     final progress = _postWatchDuration.inSeconds / totalSeconds;
     _postProgress.value = progress.clamp(0.0, 1.0);
-    debugPrint('IsmReelsVideoPlayerView: Post Duration {PostId:- ${_reelData.postId}, Post Duration: ${_postWatchDuration.inSeconds}, TotalDuration: ${totalSeconds}, Progress: ${_postProgress.value}}');
+    // debugPrint('IsmReelsVideoPlayerView: Post Duration {PostId:- ${_reelData.postId}, Post Duration: ${_postWatchDuration.inSeconds}, TotalDuration: ${totalSeconds}, Progress: ${_postProgress.value}}');
     if (_finalWatchDurationSeconds < _postWatchDuration.inSeconds || _finalWatchProgress < _postProgress.value) {
       _finalWatchDurationSeconds = _postWatchDuration.inSeconds;
       _finalWatchProgress = _postProgress.value;

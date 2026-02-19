@@ -869,12 +869,23 @@ ReelsData getReelData(TimeLineData postData, {String? loggedInUserId}) =>
       interests: postData.interests,
     );
 
-MediaMetaData _getMediaMetaData(MediaData mediaData) => MediaMetaData(
+MediaMetaData _getMediaMetaData(MediaData mediaData) {
+  if (AppConstants.convertHlsPostMediaToImageMedia && mediaData.mediaType == 'video' && mediaData.url?.endsWith('.m3u8') == true) {
+    return MediaMetaData(
+      mediaType: 0,
+      mediaUrl: mediaData.previewUrl ?? '',
+      thumbnailUrl: mediaData.previewUrl ?? '',
+      durationSeconds: AppConstants.defaultImagePostDurationSeconds,
+    );
+  } else {
+    return MediaMetaData(
       mediaType: mediaData.mediaType == 'image' ? 0 : 1,
       mediaUrl: mediaData.url ?? '',
       thumbnailUrl: mediaData.previewUrl ?? '',
       durationSeconds: (mediaData.mediaType == 'image' ? AppConstants.defaultImagePostDurationSeconds : mediaData.duration?.toInt()) ?? AppConstants.defaultImagePostDurationSeconds,
     );
+  }
+}
 
 MentionMetaData _getMentionMetaData(MentionData mentionData) => MentionMetaData(
       userId: mentionData.userId,
