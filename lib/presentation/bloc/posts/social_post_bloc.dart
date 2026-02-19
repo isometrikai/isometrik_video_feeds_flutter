@@ -1196,13 +1196,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     return super.close();
   }
 
-  Future<bool> sendEventsToBackend(
-      List<Map<String, dynamic>> eventPayLoadList) async {
-    final apiResult = await postImpressionUseCase.executePostImpression(
-        isLoading: false, impressionMapList: eventPayLoadList);
-    if (apiResult.isSuccess) {
-      return true;
-    }
-    return false;
-  }
+  Future<ApiResult<ResponseClass?>> sendEventsToBackend(
+          List<Map<String, dynamic>> eventPayLoadList) async =>
+      await postImpressionUseCase.executePostImpression(
+          isLoading: false, impressionMapList: eventPayLoadList);
 }

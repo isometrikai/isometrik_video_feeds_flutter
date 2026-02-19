@@ -39,7 +39,7 @@ class VideoPlayerWidget extends StatefulWidget {
   final VoidCallback? onVideoCompleted;
   final PostHelperCallBacks? postHelperCallBacks;
   final bool isPreloaded;
-  final Function(int, int)? videoProgressCallBack;
+  final Function(Duration totalDuration, Duration curentDuration)? videoProgressCallBack;
 
   @override
   State<VideoPlayerWidget> createState() => _VideoPlayerWidgetState();
@@ -335,7 +335,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     final now = DateTime.now().millisecondsSinceEpoch;
     if (now - _lastProgressCallbackTime >= 200) {
       _lastProgressCallbackTime = now;
-      widget.videoProgressCallBack?.call(duration.inMilliseconds, position.inMilliseconds);
+      widget.videoProgressCallBack?.call(duration, position);
     }
 
     // 1. Log "Video Started" event when video actually starts playing (position > 0)

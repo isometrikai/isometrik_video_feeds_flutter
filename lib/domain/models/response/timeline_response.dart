@@ -7,6 +7,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/res/constants/constants.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
 TimelineResponse timelineResponseFromJson(String str) =>
@@ -872,6 +873,7 @@ MediaMetaData _getMediaMetaData(MediaData mediaData) => MediaMetaData(
       mediaType: mediaData.mediaType == 'image' ? 0 : 1,
       mediaUrl: mediaData.url ?? '',
       thumbnailUrl: mediaData.previewUrl ?? '',
+      durationSeconds: (mediaData.mediaType == 'image' ? AppConstants.defaultImagePostDurationSeconds : mediaData.duration?.toInt()) ?? AppConstants.defaultImagePostDurationSeconds,
     );
 
 MentionMetaData _getMentionMetaData(MentionData mentionData) => MentionMetaData(

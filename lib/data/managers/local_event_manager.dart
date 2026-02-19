@@ -133,7 +133,7 @@ class LocalEventQueue with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
 
     // observe connectivity changes
-    _connectivitySubscription?.cancel();
+    await _connectivitySubscription?.cancel();
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen((status) async {
       if (status.contains(ConnectivityResult.none)) {
         await flush();
@@ -181,15 +181,14 @@ class LocalEventQueue with WidgetsBindingObserver {
         if (eventPayLoadList.isEmpty) return;
         final result = await socialPostBloc.sendEventsToBackend(eventPayLoadList);
 
-        if (result == false) {
-          return;
-        }
-        try {
-          unawaited(flush());
-        } catch (e) {
-          debugPrint(
-            '${runtimeType.toString()} Error in callback: $e, skipping flush',
-          );
+        if (result.isSuccess || result.statusCode == 422) { // data is flushed on success or the data is corrupted
+          try {
+            unawaited(flush());
+          } catch (e) {
+            debugPrint(
+              '${runtimeType.toString()} Error in callback: $e, skipping flush',
+            );
+          }
         }
       }
     } catch (e, stackTrace) {
