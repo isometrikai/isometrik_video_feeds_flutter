@@ -175,19 +175,23 @@ class LocalEventQueue with WidgetsBindingObserver {
           '${runtimeType.toString()}:Event Name: $eventName added with\n Event Data : ${jsonEncode(payload)}');
       debugPrint('${runtimeType.toString()}:Box length: ${box.length}');
 
-      if (box.length >= _batchSize) {
-        await _sendPendingEventsToBackend();
-        return;
-      }
-
-      if (box.length > 0 && _batchTimer == null) {
-        _batchTimer = Timer(_batchTimerDuration, () async {
-          _batchTimer = null;
+      if (eventName == EventType.postViewed.value) {
+        if (box.length >= _batchSize) {
           await _sendPendingEventsToBackend();
-        });
-        debugPrint(
-          '${runtimeType.toString()}: Started 5-min batch timer',
-        );
+          return;
+        }
+
+        if (box.length > 0 && _batchTimer == null) {
+          _batchTimer = Timer(_batchTimerDuration, () async {
+            _batchTimer = null;
+            await _sendPendingEventsToBackend();
+          });
+          debugPrint(
+            '${runtimeType.toString()}: Started 5-min batch timer',
+          );
+        } else {
+          logEvent(eventName, payload);
+        }
       }
     } catch (e, stackTrace) {
       debugPrint('LocalEventQueue.addEvent: Error adding event: $e');
@@ -210,7 +214,7 @@ class LocalEventQueue with WidgetsBindingObserver {
     ];
     if (excludedEvents.contains(eventName)) return;
     debugPrint(
-        '${runtimeType.toString()}:Event Name: $eventName\n Event Data : ${jsonEncode(payload)}');
+        '${runtimeType.toString()}:Event Triggered: $eventName\n Event Data : ${jsonEncode(payload)}');
     final rudderProperties = RudderProperty();
     rudderProperties.putValue(map: payload);
     RudderController.instance.track(

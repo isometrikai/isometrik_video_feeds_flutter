@@ -79,8 +79,7 @@ Future<void> _initializeReelsSdk() async {
         scaffoldBackgroundColor: Colors.white, // Background color
         appBarColor: Colors.white, // App bar background
         brightness: Brightness.light, // Light or dark theme
-        splashColor:
-            const Color(0xFF006CD8).withValues(alpha: 0.5), // Splash effect color
+        splashColor: const Color(0xFF006CD8).withValues(alpha: 0.5), // Splash effect color
       ),
 
       // Toast Configuration
@@ -95,8 +94,7 @@ Future<void> _initializeReelsSdk() async {
       dialogConfig: const isr.DialogConfig(
         backgroundColor: Colors.white, // Dialog background
         borderRadius: 12.0, // Rounded corners
-        padding: EdgeInsets.symmetric(
-            horizontal: 24, vertical: 28), // Internal padding
+        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 28), // Internal padding
         titleTextStyle: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w700,
@@ -183,22 +181,14 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => MultiBlocProvider(
         providers: [
-          BlocProvider(
-              create: (context) => InjectionUtils.getBloc<SplashBloc>()),
-          BlocProvider(
-              create: (context) => InjectionUtils.getBloc<LandingBloc>()),
+          BlocProvider(create: (context) => InjectionUtils.getBloc<SplashBloc>()),
+          BlocProvider(create: (context) => InjectionUtils.getBloc<LandingBloc>()),
           BlocProvider(create: (context) => InjectionUtils.getBloc<AuthBloc>()),
           BlocProvider(create: (context) => InjectionUtils.getBloc<HomeBloc>()),
-          BlocProvider(
-              create: (context) => InjectionUtils.getBloc<NavItemCubit>()),
-          BlocProvider(
-              create: (context) => InjectionUtils.getBloc<ProfileBloc>()),
-          BlocProvider(
-              create: (context) =>
-                  InjectionUtils.getBloc<UploadProgressCubit>()),
-          BlocProvider(
-              create: (context) =>
-                  InjectionUtils.getBloc<CommentActionCubit>()),
+          BlocProvider(create: (context) => InjectionUtils.getBloc<NavItemCubit>()),
+          BlocProvider(create: (context) => InjectionUtils.getBloc<ProfileBloc>()),
+          BlocProvider(create: (context) => InjectionUtils.getBloc<UploadProgressCubit>()),
+          BlocProvider(create: (context) => InjectionUtils.getBloc<CommentActionCubit>()),
           ...isr.IsrVideoReelConfig.getIsmSingletonBlocProviders(),
         ],
         child: ScreenUtilInit(
