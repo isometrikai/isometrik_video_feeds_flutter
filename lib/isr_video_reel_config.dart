@@ -128,6 +128,13 @@ class IsrVideoReelConfig {
     getBuildContext = getCurrentBuildContext;
     AppUrl.appBaseUrl = baseUrl;
     IsrVideoReelConfig.googleServiceJsonPath = googleServiceJsonPath;
+    _triggerEventLog();
+  }
+
+  static void _triggerEventLog() {
+    Future.delayed(const Duration(seconds: 5), () { // to send any pending event to backend
+      EventQueueProvider.instance.sendPendingEventsToBackend();
+    });
   }
 
   /// Persists [userInfoClass] (if provided) to local storage.
