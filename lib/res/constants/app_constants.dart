@@ -48,6 +48,11 @@ class AppConstants {
   static const int imageMediaLimit = 10;
   static const int videoMediaLimit = 10;
   static const int totalMediaLimit = 10;
+  static const int defaultImagePostDurationSeconds = 10;
+  static const int minImagePostDurationSeconds = 3;
+  static const int maxImagePostDurationSeconds = 15;
+  static const Duration impressionDataApiLogTimeDuration = Duration(minutes: 10);
+  static const bool convertHlsPostMediaToImageMedia = true;
 
   static const List<String> restrictedWords = [
     'null',

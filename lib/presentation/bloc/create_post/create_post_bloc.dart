@@ -622,12 +622,13 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
         brand: item.brandTitle,
         discountPrice: item.finalPriceList?.discountPrice,
         currency: Currency(code: item.currency, symbol: item.currencySymbol),
-        productUrl: '',
+        productUrl: item.slug?.takeIfNotEmpty() ?? item.productSeo?.slug,
         mediaPosition: ProductPosition(
           mediaPosition: index + 1,
           x: 0.3,
           y: 0.8,
         ),
+        productSlug: item.slug?.takeIfNotEmpty() ?? item.productSeo?.slug,
       );
     }).toList();
   }

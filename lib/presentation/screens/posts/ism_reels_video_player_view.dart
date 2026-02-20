@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -161,22 +160,39 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   // Image view tracking
   Timer? _imageViewTimer;
-  final Duration _imageTotalDuration = const Duration(seconds: 10);
-  Duration _imageElapsed = Duration.zero;
   bool _isImagePaused = false;
 
-  bool _hasLoggedImageViewEvent = false;
-  var _watchDuration = 0;
-
-  // Video progress tracking
-  final ValueNotifier<double> _videoProgress = ValueNotifier<double>(0.0);
+  // current media progress tracking
+  Duration _currentMediaWatchDuration = Duration.zero;
+  final ValueNotifier<double> _currentMediaProgress = ValueNotifier<double>(0.0);
   bool _isSeeking = false; // Flag to prevent progress updates during seeking
+
+  // post Progress Tracking
+  int get _postTotalDurationSeconds =>
+      _reelData.mediaMetaDataList.isEmpty
+          ? 0
+          : _reelData.mediaMetaDataList
+          .map((e) => e.durationSeconds)
+          .reduce((a, b) => a + b);
+  Duration _postWatchDuration = Duration.zero;
+  final ValueNotifier<double> _postProgress = ValueNotifier<double>(0.0);
+  bool _wasVisiblePost = false;
+  void _onCurrentIndexChanged() {
+    final isVisible = widget.currentIndex.value == widget.index;
+    if (_wasVisiblePost && !isVisible) {
+      _logWatchPostEvent();
+    }
+    debugPrint('IsmReelsVideoPlayerView: _onCurrentIndexChanged {Post index: ${widget.index}, currentIndex: ${widget.currentIndex.value}}');
+    _wasVisiblePost = isVisible;
+  }
 
   @override
   void initState() {
     _onStartInit();
+    _wasVisiblePost = widget.currentIndex.value == widget.index;
+    widget.currentIndex.addListener(_onCurrentIndexChanged);
     debugPrint(
-        'ism_reels_video_player_view: initState index: ${widget.index}, visibleIndex: ${widget.currentIndex.value}, tabType: ${widget.postSectionType}');
+        'IsmReelsVideoPlayerView: initState index: ${widget.index}, visibleIndex: ${widget.currentIndex.value}, tabType: ${widget.postSectionType}');
     super.initState();
     WidgetsBinding.instance.addObserver(this);
   }
@@ -187,13 +203,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     // Capture the BuildContext for SDK use
     IsrVideoReelConfig.buildContext = context;
     debugPrint(
-        'ism_reels_video_player_view: didChangeDependencies index: ${widget.index}, visibleIndex: ${widget.currentIndex.value}, tabType: ${widget.postSectionType}');
+        'IsmReelsVideoPlayerView: didChangeDependencies index: ${widget.index}, visibleIndex: ${widget.currentIndex.value}, tabType: ${widget.postSectionType}');
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     debugPrint(
-        'ism_reels_video_player_view: didChangeAppLifecycleState index: ${widget.index}, visibleIndex: ${widget.currentIndex.value}, tabType: ${widget.postSectionType}');
+        'IsmReelsVideoPlayerView: didChangeAppLifecycleState index: ${widget.index}, visibleIndex: ${widget.currentIndex.value}, tabType: ${widget.postSectionType}');
     // Lifecycle is handled by individual VideoPlayerWidgets
   }
 
@@ -201,15 +217,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   @override
   void didPopNext() {
     debugPrint(
-        'ism_reels_video_player_view: didPopNext index: ${widget.index}, visibleIndex: ${widget.currentIndex.value}, tabType: ${widget.postSectionType}');
+        'IsmReelsVideoPlayerView: didPopNext index: ${widget.index}, visibleIndex: ${widget.currentIndex.value}, tabType: ${widget.postSectionType}');
     // Navigation is handled by individual VideoPlayerWidgets
   }
 
   @override
   void didPushNext() {
     debugPrint(
-        'ism_reels_video_player_view: didPushNext index: ${widget.index}, visibleIndex: ${widget.currentIndex.value}, tabType: ${widget.postSectionType}');
-    // Navigation is handled by individual VideoPlayerWidgets
+        'IsmReelsVideoPlayerView: didPushNext index: ${widget.index}, visibleIndex: ${widget.currentIndex.value}, tabType: ${widget.postSectionType}');
+    if (_wasVisiblePost) _logWatchPostEvent();
   }
 
   /// Returns true if the current post has multiple media items (carousel).
@@ -243,7 +259,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _preloadNextVideos();
 
     //resent image progress
-    _resetImageProgress();
+    _resetPostProgress();
 
     // Start image view timer only if current media is an image
     if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kPictureType) {
@@ -315,14 +331,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     // Update current page notifier
     _currentPageNotifier.value = index;
 
-    // Reset video progress when changing pages
-    _videoProgress.value = 0.0;
-
     _pageMentionMetaDataList = _mentionedMetaDataList
         .where((mention) => mention.mediaPosition?.position == _currentPageNotifier.value + 1)
         .toList();
 
-    _resetImageProgress();
+    _resetMediaProgress();
 
     // Restart image view timer only if new page is an image
     if (_reelData.mediaMetaDataList[index].mediaType == kPictureType) {
@@ -335,6 +348,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   /// Disposes the current video controller if not cached, and cleans up state.
   @override
   void dispose() {
+    if (_wasVisiblePost) {
+      _logWatchPostEvent();
+    }
+    widget.currentIndex.removeListener(_onCurrentIndexChanged);
     WidgetsBinding.instance.removeObserver(this);
     _tapGestureRecognizer?.dispose();
     _pageController?.dispose();
@@ -342,9 +359,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _muteAnimationTimer?.cancel();
     _audioDebounceTimer?.cancel();
     _imageViewTimer?.cancel();
-    _videoProgress.dispose();
+    _currentMediaProgress.dispose();
+    _postProgress.dispose();
     debugPrint(
-        'ism_reels_video_player_view: dispose index: ${widget.index}, visibleIndex: ${widget.currentIndex.value}, tabType: ${widget.postSectionType}');
+        'IsmReelsVideoPlayerView: dispose index: ${widget.index}, visibleIndex: ${widget.currentIndex.value}, tabType: ${widget.postSectionType}');
     super.dispose();
   }
 
@@ -514,13 +532,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         // Visibility is handled internally by VideoPlayerWidget
       },
       onVideoCompleted: _moveToNextMedia,
-      postHelperCallBacks: this,
-      videoProgressCallBack: (totalDurationMs, currentPositionMs) {
-        _watchDuration = currentPositionMs ~/ 1000; // Convert to seconds for analytics
+      videoProgressCallBack: (totalDuration, currentPosition) {
+        _currentMediaWatchDuration   = currentPosition;
         // Update progress (0.0 to 1.0) only if not seeking
-        if (totalDurationMs > 0 && !_isSeeking) {
-          _videoProgress.value = currentPositionMs / totalDurationMs;
+        if (totalDuration.inMilliseconds > 0 && !_isSeeking) {
+          _currentMediaProgress.value = currentPosition.inMilliseconds / totalDuration.inMilliseconds;
         }
+        media.durationSeconds = totalDuration.inSeconds;
+        _updatePostProgress();
       },
     );
   }
@@ -633,7 +652,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   Widget _buildVideoSeekbar(Color pendingColor, BorderRadius borderRadius) =>
       ValueListenableBuilder<double>(
-        valueListenable: _videoProgress,
+        valueListenable: _currentMediaProgress,
         builder: (context, progress, child) => GestureDetector(
           onHorizontalDragStart: (_) => _onSeekStart(),
           onHorizontalDragEnd: (_) => _onSeekEnd(),
@@ -670,7 +689,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   Widget _buildImageProgressIndicator(Color pendingColor, BorderRadius borderRadius) =>
       ValueListenableBuilder<double>(
-        valueListenable: _videoProgress, // Used for both video and image progress
+        valueListenable: _currentMediaProgress, // Used for both video and image progress
         builder: (context, progress, child) => Container(
           height: _mediaIndicatorConfig?.indicatorHeight ?? IsrDimens.six,
           decoration: BoxDecoration(
@@ -711,7 +730,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       final duration = videoPlayerState.duration;
       if (duration != null) {
         final position = Duration(
-          milliseconds: (duration.inMilliseconds * _videoProgress.value).toInt(),
+          milliseconds: (duration.inMilliseconds * _currentMediaProgress.value).toInt(),
         );
         videoPlayerState.seekTo(position);
       }
@@ -725,7 +744,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   void _onSeekVideo(double value) {
     // Only update the progress value during seeking - don't seek video yet
-    _videoProgress.value = value;
+    _currentMediaProgress.value = value;
   }
 
   void _callOnTapMentionData(List<MentionMetaData> mentionDataList) {
@@ -889,7 +908,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   @override
   Widget build(BuildContext context) {
     debugPrint(
-        'ism_reels_video_player_view: build index: ${widget.index}, visibleIndex: ${widget.currentIndex.value}, tabType: ${widget.postSectionType}');
+        'IsmReelsVideoPlayerView: build index: ${widget.index}, visibleIndex: ${widget.currentIndex.value}, tabType: ${widget.postSectionType}');
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -1062,7 +1081,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       label: likeCount.toString(),
                       onTap: () => onTap(
                         reelData: _reelData,
-                        watchDuration: _watchDuration,
+                        watchDuration: _postWatchDuration.inSeconds,
                         postSectionType: widget.postSectionType,
                         apiCallBack: widget.onPressLikeButton != null
                             ? () => widget.onPressLikeButton!(_reelData, isLiked)
@@ -1104,7 +1123,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       label: isSaved == true ? IsrTranslationFile.saved : IsrTranslationFile.save,
                       onTap: () => onTap(
                         reelData: _reelData,
-                        watchDuration: _watchDuration,
+                        watchDuration: _postWatchDuration.inSeconds,
                         postSectionType: widget.postSectionType,
                         apiCallBack: widget.onPressSaveButton != null
                             ? () => widget.onPressSaveButton!(_reelData, isSaved)
@@ -1204,7 +1223,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       ),
                   decoration: _shopUIConfig?.shopContainerDecoration ??
                       BoxDecoration(
-                        color: Colors.black,
+                        color: Colors.white,
                         borderRadius: BorderRadius.circular(IsrDimens.ten),
                         boxShadow: [
                           BoxShadow(
@@ -1542,7 +1561,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 onPressed: () => onTap(
                   reelData: _reelData,
                   postSectionType: widget.postSectionType,
-                  watchDuration: _watchDuration,
+                  watchDuration: _postWatchDuration.inSeconds,
                   apiCallBack: widget.onPressFollowButton != null
                       ? () => widget.onPressFollowButton!(_reelData, isFollowing)
                       : null,
@@ -1594,7 +1613,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (_reelData.isLiked != true) {
       _onLikeTap?.call(
         reelData: _reelData,
-        watchDuration: _watchDuration,
+        watchDuration: _postWatchDuration.inSeconds,
         postSectionType: widget.postSectionType,
         apiCallBack: widget.onPressLikeButton != null
             ? () => widget.onPressLikeButton!(_reelData, _reelData.isLiked == true)
@@ -1805,13 +1824,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             // Visibility is handled internally by VideoPlayerWidget
           },
           onVideoCompleted: _moveToNextMedia,
-          postHelperCallBacks: this,
-          videoProgressCallBack: (totalDurationMs, currentPositionMs) {
-            _watchDuration = currentPositionMs ~/ 1000; // Convert to seconds for analytics
+          videoProgressCallBack: (totalDuration, currentPosition) {
+            _currentMediaWatchDuration = currentPosition;
             // Update progress (0.0 to 1.0) only if not seeking
-            if (totalDurationMs > 0 && !_isSeeking) {
-              _videoProgress.value = currentPositionMs / totalDurationMs;
+            if (totalDuration.inMilliseconds > 0 && !_isSeeking) {
+              _currentMediaProgress.value = currentPosition.inMilliseconds / totalDuration.inMilliseconds;
             }
+            media.durationSeconds = totalDuration.inSeconds;
+            _updatePostProgress();
           },
         ),
       );
@@ -1867,10 +1887,39 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _triggerMuteAnimation();
   }
 
-  void _resetImageProgress() {
+  void _resetPostProgress() {
+    _postWatchDuration = Duration.zero;
+    _postProgress.value = 0.0;
+    _resetMediaProgress();
+  }
+
+  void _resetMediaProgress() {
     _imageViewTimer?.cancel();
-    _imageElapsed = Duration.zero;
-    _videoProgress.value = 0.0;
+    _currentMediaWatchDuration = Duration.zero;
+    _currentMediaProgress.value = 0.0;
+  }
+
+  /// Updates post-level watch duration and progress (all media combined).
+  /// Call whenever current media progress changes (video callback or image timer).
+  void _updatePostProgress() {
+    final currentPage = _currentPageNotifier.value;
+    final totalSeconds = _postTotalDurationSeconds;
+    if (totalSeconds <= 0) return;
+
+    // Sum duration of all fully-watched media (previous pages)
+    var completedSeconds = 0;
+    for (var i = 0; i < currentPage && i < _reelData.mediaMetaDataList.length; i++) {
+      completedSeconds += _reelData.mediaMetaDataList[i].durationSeconds;
+    }
+
+    _postWatchDuration = Duration(seconds: completedSeconds) + _currentMediaWatchDuration;
+    final progress = _postWatchDuration.inSeconds / totalSeconds;
+    _postProgress.value = progress.clamp(0.0, 1.0);
+    // debugPrint('IsmReelsVideoPlayerView: Post Duration {PostId:- ${_reelData.postId}, Post Duration: ${_postWatchDuration.inSeconds}, TotalDuration: ${totalSeconds}, Progress: ${_postProgress.value}}');
+    if (_finalWatchDurationSeconds < _postWatchDuration.inSeconds || _finalWatchProgress < _postProgress.value) {
+      _finalWatchDurationSeconds = _postWatchDuration.inSeconds;
+      _finalWatchProgress = _postProgress.value;
+    }
   }
 
   /// Starts the image view timer if current media is an image
@@ -1879,7 +1928,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       // to check if the reel is preloaded or not
       return;
     }
-    final shouldAutoMove = widget.reelsConfig.autoMoveNextMedia || widget.onVideoCompleted != null;
+    final shouldAutoMove =
+        widget.reelsConfig.autoMoveNextMedia || widget.onVideoCompleted != null;
+    final imageTotalDuration = Duration(
+        seconds: _reelData
+            .mediaMetaDataList[_currentPageNotifier.value].durationSeconds
+            .clamp(AppConstants.minImagePostDurationSeconds,
+                AppConstants.maxImagePostDurationSeconds));
 
     _imageViewTimer?.cancel();
     _isImagePaused = false;
@@ -1889,23 +1944,23 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _imageViewTimer = Timer.periodic(tick, (timer) {
       if (_isImagePaused) return;
 
-      _imageElapsed += tick;
+      _currentMediaWatchDuration += tick;
 
-      final progress = _imageElapsed.inMilliseconds / _imageTotalDuration.inMilliseconds;
+      final progress = _currentMediaWatchDuration.inMilliseconds / imageTotalDuration.inMilliseconds;
 
-      _videoProgress.value = progress.clamp(0.0, 1.0);
-      _updateMaxWatch();
+      _currentMediaProgress.value = progress.clamp(0.0, 1.0);
+      _updatePostProgress();
 
-      if (_imageElapsed >= _imageTotalDuration) {
+      if (_currentMediaWatchDuration >= imageTotalDuration) {
         timer.cancel();
-        _imageElapsed = Duration.zero;
+        _currentMediaWatchDuration = Duration.zero;
 
         // Only auto-move to next if configured to do so
         if (shouldAutoMove) {
           _moveToNextMedia();
         } else {
           // Keep progress at 100% when complete but don't auto-move
-          _videoProgress.value = 1.0;
+          _currentMediaProgress.value = 1.0;
         }
       }
     });
@@ -1913,27 +1968,21 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   void _pauseImageProgress() {
     _isImagePaused = true;
-    _logImagePostEvent();
   }
 
-  int maxWatchDuration = 0;
-  int maxWatchPercentage = 0;
-
-  void _updateMaxWatch() {
-    maxWatchDuration = max(maxWatchDuration, _imageElapsed.inSeconds);
-    maxWatchPercentage = max(maxWatchPercentage, (_videoProgress.value * 100).toInt());
-  }
-
-  /// log image post event if user has watched for at least 2 seconds
-  void _logImagePostEvent() {
-    final isImage =
-        _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kPictureType;
-    if (!_hasLoggedImageViewEvent && isImage && (maxWatchDuration >= 3 || maxWatchPercentage >= 25)) {
+  double _finalWatchProgress = 0.0;
+  int _finalWatchDurationSeconds = 0;
+  /// Logs view watch data when the user leaves (next/previous post or navigates away).
+  /// Only sends once per view and if watch was meaningful (≥25% or ≥3s).
+  void _logWatchPostEvent() {
+    if (_finalWatchProgress >= 0.25 || _finalWatchDurationSeconds >= 3) {
+      debugPrint('IsmReelsVideoPlayerView: log Post View {PostId: ${_reelData.postId}, Post Duration: $_finalWatchDurationSeconds, Progress: $_finalWatchProgress}, TotalDuration: $_postTotalDurationSeconds');
       sendAnalyticsEvent(EventType.postViewed.value, {
-        'view_duration': maxWatchDuration,
-        'view_completion_rate': maxWatchPercentage
+        'view_duration': _finalWatchDurationSeconds,
+        'view_completion_rate': (_finalWatchProgress * 100).toInt()
       });
-      _hasLoggedImageViewEvent = true;
+      _finalWatchDurationSeconds = 0;
+      _finalWatchProgress = 0.0;
     }
   }
 

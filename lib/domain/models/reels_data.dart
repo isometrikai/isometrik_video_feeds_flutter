@@ -113,11 +113,13 @@ class MediaMetaData {
     required this.mediaUrl,
     required this.thumbnailUrl,
     required this.mediaType,
+    required this.durationSeconds,
   });
 
   final String mediaUrl;
   final String thumbnailUrl;
   final int mediaType; // 0 for image, 1 for video
+  int durationSeconds;
 }
 
 class MentionMetaData {

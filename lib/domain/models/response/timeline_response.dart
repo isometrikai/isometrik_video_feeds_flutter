@@ -7,6 +7,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/res/constants/constants.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
 TimelineResponse timelineResponseFromJson(String str) =>
@@ -631,6 +632,7 @@ class SocialProductData {
     required this.productUrl,
     required this.productImage,
     required this.mediaPosition,
+    required this.productSlug,
   });
 
   factory SocialProductData.fromJson(Map<String, dynamic> json) =>
@@ -650,6 +652,7 @@ class SocialProductData {
             ? null
             : ProductPosition.fromJson(
                 json['media_position'] as Map<String, dynamic>),
+        productSlug: json['product_slug'] as String? ?? '',
       );
   String? productId;
   String? productName;
@@ -660,6 +663,7 @@ class SocialProductData {
   Currency? currency;
   String? productUrl;
   String? productImage;
+  String? productSlug;
   ProductPosition? mediaPosition;
 
   Map<String, dynamic> toJson() => {
@@ -672,6 +676,7 @@ class SocialProductData {
         'product_url': productUrl,
         'product_image': productImage,
         'media_position': mediaPosition?.toJson(),
+        'product_slug': productSlug,
       };
 }
 
@@ -864,11 +869,23 @@ ReelsData getReelData(TimeLineData postData, {String? loggedInUserId}) =>
       interests: postData.interests,
     );
 
-MediaMetaData _getMediaMetaData(MediaData mediaData) => MediaMetaData(
+MediaMetaData _getMediaMetaData(MediaData mediaData) {
+  if (AppConstants.convertHlsPostMediaToImageMedia && mediaData.mediaType == 'video' && mediaData.url?.endsWith('.m3u8') == true) {
+    return MediaMetaData(
+      mediaType: 0,
+      mediaUrl: mediaData.previewUrl ?? '',
+      thumbnailUrl: mediaData.previewUrl ?? '',
+      durationSeconds: AppConstants.defaultImagePostDurationSeconds,
+    );
+  } else {
+    return MediaMetaData(
       mediaType: mediaData.mediaType == 'image' ? 0 : 1,
       mediaUrl: mediaData.url ?? '',
       thumbnailUrl: mediaData.previewUrl ?? '',
+      durationSeconds: (mediaData.mediaType == 'image' ? AppConstants.defaultImagePostDurationSeconds : mediaData.duration?.toInt()) ?? AppConstants.defaultImagePostDurationSeconds,
     );
+  }
+}
 
 MentionMetaData _getMentionMetaData(MentionData mentionData) => MentionMetaData(
       userId: mentionData.userId,
