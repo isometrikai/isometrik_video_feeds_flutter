@@ -324,9 +324,9 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     final postData = await getAsyncPostById(postId);
     final isLiked = postData?.isLiked ?? false;
     final _likeCount =
-        postData?.engagementMetrics?.likeTypes?.love?.toInt() ?? 0;
+        postData?.engagementMetrics?.likeTypes?.like?.toInt() ?? 0;
     debugPrint(
-        'IsmSocialActionCubit: likeState , like: ${postData?.isLiked}, count ${postData?.engagementMetrics?.likeTypes?.love}');
+        'IsmSocialActionCubit: likeState , like: ${postData?.isLiked}, count ${postData?.engagementMetrics?.likeTypes?.like}');
     emit(IsmLikePostState(
         isLiked: isLiked, likeCount: max(_likeCount, 0), postId: postId));
   }
@@ -367,7 +367,7 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
 
       final post = await getAsyncPostById(postId);
       post?.isLiked = true;
-      post?.engagementMetrics?.likeTypes?.love = successLikeCount;
+      post?.engagementMetrics?.likeTypes?.like = successLikeCount;
 
       emit(IsmLikeActionListenerState(
           isLiked: true,
@@ -424,7 +424,7 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
 
       final post = await getAsyncPostById(postId);
       post?.isLiked = false;
-      post?.engagementMetrics?.likeTypes?.love = successLikeCount;
+      post?.engagementMetrics?.likeTypes?.like = successLikeCount;
 
       emit(IsmLikeActionListenerState(
           isLiked: false,
