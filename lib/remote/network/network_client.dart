@@ -10,6 +10,7 @@ import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
+import 'package:talker/talker.dart';
 
 /// handles network call for all the APIs and handle the error status codes
 class NetworkClient with AppMixin {
@@ -44,6 +45,7 @@ class NetworkClient with AppMixin {
   late final IOClient _client;
 
   final String baseUrl;
+  Talker? get _talker => IsmInjectionUtils.getOtherClassIfPresent();
   final localStorageManager = isrGetIt<LocalStorageManager>();
 
   var _isRefreshing = false;
@@ -137,7 +139,7 @@ class NetworkClient with AppMixin {
       if (isLoading) Utility.closeProgressDialog();
       final res = returnResponse(response);
 
-      logRequest(this, response, data, finalUrl, headers, res, 0);
+      logRequest(this, response, data, finalUrl, headers, res, 0, _talker);
 
       if (res.hasError) {
         return _proceedWithErrorResponse(res, response);
@@ -266,10 +268,10 @@ class NetworkClient with AppMixin {
       if (isLoading) Utility.closeProgressDialog();
       var res = returnResponse(response);
       if (multipartFiles != null && multipartFiles.isNotEmpty) {
-        printLog(
-          this,
-          'Method: ${response.request?.method}\nURL :- ${response.request?.url.toString()}\nbody :- ${jsonEncode(data)}\nMultiPart :-${request.files.first.filename}\nqueryParams :- ${finalUrl.queryParameters}\nHeaders :- $headers\nResponse :-\nStatus Code :- ${res.statusCode}\nResponse Data :- ${res.data}',
-        );
+        final msg =
+            'Method: ${response.request?.method}\nURL :- ${response.request?.url.toString()}\nbody :- ${jsonEncode(data)}\nMultiPart :-${request.files.first.filename}\nqueryParams :- ${finalUrl.queryParameters}\nHeaders :- $headers\nResponse :-\nStatus Code :- ${res.statusCode}\nResponse Data :- ${res.data}';
+        _talker?.log(msg);
+        printLog(this, msg);
       }
       return res;
     } else {

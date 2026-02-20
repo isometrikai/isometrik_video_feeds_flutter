@@ -64,6 +64,8 @@ dependencies:
   rudder_sdk_flutter: ^3.3.0
   shared_preferences: ^2.5.3
   shimmer: ^3.0.0
+  talker: ^5.1.13
+  talker_dio_logger: ^5.1.13
   timeago: ^3.7.1
   url_launcher: ^6.3.2
   uuid: ^4.5.2

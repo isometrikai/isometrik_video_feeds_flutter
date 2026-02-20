@@ -7,8 +7,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:googleapis_auth/auth_io.dart';
 import 'package:http/http.dart' as http;
+import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
+import 'package:talker/talker.dart';
+import 'package:talker_dio_logger/talker_dio_logger.dart';
 
 class GoogleCloudStorageUploader {
   static Future<String?> uploadFile({
@@ -158,6 +161,19 @@ class GoogleCloudStorageUploader {
 
       // Create Dio instance
       final dio = Dio();
+      final talker = IsmInjectionUtils.getOtherClassIfPresent<Talker>();
+      if (talker != null) {
+        dio.interceptors.add(
+          TalkerDioLogger(
+            talker: talker,
+            settings: const TalkerDioLoggerSettings(
+              printRequestHeaders: true,
+              printResponseHeaders: true,
+              printResponseMessage: true,
+            ),
+          ),
+        );
+      }
 
       // Configure timeout
       dio.options.connectTimeout = const Duration(minutes: 5);

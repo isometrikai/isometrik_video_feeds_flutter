@@ -11,6 +11,7 @@ import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
+import 'package:talker/talker.dart';
 
 /// SDK configuration and initialization entrypoint.
 ///
@@ -135,6 +136,11 @@ class IsrVideoReelConfig {
     Future.delayed(const Duration(seconds: 5), () { // to send any pending event to backend
       EventQueueProvider.instance.sendPendingEventsToBackend();
     });
+  }
+
+  static void registerTalker(Talker talker) {
+    IsmInjectionUtils.unRegister<Talker>();
+    IsmInjectionUtils.registerOtherClass<Talker>( () => talker);
   }
 
   /// Persists [userInfoClass] (if provided) to local storage.
