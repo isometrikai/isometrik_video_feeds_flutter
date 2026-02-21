@@ -17,7 +17,6 @@ import ism_video_reel_player
 import media_kit_libs_macos_video
 import media_kit_video
 import package_info_plus
-import path_provider_foundation
 import photo_manager
 import pro_video_editor
 import shared_preferences_foundation
@@ -40,7 +39,6 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   MediaKitLibsMacosVideoPlugin.register(with: registry.registrar(forPlugin: "MediaKitLibsMacosVideoPlugin"))
   MediaKitVideoPlugin.register(with: registry.registrar(forPlugin: "MediaKitVideoPlugin"))
   FPPPackageInfoPlusPlugin.register(with: registry.registrar(forPlugin: "FPPPackageInfoPlusPlugin"))
-  PathProviderPlugin.register(with: registry.registrar(forPlugin: "PathProviderPlugin"))
   PhotoManagerPlugin.register(with: registry.registrar(forPlugin: "PhotoManagerPlugin"))
   ProVideoEditorPlugin.register(with: registry.registrar(forPlugin: "ProVideoEditorPlugin"))
   SharedPreferencesPlugin.register(with: registry.registrar(forPlugin: "SharedPreferencesPlugin"))
