@@ -687,6 +687,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     // Create optimistic comment
     final comment = CommentDataItem(
       commentedBy: await _localDataUseCase.getUserName(),
+      fullName: '${await _localDataUseCase.getFirstName()} ${await _localDataUseCase.getLastName()}',
       comment: commentRequest.comment,
       postId: commentRequest.postId,
       commentedByUserId: myUserId,
