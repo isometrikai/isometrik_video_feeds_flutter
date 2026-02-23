@@ -177,21 +177,21 @@ class LocalEventQueue with WidgetsBindingObserver {
 
       if (eventName == EventType.postViewed.value) {
         if (box.length >= _batchSize) {
-          await _sendPendingEventsToBackend();
+          await sendPendingEventsToBackend();
           return;
         }
 
         if (box.length > 0 && _batchTimer == null) {
           _batchTimer = Timer(_batchTimerDuration, () async {
             _batchTimer = null;
-            await _sendPendingEventsToBackend();
+            await sendPendingEventsToBackend();
           });
           debugPrint(
             '${runtimeType.toString()}: Started 5-min batch timer',
           );
-        } else {
-          logEvent(eventName, payload);
         }
+      } else {
+        logEvent(eventName, payload);
       }
     } catch (e, stackTrace) {
       debugPrint('LocalEventQueue.addEvent: Error adding event: $e');
@@ -223,10 +223,14 @@ class LocalEventQueue with WidgetsBindingObserver {
     );
   }
 
-  Future<void> _sendPendingEventsToBackend() async {
+  Future<void> sendPendingEventsToBackend() async {
     _batchTimer?.cancel();
     _batchTimer = null;
-    if (!Hive.isBoxOpen(_boxName)) return;
+    if (!Hive.isBoxOpen(_boxName)) {
+      debugPrint('LocalEventQueue.addEvent: Box not open, opening now...');
+      await Hive.openBox<LocalEvent>(_boxName);
+      debugPrint('LocalEventQueue.addEvent: Box opened successfully');
+    }
     final box = Hive.box<LocalEvent>(_boxName);
     final events = box.values.toList();
     if (events.isEmpty) return;
