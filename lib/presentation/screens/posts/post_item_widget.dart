@@ -8,7 +8,6 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
-import 'package:preload_page_view/preload_page_view.dart';
 
 class PostItemWidget extends StatefulWidget {
   const PostItemWidget({
@@ -44,7 +43,7 @@ class PostItemWidget extends StatefulWidget {
 
 class _PostItemWidgetState extends State<PostItemWidget>
     with AutomaticKeepAliveClientMixin {
-  late PreloadPageController _pageController;
+  late PageController _pageController;
   final Set<String> _cachedImages = {};
   late final VideoCacheManager _videoCacheManager;
   List<ReelsData> _reelsDataList = [];
@@ -68,7 +67,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
     _videoCacheManager = widget.videoCacheManager ?? VideoCacheManager();
     _reelsDataList = widget.reelsDataList;
     _pageController =
-        PreloadPageController(initialPage: widget.startingPostIndex ?? 0);
+        PageController(initialPage: widget.startingPostIndex ?? 0);
     _initializeContent();
   }
 
@@ -326,10 +325,10 @@ class _PostItemWidgetState extends State<PostItemWidget>
               onRefresh: () async {
                 await _refreshPost();
               },
-              child: PreloadPageView.builder(
-                preloadPagesCount: 1,
+              child: PageView.builder(
+                // preloadPagesCount: 1,
                 // key: _pageStorageKey,
-                // allowImplicitScrolling: widget.allowImplicitScrolling ?? true,
+                allowImplicitScrolling: widget.allowImplicitScrolling ?? true,
                 controller: _pageController,
                 physics: const AlwaysScrollableScrollPhysics(
                     parent: ClampingScrollPhysics()),
