@@ -77,6 +77,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   // Track if we've received valid video dimensions
   bool _hasValidVideoSize = false;
 
+  // to see if the player has played at least once
+  bool _hasPlayed = false;
+
   num _remainingDuration = 0;
 
   @override
@@ -87,6 +90,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       _configureVisibilityDetector();
       _isVisibilityConfigured = true;
     }
+    _hasPlayed = false;
     _initializeVideoPlayer();
     // Start checking if controller becomes ready asynchronously
     _startControllerReadyCheck();
@@ -176,30 +180,20 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       _videoPlayerController =
           widget.videoCacheManager.getCachedMedia(widget.mediaUrl) as IVideoPlayerController?;
 
-      // If controller exists and is already initialized, use it directly
-      if (_videoPlayerController != null &&
-          _videoPlayerController!.isInitialized &&
-          !_videoPlayerController!.isDisposed) {
-        debugPrint(
-            '✅ VideoPlayerWidget: Using cached initialized controller for: ${widget.mediaUrl}');
-        await _setupVideoController();
-        if (mounted) {
-          setState(() {
-            _isInitialized = true;
-          });
-          _checkInitialVisibility();
-        }
-        return; // Early return - no need to initialize again
-      }
-
       // OPTIMIZATION: If no cached controller, trigger precaching ONCE
       // Use video cache manager directly to avoid media type detection issues
       if (_videoPlayerController == null) {
         debugPrint('🔄 VideoPlayerWidget: Precaching video for: ${widget.mediaUrl}');
         // Use video cache manager directly (bypasses MediaTypeUtil)
-        await widget.videoCacheManager.precacheMedia([widget.mediaUrl], highPriority: true);
-        _videoPlayerController =
-            widget.videoCacheManager.getCachedMedia(widget.mediaUrl) as IVideoPlayerController?;
+
+        final controller = await widget.videoCacheManager.precacheMediaAndReturnController(widget.mediaUrl);
+        if (controller != null && controller is IVideoPlayerController) {
+          _videoPlayerController = controller;
+        }
+        if (_isDisposed && _videoPlayerController != null && _videoPlayerController?.isInitialized == true) { // if widget is disposed, detach controller
+          widget.videoCacheManager.detachedFromWidget(widget.mediaUrl, _videoPlayerController);
+          _videoPlayerController = null;
+        }
       }
 
       // Setup only if controller is now initialized
@@ -322,10 +316,18 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         }
       }
     }
-
     final position = _videoPlayerController!.position;
     final duration = _videoPlayerController!.duration;
 
+    if (!_hasPlayed) {
+      final hasPlayed = position.inMilliseconds > 0 && duration.inMilliseconds > 0;
+      if (hasPlayed) {
+        debugPrint('🎬 VideoPlayerWidget: Video started playing');
+        setState(() {
+          _hasPlayed = _videoPlayerController?.isPlaying == true;
+        });
+      }
+    }
     // Track maximum watch position for analytics
     if (position.inMilliseconds > _maxWatchPosition.inMilliseconds) {
       _maxWatchPosition = position;
@@ -333,7 +335,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
     // OPTIMIZATION: Throttle progress callbacks to every 200ms for smoother UI
     final now = DateTime.now().millisecondsSinceEpoch;
-    if (now - _lastProgressCallbackTime >= 200) {
+    if (now - _lastProgressCallbackTime >= 200 && _videoPlayerController?.isPlaying == true && _videoPlayerController?.isBuffering != true) {
       _lastProgressCallbackTime = now;
       widget.videoProgressCallBack?.call(duration, position);
     }
@@ -362,7 +364,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
     // 3. Check if video has completed (with small threshold to account for timing)
     if (kDebugMode) {
-      debugPrint('⏳ VideoPlayerWidget: Video position: $position, duration: $duration');
+      debugPrint('⏳ VideoPlayerWidget: State: ${_videoPlayerController?.isPlaying} Video position: $position, duration: $duration');
     }
     final remainingDuration = duration.inMilliseconds - position.inMilliseconds;
     if (kDebugMode) {
@@ -639,6 +641,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
     // Handle media URL changes
     if (oldWidget.mediaUrl != widget.mediaUrl) {
+      _hasPlayed = false;
       _isInitialized = false;
       _initializeVideoPlayer();
     }
@@ -659,7 +662,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       try {
         _detachControllerListeners();
         _videoPlayerController!.pause();
-        widget.videoCacheManager.markAsNotVisible(widget.mediaUrl);
+        widget.videoCacheManager.detachedFromWidget(widget.mediaUrl, _videoPlayerController);
       } catch (e) {
         debugPrint('⚠️ VideoPlayerWidget: Error during dispose: $e');
       }
@@ -739,7 +742,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                 if (_isInitialized &&
                     _videoPlayerController != null &&
                     _videoPlayerController!.isInitialized &&
-                    !_videoPlayerController!.isDisposed) ...[
+                    !_videoPlayerController!.isDisposed &&
+                    _hasPlayed) ...[
                   // Video is ready, show the player
                   // Use SizedBox.expand to fill available space when video size is 0
                   Builder(
@@ -756,7 +760,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                               imageUrl: widget.thumbnailUrl,
                               width: IsrDimens.getScreenWidth(context),
                               height: IsrDimens.getScreenHeight(context),
-                              fit: BoxFit.fill,
+                              fit: BoxFit.contain,
                               filterQuality: FilterQuality.low,
                               showError: false,
                             ),
@@ -826,7 +830,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                             imageUrl: widget.thumbnailUrl,
                             width: IsrDimens.getScreenWidth(context),
                             height: IsrDimens.getScreenHeight(context),
-                            fit: BoxFit.fill,
+                            fit: BoxFit.contain,
                             filterQuality: FilterQuality.low,
                             showError: false,
                           ),

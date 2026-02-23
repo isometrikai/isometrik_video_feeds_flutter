@@ -11,7 +11,7 @@ class VideoCacheManager implements IMediaCacheManager {
 
   factory VideoCacheManager() => _instance;
   VideoPlayerType _currentType =
-      Platform.isAndroid ? VideoPlayerType.standard : VideoPlayerType.mediaKit;
+      Platform.isAndroid ? VideoPlayerType.standardNonPreload : VideoPlayerType.standardNonPreload;
 
   static final VideoCacheManager _instance = VideoCacheManager._internal();
 
@@ -44,11 +44,15 @@ class VideoCacheManager implements IMediaCacheManager {
   @override
   dynamic getCachedMedia(String url) => _cacheManager.getCachedController(url);
 
+  Future<dynamic> precacheMediaAndReturnController(String url) => _cacheManager.precacheMediaAndReturnController(url);
+
   @override
   void markAsVisible(String url) => _cacheManager.markAsVisible(url);
 
   @override
   void markAsNotVisible(String url) => _cacheManager.markAsNotVisible(url);
+
+  void detachedFromWidget(String url, IVideoPlayerController? controller) => _cacheManager.detachedFromWidget(url, controller);
 
   @override
   bool isMediaCached(String url) => _cacheManager.isVideoCached(url);

@@ -13,6 +13,7 @@ import 'package:ism_video_reel_player/presentation/screens/posts/widgets/like_ac
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:lottie/lottie.dart';
+import 'package:preload_page_view/preload_page_view.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 /// Custom Reels Player for both Video and Photo content with carousel support
@@ -81,7 +82,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   // Carousel related variables
   final ValueNotifier<int> _currentPageNotifier = ValueNotifier<int>(0);
-  PageController? _pageController;
+  PreloadPageController? _pageController;
 
   TapGestureRecognizer? _tapGestureRecognizer;
 
@@ -253,7 +254,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _isMuted = _globalMuteState;
 
     // Initialize PageController for carousel
-    _pageController = PageController(initialPage: 0);
+    _pageController = PreloadPageController(initialPage: 0);
 
     // Preload next videos for smoother experience
     _preloadNextVideos();
@@ -483,9 +484,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         children: [
           GestureDetector(
             onTap: _toggleMentions,
-            child: PageView.builder(
+            child: PreloadPageView.builder(
+              preloadPagesCount: 1,
               controller: _pageController,
-              padEnds: false,
+              // padEnds: false,
               // key: const PageStorageKey('media_pageview'),
               // Add a key
               onPageChanged: _onPageChanged,

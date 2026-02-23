@@ -16,6 +16,7 @@ export 'post_listing/post_listing.dart';
 export 'post_place_holder_view.dart';
 export 'schedule_posts/schedule_post.dart';
 export 'search_user/search_user.dart';
+export 'standard_non_pre_loaded_player.dart';
 export 'standard_video_player.dart';
 export 'tag_details/tag_details.dart';
 export 'tag_people/tag_people.dart';

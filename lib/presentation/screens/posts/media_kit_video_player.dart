@@ -762,10 +762,19 @@ class MediaKitCacheManager implements IVideoCacheManager {
   }
 
   @override
+  Future<IVideoPlayerController?> precacheMediaAndReturnController(String url) async {
+    await precacheVideos([url]);
+    return getCachedController(url);
+  }
+
+  @override
   void markAsVisible(String url) => _visibleVideos.add(url);
 
   @override
   void markAsNotVisible(String url) => _visibleVideos.remove(url);
+
+  @override
+  void detachedFromWidget(String url, IVideoPlayerController? controller) => markAsNotVisible(url);
 
   @override
   bool isVideoCached(String url) {

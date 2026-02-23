@@ -74,11 +74,16 @@ abstract class IVideoCacheManager {
   /// Get cached video controller
   IVideoPlayerController? getCachedController(String url);
 
+  Future<IVideoPlayerController?> precacheMediaAndReturnController(String url);
+
   /// Mark video as visible (prevents disposal)
   void markAsVisible(String url);
 
   /// Mark video as not visible (allows disposal)
   void markAsNotVisible(String url);
+
+  /// when media is detached from widget(on dispose)
+  void detachedFromWidget(String url, IVideoPlayerController? controller);
 
   /// Check if video is cached and ready
   bool isVideoCached(String url);

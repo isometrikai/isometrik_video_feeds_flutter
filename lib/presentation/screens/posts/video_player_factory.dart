@@ -5,6 +5,7 @@ import 'package:ism_video_reel_player/presentation/presentation.dart';
 /// Enum to specify the video player type
 enum VideoPlayerType {
   standard,
+  standardNonPreload,
   cached,
   mediaKit,
 }
@@ -13,7 +14,7 @@ enum VideoPlayerType {
 class VideoPlayerFactory {
   /// Default video player type - change this to switch implementations
   static final VideoPlayerType defaultType =
-      Platform.isAndroid ? VideoPlayerType.standard : VideoPlayerType.mediaKit;
+      Platform.isAndroid ? VideoPlayerType.standardNonPreload : VideoPlayerType.standardNonPreload;
 
   static IVideoCacheManager create([VideoPlayerType? type]) {
     final playerType = type ?? defaultType;
@@ -24,6 +25,8 @@ class VideoPlayerFactory {
         return CachedVideoCacheManager();
       case VideoPlayerType.mediaKit:
         return MediaKitCacheManager();
+      case VideoPlayerType.standardNonPreload:
+        return StandardVideoNonPreloadedManager();
     }
   }
 }
