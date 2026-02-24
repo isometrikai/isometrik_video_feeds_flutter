@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/models/models.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart' as mc;
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart' as ms;
 import 'package:ism_video_reel_player/utils/utils.dart';
 
@@ -209,6 +210,7 @@ class IsrAppNavigator {
   static Future<String?> goToCreatePostAttributionView(
     BuildContext context, {
     List<MediaData>? newMediaDataList,
+        SoundData? soundData,
     TransitionType transitionType = TransitionType.bottomToTop,
   }) async {
     final page = MultiBlocProvider(
@@ -220,6 +222,7 @@ class IsrAppNavigator {
       ],
       child: PostAttributeView(
         newMediaDataList: newMediaDataList,
+        soundData: soundData,
         isEditMode: false,
       ),
     );
@@ -286,8 +289,8 @@ class IsrAppNavigator {
     BuildContext context, {
     ms.MediaSelectionConfig? mediaSelectionConfig,
     List<ms.MediaAssetData>? selectedMedia,
-    Future<bool> Function(List<ms.MediaAssetData> selectedMedia)? onComplete,
-    Future<String?> Function(String? mediaType)? onCaptureMedia,
+    Future<bool> Function(List<ms.MediaAssetData> selectedMedia, SoundData? soundData)? onComplete,
+    Future<CameraCaptureResult?> Function(String? mediaType)? onCaptureMedia,
     TransitionType? transitionType,
   }) async {
     final page = MultiBlocProvider(
@@ -304,6 +307,33 @@ class IsrAppNavigator {
 
     final result = await Navigator.of(context, rootNavigator: true)
         .push<List<ms.MediaAssetData>?>(
+      _buildRoute(page: page, transitionType: transitionType),
+    );
+    return result;
+  }
+
+  static Future<CameraCaptureResult?> goToMediaCaptureScreen(
+      BuildContext context, {
+        TransitionType? transitionType,
+        MediaType mediaType = MediaType.both,
+        bool soundDubbingEnabled = false,
+        Future<String?> Function()? onGalleryClick,
+        SoundData? soundData,
+      }) async {
+    final page = MultiBlocProvider(
+      providers: [
+        BlocProvider.value(value: context.getOrCreateBloc<CreatePostBloc>()),
+      ],
+      child: mc.CameraCaptureView(
+        mediaType: mediaType,
+        soundDubbingEnabled: soundDubbingEnabled,
+        onGalleryClick: onGalleryClick,
+        soundData: soundData,
+      ),
+    );
+
+    final result = await Navigator.of(context, rootNavigator: true)
+        .push<CameraCaptureResult?>(
       _buildRoute(page: page, transitionType: transitionType),
     );
     return result;

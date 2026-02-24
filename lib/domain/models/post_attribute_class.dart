@@ -13,6 +13,7 @@ class PostAttributeClass {
     this.hashTagDataList,
     this.taggedPlaces,
     this.linkedProducts,
+    this.sound,
   });
 
   double? price;
@@ -21,6 +22,7 @@ class PostAttributeClass {
   bool? allowDownload;
   bool? allowComment;
   bool? allowSave;
+  SoundData? sound;
   CreatePostRequest? createPostRequest;
   List<MentionData>? mentionedUserList;
   List<MentionData>? hashTagDataList;

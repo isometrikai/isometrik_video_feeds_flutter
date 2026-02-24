@@ -1,3 +1,4 @@
+export 'camera_capture_result.dart';
 export 'cloud__details_response.dart';
 export 'collection_list_response.dart';
 export 'comments_response.dart';

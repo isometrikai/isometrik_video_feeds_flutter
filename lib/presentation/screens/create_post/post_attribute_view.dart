@@ -6,8 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
-import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart'
-    as mc;
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart'
     as ms;
 import 'package:ism_video_reel_player/res/res.dart';
@@ -21,10 +19,12 @@ class PostAttributeView extends StatefulWidget {
     required this.isEditMode,
     this.postData,
     this.newMediaDataList,
+    this.soundData,
   });
 
   final bool? isEditMode;
   final List<MediaData>? newMediaDataList;
+  final SoundData? soundData;
   final TimeLineData? postData;
 
   @override
@@ -80,7 +80,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
       _createPostBloc.add(EditPostEvent(postData: editData));
     } else if (!_isEditMode && widget.newMediaDataList?.isNotEmpty == true) {
       _createPostBloc.add(
-          CreatePostInitialEvent(newMediaDataList: widget.newMediaDataList));
+          CreatePostInitialEvent(newMediaDataList: widget.newMediaDataList, sound: widget.soundData));
     } else {
       Navigator.pop(context);
     }
@@ -239,6 +239,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
         List<ProductDataModel>.from(original.linkedProducts ?? []);
     copy.allowComment = original.allowComment ?? true;
     copy.allowSave = original.allowSave ?? true;
+    copy.sound = original.sound;
 
     // Deep copy the createPostRequest
     if (original.createPostRequest != null) {
@@ -247,6 +248,8 @@ class _PostAttributeViewState extends State<PostAttributeView>
       copyRequest.caption = originalRequest.caption;
       copyRequest.tags = originalRequest.tags;
       copyRequest.settings = originalRequest.settings;
+      copyRequest.soundId = originalRequest.soundId;
+      copyRequest.soundSnapshot = originalRequest.soundSnapshot;
       copy.createPostRequest = copyRequest;
     }
 
@@ -1718,18 +1721,14 @@ class _PostAttributeViewState extends State<PostAttributeView>
     mediaListType: ms.MediaListType.imageVideo,
   );
 
-  Future<String?> _captureMedia(String? mediaType) async =>
-      await Navigator.push<String?>(
+  Future<CameraCaptureResult?> _captureMedia(String? mediaType) async =>
+      await IsrAppNavigator.goToMediaCaptureScreen(
         context,
-        MaterialPageRoute(
-          builder: (context) => mc.CameraCaptureView(
-            mediaType: mediaType?.mediaType ?? MediaType.photo,
-            onGalleryClick: () async {
-              Navigator.pop(context);
-              return null;
-            },
-          ),
-        ),
+        mediaType: mediaType?.mediaType ?? MediaType.photo,
+        onGalleryClick: () async {
+          Navigator.pop(context);
+          return null;
+        },
       );
 
   // Helper method to build switch tiles

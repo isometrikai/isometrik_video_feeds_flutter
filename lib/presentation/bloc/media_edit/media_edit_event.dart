@@ -66,12 +66,6 @@ class NavigateToImageAdjustmentEvent extends MediaEditEvent {
   final Map<String, dynamic>? result;
 }
 
-class NavigateToAudioEditorEvent extends MediaEditEvent {
-  NavigateToAudioEditorEvent({required this.sound});
-
-  final MediaEditSoundItem? sound;
-}
-
 class NavigateToVideoTrimEvent extends MediaEditEvent {
   NavigateToVideoTrimEvent({required this.result});
 

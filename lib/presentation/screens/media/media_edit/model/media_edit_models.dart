@@ -1,4 +1,3 @@
-import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
 
 enum EditMediaType {
   image,
@@ -28,7 +27,6 @@ class MediaEditItem {
     required this.height,
     this.duration,
     this.thumbnailPath,
-    this.sound,
     this.metaData,
   });
 
@@ -42,9 +40,6 @@ class MediaEditItem {
       height: (json['height'] as num? ?? 0).toDouble(),
       duration: json['duration'] as int?,
       thumbnailPath: json['thumbnailPath'] as String?,
-      sound: json['sound'] != null
-          ? MediaEditSoundItem.fromJson(json['sound'] as Map<String, dynamic>)
-          : null,
       metaData: json['metaData'] as Map<String, dynamic>?);
   final String originalPath;
   String? editedPath;
@@ -53,7 +48,6 @@ class MediaEditItem {
   final double height;
   final int? duration; // for videos
   String? thumbnailPath;
-  MediaEditSoundItem? sound;
   Map<String, dynamic>? metaData;
 
   MediaEditItem copyWith({
@@ -64,7 +58,6 @@ class MediaEditItem {
     double? height,
     int? duration,
     String? thumbnailPath,
-    MediaEditSoundItem? sound,
     Map<String, dynamic>? metaData,
   }) =>
       MediaEditItem(
@@ -75,7 +68,6 @@ class MediaEditItem {
           height: height ?? this.height,
           duration: duration ?? this.duration,
           thumbnailPath: thumbnailPath ?? this.thumbnailPath,
-          sound: sound ?? this.sound,
           metaData: metaData ?? this.metaData);
 
   Map<String, dynamic> toJson() => {
@@ -86,7 +78,6 @@ class MediaEditItem {
         'height': height,
         'duration': duration,
         'thumbnailPath': thumbnailPath,
-        'sound': sound?.toJson(),
         'metaData': metaData
       };
 }

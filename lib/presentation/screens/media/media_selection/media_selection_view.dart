@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/widgets/media_selection_widgets.dart';
@@ -22,8 +23,8 @@ class MediaSelectionView extends StatefulWidget {
 
   final MediaSelectionConfig mediaSelectionConfig;
   final List<MediaAssetData>? selectedMedia;
-  final Future<bool> Function(List<MediaAssetData> selectedMedia)? onComplete;
-  final Future<String?> Function(String? mediaType)? onCaptureMedia;
+  final Future<bool> Function(List<MediaAssetData> selectedMedia, SoundData? soundData)? onComplete;
+  final Future<CameraCaptureResult?> Function(String? mediaType)? onCaptureMedia;
 
   @override
   State<MediaSelectionView> createState() => _MediaSelectionViewState();
@@ -33,6 +34,7 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   late final MediaSelectionBloc _bloc;
   late ScrollController _scrollController;
+  SoundData? _soundData;
 
   @override
   void initState() {
@@ -394,7 +396,7 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
 
   Future<void> _handleMediaSelectionComplete(
       List<MediaAssetData> selectedMedia) async {
-    final isPop = await widget.onComplete?.call(selectedMedia) ?? true;
+    final isPop = await widget.onComplete?.call(selectedMedia, _soundData) ?? true;
     if (isPop && mounted) {
       Navigator.pop(context, selectedMedia);
     }
@@ -645,8 +647,10 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
 
   void _captureMedia() async {
     if (widget.onCaptureMedia != null) {
-      final filePath = await widget
+      final captureData = await widget
           .onCaptureMedia!(widget.mediaSelectionConfig.mediaListType.name);
+      final filePath = captureData?.mediaPath;
+      _soundData = captureData?.soundData;
       if (filePath?.isNotEmpty == true) {
         final file = File(filePath!);
         final mediaType = await _getMediaType(file);

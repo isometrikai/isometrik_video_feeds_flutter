@@ -4,8 +4,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get_thumbnail_video/video_thumbnail.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
-import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart'
-    as mc;
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit.dart'
     as me;
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart'
@@ -51,7 +49,7 @@ class _CreatePostMultimediaWrapperState
   );
 
   Future<bool> _onMediaSelectionComplete(
-      List<ms.MediaAssetData> selectedMedia) async {
+      List<ms.MediaAssetData> selectedMedia, SoundData? soundData) async {
     // Ensure all video thumbnails are generated before proceeding
     for (final media in selectedMedia) {
       if (media.mediaType == ms.SelectedMediaType.video &&
@@ -78,7 +76,7 @@ class _CreatePostMultimediaWrapperState
             addMoreMedia: _onAddMoreMedia,
             mediaEditConfig: mediaEditConfig,
             pickCoverPic: _pickCoverPic,
-            // onSelectSound: _onSelectSound,
+            soundData: soundData,
           ),
         ),
       );
@@ -131,7 +129,7 @@ class _CreatePostMultimediaWrapperState
             videoMediaLimit: videoLimit,
             mediaLimit: mediaLimit,
           ),
-          onCaptureMedia: _captureMedia,
+          onCaptureMedia: (mediaType) => _captureMedia(mediaType, false),
         ),
       ),
     );
@@ -147,14 +145,14 @@ class _CreatePostMultimediaWrapperState
               mediaListType: ms.MediaListType.image,
               isMultiSelect: false,
               selectMediaTitle: IsrTranslationFile.addCover),
-          onCaptureMedia: _captureMedia,
+          onCaptureMedia: (mediaType) => _captureMedia(mediaType, false),
         ),
       ),
     );
     return res?.first.localPath;
   }
 
-  Future<bool> _onMediaEditComplete(List<me.MediaEditItem> editedMedia) async {
+  Future<bool> _onMediaEditComplete(List<me.MediaEditItem> editedMedia, SoundData? soundData) async {
     if (editedMedia.isNotEmpty) {
       final _mediaDataList = editedMedia
           .toList()
@@ -180,7 +178,7 @@ class _CreatePostMultimediaWrapperState
               fileExtension: _getFileExtension(
                   editItem.editedPath ?? editItem.originalPath)))
           .toList();
-      await IsrAppNavigator.goToCreatePostAttributionView(context, newMediaDataList: _mediaDataList);
+      await IsrAppNavigator.goToCreatePostAttributionView(context, newMediaDataList: _mediaDataList, soundData: soundData);
       // _createPostBloc.goToPostAttributeView(context,
       //     newMediaDataList: _mediaDataList, onTagProduct: widget.onTagProduct);
       return false;
@@ -192,21 +190,18 @@ class _CreatePostMultimediaWrapperState
   Widget build(BuildContext context) => ms.MediaSelectionView(
         mediaSelectionConfig: mediaSelectionConfig,
         onComplete: _onMediaSelectionComplete,
-        onCaptureMedia: _captureMedia,
+        onCaptureMedia: (mediaType) => _captureMedia(mediaType, true),
       );
 
-  Future<String?> _captureMedia(String? mediaType) async =>
-      await Navigator.push<String?>(
+  Future<CameraCaptureResult?> _captureMedia(String? mediaType, bool soundDubbingEnabled) async =>
+      await IsrAppNavigator.goToMediaCaptureScreen(
         context,
-        MaterialPageRoute(
-          builder: (context) => mc.CameraCaptureView(
-            mediaType: mediaType?.mediaType ?? MediaType.both,
-            onGalleryClick: () async {
-              Navigator.pop(context);
-              return null;
-            },
-          ),
-        ),
+        mediaType: mediaType?.mediaType ?? MediaType.photo,
+        onGalleryClick: () async {
+          Navigator.pop(context);
+          return null;
+        },
+        soundDubbingEnabled: soundDubbingEnabled,
       );
 
   Future<String?> _generateVideoThumbnail(String? videoPath) async {

@@ -99,7 +99,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
   FutureOr<void> _initState(CreatePostInitialEvent event, Emitter<CreatePostState> emit) async {
     _resetData();
-    final postAttribution = await preparePostAttribution(newMediaDataList: event.newMediaDataList);
+    final postAttribution = await preparePostAttribution(newMediaDataList: event.newMediaDataList, soundData: event.sound);
     emit(PostAttributionUpdatedState(postAttributeClass: postAttribution));
   }
 
@@ -1321,6 +1321,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
   FutureOr<PostAttributeClass?> preparePostAttribution({
     List<MediaData>? newMediaDataList,
+    SoundData? soundData,
   }) async {
     debugPrint('=== _goToPostAttributeView START ===');
     debugPrint('mentionedUserData count: ${mentionedUserData.length}');
@@ -1358,7 +1359,10 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
             ? SocialPostType.video
             : SocialPostType.image;
     _createPostRequest.caption = descriptionText;
+    _createPostRequest.soundId = soundData?.id;
+    _createPostRequest.soundSnapshot = soundData == null ? null : SoundSnapshot(originalStatus: soundData.status);
 
+    _postAttributeClass.sound = soundData;
     _postAttributeClass.taggedPlaces = locationTagDataList;
     _postAttributeClass.mentionedUserList = [...mentionedUserData, ...mediaMentionUserData];
     _postAttributeClass.hashTagDataList = hashTagDataList;

@@ -18,6 +18,8 @@ class CreatePostRequest {
     this.type,
     this.visibility,
     this.scheduleTime,
+    this.soundId,
+    this.soundSnapshot,
     this.postId,
     this.settings,
     this.mentions,
@@ -41,6 +43,12 @@ class CreatePostRequest {
         status: json['status'] as String? ?? '',
         type: json['type'] as String? ?? '',
         visibility: json['visibility'] as String? ?? '',
+        soundId: json['sound_id'] as String? ?? '',
+        soundSnapshot: json['sound_snapshot'] == null
+            ? null
+            : SoundSnapshot.fromJson(
+                json['sound_snapshot'] as Map<String, dynamic>
+        ),
         scheduleTime: json['scheduled_at'] as String? ?? '',
         settings: json['settings'] == null
             ? null
@@ -60,6 +68,8 @@ class CreatePostRequest {
   String? type;
   String? visibility;
   String? scheduleTime;
+  String? soundId;
+  SoundSnapshot? soundSnapshot;
   PostSettingModel? settings;
   List<MentionData>? mentions;
 
@@ -78,10 +88,37 @@ class CreatePostRequest {
         'scheduled_at': scheduleTime,
         'tags': tags?.toMap(),
         'settings': settings?.toJson(),
+        'sound_id': soundId,
+        'sound_snapshot': soundSnapshot?.toJson(),
         'mentions': mentions == null
             ? []
             : List<dynamic>.from(mentions!.map((x) => x.toJson())),
       };
+}
+
+class SoundSnapshot {
+
+  factory SoundSnapshot.fromJson(Map<String, dynamic> json) => SoundSnapshot(
+    loop: json['loop'] as bool? ?? true,
+    originalStatus: json['original_status'] as String? ?? '',
+    volume: json['volume'] as num? ?? 1.0,
+  );
+
+  const SoundSnapshot({
+    this.loop = true,
+    this.originalStatus,
+    this.volume = 1.0,
+  });
+
+  final bool loop;
+  final String? originalStatus;
+  final num volume;
+
+  Map<String, dynamic> toJson() => {
+    'loop': loop,
+    'original_status': originalStatus,
+    'volume': volume,
+  };
 }
 
 class PostSettingModel {

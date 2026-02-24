@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -11,10 +12,14 @@ class CameraCaptureView extends StatefulWidget {
     super.key,
     this.mediaType = MediaType.both,
     this.onGalleryClick,
+    this.soundDubbingEnabled = false,
+    this.soundData,
   });
 
   final MediaType mediaType;
   final Future<String?> Function()? onGalleryClick;
+  final bool soundDubbingEnabled;
+  final SoundData? soundData;
 
   @override
   State<CameraCaptureView> createState() => _CameraCaptureViewState();
@@ -24,11 +29,13 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
     with WidgetsBindingObserver {
   late final CameraBloc _cameraBloc;
   bool _isNavigatingToEdit = false;
+  final ValueNotifier<SoundData?> _soundDataNotifier = ValueNotifier(null);
 
   @override
   void initState() {
     super.initState();
     _cameraBloc = context.getOrCreateBloc();
+    _soundDataNotifier.value = widget.soundData;
     WidgetsBinding.instance.addObserver(this);
     // Lock orientation to portrait mode
     // SystemChrome.setPreferredOrientations([
@@ -58,6 +65,7 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
     //   DeviceOrientation.landscapeRight,
     // ]);
     _cameraBloc.add(CameraDisposeEvent());
+    _soundDataNotifier.dispose();
     super.dispose();
   }
 
@@ -214,7 +222,11 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
                 cameraBloc: _cameraBloc,
                 state: state,
               ),
-              CameraTopControls(cameraBloc: _cameraBloc),
+              CameraTopControls(
+                  cameraBloc: _cameraBloc,
+                soundDubbingEnabled: widget.soundDubbingEnabled,
+                soundDataNotifier: _soundDataNotifier,
+              ),
               CameraBottomControls(
                 cameraBloc: _cameraBloc,
                 onGalleryClick: widget.onGalleryClick,
@@ -244,7 +256,13 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
     MediaType mediaTypeOverride,
     List<VideoSegment>? segments,
   ) {
-    Navigator.pop(context, mediaPath);
+    Navigator.pop(
+      context,
+      CameraCaptureResult(
+        mediaPath: mediaPath,
+        soundData: _soundDataNotifier.value,
+      ),
+    );
     _isNavigatingToEdit = false;
 
     _cameraBloc.add(CameraDiscardRecordingEvent());

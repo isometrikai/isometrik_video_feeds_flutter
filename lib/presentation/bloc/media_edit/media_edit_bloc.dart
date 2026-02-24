@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_models.dart';
 
 part 'media_edit_event.dart';
@@ -19,7 +18,6 @@ class MediaEditBloc extends Bloc<MediaEditEvent, MediaEditState> {
     on<NavigateToTextEditorEvent>(_onNavigateToTextEditor);
     on<NavigateToFilterScreenEvent>(_onNavigateToFilterScreen);
     on<NavigateToImageAdjustmentEvent>(_onNavigateToImageAdjustment);
-    on<NavigateToAudioEditorEvent>(_onNavigateToAudioEditor);
     on<NavigateToVideoTrimEvent>(_onNavigateToVideoTrim);
     on<NavigateToVideoEditEvent>(_onNavigateToVideoEdit);
     on<NavigateToVideoFilterEvent>(_onNavigateToVideoFilter);
@@ -175,7 +173,6 @@ class MediaEditBloc extends Bloc<MediaEditEvent, MediaEditState> {
           height: currentItem.height,
           duration: currentItem.duration,
           thumbnailPath: editedFile.path,
-          sound: currentItem.sound,
           metaData: currentItem.metaData,
         );
         _mediaEditItems[_currentIndex] = updatedItem;
@@ -203,7 +200,6 @@ class MediaEditBloc extends Bloc<MediaEditEvent, MediaEditState> {
           height: currentItem.height,
           duration: currentItem.duration,
           thumbnailPath: editedFile.path,
-          sound: currentItem.sound,
           metaData: currentItem.metaData,
         );
         _mediaEditItems[_currentIndex] = updatedItem;
@@ -231,7 +227,6 @@ class MediaEditBloc extends Bloc<MediaEditEvent, MediaEditState> {
           height: currentItem.height,
           duration: currentItem.duration,
           thumbnailPath: editedFile.path,
-          sound: currentItem.sound,
           metaData: currentItem.metaData,
         );
         _mediaEditItems[_currentIndex] = updatedItem;
@@ -240,19 +235,6 @@ class MediaEditBloc extends Bloc<MediaEditEvent, MediaEditState> {
           currentIndex: _currentIndex,
         ));
       }
-    }
-  }
-
-  Future<void> _onNavigateToAudioEditor(
-    NavigateToAudioEditorEvent event,
-    Emitter<MediaEditState> emit,
-  ) async {
-    if (_currentIndex < _mediaEditItems.length) {
-      _mediaEditItems[_currentIndex].sound = event.sound;
-      emit(MediaEditLoadedState(
-        mediaEditItems: List.from(_mediaEditItems),
-        currentIndex: _currentIndex,
-      ));
     }
   }
 
@@ -272,7 +254,6 @@ class MediaEditBloc extends Bloc<MediaEditEvent, MediaEditState> {
           height: currentItem.height,
           duration: currentItem.duration,
           thumbnailPath: currentItem.thumbnailPath,
-          sound: currentItem.sound,
           metaData: currentItem.metaData,
         );
         _mediaEditItems[_currentIndex] = updatedItem;
@@ -300,7 +281,6 @@ class MediaEditBloc extends Bloc<MediaEditEvent, MediaEditState> {
           height: currentItem.height,
           duration: currentItem.duration,
           thumbnailPath: currentItem.thumbnailPath,
-          sound: currentItem.sound,
           metaData: currentItem.metaData,
         );
         _mediaEditItems[_currentIndex] = updatedItem;
@@ -328,7 +308,6 @@ class MediaEditBloc extends Bloc<MediaEditEvent, MediaEditState> {
           height: currentItem.height,
           duration: currentItem.duration,
           thumbnailPath: currentItem.thumbnailPath,
-          sound: currentItem.sound,
           metaData: currentItem.metaData,
         );
         _mediaEditItems[_currentIndex] = updatedItem;
@@ -354,7 +333,6 @@ class MediaEditBloc extends Bloc<MediaEditEvent, MediaEditState> {
         height: currentItem.height,
         duration: currentItem.duration,
         thumbnailPath: event.coverFile!.path,
-        sound: currentItem.sound,
         metaData: currentItem.metaData,
       );
       _mediaEditItems[_currentIndex] = updatedItem;

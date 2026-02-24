@@ -2,9 +2,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit_config.dart';
-import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_models.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/pro_media_editor/pro_image_editor_wrapper.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/pro_media_editor/pro_video_editor_wrapper.dart';
@@ -19,19 +19,18 @@ class MediaEditView extends StatefulWidget {
     required this.mediaDataList,
     required this.mediaEditConfig,
     this.onComplete,
-    this.onSelectSound,
     this.addMoreMedia,
     this.pickCoverPic,
+    this.soundData,
   });
 
   final List<MediaEditItem> mediaDataList;
   final MediaEditConfig mediaEditConfig;
-  final Future<bool> Function(List<MediaEditItem> editededMedia)? onComplete;
-  final Future<MediaEditSoundItem?> Function(MediaEditSoundItem? sound)?
-      onSelectSound;
+  final Future<bool> Function(List<MediaEditItem> editededMedia, SoundData? soundData)? onComplete;
   final Future<List<MediaEditItem>?> Function(
       List<MediaEditItem> editededMedia)? addMoreMedia;
   final Future<String?> Function()? pickCoverPic;
+  final SoundData? soundData;
 
   @override
   State<MediaEditView> createState() => _MediaEditViewState();
@@ -39,10 +38,12 @@ class MediaEditView extends StatefulWidget {
 
 class _MediaEditViewState extends State<MediaEditView> {
   late final MediaEditBloc _bloc;
+  final ValueNotifier<SoundData?> _soundDataNotifier = ValueNotifier(null);
 
   @override
   void initState() {
     super.initState();
+    _soundDataNotifier.value = widget.soundData;
     _bloc = context.getOrCreateBloc();
     _bloc.add(MediaEditInitialEvent(mediaDataList: widget.mediaDataList));
   }
@@ -139,14 +140,6 @@ class _MediaEditViewState extends State<MediaEditView> {
     _bloc.add(NavigateToImageAdjustmentEvent(result: result));
   }
 
-  Future<void> _navigateToAudioEditor(MediaEditLoadedState state) async {
-    final currentItem = state.mediaEditItems[state.currentIndex];
-    if (widget.onSelectSound != null) {
-      final selectedSound = await widget.onSelectSound?.call(currentItem.sound);
-      _bloc.add(NavigateToAudioEditorEvent(sound: selectedSound));
-    }
-  }
-
   Future<void> _navigateToVideoTrim(MediaEditLoadedState state) async {
     final currentItem = state.mediaEditItems[state.currentIndex];
 
@@ -216,7 +209,7 @@ class _MediaEditViewState extends State<MediaEditView> {
   Future<void> _handleMediaEditComplete(
       List<MediaEditItem> mediaEditItems) async {
     try {
-      final isPop = await widget.onComplete?.call(mediaEditItems) ?? true;
+      final isPop = await widget.onComplete?.call(mediaEditItems, _soundDataNotifier.value) ?? true;
       // Return the edited media data
       if (isPop && mounted) Navigator.pop(context, mediaEditItems);
     } catch (e) {
@@ -352,13 +345,63 @@ class _MediaEditViewState extends State<MediaEditView> {
                 ),
               ],
             ),
-            const Row(
+            Row(
               mainAxisSize: MainAxisSize.min,
-              children: [],
+              children: [
+                TapHandler(
+                  onTap: () async {
+                    _soundDataNotifier.value = await SoundSelectorBottomSheet.show(context);
+                  },
+                  child: ValueListenableBuilder<SoundData?>(
+                    valueListenable: _soundDataNotifier,
+                    builder: (context, value, child) => Container(
+                      padding: IsrDimens.edgeInsetsAll(7.responsiveDimension),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.black.withValues(alpha: 0.25),
+                      ),
+                      child: Stack(
+                        children: [
+                          if (value != null) _buildPreviewImage(value),
+                          if (value == null)
+                            Icon(
+                              Icons.music_note,
+                              color: Colors.white,
+                              size: 24.responsiveDimension,
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+              ],
             ),
           ],
         ),
       );
+
+  Widget _buildPreviewImage(SoundData sound) =>
+      sound.previewUrl != null && sound.previewUrl!.isNotEmpty
+          ? Image.network(
+        sound.previewUrl!,
+        fit: BoxFit.cover,
+        width: IsrDimens.twentyFour,
+        height: IsrDimens.twentyFour,
+        loadingBuilder: (_, __, ___) => _placeholderThumbnail(),
+        errorBuilder: (_, __, ___) => _placeholderThumbnail(),
+      )
+          : _placeholderThumbnail();
+
+  Widget _placeholderThumbnail() => Container(
+    width: IsrDimens.twentyFour,
+    height: IsrDimens.twentyFour,
+    color: IsrColors.appColor.withValues(alpha: 0.1),
+    child: Icon(
+      Icons.music_note,
+      color: IsrColors.appColor,
+      size: IsrDimens.twentyFour,
+    ),
+  );
 
   Widget _buildAppBarIcon({
     required IconData icon,
@@ -419,12 +462,6 @@ class _MediaEditViewState extends State<MediaEditView> {
     if (isVideo) {
       // Video buttons: Audio, Filter, Trim, Cover Photo
       buttons = [
-        if (widget.onSelectSound != null)
-          _buildSectionButton(
-            icon: Icons.audiotrack,
-            label: 'Audio',
-            onTap: () => _navigateToAudioEditor(state),
-          ),
         _buildSectionButton(
           icon: Icons.content_cut,
           label: 'Trim',
