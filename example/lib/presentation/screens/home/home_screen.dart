@@ -73,14 +73,14 @@ class _HomeScreenState extends State<HomeScreen> {
             //hardCoded post id
             startingPostIndex: 0,
           ),
-          isr.TabDataModel(
-            postSectionType: isr.PostSectionType.otherUserPost,
-            title: TranslationFile.others,
-            reelsDataList: [],
-            userId: '67c69bb7e0295f209db1d0e9',
-            //hardCoded userId of user asjadibrahim10215
-            startingPostIndex: 0,
-          ),
+          // isr.TabDataModel(
+          //   postSectionType: isr.PostSectionType.otherUserPost,
+          //   title: TranslationFile.others,
+          //   reelsDataList: [],
+          //   userId: '67c69bb7e0295f209db1d0e9',
+          //   //hardCoded userId of user asjadibrahim10215
+          //   startingPostIndex: 0,
+          // ),
         ], // ✅ Already working!
       );
 

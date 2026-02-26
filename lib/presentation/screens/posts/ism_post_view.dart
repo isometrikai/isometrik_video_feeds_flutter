@@ -67,6 +67,12 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   @override
   void initState() {
+    _socialPostBloc = context.getOrCreateBloc();
+    if (_socialPostBloc.isClosed) {
+      isrConfigureInjection();
+      _socialPostBloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
+    }
+    _socialActionCubit = context.getOrCreateBloc();
     _onStartInit();
     super.initState();
   }
@@ -83,7 +89,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         .map((tab) => TabStateModel(
             isLoading: tab.reelsDataList.isEmpty, tabDataModel: tab))
         .toList();
-    _currentIndex = widget.startTabIndex?.toInt() ?? 0;
+    _currentIndex = (_tabDataModelList.length > (widget.startTabIndex ?? 0)) ? widget.startTabIndex?.toInt() ?? 0 : 0;
     _currentPostSectionType =
         _tabDataModelList[_currentIndex].tabDataModel.postSectionType;
     if (_currentIndex >= _tabDataModelList.length) {
@@ -102,12 +108,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
     _refreshControllers =
         List.generate(_tabDataModelList.length, (index) => RefreshController());
-    _socialPostBloc = context.getOrCreateBloc();
-    if (_socialPostBloc.isClosed) {
-      isrConfigureInjection();
-      _socialPostBloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
-    }
-    _socialActionCubit = context.getOrCreateBloc();
 
     _tabsVisibilityNotifier.value = _tabDataModelList.length > 1;
 
