@@ -112,7 +112,7 @@ class EventQueueProvider {
 class LocalEventQueue with WidgetsBindingObserver {
   LocalEventQueue();
 
-  static const _boxName = 'local_events';
+  static const _boxName = 'isometrik_social_local_events';
   static const _batchSize = 10;
   static const _batchTimerDuration = AppConstants.impressionDataApiLogTimeDuration; // need to change to 10 mins
 
