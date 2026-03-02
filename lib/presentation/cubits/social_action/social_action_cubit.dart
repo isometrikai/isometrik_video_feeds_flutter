@@ -127,16 +127,9 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     return userData;
   }
 
-  loadPostFollowState(String postId) async {
-    final postData = await getAsyncPostById(postId);
-    final isFollow = postData?.isFollowing ?? false;
-    final userId = postData?.userId ?? '';
-    emit(IsmFollowUserState(isFollowing: isFollow, userId: userId));
-  }
-
-  loadFollowState(String userId,
-      {bool? isFollowing, bool callApi = false}) async {
-    if (callApi && userId.isNotEmpty) {
+  getUserFollowState(String userId,
+      {bool? isFollowing}) async {
+    if (userId.isNotEmpty) {
       emit(IsmFollowUserState(
           isFollowing: isFollowing == true, userId: userId, isLoading: true));
       final userData = await _getSocialUserDetails(userId, showError: true);

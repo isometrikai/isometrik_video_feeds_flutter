@@ -51,11 +51,25 @@ class _FollowActionWidgetState extends State<FollowActionWidget> {
     postId = widget.postId;
     loggedInUserId = cubit.userId;
     isFollowing = widget.isFollowing ?? false;
+    _updateFollowState();
+  }
+
+  _updateFollowState() async {
+    userId = widget.userId;
+    postId = widget.postId;
+    loggedInUserId = cubit.userId;
+    isFollowing = widget.isFollowing ?? false;
+    var updatedFollowState = isFollowing;
     if (postId != null) {
-      cubit.loadPostFollowState(postId!);
-    } else {
-      cubit.loadFollowState(userId,
-          isFollowing: isFollowing, callApi: widget.callProfileApi);
+      final postData = cubit.getPostById(postId!);
+      updatedFollowState = postData?.isFollowing ?? updatedFollowState;
+    } else if (widget.callProfileApi) {
+      cubit.getUserFollowState(userId, isFollowing: isFollowing);
+    }
+    if (mounted && isFollowing != updatedFollowState) {
+      setState(() {
+        isFollowing = updatedFollowState;
+      });
     }
   }
 
@@ -66,15 +80,7 @@ class _FollowActionWidgetState extends State<FollowActionWidget> {
     if (oldWidget.userId != widget.userId ||
         oldWidget.postId != widget.postId ||
         oldWidget.isFollowing != widget.isFollowing) {
-      userId = widget.userId;
-      postId = widget.postId;
-      loggedInUserId = cubit.userId;
-      isFollowing = widget.isFollowing ?? false;
-      if (postId != null) {
-        cubit.loadPostFollowState(postId!);
-      } else {
-        cubit.loadFollowState(userId, isFollowing: isFollowing);
-      }
+      _updateFollowState();
     }
   }
 
@@ -151,6 +157,7 @@ class _FollowActionWidgetState extends State<FollowActionWidget> {
               // Error message is already shown via ErrorHandler in Cubit
               debugPrint('❌ Follow/Unfollow error: ${state.errorMessage}');
             }
+            debugPrint('FollowActionWidget:- builder :- state: ${state}, userId: ${userId}, isFollowing: ${isFollowing}, isLoading: ${isLoading}');
             debugPrint('IsmSocialActionCubit hashCode -> ${cubit.hashCode}');
             if (userId == loggedInUserId) { // self user
                 return const SizedBox.shrink();
