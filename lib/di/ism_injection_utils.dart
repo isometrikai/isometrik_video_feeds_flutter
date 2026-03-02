@@ -66,4 +66,6 @@ class IsmInjectionUtils {
 
   static T getOtherClass<T extends Object>() =>
       isrGetIt<T>(); // Generic method to get api service
+  static T? getOtherClassIfPresent<T extends Object>() =>
+      (_isRegistered<T>()) ? isrGetIt<T>() : null; // Generic method to get api service
 }
