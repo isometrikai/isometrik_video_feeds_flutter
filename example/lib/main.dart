@@ -33,6 +33,7 @@ Future<void> _initializeReelsSdk() async {
   final appVersion = await Utility.getAppVersion();
   await isr.IsrVideoReelConfig.initializeSdk(
     baseUrl: AppUrl.appBaseUrl,
+    gumletUrl: AppUrl.gumletUrl,
     postConfig: const isr.PostConfig(
       autoMoveToNextMedia: true,
       autoMoveToNextPost: true,
