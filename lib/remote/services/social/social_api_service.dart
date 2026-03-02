@@ -33,8 +33,8 @@ abstract class SocialApiService extends BaseService {
   Future<ResponseModel> getTrendingPosts({
     required bool isLoading,
     required Header header,
-    required int page,
-    required int pageLimit,
+    required String? cursor,
+    required int limit,
   });
 
   Future<ResponseModel> followUser({
@@ -202,8 +202,8 @@ abstract class SocialApiService extends BaseService {
   Future<ResponseModel> getForYouPosts({
     required bool isLoading,
     required Header header,
-    required int page,
-    required int pageLimit,
+    required String? cursor,
+    required int limit,
   });
 
   Future<ResponseModel> getMentionedUsers({

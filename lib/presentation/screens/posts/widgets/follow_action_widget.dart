@@ -157,7 +157,7 @@ class _FollowActionWidgetState extends State<FollowActionWidget> {
               // Error message is already shown via ErrorHandler in Cubit
               debugPrint('❌ Follow/Unfollow error: ${state.errorMessage}');
             }
-            debugPrint('FollowActionWidget:- builder :- state: ${state}, userId: ${userId}, isFollowing: ${isFollowing}, isLoading: ${isLoading}');
+            debugPrint('FollowActionWidget:- builder :- state: $state, userId: $userId, isFollowing: $isFollowing, isLoading: $isLoading');
             debugPrint('IsmSocialActionCubit hashCode -> ${cubit.hashCode}');
             if (userId == loggedInUserId) { // self user
                 return const SizedBox.shrink();

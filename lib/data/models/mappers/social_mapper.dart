@@ -52,6 +52,12 @@ class SocialMapper {
           data: timelineResponseFromJson(response.data),
           responseCode: response.statusCode);
 
+  CustomResponse<TimelineDataResponse?> mapTimelineDataResponse(
+      ResponseModel response) =>
+      CustomResponse(
+          data: timelineDataResponseFromJson(response.data),
+          responseCode: response.statusCode);
+
   CustomResponse<FollowUnfollowResponseModel?> mapFollowUnfollowData(
           ResponseModel response) =>
       CustomResponse(

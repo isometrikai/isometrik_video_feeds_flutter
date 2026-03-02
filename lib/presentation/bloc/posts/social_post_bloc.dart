@@ -197,7 +197,6 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     if (isFromRefresh) {
       tabAssistData.postList.clear();
       tabAssistData.currentPage = 1;
-      tabAssistData.hasMoreData = true;
       tabAssistData.isLoadingMore = false;
     } else if (!isFromPagination && tabAssistData.postList.isNotEmpty) {
       // If we have cached posts and it's not a refresh, emit them immediately
@@ -228,73 +227,104 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     }
 
     // Route to the correct use case based on PostSectionType
-    ApiResult<TimelineResponse?>? apiResult;
+    List<TimeLineData>? apiPostResult;
+    AppError? apiError;
     switch (postSectionType) {
       case PostSectionType.trending:
-        apiResult = await _getTrendingPostUseCase.executeGetTrendingPost(
+        apiPostResult = await _getTrendingPostUseCase.executeGetTrendingPost(
           isLoading: isLoading,
-          page: tabAssistData.currentPage,
-          pageLimit: tabAssistData.pageSize,
-        );
+          cursor: tabAssistData.cursor,
+          limit: tabAssistData.pageSize,
+        ).then((result) {
+          apiError = result.error;
+          if (result.data?.data?.nextCursor?.isNotEmpty == true) {
+            tabAssistData.cursor = result.data?.data?.nextCursor;
+          }
+          return result.data?.data?.posts;
+        });
         break;
       case PostSectionType.forYou:
-        apiResult = await _getForYouPostUseCase.executeGetForYouPost(
+        apiPostResult = await _getForYouPostUseCase.executeGetForYouPost(
           isLoading: isLoading,
-          page: tabAssistData.currentPage,
-          pageLimit: tabAssistData.pageSize,
-        );
+          cursor: tabAssistData.cursor,
+          limit: tabAssistData.pageSize,
+        ).then((result) {
+          apiError = result.error;
+          if (result.data?.data?.nextCursor?.isNotEmpty == true) {
+            tabAssistData.cursor = result.data?.data?.nextCursor;
+          }
+          return result.data?.data?.posts;
+        });
         break;
       case PostSectionType.following:
-        apiResult = await _getTimelinePostUseCase.executeTimeLinePost(
+        apiPostResult = await _getTimelinePostUseCase.executeTimeLinePost(
           isLoading: isLoading,
           page: tabAssistData.currentPage,
           pageLimit: tabAssistData.pageSize,
-        );
+        ).then((result) {
+          apiError = result.error;
+          return result.data?.data;
+        });
         break;
       case PostSectionType.savedPost:
-        apiResult = await _savePostUseCase.executeGetProfileSavedPostData(
+        apiPostResult = await _savePostUseCase.executeGetProfileSavedPostData(
           isLoading: isLoading,
           page: tabAssistData.currentPage,
           pageSize: tabAssistData.pageSize,
-        );
+        ).then((result) {
+          apiError = result.error;
+          return result.data?.data;
+        });
         break;
       case PostSectionType.tagPost:
         if (tabAssistData.tagType != null && tabAssistData.tagValue != null) {
-          apiResult = await _getTaggedPostsUseCase.executeGetTaggedPosts(
+          apiPostResult = await _getTaggedPostsUseCase.executeGetTaggedPosts(
             isLoading: isLoading,
             page: tabAssistData.currentPage,
             pageLimit: tabAssistData.pageSize,
             tagValue: tabAssistData.tagValue!,
             tagType: tabAssistData.tagType!,
-          );
+          ).then((result) {
+            apiError = result.error;
+            return result.data?.data;
+          });
         }
         break;
       case PostSectionType.myTaggedPost:
-        apiResult = await _getTaggedPostsUseCase.executeGetTaggedPosts(
+        apiPostResult = await _getTaggedPostsUseCase.executeGetTaggedPosts(
           isLoading: isLoading,
           page: tabAssistData.currentPage,
           pageLimit: tabAssistData.pageSize,
           tagValue: await _localDataUseCase.getUserId(),
           tagType: TagType.mention,
-        );
+        ).then((result) {
+          apiError = result.error;
+          return result.data?.data;
+        });
         break;
       case PostSectionType.myPost:
-        apiResult = await _getUserPostDataUseCase.executeGetUserProfilePostData(
+        apiPostResult = await _getUserPostDataUseCase.executeGetUserProfilePostData(
           isLoading: isLoading,
           page: tabAssistData.currentPage,
           pageSize: tabAssistData.pageSize,
           memberId: tabAssistData.userId ?? await _localDataUseCase.getUserId(),
-        );
+        ).then((result) {
+          apiError = result.error;
+          return result.data?.data;
+        });
         break;
       case PostSectionType.otherUserPost:
         if (tabAssistData.userId != null) {
-          apiResult =
+          apiPostResult =
               await _getUserPostDataUseCase.executeGetUserProfilePostData(
             isLoading: isLoading,
             page: tabAssistData.currentPage,
             pageSize: tabAssistData.pageSize,
             memberId: tabAssistData.userId!,
-          );
+          ).then((result) {
+                apiError = result.error;
+                return result.data?.data;
+              });
         }
         break;
       default:
@@ -305,9 +335,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       postDataList.add(postIdPostData);
     }
     if (tabAssistData.postSectionType == PostSectionType.following) {
-      apiResult?.data?.data?.forEach((_) => _.isFollowing = true);
+      apiPostResult?.forEach((_) => _.isFollowing = true);
     }
-    postDataList.addAll(apiResult?.data?.data ?? []);
+    postDataList.addAll(apiPostResult ?? []);
     if (postDataList.isNotEmpty) {
       _socialActionCubit.updatePostList(postDataList);
       if (postDataList.length < tabAssistData.pageSize) {
@@ -324,7 +354,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       tabAssistData.currentPage++;
     } else {
       tabAssistData.hasMoreData = false;
-      ErrorHandler.showAppError(appError: apiResult?.error);
+      ErrorHandler.showAppError(appError: apiError);
     }
     if (onComplete != null) {
       onComplete(postDataList);

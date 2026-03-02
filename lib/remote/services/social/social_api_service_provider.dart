@@ -130,8 +130,8 @@ class SocialApiServiceProvider extends SocialApiService {
   Future<ResponseModel> getTrendingPosts({
     required bool isLoading,
     required Header header,
-    required int page,
-    required int pageLimit,
+    required String? cursor,
+    required int limit,
   }) =>
       _getHeaders(header).then(
         (headers) => networkClient.makeRequest(
@@ -139,8 +139,8 @@ class SocialApiServiceProvider extends SocialApiService {
           NetworkRequestType.get,
           null,
           {
-            'page': page.toString(),
-            'page_size': pageLimit.toString(),
+            if (!cursor.isEmptyOrNull) 'cursor': cursor,
+            'limit': limit.toString(),
           },
           headers,
           isLoading,
@@ -697,8 +697,8 @@ class SocialApiServiceProvider extends SocialApiService {
   Future<ResponseModel> getForYouPosts({
     required bool isLoading,
     required Header header,
-    required int page,
-    required int pageLimit,
+    required String? cursor,
+    required int limit,
   }) =>
       _getHeaders(header).then(
         (headers) => networkClient.makeRequest(
@@ -706,8 +706,8 @@ class SocialApiServiceProvider extends SocialApiService {
           NetworkRequestType.get,
           null,
           {
-            'page': page.toString(),
-            'page_size': pageLimit.toString(),
+            if (!cursor.isEmptyOrNull) 'cursor': cursor,
+            'limit': limit.toString(),
           },
           headers,
           isLoading,

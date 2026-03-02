@@ -21,10 +21,10 @@ abstract class SocialRepository extends BaseRepository {
     required int pageLimit,
   });
 
-  Future<CustomResponse<TimelineResponse?>> getTrendingPost({
+  Future<CustomResponse<TimelineDataResponse?>> getTrendingPost({
     required bool isLoading,
-    required int page,
-    required int pageLimit,
+    required String? cursor,
+    required int limit,
   });
 
   Future<CustomResponse<FollowUnfollowResponseModel?>> followUser({
@@ -176,10 +176,10 @@ abstract class SocialRepository extends BaseRepository {
     required bool scheduledOnly,
   });
 
-  Future<CustomResponse<TimelineResponse?>> getForYouPosts({
+  Future<CustomResponse<TimelineDataResponse?>> getForYouPosts({
     required bool isLoading,
-    required int page,
-    required int pageLimit,
+    required String? cursor,
+    required int limit,
   });
 
   Future<CustomResponse<SearchUserResponse?>> getMentionedUsers({
