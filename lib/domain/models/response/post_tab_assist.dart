@@ -17,6 +17,7 @@ class PostTabAssistData {
   var hasMoreData = true;
   var isLoadingMore = false;
   var pageSize = 20;
+  String? cursor;
   String? postId;
   String? userId;
   String? tagValue;

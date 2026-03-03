@@ -9,7 +9,6 @@ import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
-import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:talker/talker.dart';
 
@@ -36,6 +35,12 @@ class IsrVideoReelConfig {
 
   /// Optional path to `google-services.json` (Android) used by some integrations.
   static String? googleServiceJsonPath;
+
+  /// base url
+  static String? baseUrl;
+
+  /// gumlet url
+  static String? gumletUrl;
 
   /// Social configuration used by SDK modules.
   static SocialConfig socialConfig = const SocialConfig();
@@ -84,6 +89,7 @@ class IsrVideoReelConfig {
   /// and user info, and notify internal state to refresh.
   static Future<void> initializeSdk({
     required String baseUrl,
+    required String gumletUrl,
     required String rudderStackWriteKey,
     required String rudderStackDataPlaneUrl,
     required UserInfoClass? userInfoClass,
@@ -98,6 +104,8 @@ class IsrVideoReelConfig {
     required String? googleServiceJsonPath,
     required BuildContext? Function()? getCurrentBuildContext,
   }) async {
+    IsrVideoReelConfig.baseUrl = baseUrl;
+    IsrVideoReelConfig.gumletUrl = gumletUrl;
     if (!isSdkInitialize) {
       WidgetsFlutterBinding.ensureInitialized();
       await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
@@ -127,7 +135,6 @@ class IsrVideoReelConfig {
       userInfoClass: userInfoClass,
     );
     getBuildContext = getCurrentBuildContext;
-    AppUrl.appBaseUrl = baseUrl;
     IsrVideoReelConfig.googleServiceJsonPath = googleServiceJsonPath;
     _triggerEventLog();
   }

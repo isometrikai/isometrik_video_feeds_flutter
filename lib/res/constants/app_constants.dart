@@ -112,9 +112,8 @@ class AppConstants {
 }
 
 abstract class AppUrl {
-  static String appBaseUrl = 'https://api.trulyfreehome.dev';
-  static const String socialBaseUrl = 'https://social-apis.dev.trulyfree.com';
-  static const String gumletUrl = 'https://cdn.trulyfreehome.dev';
+  static String get appBaseUrl => IsrVideoReelConfig.baseUrl ?? '';
+  static String get gumletUrl => IsrVideoReelConfig.gumletUrl ?? '';
 }
 
 abstract class DefaultValues {

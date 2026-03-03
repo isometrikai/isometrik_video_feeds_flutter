@@ -743,30 +743,55 @@ class Utility {
   /// [tags] - Comment tags containing mentions and hashtags data
   /// [onUsernameTap] - Callback when username is tapped
   /// [onHashtagTap] - Callback when hashtag is tapped
+  /// [maxLength] - If set and text is longer, show "view more" when collapsed
+  /// [isExpanded] - When true and text is truncated, show full text and "view less"
+  /// [viewMoreLabel] - Label for the "view more" link (default from translations)
+  /// [viewLessLabel] - Label for the "view less" link (default from translations)
+  /// [onViewMoreTap] - Callback when "view more" is tapped
+  /// [onViewLessTap] - Callback when "view less" is tapped
   static List<TextSpan> buildCommentTextSpans(
     String text,
     TextStyle baseStyle,
     CommentTags? tags, {
     Function(String)? onUsernameTap,
     Function(String)? onHashtagTap,
+    int? maxLength,
+    bool isExpanded = true,
+    String? viewMoreLabel,
+    String? viewLessLabel,
+    VoidCallback? onViewMoreTap,
+    VoidCallback? onViewLessTap,
   }) {
     final spans = <TextSpan>[];
 
     if (text.isEmpty) return spans;
 
+    final effectiveMaxLength = maxLength;
+    final showViewMoreLess = effectiveMaxLength != null &&
+        effectiveMaxLength > 0 &&
+        text.length > effectiveMaxLength;
+
+    final displayText = (showViewMoreLess && !isExpanded)
+        ? text.substring(0, effectiveMaxLength!)
+        : text;
+
     // Create a list of all tagged positions (mentions and hashtags)
     final taggedPositions = <TagPosition>[];
 
-    // Add mention positions
+    // Add mention positions (only within displayText range when truncated)
     if (tags?.mentions != null) {
       for (final mention in tags!.mentions!) {
         if (mention.textPosition != null) {
-          taggedPositions.add(TagPosition(
-            start: mention.textPosition!.start?.toInt() ?? 0,
-            end: mention.textPosition!.end?.toInt() ?? 0,
-            type: Tag.mention,
-            data: mention,
-          ));
+          final start = mention.textPosition!.start?.toInt() ?? 0;
+          final end = mention.textPosition!.end?.toInt() ?? 0;
+          if (end <= displayText.length) {
+            taggedPositions.add(TagPosition(
+              start: start,
+              end: end,
+              type: Tag.mention,
+              data: mention,
+            ));
+          }
         }
       }
     }
@@ -775,12 +800,16 @@ class Utility {
     if (tags?.hashtags != null) {
       for (final hashtag in tags!.hashtags!) {
         if (hashtag.textPosition != null) {
-          taggedPositions.add(TagPosition(
-            start: hashtag.textPosition!.start?.toInt() ?? 0,
-            end: hashtag.textPosition!.end?.toInt() ?? 0,
-            type: Tag.hashtag,
-            data: hashtag,
-          ));
+          final start = hashtag.textPosition!.start?.toInt() ?? 0;
+          final end = hashtag.textPosition!.end?.toInt() ?? 0;
+          if (end <= displayText.length) {
+            taggedPositions.add(TagPosition(
+              start: start,
+              end: end,
+              type: Tag.hashtag,
+              data: hashtag,
+            ));
+          }
         }
       }
     }
@@ -788,16 +817,18 @@ class Utility {
     // Sort positions by start index
     taggedPositions.sort((a, b) => a.start.compareTo(b.start));
 
-    // Also handle URLs
+    // Also handle URLs (only within displayText range when truncated)
     final urlRegex = RegExp(r'(https?:\/\/\S+|www\.\S+)', caseSensitive: false);
-    final urlMatches = urlRegex.allMatches(text);
+    final urlMatches = urlRegex.allMatches(displayText);
     for (final match in urlMatches) {
-      taggedPositions.add(TagPosition(
-        start: match.start,
-        end: match.end,
-        type: Tag.url,
-        data: null,
-      ));
+      if (match.end <= displayText.length) {
+        taggedPositions.add(TagPosition(
+          start: match.start,
+          end: match.end,
+          type: Tag.url,
+          data: null,
+        ));
+      }
     }
 
     // Sort again to include URLs
@@ -810,14 +841,14 @@ class Utility {
       if (position.start > currentIndex) {
         spans.add(
           TextSpan(
-            text: text.substring(currentIndex, position.start),
+            text: displayText.substring(currentIndex, position.start),
             style: baseStyle,
           ),
         );
       }
 
       // Add the tagged text with appropriate styling and tap handler
-      final taggedText = text.substring(position.start, position.end);
+      final taggedText = displayText.substring(position.start, position.end);
       var taggedStyle = baseStyle;
       TapGestureRecognizer? recognizer;
 
@@ -876,13 +907,44 @@ class Utility {
     }
 
     // Add remaining text
-    if (currentIndex < text.length) {
+    if (currentIndex < displayText.length) {
       spans.add(
         TextSpan(
-          text: text.substring(currentIndex),
+          text: displayText.substring(currentIndex),
           style: baseStyle,
         ),
       );
+    }
+
+    // Append "view more" or "view less" when applicable
+    if (showViewMoreLess) {
+      final linkStyle = baseStyle.copyWith(
+        color: IsrColors.appColor,
+        fontWeight: FontWeight.w600,
+      );
+      if (!isExpanded) {
+        final label = viewMoreLabel ?? IsrTranslationFile.viewMore;
+        spans.add(TextSpan(text: ' '));
+        spans.add(
+          TextSpan(
+            text: label,
+            style: linkStyle,
+            recognizer: TapGestureRecognizer()
+              ..onTap = () => onViewMoreTap?.call(),
+          ),
+        );
+      } else {
+        final label = viewLessLabel ?? IsrTranslationFile.viewLess;
+        spans.add(TextSpan(text: ' '));
+        spans.add(
+          TextSpan(
+            text: label,
+            style: linkStyle,
+            recognizer: TapGestureRecognizer()
+              ..onTap = () => onViewLessTap?.call(),
+          ),
+        );
+      }
     }
 
     return spans;

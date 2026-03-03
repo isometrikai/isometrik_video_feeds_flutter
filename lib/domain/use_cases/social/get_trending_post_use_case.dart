@@ -6,17 +6,16 @@ class GetTrendingPostUseCase extends BaseUseCase {
 
   final SocialRepository _repository;
 
-  Future<ApiResult<TimelineResponse?>> executeGetTrendingPost({
+  Future<ApiResult<TimelineDataResponse?>> executeGetTrendingPost({
     required bool isLoading,
-    required int page,
-    required int pageLimit,
-    Map<String, dynamic>? createPostRequest,
+    required String? cursor,
+    required int limit,
   }) async =>
       await super.execute(() async {
         final response = await _repository.getTrendingPost(
           isLoading: isLoading,
-          page: page,
-          pageLimit: pageLimit,
+          cursor: cursor,
+          limit: limit,
         );
         return ApiResult(
             data: response.responseCode == 200 ? response.data : null);

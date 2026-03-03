@@ -72,20 +72,20 @@ class SocialRepositoryImpl implements SocialRepository {
   }
 
   @override
-  Future<CustomResponse<TimelineResponse?>> getTrendingPost({
+  Future<CustomResponse<TimelineDataResponse?>> getTrendingPost({
     required bool isLoading,
-    required int page,
-    required int pageLimit,
+    required String? cursor,
+    required int limit,
   }) async {
     try {
       final header = await _dataSource.getHeader();
       final response = await _apiService.getTrendingPosts(
         isLoading: isLoading,
         header: header,
-        page: page,
-        pageLimit: pageLimit,
+        cursor: cursor,
+        limit: limit,
       );
-      return _socialMapper.mapTimelineResponse(response);
+      return _socialMapper.mapTimelineDataResponse(response);
     } catch (e) {
       rethrow;
     }
@@ -563,20 +563,20 @@ class SocialRepositoryImpl implements SocialRepository {
   }
 
   @override
-  Future<CustomResponse<TimelineResponse?>> getForYouPosts({
+  Future<CustomResponse<TimelineDataResponse?>> getForYouPosts({
     required bool isLoading,
-    required int page,
-    required int pageLimit,
+    required String? cursor,
+    required int limit,
   }) async {
     try {
       final header = await _dataSource.getHeader();
       final response = await _apiService.getForYouPosts(
         isLoading: isLoading,
         header: header,
-        page: page,
-        pageLimit: pageLimit,
+        cursor: cursor,
+        limit: limit,
       );
-      return _socialMapper.mapTimelineResponse(response);
+      return _socialMapper.mapTimelineDataResponse(response);
     } catch (e) {
       rethrow;
     }

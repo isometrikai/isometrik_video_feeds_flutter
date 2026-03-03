@@ -9,6 +9,7 @@ import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:rudder_sdk_flutter/RudderController.dart';
 import 'package:rudder_sdk_flutter_platform_interface/platform.dart';
+import 'package:talker/talker.dart';
 import 'package:uuid/uuid.dart';
 
 class EventQueueProvider {
@@ -119,6 +120,8 @@ class LocalEventQueue with WidgetsBindingObserver {
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   Timer? _batchTimer;
 
+  Talker? get _talker => IsmInjectionUtils.getOtherClassIfPresent();
+
   Future<void> init() async {
     try {
       if (!Hive.isBoxOpen(_boxName)) {
@@ -176,6 +179,7 @@ class LocalEventQueue with WidgetsBindingObserver {
       debugPrint('${runtimeType.toString()}:Box length: ${box.length}');
 
       if (eventName == EventType.postViewed.value) {
+        _talker?.info('${runtimeType.toString()}:Event Name: $eventName added with\n Event Data : ${jsonEncode(payload)}');
         if (box.length >= _batchSize) {
           await sendPendingEventsToBackend();
           return;
@@ -214,7 +218,7 @@ class LocalEventQueue with WidgetsBindingObserver {
     ];
     if (excludedEvents.contains(eventName)) return;
     debugPrint(
-        '${runtimeType.toString()}:Event Triggered: $eventName\n Event Data : ${jsonEncode(payload)}');
+        'Adding Event -> Event Triggered: $eventName\n Event Data : ${jsonEncode(payload)}');
     final rudderProperties = RudderProperty();
     rudderProperties.putValue(map: payload);
     RudderController.instance.track(
@@ -238,8 +242,10 @@ class LocalEventQueue with WidgetsBindingObserver {
       for (final event in events) event.payload,
     ];
     try {
+      _talker?.info('Sending Event -> Event Data : $eventPayLoadList');
       final socialPostBloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
       final result = await socialPostBloc.sendEventsToBackend(eventPayLoadList);
+      _talker?.info('Sending Event -> Event result status : ${result.statusCode}, isSuccess: ${result.isSuccess}, errorIfAny: ${result.error?.message}');
       if (result.isSuccess || result.statusCode == 422) {
         try {
           await flush();

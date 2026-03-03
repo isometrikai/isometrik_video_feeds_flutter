@@ -450,10 +450,24 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
     _overlayEntry = null;
   }
 
+  bool get _isCurrentTagInSuggestions {
+    final term = _currentSearchTerm.trim().toLowerCase();
+    if (term.isEmpty) return false;
+    return _hashTagResults.any(
+      (t) => (t.hashtag ?? '').trim().toLowerCase() == term,
+    );
+  }
+
   void _showOverlay() {
     _removeOverlay();
 
-    if (!_isSearching || (_searchResults.isEmpty && _hashTagResults.isEmpty)) {
+    final showAddTagOption = _isHashtagSearchActive &&
+        _currentSearchTerm.trim().isNotEmpty &&
+        !_isCurrentTagInSuggestions;
+    if (!_isSearching ||
+        (_searchResults.isEmpty &&
+            _hashTagResults.isEmpty &&
+            !showAddTagOption)) {
       return;
     }
 
@@ -499,7 +513,8 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
   Widget _buildSuggestionsContent() {
     if (_searchResults.isNotEmpty) {
       return _buildUserSuggestionsContent();
-    } else if (_hashTagResults.isNotEmpty) {
+    } else if (_hashTagResults.isNotEmpty ||
+        (_isHashtagSearchActive && _currentSearchTerm.trim().isNotEmpty)) {
       return _buildHashtagSuggestionsContent();
     }
     return const SizedBox.shrink();
@@ -567,17 +582,25 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
         },
       );
 
-  Widget _buildHashtagSuggestionsContent() => ListView.separated(
-        shrinkWrap: true,
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        itemCount: _hashTagResults.length,
-        separatorBuilder: (context, index) => const Divider(
-          height: 1,
-          color: Colors.white,
-          indent: 16,
-          endIndent: 16,
-        ),
-        itemBuilder: (context, index) {
+  Widget _buildHashtagSuggestionsContent() {
+    final showAddTagOption = _isHashtagSearchActive &&
+        _currentSearchTerm.trim().isNotEmpty &&
+        !_isCurrentTagInSuggestions;
+    final itemCount =
+        _hashTagResults.length + (showAddTagOption ? 1 : 0);
+
+    return ListView.separated(
+      shrinkWrap: true,
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: itemCount,
+      separatorBuilder: (context, index) => const Divider(
+        height: 1,
+        color: Colors.white,
+        indent: 16,
+        endIndent: 16,
+      ),
+      itemBuilder: (context, index) {
+        if (index < _hashTagResults.length) {
           final hasTag = _hashTagResults[index];
           return Material(
             color: Colors.transparent,
@@ -588,7 +611,6 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
                     const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 child: Row(
                   children: [
-                    // Hashtag content
                     Expanded(
                       child: Text(
                         '#${hasTag.hashtag ?? ''}',
@@ -597,7 +619,6 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    // Post count on the right
                     if (hasTag.usageCount != null && hasTag.usageCount! > 0)
                       Text(
                         '${hasTag.usageCount} Posts',
@@ -609,8 +630,42 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
               ),
             ),
           );
-        },
-      );
+        }
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _selectHashTag(
+              HashTagData(hashtag: _currentSearchTerm.trim()),
+            ),
+            child: Padding(
+              padding:
+                  const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.add_circle_outline,
+                    size: 20,
+                    color: IsrColors.appColor,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Add tag #${_currentSearchTerm.trim()}',
+                      style: IsrStyles.primaryText14.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: IsrColors.appColor,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   void _selectHashTag(HashTagData hashTag) {
     final text = widget.controller.text;

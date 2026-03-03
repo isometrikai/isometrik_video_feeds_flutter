@@ -68,6 +68,84 @@ class TimelineResponse {
       };
 }
 
+TimelineDataResponse timelineDataResponseFromJson(String str) =>
+    TimelineDataResponse.fromMap(json.decode(str) as Map<String, dynamic>);
+
+String timelineDataResponseToMap(TimelineDataResponse data) =>
+    json.encode(data.toMap());
+
+class TimelineDataResponse {
+  TimelineDataResponse({
+    this.status,
+    this.message,
+    this.statusCode,
+    this.code,
+    this.data,
+    this.total,
+    this.page,
+    this.pageSize,
+    this.totalPages,
+  });
+
+  factory TimelineDataResponse.fromMap(Map<String, dynamic> json) =>
+      TimelineDataResponse(
+        status: json['status'] as String? ?? '',
+        message: json['message'] as String? ?? '',
+        statusCode: json['statusCode'] as num? ?? 0,
+        code: json['code'] as String? ?? '',
+        data: json['data'] == null
+            ? null
+            : json.objectOrNull('data', TimeLineBodyData.fromMap),
+        total: json['total'] as num? ?? 0,
+        page: json['page'] as num? ?? 0,
+        pageSize: json['page_size'] as num? ?? 0,
+        totalPages: json['total_pages'] as num? ?? 0,
+      );
+  String? status;
+  String? message;
+  num? statusCode;
+  String? code;
+  TimeLineBodyData? data;
+  num? total;
+  num? page;
+  num? pageSize;
+  num? totalPages;
+
+  Map<String, dynamic> toMap() => {
+    'status': status,
+    'message': message,
+    'statusCode': statusCode,
+    'code': code,
+    'data': data?.toMap(),
+    'total': total,
+    'page': page,
+    'page_size': pageSize,
+    'total_pages': totalPages,
+  };
+}
+
+class TimeLineBodyData {
+
+  TimeLineBodyData({
+    this.posts,
+    this.nextCursor,
+  });
+
+  factory TimeLineBodyData.fromMap(Map<String, dynamic> json) => TimeLineBodyData(
+    posts: json['posts'] == null ? [] : List<TimeLineData>.from((json['posts'] as List?)?.map((x) => TimeLineData.fromMap(x as Map<String, dynamic>? ?? {})) ?? []),
+    nextCursor: json['next_cursor'] as String? ?? '',
+  );
+
+
+  List<TimeLineData>? posts;
+  String? nextCursor;
+
+  Map<String, dynamic> toMap() => {
+    'posts': posts == null ? [] : List<dynamic>.from(posts!.map((x) => x.toMap())),
+    'next_cursor': nextCursor,
+  };
+}
+
 class TimeLineData {
   TimeLineData({
     this.textFormatting,

@@ -648,66 +648,116 @@ class _UserMentionTextFieldState extends State<UserMentionTextField> {
         )
       : const SizedBox.shrink();
 
-  Widget _buildHashtagSuggestions() =>
-      _isSearching && _hashTagResults.isNotEmpty
-          ? Column(
-              children: [
-                const Divider(height: 1, thickness: 1),
-                Container(
-                  constraints: BoxConstraints(
-                    maxHeight: MediaQuery.of(context).size.height *
-                        0.4, // Maximum 40% of screen height
-                    // minHeight: 200, // Minimum height to show some items
-                  ),
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemCount: _hashTagResults.length,
-                    separatorBuilder: (context, index) => const Divider(
-                      height: 1,
-                      color: Colors.white,
-                      indent: 16,
-                      endIndent: 16,
-                    ),
-                    itemBuilder: (context, index) {
-                      final hasTag = _hashTagResults[index];
-                      return Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: () => _selectHashTag(hasTag),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 12, horizontal: 16),
-                            child: Row(
-                              children: [
-                                // Hashtag content
-                                Expanded(
-                                  child: Text(
-                                    '#${hasTag.hashtag ?? ''}',
-                                    style: IsrStyles.primaryText14
-                                        .copyWith(fontWeight: FontWeight.w600),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                // Post count on the right
-                                if (hasTag.usageCount != null &&
-                                    hasTag.usageCount! > 0)
-                                  Text(
-                                    '${hasTag.usageCount} Posts',
-                                    style: IsrStyles.primaryText14
-                                        .copyWith(color: '868686'.toColor()),
-                                  ),
-                              ],
+  bool get _isCurrentTagInSuggestions {
+    final term = _currentSearchTerm.trim().toLowerCase();
+    if (term.isEmpty) return false;
+    return _hashTagResults.any(
+      (t) => (t.hashtag ?? '').trim().toLowerCase() == term,
+    );
+  }
+
+  Widget _buildHashtagSuggestions() {
+    final showHashtagResults =
+        _isSearching && _hashTagResults.isNotEmpty;
+    final showAddTagOption = _isSearching &&
+        _isHashtagSearchActive &&
+        !_showLoading &&
+        _currentSearchTerm.trim().isNotEmpty &&
+        !_isCurrentTagInSuggestions;
+
+    if (!showHashtagResults && !showAddTagOption) {
+      return const SizedBox.shrink();
+    }
+
+    final itemCount =
+        _hashTagResults.length + (showAddTagOption ? 1 : 0);
+
+    return Column(
+      children: [
+        const Divider(height: 1, thickness: 1),
+        Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.4,
+          ),
+          child: ListView.separated(
+            shrinkWrap: true,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            itemCount: itemCount,
+            separatorBuilder: (context, index) => const Divider(
+              height: 1,
+              color: Colors.white,
+              indent: 16,
+              endIndent: 16,
+            ),
+            itemBuilder: (context, index) {
+              if (index < _hashTagResults.length) {
+                final hasTag = _hashTagResults[index];
+                return Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _selectHashTag(hasTag),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 12, horizontal: 16),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '#${hasTag.hashtag ?? ''}',
+                              style: IsrStyles.primaryText14
+                                  .copyWith(fontWeight: FontWeight.w600),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          if (hasTag.usageCount != null &&
+                              hasTag.usageCount! > 0)
+                            Text(
+                              '${hasTag.usageCount} Posts',
+                              style: IsrStyles.primaryText14
+                                  .copyWith(color: '868686'.toColor()),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _selectHashTag(
+                    HashTagData(hashtag: _currentSearchTerm.trim()),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 12, horizontal: 16),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.add_circle_outline,
+                          size: 20,
+                          color: IsrColors.appColor,
                         ),
-                      );
-                    },
+                        const SizedBox(width: 12),
+                        Text(
+                          'Add tag #${_currentSearchTerm.trim()}',
+                          style: IsrStyles.primaryText14.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: IsrColors.appColor,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ],
-            )
-          : const SizedBox.shrink();
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
 
   @override
   void dispose() {

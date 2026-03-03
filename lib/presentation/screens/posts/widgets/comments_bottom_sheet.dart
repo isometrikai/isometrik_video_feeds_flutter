@@ -44,6 +44,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   var _isLoadingMore = false;
   final _scrollController = ScrollController();
   final Map<String, GlobalKey> _commentItemKeys = {};
+  final Set<String> _expandedCommentKeys = {};
+  static const int _commentMaxLength = 100;
   CommentConfig get _commentConfig =>
       widget.commentConfig ?? IsrVideoReelConfig.commentConfig;
 
@@ -290,11 +292,26 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                 _commentItemConfig?.commentTextStyle ??
                                     IsrStyles.primaryText14,
                                 comment.tags,
+                                maxLength: _commentMaxLength,
+                                isExpanded: _expandedCommentKeys.contains(
+                                    '${comment.id}_${comment.comment}_${comment.commentedOn?.millisecondsSinceEpoch}'),
                                 onUsernameTap: (userId) {
                                   widget.onTapProfile?.call(userId);
                                 },
                                 onHashtagTap: (hashtag) {
                                   widget.onTapHasTag?.call(hashtag);
+                                },
+                                onViewMoreTap: () {
+                                  setState(() {
+                                    _expandedCommentKeys.add(
+                                        '${comment.id}_${comment.comment}_${comment.commentedOn?.millisecondsSinceEpoch}');
+                                  });
+                                },
+                                onViewLessTap: () {
+                                  setState(() {
+                                    _expandedCommentKeys.remove(
+                                        '${comment.id}_${comment.comment}_${comment.commentedOn?.millisecondsSinceEpoch}');
+                                  });
                                 },
                               ),
                             ],
@@ -558,11 +575,26 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                           _commentItemConfig?.commentTextStyle ??
                               IsrStyles.primaryText14,
                           comment.tags,
+                          maxLength: _commentMaxLength,
+                          isExpanded: _expandedCommentKeys.contains(
+                              '${comment.id}_${comment.comment}_${comment.commentedOn?.millisecondsSinceEpoch}'),
                           onUsernameTap: (userId) {
                             widget.onTapProfile?.call(userId);
                           },
                           onHashtagTap: (hashtag) {
                             widget.onTapHasTag?.call(hashtag);
+                          },
+                          onViewMoreTap: () {
+                            setState(() {
+                              _expandedCommentKeys.add(
+                                  '${comment.id}_${comment.comment}_${comment.commentedOn?.millisecondsSinceEpoch}');
+                            });
+                          },
+                          onViewLessTap: () {
+                            setState(() {
+                              _expandedCommentKeys.remove(
+                                  '${comment.id}_${comment.comment}_${comment.commentedOn?.millisecondsSinceEpoch}');
+                            });
                           },
                         ),
                       ],
