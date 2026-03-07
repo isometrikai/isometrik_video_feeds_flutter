@@ -1066,6 +1066,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   ],
                 ),
               ],
+              if (_reelData.sound != null)
+                _buildSoundPreviewImage(_reelData.sound!),
               if (_reelData.postSetting?.isLikeButtonVisible == true)
                 LikeActionWidget(
                   postId: _reelData.postId ?? '',
@@ -1146,6 +1148,28 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           ),
         ),
       );
+
+  Widget _buildSoundPreviewImage(Sound sound) =>
+      sound.previewUrl != null && sound.previewUrl!.isNotEmpty
+          ? Image.network(
+        sound.previewUrl!,
+        fit: BoxFit.cover,
+        width: IsrDimens.twentyFour,
+        height: IsrDimens.twentyFour,
+        loadingBuilder: (_, __, ___) => _soundPlaceholderThumbnail(),
+        errorBuilder: (_, __, ___) => _soundPlaceholderThumbnail(),
+      ) : _soundPlaceholderThumbnail();
+
+  Widget _soundPlaceholderThumbnail() => Container(
+    width: IsrDimens.twentyFour,
+    height: IsrDimens.twentyFour,
+    color: IsrColors.appColor.withValues(alpha: 0.1),
+    child: Icon(
+      Icons.music_note,
+      color: IsrColors.appColor,
+      size: IsrDimens.twentyFour,
+    ),
+  );
 
   Widget _buildActionButton({
     required String icon,

@@ -33,6 +33,8 @@ class ReelsData {
     this.createOn,
     this.watchDuration,
     this.interests,
+    this.sound,
+    this.soundSnapshot,
   });
 
   final dynamic postData;
@@ -45,6 +47,8 @@ class ReelsData {
   final bool? isVerifiedUser;
   final String? description;
   final String? createOn;
+  final Sound? sound;
+  final SoundSnapshot? soundSnapshot;
 
   final List<MediaMetaData> mediaMetaDataList;
 
@@ -105,6 +109,8 @@ class ReelsData {
         likesCount: likesCount ?? this.likesCount,
         commentCount: commentCount ?? this.commentCount,
         interests: interests,
+        sound: sound,
+        soundSnapshot: soundSnapshot,
       );
 }
 

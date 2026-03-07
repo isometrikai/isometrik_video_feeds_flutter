@@ -927,6 +927,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
             mediaData.fileExtension ?? '',
           );
 
+          debugPrint('CreatePostBloc - uploaded url;- ${mediaData.url}');
+
           // Update completed units after file upload
           completedUploadUnits += 1.0;
 
@@ -977,6 +979,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
                 AppConstants.cloudinaryImageFolder,
                 mediaData.coverFileExtension ?? '',
               );
+
+              debugPrint('CreatePostBloc - uploaded Preview_url;- ${mediaData.previewUrl}');
 
               // Update completed units after thumbnail upload
               completedUploadUnits += 1.0;
@@ -1063,6 +1067,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
           // Update the preview item with uploaded URL
           previewItem.url = uploadedUrl;
+          debugPrint('CreatePostBloc - uploaded Preview_url (cover);- ${previewItem.url}');
+
 
           if (!emit.isDone) {
             emit(ShowProgressDialogState(
@@ -1360,7 +1366,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
             : SocialPostType.image;
     _createPostRequest.caption = descriptionText;
     _createPostRequest.soundId = soundData?.id;
-    _createPostRequest.soundSnapshot = soundData == null ? null : SoundSnapshot(originalStatus: soundData.status);
+    _createPostRequest.soundSnapshot = soundData == null ? null : SoundSnapshotData(originalStatus: soundData.status);
 
     _postAttributeClass.sound = soundData;
     _postAttributeClass.taggedPlaces = locationTagDataList;

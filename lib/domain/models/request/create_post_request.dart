@@ -46,7 +46,7 @@ class CreatePostRequest {
         soundId: json['sound_id'] as String? ?? '',
         soundSnapshot: json['sound_snapshot'] == null
             ? null
-            : SoundSnapshot.fromJson(
+            : SoundSnapshotData.fromJson(
                 json['sound_snapshot'] as Map<String, dynamic>
         ),
         scheduleTime: json['scheduled_at'] as String? ?? '',
@@ -69,7 +69,7 @@ class CreatePostRequest {
   String? visibility;
   String? scheduleTime;
   String? soundId;
-  SoundSnapshot? soundSnapshot;
+  SoundSnapshotData? soundSnapshot;
   PostSettingModel? settings;
   List<MentionData>? mentions;
 
@@ -96,15 +96,15 @@ class CreatePostRequest {
       };
 }
 
-class SoundSnapshot {
+class SoundSnapshotData {
 
-  factory SoundSnapshot.fromJson(Map<String, dynamic> json) => SoundSnapshot(
+  factory SoundSnapshotData.fromJson(Map<String, dynamic> json) => SoundSnapshotData(
     loop: json['loop'] as bool? ?? true,
     originalStatus: json['original_status'] as String? ?? '',
     volume: json['volume'] as num? ?? 1.0,
   );
 
-  const SoundSnapshot({
+  const SoundSnapshotData({
     this.loop = true,
     this.originalStatus,
     this.volume = 1.0,

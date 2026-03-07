@@ -158,6 +158,7 @@ class TimeLineData {
     this.visibility,
     this.id,
     this.soundSnapshot,
+    this.sound,
     this.tags,
     this.settings,
     this.engagementMetrics,
@@ -186,7 +187,12 @@ class TimeLineData {
             : SocialUserData.fromMap(json['user'] as Map<String, dynamic>),
         visibility: json['visibility'] as String? ?? '',
         id: json['id'] as String? ?? '',
-        soundSnapshot: json['sound_snapshot'],
+        soundSnapshot: json['sound_snapshot'] != null
+            ? SoundSnapshot.fromJson(json['sound_snapshot'] as Map<String, dynamic>)
+            : null,
+        sound: json['sound'] != null
+            ? Sound.fromJson(json['sound'] as Map<String, dynamic>)
+            : null,
         tags: json['tags'] == null
             ? null
             : json['tags'] is String &&
@@ -225,7 +231,8 @@ class TimeLineData {
   SocialUserData? user;
   String? visibility;
   String? id;
-  dynamic soundSnapshot;
+  SoundSnapshot? soundSnapshot;
+  Sound? sound;
   Tags? tags;
   Settings? settings;
   EngagementMetrics? engagementMetrics;
@@ -251,7 +258,8 @@ class TimeLineData {
         'user': user?.toMap(),
         'visibility': visibility,
         'id': id,
-        'sound_snapshot': soundSnapshot,
+        'sound_snapshot': soundSnapshot?.toJson(),
+        'sound': sound?.toJson(),
         'tags': tags?.toMap(),
         'settings': settings?.toMap(),
         'engagement_metrics': engagementMetrics?.toMap(),
@@ -269,6 +277,145 @@ class TimeLineData {
             : List<dynamic>.from(interests!.map((x) => x)),
         'scheduled_at': scheduledAt,
       };
+}
+
+class Sound {
+  const Sound({
+    this.id,
+    this.title,
+    this.artist,
+    this.album,
+    this.type,
+    this.usageCount,
+    this.url,
+    this.waveformUrl,
+    this.previewUrl,
+  });
+
+  factory Sound.fromJson(Map<String, dynamic> json) => Sound(
+      id: json['id'] as String?,
+      title: json['title'] as String?,
+      artist: json['artist'] as String?,
+      album: json['album'] as String?,
+      type: json['type'] as String?,
+      usageCount: json['usage_count'] as int?,
+      url: json['url'] as String?, // ?? 'https://storage.googleapis.com/trulyfree-staging/AudioData/0/0/1771938994326.mp3',
+      waveformUrl: json['waveform_url'] as String?,
+      previewUrl: json['preview_url'] as String?, // ?? 'https://cdn.pixabay.com/audio/2024/04/12/08-26-11-87_200x200.jpg',
+    );
+  final String? id;
+  final String? title;
+  final String? artist;
+  final String? album;
+  final String? type;
+  final int? usageCount;
+  final String? url;
+  final String? waveformUrl;
+  final String? previewUrl;
+
+  Map<String, dynamic> toJson() => {
+      'id': id,
+      'title': title,
+      'artist': artist,
+      'album': album,
+      'type': type,
+      'usage_count': usageCount,
+      'url': url,
+      'waveform_url': waveformUrl,
+      'preview_url': previewUrl,
+    };
+
+  Sound copyWith({
+    String? id,
+    String? title,
+    String? artist,
+    String? album,
+    String? type,
+    int? usageCount,
+    String? url,
+    String? waveformUrl,
+    String? previewUrl,
+  }) => Sound(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      artist: artist ?? this.artist,
+      album: album ?? this.album,
+      type: type ?? this.type,
+      usageCount: usageCount ?? this.usageCount,
+      url: url ?? this.url,
+      waveformUrl: waveformUrl ?? this.waveformUrl,
+      previewUrl: previewUrl ?? this.previewUrl,
+    );
+}
+
+class SoundSnapshot {
+
+  factory SoundSnapshot.fromJson(Map<String, dynamic> json) => SoundSnapshot(
+      startTime: (json['start_time'] as num?)?.toDouble(),
+      endTime: (json['end_time'] as num?)?.toDouble(),
+      segmentDuration: (json['segment_duration'] as num?)?.toDouble(),
+      volume: (json['volume'] as num?)?.toDouble(),
+      fadeIn: (json['fade_in'] as num?)?.toDouble(),
+      fadeOut: (json['fade_out'] as num?)?.toDouble(),
+      loop: json['loop'] as bool?,
+      capturedAt: json['captured_at'] as String?,
+      originalStatus: json['original_status'] as String?,
+    );
+
+  const SoundSnapshot({
+    this.startTime,
+    this.endTime,
+    this.segmentDuration,
+    this.volume,
+    this.fadeIn,
+    this.fadeOut,
+    this.loop,
+    this.capturedAt,
+    this.originalStatus,
+  });
+  final double? startTime;
+  final double? endTime;
+  final double? segmentDuration;
+  final double? volume;
+  final double? fadeIn;
+  final double? fadeOut;
+  final bool? loop;
+  final String? capturedAt;
+  final String? originalStatus;
+
+  Map<String, dynamic> toJson() => {
+      'start_time': startTime,
+      'end_time': endTime,
+      'segment_duration': segmentDuration,
+      'volume': volume,
+      'fade_in': fadeIn,
+      'fade_out': fadeOut,
+      'loop': loop,
+      'captured_at': capturedAt,
+      'original_status': originalStatus,
+    };
+
+  SoundSnapshot copyWith({
+    double? startTime,
+    double? endTime,
+    double? segmentDuration,
+    double? volume,
+    double? fadeIn,
+    double? fadeOut,
+    bool? loop,
+    String? capturedAt,
+    String? originalStatus,
+  }) => SoundSnapshot(
+      startTime: startTime ?? this.startTime,
+      endTime: endTime ?? this.endTime,
+      segmentDuration: segmentDuration ?? this.segmentDuration,
+      volume: volume ?? this.volume,
+      fadeIn: fadeIn ?? this.fadeIn,
+      fadeOut: fadeOut ?? this.fadeOut,
+      loop: loop ?? this.loop,
+      capturedAt: capturedAt ?? this.capturedAt,
+      originalStatus: originalStatus ?? this.originalStatus,
+    );
 }
 
 class PreviewMedia {
@@ -925,6 +1072,8 @@ ReelsData getReelData(TimeLineData postData, {String? loggedInUserId}) =>
           ? postData.tags?.places?.map(_getPlaceMetaData).toList()
           : null,
       postId: postData.id,
+      sound: postData.sound,
+      soundSnapshot: postData.soundSnapshot,
       tags: postData.tags,
       mediaMetaDataList: postData.media?.map(_getMediaMetaData).toList() ?? [],
       userId: postData.user?.id ?? '',
