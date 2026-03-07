@@ -12,6 +12,7 @@ import 'package:ism_video_reel_player/presentation/screens/posts/video_player_wi
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/like_action_widget.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:lottie/lottie.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -162,6 +163,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   Timer? _imageViewTimer;
   bool _isImagePaused = false;
 
+  // Post sound (plays in loop for entire post when _reelData.sound is set)
+  AudioPlayer? _postSoundPlayer;
+
   // current media progress tracking
   Duration _currentMediaWatchDuration = Duration.zero;
   final ValueNotifier<double> _currentMediaProgress = ValueNotifier<double>(0.0);
@@ -181,6 +185,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     final isVisible = widget.currentIndex.value == widget.index;
     if (_wasVisiblePost && !isVisible) {
       _logWatchPostEvent();
+      _pausePostSound();
+    } else if (!_wasVisiblePost && isVisible && _reelData.sound != null) {
+      _playPostSoundIfVisible();
     }
     debugPrint('IsmReelsVideoPlayerView: _onCurrentIndexChanged {Post index: ${widget.index}, currentIndex: ${widget.currentIndex.value}}');
     _wasVisiblePost = isVisible;
@@ -265,7 +272,39 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kPictureType) {
       _startOrResumeImageProgress();
     }
+
+    _initPostSoundPlayer();
   }
+
+  /// Initializes and starts post sound when _reelData.sound is set. Loops for entire post.
+  Future<void> _initPostSoundPlayer() async {
+    final sound = _reelData.sound;
+    if (sound?.url == null || sound!.url!.isEmpty) return;
+    try {
+      _postSoundPlayer?.dispose();
+      _postSoundPlayer = AudioPlayer();
+      await _postSoundPlayer!.setUrl(sound.url!);
+      await _postSoundPlayer!.setLoopMode(LoopMode.all);
+      await _postSoundPlayer!.setVolume(_isMuted ? 0.0 : 1.0);
+      if (mounted && widget.currentIndex.value == widget.index) {
+        await _postSoundPlayer!.play();
+      }
+    } catch (e) {
+      debugPrint('IsmReelsVideoPlayerView: Post sound init error: $e');
+    }
+  }
+
+  void _playPostSoundIfVisible() {
+    if (widget.currentIndex.value != widget.index || !mounted) return;
+    _postSoundPlayer?.play();
+  }
+
+  void _pausePostSound() {
+    _postSoundPlayer?.pause();
+  }
+
+  /// Whether video(s) in this post should be muted: true when post has sound or user muted.
+  bool get _isVideoMuted => _reelData.sound != null ? true : _isMuted;
 
   /// Method For Update The Tree Carefully
   void mountUpdate() {
@@ -359,6 +398,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _muteAnimationTimer?.cancel();
     _audioDebounceTimer?.cancel();
     _imageViewTimer?.cancel();
+    _postSoundPlayer?.dispose();
+    _postSoundPlayer = null;
     _currentMediaProgress.dispose();
     _postProgress.dispose();
     debugPrint(
@@ -527,7 +568,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       mediaUrl: media.mediaUrl,
       thumbnailUrl: media.thumbnailUrl,
       videoCacheManager: _videoCacheManager,
-      isMuted: _isMuted,
+      isMuted: _isVideoMuted,
       onVisibilityChanged: (isVisible) {
         // Visibility is handled internally by VideoPlayerWidget
       },
@@ -876,6 +917,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   void _togglePlayPause() {
     if (!mounted) return; // Safety check: Widget is disposed
 
+    _pausePostSound();
+
     // Pause video on long press start
     final key = _getCurrentVideoPlayerKey();
     final videoPlayerState = VideoPlayerWidget.of(key);
@@ -891,6 +934,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   void _resumePlayback() {
     if (!mounted) return; // Safety check: Widget is disposed
+
+    if (widget.currentIndex.value == widget.index && _reelData.sound != null) {
+      _playPostSoundIfVisible();
+    }
 
     // Resume video on long press release
     final key = _getCurrentVideoPlayerKey();
@@ -933,7 +980,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   ),
                 ),
               if (_showMuteAnimation &&
-                  _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kVideoType)
+                  (_reelData.sound != null ||
+                      _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType ==
+                          kVideoType))
                 Center(
                   child: AnimatedScale(
                     scale: _muteIconScale,
@@ -1843,7 +1892,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           mediaUrl: media.mediaUrl,
           thumbnailUrl: media.thumbnailUrl,
           videoCacheManager: _videoCacheManager,
-          isMuted: _isMuted,
+          isMuted: _isVideoMuted,
           onVisibilityChanged: (isVisible) {
             // Visibility is handled internally by VideoPlayerWidget
           },
@@ -1890,10 +1939,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
   }
 
-  /// Handles mute/unmute toggle for videos only, with animation.
+  /// Handles mute/unmute toggle: for posts with sound (mute post sound) or for video-only posts.
   void _toggleMuteAndUnMute() {
-    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType != kVideoType) {
-      // Only allow mute/unmute for videos
+    final hasPostSound = _reelData.sound != null;
+    final isCurrentVideo =
+        _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kVideoType;
+    if (!hasPostSound && !isCurrentVideo) {
       return;
     }
 
@@ -1907,6 +1958,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       _isMuted = !_isMuted;
       _globalMuteState = _isMuted; // Update global mute state
     });
+    // Post sound volume: mute when user muted, unmute when user unmuted
+    _postSoundPlayer?.setVolume(_isMuted ? 0.0 : 1.0);
     // Volume change is handled by VideoPlayerWidget via didUpdateWidget
     _triggerMuteAnimation();
   }
