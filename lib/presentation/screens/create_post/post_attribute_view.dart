@@ -59,6 +59,10 @@ class _PostAttributeViewState extends State<PostAttributeView>
 
   bool _isDialogOpen = false;
 
+  // Throttle post-button updates when returning from other screens to reduce transition jank
+  static const _postButtonUpdateThrottleMs = 150;
+  int _lastPostButtonUpdateMs = 0;
+
   // Schedule post variables - sync with bloc
   late final CreatePostBloc _createPostBloc;
   late final UploadProgressCubit _progressCubit;
@@ -447,9 +451,14 @@ class _PostAttributeViewState extends State<PostAttributeView>
 
   @override
   Widget build(BuildContext context) {
-    // Check for changes on every build (when user returns from other screens)
+    // Throttled update when user returns from other screens to avoid jank during transition
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _updatePostButtonState();
+      if (!mounted) return;
+      final now = DateTime.now().millisecondsSinceEpoch;
+      if (now - _lastPostButtonUpdateMs >= _postButtonUpdateThrottleMs) {
+        _lastPostButtonUpdateMs = now;
+        _updatePostButtonState();
+      }
     });
 
     return BlocListener<CreatePostBloc, CreatePostState>(

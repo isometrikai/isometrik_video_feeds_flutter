@@ -41,10 +41,15 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addObserver(this);
-    _bloc.add(MediaSelectionInitialEvent(
-      selectedMedia: widget.selectedMedia,
-      config: widget.mediaSelectionConfig,
-    ));
+    // Defer initial load to after the first frame so the push transition
+    // animates smoothly without jank from permission/album loading.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _bloc.add(MediaSelectionInitialEvent(
+        selectedMedia: widget.selectedMedia,
+        config: widget.mediaSelectionConfig,
+      ));
+    });
   }
 
   @override
@@ -346,47 +351,49 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
             centerTitle: true,
           ),
           body: SafeArea(
-            child: BlocConsumer<MediaSelectionBloc, MediaSelectionState>(
-              buildWhen: (previous, current) =>
-                  current is MediaSelectionLoadingState ||
-                  current is MediaSelectionPermissionDeniedState ||
-                  current is MediaSelectionLoadedState,
-              listenWhen: (previous, current) =>
-                  current is MediaSelectionErrorState &&
-                      (previous is! MediaSelectionErrorState ||
-                          previous.message != current.message) ||
-                  current is MediaSelectionCompletedState,
-              listener: (context, state) {
-                if (state is MediaSelectionErrorState) {
-                  MediaSelectionUtility.showInSnackBar(state.message, context);
-                } else if (state is MediaSelectionCompletedState) {
-                  _handleMediaSelectionComplete(state.selectedMedia);
-                }
-              },
-              builder: (context, state) {
-                if (state is MediaSelectionInitialState ||
-                    state is MediaSelectionLoadingState) {
-                  return Center(
-                    child: CircularProgressIndicator(
-                      color: widget.mediaSelectionConfig.primaryColor,
-                    ),
-                  );
-                } else if (state is MediaSelectionPermissionDeniedState) {
-                  return _buildPermissionDenied();
-                } else if (state is MediaSelectionLoadedState) {
-                  return _buildBody(state);
-                } else if (state is MediaSelectionErrorState) {
-                  return Center(
-                    child: Text(
-                      state.message,
-                      style: TextStyle(
-                        color: widget.mediaSelectionConfig.primaryTextColor,
+            child: RepaintBoundary(
+              child: BlocConsumer<MediaSelectionBloc, MediaSelectionState>(
+                buildWhen: (previous, current) =>
+                    current is MediaSelectionLoadingState ||
+                    current is MediaSelectionPermissionDeniedState ||
+                    current is MediaSelectionLoadedState,
+                listenWhen: (previous, current) =>
+                    current is MediaSelectionErrorState &&
+                        (previous is! MediaSelectionErrorState ||
+                            previous.message != current.message) ||
+                    current is MediaSelectionCompletedState,
+                listener: (context, state) {
+                  if (state is MediaSelectionErrorState) {
+                    MediaSelectionUtility.showInSnackBar(state.message, context);
+                  } else if (state is MediaSelectionCompletedState) {
+                    _handleMediaSelectionComplete(state.selectedMedia);
+                  }
+                },
+                builder: (context, state) {
+                  if (state is MediaSelectionInitialState ||
+                      state is MediaSelectionLoadingState) {
+                    return Center(
+                      child: CircularProgressIndicator(
+                        color: widget.mediaSelectionConfig.primaryColor,
                       ),
-                    ),
-                  );
-                }
-                return const SizedBox.shrink();
-              },
+                    );
+                  } else if (state is MediaSelectionPermissionDeniedState) {
+                    return _buildPermissionDenied();
+                  } else if (state is MediaSelectionLoadedState) {
+                    return _buildBody(state);
+                  } else if (state is MediaSelectionErrorState) {
+                    return Center(
+                      child: Text(
+                        state.message,
+                        style: TextStyle(
+                          color: widget.mediaSelectionConfig.primaryTextColor,
+                        ),
+                      ),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
+              ),
             ),
           ),
         ),
@@ -579,9 +586,11 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
             ),
           ),
 
-          // Media grid as scrollable widget
+          // Media grid in its own repaint layer to reduce jank when scrolling or when grid appears
           Expanded(
-            child: _buildScrollableMediaGrid(state),
+            child: RepaintBoundary(
+              child: _buildScrollableMediaGrid(state),
+            ),
           ),
         ],
       );
