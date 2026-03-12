@@ -42,6 +42,12 @@ class IsrVideoReelConfig {
   /// gumlet url
   static String? gumletUrl;
 
+  /// tenantId
+  static String? tenantId;
+
+  /// projectId
+  static String? projectId;
+
   /// additional header
   static Map<String, String>? additionalHeader;
 
@@ -110,6 +116,8 @@ class IsrVideoReelConfig {
   }) async {
     IsrVideoReelConfig.baseUrl = baseUrl;
     IsrVideoReelConfig.gumletUrl = gumletUrl;
+    IsrVideoReelConfig.tenantId = defaultHeaders.stringOrNull('x-tenant-id');
+    IsrVideoReelConfig.projectId = defaultHeaders.stringOrNull('x-project-id');
     if (!isSdkInitialize) {
       WidgetsFlutterBinding.ensureInitialized();
       await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
