@@ -65,14 +65,7 @@ class MediaSelectionBloc
     emit(MediaSelectionLoadingState());
     final ps = await pm.PhotoManager.requestPermissionExtend();
     if (ps.isAuth) {
-      emit(MediaSelectionLoadedState(
-        media: _media,
-        albums: _albums,
-        currentAlbum: _currentAlbum,
-        selectedMedia: _selectedMedia,
-        isMultiSelectMode: _isMultiSelectMode,
-        hasMore: _hasMore,
-      ));
+      // Stay in loading state until albums + first page of media are loaded
       add(LoadAlbumsEvent());
     } else {
       // Check if permission is permanently denied or limited
@@ -93,50 +86,52 @@ class MediaSelectionBloc
     try {
       _albums.clear();
 
-      // 1. Recent Album - All images and videos sorted by recent date
-      final recentAlbum = await pm.PhotoManager.getAssetPathList(
-        type: pm.RequestType.common,
-        hasAll: true,
-        onlyAll: true,
-        filterOption: pm.FilterOptionGroup(
-          orders: [
-            const pm.OrderOption(
-              type: pm.OrderOptionType.updateDate,
-              asc: false, // false = NEW → OLD
-            )
-          ],
+      // Load all three album types in parallel for faster startup
+      final results = await Future.wait([
+        pm.PhotoManager.getAssetPathList(
+          type: pm.RequestType.common,
+          hasAll: true,
+          onlyAll: true,
+          filterOption: pm.FilterOptionGroup(
+            orders: [
+              const pm.OrderOption(
+                type: pm.OrderOptionType.updateDate,
+                asc: false, // false = NEW → OLD
+              )
+            ],
+          ),
         ),
-      );
+        pm.PhotoManager.getAssetPathList(
+          type: pm.RequestType.image,
+          hasAll: true,
+          onlyAll: true,
+          filterOption: pm.FilterOptionGroup(
+            orders: [
+              const pm.OrderOption(
+                type: pm.OrderOptionType.updateDate,
+                asc: false,
+              )
+            ],
+          ),
+        ),
+        pm.PhotoManager.getAssetPathList(
+          type: pm.RequestType.video,
+          hasAll: true,
+          onlyAll: true,
+          filterOption: pm.FilterOptionGroup(
+            orders: [
+              const pm.OrderOption(
+                type: pm.OrderOptionType.updateDate,
+                asc: false,
+              )
+            ],
+          ),
+        ),
+      ]);
 
-      // 2. Images Album
-      final imagesAlbum = await pm.PhotoManager.getAssetPathList(
-        type: pm.RequestType.image,
-        hasAll: true,
-        onlyAll: true,
-        filterOption: pm.FilterOptionGroup(
-          orders: [
-            const pm.OrderOption(
-              type: pm.OrderOptionType.updateDate,
-              asc: false, // false = NEW → OLD
-            )
-          ],
-        ),
-      );
-
-      // 3. Videos Album
-      final videosAlbum = await pm.PhotoManager.getAssetPathList(
-        type: pm.RequestType.video,
-        hasAll: true,
-        onlyAll: true,
-        filterOption: pm.FilterOptionGroup(
-          orders: [
-            const pm.OrderOption(
-              type: pm.OrderOptionType.updateDate,
-              asc: false, // false = NEW → OLD
-            )
-          ],
-        ),
-      );
+      final recentAlbum = results[0];
+      final imagesAlbum = results[1];
+      final videosAlbum = results[2];
 
       // Add albums if they have content
       if (recentAlbum.isNotEmpty &&
@@ -209,15 +204,19 @@ class MediaSelectionBloc
         return;
       }
 
-      emit(MediaSelectionLoadedState(
-        media: _media,
-        albums: _albums,
-        currentAlbum: _currentAlbum,
-        selectedMedia: _selectedMedia,
-        isMultiSelectMode: _isMultiSelectMode,
-        isLoadingMore: event.loadMore,
-        hasMore: _hasMore,
-      ));
+      // For load-more, emit immediately so UI shows loading in grid.
+      // For initial load, stay in LoadingState until we have media (no emit here).
+      if (event.loadMore) {
+        emit(MediaSelectionLoadedState(
+          media: _media,
+          albums: _albums,
+          currentAlbum: _currentAlbum,
+          selectedMedia: _selectedMedia,
+          isMultiSelectMode: _isMultiSelectMode,
+          isLoadingMore: true,
+          hasMore: _hasMore,
+        ));
+      }
       log('load local media -> current page: $_currentPage');
       final count = await _currentAlbum?.assetCountAsync;
       final assets = await _currentAlbum!.getAssetListPaged(
