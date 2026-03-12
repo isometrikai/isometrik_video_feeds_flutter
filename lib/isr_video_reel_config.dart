@@ -42,6 +42,9 @@ class IsrVideoReelConfig {
   /// gumlet url
   static String? gumletUrl;
 
+  /// additional header
+  static Map<String, String>? additionalHeader;
+
   /// Social configuration used by SDK modules.
   static SocialConfig socialConfig = const SocialConfig();
 
@@ -94,6 +97,7 @@ class IsrVideoReelConfig {
     required String rudderStackDataPlaneUrl,
     required UserInfoClass? userInfoClass,
     required Map<String, dynamic> defaultHeaders,
+    Map<String, String>? additionalHeader,
     SocialConfig? socialConfig,
     PostConfig? postConfig,
     TabConfig? tabConfig,
@@ -119,6 +123,7 @@ class IsrVideoReelConfig {
       );
       isSdkInitialize = true;
     }
+    IsrVideoReelConfig.additionalHeader = additionalHeader;
     await _storeHeaderValues(defaultHeaders);
     await _saveUserInformation(userInfoClass: userInfoClass);
     IsrVideoReelConfig.socialConfig = socialConfig ?? IsrVideoReelConfig.socialConfig;
