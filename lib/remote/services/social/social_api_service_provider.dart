@@ -1,4 +1,5 @@
 import 'package:ism_video_reel_player/data/data.dart';
+import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/remote/remote.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -41,10 +42,12 @@ class SocialApiServiceProvider extends SocialApiService {
         'currencyCode': header.currencyCode,
       if (header.platForm.platformText.isEmptyOrNull == false)
         'platform': header.platForm.platformText,
-      if (AppConstants.tenantId.isEmptyOrNull == false)
-        'x-tenant-id': AppConstants.tenantId,
-      if (AppConstants.projectId.isEmptyOrNull == false)
-        'x-project-id': AppConstants.projectId,
+      if (header.xTenantId.isEmptyOrNull == false)
+        'x-tenant-id': header.xTenantId,
+      if (header.xProjectId.isEmptyOrNull == false)
+        'x-project-id': header.xProjectId,
+      if (IsrVideoReelConfig.additionalHeader != null)
+        ...IsrVideoReelConfig.additionalHeader!
     };
   }
 
