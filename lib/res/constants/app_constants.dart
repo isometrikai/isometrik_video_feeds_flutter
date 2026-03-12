@@ -105,8 +105,8 @@ class AppConstants {
     '___'
   ];
 
-  static const String tenantId = 'tenant_001';
-  static const String projectId = 'project_001';
+  static String get tenantId => IsrVideoReelConfig.tenantId ?? 'tenant_001';
+  static String get projectId => IsrVideoReelConfig.projectId ?? 'project_001';
 
   static String bucketName = 'trulyfree-staging';
 }
