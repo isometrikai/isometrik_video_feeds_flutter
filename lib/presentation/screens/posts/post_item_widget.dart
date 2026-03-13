@@ -14,7 +14,6 @@ class PostItemWidget extends StatefulWidget {
     super.key,
     this.onLoadMore,
     this.onRefresh,
-    this.placeHolderWidget,
     this.postSectionType,
     this.onTapPlaceHolder,
     this.startingPostIndex = 0,
@@ -22,12 +21,13 @@ class PostItemWidget extends StatefulWidget {
     this.allowImplicitScrolling = true,
     required this.reelsDataList,
     this.videoCacheManager,
+    this.getEmptyScreen,
     required this.reelsConfig,
   });
 
   final Future<List<ReelsData>> Function()? onLoadMore;
+  final Widget? Function()? getEmptyScreen;
   final Future<bool> Function()? onRefresh;
-  final Widget? placeHolderWidget;
   final PostSectionType? postSectionType;
   final VoidCallback? onTapPlaceHolder;
   final int? startingPostIndex;
@@ -294,25 +294,25 @@ class _PostItemWidgetState extends State<PostItemWidget>
               onRefresh: () async {
                 await _refreshPost();
               },
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(
-                  parent: ClampingScrollPhysics(),
-                ),
-                child: SizedBox(
-                  height: MediaQuery.of(context).size.height,
-                  child: Center(
-                    child: widget.placeHolderWidget ??
-                        PostPlaceHolderView(
-                          postSectionType: widget.postSectionType,
-                          onTap: () {
-                            if (widget.onTapPlaceHolder != null) {
-                              widget.onTapPlaceHolder!();
-                            }
-                          },
-                        ),
+              child: widget.getEmptyScreen?.call() ??
+                  SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: ClampingScrollPhysics(),
+                    ),
+                    child: SizedBox(
+                      height: MediaQuery.of(context).size.height,
+                      child: Center(
+                        child: PostPlaceHolderView(
+                              postSectionType: widget.postSectionType,
+                              onTap: () {
+                                if (widget.onTapPlaceHolder != null) {
+                                  widget.onTapPlaceHolder!();
+                                }
+                              },
+                            ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
             ),
           ),
         ],
