@@ -306,6 +306,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         key: ValueKey(_getUniqueKey(tabState.tabDataModel, index)),
         videoCacheManager:
             _loggedInUserId.isNotEmpty ? _videoCacheManager : null,
+        getEmptyScreen: () => _tabConfig.tabCallBackConfig?.getEmptyScreen?.call(tabState.tabDataModel),
         onTapPlaceHolder: () {
           if ((_postTabController?.length ?? 0) > 1) {
             _tabsVisibilityNotifier.value = true;
