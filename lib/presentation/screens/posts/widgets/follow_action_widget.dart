@@ -51,6 +51,7 @@ class _FollowActionWidgetState extends State<FollowActionWidget> {
     postId = widget.postId;
     loggedInUserId = cubit.userId;
     isFollowing = widget.isFollowing ?? false;
+    debugPrint('FollowActionWidget:- initState:- userId: $userId, isFollowing: $isFollowing, isLoading: $isLoading');
     _updateFollowState();
   }
 
@@ -71,6 +72,7 @@ class _FollowActionWidgetState extends State<FollowActionWidget> {
         isFollowing = updatedFollowState;
       });
     }
+    debugPrint('FollowActionWidget:- _updateFollowState:- userId: $userId, isFollowing: $isFollowing, isLoading: $isLoading');
   }
 
   @override
@@ -123,8 +125,7 @@ class _FollowActionWidgetState extends State<FollowActionWidget> {
             if (current is IsmFollowUserState && current.userId == userId) {
               return true;
             }
-            if (current is IsmFollowActionListenerState &&
-                current.userId == userId) {
+            if (current is IsmFollowActionListenerState && current.userId == userId) {
               return true;
             }
             if (current is IsmFollowErrorState && current.userId == userId) {
@@ -143,14 +144,15 @@ class _FollowActionWidgetState extends State<FollowActionWidget> {
             }
           },
           builder: (context, state) {
-            if (state is IsmFollowUserState) {
+            if (state is IsmFollowUserState && state.userId == userId) {
               isLoading = state.isLoading;
               isFollowing = state.isFollowing;
-            } else if (state is IsmFollowActionListenerState) {
+            } else if (state is IsmFollowActionListenerState && state.userId == userId) {
+              // debugPrint('FollowActionWidget:- builder :- state: $state, stateUserId: ${state.userId}, userId: $userId, isFollowing: $isFollowing, isLoading: $isLoading');
               // Update state from listener state (emitted after follow/unfollow actions)
               isFollowing = state.isFollowing;
               isLoading = false; // Listener state means action is complete
-            } else if (state is IsmFollowErrorState) {
+            } else if (state is IsmFollowErrorState && state.userId == userId) {
               // Handle error state - reset loading, keep previous following state
               isLoading = false;
               isFollowing = state.wasFollowing;
