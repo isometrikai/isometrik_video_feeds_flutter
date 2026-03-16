@@ -198,6 +198,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       tabAssistData.postList.clear();
       tabAssistData.currentPage = 1;
       tabAssistData.isLoadingMore = false;
+      tabAssistData.cursor = null;
     } else if (!isFromPagination && tabAssistData.postList.isNotEmpty) {
       // If we have cached posts and it's not a refresh, emit them immediately
       // emit(HomeLoaded(followingPosts: _followingPostList, trendingPosts: _trendingPostList));
@@ -206,6 +207,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     if (!isFromPagination) {
       tabAssistData.currentPage = 1;
       tabAssistData.hasMoreData = true;
+      tabAssistData.cursor = null;
     } else if (tabAssistData.isLoadingMore || !tabAssistData.hasMoreData) {
       return;
     }
@@ -250,9 +252,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
           limit: tabAssistData.pageSize,
         ).then((result) {
           apiError = result.error;
-          if (result.data?.data?.nextCursor?.isNotEmpty == true) {
-            tabAssistData.cursor = result.data?.data?.nextCursor;
-          }
+          tabAssistData.cursor = result.data?.data?.nextCursor;
           return result.data?.data?.posts;
         });
         break;
@@ -354,6 +354,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       tabAssistData.currentPage++;
     } else {
       tabAssistData.hasMoreData = false;
+      tabAssistData.cursor = null;
       ErrorHandler.showAppError(appError: apiError);
     }
     if (onComplete != null) {
