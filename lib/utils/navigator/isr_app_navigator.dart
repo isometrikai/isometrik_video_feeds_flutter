@@ -36,6 +36,30 @@ class IsrAppNavigator {
     );
   }
 
+  /// Navigate to post listing screen
+  /// ✅ Wraps the destination with necessary BLoC providers
+  /// Uses rootNavigator to hide bottom navigation bar
+  static void navigateToSearch(
+      BuildContext context, {
+        String? search,
+        List<SearchTabType>? tabList = SearchTabType.values,
+        SearchScreenConfig? config,
+        TransitionType? transitionType,
+      }) {
+    final page = BlocProvider<PostListingBloc>(
+      create: (_) => IsmInjectionUtils.getBloc<PostListingBloc>(),
+      child: PostListingView(
+        searchQuery: search ?? '',
+        tabList: tabList?.takeIf((list) => list.isNotEmpty) ?? SearchTabType.values,
+        config: config,
+      ),
+    );
+
+    Navigator.of(context, rootNavigator: true).push(
+      _buildRoute(page: page, transitionType: transitionType),
+    );
+  }
+
   /// Navigate to schedule post listing screen
   /// ✅ Wraps the destination with necessary BLoC providers
   /// Uses rootNavigator to hide bottom navigation bar

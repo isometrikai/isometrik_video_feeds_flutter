@@ -12,3 +12,4 @@ export 'navigator/navigator.dart';
 export 'rectangular_progress_bar.dart';
 export 'triangle_painter.dart';
 export 'utility.dart';
+export 'video_media_util.dart';

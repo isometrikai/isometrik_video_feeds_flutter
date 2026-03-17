@@ -9,14 +9,18 @@ import 'package:ism_video_reel_player/utils/utils.dart';
 class PostListingView extends StatefulWidget {
   PostListingView({
     super.key,
-    required this.tagValue,
-    required this.tagType,
+    this.tagValue = '',
+    this.tagType = TagType.hashtag,
     this.searchQuery,
+    this.tabList = SearchTabType.values,
+    this.config,
   });
 
   final String tagValue;
-  TagType tagType;
+  final TagType tagType;
   final String? searchQuery;
+  final List<SearchTabType> tabList;
+  final SearchScreenConfig? config;
 
   @override
   State<PostListingView> createState() => _PostListingViewState();
@@ -50,9 +54,12 @@ class _PostListingViewState extends State<PostListingView> {
   // Flag to prevent multiple initializations
   bool _isInitialized = false;
 
+  SearchScreenConfig get _searchScreenConfig =>
+      widget.config ?? IsrVideoReelConfig.searchScreenConfig;
+
   // Configuration getters
   SearchScreenUIConfig? get _searchScreenUIConfig =>
-      IsrVideoReelConfig.searchScreenConfig.searchScreenUIConfig;
+      _searchScreenConfig.searchScreenUIConfig;
 
   @override
   void didChangeDependencies() {
@@ -72,7 +79,7 @@ class _PostListingViewState extends State<PostListingView> {
     _hashtagController.text = widget.searchQuery ?? '#${widget.tagValue}';
 
     // Initialize tab loading states
-    for (final tab in SearchTabType.values) {
+    for (final tab in widget.tabList) {
       _tabLoading[tab] = false;
       _tabResults[tab] = [];
       _tabLoadingMore[tab] = false;
@@ -130,14 +137,14 @@ class _PostListingViewState extends State<PostListingView> {
 
     // Set loading state for all tabs (since cache was cleared)
     setState(() {
-      for (final tab in SearchTabType.values) {
+      for (final tab in widget.tabList) {
         _tabLoading[tab] = true;
         _tabLastQuery[tab] = cleanQuery;
       }
     });
 
     // Search all tabs (since cache was cleared, all tabs need fresh data)
-    for (final tab in SearchTabType.values) {
+    for (final tab in widget.tabList) {
       _postListingBloc.add(
         GetSearchResultsEvent(
           searchQuery: cleanQuery,
@@ -188,7 +195,7 @@ class _PostListingViewState extends State<PostListingView> {
       _postList.clear();
       _lastSearchQuery = ''; // Reset last search query
       // Clear all tab results
-      for (final tab in SearchTabType.values) {
+      for (final tab in widget.tabList) {
         _tabResults[tab] = [];
         _tabLoading[tab] = false;
       }
@@ -201,7 +208,7 @@ class _PostListingViewState extends State<PostListingView> {
     // Clear cached results for all tabs when search query changes
     setState(() {
       _lastSearchQuery = ''; // Reset last search query
-      for (final tab in SearchTabType.values) {
+      for (final tab in widget.tabList) {
         _tabResults[tab] = [];
         _tabLoading[tab] = false;
         _tabLastQuery[tab] = ''; // Clear query tracking for each tab
@@ -243,7 +250,7 @@ class _PostListingViewState extends State<PostListingView> {
           ),
         ),
         child: Row(
-          children: SearchTabType.values.map((tab) {
+          children: widget.tabList.map((tab) {
             final isSelected = _selectedTab == tab;
             return Expanded(
               child: GestureDetector(
@@ -534,15 +541,15 @@ class _PostListingViewState extends State<PostListingView> {
           if (velocity < 0) {
             // Swipe left - go to next tab
             newIndex =
-                (currentIndex + 1).clamp(0, SearchTabType.values.length - 1);
+                (currentIndex + 1).clamp(0, widget.tabList.length - 1);
           } else {
             // Swipe right - go to previous tab
             newIndex =
-                (currentIndex - 1).clamp(0, SearchTabType.values.length - 1);
+                (currentIndex - 1).clamp(0, widget.tabList.length - 1);
           }
 
           if (newIndex != currentIndex) {
-            final newTab = SearchTabType.values[newIndex];
+            final newTab = widget.tabList[newIndex];
             debugPrint(
                 '👆 Swipe detected: from ${_selectedTab.name} to ${newTab.name}');
             setState(() {
@@ -553,7 +560,7 @@ class _PostListingViewState extends State<PostListingView> {
         },
         child: IndexedStack(
           index: _selectedTab.index,
-          children: SearchTabType.values.map(_buildTabPage).toList(),
+          children: widget.tabList.map(_buildTabPage).toList(),
         ),
       );
 
@@ -576,7 +583,7 @@ class _PostListingViewState extends State<PostListingView> {
     }
 
     // Show empty state only if not loading and we've completed a query
-    if (results.isEmpty && !isLoading && hasQuery) {
+    if (results.isEmpty && !isLoading) {
       return _buildEmptyState(tab);
     }
 
