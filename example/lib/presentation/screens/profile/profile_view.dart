@@ -41,6 +41,16 @@ class _ProfileViewState extends State<ProfileView> {
               ),
               const Divider(),
 
+              // search Tile
+              ListTile(
+                leading: const Icon(Icons.search),
+                title: const Text('Search'),
+                onTap: () {
+                  _search(context);
+                },
+              ),
+              const Divider(),
+
               // scheduled post listing Tile
               ListTile(
                 leading: const Icon(Icons.timelapse),
@@ -90,6 +100,17 @@ class _ProfileViewState extends State<ProfileView> {
 
   void _schedulePostListing(BuildContext context) {
     isr.IsrAppNavigator.navigateToSchedulePostListing(context);
+  }
+
+  void _search(BuildContext context) {
+    isr.IsrAppNavigator.navigateToSearch(
+        context,
+      // search: 'app',
+      // tabList: [
+      //   isr.SearchTabType.posts,
+      //   isr.SearchTabType.account,
+      // ],
+    );
   }
 
   void _showLogoutConfirmation(BuildContext context) {
