@@ -327,7 +327,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
                 await _refreshPost();
               },
               child: PreloadPageView.builder(
-                preloadPagesCount: _videoCacheManager.currentPlayerType == VideoPlayerType.standardNonPreload ? 3 : 1,
+                preloadPagesCount: _videoCacheManager.currentPlayerType == VideoPlayerType.standardNonPreload ? 2 : 1,
                 // key: _pageStorageKey,
                 // allowImplicitScrolling: widget.allowImplicitScrolling ?? true,
                 controller: _pageController,
