@@ -163,6 +163,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   Timer? _imageViewTimer;
   bool _isImagePaused = false;
 
+  bool get _isPreloaded => widget.index != widget.currentIndex.value;
+
   // current media progress tracking
   Duration _currentMediaWatchDuration = Duration.zero;
   final ValueNotifier<double> _currentMediaProgress = ValueNotifier<double>(0.0);
@@ -543,6 +545,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         media.durationSeconds = totalDuration.inSeconds;
         _updatePostProgress();
       },
+      isPreloaded: _isPreloaded,
     );
   }
 
@@ -1801,6 +1804,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   Widget _buildPageView(int index) {
     final media = _reelData.mediaMetaDataList[index];
+    final isMediaPreloaded = _currentPageNotifier.value != index;
     if (media.mediaType == kPictureType) {
       return SizedBox(
         key: ValueKey('media_$index'), // Consistent key
@@ -1835,6 +1839,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             media.durationSeconds = totalDuration.inSeconds;
             _updatePostProgress();
           },
+          isPreloaded: _isPreloaded || isMediaPreloaded,
         ),
       );
     }

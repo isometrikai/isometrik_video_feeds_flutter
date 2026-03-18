@@ -180,6 +180,7 @@ class GoogleCloudStorageUploader {
       dio.options.receiveTimeout = const Duration(minutes: 5);
       dio.options.sendTimeout = const Duration(minutes: 5);
 
+      int _logProgress = 0;
       final response = await dio.post(
         uploadUrl,
         data: bytes,
@@ -195,8 +196,11 @@ class GoogleCloudStorageUploader {
             // Calculate upload progress (0% to 90%)
             final uploadProgress = (sent / total) * 0.9;
             onProgress(uploadProgress);
-            debugPrint(
-                'Upload progress: ${(uploadProgress * 100).toInt()}% ($sent/$total bytes)');
+            if (_logProgress != (uploadProgress * 100)) {
+              _logProgress = (uploadProgress * 100).toInt();
+              debugPrint(
+                  'Upload progress: $_logProgress% ($sent/$total bytes)');
+            }
           }
         },
       );
