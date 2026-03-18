@@ -386,6 +386,17 @@ extension MapSafeGetters on Map<String, dynamic> {
   List<T>? _listOrNull<T>(String key) {
     final value = this[key];
     if (value is List) return value.whereType<T>().toList();
+    if (value is T) return [value];
+    if (value is String && value.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(value);
+        if (decoded is List) {
+          return decoded.whereType<T>().toList();
+        }
+      } catch (_) {
+
+      }
+    }
     return null;
   }
 

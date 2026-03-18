@@ -80,11 +80,13 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   // to see if the player has played at least once
   bool _hasPlayed = false;
 
-  num _remainingDuration = 0;
+  bool _isVideoCompleted = false;
 
   @override
   void initState() {
     super.initState();
+    _isVisible = !widget.isPreloaded;
+    debugPrint('⚠️ state VideoPlayerWidget: initState');
     // OPTIMIZATION: Configure VisibilityDetector for faster updates
     if (!_isVisibilityConfigured) {
       _configureVisibilityDetector();
@@ -271,7 +273,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       ]);
 
       // If widget is visible when initialized, start playing immediately
-      if (_isVisible && !widget.isPreloaded) {
+      if (_isVisible) {
         // Don't await play - let it start immediately
         unawaited(_videoPlayerController!.play());
         widget.videoCacheManager.markAsVisible(widget.mediaUrl);
@@ -363,22 +365,21 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     }
 
     // 3. Check if video has completed (with small threshold to account for timing)
-    if (kDebugMode) {
-      debugPrint('⏳ VideoPlayerWidget: State: ${_videoPlayerController?.isPlaying} Video position: $position, duration: $duration');
+    if (duration == null || position == null) return;
+
+    // 👇 Check if near end (within 500ms)
+    final isAtEnd = position >= duration - const Duration(milliseconds: 500);
+
+    if (isAtEnd && !_isVideoCompleted) {
+      _isVideoCompleted = true;
+
+      widget.onVideoCompleted?.call(); // 🔥 your callback
     }
-    final remainingDuration = duration.inMilliseconds - position.inMilliseconds;
-    if (kDebugMode) {
-      debugPrint(
-          '⏳ VideoPlayerWidget: Remaining duration: $remainingDuration > $_remainingDuration = ${remainingDuration > _remainingDuration}');
+
+    // 👇 Reset when user rewinds or new video loads
+    if (position < duration - const Duration(seconds: 1)) {
+      _isVideoCompleted = false;
     }
-    if (_remainingDuration > 0 && remainingDuration > _remainingDuration) {
-      // remainingDuration is greater then _remainingDuration then video has restarted after completing
-      // Video completed - notify callback
-      widget.onVideoCompleted?.call();
-      // Log watch event when video completes
-      // _logWatchEventIfNeeded();
-    }
-    _remainingDuration = remainingDuration;
   }
 
   /// Log "Video Started" event when playback begins
@@ -441,8 +442,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       try {
         if (_isVisible &&
             !_videoPlayerController!.isPlaying &&
-            !_isManuallyPaused &&
-            !widget.isPreloaded) {
+            !_isManuallyPaused) {
           // Ensure volume is set correctly before playing
           unawaited(_videoPlayerController!.setVolume(widget.isMuted ? 0.0 : 1.0));
           // OPTIMIZATION: Don't await - fire and forget for instant response
@@ -582,7 +582,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         !_videoPlayerController!.isPlaying) {
       _isManuallyPaused = false;
       // Only play if visible
-      if (_isVisible && !widget.isPreloaded) {
+      if (_isVisible) {
         _videoPlayerController!.play();
       }
       _logVideoStartedEvent();
@@ -625,6 +625,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   @override
   void didUpdateWidget(VideoPlayerWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
+    debugPrint('⚠️ state VideoPlayerWidget: initState');
 
     // Handle mute state changes
     // Note: Don't check _isDisposed here - didUpdateWidget is only called when widget is active
@@ -649,6 +650,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   @override
   void dispose() {
+    debugPrint('⚠️ state VideoPlayerWidget: initState');
     _isDisposed = true;
     // Cancel timers
     _stopStuckVideoDetection();
@@ -724,7 +726,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
             if (state is PlayPauseVideoState) {
               if (state.play) {
-                if (_isVisible && mounted && _isManuallyPaused && !widget.isPreloaded) {
+                if (_isVisible && mounted && _isManuallyPaused) {
                   play();
                 }
               } else {
