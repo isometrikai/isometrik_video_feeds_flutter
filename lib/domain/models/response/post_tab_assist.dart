@@ -14,7 +14,6 @@ class PostTabAssistData {
   final PostSectionType postSectionType;
   final List<TimeLineData> postList;
   var currentPage = 1;
-  var hasMoreData = true;
   var isLoadingMore = false;
   var pageSize = 20;
   String? cursor;

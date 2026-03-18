@@ -206,9 +206,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
 
     if (!isFromPagination) {
       tabAssistData.currentPage = 1;
-      tabAssistData.hasMoreData = true;
       tabAssistData.cursor = null;
-    } else if (tabAssistData.isLoadingMore || !tabAssistData.hasMoreData) {
+    } else if (tabAssistData.isLoadingMore) {
       return;
     }
 
@@ -340,9 +339,6 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     postDataList.addAll(apiPostResult ?? []);
     if (postDataList.isNotEmpty) {
       _socialActionCubit.updatePostList(postDataList);
-      if (postDataList.length < tabAssistData.pageSize) {
-        tabAssistData.hasMoreData = false;
-      }
 
       if (isFromPagination) {
         tabAssistData.postList.addAll(postDataList);
@@ -353,7 +349,6 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       }
       tabAssistData.currentPage++;
     } else {
-      tabAssistData.hasMoreData = false;
       tabAssistData.cursor = null;
       ErrorHandler.showAppError(appError: apiError);
     }
