@@ -28,6 +28,7 @@ class VideoPlayerWidget extends StatefulWidget {
     this.postHelperCallBacks,
     this.videoProgressCallBack,
     this.isPreloaded = false,
+    this.logIndex,
   });
 
   final String mediaUrl;
@@ -40,6 +41,7 @@ class VideoPlayerWidget extends StatefulWidget {
   final PostHelperCallBacks? postHelperCallBacks;
   final bool isPreloaded;
   final Function(Duration totalDuration, Duration curentDuration)? videoProgressCallBack;
+  final String? logIndex;
 
   @override
   State<VideoPlayerWidget> createState() => _VideoPlayerWidgetState();
@@ -86,7 +88,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   void initState() {
     super.initState();
     _isVisible = !widget.isPreloaded;
-    debugPrint('⚠️ state VideoPlayerWidget: initState');
+    debugPrint('⚠️ state VideoPlayerWidget: (${widget.logIndex}) initState - isPreloaded: ${widget.isPreloaded}');
     // OPTIMIZATION: Configure VisibilityDetector for faster updates
     if (!_isVisibilityConfigured) {
       _configureVisibilityDetector();
@@ -427,6 +429,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     final wasVisible = _isVisible;
     // OPTIMIZATION: Lower threshold (0.5) for earlier video start like Instagram
     _isVisible = info.visibleFraction > 0.5;
+    debugPrint('✅ VideoPlayerWidget: (${widget.logIndex}) _handleVisibilityChanged - _isVisible: $_isVisible, visibilityFraction: ${info.visibleFraction}');
 
     // Only notify if visibility state actually changed
     if (wasVisible != _isVisible) {
@@ -625,7 +628,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   @override
   void didUpdateWidget(VideoPlayerWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    debugPrint('⚠️ state VideoPlayerWidget: initState');
+    debugPrint('⚠️ state VideoPlayerWidget: (${widget.logIndex}) didUpdateWidget - isPreloaded: ${widget.isPreloaded}');
 
     // Handle mute state changes
     // Note: Don't check _isDisposed here - didUpdateWidget is only called when widget is active
@@ -650,7 +653,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   @override
   void dispose() {
-    debugPrint('⚠️ state VideoPlayerWidget: initState');
+    debugPrint('⚠️ state VideoPlayerWidget: (${widget.logIndex}) dispose');
     _isDisposed = true;
     // Cancel timers
     _stopStuckVideoDetection();

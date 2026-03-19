@@ -546,6 +546,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         _updatePostProgress();
       },
       isPreloaded: _isPreloaded,
+      logIndex: '${widget.index}-0-}',
     );
   }
 
@@ -1840,6 +1841,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             _updatePostProgress();
           },
           isPreloaded: _isPreloaded || isMediaPreloaded,
+            logIndex: '${widget.index}-$index}'
         ),
       );
     }
