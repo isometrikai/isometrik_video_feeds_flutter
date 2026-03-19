@@ -140,38 +140,10 @@ class SearchLocationBloc
         return;
       }
 
-      // Check if we have valid saved location data
-      var savedLatitude = await _localDataUseCase.getLatitude();
-      var savedLongitude = await _localDataUseCase.getLongitude();
-
-      final hasValidSavedLocation = savedLatitude != 0.0 &&
-          savedLongitude != 0.0 &&
-          savedLatitude.isFinite &&
-          savedLongitude.isFinite;
-
-      if (hasValidSavedLocation) {
-        // We have valid saved location, emit it without getting new location
-        debugPrint('Using saved location: $savedLatitude, $savedLongitude');
-        emit(SearchLocationSuccessState(
-          latitude: savedLatitude,
-          longitude: savedLongitude,
-          accuracy: null,
-          timestamp: null,
-          isLastKnownPosition: false,
-        ));
-
-        // Get nearby places after location is confirmed
-        add(GetNearByPlacesEvent());
-        return;
-      }
-
-      // No valid saved location, get current position
-      debugPrint('No valid saved location found, getting current location...');
-
       await _locationManager.getCurrentLocation();
 
-      savedLatitude = await _localDataUseCase.getLatitude();
-      savedLongitude = await _localDataUseCase.getLongitude();
+      final savedLatitude = await _localDataUseCase.getLatitude();
+      final savedLongitude = await _localDataUseCase.getLongitude();
 
       emit(SearchLocationSuccessState(
         latitude: savedLatitude,

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:ism_video_reel_player/core/core.dart';
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
@@ -150,6 +151,15 @@ class IsrVideoReelConfig {
     getBuildContext = getCurrentBuildContext;
     IsrVideoReelConfig.googleServiceJsonPath = googleServiceJsonPath;
     _triggerEventLog();
+    unawaited(_updateHeaderAddressFromIp());
+  }
+
+  static Future<void> _updateHeaderAddressFromIp() async {
+    try {
+      await IsmInjectionUtils.getOtherClass<LocationManager>().updateHeaderLocationFromIP();
+    } catch (e) {
+      debugPrint('Error getting location from IP: $e');
+    }
   }
 
   static void _triggerEventLog() {
