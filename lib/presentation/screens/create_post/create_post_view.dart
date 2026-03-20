@@ -280,7 +280,23 @@ class _CreatePostViewState extends State<CreatePostView> {
 
   void _showProgressDialog(String title, String message) async {
     await Utility.showBottomSheet(
-        child: UploadProgressBottomSheet(message: message),
+        child: BlocProvider<UploadProgressCubit>.value(
+          value: _progressCubit,
+          child: UploadProgressBottomSheet(
+            message: message,
+            onClose: () {
+              Navigator.of(context).pop();
+              _progressCubit.updateIsError(false);
+              _isDialogOpen = false;
+            },
+            onRetry: () {
+              Navigator.of(context).pop();
+              _progressCubit.updateIsError(false);
+              _progressCubit.updateProgress(0);
+              _isDialogOpen = false;
+            },
+          ),
+        ),
         isDismissible: false);
     _isDialogOpen = false;
   }
@@ -418,6 +434,7 @@ class _CreatePostViewState extends State<CreatePostView> {
             _progressCubit.updateTitle(
                 state.title ?? IsrTranslationFile.uploadingMediaFiles);
             _progressCubit.updateSubtitle(state.subTitle ?? '');
+            _progressCubit.updateIsError(state.isErrorUploading);
           }
           if (state is MediaSelectedState) {
             _mediaDataList.clear();

@@ -101,6 +101,7 @@ class ShowProgressDialogState extends CreatePostState {
     this.totalFiles = 0,
     this.currentFileName = '',
     this.isAllFilesUploaded = false,
+    this.isErrorUploading = false
   });
 
   final double? progress;
@@ -110,6 +111,7 @@ class ShowProgressDialogState extends CreatePostState {
   final int totalFiles;
   final String currentFileName;
   final bool isAllFilesUploaded;
+  final bool isErrorUploading;
 }
 
 class MentionedUsersUpdatedState extends CreatePostState {
