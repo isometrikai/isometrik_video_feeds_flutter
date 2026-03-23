@@ -49,7 +49,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
   late final VideoCacheManager _videoCacheManager;
   List<ReelsData> _reelsDataList = [];
   late final IsmSocialActionCubit _ismSocialActionCubit;
-  final ValueNotifier<int> _currentIndex = ValueNotifier<int>(0);
+  late final ValueNotifier<int> _currentIndex;
 
   bool _isInitialized = false;
 
@@ -69,6 +69,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
     _reelsDataList = widget.reelsDataList;
     _pageController =
         PreloadPageController(initialPage: widget.startingPostIndex ?? 0);
+    _currentIndex = ValueNotifier<int>(widget.startingPostIndex ?? 0);
     _initializeContent();
   }
 

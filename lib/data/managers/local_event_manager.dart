@@ -191,7 +191,7 @@ class LocalEventQueue with WidgetsBindingObserver {
             await sendPendingEventsToBackend();
           });
           debugPrint(
-            '${runtimeType.toString()}: Started 5-min batch timer',
+            '${runtimeType.toString()}: Started ${_batchTimerDuration.inMinutes}-min batch timer',
           );
         }
       } else {
@@ -231,9 +231,9 @@ class LocalEventQueue with WidgetsBindingObserver {
     _batchTimer?.cancel();
     _batchTimer = null;
     if (!Hive.isBoxOpen(_boxName)) {
-      debugPrint('LocalEventQueue.addEvent: Box not open, opening now...');
+      debugPrint('${runtimeType.toString()}: Box not open, opening now...');
       await Hive.openBox<LocalEvent>(_boxName);
-      debugPrint('LocalEventQueue.addEvent: Box opened successfully');
+      debugPrint('${runtimeType.toString()}: Box opened successfully');
     }
     final box = Hive.box<LocalEvent>(_boxName);
     final events = box.values.toList();
@@ -242,10 +242,12 @@ class LocalEventQueue with WidgetsBindingObserver {
       for (final event in events) event.payload,
     ];
     try {
-      _talker?.info('Sending Event -> Event Data : $eventPayLoadList');
+      _talker?.info('${runtimeType.toString()}: Sending Event -> Event Data : $eventPayLoadList');
       final socialPostBloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
+      debugPrint('${runtimeType.toString()}: API Call Init -> payload:- $eventPayLoadList');
       final result = await socialPostBloc.sendEventsToBackend(eventPayLoadList);
-      _talker?.info('Sending Event -> Event result status : ${result.statusCode}, isSuccess: ${result.isSuccess}, errorIfAny: ${result.error?.message}');
+      _talker?.info('${runtimeType.toString()}: Sending Event -> Event result status : ${result.statusCode}, isSuccess: ${result.isSuccess}, errorIfAny: ${result.error?.message}');
+      debugPrint('${runtimeType.toString()}: API Call reslt -> ${result.statusCode}, isSuccess: ${result.isSuccess}, errorIfAny: ${result.error?.message}');
       if (result.isSuccess || result.statusCode == 422) {
         try {
           await flush();

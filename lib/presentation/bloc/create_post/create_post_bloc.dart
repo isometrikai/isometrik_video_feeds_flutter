@@ -140,21 +140,26 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   ) async {
     final myUserId = await _localDataUseCase.getUserId();
     var mainProgress = 0;
-    final response = await googleCloudStorageUploaderUseCase.executeGoogleCloudStorageUploader(
-        file: file!,
-        fileName: fileName,
-        fileExtension: fileExtension,
-        userId: myUserId,
-        onProgress: (_) {
-          final progress = (_ * 100).toInt();
-          if (mainProgress != progress) {
-            mainProgress = progress;
-            debugPrint('_uploadMediaToGoogleCloud......progress: $progress');
-            progressCallBackFunction.call(progress.toDouble());
-          }
-        });
-    debugPrint('_uploadMediaToGoogleCloud: $response');
-    return response ?? '';
+    try {
+      final response = await googleCloudStorageUploaderUseCase.executeGoogleCloudStorageUploader(
+          file: file!,
+          fileName: fileName,
+          fileExtension: fileExtension,
+          userId: myUserId,
+          onProgress: (_) {
+            final progress = (_ * 100).toInt();
+            if (mainProgress != progress) {
+              mainProgress = progress;
+              debugPrint('_uploadMediaToGoogleCloud......progress: $progress');
+              progressCallBackFunction.call(progress.toDouble());
+            }
+          });
+      debugPrint('_uploadMediaToGoogleCloud: $response');
+      return response ?? '';
+    } catch (e) {
+      debugPrint('_uploadMediaToGoogleCloud error: $e');
+      return '';
+    }
   }
 
   String _getFileName(String? file, String fileType) {
@@ -479,34 +484,57 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   FutureOr<void> _createPost(PostCreateEvent event, Emitter<CreatePostState> emit) async {
     _createPostRequest = event.createPostRequest;
     debugPrint('_createPostRequest....${jsonEncode(_createPostRequest)}');
-    // add(MediaUploadEvent(mediaDataList: _mediaDataList, postId: ''));
-    // return;
-    late ApiResult<CreatePostResponse?> apiResult;
-    if (event.isForEdit == true) {
-      apiResult = await _createPostUseCase.executeEditPost(
-        isLoading: true,
-        postId: _postData?.id ?? '',
-        editPostRequest: _createPostRequest.toJson(),
-      );
-    } else {
-      apiResult = await _createPostUseCase.executeCreatePost(
+
+    if (event.isForEdit != true) {
+      final uploadSuccess = await _runLocalMediaUploads(emit);
+      if (!uploadSuccess) return;
+      _createPostRequest.media = _mediaDataList;
+
+      final apiResult = await _createPostUseCase.executeCreatePost(
         isLoading: true,
         createPostRequest: _createPostRequest.toJson(),
       );
-    }
-    if (apiResult.isSuccess) {
-      if (event.isForEdit == false) {
+      if (apiResult.isSuccess) {
         _postData = null;
+        final createPostData = apiResult.data?.data;
+        final postId = createPostData?.id ?? '';
+        final needsProcessing = _isMediaChanged(includeCoverChange: false);
+        if (needsProcessing) {
+          add(MediaProcessingEvent(postId: postId));
+        } else {
+          await _createPostData(postId);
+          emit(PostCreatedState(
+            postDataModel: null,
+            postSuccessMessage: _createPostRequest.scheduleTime != null
+                ? IsrTranslationFile.postScheduledSuccessfully
+                : IsrTranslationFile.socialPostCreatedSuccessfully,
+            postSuccessTitle: _createPostRequest.scheduleTime != null
+                ? IsrTranslationFile.successfullyScheduled
+                : IsrTranslationFile.successfullyPosted,
+            mediaDataList: _createPostRequest.media,
+          ));
+        }
+      } else {
+        ErrorHandler.showAppError(appError: apiResult.error, isNeedToShowError: true);
       }
+      return;
+    }
+
+    late ApiResult<CreatePostResponse?> apiResult;
+    apiResult = await _createPostUseCase.executeEditPost(
+      isLoading: true,
+      postId: _postData?.id ?? '',
+      editPostRequest: _createPostRequest.toJson(),
+    );
+    if (apiResult.isSuccess) {
       if (_postData != null) {
         _updatePostData();
       }
-      final createPostData = apiResult.data?.data;
       final isMediaChanged = _isMediaChanged();
       if (!_isForEdit || isMediaChanged) {
         add(MediaUploadEvent(
             mediaDataList: _mediaDataList,
-            postId: (event.isForEdit == true) ? _postData?.id ?? '' : createPostData?.id ?? ''));
+            postId: _postData?.id ?? ''));
       } else {
         if (_isForEdit) {
           _updatePostData();
@@ -818,17 +846,26 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     return bufferedDate;
   }
 
-  FutureOr<void> _uploadMedia(MediaUploadEvent event, Emitter<CreatePostState> emit) async {
+  /// Uploads local media + cover previews to cloud. Updates [_mediaDataList] and
+  /// preview URLs on [_createPostRequest]. Used for new posts before create API,
+  /// and for edit flow via [MediaUploadEvent].
+  Future<bool> _runLocalMediaUploads(Emitter<CreatePostState> emit) async {
     _removeDuplicateMedia(_mediaDataList);
-    final uploadingMedia = _mediaDataList
-        .where((mediaData) =>
-            mediaData.localPath.isEmptyOrNull == false &&
-            Utility.isLocalUrl(mediaData.localPath ?? ''))
-        .toList();
+    final uploadingMedia = _mediaDataList.where((mediaData) {
+      final hasLocalPath = mediaData.localPath.isEmptyOrNull == false &&
+          Utility.isLocalUrl(mediaData.localPath ?? '');
+      if (!hasLocalPath) return false;
+      // Upload only pending items; skip already uploaded remote URLs.
+      return mediaData.url.isEmptyOrNull == true || Utility.isLocalUrl(mediaData.url ?? '');
+    }).toList();
     final uploadingCover = _createPostRequest.previews
-            ?.where((mediaData) =>
-                mediaData.localFilePath.isEmptyOrNull == false &&
-                Utility.isLocalUrl(mediaData.localFilePath ?? ''))
+            ?.where((mediaData) {
+              final hasLocalPath = mediaData.localFilePath.isEmptyOrNull == false &&
+                  Utility.isLocalUrl(mediaData.localFilePath ?? '');
+              if (!hasLocalPath) return false;
+              // Upload only pending items; skip already uploaded remote URLs.
+              return mediaData.url.isEmptyOrNull == true || Utility.isLocalUrl(mediaData.url ?? '');
+            })
             .toList() ??
         [];
 
@@ -837,7 +874,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
     if (uploadingMedia.isListEmptyOrNull == false) {
       // Create a copy to avoid concurrent modification during iteration
-      final mediaListLength = uploadingMedia.length;
+      final mediaListLength = _mediaDataList.length;
       final filesToUpload = uploadingMedia
           .where((media) =>
               media.localPath.isEmptyOrNull == false && Utility.isLocalUrl(media.localPath ?? ''))
@@ -893,7 +930,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
           final baseProgress = completedUploadUnits / totalUploadUnits * 100;
 
-          mediaData.url = await _uploadMediaToGoogleCloud(
+          final uploadedMediaUrl = await _uploadMediaToGoogleCloud(
             compressedFile ?? File(mediaData.localPath ?? ''),
             mediaData.fileName ?? '',
             mediaData.mediaType?.mediaType,
@@ -926,6 +963,19 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
                 : AppConstants.cloudinaryVideoFolder,
             mediaData.fileExtension ?? '',
           );
+          if (uploadedMediaUrl.isEmpty) {
+            emit(ShowProgressDialogState(
+              progress: 0,
+              title: IsrTranslationFile.uploadingMediaFiles,
+              subTitle: IsrTranslationFile.uploadFailed,
+              currentFileIndex: uploadIndex,
+              totalFiles: totalFiles,
+              currentFileName: mediaData.fileName ?? '',
+              isErrorUploading: true,
+            ));
+            return false;
+          }
+          mediaData.url = uploadedMediaUrl;
 
           // Update completed units after file upload
           completedUploadUnits += 1.0;
@@ -945,7 +995,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
               final thumbnailBaseProgress = completedUploadUnits / totalUploadUnits * 100;
 
-              mediaData.previewUrl = await _uploadMediaToGoogleCloud(
+              final uploadedPreviewUrl = await _uploadMediaToGoogleCloud(
                 compressedFile ?? File(previewLocalPath ?? ''),
                 mediaData.coverFileName ?? '',
                 MediaType.photo,
@@ -977,6 +1027,19 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
                 AppConstants.cloudinaryImageFolder,
                 mediaData.coverFileExtension ?? '',
               );
+              if (uploadedPreviewUrl.isEmpty) {
+                emit(ShowProgressDialogState(
+                  progress: 0,
+                  title: IsrTranslationFile.uploadingMediaFiles,
+                  subTitle: IsrTranslationFile.uploadFailed,
+                  currentFileIndex: uploadIndex,
+                  totalFiles: totalFiles,
+                  currentFileName: mediaData.fileName ?? '',
+                  isErrorUploading: true,
+                ));
+                return false;
+              }
+              mediaData.previewUrl = uploadedPreviewUrl;
 
               // Update completed units after thumbnail upload
               completedUploadUnits += 1.0;
@@ -1022,7 +1085,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
           totalUploadUnits > 1 ? (totalUploadUnits - 1) / totalUploadUnits * 100 : 0.0;
 
       for (final previewItem in _createPostRequest.previews!) {
-        if (Utility.isLocalUrl(previewItem.localFilePath ?? '')) {
+        if (Utility.isLocalUrl(previewItem.localFilePath ?? '') &&
+            (previewItem.url.isEmptyOrNull == true || Utility.isLocalUrl(previewItem.url ?? ''))) {
           final coverFileName = previewItem.fileName ?? 'cover_image';
           final uploadIndex = _mediaDataList.length + 1;
           final totalFiles = _mediaDataList.length + 1;
@@ -1060,6 +1124,18 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
                 : AppConstants.cloudinaryVideoFolder,
             _coverImageExtension,
           );
+          if (uploadedUrl.isEmpty) {
+            emit(ShowProgressDialogState(
+              progress: 0,
+              title: IsrTranslationFile.uploadingPreviewFiles,
+              subTitle: IsrTranslationFile.uploadFailed,
+              currentFileIndex: uploadIndex,
+              totalFiles: totalFiles,
+              currentFileName: coverFileName,
+              isErrorUploading: true,
+            ));
+            return false;
+          }
 
           // Update the preview item with uploaded URL
           previewItem.url = uploadedUrl;
@@ -1078,8 +1154,12 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
         }
       }
     }
+    return true;
+  }
 
-    // return;
+  FutureOr<void> _uploadMedia(MediaUploadEvent event, Emitter<CreatePostState> emit) async {
+    final uploadSuccess = await _runLocalMediaUploads(emit);
+    if (!uploadSuccess) return;
     final isMediaChanged = _isMediaChanged(includeCoverChange: false);
     if (isMediaChanged) {
       add(MediaProcessingEvent(postId: event.postId));
@@ -1184,12 +1264,65 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     }
   }
 
+  /// Unique upload file names for new posts without pre-assigning Gumlet URLs (URLs are set after upload).
+  Future<void> _ensureUniqueUploadNamesForMedia() async {
+    if (_mediaDataList.isListEmptyOrNull == false) {
+      // Create a copy to avoid concurrent modification during iteration
+      final mediaListLength = _mediaDataList.length;
+      for (var index = 0; index < mediaListLength; index++) {
+        final mediaData = _mediaDataList[index];
+        if (mediaData.localPath.isEmptyOrNull == false &&
+            Utility.isLocalUrl(mediaData.localPath ?? '')) {
+          final finalFileName =
+              '${mediaData.fileName}_${index}_${DateTime.now().millisecondsSinceEpoch}';
+          mediaData.fileName = finalFileName;
+          if (mediaData.mediaType?.mediaType == MediaType.video) {
+            final previewLocalPath = mediaData.previewUrl ?? mediaData.coverFileLocalPath;
+            if (previewLocalPath.isEmptyOrNull == false &&
+                Utility.isLocalUrl(previewLocalPath ?? '')) {
+              final thumbName =
+                  '${mediaData.coverFileName}_${index}_${DateTime.now().millisecondsSinceEpoch}';
+              mediaData.coverFileName = thumbName;
+            }
+          }
+        }
+        _mediaDataList[index] = mediaData;
+      }
+    }
+  }
+
+  /// Cover preview metadata for create flow; [PreviewMedia.url] is filled after cloud upload.
+  Future<void> _prepareCoverForLocalUpload() async {
+    if (_coverImage.trim().isNotEmpty) {
+      debugPrint('cover file : $_coverImage');
+      debugPrint('cover image extension : $_coverImageExtension');
+      debugPrint('cover file name : $_coverFileName');
+      final finalFileName = '${_coverFileName}_${0}_${DateTime.now().millisecondsSinceEpoch}';
+      _createPostRequest.previews = [
+        PreviewMedia(
+          mediaType: MediaType.photo.mediaTypeString,
+          url: '',
+          fileName: finalFileName,
+          localFilePath: _coverImage,
+          position: 1,
+        )
+      ];
+      debugPrint('create post request : ${_createPostRequest.toJson()}');
+    } else {
+      _createPostRequest.previews = _postData?.previews;
+    }
+  }
+
   FutureOr<void> _changeCoverImage(
       ChangeCoverImageEvent event, Emitter<CreatePostState> emit) async {
     _coverImage = event.coverImage.path;
     _coverImageExtension = _getFileExtension(_coverImage);
     _coverFileName = _getFileName(_coverImage, 'thumbnail');
-    await _createCoverUrl();
+    if (_isForEdit) {
+      await _createCoverUrl();
+    } else {
+      await _prepareCoverForLocalUpload();
+    }
     event.onComplete?.call();
   }
 
@@ -1347,8 +1480,13 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     if (_mediaDataList.isEmpty) {
       return null;
     }
-    await _createMediaUrls();
-    await _createCoverUrl();
+    if (_isForEdit) {
+      await _createMediaUrls();
+      await _createCoverUrl();
+    } else {
+      await _ensureUniqueUploadNamesForMedia();
+      await _prepareCoverForLocalUpload();
+    }
 
     _createPostRequest.media = _mediaDataList;
 

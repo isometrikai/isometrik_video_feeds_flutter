@@ -12,6 +12,7 @@ class IsrTranslationFile {
   static const String ok = 'Ok';
   static const String next = 'Next';
   static const String cancel = 'Cancel';
+  static const String close = 'Close';
   static const String continues = 'Continue';
   static const String alert = 'Alert';
   static const String follow = 'Follow';
@@ -173,6 +174,10 @@ class IsrTranslationFile {
   static const String uploadingPreviewFiles = 'Uploading Preview Files';
   static const String uploadComplete = 'Upload Complete';
   static const String successfullyUploaded = 'Successfully Uploaded';
+  static const String mediaUploadFailedTryAgain =
+      'Upload failed. Please try again to upload pending files.';
+  static const String uploadFailed =
+      'Upload Failed';
   static const String yourMediaFilesHaveBeenUploadedSuccessfully =
       'Your media files have been uploaded successfully';
   static const String tagPeople = 'Tag People';

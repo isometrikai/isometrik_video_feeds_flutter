@@ -529,6 +529,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
           _progressCubit.updateTitle(
               state.title ?? IsrTranslationFile.uploadingMediaFiles);
           _progressCubit.updateSubtitle(state.subTitle ?? '');
+          _progressCubit.updateIsError(state.isErrorUploading);
         }
       },
       child: _buildPage(),
@@ -840,9 +841,26 @@ class _PostAttributeViewState extends State<PostAttributeView>
 
   void _showProgressDialog(String title, String message) async {
     await Utility.showBottomSheet(
-        child: BlocProvider(
-          create: (context) => _progressCubit,
-          child: UploadProgressBottomSheet(message: message),
+        child: BlocProvider<UploadProgressCubit>.value(
+          value: _progressCubit,
+          child: UploadProgressBottomSheet(
+            message: message,
+            onClose: () {
+              Navigator.of(context).pop();
+              _progressCubit.updateIsError(false);
+              _isDialogOpen = false;
+            },
+            onRetry: () {
+              _progressCubit.updateIsError(false);
+              _progressCubit.updateProgress(0);
+              Future.delayed(
+                const Duration(milliseconds: 300), () {
+                if (mounted) {
+                  _createPost();
+                }
+              });
+            },
+          ),
         ),
         isDismissible: false);
     _isDialogOpen = false;

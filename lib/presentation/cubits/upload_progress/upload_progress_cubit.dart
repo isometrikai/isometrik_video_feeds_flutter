@@ -17,6 +17,10 @@ class UploadProgressCubit extends Cubit<ProgressState> {
     emit(state.copyWith(subtitle: value));
   }
 
+  void updateIsError(bool value) {
+    emit(state.copyWith(isError: value));
+  }
+
   void showSuccess() {
     emit(state.copyWith(isSuccess: true));
   }
@@ -33,23 +37,27 @@ class ProgressState {
     required this.title,
     required this.subtitle,
     required this.isSuccess,
+    this.isError = false
   });
 
   final double progress;
   final String title;
   final String subtitle;
   final bool isSuccess;
+  final bool isError;
 
   ProgressState copyWith({
     double? progress,
     String? title,
     String? subtitle,
     bool? isSuccess,
+    bool? isError,
   }) =>
       ProgressState(
         progress: progress ?? this.progress,
         title: title ?? this.title,
         subtitle: subtitle ?? this.subtitle,
         isSuccess: isSuccess ?? this.isSuccess,
+        isError: isError ?? this.isError,
       );
 }

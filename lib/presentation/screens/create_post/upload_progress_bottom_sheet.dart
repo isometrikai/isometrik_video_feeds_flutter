@@ -7,18 +7,20 @@ import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:lottie/lottie.dart';
 
 class UploadProgressBottomSheet extends StatelessWidget {
-  const UploadProgressBottomSheet({Key? key, this.onClose, this.message})
-      : super(key: key);
+  const UploadProgressBottomSheet({
+    Key? key,
+    this.onClose,
+    this.onRetry,
+    this.message,
+  }) : super(key: key);
   final VoidCallback? onClose;
+  final VoidCallback? onRetry;
   final String? message;
 
   @override
   Widget build(BuildContext context) =>
       BlocBuilder<UploadProgressCubit, ProgressState>(
         builder: (context, state) => Container(
-          margin: IsrDimens.edgeInsetsSymmetric(
-              horizontal: 16.responsiveDimension,
-              vertical: 20.responsiveDimension),
           padding: IsrDimens.edgeInsetsAll(24.responsiveDimension),
           decoration: BoxDecoration(
             color: Colors.white,
@@ -85,26 +87,54 @@ class UploadProgressBottomSheet extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    Text(
-                      '${state.progress.toStringAsFixed(0)}%',
-                      style: IsrStyles.primaryText14.copyWith(
-                        color: Colors.grey[600],
-                      ),
-                    ),
+                    if (!state.isError)
+                      Text(
+                        '${state.progress.toStringAsFixed(0)}%',
+                        style: IsrStyles.primaryText14.copyWith(
+                          color: Colors.grey[600],
+                        ),
+                      )
+                    else
+                      Icon(Icons.error_outline, color: Colors.red, size: IsrDimens.twentyFive,),
                   ],
                 ),
                 12.verticalSpace,
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(2),
-                  child: LinearProgressIndicator(
-                    value: state.progress / 100,
-                    minHeight: 4,
-                    backgroundColor: Colors.grey[200],
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      Theme.of(context).primaryColor,
+                if (!state.isError)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(2),
+                    child: LinearProgressIndicator(
+                      value: state.progress / 100,
+                      minHeight: 4,
+                      backgroundColor: Colors.grey[200],
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Theme.of(context).primaryColor,
+                      ),
                     ),
                   ),
-                ),
+                if (state.isError) ...[
+                  20.verticalSpace,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: AppButton(
+                          title: IsrTranslationFile.close,
+                          type: ButtonType.secondary,
+                          size: ButtonSize.medium,
+                          textColor: Theme.of(context).primaryColor,
+                          onPress: onClose ?? () => Navigator.of(context).pop(),
+                        ),
+                      ),
+                      12.horizontalSpace,
+                      Expanded(
+                        child: AppButton(
+                          title: IsrTranslationFile.retry,
+                          size: ButtonSize.medium,
+                          onPress: onRetry ?? onClose ?? () => Navigator.of(context).pop(),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ],
           ),

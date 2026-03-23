@@ -65,6 +65,14 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   LoadingViewConfig? get _loadingViewConfig => _tabUIConfig?.loadingViewConfig;
   StatusBarConfig? get _statusBarConfig => _tabUIConfig?.statusBarConfig;
 
+  /// When false, tab bodies stay a cheap placeholder so the push transition
+  /// is not competing with [PostItemWidget] / video precache on the GPU.
+  var _reelsBodyReady = false;
+  var _routeEnterListenerScheduled = false;
+  Animation<double>? _routeEnterAnimation;
+  AnimationStatusListener? _routeEnterStatusListener;
+  var _initialPostLoadDispatched = false;
+
   @override
   void initState() {
     _socialPostBloc = context.getOrCreateBloc();
@@ -114,6 +122,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     if (_isFollowingPostsEmpty()) {
       // _tabsVisibilityNotifier.value = false;
     }
+    _scheduleReelsBodyWhenRouteSettled();
     _loggedInUserId = await _socialPostBloc.userId;
     _postTabController?.addListener(() async {
       if (!mounted) return;
@@ -153,6 +162,56 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         }
       }
     });
+  }
+
+  void _scheduleReelsBodyWhenRouteSettled() {
+    if (_routeEnterListenerScheduled) return;
+    _routeEnterListenerScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final animation = ModalRoute.of(context)?.animation;
+      void onEnterCompleted() {
+        if (!mounted || _reelsBodyReady) return;
+        _tearDownRouteEnterListener();
+        _reelsBodyReady = true;
+        _dispatchInitialPostLoad();
+        setState(() {});
+      }
+
+      if (animation == null ||
+          animation.status == AnimationStatus.completed ||
+          animation.value >= 1.0) {
+        onEnterCompleted();
+        return;
+      }
+
+      _routeEnterAnimation = animation;
+      _routeEnterStatusListener = (AnimationStatus status) {
+        if (status == AnimationStatus.completed) {
+          onEnterCompleted();
+        }
+      };
+      animation.addStatusListener(_routeEnterStatusListener!);
+    });
+  }
+
+  void _tearDownRouteEnterListener() {
+    final anim = _routeEnterAnimation;
+    final listener = _routeEnterStatusListener;
+    if (anim != null && listener != null) {
+      anim.removeStatusListener(listener);
+    }
+    _routeEnterAnimation = null;
+    _routeEnterStatusListener = null;
+  }
+
+  void _dispatchInitialPostLoad() {
+    if (_initialPostLoadDispatched ||
+        !IsrVideoReelConfig.isSdkInitialize ||
+        _postTabController == null) {
+      return;
+    }
+    _initialPostLoadDispatched = true;
     _socialPostBloc.add(LoadPostData(
         startTabIndex: _currentIndex,
         postSections: widget.tabDataModelList
@@ -248,7 +307,13 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                     child: TabBarView(
                       controller: _postTabController,
                       physics: const NeverScrollableScrollPhysics(),
-                      children: _tabDataModelList.map(_buildTabView).toList(),
+                      children: _tabDataModelList
+                          .map(
+                            (tab) => _reelsBodyReady
+                                ? _buildTabView(tab)
+                                : _buildTransitionPlaceholder(),
+                          )
+                          .toList(),
                     ),
                   ),
                 ),
@@ -679,6 +744,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    _tearDownRouteEnterListener();
     _postTabController?.dispose();
     for (var controller in _refreshControllers) {
       controller.dispose();
@@ -783,6 +849,12 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     );
     return updatedMentionList ?? mentionList;
   }
+
+  /// Solid backdrop only — no shimmer/listeners — during the route transition.
+  Widget _buildTransitionPlaceholder() => ColoredBox(
+        color: _loadingViewConfig?.backgroundColor ?? Colors.black,
+        child: const SizedBox.expand(),
+      );
 
   /// Builds the initial loading view to prevent background flicker during navigation
   Widget _buildInitialLoadingView() => Container(
