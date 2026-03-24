@@ -23,6 +23,8 @@ class IsmDataProvider {
   GetTaggedPostsUseCase get _getTaggedPostUseCase =>
       IsmInjectionUtils.getUseCase<GetTaggedPostsUseCase>();
 
+  SocialUserProfileUseCase get _socialUserProfileUseCase => IsmInjectionUtils.getUseCase<SocialUserProfileUseCase>();
+
   GetUserPostDataUseCase get _userPostDataUseCase =>
       IsmInjectionUtils.getUseCase<GetUserPostDataUseCase>();
 
@@ -308,6 +310,24 @@ class IsmDataProvider {
         tagValue: tagValue,
       ),
       toJson: (data) => data?.toMap() ?? {},
+      onSuccess: onSuccess,
+      onError: onError,
+    );
+  }
+
+  /// Get tagged posts
+  Future<void> getSocialUserDetails({
+    required String userId,
+    bool isLoading = false,
+    Function(String, int)? onSuccess,
+    Function(String, int)? onError,
+  }) async {
+    await _executeApiCall(
+      apiCall: () => _socialUserProfileUseCase.executeSearchUser(
+        isLoading: isLoading,
+        userId: userId,
+      ),
+      toJson: (data) => data?.toJson() ?? {},
       onSuccess: onSuccess,
       onError: onError,
     );
