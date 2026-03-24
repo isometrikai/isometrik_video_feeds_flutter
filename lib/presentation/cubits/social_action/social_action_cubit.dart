@@ -40,8 +40,8 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
   Future<String> get getStoredUserId => _localDataUseCase.getUserId();
   String userId = '';
 
-  updateLocalUserData() async {
-    userId = await getStoredUserId;
+  updateLocalUserData(UserInfoClass? userInfoClass) async {
+    userId = userInfoClass?.userId ?? '';
   }
 
   final _uniquePostList = <String, TimeLineData>{};
@@ -572,7 +572,7 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     debugPrint('IsmSocialActionCubit onSdkReinitializeChanged -> userId: $userId');
     if (userId != this.userId) {
       _uniquePostList.clear();
-      updateLocalUserData();
+      updateLocalUserData(userInfoClass);
       emit(IsmUserChangedActionListenerState(userId: userId ?? '', userInfoClass: userInfoClass));
     }
   }
