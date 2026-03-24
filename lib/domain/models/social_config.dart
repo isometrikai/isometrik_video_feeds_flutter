@@ -1,8 +1,7 @@
+import 'dart:io' show File;
+
 import 'package:flutter/material.dart';
-import 'package:ism_video_reel_player/ism_video_reel_player.dart'
-    show ButtonType;
-import 'package:ism_video_reel_player/utils/enums.dart' show ButtonType;
-import 'package:ism_video_reel_player/utils/utils.dart' show ButtonType;
+import 'package:ism_video_reel_player/utils/enums.dart' show ButtonType, MediaType;
 
 /// Main configuration class for social features in the SDK.
 ///
@@ -81,6 +80,7 @@ class SocialConfig {
     this.primaryButton,
     this.secondaryButton,
     this.tertiaryButton,
+    this.googleCloudUpload,
   });
 
   final SocialCallBackConfig? socialCallBackConfig;
@@ -123,6 +123,9 @@ class SocialConfig {
   /// Falls back to theme defaults if not provided.
   final ButtonConfig? tertiaryButton;
 
+  /// Google Cloud Storage upload settings (service account JSON path and bucket).
+  final GoogleCloudUpload? googleCloudUpload;
+
   SocialConfig copyWith({
     SocialCallBackConfig? socialCallBackConfig,
     ThemeConfig? themeConfig,
@@ -134,6 +137,7 @@ class SocialConfig {
     ButtonConfig? primaryButton,
     ButtonConfig? secondaryButton,
     ButtonConfig? tertiaryButton,
+    GoogleCloudUpload? googleCloudUpload,
   }) =>
       SocialConfig(
         socialCallBackConfig: socialCallBackConfig ?? this.socialCallBackConfig,
@@ -146,6 +150,7 @@ class SocialConfig {
         primaryButton: primaryButton ?? this.primaryButton,
         secondaryButton: secondaryButton ?? this.secondaryButton,
         tertiaryButton: tertiaryButton ?? this.tertiaryButton,
+        googleCloudUpload: googleCloudUpload ?? this.googleCloudUpload,
       );
 }
 
@@ -162,22 +167,82 @@ class SocialConfig {
 ///     final success = await performLogin();
 ///     return success;
 ///   },
+///   uploadMediaToCloud: (file, fileName, mediaType, onProgress, folderName, ext) async {
+///     return await myUploader.upload(...);
+///   },
+///   convertToGumletUrl: (mediaUrl) { /* return Gumlet URL if enabled */ return mediaUrl; },
 /// )
 /// ```
 class SocialCallBackConfig {
   const SocialCallBackConfig({
     this.onLoginInvoked,
+    this.uploadMediaToCloud,
+    this.convertToGumletUrl,
   });
 
   /// Callback invoked when login is required.
   /// Should return `true` if login was successful, `false` otherwise.
   final Future<bool> Function()? onLoginInvoked;
 
+  /// Host app upload: use your own cloud storage / CDN instead of the SDK default uploader.
+  ///
+  /// Return the final public URL for the uploaded file, or an empty string on failure.
+  /// The progress callback argument expects values in **0–100** (same as the default uploader).
+  final Future<String> Function(
+    File? file,
+    String fileName,
+    MediaType? mediaType,
+    void Function(double) progressCallBackFunction,
+    String folderName,
+    String fileExtension,
+  )? uploadMediaToCloud;
+
+  /// When Gumlet (or similar) is enabled in the host project, map a raw media URL to the
+  /// optimized Gumlet URL. If omitted, SDK uses the URL returned from upload as-is.
+  final String Function(String mediaUrl)? convertToGumletUrl;
+
   SocialCallBackConfig copyWith({
     Future<bool> Function()? onLoginInvoked,
+    Future<String> Function(
+      File? file,
+      String fileName,
+      MediaType? mediaType,
+      void Function(double) progressCallBackFunction,
+      String folderName,
+      String fileExtension,
+    )? uploadMediaToCloud,
+    String Function(String mediaUrl)? convertToGumletUrl,
   }) =>
       SocialCallBackConfig(
         onLoginInvoked: onLoginInvoked ?? this.onLoginInvoked,
+        uploadMediaToCloud: uploadMediaToCloud ?? this.uploadMediaToCloud,
+        convertToGumletUrl: convertToGumletUrl ?? this.convertToGumletUrl,
+      );
+}
+
+/// Google Cloud Storage upload configuration.
+///
+/// Provide the filesystem path to your service account JSON key file and the
+/// target GCS bucket name.
+class GoogleCloudUpload {
+  const GoogleCloudUpload({
+    required this.credentialsJsonPath,
+    required this.bucketName,
+  });
+
+  /// Path to the Google Cloud service account credentials JSON file.
+  final String credentialsJsonPath;
+
+  /// GCS bucket name for uploads.
+  final String bucketName;
+
+  GoogleCloudUpload copyWith({
+    String? credentialsJsonPath,
+    String? bucketName,
+  }) =>
+      GoogleCloudUpload(
+        credentialsJsonPath: credentialsJsonPath ?? this.credentialsJsonPath,
+        bucketName: bucketName ?? this.bucketName,
       );
 }
 

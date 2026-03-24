@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -33,7 +35,7 @@ Future<void> _initializeReelsSdk() async {
   final appVersion = await Utility.getAppVersion();
   await isr.IsrVideoReelConfig.initializeSdk(
     baseUrl: AppUrl.appBaseUrl,
-    gumletUrl: AppUrl.gumletUrl,
+    // gumletUrl: AppUrl.gumletUrl,
     postConfig: const isr.PostConfig(
       autoMoveToNextMedia: true,
       autoMoveToNextPost: true,
@@ -52,7 +54,7 @@ Future<void> _initializeReelsSdk() async {
     ),
     rudderStackDataPlaneUrl: 'https://houseofappobxa.dataplane.rudderstack.com',
     rudderStackWriteKey: '360M58NTcDMelJWL0b5F4hYE4av',
-    googleServiceJsonPath: AssetConstants.googleServiceJson,
+    // googleServiceJsonPath: AssetConstants.googleServiceJson,
     getCurrentBuildContext: () => exNavigatorKey.currentContext,
     defaultHeaders: {
       'Authorization': accessToken,
@@ -73,6 +75,10 @@ Future<void> _initializeReelsSdk() async {
       'x-project-id': AppConstants.projectId,
     },
     socialConfig: isr.SocialConfig(
+      googleCloudUpload: isr.GoogleCloudUpload(
+        bucketName: AppConstants.bucketName,
+        credentialsJsonPath: AssetConstants.googleServiceJson,
+      ),
       // Theme Configuration
       themeConfig: isr.ThemeConfig(
         primaryColor: const Color(0xFF006CD8), // Main brand color

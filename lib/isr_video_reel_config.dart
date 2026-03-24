@@ -34,14 +34,8 @@ class IsrVideoReelConfig {
   /// SDK modules.
   static BuildContext? Function()? getBuildContext;
 
-  /// Optional path to `google-services.json` (Android) used by some integrations.
-  static String? googleServiceJsonPath;
-
   /// base url
   static String? baseUrl;
-
-  /// gumlet url
-  static String? gumletUrl;
 
   /// tenantId
   static String? tenantId;
@@ -99,7 +93,6 @@ class IsrVideoReelConfig {
   /// and user info, and notify internal state to refresh.
   static Future<void> initializeSdk({
     required String baseUrl,
-    required String gumletUrl,
     required String rudderStackWriteKey,
     required String rudderStackDataPlaneUrl,
     required UserInfoClass? userInfoClass,
@@ -112,11 +105,9 @@ class IsrVideoReelConfig {
     CreateEditPostConfig? createEditPostConfig,
     TagDetailsConfig? tagDetailsConfig,
     SearchScreenConfig? searchScreenConfig,
-    required String? googleServiceJsonPath,
     required BuildContext? Function()? getCurrentBuildContext,
   }) async {
     IsrVideoReelConfig.baseUrl = baseUrl;
-    IsrVideoReelConfig.gumletUrl = gumletUrl;
     IsrVideoReelConfig.tenantId = defaultHeaders.stringOrNull('x-tenant-id');
     IsrVideoReelConfig.projectId = defaultHeaders.stringOrNull('x-project-id');
     if (!isSdkInitialize) {
@@ -149,7 +140,6 @@ class IsrVideoReelConfig {
       userInfoClass: userInfoClass,
     );
     getBuildContext = getCurrentBuildContext;
-    IsrVideoReelConfig.googleServiceJsonPath = googleServiceJsonPath;
     _triggerEventLog();
     unawaited(_updateHeaderAddressFromIp());
   }

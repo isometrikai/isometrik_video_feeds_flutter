@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:ism_video_reel_player/core/api_result.dart';
 import 'package:ism_video_reel_player/core/errors/error_handler.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:path/path.dart' as path;
@@ -130,6 +131,20 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     resetApiCall();
   }
 
+  String _applyConvertToGumletUrl(String mediaUrl) {
+    if (mediaUrl.isEmpty) return mediaUrl;
+    final convert =
+        IsrVideoReelConfig.socialConfig.socialCallBackConfig?.convertToGumletUrl;
+    if (convert == null) return mediaUrl;
+    try {
+      final converted = convert(mediaUrl);
+      if (converted.isNotEmpty) return converted;
+    } catch (e) {
+      debugPrint('convertToGumletUrl error: $e');
+    }
+    return mediaUrl;
+  }
+
   Future<String> _uploadMediaToGoogleCloud(
     File? file,
     String fileName,
@@ -138,28 +153,51 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     String folderName,
     String fileExtension,
   ) async {
-    final myUserId = await _localDataUseCase.getUserId();
-    var mainProgress = 0;
-    try {
-      final response = await googleCloudStorageUploaderUseCase.executeGoogleCloudStorageUploader(
-          file: file!,
-          fileName: fileName,
-          fileExtension: fileExtension,
-          userId: myUserId,
-          onProgress: (_) {
-            final progress = (_ * 100).toInt();
-            if (mainProgress != progress) {
-              mainProgress = progress;
-              debugPrint('_uploadMediaToGoogleCloud......progress: $progress');
-              progressCallBackFunction.call(progress.toDouble());
-            }
-          });
-      debugPrint('_uploadMediaToGoogleCloud: $response');
-      return response ?? '';
-    } catch (e) {
-      debugPrint('_uploadMediaToGoogleCloud error: $e');
-      return '';
+    final customUpload =
+        IsrVideoReelConfig.socialConfig.socialCallBackConfig?.uploadMediaToCloud;
+    String result;
+
+    if (customUpload != null) {
+      try {
+        result = await customUpload(
+          file,
+          fileName,
+          mediaType,
+          progressCallBackFunction,
+          folderName,
+          fileExtension,
+        );
+        debugPrint('_uploadMediaToGoogleCloud (custom): $result');
+      } catch (e) {
+        debugPrint('_uploadMediaToGoogleCloud custom error: $e');
+        result = '';
+      }
+    } else {
+      final myUserId = await _localDataUseCase.getUserId();
+      var mainProgress = 0;
+      try {
+        final response = await googleCloudStorageUploaderUseCase.executeGoogleCloudStorageUploader(
+            file: file!,
+            fileName: fileName,
+            fileExtension: fileExtension,
+            userId: myUserId,
+            onProgress: (_) {
+              final progress = (_ * 100).toInt();
+              if (mainProgress != progress) {
+                mainProgress = progress;
+                debugPrint('_uploadMediaToGoogleCloud......progress: $progress');
+                progressCallBackFunction.call(progress.toDouble());
+              }
+            });
+        debugPrint('_uploadMediaToGoogleCloud: $response');
+        result = response ?? '';
+      } catch (e) {
+        debugPrint('_uploadMediaToGoogleCloud error: $e');
+        result = '';
+      }
     }
+
+    return _applyConvertToGumletUrl(result);
   }
 
   String _getFileName(String? file, String fileType) {

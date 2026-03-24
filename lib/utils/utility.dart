@@ -589,25 +589,7 @@ class Utility {
 
   /// returns gumlet image url
   static String buildGumletImageUrl(
-      {required String imageUrl, double? width, double? height}) {
-    final finalImageUrl =
-        removeSourceUrl(imageUrl).replaceAll('trulyfree-staging/', '');
-    final queryParameter = StringBuffer();
-    if (width != null && width != 0) {
-      queryParameter.write('w=$width');
-    }
-    if (height != null && height != 0) {
-      if (queryParameter.isNotEmpty) {
-        queryParameter.write('&');
-      }
-      queryParameter.write('h=$height');
-    }
-    // queryParameter.write('&q=70');
-
-    final optimizedImageUrl =
-        '${AppUrl.gumletUrl}/$finalImageUrl${queryParameter.isNotEmpty ? '?$queryParameter' : ''}';
-    return optimizedImageUrl;
-  }
+      {required String imageUrl, double? width, double? height}) => IsrVideoReelConfig.socialConfig.socialCallBackConfig?.convertToGumletUrl?.call(imageUrl).takeIfNotEmpty() ?? imageUrl;
 
   /// removes source url and extract only file name
   static String removeSourceUrl(String url) {

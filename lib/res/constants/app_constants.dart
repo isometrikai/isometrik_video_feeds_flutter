@@ -108,12 +108,12 @@ class AppConstants {
   static String get tenantId => IsrVideoReelConfig.tenantId ?? 'tenant_001';
   static String get projectId => IsrVideoReelConfig.projectId ?? 'project_001';
 
-  static String bucketName = 'trulyfree-staging';
+  static String get bucketName => IsrVideoReelConfig.socialConfig.googleCloudUpload?.bucketName ?? 'post_media';
 }
 
 abstract class AppUrl {
   static String get appBaseUrl => IsrVideoReelConfig.baseUrl ?? '';
-  static String get gumletUrl => IsrVideoReelConfig.gumletUrl ?? '';
+  static String get gumletUrl => 'test';
 }
 
 abstract class DefaultValues {
