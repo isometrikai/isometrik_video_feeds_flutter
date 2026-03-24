@@ -51,7 +51,7 @@ class _FollowActionWidgetState extends State<FollowActionWidget> {
     postId = widget.postId;
     loggedInUserId = cubit.userId;
     isFollowing = widget.isFollowing ?? false;
-    debugPrint('FollowActionWidget:- initState:- userId: $userId, isFollowing: $isFollowing, isLoading: $isLoading');
+    debugPrint('FollowActionWidget:- initState:- userId: $userId, loggedInUserId: $loggedInUserId, isFollowing: $isFollowing, isLoading: $isLoading');
     _updateFollowState();
   }
 
