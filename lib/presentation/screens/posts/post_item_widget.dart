@@ -32,6 +32,7 @@ class PostItemWidget extends StatefulWidget {
     this.allowImplicitScrolling = true,
     this.onPageChanged,
     this.onTapTag,
+    this.bottomOverlayPadding,
   });
 
   final Future<String?> Function()? onCreatePost;
@@ -56,6 +57,7 @@ class PostItemWidget extends StatefulWidget {
   final bool? allowImplicitScrolling;
   final Function(int, String)? onPageChanged;
   final Function(String tag, String postId)? onTapTag;
+  final double? bottomOverlayPadding;
 
   @override
   State<PostItemWidget> createState() => _PostItemWidgetState();
@@ -187,6 +189,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
           isCreatePostButtonVisible: widget.isCreatePostButtonVisible,
           thumbnail: _postList[index].thumbnailUrl1 ?? '',
           key: Key(_postList[index].postId ?? ''),
+          bottomOverlayPadding: widget.bottomOverlayPadding,
           onCreatePost: () async {
             if (widget.onCreatePost == null) return;
             final postDataModelJsonString = await widget.onCreatePost!();
