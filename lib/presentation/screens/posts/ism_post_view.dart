@@ -17,11 +17,13 @@ class IsmPostView extends StatefulWidget {
     this.allowImplicitScrolling = false,
     this.onPageChanged,
     this.onTabChange,
+    this.bottomOverlayPadding,
   });
 
   final List<TabDataModel> tabDataModelList;
   final num? currentIndex;
   final bool? allowImplicitScrolling;
+  final double? bottomOverlayPadding;
   final Function(int, String)? onPageChanged;
   final Future<bool> Function(TabDataModel, int)? onTabChange;
 
@@ -217,6 +219,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         onLoadMore: tabData.onLoadMore,
         onTapCartIcon: tabData.onTapCartIcon,
         onRefresh: tabData.onRefresh,
+        bottomOverlayPadding: widget.bottomOverlayPadding,
         placeHolderWidget: tabData.placeHolderWidget,
         postSectionType: tabData.postSectionType,
         onTapPlaceHolder: () {

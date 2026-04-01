@@ -54,6 +54,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
     this.postStatus,
     this.isFirstPost,
     this.onTapTag,
+    this.bottomOverlayPadding,
   });
 
   final String? mediaUrl;
@@ -98,6 +99,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
   final int? postStatus;
   final bool? isFirstPost;
   final Function(String tag)? onTapTag;
+  final double? bottomOverlayPadding;
 
   @override
   State<IsmReelsVideoPlayerView> createState() => _IsmReelsVideoPlayerViewState();
@@ -382,7 +384,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
       );
 
   Widget _buildRightSideActions() => Padding(
-        padding: IsrDimens.edgeInsets(bottom: IsrDimens.forty, right: IsrDimens.sixteen),
+        padding: IsrDimens.edgeInsets(bottom: (widget.bottomOverlayPadding ?? 0) + IsrDimens.forty, right: IsrDimens.sixteen),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.end,
@@ -540,7 +542,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
 
   Widget _buildBottomSection() => Padding(
         padding: IsrDimens.edgeInsets(
-            left: IsrDimens.sixteen, right: IsrDimens.sixteen, bottom: IsrDimens.fifteen),
+            left: IsrDimens.sixteen, right: IsrDimens.sixteen, bottom: (widget.bottomOverlayPadding ?? 0) + IsrDimens.fifteen),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
