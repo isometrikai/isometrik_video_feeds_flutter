@@ -34,6 +34,7 @@ Future<void> _initializeReelsSdk() async {
   final mobileNumber = await _localDataUseCase.getPhoneNumber();
   final appVersion = await Utility.getAppVersion();
   await isr.IsrVideoReelConfig.initializeSdk(
+    appName: 'IsmVideoReel',
     baseUrl: AppUrl.appBaseUrl,
     // gumletUrl: AppUrl.gumletUrl,
     postConfig: const isr.PostConfig(

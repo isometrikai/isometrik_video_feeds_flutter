@@ -142,8 +142,7 @@ class _CollectionBottomSheetWidgetState
         _additionalItemsCount[collectionIdToUpdate] =
             (_additionalItemsCount[collectionIdToUpdate] ?? 0) + 1;
 
-        // Update button state
-        _updateDoneButtonState();
+        Navigator.pop(context);
 
         debugPrint('Collection $collectionIdToUpdate updated - item added');
       },
@@ -221,9 +220,8 @@ class _CollectionBottomSheetWidgetState
                         await Utility.showCustomizedBottomSheet(
                           isRoundedCorners: false,
                           isScrollControlled: true,
-                          child: BlocProvider<CollectionBloc>(
-                            create: (context) =>
-                                IsmInjectionUtils.getBloc<CollectionBloc>(),
+                          child: BlocProvider<CollectionBloc>.value(
+                            value: _collectionBloc,
                             child: CreateCollectionView(
                               productOrPostId: widget.postId,
                               defaultCollectionImage: widget.thumbnailUrl ?? '',
@@ -429,7 +427,7 @@ class _CollectionBottomSheetWidgetState
                             _additionalItemsCount[collectionId] ?? 0;
                         final totalCount = baseCount + additionalCount;
                         return Text(
-                          '${(collection.isPrivate ?? false) ? IsrTranslationFile.private : IsrTranslationFile.public} • $totalCount ${totalCount <= 1 ? "Item" : "Items"}',
+                          '${(collection.isPrivate ?? false) ? IsrTranslationFile.private : IsrTranslationFile.public}', // count not present in api yet • $totalCount ${totalCount <= 1 ? "Item" : "Items"}',
                           style: IsrStyles.primaryText12.copyWith(
                             color: '767676'.toColor(),
                           ),

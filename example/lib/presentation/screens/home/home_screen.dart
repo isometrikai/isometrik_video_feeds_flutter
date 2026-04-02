@@ -69,7 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
             postSectionType: isr.PostSectionType.singlePost,
             title: TranslationFile.single,
             reelsDataList: [],
-            postId: 'post_98e927787ec5',
+            postId: 'post_85e97b208f5c',
             //hardCoded post id
             startingPostIndex: 0,
           ),

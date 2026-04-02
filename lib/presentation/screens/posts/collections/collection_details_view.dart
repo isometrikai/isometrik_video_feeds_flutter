@@ -778,8 +778,8 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
     await Utility.showCustomizedBottomSheet(
       isRoundedCorners: false,
       isScrollControlled: true,
-      child: BlocProvider<CollectionBloc>(
-        create: (context) => IsmInjectionUtils.getBloc<CollectionBloc>(),
+      child: BlocProvider<CollectionBloc>.value(
+        value: IsmInjectionUtils.getBloc<CollectionBloc>(),
         child: CreateCollectionView(
           collection: collection,
           defaultCollectionImage: collection?.image ?? '',
@@ -815,9 +815,9 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
                 Expanded(
                   child: AppButton(
                     title: IsrTranslationFile.cancel,
+                    type: ButtonType.secondary,
                     onPress: () => context.pop(),
                     backgroundColor: IsrColors.colorF5F5F5,
-                    textColor: IsrColors.black,
                   ),
                 ),
                 12.responsiveHorizontalSpace,

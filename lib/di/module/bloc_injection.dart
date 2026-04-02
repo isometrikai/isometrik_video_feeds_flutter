@@ -115,11 +115,12 @@ class BlocInjection {
       CameraBloc.new,
     );
 
-    IsmInjectionUtils.registerBloc<CollectionBloc>(
+    IsmInjectionUtils.registerSingletonBloc<CollectionBloc>(
       () => CollectionBloc(
         IsmInjectionUtils.getUseCase<CollectionUseCase>(),
         IsmInjectionUtils.getUseCase<SavePostUseCase>(),
         localDataUseCase,
+        IsmInjectionUtils.getUseCase<GoogleCloudStorageUploaderUseCase>(),
       ),
     );
   }
