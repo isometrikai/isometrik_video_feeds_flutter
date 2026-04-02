@@ -43,6 +43,9 @@ class IsrVideoReelConfig {
   /// projectId
   static String? projectId;
 
+  /// appName or identifier
+  static String appName = 'IsmVideoReel';
+
   /// additional header
   static Map<String, String>? additionalHeader;
 
@@ -97,6 +100,7 @@ class IsrVideoReelConfig {
     required String rudderStackDataPlaneUrl,
     required UserInfoClass? userInfoClass,
     required Map<String, dynamic> defaultHeaders,
+    required String appName,
     Map<String, String>? additionalHeader,
     SocialConfig? socialConfig,
     PostConfig? postConfig,
@@ -110,6 +114,7 @@ class IsrVideoReelConfig {
     IsrVideoReelConfig.baseUrl = baseUrl;
     IsrVideoReelConfig.tenantId = defaultHeaders.stringOrNull('x-tenant-id');
     IsrVideoReelConfig.projectId = defaultHeaders.stringOrNull('x-project-id');
+    IsrVideoReelConfig.appName = appName;
     if (!isSdkInitialize) {
       WidgetsFlutterBinding.ensureInitialized();
       await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
