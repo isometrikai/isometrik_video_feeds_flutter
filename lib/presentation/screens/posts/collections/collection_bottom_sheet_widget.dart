@@ -426,6 +426,8 @@ class _CollectionBottomSheetWidgetState
                         final additionalCount =
                             _additionalItemsCount[collectionId] ?? 0;
                         final totalCount = baseCount + additionalCount;
+                        debugPrint(
+                            'Collection: ${collection.name}, Base Count: $baseCount, Additional Count: $additionalCount, Total Count: $totalCount');
                         return Text(
                           '${(collection.isPrivate ?? false) ? IsrTranslationFile.private : IsrTranslationFile.public}', // count not present in api yet • $totalCount ${totalCount <= 1 ? "Item" : "Items"}',
                           style: IsrStyles.primaryText12.copyWith(

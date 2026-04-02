@@ -37,20 +37,23 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
 
   @override
   void initState() {
-    _onStartInit();
     super.initState();
+    _onStartInit();
   }
 
   void _onStartInit() {
     setState(() => _isLoading = true);
     _socialPostBloc.add(
       GetReasonEvent(
-        onComplete: (reasons) {
-          setState(() {
-            _reportReasons.clear();
-            _reportReasons.addAll(reasons as Iterable<ReportReason>);
-            _isLoading = false;
-          });
+        onComplete: (reasons) async {
+          await Future.delayed(const Duration(seconds: 3));
+          _reportReasons.clear();
+          // _reportReasons.addAll(reasons as Iterable<ReportReason>);
+          _isLoading = false;
+          if (mounted) {
+            setState(() {
+            });
+          }
         },
         reasonsFor: widget.reasonFor,
       ),
@@ -70,7 +73,8 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
             ),
           ),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisSize: MainAxisSize.max,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Header row - fixed at top
               Row(
@@ -98,72 +102,88 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
                 ],
               ),
               24.responsiveVerticalSpace,
-              // Scrollable content - wrapped in Flexible to prevent overflow
-              Flexible(
+              Expanded(
                 child: _isLoading
-                    ? Center(child: Utility.loaderWidget())
-                    : SingleChildScrollView(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // Header and reasons list
-                            ...List.generate(
-                              _reportReasons.length,
-                              (index) => Padding(
-                                padding: IsrDimens.edgeInsets(
-                                    bottom: IsrDimens.twelve),
-                                child: TapHandler(
-                                  onTap: () {
-                                    setState(() {
-                                      _selectedReason = _reportReasons[index];
-                                    });
-                                  },
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 24.responsiveDimension,
-                                        height: 24.responsiveDimension,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: _selectedReason ==
-                                                    _reportReasons[index]
-                                                ? Theme.of(context).primaryColor
-                                                : '838383'.toColor(),
-                                            width: 2.responsiveDimension,
-                                          ),
-                                        ),
-                                        child: _selectedReason ==
-                                                _reportReasons[index]
-                                            ? Center(
-                                                child: Container(
-                                                  width: 12.responsiveDimension,
-                                                  height:
-                                                      12.responsiveDimension,
-                                                  decoration: BoxDecoration(
-                                                    shape: BoxShape.circle,
-                                                    color: Theme.of(context)
-                                                        .primaryColor,
-                                                  ),
-                                                ),
-                                              )
-                                            : null,
-                                      ),
-                                      12.responsiveHorizontalSpace,
-                                      Expanded(
-                                        child: Text(
-                                          _reportReasons[index].name ?? '',
-                                          style: IsrStyles.primaryText14,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                    ? const Center(child: CircularProgressIndicator())
+                    : _reportReasons.isEmpty
+                        ? Center(
+                            child: Padding(
+                              padding:
+                                  IsrDimens.edgeInsetsAll(IsrDimens.sixteen),
+                              child: Text(
+                                IsrTranslationFile.noReportReasonsAvailable,
+                                textAlign: TextAlign.center,
+                                style: IsrStyles.primaryText14.copyWith(
+                                  color: '4A4A4A'.toColor(),
                                 ),
                               ),
                             ),
-                          ],
-                        ),
-                      ),
+                          )
+                        : SingleChildScrollView(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                ...List.generate(
+                                  _reportReasons.length,
+                                  (index) => Padding(
+                                    padding: IsrDimens.edgeInsets(
+                                        bottom: IsrDimens.twelve),
+                                    child: TapHandler(
+                                      onTap: () {
+                                        setState(() {
+                                          _selectedReason =
+                                              _reportReasons[index];
+                                        });
+                                      },
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            width: 24.responsiveDimension,
+                                            height: 24.responsiveDimension,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              border: Border.all(
+                                                color: _selectedReason ==
+                                                        _reportReasons[index]
+                                                    ? Theme.of(context)
+                                                        .primaryColor
+                                                    : '838383'.toColor(),
+                                                width: 2.responsiveDimension,
+                                              ),
+                                            ),
+                                            child: _selectedReason ==
+                                                    _reportReasons[index]
+                                                ? Center(
+                                                    child: Container(
+                                                      width: 12
+                                                          .responsiveDimension,
+                                                      height: 12
+                                                          .responsiveDimension,
+                                                      decoration: BoxDecoration(
+                                                        shape: BoxShape.circle,
+                                                        color: Theme.of(context)
+                                                            .primaryColor,
+                                                      ),
+                                                    ),
+                                                  )
+                                                : null,
+                                          ),
+                                          12.responsiveHorizontalSpace,
+                                          Expanded(
+                                            child: Text(
+                                              _reportReasons[index].name ?? '',
+                                              style: IsrStyles.primaryText14,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
               ),
               // Button section - fixed at bottom
               Column(
@@ -214,8 +234,9 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
         builder: (context) => Dialog(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          backgroundColor: IsrVideoReelConfig
-              .socialConfig.dialogConfig?.backgroundColor ?? Colors.white,
+          backgroundColor:
+              IsrVideoReelConfig.socialConfig.dialogConfig?.backgroundColor ??
+                  Colors.white,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
             child: Column(
@@ -245,14 +266,16 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
                     _buildDialogButton(
                       context: context,
                       title: IsrTranslationFile.report,
-                      buttonConfig: IsrVideoReelConfig.socialConfig.primaryButton,
+                      buttonConfig:
+                          IsrVideoReelConfig.socialConfig.primaryButton,
                       onPress: () => Navigator.of(context).pop(true),
                       defaultBackgroundColor: 'E04755'.toColor(),
                     ),
                     _buildDialogButton(
                       context: context,
                       title: IsrTranslationFile.cancel,
-                      buttonConfig: IsrVideoReelConfig.socialConfig.secondaryButton,
+                      buttonConfig:
+                          IsrVideoReelConfig.socialConfig.secondaryButton,
                       buttonType: ButtonType.secondary,
                       onPress: () => Navigator.of(context).pop(false),
                       defaultBackgroundColor: 'F6F6F6'.toColor(),
@@ -274,14 +297,16 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
     required VoidCallback? onPress,
     Color? defaultBackgroundColor,
     Color? defaultTextColor,
-  }) => AppButton(
-      title: title,
-      width: 102.responsiveDimension,
-      type: buttonType,
-      onPress: onPress,
-      backgroundColor: buttonConfig?.backgroundColor ?? defaultBackgroundColor,
-      textColor: buttonConfig?.textColor ?? defaultTextColor,
-      borderColor: buttonConfig?.borderColor,
-      borderRadius: buttonConfig?.borderRadius,
-    );
+  }) =>
+      AppButton(
+        title: title,
+        width: 102.responsiveDimension,
+        type: buttonType,
+        onPress: onPress,
+        backgroundColor:
+            buttonConfig?.backgroundColor ?? defaultBackgroundColor,
+        textColor: buttonConfig?.textColor ?? defaultTextColor,
+        borderColor: buttonConfig?.borderColor,
+        borderRadius: buttonConfig?.borderRadius,
+      );
 }
