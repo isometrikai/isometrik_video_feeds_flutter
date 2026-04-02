@@ -46,9 +46,8 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
     _socialPostBloc.add(
       GetReasonEvent(
         onComplete: (reasons) async {
-          await Future.delayed(const Duration(seconds: 3));
           _reportReasons.clear();
-          // _reportReasons.addAll(reasons as Iterable<ReportReason>);
+          _reportReasons.addAll(reasons as Iterable<ReportReason>);
           _isLoading = false;
           if (mounted) {
             setState(() {
@@ -104,7 +103,7 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
               24.responsiveVerticalSpace,
               Expanded(
                 child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
+                    ? Center(child: Utility.loaderWidget())
                     : _reportReasons.isEmpty
                         ? Center(
                             child: Padding(

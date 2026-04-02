@@ -6,7 +6,7 @@ import 'package:ism_video_reel_player/presentation/screens/media/media_edit/medi
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/pro_media_editor/pro_media_util.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
-// import '../../custom_pro_image_editor/pro_image_editor.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 
 class ProImageEditorWrapper extends StatefulWidget {
@@ -49,7 +49,7 @@ class _ProImageEditorWrapperState extends State<ProImageEditorWrapper> {
           future: File(widget.mediaPath).readAsBytes(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
+              return Center(child: Utility.loaderWidget(isAdaptive: false));
             }
 
             if (snapshot.hasError || !snapshot.hasData) {

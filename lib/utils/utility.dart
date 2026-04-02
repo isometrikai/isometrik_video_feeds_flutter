@@ -430,9 +430,10 @@ class Utility {
 
   static Widget loaderWidget({bool? isAdaptive = true}) => Center(
         child: isAdaptive == true
-            ? const CircularProgressIndicator.adaptive(
-                backgroundColor: Colors.white)
-            : const CircularProgressIndicator(color: Colors.white),
+            ? CircularProgressIndicator.adaptive(
+                backgroundColor: IsrColors.appColor,
+        )
+            : CircularProgressIndicator(color: IsrColors.appColor),
       );
 
   /// get formated date
