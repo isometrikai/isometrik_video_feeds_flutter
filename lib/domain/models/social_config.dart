@@ -1,7 +1,24 @@
 import 'dart:io' show File;
 
 import 'package:flutter/material.dart';
-import 'package:ism_video_reel_player/utils/enums.dart' show ButtonType, MediaType;
+import 'package:ism_video_reel_player/utils/enums.dart'
+    show ButtonType, LoaderType, MediaType;
+
+/// App-provided loader builder used across SDK screens/dialogs.
+///
+/// The same callback is reused by:
+/// - `AppLoader` (dialog and full-screen loaders)
+/// - `Utility.loaderWidget()` (inline loaders in lists/cards/placeholders)
+///
+/// Returning a widget here lets host apps keep one consistent loading UI
+/// without changing SDK internals.
+typedef SdkLoaderBuilder = Widget Function(
+  BuildContext context, {
+  bool isDialog,
+  String? message,
+  LoaderType? loaderType,
+  bool isAdaptive,
+});
 
 /// Main configuration class for social features in the SDK.
 ///
@@ -71,6 +88,7 @@ import 'package:ism_video_reel_player/utils/enums.dart' show ButtonType, MediaTy
 class SocialConfig {
   const SocialConfig({
     this.socialCallBackConfig,
+    this.loaderBuilder,
     this.themeConfig,
     this.toastConfig,
     this.dialogConfig,
@@ -84,6 +102,13 @@ class SocialConfig {
   });
 
   final SocialCallBackConfig? socialCallBackConfig;
+
+  /// App-side loader builder reused across the complete SDK.
+  ///
+  /// If provided, the SDK uses this loader for both dialog-level and inline
+  /// loading states. If omitted, SDK falls back to default `AppLoader` /
+  /// `CircularProgressIndicator` behavior.
+  final SdkLoaderBuilder? loaderBuilder;
   final ThemeConfig? themeConfig;
   final ToastConfig? toastConfig;
   final DialogConfig? dialogConfig;
@@ -128,6 +153,7 @@ class SocialConfig {
 
   SocialConfig copyWith({
     SocialCallBackConfig? socialCallBackConfig,
+    SdkLoaderBuilder? loaderBuilder,
     ThemeConfig? themeConfig,
     ToastConfig? toastConfig,
     DialogConfig? dialogConfig,
@@ -141,6 +167,7 @@ class SocialConfig {
   }) =>
       SocialConfig(
         socialCallBackConfig: socialCallBackConfig ?? this.socialCallBackConfig,
+        loaderBuilder: loaderBuilder ?? this.loaderBuilder,
         themeConfig: themeConfig ?? this.themeConfig,
         toastConfig: toastConfig ?? this.toastConfig,
         dialogConfig: dialogConfig ?? this.dialogConfig,

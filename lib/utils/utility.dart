@@ -428,13 +428,29 @@ class Utility {
     }
   }
 
-  static Widget loaderWidget({bool? isAdaptive = true}) => Center(
-        child: isAdaptive == true
-            ? CircularProgressIndicator.adaptive(
-                backgroundColor: IsrColors.appColor,
-        )
-            : CircularProgressIndicator(color: IsrColors.appColor),
+  static Widget loaderWidget({bool? isAdaptive = true}) {
+    final appLoaderBuilder = IsrVideoReelConfig.socialConfig.loaderBuilder;
+    if (appLoaderBuilder != null) {
+      final loaderContext = context ?? IsrVideoReelConfig.buildContext;
+      if (loaderContext == null) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      // Reuse app-side loader for inline placeholders as well.
+      return appLoaderBuilder(
+        loaderContext,
+        isDialog: false,
+        loaderType: LoaderType.normal,
+        isAdaptive: isAdaptive ?? true,
       );
+    }
+    return Center(
+      child: isAdaptive == true
+          ? CircularProgressIndicator.adaptive(
+              backgroundColor: IsrColors.appColor,
+            )
+          : CircularProgressIndicator(color: IsrColors.appColor),
+    );
+  }
 
   /// get formated date
   static String getFormattedDateWithNumberOfDays(int? numberOfDays,
