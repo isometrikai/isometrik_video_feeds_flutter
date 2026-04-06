@@ -246,7 +246,7 @@ Config and callbacks are set via **`IsrVideoReelConfig`** (or passed into `initi
 
 | Config                    | Purpose |
 |---------------------------|--------|
-| **`socialConfig`**        | Theme, toasts, dialogs, buttons, fonts, colors; optional **`GoogleCloudUpload`** (`credentialsJsonPath`, `bucketName`); **SocialCallBackConfig**: `onLoginInvoked`, optional `uploadMediaToCloud`, `convertToGumletUrl`. |
+| **`socialConfig`**        | Theme, toasts, dialogs, buttons, fonts, colors; app-wide loader override via `loaderBuilder`; optional **`GoogleCloudUpload`** (`credentialsJsonPath`, `bucketName`); **SocialCallBackConfig**: `onLoginInvoked`, optional `uploadMediaToCloud`, `convertToGumletUrl`. |
 | **`postConfig`**          | Post UI (overlay, actions, media indicator, profile, description, location, shop, follow button); **PostCallBackConfig**: save/like/follow/share/comment/profile/tag-product/post-changed. |
 | **`tabConfig`**           | Tab bar, back button, loading, status bar; **TabCallBackConfig**: `onChangeOfTab`, `onReelsLoaded`, `getEmptyScreen`. |
 | **`commentConfig`**       | Comment bottom sheet, header, item, reply field, placeholder, more options. |
@@ -281,6 +281,35 @@ socialConfig: SocialConfig(
 | `bucketName` | Target Google Cloud Storage bucket name. |
 
 You can customize each config’s sub-properties (e.g. `ThemeConfig`, `ToastConfig`, `ButtonConfig`, `GoogleCloudUpload`, `PostUIConfig`, etc.) as needed; see the respective model classes in the SDK for full options.
+
+### Reuse one loader across complete SDK
+
+Provide `loaderBuilder` in `SocialConfig` to use your app loader in all SDK loading states (dialog loaders and inline loaders):
+
+```dart
+socialConfig: SocialConfig(
+  loaderBuilder: (
+    context, {
+    bool isDialog = false,
+    String? message,
+    LoaderType? loaderType,
+    bool isAdaptive = true,
+  }) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const CircularProgressIndicator(),
+          if (isDialog && message != null) ...[
+            const SizedBox(height: 12),
+            Text(message),
+          ],
+        ],
+      ),
+    );
+  },
+),
+```
 
 ---
 
