@@ -11,29 +11,29 @@ part 'social_post_state.dart';
 
 class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   SocialPostBloc(
-    this._localDataUseCase,
-    this._getTimelinePostUseCase,
-    this._getTrendingPostUseCase,
-    this._getForYouPostUseCase,
-    this._followPostUseCase,
-    this._savePostUseCase,
-    this._likePostUseCase,
-    this._reportPostUseCase,
-    this._reportUseCase,
-    this._getReportReasonsUseCase,
-    this._getPostDetailsUseCase,
-    this._getPostInsightUseCase,
-    this._getPostCommentUseCase,
-    this._commentUseCase,
-    this._getSocialProductsUseCase,
-    this._getMentionedUsersUseCase,
-    this._removeMentionUseCase,
-    this._getTaggedPostsUseCase,
-    this._getUserPostDataUseCase,
-    this._deletePostUseCase,
-    this.postImpressionUseCase,
-    this._onShareSuccessLogUseCase
-  ) : super(PostLoadingState(isLoading: true)) {
+      this._localDataUseCase,
+      this._getTimelinePostUseCase,
+      this._getTrendingPostUseCase,
+      this._getForYouPostUseCase,
+      this._followPostUseCase,
+      this._savePostUseCase,
+      this._likePostUseCase,
+      this._reportPostUseCase,
+      this._reportUseCase,
+      this._getReportReasonsUseCase,
+      this._getPostDetailsUseCase,
+      this._getPostInsightUseCase,
+      this._getPostCommentUseCase,
+      this._commentUseCase,
+      this._getSocialProductsUseCase,
+      this._getMentionedUsersUseCase,
+      this._removeMentionUseCase,
+      this._getTaggedPostsUseCase,
+      this._getUserPostDataUseCase,
+      this._deletePostUseCase,
+      this.postImpressionUseCase,
+      this._onShareSuccessLogUseCase)
+      : super(PostLoadingState(isLoading: true)) {
     on<StartPost>(_onStartPost);
     on<LoadPostData>(_onLoadHomeData);
     on<GetTimeLinePostEvent>(_getTimeLinePost);
@@ -126,13 +126,14 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       _postsByTab.clear();
       _postsByTab.addAll(event.postSections);
       final tabList = _postsByTab.toList();
-      if (event.startTabIndex > 0 && event.startTabIndex< tabList.length) {
+      if (event.startTabIndex > 0 && event.startTabIndex < tabList.length) {
         final startTab = tabList.removeAt(event.startTabIndex);
         tabList.insert(0, startTab);
       }
       final isUserLoggedIn = await this.isUserLoggedIn;
       for (final postTab in tabList) {
-        emit(PostLoadingState(isLoading: true, postType: postTab.postSectionType));
+        emit(PostLoadingState(
+            isLoading: true, postType: postTab.postSectionType));
         if (postTab.postList.isEmpty) {
           if (postTab.postId?.trim().isNotEmpty == true &&
               postTab.postList.isEmpty) {
@@ -232,11 +233,13 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     AppError? apiError;
     switch (postSectionType) {
       case PostSectionType.trending:
-        apiPostResult = await _getTrendingPostUseCase.executeGetTrendingPost(
+        apiPostResult = await _getTrendingPostUseCase
+            .executeGetTrendingPost(
           isLoading: isLoading,
           cursor: tabAssistData.cursor,
           limit: tabAssistData.pageSize,
-        ).then((result) {
+        )
+            .then((result) {
           apiError = result.error;
           if (result.data?.data?.nextCursor?.isNotEmpty == true) {
             tabAssistData.cursor = result.data?.data?.nextCursor;
@@ -245,85 +248,98 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         });
         break;
       case PostSectionType.forYou:
-        apiPostResult = await _getForYouPostUseCase.executeGetForYouPost(
+        apiPostResult = await _getForYouPostUseCase
+            .executeGetForYouPost(
           isLoading: isLoading,
           cursor: tabAssistData.cursor,
           limit: tabAssistData.pageSize,
-        ).then((result) {
+        )
+            .then((result) {
           apiError = result.error;
           tabAssistData.cursor = result.data?.data?.nextCursor;
           return result.data?.data?.posts;
         });
         break;
       case PostSectionType.following:
-        apiPostResult = await _getTimelinePostUseCase.executeTimeLinePost(
+        apiPostResult = await _getTimelinePostUseCase
+            .executeTimeLinePost(
           isLoading: isLoading,
           page: tabAssistData.currentPage,
           pageLimit: tabAssistData.pageSize,
-        ).then((result) {
+        )
+            .then((result) {
           apiError = result.error;
           return result.data?.data;
         });
         break;
       case PostSectionType.savedPost:
-        apiPostResult = await _savePostUseCase.executeGetProfileSavedPostData(
+        apiPostResult = await _savePostUseCase
+            .executeGetProfileSavedPostData(
           isLoading: isLoading,
           page: tabAssistData.currentPage,
           pageSize: tabAssistData.pageSize,
-        ).then((result) {
+        )
+            .then((result) {
           apiError = result.error;
           return result.data?.data;
         });
         break;
       case PostSectionType.tagPost:
         if (tabAssistData.tagType != null && tabAssistData.tagValue != null) {
-          apiPostResult = await _getTaggedPostsUseCase.executeGetTaggedPosts(
+          apiPostResult = await _getTaggedPostsUseCase
+              .executeGetTaggedPosts(
             isLoading: isLoading,
             page: tabAssistData.currentPage,
             pageLimit: tabAssistData.pageSize,
             tagValue: tabAssistData.tagValue!,
             tagType: tabAssistData.tagType!,
-          ).then((result) {
+          )
+              .then((result) {
             apiError = result.error;
             return result.data?.data;
           });
         }
         break;
       case PostSectionType.myTaggedPost:
-        apiPostResult = await _getTaggedPostsUseCase.executeGetTaggedPosts(
+        apiPostResult = await _getTaggedPostsUseCase
+            .executeGetTaggedPosts(
           isLoading: isLoading,
           page: tabAssistData.currentPage,
           pageLimit: tabAssistData.pageSize,
           tagValue: await _localDataUseCase.getUserId(),
           tagType: TagType.mention,
-        ).then((result) {
+        )
+            .then((result) {
           apiError = result.error;
           return result.data?.data;
         });
         break;
       case PostSectionType.myPost:
-        apiPostResult = await _getUserPostDataUseCase.executeGetUserProfilePostData(
+        apiPostResult = await _getUserPostDataUseCase
+            .executeGetUserProfilePostData(
           isLoading: isLoading,
           page: tabAssistData.currentPage,
           pageSize: tabAssistData.pageSize,
           memberId: tabAssistData.userId ?? await _localDataUseCase.getUserId(),
-        ).then((result) {
+        )
+            .then((result) {
           apiError = result.error;
           return result.data?.data;
         });
         break;
       case PostSectionType.otherUserPost:
         if (tabAssistData.userId != null) {
-          apiPostResult =
-              await _getUserPostDataUseCase.executeGetUserProfilePostData(
+          apiPostResult = await _getUserPostDataUseCase
+              .executeGetUserProfilePostData(
             isLoading: isLoading,
             page: tabAssistData.currentPage,
             pageSize: tabAssistData.pageSize,
             memberId: tabAssistData.userId!,
-          ).then((result) {
-                apiError = result.error;
-                return result.data?.data;
-              });
+          )
+              .then((result) {
+            apiError = result.error;
+            return result.data?.data;
+          });
         }
         break;
       default:
@@ -379,9 +395,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   FutureOr<void> _getReason(
       GetReasonEvent event, Emitter<SocialPostState> emit) async {
     final apiResult = await _getReportReasonsUseCase.executeGetReportReasons(
-      isLoading: false,
-      reasonFor: event.reasonsFor
-    );
+        isLoading: false, reasonFor: event.reasonsFor);
 
     if (apiResult.isSuccess) {
       event.onComplete.call(apiResult.data);
@@ -424,7 +438,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       event.onComplete.call(true);
       if (event.showToastOnSuccess) {
         Utility.showToastMessage(IsrTranslationFile.reportedSuccessfully(
-            event.reportReason.type ?? '').trim());
+                event.reportReason.type ?? '')
+            .trim());
       }
     } else {
       ErrorHandler.showAppError(appError: apiResult.error);
@@ -654,7 +669,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
             IsrTranslationFile.commentReportedSuccessfully);
       } else if (event.commentAction == CommentAction.delete &&
           event.commentId?.trim().isNotEmpty == true) {
-        emit(CommentCountModified(postId: event.postId ?? '', modifiedValue: -1));
+        emit(CommentCountModified(
+            postId: event.postId ?? '', modifiedValue: -1));
         final myUserId = await _localDataUseCase.getUserId();
         final commentList = event.postCommentList?.toList() ?? [];
         if (event.parentCommentId?.trim().isNotEmpty == true) {
@@ -713,7 +729,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     // Create optimistic comment
     final comment = CommentDataItem(
       commentedBy: await _localDataUseCase.getUserName(),
-      fullName: '${await _localDataUseCase.getFirstName()} ${await _localDataUseCase.getLastName()}',
+      fullName:
+          '${await _localDataUseCase.getFirstName()} ${await _localDataUseCase.getLastName()}',
       comment: commentRequest.comment,
       postId: commentRequest.postId,
       commentedByUserId: myUserId,
@@ -902,10 +919,12 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       postId: event.postId ?? '',
       postData: event.data,
     ));
-    final postDataResult = (!event.callPostDetailsApi)? null : await _getPostDetailsUseCase.executeGetPostDetails(
-      isLoading: false,
-      postId: event.postId ?? '',
-    );
+    final postDataResult = (!event.callPostDetailsApi)
+        ? null
+        : await _getPostDetailsUseCase.executeGetPostDetails(
+            isLoading: false,
+            postId: event.postId ?? '',
+          );
     final insightApiResult = await _getPostInsightUseCase.executeGetPostInsight(
       isLoading: false,
       postId: event.postId ?? '',
@@ -1150,26 +1169,26 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       }
 
       // Remove in-review comments that have been in that state for more than 10 seconds
-      final removedAny = _removeOldInReviewComments(commentList, postId);
+      // final removedAny = _removeOldInReviewComments(commentList, postId);
 
       // Check if there are any in-review comments remaining
       if (!_hasInReviewComments(commentList)) {
         _stopInReviewUpdateTimer();
         _postsWithInReviewComments.remove(postId);
         // Update state if comments were removed
-        if (removedAny) {
-          add(GetPostCommentsEvent(
-            postId: postId,
-            isLoading: false,
-          ));
-        }
+        // if (removedAny) {
+        //   add(GetPostCommentsEvent(
+        //     postId: postId,
+        //     isLoading: false,
+        //   ));
+        // }
         return;
       }
 
       // Update stored comment list if comments were removed
-      if (removedAny) {
-        _postsWithInReviewComments[postId] = commentList;
-      }
+      // if (removedAny) {
+      //   _postsWithInReviewComments[postId] = commentList;
+      // }
 
       // Fetch updated comments from API (GetPostCommentsEvent will handle merging)
       add(GetPostCommentsEvent(
