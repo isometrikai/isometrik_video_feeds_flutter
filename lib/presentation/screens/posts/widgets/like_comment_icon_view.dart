@@ -27,6 +27,8 @@ class LikeCommentIconView extends StatefulWidget {
 class _LikeCommentIconViewState extends State<LikeCommentIconView> {
   var commentAction = CommentAction.dislike;
   final iconSize = 20.responsiveDimension;
+  var _isLoading = false;
+  CommentAction? _previousAction;
 
   @override
   void initState() {
@@ -40,38 +42,49 @@ class _LikeCommentIconViewState extends State<LikeCommentIconView> {
         listenWhen: (previous, current) {
           if (current is CommentActionedState) {
             if (current.commentId == widget.commentId) {
-              commentAction = current.commentAction;
               return true;
             }
           } else if (current is CommentActionErrorState) {
             if (current.commentId == widget.commentId) {
-              commentAction = current.commentAction;
               return true;
             }
           }
           return false;
         },
         listener: (context, state) {
+          _isLoading = false;
           if (state is CommentActionErrorState &&
               state.commentId == widget.commentId) {
+            // Revert optimistic UI on API failure.
+            if (_previousAction != null) {
+              final wasLiked = _previousAction == CommentAction.like;
+              commentAction = _previousAction!;
+              widget.onLikeDisLikeComment(wasLiked);
+              _previousAction = null;
+            }
             Utility.showInSnackBar(state.errorMsg, context,
                 isSuccessIcon: true);
+          } else if (state is CommentActionedState &&
+              state.commentId == widget.commentId) {
+            // API success: keep optimistic UI as-is.
+            _previousAction = null;
           }
         },
         buildWhen: (previous, current) {
           if (current is CommentActionedState) {
             if (current.commentId == widget.commentId) {
-              widget.onLikeDisLikeComment(
-                  current.commentAction == CommentAction.like);
+              commentAction = current.commentAction;
               return true;
             }
           } else if (current is CommentActionLoadingState) {
             if (current.commentId == widget.commentId) {
               commentAction = current.commentAction;
+              _isLoading = true;
               return true;
             }
           } else if (current is CommentActionErrorState) {
             if (current.commentId == widget.commentId) {
+              _isLoading = false;
               return true;
             }
           }
@@ -82,10 +95,9 @@ class _LikeCommentIconViewState extends State<LikeCommentIconView> {
           duration: const Duration(milliseconds: 500),
           firstCurve: Curves.fastOutSlowIn,
           secondCurve: Curves.fastOutSlowIn,
-          crossFadeState:
-              CrossFadeState.showSecond, //state is CommentActionLoadingState
-          // ? CrossFadeState.showFirst
-          // : CrossFadeState.showSecond,
+          crossFadeState: _isLoading
+              ? CrossFadeState.showFirst
+              : CrossFadeState.showSecond,
           firstChild: SizedBox(
             height: iconSize,
             width: iconSize,
@@ -98,10 +110,19 @@ class _LikeCommentIconViewState extends State<LikeCommentIconView> {
           ),
           secondChild: GestureDetector(
             onTap: () {
+              if (_isLoading) return;
+              final nextAction = commentAction == CommentAction.like
+                  ? CommentAction.dislike
+                  : CommentAction.like;
+
+              // Optimistic UI update (count update handled by callback).
+              _previousAction = commentAction;
+              commentAction = nextAction;
+              widget.onLikeDisLikeComment(nextAction == CommentAction.like);
+              setState(() {});
+
               context.getOrCreateBloc<CommentActionCubit>().doActionOnComment(
-                    commentAction == CommentAction.like
-                        ? CommentAction.dislike
-                        : CommentAction.like,
+                    nextAction,
                     widget.commentId,
                     widget.postId,
                     widget.userId,
