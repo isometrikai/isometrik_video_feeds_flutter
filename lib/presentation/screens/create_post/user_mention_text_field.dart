@@ -491,11 +491,9 @@ class _UserMentionTextFieldState extends State<UserMentionTextField> {
               enableSuggestions: false,
               keyboardType: TextInputType.multiline,
               textInputAction: TextInputAction.newline,
-              style: widget.style ??
-                  const TextStyle(
-                    fontSize: 14,
-                    color: Colors.black87,
-                  ),
+              style: (widget.style ?? const TextStyle(fontSize: 14)).copyWith(
+                color: widget.style?.color ?? Colors.black87,
+              ),
               decoration: InputDecoration(
                 hintText: widget.hintText,
                 hintStyle: widget.hintStyle ??
@@ -657,8 +655,7 @@ class _UserMentionTextFieldState extends State<UserMentionTextField> {
   }
 
   Widget _buildHashtagSuggestions() {
-    final showHashtagResults =
-        _isSearching && _hashTagResults.isNotEmpty;
+    final showHashtagResults = _isSearching && _hashTagResults.isNotEmpty;
     final showAddTagOption = _isSearching &&
         _isHashtagSearchActive &&
         !_showLoading &&
@@ -669,8 +666,7 @@ class _UserMentionTextFieldState extends State<UserMentionTextField> {
       return const SizedBox.shrink();
     }
 
-    final itemCount =
-        _hashTagResults.length + (showAddTagOption ? 1 : 0);
+    final itemCount = _hashTagResults.length + (showAddTagOption ? 1 : 0);
 
     return Column(
       children: [
