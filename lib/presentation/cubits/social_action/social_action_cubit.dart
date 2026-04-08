@@ -34,7 +34,7 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
   final GetUserPostDataUseCase _getUserPostDataUseCase =
       IsmInjectionUtils.getUseCase<GetUserPostDataUseCase>();
   final IsmLocalDataUseCase _localDataUseCase =
-  IsmInjectionUtils.getUseCase<IsmLocalDataUseCase>();
+      IsmInjectionUtils.getUseCase<IsmLocalDataUseCase>();
 
   Future<bool> get isUserLoggedIn => _localDataUseCase.isLoggedIn();
   Future<String> get getStoredUserId => _localDataUseCase.getUserId();
@@ -127,8 +127,7 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     return userData;
   }
 
-  getUserFollowState(String userId,
-      {bool? isFollowing}) async {
+  getUserFollowState(String userId, {bool? isFollowing}) async {
     if (userId.isNotEmpty) {
       emit(IsmFollowUserState(
           isFollowing: isFollowing == true, userId: userId, isLoading: true));
@@ -333,9 +332,13 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     Future<bool> Function()? apiCallBack,
   }) async {
     final likeCount = max(_likeCount, 0);
+    final optimisticLikeCount = likeCount + 1;
 
     emit(IsmLikePostState(
-        isLiked: true, likeCount: likeCount, postId: postId, isLoading: true));
+        isLiked: true,
+        likeCount: optimisticLikeCount,
+        postId: postId,
+        isLoading: true));
 
     final bool isSuccess;
     AppError? error;
@@ -353,20 +356,18 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     }
 
     if (isSuccess) {
-      final successLikeCount = likeCount + 1;
-
       emit(IsmLikePostState(
-          isLiked: true, postId: postId, likeCount: successLikeCount));
+          isLiked: true, postId: postId, likeCount: optimisticLikeCount));
 
       final post = await getAsyncPostById(postId);
       post?.isLiked = true;
-      post?.engagementMetrics?.likeTypes?.like = successLikeCount;
+      post?.engagementMetrics?.likeTypes?.like = optimisticLikeCount;
 
       emit(IsmLikeActionListenerState(
           isLiked: true,
           postId: postId,
           postData: post,
-          likeCount: successLikeCount));
+          likeCount: optimisticLikeCount));
 
       _logLikeEvent(
         LikeAction.like,
@@ -390,9 +391,13 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     Future<bool> Function()? apiCallBack,
   }) async {
     final likeCount = max(_likeCount, 0);
+    final optimisticLikeCount = max(0, likeCount - 1);
 
     emit(IsmLikePostState(
-        isLiked: false, likeCount: likeCount, postId: postId, isLoading: true));
+        isLiked: false,
+        likeCount: optimisticLikeCount,
+        postId: postId,
+        isLoading: true));
 
     final bool isSuccess;
     AppError? error;
@@ -410,20 +415,18 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     }
 
     if (isSuccess) {
-      final successLikeCount = max(0, likeCount - 1);
-
       emit(IsmLikePostState(
-          isLiked: false, postId: postId, likeCount: successLikeCount));
+          isLiked: false, postId: postId, likeCount: optimisticLikeCount));
 
       final post = await getAsyncPostById(postId);
       post?.isLiked = false;
-      post?.engagementMetrics?.likeTypes?.like = successLikeCount;
+      post?.engagementMetrics?.likeTypes?.like = optimisticLikeCount;
 
       emit(IsmLikeActionListenerState(
           isLiked: false,
           postId: postId,
           postData: post,
-          likeCount: successLikeCount));
+          likeCount: optimisticLikeCount));
 
       _logLikeEvent(
         LikeAction.unlike,
@@ -568,12 +571,15 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     _uniquePostList.remove(postId);
   }
 
-  void onSdkReinitializeChanged({String? userId, UserInfoClass? userInfoClass}) {
-    debugPrint('IsmSocialActionCubit onSdkReinitializeChanged -> userId: $userId');
+  void onSdkReinitializeChanged(
+      {String? userId, UserInfoClass? userInfoClass}) {
+    debugPrint(
+        'IsmSocialActionCubit onSdkReinitializeChanged -> userId: $userId');
     if (userId != this.userId) {
       _uniquePostList.clear();
       updateLocalUserData(userInfoClass);
-      emit(IsmUserChangedActionListenerState(userId: userId ?? '', userInfoClass: userInfoClass));
+      emit(IsmUserChangedActionListenerState(
+          userId: userId ?? '', userInfoClass: userInfoClass));
     }
   }
 
