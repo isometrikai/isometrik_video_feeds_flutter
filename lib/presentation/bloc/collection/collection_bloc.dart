@@ -104,11 +104,24 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
     if (apiResult.isSuccess) {
       final response = apiResult.data;
       if (response != null) {
-        final collectionId = response.data.isNotEmpty
-            ? jsonDecode(response.data)['collectionId'] == null
-                ? ''
-                : jsonDecode(response.data)['collectionId'] as String
-            : '';
+        // final collectionId = response.data.isNotEmpty
+        //     ? jsonDecode(response.data)['collectionId'] == null
+        //         ? ''
+        //         : jsonDecode(response.data)['collectionId'] as String
+        //     : '';
+        var collectionId = '';
+        if (response.data.isNotEmpty) {
+          try {
+            final decoded = jsonDecode(response.data);
+            if (decoded is Map) {
+              final data = decoded['data'];
+              final id = data is Map ? data['id'] : null;
+              if (id is String) collectionId = id;
+            }
+          } catch (_) {
+            collectionId = '';
+          }
+        }
 
         emit(CreateCollectionSuccessState(
           message:
@@ -190,7 +203,7 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
         croppedProfileImage,
         'collection_image_${DateTime.now().millisecondsSinceEpoch}',
         MediaType.photo,
-            (progress) {},
+        (progress) {},
         AppConstants.cloudinaryImageFolder,
         path.extension(croppedProfileImage!.path),
       );
@@ -210,15 +223,15 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
   }
 
   Future<String> _uploadMediaToGoogleCloud(
-      File? file,
-      String fileName,
-      MediaType? mediaType,
-      Function(double) progressCallBackFunction,
-      String folderName,
-      String fileExtension,
-      ) async {
-    final customUpload =
-        IsrVideoReelConfig.socialConfig.socialCallBackConfig?.uploadMediaToCloud;
+    File? file,
+    String fileName,
+    MediaType? mediaType,
+    Function(double) progressCallBackFunction,
+    String folderName,
+    String fileExtension,
+  ) async {
+    final customUpload = IsrVideoReelConfig
+        .socialConfig.socialCallBackConfig?.uploadMediaToCloud;
     String result;
 
     if (customUpload != null) {
@@ -240,19 +253,21 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
       final myUserId = await localDataUseCase.getUserId();
       var mainProgress = 0;
       try {
-        final response = await googleCloudStorageUploaderUseCase.executeGoogleCloudStorageUploader(
-            file: file!,
-            fileName: fileName,
-            fileExtension: fileExtension,
-            userId: myUserId,
-            onProgress: (_) {
-              final progress = (_ * 100).toInt();
-              if (mainProgress != progress) {
-                mainProgress = progress;
-                debugPrint('_uploadMediaToGoogleCloud......progress: $progress');
-                progressCallBackFunction.call(progress.toDouble());
-              }
-            });
+        final response = await googleCloudStorageUploaderUseCase
+            .executeGoogleCloudStorageUploader(
+                file: file!,
+                fileName: fileName,
+                fileExtension: fileExtension,
+                userId: myUserId,
+                onProgress: (_) {
+                  final progress = (_ * 100).toInt();
+                  if (mainProgress != progress) {
+                    mainProgress = progress;
+                    debugPrint(
+                        '_uploadMediaToGoogleCloud......progress: $progress');
+                    progressCallBackFunction.call(progress.toDouble());
+                  }
+                });
         debugPrint('_uploadMediaToGoogleCloud: $response');
         result = response ?? '';
       } catch (e) {
@@ -266,8 +281,8 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
 
   String _applyConvertToGumletUrl(String mediaUrl) {
     if (mediaUrl.isEmpty) return mediaUrl;
-    final convert =
-        IsrVideoReelConfig.socialConfig.socialCallBackConfig?.convertToGumletUrl;
+    final convert = IsrVideoReelConfig
+        .socialConfig.socialCallBackConfig?.convertToGumletUrl;
     if (convert == null) return mediaUrl;
     try {
       final converted = convert(mediaUrl);
