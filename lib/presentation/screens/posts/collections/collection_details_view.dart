@@ -775,7 +775,7 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
 
   /// Handles editing the collection
   Future<void> _handleEditCollection() async {
-    await Utility.showCustomizedBottomSheet(
+    final result = await Utility.showCustomizedBottomSheet(
       isRoundedCorners: false,
       isScrollControlled: true,
       child: BlocProvider<CollectionBloc>.value(
@@ -786,6 +786,14 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
         ),
       ),
     );
+
+    if (result is CollectionData) {
+      setState(() {
+        widget.collectionData = result;
+        collection = result;
+        collectionId = result.id;
+      });
+    }
     await _refreshPage();
   }
 

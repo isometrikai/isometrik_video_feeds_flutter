@@ -36,7 +36,8 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
   final ValueNotifier<bool> _isPrivate = ValueNotifier(false);
   final ValueNotifier<bool> _enableCreateButton = ValueNotifier(false);
 
-  CollectionBloc get _collectionBloc => context.getOrCreateBloc<CollectionBloc>();
+  CollectionBloc get _collectionBloc =>
+      context.getOrCreateBloc<CollectionBloc>();
 
   final ValueNotifier<File?> localImage = ValueNotifier<File?>(null);
   final ValueNotifier<String> imageUrl = ValueNotifier<String>('');
@@ -84,8 +85,7 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
   bool get isEditMode => widget.collection != null;
 
   @override
-  Widget build(BuildContext context) =>
-      context.attachBlocIfNeeded(
+  Widget build(BuildContext context) => context.attachBlocIfNeeded(
         bloc: _collectionBloc,
         child: BlocListener<CollectionBloc, CollectionState>(
           bloc: _collectionBloc,
@@ -120,7 +120,30 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
               debugPrint(
                   'EditCollectionSuccessState received - dismissing bottom sheet');
               Utility.showToastMessage(state.message);
-              context.pop();
+              final existing = widget.collection;
+              if (existing == null) {
+                context.pop();
+                return;
+              }
+
+              final updated = CollectionData(
+                id: existing.id,
+                userId: existing.userId,
+                name: state.editCollectionRequestModel.name,
+                description: state.editCollectionRequestModel.description,
+                isPrivate: state.editCollectionRequestModel.isPrivate,
+                image: state.editCollectionRequestModel.image,
+                productIds: existing.productIds,
+                timestamp: existing.timestamp,
+                createdAt: existing.createdAt,
+                updatedTimeStamp: existing.updatedTimeStamp,
+                previewImages: existing.previewImages,
+                postCount: existing.postCount,
+                productCount: existing.productCount,
+                likes: existing.likes,
+              );
+
+              context.pop(updated);
             } else if (state is EditCollectionErrorState) {
               debugPrint('EditCollectionErrorState received: ${state.error}');
               Utility.showToastMessage(state.error);
@@ -158,7 +181,8 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
                       children: [
                         _buildImagePicker(),
                         IsrDimens.boxHeight(IsrDimens.twenty),
-                        _buildFieldLabel('${IsrTranslationFile.collectionName}*'),
+                        _buildFieldLabel(
+                            '${IsrTranslationFile.collectionName}*'),
                         _buildInputField(
                           _collectionNameController,
                           _collectionNameFocusNode,
@@ -353,18 +377,16 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
                 second: localImage,
                 builder: (context, _imageUrl, _localFile, _) {
                   Widget? imageWidget;
-                  if (_imageUrl.trim().isNotEmpty){
+                  if (_imageUrl.trim().isNotEmpty) {
                     imageWidget = AppImage.network(
                       _imageUrl,
-                      borderRadius:
-                      IsrDimens.borderRadiusAll(IsrDimens.eight),
+                      borderRadius: IsrDimens.borderRadiusAll(IsrDimens.eight),
                     );
                   } else if (_localFile != null) {
                     imageWidget = AppImage.file(
                       _localFile.path,
                       fit: BoxFit.cover,
-                      borderRadius:
-                      IsrDimens.borderRadiusAll(IsrDimens.eight),
+                      borderRadius: IsrDimens.borderRadiusAll(IsrDimens.eight),
                     );
                   }
                   if (imageWidget != null) {
