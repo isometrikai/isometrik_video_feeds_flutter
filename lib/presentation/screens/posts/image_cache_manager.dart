@@ -70,7 +70,7 @@ class ImageCacheManager implements IMediaCacheManager {
   }
 
   Future<void> _cacheImage(String url, {bool highPriority = false}) async {
-    final cleanUrl = url.split('?').first.split('#').first;
+    final cleanUrl = _normalizeImageUrl(url);
 
     // Validate that this is actually an image URL
     final mediaType = MediaTypeUtil.getMediaType(cleanUrl);
@@ -115,29 +115,37 @@ class ImageCacheManager implements IMediaCacheManager {
   }
 
   Future<void> _initializeImage(String url, {bool highPriority = false}) async {
+    final normalizedUrl = _normalizeImageUrl(url);
     try {
       // Since we're using CachedNetworkImage, focus on disk caching
       // CachedNetworkImage will handle its own memory cache
       if (highPriority) {
         // For high priority, preload into CachedNetworkImage's disk cache
-        await _diskCache.downloadFile(url);
+        await _diskCache.downloadFile(normalizedUrl);
         debugPrint(
-            '✅ ImageCacheManager: Successfully cached image on disk: $url');
+            '✅ ImageCacheManager: Successfully cached image on disk: $normalizedUrl');
 
         // Also preload into Flutter's memory cache for instant display
-        unawaited(_preloadIntoFlutterCache(url));
+        unawaited(_preloadIntoFlutterCache(normalizedUrl));
       } else {
         // For low priority, just trigger disk caching in background
-        unawaited(_diskCache.downloadFile(url).then((_) {
-          debugPrint(
-              '✅ ImageCacheManager: Successfully cached image on disk: $url');
-        }));
+        unawaited(
+          _diskCache.downloadFile(normalizedUrl).then((_) {
+            debugPrint(
+                '✅ ImageCacheManager: Successfully cached image on disk: $normalizedUrl');
+          }).catchError((e, st) {
+            // Precaching must never crash the UI; 404s and transient network errors are expected.
+            debugPrint(
+                '⚠️ ImageCacheManager: Disk cache download failed (ignored): $normalizedUrl');
+            debugPrint('Error details: $e');
+          }),
+        );
       }
     } catch (e) {
       debugPrint(
-          '❌ ImageCacheManager: Error initializing image cache for URL: $url');
+          '❌ ImageCacheManager: Error initializing image cache for URL: $normalizedUrl');
       debugPrint('Error details: $e');
-      rethrow;
+      // Precaching should be best-effort; never propagate errors to callers.
     }
   }
 
@@ -224,6 +232,26 @@ class ImageCacheManager implements IMediaCacheManager {
     } catch (e) {
       debugPrint('⚠️ Error checking disk cache for $url: $e');
       return false;
+    }
+  }
+
+  /// Normalizes image URLs for consistent caching & safe HTTP requests.
+  ///
+  /// - Strips query params & fragments to reduce duplicate cache entries
+  /// - Ensures the URL is properly percent-encoded (e.g. spaces)
+  String _normalizeImageUrl(String url) {
+    final trimmed = url.trim();
+    if (trimmed.isEmpty) return trimmed;
+
+    final noQuery = trimmed.split('?').first;
+    final noFragment = noQuery.split('#').first;
+
+    // If already a valid URI, keep its normalized string form.
+    try {
+      return Uri.parse(noFragment).toString();
+    } catch (_) {
+      // Fall back to a safe encoding for common invalid URLs (spaces, etc.).
+      return Uri.encodeFull(noFragment);
     }
   }
 }
