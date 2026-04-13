@@ -99,6 +99,8 @@ class IsrTranslationFile {
   static const reports = 'Reports';
   static const confirm = 'Confirm';
   static const failedToLoadReportReasons = 'Failed to load report reasons';
+  static const noReportReasonsAvailable =
+      'No report reasons are available at the moment.';
   static const selectDate = 'Select Date';
   static const String uploadingVideo = 'Uploading Video';
   static const String uploadingImage = 'Uploading Image';

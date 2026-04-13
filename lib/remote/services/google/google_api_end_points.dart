@@ -1,6 +1,6 @@
 class GoogleApiEndPoints {
   static const getGeocodeAddress =
-      'https://maps.googleapis.com/maps/api/geocode/json';
+      'https://maps.googleapis.com/maps/api/place/autocomplete/json';
   static const getAddressByAutoCompleteSearch =
       'https://maps.googleapis.com/maps/api/place/autocomplete/json';
   static const getPlaceDetails =

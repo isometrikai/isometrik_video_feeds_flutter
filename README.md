@@ -246,7 +246,7 @@ Config and callbacks are set via **`IsrVideoReelConfig`** (or passed into `initi
 
 | Config                    | Purpose |
 |---------------------------|--------|
-| **`socialConfig`**        | Theme, toasts, dialogs, buttons, fonts, colors; **SocialCallBackConfig**: `onLoginInvoked` (when login is required). |
+| **`socialConfig`**        | Theme, toasts, dialogs, buttons, fonts, colors; app-wide loader override via `loaderBuilder`; optional **`GoogleCloudUpload`** (`credentialsJsonPath`, `bucketName`); **SocialCallBackConfig**: `onLoginInvoked`, optional `uploadMediaToCloud`, `convertToGumletUrl`. |
 | **`postConfig`**          | Post UI (overlay, actions, media indicator, profile, description, location, shop, follow button); **PostCallBackConfig**: save/like/follow/share/comment/profile/tag-product/post-changed. |
 | **`tabConfig`**           | Tab bar, back button, loading, status bar; **TabCallBackConfig**: `onChangeOfTab`, `onReelsLoaded`, `getEmptyScreen`. |
 | **`commentConfig`**       | Comment bottom sheet, header, item, reply field, placeholder, more options. |
@@ -256,12 +256,60 @@ Config and callbacks are set via **`IsrVideoReelConfig`** (or passed into `initi
 
 ### Key callbacks (summary)
 
-- **SocialCallBackConfig**: `onLoginInvoked` → `Future<bool>` (login success/failure).
+- **SocialCallBackConfig**: `onLoginInvoked` → `Future<bool>` (login success/failure); optional `uploadMediaToCloud` (host upload); optional `convertToGumletUrl` (raw URL → Gumlet URL).
 - **PostCallBackConfig**: `onSaveChanged`, `onLikeChanged`, `onSaveClicked`, `onLikeClick`, `onFollowClick`, `onShareClicked`, `onCommentClick`, `onProfileClick`, `onTagProductClick`, `onPostChanged`.
 - **TabCallBackConfig**: `onChangeOfTab`, `onReelsLoaded`, `getEmptyScreen`.
 - **CreateEditPostCallBackConfig**: `onLinkProduct`.
 
-You can customize each config’s sub-properties (e.g. `ThemeConfig`, `ToastConfig`, `ButtonConfig`, `PostUIConfig`, etc.) as needed; see the respective model classes in the SDK for full options.
+### Google Cloud upload (`GoogleCloudUpload`)
+
+Optional on **`SocialConfig`**. Supply the filesystem path to your Google Cloud **service account JSON** key file and the **GCS bucket** name:
+
+```dart
+socialConfig: SocialConfig(
+  googleCloudUpload: GoogleCloudUpload(
+    credentialsJsonPath: '/path/to/service-account.json',
+    bucketName: 'your-gcs-bucket',
+  ),
+  // ... theme, callbacks, etc.
+)
+```
+
+| Field | Description |
+|-------|-------------|
+| `credentialsJsonPath` | Path to the service account credentials JSON file. |
+| `bucketName` | Target Google Cloud Storage bucket name. |
+
+You can customize each config’s sub-properties (e.g. `ThemeConfig`, `ToastConfig`, `ButtonConfig`, `GoogleCloudUpload`, `PostUIConfig`, etc.) as needed; see the respective model classes in the SDK for full options.
+
+### Reuse one loader across complete SDK
+
+Provide `loaderBuilder` in `SocialConfig` to use your app loader in all SDK loading states (dialog loaders and inline loaders):
+
+```dart
+socialConfig: SocialConfig(
+  loaderBuilder: (
+    context, {
+    bool isDialog = false,
+    String? message,
+    LoaderType? loaderType,
+    bool isAdaptive = true,
+  }) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const CircularProgressIndicator(),
+          if (isDialog && message != null) ...[
+            const SizedBox(height: 12),
+            Text(message),
+          ],
+        ],
+      ),
+    );
+  },
+),
+```
 
 ---
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 
 /// A widget that displays a initializing screen when the video editor startup.
 class VideoInitializingWidget extends StatelessWidget {
@@ -10,17 +11,17 @@ class VideoInitializingWidget extends StatelessWidget {
         backgroundColor: Colors.transparent,
         body: Container(
           color: Colors.white.withValues(alpha: 0.5),
-          child: const Center(
+          child: Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               spacing: 30,
               children: [
-                Icon(
+                const Icon(
                   Icons.video_camera_back_rounded,
                   size: 80,
                   color: Colors.black,
                 ),
-                Text(
+                const Text(
                   'Initializing Video-Editor...',
                   style: TextStyle(
                     fontSize: 18,
@@ -31,7 +32,7 @@ class VideoInitializingWidget extends StatelessWidget {
                 SizedBox(
                   width: 60,
                   height: 60,
-                  child: CircularProgressIndicator(),
+                  child: Utility.loaderWidget(isAdaptive: false),
                 ),
               ],
             ),

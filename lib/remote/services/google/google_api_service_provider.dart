@@ -70,7 +70,7 @@ class GoogleApiServiceProvider extends GoogleApiService with AppMixin {
 
     // Build the API URL - using Places Autocomplete API
     final apiURL =
-        '${GoogleApiEndPoints.getGeocodeAddress}?address=$encodedSearch&key=$apiKey&language=en&types=geocode';
+        '${GoogleApiEndPoints.getGeocodeAddress}?input=$encodedSearch&key=$apiKey&language=en'; //&types=geocode
 
     final response = await http.get(Uri.parse(apiURL));
     printLog(

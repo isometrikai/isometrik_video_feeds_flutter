@@ -196,7 +196,7 @@ class GoogleCloudStorageUploader {
             // Calculate upload progress (0% to 90%)
             final uploadProgress = (sent / total) * 0.9;
             onProgress(uploadProgress);
-            if (_logProgress != (uploadProgress * 100)) {
+            if (_logProgress != (uploadProgress * 100).toInt()) {
               _logProgress = (uploadProgress * 100).toInt();
               debugPrint(
                   'Upload progress: $_logProgress% ($sent/$total bytes)');

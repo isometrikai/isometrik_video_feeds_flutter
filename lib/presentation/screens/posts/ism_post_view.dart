@@ -523,7 +523,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
             },
       onPressSave: (reelsData, currentSaved) async {
         if (_postConfig.postCallBackConfig?.onSaveClicked == null) {
-          return await _handleCollection(reelsData, currentSaved);
+          _socialPostBloc.add(PlayPauseVideoEvent(play: false));
+          final res = await _handleCollection(reelsData, currentSaved);
+          _socialPostBloc.add(PlayPauseVideoEvent(play: true));
+          return res;
         } else {
           _socialPostBloc.add(PlayPauseVideoEvent(play: false));
           final postData = reelsData.postData is TimeLineData
@@ -1212,8 +1215,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           : postData.media?.first.url.toString() ?? '';
     }
     final updatedSaveStatus = await Utility.showBottomSheet(
-      child: BlocProvider<CollectionBloc>(
-        create: (context) => IsmInjectionUtils.getBloc<CollectionBloc>(),
+      child: BlocProvider<CollectionBloc>.value(
+        value: IsmInjectionUtils.getBloc<CollectionBloc>(),
         child: CollectionBottomSheetWidget(
           postId: reelsData.postId ?? '',
           isFromPost: true,

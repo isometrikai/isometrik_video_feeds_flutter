@@ -142,8 +142,7 @@ class _CollectionBottomSheetWidgetState
         _additionalItemsCount[collectionIdToUpdate] =
             (_additionalItemsCount[collectionIdToUpdate] ?? 0) + 1;
 
-        // Update button state
-        _updateDoneButtonState();
+        Navigator.pop(context);
 
         debugPrint('Collection $collectionIdToUpdate updated - item added');
       },
@@ -221,9 +220,8 @@ class _CollectionBottomSheetWidgetState
                         await Utility.showCustomizedBottomSheet(
                           isRoundedCorners: false,
                           isScrollControlled: true,
-                          child: BlocProvider<CollectionBloc>(
-                            create: (context) =>
-                                IsmInjectionUtils.getBloc<CollectionBloc>(),
+                          child: BlocProvider<CollectionBloc>.value(
+                            value: _collectionBloc,
                             child: CreateCollectionView(
                               productOrPostId: widget.postId,
                               defaultCollectionImage: widget.thumbnailUrl ?? '',
@@ -263,36 +261,36 @@ class _CollectionBottomSheetWidgetState
                           return const SizedBox.shrink();
                         }
 
-                        // Build map once - only on first load
-                        if (_collectionMap.isEmpty) {
-                          debugPrint('Building collection map...');
-                          for (final collection in state.collectionList) {
-                            final collectionId = collection.id ?? '';
+                        // Build map (cache) and set initial selection (only once)
+                        debugPrint('Syncing collection cache...');
+                        for (final collection in state.collectionList) {
+                          final collectionId = collection.id ?? '';
+                          debugPrint(
+                              'Collection: ${collection.name}, ID: "$collectionId"');
+                          // Skip collections with empty ID
+                          if (collectionId.isEmpty) {
                             debugPrint(
-                                'Collection: ${collection.name}, ID: "$collectionId"');
-                            // Skip collections with empty ID
-                            if (collectionId.isEmpty) {
-                              debugPrint(
-                                  'Skipping collection with empty ID: ${collection.name}');
-                              continue;
-                            }
-                            _collectionMap[collectionId] = collection;
+                                'Skipping collection with empty ID: ${collection.name}');
+                            continue;
+                          }
 
-                            // Check if post exists in collection (set initial selection)
-                            final items = collection.productIds ?? [];
-                            if (items.any((item) => item.id == widget.postId)) {
-                              // Only set if not already set (first match wins)
-                              if (_initialSelectedCollectionId == null) {
-                                _initialSelectedCollectionId = collectionId;
-                                selectedCollectionNotifier.value = collectionId;
-                                debugPrint(
-                                    'Initial selection set to: $collectionId');
-                              }
+                          // Don't overwrite locally updated collection data
+                          _collectionMap.putIfAbsent(collectionId, () => collection);
+
+                          // Check if post exists in collection (set initial selection)
+                          final items = collection.productIds ?? [];
+                          if (items.any((item) => item.id == widget.postId)) {
+                            // Only set if not already set (first match wins)
+                            if (_initialSelectedCollectionId == null) {
+                              _initialSelectedCollectionId = collectionId;
+                              selectedCollectionNotifier.value = collectionId;
+                              debugPrint(
+                                  'Initial selection set to: $collectionId');
                             }
                           }
-                          debugPrint(
-                              'Collection map built with ${_collectionMap.length} items');
                         }
+                        debugPrint(
+                            'Collection cache has ${_collectionMap.length} items');
 
                         return ValueListenableBuilder<String?>(
                           valueListenable: selectedCollectionNotifier,
@@ -302,11 +300,15 @@ class _CollectionBottomSheetWidgetState
                             return ListView.builder(
                               controller: _scrollController,
                               itemCount: state.collectionList.length,
-                              itemBuilder: (context, index) =>
-                                  _buildCollectionTile(
-                                state.collectionList[index],
-                                selectedCollectionId,
-                              ),
+                              itemBuilder: (context, index) {
+                                final fallback = state.collectionList[index];
+                                final id = fallback.id ?? '';
+                                final collection = _collectionMap[id] ?? fallback;
+                                return _buildCollectionTile(
+                                  collection,
+                                  selectedCollectionId,
+                                );
+                              },
                             );
                           },
                         );
@@ -380,10 +382,18 @@ class _CollectionBottomSheetWidgetState
         value: isSelected,
         title: GestureDetector(
           onTap: () async {
-            await IsrAppNavigator.navigateCollectionDetailsView(
+            final result = await IsrAppNavigator.navigateCollectionDetailsView(
               context,
               collectionData: collection,
             );
+            if (result is CollectionData) {
+              setState(() {
+                final id = result.id ?? '';
+                if (id.isNotEmpty) {
+                  _collectionMap[id] = result;
+                }
+              });
+            }
           },
           child: Row(
             children: [
@@ -428,8 +438,10 @@ class _CollectionBottomSheetWidgetState
                         final additionalCount =
                             _additionalItemsCount[collectionId] ?? 0;
                         final totalCount = baseCount + additionalCount;
+                        debugPrint(
+                            'Collection: ${collection.name}, Base Count: $baseCount, Additional Count: $additionalCount, Total Count: $totalCount');
                         return Text(
-                          '${(collection.isPrivate ?? false) ? IsrTranslationFile.private : IsrTranslationFile.public} • $totalCount ${totalCount <= 1 ? "Item" : "Items"}',
+                          '${(collection.isPrivate ?? false) ? IsrTranslationFile.private : IsrTranslationFile.public}', // count not present in api yet • $totalCount ${totalCount <= 1 ? "Item" : "Items"}',
                           style: IsrStyles.primaryText12.copyWith(
                             color: '767676'.toColor(),
                           ),

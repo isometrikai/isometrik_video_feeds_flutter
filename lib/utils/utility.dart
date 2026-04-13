@@ -428,12 +428,29 @@ class Utility {
     }
   }
 
-  static Widget loaderWidget({bool? isAdaptive = true}) => Center(
-        child: isAdaptive == true
-            ? const CircularProgressIndicator.adaptive(
-                backgroundColor: Colors.white)
-            : const CircularProgressIndicator(color: Colors.white),
+  static Widget loaderWidget({bool? isAdaptive = true}) {
+    final appLoaderBuilder = IsrVideoReelConfig.socialConfig.loaderBuilder;
+    if (appLoaderBuilder != null) {
+      final loaderContext = context ?? IsrVideoReelConfig.buildContext;
+      if (loaderContext == null) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      // Reuse app-side loader for inline placeholders as well.
+      return appLoaderBuilder(
+        loaderContext,
+        isDialog: false,
+        loaderType: LoaderType.normal,
+        isAdaptive: isAdaptive ?? true,
       );
+    }
+    return Center(
+      child: isAdaptive == true
+          ? CircularProgressIndicator.adaptive(
+              backgroundColor: IsrColors.appColor,
+            )
+          : CircularProgressIndicator(color: IsrColors.appColor),
+    );
+  }
 
   /// get formated date
   static String getFormattedDateWithNumberOfDays(int? numberOfDays,
@@ -589,25 +606,7 @@ class Utility {
 
   /// returns gumlet image url
   static String buildGumletImageUrl(
-      {required String imageUrl, double? width, double? height}) {
-    final finalImageUrl =
-        removeSourceUrl(imageUrl).replaceAll('trulyfree-staging/', '');
-    final queryParameter = StringBuffer();
-    if (width != null && width != 0) {
-      queryParameter.write('w=$width');
-    }
-    if (height != null && height != 0) {
-      if (queryParameter.isNotEmpty) {
-        queryParameter.write('&');
-      }
-      queryParameter.write('h=$height');
-    }
-    // queryParameter.write('&q=70');
-
-    final optimizedImageUrl =
-        '${AppUrl.gumletUrl}/$finalImageUrl${queryParameter.isNotEmpty ? '?$queryParameter' : ''}';
-    return optimizedImageUrl;
-  }
+      {required String imageUrl, double? width, double? height}) => IsrVideoReelConfig.socialConfig.socialCallBackConfig?.convertToGumletUrl?.call(imageUrl).takeIfNotEmpty() ?? imageUrl;
 
   /// removes source url and extract only file name
   static String removeSourceUrl(String url) {

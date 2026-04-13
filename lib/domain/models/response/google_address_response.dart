@@ -22,9 +22,13 @@ class GoogleAddressResponse {
 
   factory GoogleAddressResponse.fromJson(Map<String, dynamic> json) =>
       GoogleAddressResponse(
-        results: json['results'] == null
+        // Supports both:
+        // - Geocode / TextSearch / NearbySearch style responses (`results`)
+        // - Places Autocomplete responses (`predictions`)
+        results: (json['results'] ?? json['predictions']) == null
             ? []
-            : List<Result>.from((json['results'] as List<dynamic>)
+            : List<Result>.from(((json['results'] ?? json['predictions'])
+                    as List<dynamic>)
                 .map((x) => Result.fromJson(x as Map<String, dynamic>))),
         status: json['status'] as String? ?? '',
       );
@@ -51,27 +55,44 @@ class Result {
     this.types,
   });
 
-  factory Result.fromJson(Map<String, dynamic> json) => Result(
-        addressComponents: json['address_components'] == null
-            ? []
-            : List<AddressComponent>.from(
-                (json['address_components'] as List<dynamic>).map((x) =>
-                    AddressComponent.fromJson(x as Map<String, dynamic>))),
-        formattedAddress: json['formatted_address'] as String? ?? '',
-        geometry: json['geometry'] == null
-            ? null
-            : Geometry.fromJson(json['geometry'] as Map<String, dynamic>),
-        placeId: json['place_id'] as String? ?? '',
-        name: json['name'] as String? ?? '',
-        postcodeLocalities: json['postcode_localities'] == null
-            ? []
-            : List<String>.from((json['postcode_localities'] as List<dynamic>)
-                .map((x) => x as String)),
-        types: json['types'] == null
-            ? []
-            : List<String>.from(
-                (json['types'] as List<dynamic>).map((x) => x as String)),
-      );
+  factory Result.fromJson(Map<String, dynamic> json) {
+    final structuredFormatting =
+        json['structured_formatting'] as Map<String, dynamic>?;
+
+    // Supports both:
+    // - Geocode / Place Details: `name`, `formatted_address`
+    // - Places Autocomplete predictions: `structured_formatting.main_text`,
+    //   `structured_formatting.secondary_text`
+    final name = (structuredFormatting?['main_text'] as String?) ??
+        (json['name'] as String?) ??
+        '';
+    final formattedAddress =
+        (structuredFormatting?['secondary_text'] as String?) ??
+            (json['formatted_address'] as String?) ??
+            '';
+
+    return Result(
+      addressComponents: json['address_components'] == null
+          ? []
+          : List<AddressComponent>.from(
+              (json['address_components'] as List<dynamic>).map((x) =>
+                  AddressComponent.fromJson(x as Map<String, dynamic>))),
+      formattedAddress: formattedAddress,
+      geometry: json['geometry'] == null
+          ? null
+          : Geometry.fromJson(json['geometry'] as Map<String, dynamic>),
+      placeId: json['place_id'] as String? ?? '',
+      name: name,
+      postcodeLocalities: json['postcode_localities'] == null
+          ? []
+          : List<String>.from((json['postcode_localities'] as List<dynamic>)
+              .map((x) => x as String)),
+      types: json['types'] == null
+          ? []
+          : List<String>.from(
+              (json['types'] as List<dynamic>).map((x) => x as String)),
+    );
+  }
 
   List<AddressComponent>? addressComponents;
   String? formattedAddress;

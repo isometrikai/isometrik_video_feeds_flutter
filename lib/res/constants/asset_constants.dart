@@ -41,7 +41,7 @@ class AssetConstants {
   static const String icMoreIcon =
       '${packageName}assets/icons/ic_more_icon.svg';
   static final String googleServiceJson =
-      IsrVideoReelConfig.googleServiceJsonPath ??
+      IsrVideoReelConfig.socialConfig.googleCloudUpload?.credentialsJsonPath ??
           'assets/json/google_service_json.json';
   static const String icShareIcon =
       '${packageName}assets/icons/ic_share_icon.png';

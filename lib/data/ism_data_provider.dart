@@ -16,19 +16,29 @@ class IsmDataProvider {
   static IsmDataProvider get instance => _instance;
 
   /// Get UseCases from DI
-  CollectionUseCase get _collectionUseCase => IsmInjectionUtils.getUseCase<CollectionUseCase>();
+  CollectionUseCase get _collectionUseCase =>
+      IsmInjectionUtils.getUseCase<CollectionUseCase>();
 
-  SavePostUseCase get _savedPostUseCase => IsmInjectionUtils.getUseCase<SavePostUseCase>();
+  SavePostUseCase get _savedPostUseCase =>
+      IsmInjectionUtils.getUseCase<SavePostUseCase>();
 
   GetTaggedPostsUseCase get _getTaggedPostUseCase =>
       IsmInjectionUtils.getUseCase<GetTaggedPostsUseCase>();
 
+  GetTrendingPostUseCase get _getTrendingPostUseCase =>
+      IsmInjectionUtils.getUseCase<GetTrendingPostUseCase>();
+
+  SocialUserProfileUseCase get _socialUserProfileUseCase =>
+      IsmInjectionUtils.getUseCase<SocialUserProfileUseCase>();
+
   GetUserPostDataUseCase get _userPostDataUseCase =>
       IsmInjectionUtils.getUseCase<GetUserPostDataUseCase>();
 
-  CreatePostUseCase get _createPostUseCase => IsmInjectionUtils.getUseCase<CreatePostUseCase>();
+  CreatePostUseCase get _createPostUseCase =>
+      IsmInjectionUtils.getUseCase<CreatePostUseCase>();
 
-  DeletePostUseCase get _deletePostUseCase => IsmInjectionUtils.getUseCase<DeletePostUseCase>();
+  DeletePostUseCase get _deletePostUseCase =>
+      IsmInjectionUtils.getUseCase<DeletePostUseCase>();
 
   /// Private generic handler to reduce code duplication
   Future<void> _executeApiCall<T>({
@@ -47,6 +57,22 @@ class IsmDataProvider {
     } else {
       onError?.call(result.error?.message ?? '', result.statusCode ?? 500);
     }
+  }
+
+  Future<void> fetchTrendingPost({
+    String? cursor,
+    required int limit,
+    bool isLoading = false,
+    Function(String, int)? onSuccess,
+    Function(String, int)? onError,
+  }) async {
+    await _executeApiCall(
+      apiCall: () => _getTrendingPostUseCase.executeGetTrendingPost(
+          isLoading: isLoading, limit: limit, cursor: cursor),
+      toJson: (data) => data?.toMap() ?? {},
+      onSuccess: onSuccess,
+      onError: onError,
+    );
   }
 
   /// Fetches collection list
@@ -308,6 +334,24 @@ class IsmDataProvider {
         tagValue: tagValue,
       ),
       toJson: (data) => data?.toMap() ?? {},
+      onSuccess: onSuccess,
+      onError: onError,
+    );
+  }
+
+  /// Get tagged posts
+  Future<void> getSocialUserDetails({
+    required String userId,
+    bool isLoading = false,
+    Function(String, int)? onSuccess,
+    Function(String, int)? onError,
+  }) async {
+    await _executeApiCall(
+      apiCall: () => _socialUserProfileUseCase.executeSearchUser(
+        isLoading: isLoading,
+        userId: userId,
+      ),
+      toJson: (data) => data?.toJson() ?? {},
       onSuccess: onSuccess,
       onError: onError,
     );

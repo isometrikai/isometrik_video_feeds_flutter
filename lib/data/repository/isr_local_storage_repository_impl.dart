@@ -1,5 +1,7 @@
 import 'package:ism_video_reel_player/data/data.dart';
+import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
 class IsrLocalStorageRepositoryImpl implements IsrLocalStorageRepository {
@@ -59,8 +61,14 @@ class IsrLocalStorageRepositoryImpl implements IsrLocalStorageRepository {
   void clearSession() {}
 
   @override
-  Future<String> getUserId() async =>
-      await _localStorageManager.getSecuredValue(LocalStorageKeys.userId);
+  // Future<String> getUserId() async => await _localStorageManager.getSecuredValue(LocalStorageKeys.userId);
+  Future<String> getUserId() async {
+    var userId = await _localStorageManager.getSecuredValue(LocalStorageKeys.userId);
+    if (userId.trim().isEmpty && await isLoggedIn()) {
+      userId = IsmInjectionUtils.getBloc<IsmSocialActionCubit>().userId;
+    }
+    return userId;
+  }
 
   @override
   Future<String> getEmail() async =>

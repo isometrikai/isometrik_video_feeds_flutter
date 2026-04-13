@@ -435,8 +435,8 @@ class IsrAppNavigator {
     required CollectionData collectionData,
     TransitionType? transitionType,
   }) async {
-    final page = BlocProvider<CollectionBloc>(
-      create: (_) => IsmInjectionUtils.getBloc<CollectionBloc>(),
+    final page = BlocProvider<CollectionBloc>.value(
+      value: IsmInjectionUtils.getBloc<CollectionBloc>(),
       child: CollectionDetailsView(
         collectionData: collectionData,
       ),

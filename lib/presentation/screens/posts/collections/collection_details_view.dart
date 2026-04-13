@@ -775,17 +775,25 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
 
   /// Handles editing the collection
   Future<void> _handleEditCollection() async {
-    await Utility.showCustomizedBottomSheet(
+    final result = await Utility.showCustomizedBottomSheet(
       isRoundedCorners: false,
       isScrollControlled: true,
-      child: BlocProvider<CollectionBloc>(
-        create: (context) => IsmInjectionUtils.getBloc<CollectionBloc>(),
+      child: BlocProvider<CollectionBloc>.value(
+        value: IsmInjectionUtils.getBloc<CollectionBloc>(),
         child: CreateCollectionView(
           collection: collection,
           defaultCollectionImage: collection?.image ?? '',
         ),
       ),
     );
+
+    if (result is CollectionData) {
+      setState(() {
+        widget.collectionData = result;
+        collection = result;
+        collectionId = result.id;
+      });
+    }
     await _refreshPage();
   }
 
@@ -815,9 +823,9 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
                 Expanded(
                   child: AppButton(
                     title: IsrTranslationFile.cancel,
+                    type: ButtonType.secondary,
                     onPress: () => context.pop(),
                     backgroundColor: IsrColors.colorF5F5F5,
-                    textColor: IsrColors.black,
                   ),
                 ),
                 12.responsiveHorizontalSpace,

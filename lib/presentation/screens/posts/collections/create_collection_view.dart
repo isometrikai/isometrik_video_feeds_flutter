@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -37,7 +36,8 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
   final ValueNotifier<bool> _isPrivate = ValueNotifier(false);
   final ValueNotifier<bool> _enableCreateButton = ValueNotifier(false);
 
-  final _collectionBloc = IsmInjectionUtils.getBloc<CollectionBloc>();
+  CollectionBloc get _collectionBloc =>
+      context.getOrCreateBloc<CollectionBloc>();
 
   final ValueNotifier<File?> localImage = ValueNotifier<File?>(null);
   final ValueNotifier<String> imageUrl = ValueNotifier<String>('');
@@ -85,247 +85,273 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
   bool get isEditMode => widget.collection != null;
 
   @override
-  Widget build(BuildContext context) =>
-      BlocListener<CollectionBloc, CollectionState>(
+  Widget build(BuildContext context) => context.attachBlocIfNeeded(
         bloc: _collectionBloc,
-        listener: (context, state) {
-          debugPrint(
-              'CreateCollectionView BlocListener received state: $state');
-
-          if (state is CreateCollectionSuccessState) {
+        child: BlocListener<CollectionBloc, CollectionState>(
+          bloc: _collectionBloc,
+          listener: (context, state) {
             debugPrint(
-                'CreateCollectionSuccessState received - dismissing bottom sheet');
-            Utility.showToastMessage(state.message);
+                'CreateCollectionView BlocListener received state: $state');
 
-            if ((widget.productOrPostId ?? '').isNotEmpty) {
-              _collectionBloc.add(
-                MoveToCollectionEvent(
-                  postId: widget.productOrPostId ?? '',
-                  collectionId: state.collectionId,
-                ),
-              );
-            } else {
-              _collectionBloc.add(GetUserCollectionEvent(
-                limit: 20,
-                skip: 1,
-              ));
-            }
+            if (state is CreateCollectionSuccessState) {
+              debugPrint(
+                  'CreateCollectionSuccessState received - dismissing bottom sheet');
+              Utility.showToastMessage(state.message);
 
-            context.pop();
-          } else if (state is CreateCollectionErrorState) {
-            debugPrint('CreateCollectionErrorState received: ${state.error}');
-            Utility.showToastMessage(state.error);
-          } else if (state is EditCollectionSuccessState) {
-            debugPrint(
-                'EditCollectionSuccessState received - dismissing bottom sheet');
-            Utility.showToastMessage(state.message);
-            context.pop();
-          } else if (state is EditCollectionErrorState) {
-            debugPrint('EditCollectionErrorState received: ${state.error}');
-            Utility.showToastMessage(state.error);
-          } else if (state is CollectionImageUpdateSuccessState) {
-            imageUrl.value = state.imageString;
-            localImage.value = state.localFile;
-            FocusManager.instance.primaryFocus?.unfocus();
-            enableCreatebtn();
-          }
-        },
-        child: Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CommonTitleTextWidget(
-                title: isEditMode
-                    ? IsrTranslationFile.editCollection
-                    : IsrTranslationFile.createNewCollection,
-                showCloseIcon: true,
-                removePadding: true,
-              ),
-              12.responsiveVerticalSpace,
-              // const CustomDivider(
-              //   color: IsrColors.colorD4D4D4,
-              //   height: 1,
-              // ),
-              // 16.responsiveVerticalSpace,
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildImagePicker(),
-                      IsrDimens.boxHeight(IsrDimens.twenty),
-                      _buildFieldLabel('${IsrTranslationFile.collectionName}*'),
-                      _buildInputField(
-                        _collectionNameController,
-                        _collectionNameFocusNode,
-                        IsrTranslationFile.collectionName,
-                        inputFormatter: [
-                          // FilteringTextInputFormatter.allow(
-                          //   RegExp(r'[a-zA-Z0-9 ]'),
-                          // ),
-                          NoFirstSpaceFormatter(),
-                          CapitalizeTextFormatter(
-                              capitalizeOnlyFirstLetter: true),
-                        ],
-                        onChange: (val) {
-                          // _collectionNameController.updateTextWithCursor(
-                          //     (_) => Utility.capitalizeString(val,
-                          //         capitalizeOnlyFirstLetter: true));
-                          enableCreatebtn();
-                        },
-                        maxLength: 42,
-                      ),
-                      IsrDimens.boxHeight(IsrDimens.twelve),
-                      _buildFieldLabel(
-                          '${IsrTranslationFile.description}(Optional)'),
-                      _buildInputField(
-                        _descriptionController,
-                        _descriptionFocusNode,
-                        IsrTranslationFile.description,
-                        maxLines: 5,
-                        onChange: (desc) {
-                          enableCreatebtn();
-                        },
-                        maxLength: 200,
-                        showCountBuilder: true,
-                      ),
-                      IsrDimens.boxHeight(IsrDimens.sixteen),
-                      // Text(
-                      //   IsrTranslationFile.shareSettings,
-                      //   style: IsrStyles.primaryText14.copyWith(
-                      //     fontWeight: FontWeight.w500,
-                      //   ),
-                      // ),
-                      // IsrDimens.boxHeight(IsrDimens.sixteen),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              const AppImage.svg(
-                                AssetConstants.icLockIcon,
-                                color: IsrColors.color333333,
-                              ),
-                              8.responsiveHorizontalSpace,
-                              Text(
-                                IsrTranslationFile.makeThisCollectionPrivate,
-                                style: IsrStyles.secondaryText14.copyWith(
-                                  color: IsrColors.color333333,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                          ValueListenableBuilder(
-                            valueListenable: _isPrivate,
-                            builder: (_, isPrivate, __) => Switch(
-                              activeThumbColor: IsrColors.appColor,
-                              activeTrackColor:
-                                  IsrColors.appColor.applyOpacity(0.1),
-                              inactiveTrackColor: 'EBEBEB'.toColor(),
-                              inactiveThumbColor: '6B6B6B'.toColor(),
-                              trackOutlineWidth: WidgetStateProperty.all(0),
-                              trackOutlineColor: WidgetStateProperty.all(
-                                  IsrColors.transparent),
-                              value: isPrivate,
-                              onChanged: (value) {
-                                _isPrivate.value = value;
-                                enableCreatebtn();
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                      // ValueListenableBuilder<bool>(
-                      //   valueListenable: _isPrivate,
-                      //   builder: (_, isPrivate, __) => IntrinsicHeight(
-                      //     child: Row(
-                      //       children: [
-                      //         _buildSharingOption(
-                      //           AssetConstants.icEarth,
-                      //           IsrTranslationFile.public,
-                      //           IsrTranslationFile.anyoneCanView,
-                      //           isPrivate,
-                      //           false,
-                      //         ),
-                      //         8.responsiveHorizontalSpace,
-                      //         _buildSharingOption(
-                      //           AssetConstants.icLock,
-                      //           IsrTranslationFile.private,
-                      //           IsrTranslationFile.onlyYouCanView,
-                      //           isPrivate,
-                      //           true,
-                      //         ),
-                      //       ],
-                      //     ),
-                      //   ),
-                      // ),
-                      24.responsiveVerticalSpace,
-                    ],
+              if ((widget.productOrPostId ?? '').isNotEmpty) {
+                _collectionBloc.add(
+                  MoveToCollectionEvent(
+                    postId: widget.productOrPostId ?? '',
+                    collectionId: state.collectionId,
                   ),
+                );
+              } else {
+                _collectionBloc.add(GetUserCollectionEvent(
+                  limit: 20,
+                  skip: 1,
+                ));
+              }
+
+              context.pop();
+            } else if (state is CreateCollectionErrorState) {
+              debugPrint('CreateCollectionErrorState received: ${state.error}');
+              Utility.showToastMessage(state.error);
+            } else if (state is EditCollectionSuccessState) {
+              debugPrint(
+                  'EditCollectionSuccessState received - dismissing bottom sheet');
+              Utility.showToastMessage(state.message);
+              final existing = widget.collection;
+              if (existing == null) {
+                context.pop();
+                return;
+              }
+
+              final updated = CollectionData(
+                id: existing.id,
+                userId: existing.userId,
+                name: state.editCollectionRequestModel.name,
+                description: state.editCollectionRequestModel.description,
+                isPrivate: state.editCollectionRequestModel.isPrivate,
+                image: state.editCollectionRequestModel.image,
+                productIds: existing.productIds,
+                timestamp: existing.timestamp,
+                createdAt: existing.createdAt,
+                updatedTimeStamp: existing.updatedTimeStamp,
+                previewImages: existing.previewImages,
+                postCount: existing.postCount,
+                productCount: existing.productCount,
+                likes: existing.likes,
+              );
+
+              context.pop(updated);
+            } else if (state is EditCollectionErrorState) {
+              debugPrint('EditCollectionErrorState received: ${state.error}');
+              Utility.showToastMessage(state.error);
+            } else if (state is CollectionImageUpdateSuccessState) {
+              imageUrl.value = state.imageString;
+              localImage.value = state.localFile;
+              FocusManager.instance.primaryFocus?.unfocus();
+              enableCreatebtn();
+            }
+          },
+          child: Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CommonTitleTextWidget(
+                  title: isEditMode
+                      ? IsrTranslationFile.editCollection
+                      : IsrTranslationFile.createNewCollection,
+                  showCloseIcon: true,
+                  removePadding: true,
                 ),
-              ),
-              Padding(
-                padding: IsrDimens.edgeInsets(
-                  bottom: MediaQuery.of(context).padding.bottom +
-                      14.responsiveDimension,
-                ),
-                child: ValueListenableBuilder<bool>(
-                  valueListenable: _enableCreateButton,
-                  builder: (context, _enable, _) =>
-                      BlocBuilder<CollectionBloc, CollectionState>(
-                    bloc: _collectionBloc,
-                    buildWhen: (previous, current) =>
-                        current is CreateCollectionLoadingState ||
-                        current is CreateCollectionSuccessState ||
-                        current is CreateCollectionErrorState ||
-                        current is EditCollectionLoadingState ||
-                        current is EditCollectionSuccessState ||
-                        current is EditCollectionErrorState,
-                    builder: (context, state) => AppButton(
-                      isDisable: !_enable,
-                      borderRadius: 6.responsiveDimension,
-                      title: isEditMode
-                          ? IsrTranslationFile.save
-                          : IsrTranslationFile.createCollection,
-                      onPress: () {
-                        if (isEditMode) {
-                          _collectionBloc.add(
-                            EditUserCollectionEvent(
-                                EditCollectionRequestModel(
-                                    isPrivate: _isPrivate.value,
-                                    name: _collectionNameController.text,
-                                    description: _descriptionController.text,
-                                    image: imageUrl.value,
-                                    id: widget.collection?.id ?? ''),
-                                widget.collection?.id ?? ''),
-                          );
-                        } else {
-                          _collectionBloc.add(
-                            CreateUserCollectionEvent(
-                              createCollectionRequestModel:
-                                  CreateCollectionRequestModel(
-                                isPrivate: _isPrivate.value,
-                                name: _collectionNameController.text,
-                                description: _descriptionController.text,
-                                imageUrl: imageUrl.value,
+                12.responsiveVerticalSpace,
+                // const CustomDivider(
+                //   color: IsrColors.colorD4D4D4,
+                //   height: 1,
+                // ),
+                // 16.responsiveVerticalSpace,
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildImagePicker(),
+                        IsrDimens.boxHeight(IsrDimens.twenty),
+                        _buildFieldLabel(
+                            '${IsrTranslationFile.collectionName}*'),
+                        _buildInputField(
+                          _collectionNameController,
+                          _collectionNameFocusNode,
+                          IsrTranslationFile.collectionName,
+                          inputFormatter: [
+                            // FilteringTextInputFormatter.allow(
+                            //   RegExp(r'[a-zA-Z0-9 ]'),
+                            // ),
+                            NoFirstSpaceFormatter(),
+                            CapitalizeTextFormatter(
+                                capitalizeOnlyFirstLetter: true),
+                          ],
+                          onChange: (val) {
+                            // _collectionNameController.updateTextWithCursor(
+                            //     (_) => Utility.capitalizeString(val,
+                            //         capitalizeOnlyFirstLetter: true));
+                            enableCreatebtn();
+                          },
+                          maxLength: 42,
+                        ),
+                        IsrDimens.boxHeight(IsrDimens.twelve),
+                        _buildFieldLabel(
+                            '${IsrTranslationFile.description}(Optional)'),
+                        _buildInputField(
+                          _descriptionController,
+                          _descriptionFocusNode,
+                          IsrTranslationFile.description,
+                          maxLines: 5,
+                          onChange: (desc) {
+                            enableCreatebtn();
+                          },
+                          maxLength: 200,
+                          showCountBuilder: true,
+                        ),
+                        IsrDimens.boxHeight(IsrDimens.sixteen),
+                        // Text(
+                        //   IsrTranslationFile.shareSettings,
+                        //   style: IsrStyles.primaryText14.copyWith(
+                        //     fontWeight: FontWeight.w500,
+                        //   ),
+                        // ),
+                        // IsrDimens.boxHeight(IsrDimens.sixteen),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                const AppImage.svg(
+                                  AssetConstants.icLockIcon,
+                                  color: IsrColors.color333333,
+                                ),
+                                8.responsiveHorizontalSpace,
+                                Text(
+                                  IsrTranslationFile.makeThisCollectionPrivate,
+                                  style: IsrStyles.secondaryText14.copyWith(
+                                    color: IsrColors.color333333,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            ValueListenableBuilder(
+                              valueListenable: _isPrivate,
+                              builder: (_, isPrivate, __) => Switch(
+                                activeThumbColor: IsrColors.appColor,
+                                activeTrackColor:
+                                    IsrColors.appColor.applyOpacity(0.1),
+                                inactiveTrackColor: 'EBEBEB'.toColor(),
+                                inactiveThumbColor: '6B6B6B'.toColor(),
+                                trackOutlineWidth: WidgetStateProperty.all(0),
+                                trackOutlineColor: WidgetStateProperty.all(
+                                    IsrColors.transparent),
+                                value: isPrivate,
+                                onChanged: (value) {
+                                  _isPrivate.value = value;
+                                  enableCreatebtn();
+                                },
                               ),
                             ),
-                          );
-                        }
-                      },
-                      isLoading: state is CreateCollectionLoadingState ||
-                          state is EditCollectionLoadingState,
-                      textStyle: IsrStyles.primaryText14
-                          .copyWith(color: IsrColors.white),
+                          ],
+                        ),
+                        // ValueListenableBuilder<bool>(
+                        //   valueListenable: _isPrivate,
+                        //   builder: (_, isPrivate, __) => IntrinsicHeight(
+                        //     child: Row(
+                        //       children: [
+                        //         _buildSharingOption(
+                        //           AssetConstants.icEarth,
+                        //           IsrTranslationFile.public,
+                        //           IsrTranslationFile.anyoneCanView,
+                        //           isPrivate,
+                        //           false,
+                        //         ),
+                        //         8.responsiveHorizontalSpace,
+                        //         _buildSharingOption(
+                        //           AssetConstants.icLock,
+                        //           IsrTranslationFile.private,
+                        //           IsrTranslationFile.onlyYouCanView,
+                        //           isPrivate,
+                        //           true,
+                        //         ),
+                        //       ],
+                        //     ),
+                        //   ),
+                        // ),
+                        24.responsiveVerticalSpace,
+                      ],
                     ),
                   ),
                 ),
-              ),
-            ],
+                Padding(
+                  padding: IsrDimens.edgeInsets(
+                    bottom: MediaQuery.of(context).padding.bottom +
+                        14.responsiveDimension,
+                  ),
+                  child: ValueListenableBuilder<bool>(
+                    valueListenable: _enableCreateButton,
+                    builder: (context, _enable, _) =>
+                        BlocBuilder<CollectionBloc, CollectionState>(
+                      bloc: _collectionBloc,
+                      buildWhen: (previous, current) =>
+                          current is CreateCollectionLoadingState ||
+                          current is CreateCollectionSuccessState ||
+                          current is CreateCollectionErrorState ||
+                          current is EditCollectionLoadingState ||
+                          current is EditCollectionSuccessState ||
+                          current is EditCollectionErrorState,
+                      builder: (context, state) => AppButton(
+                        isDisable: !_enable,
+                        borderRadius: 6.responsiveDimension,
+                        title: isEditMode
+                            ? IsrTranslationFile.save
+                            : IsrTranslationFile.createCollection,
+                        onPress: () {
+                          if (isEditMode) {
+                            _collectionBloc.add(
+                              EditUserCollectionEvent(
+                                  EditCollectionRequestModel(
+                                      isPrivate: _isPrivate.value,
+                                      name: _collectionNameController.text,
+                                      description: _descriptionController.text,
+                                      image: imageUrl.value,
+                                      id: widget.collection?.id ?? ''),
+                                  widget.collection?.id ?? ''),
+                            );
+                          } else {
+                            _collectionBloc.add(
+                              CreateUserCollectionEvent(
+                                createCollectionRequestModel:
+                                    CreateCollectionRequestModel(
+                                  isPrivate: _isPrivate.value,
+                                  name: _collectionNameController.text,
+                                  description: _descriptionController.text,
+                                  imageUrl: imageUrl.value,
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        isLoading: state is CreateCollectionLoadingState ||
+                            state is EditCollectionLoadingState,
+                        textStyle: IsrStyles.primaryText14
+                            .copyWith(color: IsrColors.white),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -350,19 +376,20 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
                 first: imageUrl,
                 second: localImage,
                 builder: (context, _imageUrl, _localFile, _) {
-                  if (_localFile != null || _imageUrl.isNotEmpty) {
-                    final imageWidget = _localFile != null
-                        ? AppImage.file(
-                            _localFile.path,
-                            fit: BoxFit.cover,
-                            borderRadius:
-                                IsrDimens.borderRadiusAll(IsrDimens.eight),
-                          )
-                        : AppImage.network(
-                            _imageUrl,
-                            borderRadius:
-                                IsrDimens.borderRadiusAll(IsrDimens.eight),
-                          );
+                  Widget? imageWidget;
+                  if (_imageUrl.trim().isNotEmpty) {
+                    imageWidget = AppImage.network(
+                      _imageUrl,
+                      borderRadius: IsrDimens.borderRadiusAll(IsrDimens.eight),
+                    );
+                  } else if (_localFile != null) {
+                    imageWidget = AppImage.file(
+                      _localFile.path,
+                      fit: BoxFit.cover,
+                      borderRadius: IsrDimens.borderRadiusAll(IsrDimens.eight),
+                    );
+                  }
+                  if (imageWidget != null) {
                     return Center(
                       child: Stack(
                         clipBehavior: Clip.none,
@@ -404,7 +431,9 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
                         borderRadius: IsrDimens.eight,
                         onTap: () {
                           Utility.showBottomSheet(
-                            child: const ShowProfileImageSelectBottomSheet(),
+                            child: ShowProfileImageSelectBottomSheet(
+                              collectionBloc: _collectionBloc,
+                            ),
                           );
                         },
                         child: Center(

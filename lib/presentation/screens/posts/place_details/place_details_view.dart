@@ -256,9 +256,9 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
 
   Widget _buildPostsContent(PlaceDetailsState state) {
     if (state is PlaceDetailsLoadingState && state.isLoading) {
-      return const SliverFillRemaining(
+      return SliverFillRemaining(
         child: Center(
-          child: CircularProgressIndicator(),
+          child: Utility.loaderWidget(isAdaptive: false),
         ),
       );
     } else if (state is PlaceDetailsErrorState) {
@@ -288,10 +288,10 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
             (context, index) {
               if (index == postList.length) {
                 return _isLoadingMore
-                    ? const Center(
+                    ? Center(
                         child: Padding(
-                          padding: EdgeInsets.all(16.0),
-                          child: CircularProgressIndicator(),
+                          padding: const EdgeInsets.all(16.0),
+                          child: Utility.loaderWidget(isAdaptive: false),
                         ),
                       )
                     : const SizedBox.shrink();

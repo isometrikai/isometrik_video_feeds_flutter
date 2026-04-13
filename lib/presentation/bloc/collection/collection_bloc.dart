@@ -6,9 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
+import 'package:path/path.dart' as path;
 
 part 'collection_event.dart';
 part 'collection_state.dart';
@@ -18,6 +19,7 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
     this._userCollectionsUseCase,
     this.getSavedPostDataUseCase,
     this.localDataUseCase,
+    this.googleCloudStorageUploaderUseCase,
   ) : super(CollectionInitState()) {
     on<CollectionInitEvent>((event, emit) {
       emit(CollectionInitState());
@@ -38,6 +40,7 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
   final CollectionUseCase _userCollectionsUseCase;
   final SavePostUseCase getSavedPostDataUseCase;
   final IsmLocalDataUseCase localDataUseCase;
+  final GoogleCloudStorageUploaderUseCase googleCloudStorageUploaderUseCase;
 
   /// Image picker
   final ImagePicker picker = ImagePicker();
@@ -101,11 +104,24 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
     if (apiResult.isSuccess) {
       final response = apiResult.data;
       if (response != null) {
-        final collectionId = response.data.isNotEmpty
-            ? jsonDecode(response.data)['collectionId'] == null
-                ? ''
-                : jsonDecode(response.data)['collectionId'] as String
-            : '';
+        // final collectionId = response.data.isNotEmpty
+        //     ? jsonDecode(response.data)['collectionId'] == null
+        //         ? ''
+        //         : jsonDecode(response.data)['collectionId'] as String
+        //     : '';
+        var collectionId = '';
+        if (response.data.isNotEmpty) {
+          try {
+            final decoded = jsonDecode(response.data);
+            if (decoded is Map) {
+              final data = decoded['data'];
+              final id = data is Map ? data['id'] : null;
+              if (id is String) collectionId = id;
+            }
+          } catch (_) {
+            collectionId = '';
+          }
+        }
 
         emit(CreateCollectionSuccessState(
           message:
@@ -177,18 +193,104 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
     );
     emit(CollectionImageLoadingState());
 
-    // final apiResult = await _userCollectionsUseCase.executeCollectionAddImage(
-    //     isLoading: false, file: croppedProfileImage!, uploadTo: 1);
-    // if (apiResult.isSuccess) {
-    //   final response = jsonDecode(apiResult.data?.data ?? '');
-    //   emit(CollectionImageUpdateSuccessState(
-    //     imageString: response['data']['imageUrl'] as String,
-    //     localFile: croppedProfileImage!,
-    //   ));
-    // } else {
-    //   emit(CollectionImageUpdateErrorState(apiResult.error?.message ?? ''));
-    //   ErrorHandler.showAppError(isNeedToShowError: true, appError: apiResult.error);
-    // }
+    if (croppedProfileImage == null) {
+      emit(CollectionImageUpdateErrorState('Image compression failed.'));
+      return;
+    }
+
+    try {
+      final uploadedImageUrl = await _uploadMediaToGoogleCloud(
+        croppedProfileImage,
+        'collection_image_${DateTime.now().millisecondsSinceEpoch}',
+        MediaType.photo,
+        (progress) {},
+        AppConstants.cloudinaryImageFolder,
+        path.extension(croppedProfileImage!.path),
+      );
+
+      if (uploadedImageUrl.isNotEmpty) {
+        emit(CollectionImageUpdateSuccessState(
+          imageString: uploadedImageUrl,
+          localFile: croppedProfileImage!,
+        ));
+      } else {
+        emit(CollectionImageUpdateErrorState('Image upload failed.'));
+      }
+    } catch (e) {
+      debugPrint('Image upload error: $e');
+      emit(CollectionImageUpdateErrorState('Image upload failed.'));
+    }
+  }
+
+  Future<String> _uploadMediaToGoogleCloud(
+    File? file,
+    String fileName,
+    MediaType? mediaType,
+    Function(double) progressCallBackFunction,
+    String folderName,
+    String fileExtension,
+  ) async {
+    final customUpload = IsrVideoReelConfig
+        .socialConfig.socialCallBackConfig?.uploadMediaToCloud;
+    String result;
+
+    if (customUpload != null) {
+      try {
+        result = await customUpload(
+          file,
+          fileName,
+          mediaType,
+          progressCallBackFunction,
+          folderName,
+          fileExtension,
+        );
+        debugPrint('_uploadMediaToGoogleCloud (custom): $result');
+      } catch (e) {
+        debugPrint('_uploadMediaToGoogleCloud custom error: $e');
+        result = '';
+      }
+    } else {
+      final myUserId = await localDataUseCase.getUserId();
+      var mainProgress = 0;
+      try {
+        final response = await googleCloudStorageUploaderUseCase
+            .executeGoogleCloudStorageUploader(
+                file: file!,
+                fileName: fileName,
+                fileExtension: fileExtension,
+                userId: myUserId,
+                onProgress: (_) {
+                  final progress = (_ * 100).toInt();
+                  if (mainProgress != progress) {
+                    mainProgress = progress;
+                    debugPrint(
+                        '_uploadMediaToGoogleCloud......progress: $progress');
+                    progressCallBackFunction.call(progress.toDouble());
+                  }
+                });
+        debugPrint('_uploadMediaToGoogleCloud: $response');
+        result = response ?? '';
+      } catch (e) {
+        debugPrint('_uploadMediaToGoogleCloud error: $e');
+        result = '';
+      }
+    }
+
+    return _applyConvertToGumletUrl(result);
+  }
+
+  String _applyConvertToGumletUrl(String mediaUrl) {
+    if (mediaUrl.isEmpty) return mediaUrl;
+    final convert = IsrVideoReelConfig
+        .socialConfig.socialCallBackConfig?.convertToGumletUrl;
+    if (convert == null) return mediaUrl;
+    try {
+      final converted = convert(mediaUrl);
+      if (converted.isNotEmpty) return converted;
+    } catch (e) {
+      debugPrint('convertToGumletUrl error: $e');
+    }
+    return mediaUrl;
   }
 
   FutureOr<void> _savePostAction(
@@ -302,7 +404,7 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
   FutureOr<void> moveToCollection(
       MoveToCollectionEvent event, Emitter<CollectionState> emit) async {
     final apiResult = await _userCollectionsUseCase.executeMoveToCollection(
-      isLoading: false,
+      isLoading: true,
       postId: event.postId,
       collectionId: event.collectionId,
     );
