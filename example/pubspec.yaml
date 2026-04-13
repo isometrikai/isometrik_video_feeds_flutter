@@ -40,7 +40,9 @@ dependencies:
   video_compress: ^3.1.4
 
 dependency_overrides:
+  device_info_plus: ^10.1.0
   package_info_plus: ^9.0.0
+  
 
 dev_dependencies:
   flutter_test:

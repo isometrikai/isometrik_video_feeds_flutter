@@ -38,7 +38,6 @@ class _PostListingViewState extends State<PostListingView> {
   // Track last search query to avoid unnecessary API calls
   String _lastSearchQuery = '';
 
-  // Tab management
   SearchTabType _selectedTab = SearchTabType.posts;
   final Map<SearchTabType, List<dynamic>> _tabResults = {};
   final Map<SearchTabType, bool> _tabLoading = {};
@@ -61,6 +60,11 @@ class _PostListingViewState extends State<PostListingView> {
   SearchScreenUIConfig? get _searchScreenUIConfig =>
       _searchScreenConfig.searchScreenUIConfig;
 
+  int get _selectedTabListIndex {
+    final i = widget.tabList.indexOf(_selectedTab);
+    return i >= 0 ? i : 0;
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -77,6 +81,10 @@ class _PostListingViewState extends State<PostListingView> {
 
   void _onStartInit() {
     _hashtagController.text = widget.searchQuery ?? '#${widget.tagValue}';
+
+    if (widget.tabList.isNotEmpty) {
+      _selectedTab = widget.tabList.first;
+    }
 
     // Initialize tab loading states
     for (final tab in widget.tabList) {
@@ -535,7 +543,7 @@ class _PostListingViewState extends State<PostListingView> {
           final velocity = details.primaryVelocity ?? 0;
           if (velocity.abs() < 300) return; // Ignore slow swipes
 
-          final currentIndex = _selectedTab.index;
+          final currentIndex = _selectedTabListIndex;
           int newIndex;
 
           if (velocity < 0) {
@@ -559,7 +567,7 @@ class _PostListingViewState extends State<PostListingView> {
           }
         },
         child: IndexedStack(
-          index: _selectedTab.index,
+          index: _selectedTabListIndex,
           children: widget.tabList.map(_buildTabPage).toList(),
         ),
       );
