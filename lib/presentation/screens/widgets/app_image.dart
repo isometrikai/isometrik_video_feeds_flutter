@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:ism_video_reel_player/presentation/presentation.dart';
+import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
@@ -25,6 +25,8 @@ class AppImage extends StatelessWidget {
     this.fadeAnimationEnable,
     this.filterQuality,
     this.textColor,
+    this.blendMode,
+    this.placeHolderWidget,
   })  : _imageType = ImageType.asset,
         showError = false,
         color = null;
@@ -47,6 +49,8 @@ class AppImage extends StatelessWidget {
     this.fadeAnimationEnable,
     this.filterQuality,
     this.textColor,
+    this.blendMode,
+    this.placeHolderWidget,
   })  : _imageType = ImageType.svg,
         showError = false;
 
@@ -68,6 +72,8 @@ class AppImage extends StatelessWidget {
     this.fadeAnimationEnable,
     this.filterQuality,
     this.textColor,
+    this.blendMode,
+    this.placeHolderWidget,
   })  : _imageType = ImageType.network,
         color = null;
 
@@ -88,6 +94,8 @@ class AppImage extends StatelessWidget {
     this.fadeAnimationEnable,
     this.filterQuality,
     this.textColor,
+    this.blendMode,
+    this.placeHolderWidget,
   })  : _imageType = ImageType.file,
         showError = false,
         color = null;
@@ -106,8 +114,10 @@ class AppImage extends StatelessWidget {
   final bool showError;
   final EdgeInsets? padding;
   final String? placeHolderName;
+  final Widget? Function(double? height, double? width)? placeHolderWidget;
   final BoxFit? fit;
   final bool? fadeAnimationEnable;
+  final BlendMode? blendMode;
   final FilterQuality? filterQuality;
   final Color? textColor;
 
@@ -128,7 +138,7 @@ class AppImage extends StatelessWidget {
           ImageType.asset =>
             _Asset(path, fit: fit, height: height, width: width),
           ImageType.svg =>
-            _Svg(path, fit: fit, color: color, height: height, width: width),
+            _Svg(path, fit: fit, color: color, height: height, width: width, blendMode: blendMode,),
           ImageType.file => _File(
               path,
               fit: fit,
@@ -141,6 +151,7 @@ class AppImage extends StatelessWidget {
               width: width,
               fit: fit,
               isProfileImage: isProfileImage,
+              placeHolderWidget: placeHolderWidget ?? IsrVideoReelConfig.socialConfig.socialCallBackConfig?.placeHolderGenerator,
               name: name,
               showError: showError,
               placeHolderName: placeHolderName,
@@ -203,6 +214,7 @@ class _Network extends StatelessWidget {
     required this.name,
     required this.isProfileImage,
     required this.showError,
+    this.placeHolderWidget,
     this.fit,
     this.placeHolderName,
     this.height,
@@ -216,6 +228,7 @@ class _Network extends StatelessWidget {
   final String imageUrl;
   final String name;
   final String? placeHolderName;
+  final Widget? Function(double? height, double? width)? placeHolderWidget;
   final bool isProfileImage;
   final bool showError;
   final BoxFit? fit;
@@ -285,7 +298,7 @@ class _Network extends StatelessWidget {
               borderRadius: borderRadius,
               placeHolderName: placeHolderName,
               boxShape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
-              child: name.isStringEmptyOrNull == false && isProfileImage
+              child: placeHolderWidget?.call(height, width) ?? (name.isStringEmptyOrNull == false && isProfileImage
                   ? Center(
                       child: FittedBox(
                         fit: BoxFit.scaleDown,
@@ -301,7 +314,8 @@ class _Network extends StatelessWidget {
                         ),
                       ),
                     )
-                  : null,
+                  : null
+              ),
             )
           : Container(
               width: width,
@@ -321,7 +335,7 @@ class _Network extends StatelessWidget {
               padding: 4,
               placeHolderName: placeHolderName,
               boxShape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
-              child: name.isStringEmptyOrNull == false && isProfileImage
+              child: placeHolderWidget?.call(height, width) ?? (name.isStringEmptyOrNull == false && isProfileImage
                   ? Center(
                       child: FittedBox(
                         fit: BoxFit.scaleDown,
@@ -337,7 +351,8 @@ class _Network extends StatelessWidget {
                         ),
                       ),
                     )
-                  : null,
+                  : null
+              ),
             )
           : Container(
               width: width,
@@ -367,7 +382,7 @@ class _Network extends StatelessWidget {
                   placeHolderName: placeHolderName,
                   boxShape:
                       isProfileImage ? BoxShape.circle : BoxShape.rectangle,
-                  child: name.isStringEmptyOrNull == false && isProfileImage
+                  child: placeHolderWidget?.call(height, width) ?? (name.isStringEmptyOrNull == false && isProfileImage
                       ? Center(
                           child: FittedBox(
                             fit: BoxFit.scaleDown,
@@ -384,7 +399,8 @@ class _Network extends StatelessWidget {
                             ),
                           ),
                         )
-                      : null,
+                      : null
+                  ),
                 )
               : Container(
                   width: width,
@@ -407,6 +423,7 @@ class _Svg extends StatelessWidget {
     this.fit,
     this.height,
     this.width,
+    this.blendMode,
   });
 
   final String path;
@@ -414,6 +431,7 @@ class _Svg extends StatelessWidget {
   final BoxFit? fit;
   final double? height;
   final double? width;
+  final BlendMode? blendMode;
 
   @override
   Widget build(BuildContext context) => SvgPicture.asset(
@@ -424,7 +442,7 @@ class _Svg extends StatelessWidget {
         colorFilter: color != null
             ? ColorFilter.mode(
                 color!,
-                BlendMode.srcIn,
+                blendMode ?? BlendMode.srcIn,
               )
             : null,
       );

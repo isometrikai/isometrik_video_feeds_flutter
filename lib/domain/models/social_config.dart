@@ -205,6 +205,7 @@ class SocialCallBackConfig {
     this.onLoginInvoked,
     this.uploadMediaToCloud,
     this.convertToGumletUrl,
+    this.placeHolderGenerator,
   });
 
   /// Callback invoked when login is required.
@@ -228,6 +229,8 @@ class SocialCallBackConfig {
   /// optimized Gumlet URL. If omitted, SDK uses the URL returned from upload as-is.
   final String Function(String mediaUrl)? convertToGumletUrl;
 
+  /// to generate your own placeholders.
+  final Widget? Function(double? height, double? width)? placeHolderGenerator;
   SocialCallBackConfig copyWith({
     Future<bool> Function()? onLoginInvoked,
     Future<String> Function(
@@ -239,11 +242,14 @@ class SocialCallBackConfig {
       String fileExtension,
     )? uploadMediaToCloud,
     String Function(String mediaUrl)? convertToGumletUrl,
+    Widget? Function(double? height, double? width)? placeHolderGenerator,
   }) =>
       SocialCallBackConfig(
         onLoginInvoked: onLoginInvoked ?? this.onLoginInvoked,
         uploadMediaToCloud: uploadMediaToCloud ?? this.uploadMediaToCloud,
         convertToGumletUrl: convertToGumletUrl ?? this.convertToGumletUrl,
+        placeHolderGenerator:
+            placeHolderGenerator ?? this.placeHolderGenerator,
       );
 }
 

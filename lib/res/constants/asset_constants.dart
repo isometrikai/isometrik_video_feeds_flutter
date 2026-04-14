@@ -69,8 +69,6 @@ class AssetConstants {
       '${packageName}assets/icons/ic_camera_icon.svg';
   static const String icGalleryIcon =
       '${packageName}assets/icons/ic_gallery_icon.svg';
-  static const String icAppImagePlaceHolder =
-      '${packageName}assets/icons/ic_app_image_place_holder.svg';
   static const String icAddFollowerPlaceHolder =
       '${packageName}assets/icons/ic_add_follower_place_holder.svg';
   static const String icClose = '${packageName}assets/icons/ic_close.svg';
@@ -111,8 +109,6 @@ class AssetConstants {
       '${packageName}assets/icons/ic_post_location.svg';
   static const String icTimerIcon =
       '${packageName}assets/icons/ic_timer_icon.svg';
-  static const String icTalentIcon =
-      '${packageName}assets/icons/ic_talent_icon.png';
   static const String icMediaSelectMultiple =
       '${packageName}assets/icons/ic_media_select_multiple.svg';
   static const String icMediaSelectSingle =

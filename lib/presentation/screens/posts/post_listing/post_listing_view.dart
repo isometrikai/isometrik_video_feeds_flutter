@@ -47,9 +47,6 @@ class _PostListingViewState extends State<PostListingView> {
   final Map<SearchTabType, bool> _tabLoadingMore = {};
   final Map<SearchTabType, bool> _tabHasMoreData = {};
 
-  // Track follow state for users
-  final Map<String, bool> _userFollowingState = {};
-
   // Flag to prevent multiple initializations
   bool _isInitialized = false;
 
@@ -1397,62 +1394,42 @@ class _PostListingViewState extends State<PostListingView> {
   }
 
   // Follow button widget with API integration
-  Widget _buildFollowButton(SocialUserData user) {
-    // Check if user is following from either the user model or local state
-    final isFollowing =
-        _userFollowingState[user.id] ?? user.isFollowing ?? false;
-
-    // Hide button if user is already following
-    if (isFollowing) {
-      return const SizedBox.shrink();
-    }
-
-    return AppButton(
-      height: _searchScreenUIConfig
-              ?.accountsListConfig?.followButtonConfig?.height ??
-          30.responsiveDimension,
-      width: _searchScreenUIConfig
-              ?.accountsListConfig?.followButtonConfig?.width ??
-          80.responsiveDimension,
-      borderRadius: _searchScreenUIConfig
-              ?.accountsListConfig?.followButtonConfig?.borderRadius ??
-          20,
-      title:
-          _searchScreenUIConfig?.accountsListConfig?.followButtonConfig?.text ??
-              IsrTranslationFile.follow,
-      backgroundColor: _searchScreenUIConfig
-          ?.accountsListConfig?.followButtonConfig?.backgroundColor,
-      textStyle: _searchScreenUIConfig
-              ?.accountsListConfig?.followButtonConfig?.textStyle ??
-          IsrStyles.primaryText12.copyWith(
-            color: _searchScreenUIConfig
-                    ?.accountsListConfig?.followButtonConfig?.textColor ??
-                IsrColors.white,
-            fontWeight: FontWeight.w600,
-          ),
-      onPress: () {
-        _handleFollowUser(user);
-      },
-    );
-  }
-
-  // Handle follow user action
-  void _handleFollowUser(SocialUserData user) {
-    if (user.id == null || user.id!.isEmpty) return;
-
-    _postListingBloc.add(
-      FollowSocialUserEvent(
-        followingId: user.id!,
-        followAction: FollowAction.follow,
-        onComplete: (isSuccess) {
-          if (isSuccess && mounted) {
-            // Update local state to hide the follow button
-            setState(() {
-              _userFollowingState[user.id!] = true;
-            });
+  Widget _buildFollowButton(SocialUserData user) => FollowActionWidget(
+        userId: user.id ?? '',
+        isFollowing: user.isFollowing ?? false,
+        builder: (isLoading, isFollowing, onTap) {
+          if (isLoading) {
+            return Utility.loaderWidget(isAdaptive: false);
+          } else if (!isFollowing) {
+            return AppButton(
+              height: _searchScreenUIConfig
+                  ?.accountsListConfig?.followButtonConfig?.height ??
+                  30.responsiveDimension,
+              width: _searchScreenUIConfig
+                  ?.accountsListConfig?.followButtonConfig?.width ??
+                  80.responsiveDimension,
+              borderRadius: _searchScreenUIConfig
+                  ?.accountsListConfig?.followButtonConfig?.borderRadius ??
+                  20,
+              title:
+              _searchScreenUIConfig?.accountsListConfig?.followButtonConfig?.text ??
+                  IsrTranslationFile.follow,
+              backgroundColor: _searchScreenUIConfig
+                  ?.accountsListConfig?.followButtonConfig?.backgroundColor,
+              textStyle: _searchScreenUIConfig
+                  ?.accountsListConfig?.followButtonConfig?.textStyle ??
+                  IsrStyles.primaryText12.copyWith(
+                    color: _searchScreenUIConfig
+                        ?.accountsListConfig?.followButtonConfig?.textColor ??
+                        IsrColors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+              onPress: () {
+                onTap.call();
+              },
+            );
           }
+          return const SizedBox.shrink();
         },
-      ),
     );
-  }
 }
