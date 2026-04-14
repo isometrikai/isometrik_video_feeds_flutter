@@ -104,7 +104,14 @@ class _ProfileViewState extends State<ProfileView> {
 
   void _search(BuildContext context) {
     isr.IsrAppNavigator.navigateToSearch(
-        context,
+      context,
+      tabList: [
+        isr.SearchTabType.account,
+        isr.SearchTabType.posts,
+        isr.SearchTabType.tags,
+        isr.SearchTabType.places,
+      ],
+
       // search: 'app',
       // tabList: [
       //   isr.SearchTabType.posts,

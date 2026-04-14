@@ -1036,65 +1036,65 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
 
   /// Removes in-review comments that have been in that state for more than 10 seconds
   /// Returns true if any comments were removed
-  bool _removeOldInReviewComments(
-      List<CommentDataItem> comments, String postId) {
-    var removedAny = false;
-    final now = DateTime.now();
-    final commentsToRemove = <CommentDataItem>[];
-    final childCommentsToRemove =
-        <MapEntry<CommentDataItem, CommentDataItem>>{};
+  // bool _removeOldInReviewComments(
+  //     List<CommentDataItem> comments, String postId) {
+  //   var removedAny = false;
+  //   final now = DateTime.now();
+  //   final commentsToRemove = <CommentDataItem>[];
+  //   final childCommentsToRemove =
+  //       <MapEntry<CommentDataItem, CommentDataItem>>{};
 
-    void checkComments(List<CommentDataItem> commentList) {
-      for (final comment in commentList) {
-        if (comment.status == IsrTranslationFile.inReview &&
-            comment.commentedOn != null) {
-          final duration = now.difference(comment.commentedOn!);
-          if (duration.inSeconds > 10) {
-            // Mark for removal
-            if (comment.parentCommentId != null &&
-                comment.parentCommentId!.isNotEmpty) {
-              // This is a child comment, find parent recursively and mark for removal
-              final parentComment =
-                  _findCommentById(comments, comment.parentCommentId!);
-              if (parentComment != null) {
-                childCommentsToRemove.add(MapEntry(parentComment, comment));
-              }
-            } else {
-              // Top-level comment
-              commentsToRemove.add(comment);
-            }
-            removedAny = true;
-          }
-        }
+  //   void checkComments(List<CommentDataItem> commentList) {
+  //     for (final comment in commentList) {
+  //       if (comment.status == IsrTranslationFile.inReview &&
+  //           comment.commentedOn != null) {
+  //         final duration = now.difference(comment.commentedOn!);
+  //         if (duration.inSeconds > 10) {
+  //           // Mark for removal
+  //           if (comment.parentCommentId != null &&
+  //               comment.parentCommentId!.isNotEmpty) {
+  //             // This is a child comment, find parent recursively and mark for removal
+  //             final parentComment =
+  //                 _findCommentById(comments, comment.parentCommentId!);
+  //             if (parentComment != null) {
+  //               childCommentsToRemove.add(MapEntry(parentComment, comment));
+  //             }
+  //           } else {
+  //             // Top-level comment
+  //             commentsToRemove.add(comment);
+  //           }
+  //           removedAny = true;
+  //         }
+  //       }
 
-        // Check child comments recursively
-        if (comment.childComments != null &&
-            comment.childComments!.isNotEmpty) {
-          checkComments(comment.childComments!);
-        }
-      }
-    }
+  //       // Check child comments recursively
+  //       if (comment.childComments != null &&
+  //           comment.childComments!.isNotEmpty) {
+  //         checkComments(comment.childComments!);
+  //       }
+  //     }
+  //   }
 
-    checkComments(comments);
+  //   checkComments(comments);
 
-    // Remove top-level comments
-    for (final comment in commentsToRemove) {
-      comments.remove(comment);
-    }
+  //   // Remove top-level comments
+  //   for (final comment in commentsToRemove) {
+  //     comments.remove(comment);
+  //   }
 
-    // Remove child comments
-    for (final entry in childCommentsToRemove) {
-      final parent = entry.key;
-      final child = entry.value;
-      parent.childComments?.remove(child);
-      parent.childCommentCount = (parent.childCommentCount ?? 1) - 1;
-      if (parent.childComments?.isEmpty == true) {
-        parent.showReply = false;
-      }
-    }
+  //   // Remove child comments
+  //   for (final entry in childCommentsToRemove) {
+  //     final parent = entry.key;
+  //     final child = entry.value;
+  //     parent.childComments?.remove(child);
+  //     parent.childCommentCount = (parent.childCommentCount ?? 1) - 1;
+  //     if (parent.childComments?.isEmpty == true) {
+  //       parent.showReply = false;
+  //     }
+  //   }
 
-    return removedAny;
-  }
+  //   return removedAny;
+  // }
 
   /// Merges API response comments with existing in-review comments
   /// Updates only in-review comments while preserving other comments
