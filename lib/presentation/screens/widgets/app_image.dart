@@ -244,7 +244,7 @@ class _Network extends StatelessWidget {
     final fullName = name.isStringEmptyOrNull == false ? name : '';
     final words = fullName.split(' ');
     final initials =
-        words.map((word) => word.isNotEmpty ? word[0] : '').join('');
+        words.map((word) => word.isNotEmpty ? word[0] : '').join('').toUpperCase();
     final isOptimizationEnable =
         imageUrl.contains('https://cdn.trulyfreehome.dev');
 
