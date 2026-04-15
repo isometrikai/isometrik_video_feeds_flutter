@@ -5,7 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player_example/core/core.dart';
 import 'package:ism_video_reel_player_example/di/di.dart';
 import 'package:ism_video_reel_player_example/domain/domain.dart';
-import 'package:ism_video_reel_player_example/utils/utils.dart';
+import 'package:ism_video_reel_player_example/main.dart';
 
 part 'auth_event.dart';
 part 'auth_state.dart';
@@ -63,6 +63,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       mobileNumber: event.mobileNumber,
     );
     if (apiResult.isSuccess) {
+      await initializeReelsSdk();
       InjectionUtils.getRouteManagement().goToHomeScreen();
     } else {
       ErrorHandler.showAppError(

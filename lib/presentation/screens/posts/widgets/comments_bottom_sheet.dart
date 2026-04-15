@@ -124,6 +124,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     _replyFocusNode.dispose();
     _replyController.dispose();
     _commentItemKeys.clear();
+    _commentModifiedCount = 0;
     super.dispose();
   }
 
@@ -292,6 +293,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                 _commentItemConfig?.commentTextStyle ??
                                     IsrStyles.primaryText14,
                                 comment.tags,
+                                userNameStyle: _commentItemConfig?.userTagTextStyle,
+                                hashTagStyle: _commentItemConfig?.hashtagTextStyle,
                                 maxLength: _commentMaxLength,
                                 isExpanded: _expandedCommentKeys.contains(
                                     '${comment.id}_${comment.comment}_${comment.commentedOn?.millisecondsSinceEpoch}'),

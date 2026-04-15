@@ -131,6 +131,8 @@ class CommentItemConfig {
   const CommentItemConfig({
     this.usernameStyle,
     this.commentTextStyle,
+    this.userTagTextStyle,
+    this.hashtagTextStyle,
     this.timestampStyle,
     this.likeCountStyle,
     this.replyButtonStyle,
@@ -150,6 +152,12 @@ class CommentItemConfig {
 
   /// Style for comment text content
   final TextStyle? commentTextStyle;
+
+  /// Style for user tag in comment text content
+  final TextStyle? userTagTextStyle;
+
+  /// Style for hashtag in comment text content
+  final TextStyle? hashtagTextStyle;
 
   /// Style for timestamp text
   final TextStyle? timestampStyle;
@@ -190,6 +198,8 @@ class CommentItemConfig {
   CommentItemConfig copyWith({
     TextStyle? usernameStyle,
     TextStyle? commentTextStyle,
+    TextStyle? userTagTextStyle,
+    TextStyle? hashtagTextStyle,
     TextStyle? timestampStyle,
     TextStyle? likeCountStyle,
     TextStyle? replyButtonStyle,
@@ -206,6 +216,8 @@ class CommentItemConfig {
       CommentItemConfig(
         usernameStyle: usernameStyle ?? this.usernameStyle,
         commentTextStyle: commentTextStyle ?? this.commentTextStyle,
+        userTagTextStyle: userTagTextStyle ?? this.userTagTextStyle,
+        hashtagTextStyle: hashtagTextStyle ?? this.hashtagTextStyle,
         timestampStyle: timestampStyle ?? this.timestampStyle,
         likeCountStyle: likeCountStyle ?? this.likeCountStyle,
         replyButtonStyle: replyButtonStyle ?? this.replyButtonStyle,
@@ -232,6 +244,8 @@ class ReplyFieldConfig {
     this.closeReplyIconColor,
     this.inputDecoration,
     this.inputTextStyle,
+    this.inputUserTagTextStyle,
+    this.inputHashtagTextStyle,
     this.hintTextStyle,
     this.postButtonStyle,
     this.replyFieldPadding,
@@ -261,6 +275,12 @@ class ReplyFieldConfig {
   /// Style for input text
   final TextStyle? inputTextStyle;
 
+  /// Style for user tag in comment text content
+  final TextStyle? inputUserTagTextStyle;
+
+  /// Style for hashtag in comment text content
+  final TextStyle? inputHashtagTextStyle;
+
   /// Style for hint text
   final TextStyle? hintTextStyle;
 
@@ -279,6 +299,8 @@ class ReplyFieldConfig {
     Color? closeReplyIconColor,
     InputDecoration? inputDecoration,
     TextStyle? inputTextStyle,
+    TextStyle? inputUserTagTextStyle,
+    TextStyle? inputHashtagTextStyle,
     TextStyle? hintTextStyle,
     TextStyle? postButtonStyle,
     EdgeInsetsGeometry? replyFieldPadding,
@@ -293,6 +315,8 @@ class ReplyFieldConfig {
         closeReplyIconColor: closeReplyIconColor ?? this.closeReplyIconColor,
         inputDecoration: inputDecoration ?? this.inputDecoration,
         inputTextStyle: inputTextStyle ?? this.inputTextStyle,
+        inputUserTagTextStyle: inputUserTagTextStyle ?? this.inputUserTagTextStyle,
+        inputHashtagTextStyle: inputHashtagTextStyle ?? this.inputHashtagTextStyle,
         hintTextStyle: hintTextStyle ?? this.hintTextStyle,
         postButtonStyle: postButtonStyle ?? this.postButtonStyle,
         replyFieldPadding: replyFieldPadding ?? this.replyFieldPadding,
