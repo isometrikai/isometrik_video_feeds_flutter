@@ -17,11 +17,11 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   configureInjection();
-  await _initializeReelsSdk();
+  await initializeReelsSdk();
   runApp(MyApp());
 }
 
-Future<void> _initializeReelsSdk() async {
+Future<void> initializeReelsSdk() async {
   final _localDataUseCase = InjectionUtils.getUseCase<LocalDataUseCase>();
   final accessToken = await _localDataUseCase.getAccessToken();
   final userId = await _localDataUseCase.getUserId();
@@ -37,12 +37,6 @@ Future<void> _initializeReelsSdk() async {
     appName: 'IsmVideoReel',
     baseUrl: AppUrl.appBaseUrl,
     // gumletUrl: AppUrl.gumletUrl,
-    postConfig: const isr.PostConfig(
-      autoMoveToNextMedia: true,
-      autoMoveToNextPost: true,
-    ),
-    tabConfig: const isr.TabConfig(),
-    createEditPostConfig: const isr.CreateEditPostConfig(),
     userInfoClass: isr.UserInfoClass(
       userId: userId,
       userName: userName,
@@ -69,12 +63,25 @@ Future<void> _initializeReelsSdk() async {
       'version': appVersion,
       'currencySymbol': '\$',
       'currencyCode': 'USD',
-      'platform': Utility.platFormType().platformText,
+      'platform': Utility
+          .platFormType()
+          .platformText,
       'latitude': DefaultValues.defaultLatitude,
       'longitude': DefaultValues.defaultLongitude,
       'x-tenant-id': AppConstants.tenantId,
       'x-project-id': AppConstants.projectId,
     },
+  );
+}
+
+void _configureReelsSdk() {
+  isr.IsrVideoReelConfig.setUpConfig(
+    postConfig: const isr.PostConfig(
+      autoMoveToNextMedia: true,
+      autoMoveToNextPost: true,
+    ),
+    tabConfig: const isr.TabConfig(),
+    createEditPostConfig: const isr.CreateEditPostConfig(),
     socialConfig: isr.SocialConfig(
       googleCloudUpload: isr.GoogleCloudUpload(
         bucketName: AppConstants.bucketName,
@@ -209,6 +216,7 @@ class MyApp extends StatelessWidget {
             builder: (context, constraints) => OrientationBuilder(
               builder: (context, orientation) {
                 SizeConfig().init(constraints, orientation);
+                _configureReelsSdk();
                 return GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: Utility.hideKeyboard,

@@ -85,12 +85,18 @@ class IsrVideoReelConfig {
   /// - [rudderStackDataPlaneUrl]: RudderStack dataplane URL.
   /// - [defaultHeaders]: Default headers to be persisted for SDK requests
   ///   (for example `Authorization`, `x-tenant-id`, etc.).
-  /// - [socialConfig]: Social module configuration.
+  /// - [appName]: App name or identifier used by the SDK.
+  /// - [getCurrentBuildContext]: Callback to resolve the current [BuildContext].
   ///
   /// Optional parameters:
   /// - [userInfoClass]: Initial user context persisted by the SDK.
-  /// - [googleServiceJsonPath]: Optional path to Google services config.
-  /// - [getCurrentBuildContext]: Callback to resolve the current [BuildContext].
+  /// - [additionalHeader]: Extra HTTP headers merged with defaults.
+  ///
+  /// **Module configuration (deprecated on this method):** Passing
+  /// [socialConfig], [postConfig], [tabConfig], [commentConfig],
+  /// [createEditPostConfig], [tagDetailsConfig], or [searchScreenConfig] here
+  /// is deprecated. Prefer [setUpConfig] so feature flags and UI tuning stay
+  /// separate from bootstrap (URL, analytics, headers, user).
   ///
   /// If called again after initialization, the SDK will update stored headers
   /// and user info, and notify internal state to refresh.
@@ -102,12 +108,19 @@ class IsrVideoReelConfig {
     required Map<String, dynamic> defaultHeaders,
     required String appName,
     Map<String, String>? additionalHeader,
+    @Deprecated('Use setUpConfig(socialConfig: ...) instead.')
     SocialConfig? socialConfig,
+    @Deprecated('Use setUpConfig(postConfig: ...) instead.')
     PostConfig? postConfig,
+    @Deprecated('Use setUpConfig(tabConfig: ...) instead.')
     TabConfig? tabConfig,
+    @Deprecated('Use setUpConfig(commentConfig: ...) instead.')
     CommentConfig? commentConfig,
+    @Deprecated('Use setUpConfig(createEditPostConfig: ...) instead.')
     CreateEditPostConfig? createEditPostConfig,
+    @Deprecated('Use setUpConfig(tagDetailsConfig: ...) instead.')
     TagDetailsConfig? tagDetailsConfig,
+    @Deprecated('Use setUpConfig(searchScreenConfig: ...) instead.')
     SearchScreenConfig? searchScreenConfig,
     required BuildContext? Function()? getCurrentBuildContext,
   }) async {
@@ -147,6 +160,45 @@ class IsrVideoReelConfig {
     getBuildContext = getCurrentBuildContext;
     _triggerEventLog();
     unawaited(_updateHeaderAddressFromIp());
+  }
+
+  /// Applies or updates SDK module configuration (social, posts, tabs, comments,
+  /// create/edit post, tag details, search).
+  ///
+  /// Call this when you need to change feature-specific settings without
+  /// re-running full [initializeSdk] (for example after remote config loads, or
+  /// when switching themes/locales that affect SDK UI). Any argument omitted
+  /// keeps the current value; pass a new instance only for the pieces you want
+  /// to replace.
+  ///
+  /// **Relationship to [initializeSdk]:** Prefer this method for all module
+  /// configs. The corresponding parameters on [initializeSdk] are deprecated
+  /// but still applied if passed, for backward compatibility.
+  ///
+  /// Parameters:
+  /// - [socialConfig]: Social graph, profiles, and related behavior.
+  /// - [postConfig]: Feed/post list and post UI behavior.
+  /// - [tabConfig]: Tab bar and navigation within SDK surfaces.
+  /// - [commentConfig]: Comments sheet, threading, and input behavior.
+  /// - [createEditPostConfig]: Create and edit post flows and validation.
+  /// - [tagDetailsConfig]: Tagging people and tag UI.
+  /// - [searchScreenConfig]: In-SDK search screen layout and options.
+  static void setUpConfig({
+    SocialConfig? socialConfig,
+    PostConfig? postConfig,
+    TabConfig? tabConfig,
+    CommentConfig? commentConfig,
+    CreateEditPostConfig? createEditPostConfig,
+    TagDetailsConfig? tagDetailsConfig,
+    SearchScreenConfig? searchScreenConfig,
+  }) {
+    IsrVideoReelConfig.socialConfig = socialConfig ?? IsrVideoReelConfig.socialConfig;
+    IsrVideoReelConfig.postConfig = postConfig ?? IsrVideoReelConfig.postConfig;
+    IsrVideoReelConfig.tabConfig = tabConfig ?? IsrVideoReelConfig.tabConfig;
+    IsrVideoReelConfig.commentConfig = commentConfig ?? IsrVideoReelConfig.commentConfig;
+    IsrVideoReelConfig.createEditPostConfig = createEditPostConfig ?? IsrVideoReelConfig.createEditPostConfig;
+    IsrVideoReelConfig.tagDetailsConfig = tagDetailsConfig ?? IsrVideoReelConfig.tagDetailsConfig;
+    IsrVideoReelConfig.searchScreenConfig = searchScreenConfig ?? IsrVideoReelConfig.searchScreenConfig;
   }
 
   static Future<void> _updateHeaderAddressFromIp() async {
