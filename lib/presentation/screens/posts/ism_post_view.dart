@@ -786,13 +786,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         child: CommentsBottomSheet(
           postId: postId,
           onTapProfile: (userId) {
-            context.pop(totalCommentsCount);
             _postConfig.postCallBackConfig?.onProfileClick
                 ?.call(postData, userId, null);
             _logProfileEvent(userId, postData?.user?.username ?? '');
           },
           onTapHasTag: (hashTag) {
-            context.pop(totalCommentsCount);
             _redirectToHashtag(hashTag, tabData.postSectionType, postId);
           },
           postData: postData,

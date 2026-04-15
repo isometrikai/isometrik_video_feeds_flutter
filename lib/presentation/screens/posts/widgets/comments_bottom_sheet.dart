@@ -124,6 +124,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     _replyFocusNode.dispose();
     _replyController.dispose();
     _commentItemKeys.clear();
+    _commentModifiedCount = 0;
     super.dispose();
   }
 
