@@ -51,3 +51,4 @@ app.*.map.json
 /example/android/app/.cxx/Debug
 example/assets/json/google_service_json.json
 /lib/data/managers/local_event.g.dart
+/lib/generated/

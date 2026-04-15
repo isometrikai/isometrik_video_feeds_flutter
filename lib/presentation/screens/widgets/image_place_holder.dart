@@ -44,7 +44,7 @@ class ImagePlaceHolder extends StatelessWidget {
         ),
         child: child ??
             AppImage.svg(
-              placeHolderName ?? AssetConstants.icAppImagePlaceHolder,
+              placeHolderName ?? AssetConstants.icCoverImagePlaceHolder,
               fit: boxFit ?? BoxFit.contain,
               height: height,
               width: width,
