@@ -754,6 +754,8 @@ class Utility {
     CommentTags? tags, {
     Function(String)? onUsernameTap,
     Function(String)? onHashtagTap,
+    TextStyle? userNameStyle,
+    TextStyle? hashTagStyle,
     int? maxLength,
     bool isExpanded = true,
     String? viewMoreLabel,
@@ -853,7 +855,7 @@ class Utility {
 
       switch (position.type) {
         case Tag.mention:
-          taggedStyle = baseStyle.copyWith(
+          taggedStyle = userNameStyle ?? baseStyle.copyWith(
             fontWeight: FontWeight.w600,
           );
           recognizer = TapGestureRecognizer()
@@ -867,7 +869,7 @@ class Utility {
           break;
 
         case Tag.hashtag:
-          taggedStyle = baseStyle.copyWith(
+          taggedStyle = hashTagStyle ?? baseStyle.copyWith(
             fontWeight: FontWeight.w600,
           );
           recognizer = TapGestureRecognizer()
