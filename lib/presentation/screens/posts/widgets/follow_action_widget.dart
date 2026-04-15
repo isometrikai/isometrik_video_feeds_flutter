@@ -22,7 +22,7 @@ class FollowActionWidget extends StatefulWidget {
   final Widget Function(
     bool isLoading,
     bool isFollowing,
-    Function({
+    Future<void> Function({
       ReelsData? reelData,
       PostSectionType? postSectionType,
       int? watchDuration,
@@ -164,10 +164,7 @@ class _FollowActionWidgetState extends State<FollowActionWidget> {
             if (userId == loggedInUserId) { // self user
                 return const SizedBox.shrink();
             }
-            return GestureDetector(
-              onTap: isLoading ? null : _onTap,
-              child: widget.builder(isLoading, isFollowing, _onTap),
-            );
+            return widget.builder(isLoading, isFollowing, _onTap);
           },
         ),
       );
