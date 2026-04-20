@@ -7,24 +7,28 @@ class PostConfig {
     this.postCallBackConfig,
     this.autoMoveToNextMedia = true,
     this.autoMoveToNextPost = true,
+    this.isCaptionRequired = false,
   });
 
   final PostUIConfig? postUIConfig;
   final PostCallBackConfig? postCallBackConfig;
   final bool autoMoveToNextMedia;
   final bool autoMoveToNextPost;
+  final bool isCaptionRequired;
 
   PostConfig copyWith({
     PostUIConfig? postUIConfig,
     PostCallBackConfig? postCallBackConfig,
     bool? autoMoveToNextMedia,
     bool? autoMoveToNextPost,
+    bool? isCaptionRequired,
   }) =>
       PostConfig(
         postUIConfig: postUIConfig ?? this.postUIConfig,
         postCallBackConfig: postCallBackConfig ?? this.postCallBackConfig,
         autoMoveToNextMedia: autoMoveToNextMedia ?? this.autoMoveToNextMedia,
         autoMoveToNextPost: autoMoveToNextPost ?? this.autoMoveToNextPost,
+        isCaptionRequired: isCaptionRequired ?? this.isCaptionRequired,
       );
 }
 
