@@ -3,15 +3,19 @@ import 'package:flutter/material.dart';
 class CommentConfig {
   const CommentConfig({
     this.commentUIConfig,
+    this.showFloatingcomments = false,
   });
 
   final CommentUIConfig? commentUIConfig;
+  final bool showFloatingcomments;
 
   CommentConfig copyWith({
     CommentUIConfig? commentUIConfig,
+    bool? showFloatingcomments,
   }) =>
       CommentConfig(
         commentUIConfig: commentUIConfig ?? this.commentUIConfig,
+        showFloatingcomments: showFloatingcomments ?? this.showFloatingcomments,
       );
 }
 
