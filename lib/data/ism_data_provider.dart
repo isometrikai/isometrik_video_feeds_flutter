@@ -28,6 +28,9 @@ class IsmDataProvider {
   GetTrendingPostUseCase get _getTrendingPostUseCase =>
       IsmInjectionUtils.getUseCase<GetTrendingPostUseCase>();
 
+  GetTimelinePostUseCase get _getTimelinePostUseCase =>
+      IsmInjectionUtils.getUseCase<GetTimelinePostUseCase>();
+
   SocialUserProfileUseCase get _socialUserProfileUseCase =>
       IsmInjectionUtils.getUseCase<SocialUserProfileUseCase>();
 
@@ -61,7 +64,7 @@ class IsmDataProvider {
 
   Future<void> fetchTrendingPost({
     String? cursor,
-    required int limit,
+    int limit = 20,
     bool isLoading = false,
     Function(String, int)? onSuccess,
     Function(String, int)? onError,
@@ -69,6 +72,22 @@ class IsmDataProvider {
     await _executeApiCall(
       apiCall: () => _getTrendingPostUseCase.executeGetTrendingPost(
           isLoading: isLoading, limit: limit, cursor: cursor),
+      toJson: (data) => data?.toMap() ?? {},
+      onSuccess: onSuccess,
+      onError: onError,
+    );
+  }
+
+  Future<void> fetchFollowingPost({
+    int limit = 20,
+    int page = 1,
+    bool isLoading = false,
+    Function(String, int)? onSuccess,
+    Function(String, int)? onError,
+  }) async {
+    await _executeApiCall(
+      apiCall: () => _getTimelinePostUseCase.executeTimeLinePost(
+          isLoading: isLoading, page: page, pageLimit: limit),
       toJson: (data) => data?.toMap() ?? {},
       onSuccess: onSuccess,
       onError: onError,
