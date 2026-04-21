@@ -523,6 +523,15 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     _createPostRequest = event.createPostRequest;
     debugPrint('_createPostRequest....${jsonEncode(_createPostRequest)}');
 
+    if (event.isForEdit != true &&
+        IsrVideoReelConfig.postConfig.isCaptionRequired &&
+        (_createPostRequest.caption?.trim().isEmpty ?? true)) {
+      Utility.showAppDialog(
+        message: 'Please enter caption',
+      );
+      return;
+    }
+
     if (event.isForEdit != true) {
       final uploadSuccess = await _runLocalMediaUploads(emit);
       if (!uploadSuccess) return;

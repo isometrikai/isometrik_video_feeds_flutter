@@ -159,8 +159,10 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                         state.postCommentsList as Iterable<CommentDataItem>);
                 });
               }
-            } else if (state is CommentCountModified && state.postId == widget.postId) {
-              _commentModifiedCount = _commentModifiedCount + state.modifiedValue;
+            } else if (state is CommentCountModified &&
+                state.postId == widget.postId) {
+              _commentModifiedCount =
+                  _commentModifiedCount + state.modifiedValue;
             }
           },
           builder: (context, state) => Container(
@@ -293,8 +295,10 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                 _commentItemConfig?.commentTextStyle ??
                                     IsrStyles.primaryText14,
                                 comment.tags,
-                                userNameStyle: _commentItemConfig?.userTagTextStyle,
-                                hashTagStyle: _commentItemConfig?.hashtagTextStyle,
+                                userNameStyle:
+                                    _commentItemConfig?.userTagTextStyle,
+                                hashTagStyle:
+                                    _commentItemConfig?.hashtagTextStyle,
                                 maxLength: _commentMaxLength,
                                 isExpanded: _expandedCommentKeys.contains(
                                     '${comment.id}_${comment.comment}_${comment.commentedOn?.millisecondsSinceEpoch}'),
@@ -338,10 +342,10 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                     comment.commentedOn,
                                     showJustNow: true),
                                 style: _commentItemConfig?.timestampStyle ??
-                                  IsrStyles.primaryText12.copyWith(
-                                    color: '828282'.toColor(),
-                                  ),
-                            ),
+                                    IsrStyles.primaryText12.copyWith(
+                                      color: '828282'.toColor(),
+                                    ),
+                              ),
                             if (comment.id != null && comment.id!.isNotEmpty)
                               Text(
                                 '${comment.likeCount} ${(comment.likeCount ?? 0) <= 1 ? IsrTranslationFile.like : IsrTranslationFile.likes}',
@@ -617,12 +621,13 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                         ),
                       if (comment.id != null && comment.id!.isNotEmpty)
                         Text(
-                          Utility.getTimeAgoFromDateTime(comment.commentedOn, showJustNow: true),
+                          Utility.getTimeAgoFromDateTime(comment.commentedOn,
+                              showJustNow: true),
                           style: _commentItemConfig?.timestampStyle ??
-                            IsrStyles.primaryText12.copyWith(
-                              color: '828282'.toColor(),
-                            ),
-                      ),
+                              IsrStyles.primaryText12.copyWith(
+                                color: '828282'.toColor(),
+                              ),
+                        ),
                       if (comment.id != null && comment.id!.isNotEmpty)
                         Text(
                           '$likeCount ${likeCount <= 1 ? IsrTranslationFile.like : IsrTranslationFile.likes}',
@@ -859,169 +864,168 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     }
   }
 
-  Widget _buildReplyField(CommentDataItem? commentDataItem) {
-    final userMentions = <CommentMentionData>[];
-    final tagMentions = <CommentMentionData>[];
-    return StatefulBuilder(
-      builder: (context, setState) => Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          if (commentDataItem?.commentedBy.isStringEmptyOrNull == false)
-            Container(
-              padding: IsrDimens.edgeInsetsAll(16.responsiveDimension),
-              color: _replyFieldConfig?.replyingToBackgroundColor ??
-                  '001E57'.toColor(),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: RichText(
-                      text: TextSpan(
-                        children: [
-                          TextSpan(
-                            text: '${IsrTranslationFile.replyingTo} ',
-                            style: _replyFieldConfig?.replyingToTextStyle ??
-                                IsrStyles.white14,
-                          ),
-                          TextSpan(
-                            text: commentDataItem?.commentedBy ?? '',
-                            style: _replyFieldConfig?.replyingToNameStyle ??
-                                IsrStyles.white14
-                                    .copyWith(fontWeight: FontWeight.w600),
-                          ),
-                        ],
+  final userMentions = <CommentMentionData>[];
+  final tagMentions = <CommentMentionData>[];
+
+  Widget _buildReplyField(CommentDataItem? commentDataItem) => StatefulBuilder(
+        builder: (context, setState) => Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            if (commentDataItem?.commentedBy.isStringEmptyOrNull == false)
+              Container(
+                padding: IsrDimens.edgeInsetsAll(16.responsiveDimension),
+                color: _replyFieldConfig?.replyingToBackgroundColor ??
+                    '001E57'.toColor(),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: RichText(
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: '${IsrTranslationFile.replyingTo} ',
+                              style: _replyFieldConfig?.replyingToTextStyle ??
+                                  IsrStyles.white14,
+                            ),
+                            TextSpan(
+                              text: commentDataItem?.commentedBy ?? '',
+                              style: _replyFieldConfig?.replyingToNameStyle ??
+                                  IsrStyles.white14
+                                      .copyWith(fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
+                    TapHandler(
+                      onTap: () => _setReplyComment(null),
+                      child: AppImage.svg(
+                        _replyFieldConfig?.closeReplyIcon ??
+                            AssetConstants.icClose,
+                        width: _replyFieldConfig?.closeReplyIconSize,
+                        height: _replyFieldConfig?.closeReplyIconSize,
+                        color: _replyFieldConfig?.closeReplyIconColor ??
+                            IsrColors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            const Divider(height: 1),
+            Padding(
+              padding: _replyFieldConfig?.replyFieldPadding ??
+                  IsrDimens.edgeInsetsSymmetric(
+                      horizontal: 10.responsiveDimension),
+              child: Row(
+                mainAxisSize: MainAxisSize.max,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: CommentTaggingTextField(
+                      controller: _replyController,
+                      focusNode: _replyFocusNode,
+                      minLines: 1,
+                      autoFocus: true,
+                      hintText: IsrTranslationFile.addAComment,
+                      style: _replyFieldConfig?.inputTextStyle,
+                      decoration: _replyFieldConfig?.inputDecoration ??
+                          const InputDecoration(
+                            hintText: IsrTranslationFile.addAComment,
+                            border: InputBorder.none,
+                            floatingLabelBehavior: FloatingLabelBehavior.never,
+                            alignLabelWithHint: true,
+                          ),
+                      onRemoveHashTagData: (mentionData) {
+                        tagMentions.removeWhere(
+                            (_) => _.toJson() == mentionData.toJson());
+                      },
+                      onRemoveMentionData: (mentionData) {
+                        userMentions.removeWhere(
+                            (_) => _.toJson() == mentionData.toJson());
+                      },
+                      onAddHashTagData: (mentionData) {
+                        if (!tagMentions
+                            .any((_) => _.toJson() == mentionData.toJson())) {
+                          tagMentions.add(mentionData);
+                        }
+                      },
+                      onAddMentionData: (mentionData) {
+                        if (!userMentions
+                            .any((_) => _.toJson() == mentionData.toJson())) {
+                          userMentions.add(mentionData);
+                        }
+                      },
+                    ),
                   ),
-                  TapHandler(
-                    onTap: () => _setReplyComment(null),
-                    child: AppImage.svg(
-                      _replyFieldConfig?.closeReplyIcon ??
-                          AssetConstants.icClose,
-                      width: _replyFieldConfig?.closeReplyIconSize,
-                      height: _replyFieldConfig?.closeReplyIconSize,
-                      color: _replyFieldConfig?.closeReplyIconColor ??
-                          IsrColors.white,
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: _replyController,
+                    builder: (context, value, child) => AppButton(
+                      width: 70.responsiveDimension,
+                      title: IsrTranslationFile.post,
+                      textStyle: _replyFieldConfig?.postButtonStyle ??
+                          IsrStyles.primaryText14.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: value.text.isStringEmptyOrNull
+                                ? Theme.of(context)
+                                    .primaryColor
+                                    .changeOpacity(0.5)
+                                : Theme.of(context).primaryColor,
+                          ),
+                      isDisable: value.text.isStringEmptyOrNull,
+                      type: ButtonType.text,
+                      onPress: () async {
+                        if (value.text.isStringEmptyOrNull) return;
+
+                        final commentText = value.text;
+                        final postId = commentDataItem?.postId ?? widget.postId;
+                        final parentCommentId = commentDataItem?.id ?? '';
+
+                        // Clear input and hide keyboard immediately for better UX
+                        _replyFocusNode.unfocus();
+                        _replyController.clear();
+                        final currentTagMentions =
+                            List<CommentMentionData>.from(tagMentions);
+                        final currentUserMentions =
+                            List<CommentMentionData>.from(userMentions);
+                        tagMentions.clear();
+                        userMentions.clear();
+                        _setReplyComment(null);
+
+                        // Send to server - Bloc will handle optimistic UI update
+                        _socialBloc.add(
+                          CommentActionEvent(
+                            userId: commentDataItem?.commentedByUserId,
+                            isLoading: false,
+                            parentCommentId: parentCommentId,
+                            postId: postId,
+                            replyText: commentText,
+                            commentAction: CommentAction.comment,
+                            postedBy: _myUserId,
+                            postCommentList: _postCommentList,
+                            commentTags: {
+                              'hashtags': currentTagMentions
+                                  .map((e) => e.toJson())
+                                  .toList(),
+                              'mentions': currentUserMentions
+                                  .map((e) => e.toJson())
+                                  .toList(),
+                            },
+                            postDataModel: widget.postData,
+                            tabDataModel: widget.tabData,
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ],
               ),
             ),
-          const Divider(height: 1),
-          Padding(
-            padding: _replyFieldConfig?.replyFieldPadding ??
-                IsrDimens.edgeInsetsSymmetric(
-                    horizontal: 10.responsiveDimension),
-            child: Row(
-              mainAxisSize: MainAxisSize.max,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: CommentTaggingTextField(
-                    controller: _replyController,
-                    focusNode: _replyFocusNode,
-                    minLines: 1,
-                    autoFocus: true,
-                    hintText: IsrTranslationFile.addAComment,
-                    style: _replyFieldConfig?.inputTextStyle,
-                    decoration: _replyFieldConfig?.inputDecoration ??
-                        const InputDecoration(
-                          hintText: IsrTranslationFile.addAComment,
-                          border: InputBorder.none,
-                          floatingLabelBehavior: FloatingLabelBehavior.never,
-                          alignLabelWithHint: true,
-                        ),
-                    onRemoveHashTagData: (mentionData) {
-                      tagMentions.removeWhere(
-                          (_) => _.toJson() == mentionData.toJson());
-                    },
-                    onRemoveMentionData: (mentionData) {
-                      userMentions.removeWhere(
-                          (_) => _.toJson() == mentionData.toJson());
-                    },
-                    onAddHashTagData: (mentionData) {
-                      if (!tagMentions
-                          .any((_) => _.toJson() == mentionData.toJson())) {
-                        tagMentions.add(mentionData);
-                      }
-                    },
-                    onAddMentionData: (mentionData) {
-                      if (!userMentions
-                          .any((_) => _.toJson() == mentionData.toJson())) {
-                        userMentions.add(mentionData);
-                      }
-                    },
-                  ),
-                ),
-                ValueListenableBuilder<TextEditingValue>(
-                  valueListenable: _replyController,
-                  builder: (context, value, child) => AppButton(
-                    width: 70.responsiveDimension,
-                    title: IsrTranslationFile.post,
-                    textStyle: _replyFieldConfig?.postButtonStyle ??
-                        IsrStyles.primaryText14.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: value.text.isStringEmptyOrNull
-                              ? Theme.of(context)
-                                  .primaryColor
-                                  .changeOpacity(0.5)
-                              : Theme.of(context).primaryColor,
-                        ),
-                    isDisable: value.text.isStringEmptyOrNull,
-                    type: ButtonType.text,
-                    onPress: () async {
-                      if (value.text.isStringEmptyOrNull) return;
-
-                      final commentText = value.text;
-                      final postId = commentDataItem?.postId ?? widget.postId;
-                      final parentCommentId = commentDataItem?.id ?? '';
-
-                      // Clear input and hide keyboard immediately for better UX
-                      _replyFocusNode.unfocus();
-                      _replyController.clear();
-                      final currentTagMentions =
-                          List<CommentMentionData>.from(tagMentions);
-                      final currentUserMentions =
-                          List<CommentMentionData>.from(userMentions);
-                      tagMentions.clear();
-                      userMentions.clear();
-                      _setReplyComment(null);
-
-                      // Send to server - Bloc will handle optimistic UI update
-                      _socialBloc.add(
-                        CommentActionEvent(
-                          userId: commentDataItem?.commentedByUserId,
-                          isLoading: false,
-                          parentCommentId: parentCommentId,
-                          postId: postId,
-                          replyText: commentText,
-                          commentAction: CommentAction.comment,
-                          postedBy: _myUserId,
-                          postCommentList: _postCommentList,
-                          commentTags: {
-                            'hashtags': currentTagMentions
-                                .map((e) => e.toJson())
-                                .toList(),
-                            'mentions': currentUserMentions
-                                .map((e) => e.toJson())
-                                .toList(),
-                          },
-                          postDataModel: widget.postData,
-                          tabDataModel: widget.tabData,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+          ],
+        ),
+      );
 
   Widget _buildPlaceHolder() => LayoutBuilder(
         builder: (context, constraints) => SingleChildScrollView(
