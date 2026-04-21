@@ -24,6 +24,7 @@ class CommentUIConfig {
     this.bottomSheetConfig,
     this.headerConfig,
     this.commentItemConfig,
+    this.belowCommentsConfig,
     this.replyFieldConfig,
     this.placeholderConfig,
     this.moreOptionsConfig,
@@ -32,6 +33,7 @@ class CommentUIConfig {
   final BottomSheetConfig? bottomSheetConfig;
   final CommentHeaderConfig? headerConfig;
   final CommentItemConfig? commentItemConfig;
+  final BelowCommentsConfig? belowCommentsConfig;
   final ReplyFieldConfig? replyFieldConfig;
   final CommentPlaceholderConfig? placeholderConfig;
   final MoreOptionsConfig? moreOptionsConfig;
@@ -40,6 +42,7 @@ class CommentUIConfig {
     BottomSheetConfig? bottomSheetConfig,
     CommentHeaderConfig? headerConfig,
     CommentItemConfig? commentItemConfig,
+    BelowCommentsConfig? belowCommentsConfig,
     ReplyFieldConfig? replyFieldConfig,
     CommentPlaceholderConfig? placeholderConfig,
     MoreOptionsConfig? moreOptionsConfig,
@@ -48,6 +51,7 @@ class CommentUIConfig {
         bottomSheetConfig: bottomSheetConfig ?? this.bottomSheetConfig,
         headerConfig: headerConfig ?? this.headerConfig,
         commentItemConfig: commentItemConfig ?? this.commentItemConfig,
+        belowCommentsConfig: belowCommentsConfig ?? this.belowCommentsConfig,
         replyFieldConfig: replyFieldConfig ?? this.replyFieldConfig,
         placeholderConfig: placeholderConfig ?? this.placeholderConfig,
         moreOptionsConfig: moreOptionsConfig ?? this.moreOptionsConfig,
@@ -234,6 +238,73 @@ class CommentItemConfig {
         commentSpacing: commentSpacing ?? this.commentSpacing,
         childCommentPadding: childCommentPadding ?? this.childCommentPadding,
         childCommentIndent: childCommentIndent ?? this.childCommentIndent,
+      );
+}
+
+/// Configuration for comments shown below post caption/details
+class BelowCommentsConfig {
+  const BelowCommentsConfig({
+    this.usernameStyle,
+    this.commentTextStyle,
+    this.viewAllCommentsStyle,
+    this.viewAllCommentsText,
+    this.commentSpacing,
+    this.maxLinesPerComment,
+    this.maxVisibleComments,
+    this.animationDurationInMilliseconds,
+    this.animationOffsetY,
+  });
+
+  /// Style for comment author username
+  final TextStyle? usernameStyle;
+
+  /// Style for comment text content
+  final TextStyle? commentTextStyle;
+
+  /// Style for "View all comments" action
+  final TextStyle? viewAllCommentsStyle;
+
+  /// Override for "View all comments" text
+  final String? viewAllCommentsText;
+
+  /// Spacing between comment rows
+  final double? commentSpacing;
+
+  /// Max lines for each comment row
+  final int? maxLinesPerComment;
+
+  /// Number of comments to show below the post
+  final int? maxVisibleComments;
+
+  /// Animation duration for comments update
+  final int? animationDurationInMilliseconds;
+
+  /// Vertical offset used by slide animation
+  final double? animationOffsetY;
+
+  BelowCommentsConfig copyWith({
+    TextStyle? usernameStyle,
+    TextStyle? commentTextStyle,
+    TextStyle? viewAllCommentsStyle,
+    String? viewAllCommentsText,
+    double? commentSpacing,
+    int? maxLinesPerComment,
+    int? maxVisibleComments,
+    int? animationDurationInMilliseconds,
+    double? animationOffsetY,
+  }) =>
+      BelowCommentsConfig(
+        usernameStyle: usernameStyle ?? this.usernameStyle,
+        commentTextStyle: commentTextStyle ?? this.commentTextStyle,
+        viewAllCommentsStyle: viewAllCommentsStyle ?? this.viewAllCommentsStyle,
+        viewAllCommentsText: viewAllCommentsText ?? this.viewAllCommentsText,
+        commentSpacing: commentSpacing ?? this.commentSpacing,
+        maxLinesPerComment: maxLinesPerComment ?? this.maxLinesPerComment,
+        maxVisibleComments: maxVisibleComments ?? this.maxVisibleComments,
+        animationDurationInMilliseconds:
+            animationDurationInMilliseconds ??
+                this.animationDurationInMilliseconds,
+        animationOffsetY: animationOffsetY ?? this.animationOffsetY,
       );
 }
 

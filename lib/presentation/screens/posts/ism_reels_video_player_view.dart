@@ -70,6 +70,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   PostConfig get _postConfig => widget.reelsConfig.postConfig;
   bool get _showFloatingComments =>
       IsrVideoReelConfig.commentConfig.showFloatingcomments;
+  CommentUIConfig? get _commentUiConfig =>
+      IsrVideoReelConfig.commentConfig.commentUIConfig;
+  BelowCommentsConfig? get _belowCommentsConfig =>
+      _commentUiConfig?.belowCommentsConfig;
 
   // Config helper getters
   PostUIConfig? get _uiConfig => _postConfig.postUIConfig;
@@ -313,7 +317,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       .compareTo(a.commentedOn?.millisecondsSinceEpoch ?? 0),
                 );
               setState(() {
-                _floatingComments = sortedComments.take(2).toList();
+                final maxVisibleComments =
+                    _belowCommentsConfig?.maxVisibleComments ?? 2;
+                _floatingComments =
+                    sortedComments.take(maxVisibleComments).toList();
               });
             },
           ),
@@ -1658,17 +1665,29 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       return const SizedBox.shrink();
     }
 
-    final usernameStyle = (_textStyleConfig?.userNameStyle ?? IsrStyles.white12)
+    final usernameStyle = (_belowCommentsConfig?.usernameStyle ??
+            _textStyleConfig?.userNameStyle ??
+            IsrStyles.white12)
         .copyWith(fontWeight: FontWeight.w700, shadows: _textShadows);
-    final commentStyle =
-        (_textStyleConfig?.descriptionStyle ?? IsrStyles.white12).copyWith(
+    final commentStyle = (_belowCommentsConfig?.commentTextStyle ??
+            _textStyleConfig?.descriptionStyle ??
+            IsrStyles.white12)
+        .copyWith(
             color: IsrColors.white.changeOpacity(0.9), shadows: _textShadows);
-    final buttonStyle =
-        (_descriptionConfig?.expandTextStyle ?? IsrStyles.white12).copyWith(
-      fontWeight: FontWeight.w700,
-      color: IsrColors.white,
-      shadows: _textShadows,
+    final buttonStyle = _belowCommentsConfig?.viewAllCommentsStyle ??
+        _descriptionConfig?.expandTextStyle ??
+        IsrStyles.white12;
+
+    final commentSpacing =
+        _belowCommentsConfig?.commentSpacing ?? IsrDimens.four;
+    final maxLinesPerComment = _belowCommentsConfig?.maxLinesPerComment ?? 2;
+    final viewAllCommentsText =
+        _belowCommentsConfig?.viewAllCommentsText ?? 'View all comments';
+    final animationDuration = Duration(
+      milliseconds:
+          _belowCommentsConfig?.animationDurationInMilliseconds ?? 220,
     );
+    final animationOffsetY = _belowCommentsConfig?.animationOffsetY ?? 0.06;
     final animationKey = _floatingComments
         .map((comment) =>
             '${comment.id}_${comment.commentedOn?.millisecondsSinceEpoch}_${comment.comment}')
@@ -1676,12 +1695,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     return RepaintBoundary(
       child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 220),
+        duration: animationDuration,
         switchInCurve: Curves.easeOutCubic,
         switchOutCurve: Curves.easeInCubic,
         transitionBuilder: (child, animation) {
           final slideAnimation = Tween<Offset>(
-            begin: const Offset(0, 0.06),
+            begin: Offset(0, animationOffsetY),
             end: Offset.zero,
           ).animate(animation);
           return FadeTransition(
@@ -1701,9 +1720,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   ? comment.fullName!.trim()
                   : (comment.commentedBy ?? '').trim();
               return Padding(
-                padding: IsrDimens.edgeInsets(bottom: IsrDimens.four),
+                padding: IsrDimens.edgeInsets(bottom: commentSpacing),
                 child: RichText(
-                  maxLines: 2,
+                  maxLines: maxLinesPerComment,
                   overflow: TextOverflow.ellipsis,
                   text: TextSpan(
                     children: [
@@ -1719,7 +1738,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             TapHandler(
               onTap: _handleCommentClick,
               child: Text(
-                'view all comments',
+                viewAllCommentsText,
                 style: buttonStyle,
               ),
             ),
