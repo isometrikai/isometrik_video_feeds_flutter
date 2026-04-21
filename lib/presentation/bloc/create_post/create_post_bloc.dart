@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_thumbnail_video/video_thumbnail.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ism_video_reel_player/core/api_result.dart';
+import 'package:ism_video_reel_player/core/errors/app_error.dart';
 import 'package:ism_video_reel_player/core/errors/error_handler.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
@@ -97,6 +98,124 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   var _coverImage = '';
   var _coverImageExtension = '';
   var _coverFileName = '';
+
+  PostCreateEvent? _lastPostCreateEventForRetry;
+
+  bool get _usesBackgroundPostUi =>
+      IsrVideoReelConfig.createEditPostConfig.createEditPostCallBackConfig?.onBackgroundPostOperation !=
+      null;
+
+  void _retryBackgroundPost() {
+    final ev = _lastPostCreateEventForRetry;
+    if (ev != null) add(ev);
+  }
+
+  void _emitOrBackgroundUploadProgress(Emitter<CreatePostState> emit, ShowProgressDialogState state) {
+    if (_usesBackgroundPostUi) {
+      _notifyBackgroundUploadProgress(state);
+    } else {
+      emit(state);
+    }
+  }
+
+  void _notifyBackgroundUploadProgress(ShowProgressDialogState s) {
+    final cb =
+        IsrVideoReelConfig.createEditPostConfig.createEditPostCallBackConfig?.onBackgroundPostOperation;
+    if (cb == null) return;
+    cb(BackgroundPostOperationUpdate(
+      phase:
+          s.isErrorUploading ? BackgroundPostOperationPhase.failure : BackgroundPostOperationPhase.uploading,
+      overallProgressPercent: (s.progress ?? 0).clamp(0, 100),
+      title: s.title,
+      subtitle: s.subTitle,
+      currentFileIndex: s.currentFileIndex,
+      totalFiles: s.totalFiles,
+      currentFileName: s.currentFileName,
+      isUploadError: s.isErrorUploading,
+      isAllFilesUploaded: s.isAllFilesUploaded,
+      failureKind: s.isErrorUploading ? BackgroundPostFailureKind.upload : null,
+      failureMessage: s.isErrorUploading ? (s.subTitle ?? s.title) : null,
+      isEditMode: _isForEdit,
+      retry: s.isErrorUploading ? _retryBackgroundPost : null,
+    ));
+  }
+
+  void _notifyBackgroundCreatingPost() {
+    final cb =
+        IsrVideoReelConfig.createEditPostConfig.createEditPostCallBackConfig?.onBackgroundPostOperation;
+    if (cb == null) return;
+    cb(BackgroundPostOperationUpdate(
+      phase: BackgroundPostOperationPhase.creatingPost,
+      overallProgressPercent: 100,
+      title: _isForEdit ? IsrTranslationFile.savingPost : IsrTranslationFile.posting,
+      isEditMode: _isForEdit,
+      retry: _retryBackgroundPost,
+    ));
+  }
+
+  void _notifyBackgroundProcessingMedia() {
+    final cb =
+        IsrVideoReelConfig.createEditPostConfig.createEditPostCallBackConfig?.onBackgroundPostOperation;
+    if (cb == null) return;
+    cb(BackgroundPostOperationUpdate(
+      phase: BackgroundPostOperationPhase.processingMedia,
+      overallProgressPercent: 0,
+      title: IsrTranslationFile.postingPost,
+      isEditMode: _isForEdit,
+      retry: _retryBackgroundPost,
+    ));
+  }
+
+  void _notifyBackgroundApiFailure(AppError? error, {required bool isEdit}) {
+    final cb =
+        IsrVideoReelConfig.createEditPostConfig.createEditPostCallBackConfig?.onBackgroundPostOperation;
+    if (cb == null) return;
+    cb(BackgroundPostOperationUpdate(
+      phase: BackgroundPostOperationPhase.failure,
+      failureKind: BackgroundPostFailureKind.createOrEditApi,
+      failureMessage: error?.message ?? 'Unknown error',
+      httpStatusCode: error?.statusCode,
+      isEditMode: isEdit,
+      retry: _retryBackgroundPost,
+    ));
+  }
+
+  void _notifyBackgroundMediaProcessingFailure(AppError? error) {
+    final cb =
+        IsrVideoReelConfig.createEditPostConfig.createEditPostCallBackConfig?.onBackgroundPostOperation;
+    if (cb == null) return;
+    cb(BackgroundPostOperationUpdate(
+      phase: BackgroundPostOperationPhase.failure,
+      failureKind: BackgroundPostFailureKind.mediaProcessing,
+      failureMessage: error?.message ?? 'Unknown error',
+      httpStatusCode: error?.statusCode,
+      isEditMode: _isForEdit,
+      retry: _retryBackgroundPost,
+    ));
+  }
+
+  void _afterEmitPostCreated(PostCreatedState state, {String? resolvedPostId}) {
+    if (!_usesBackgroundPostUi) return;
+    final postId = state.postDataModel?.id ?? resolvedPostId;
+    if (_isForEdit) {
+      IsrVideoReelConfig.socialActionCubit
+          .onPostEdited(postId: postId, postData: state.postDataModel);
+    } else {
+      IsrVideoReelConfig.socialActionCubit.onPostCreated(postId: postId);
+    }
+    IsrVideoReelConfig.createEditPostConfig.createEditPostCallBackConfig?.onBackgroundPostOperation?.call(
+      BackgroundPostOperationUpdate(
+        phase: BackgroundPostOperationPhase.success,
+        overallProgressPercent: 100,
+        postId: postId,
+        postData: state.postDataModel ?? _postData,
+        successTitle: state.postSuccessTitle,
+        successMessage: state.postSuccessMessage,
+        mediaDataList: state.mediaDataList,
+        isEditMode: _isForEdit,
+      ),
+    );
+  }
 
   FutureOr<void> _initState(CreatePostInitialEvent event, Emitter<CreatePostState> emit) async {
     _resetData();
@@ -520,6 +639,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   }
 
   FutureOr<void> _createPost(PostCreateEvent event, Emitter<CreatePostState> emit) async {
+    _lastPostCreateEventForRetry = event;
     _createPostRequest = event.createPostRequest;
     debugPrint('_createPostRequest....${jsonEncode(_createPostRequest)}');
 
@@ -537,8 +657,12 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       if (!uploadSuccess) return;
       _createPostRequest.media = _mediaDataList;
 
+      if (_usesBackgroundPostUi) {
+        _notifyBackgroundCreatingPost();
+      }
+
       final apiResult = await _createPostUseCase.executeCreatePost(
-        isLoading: true,
+        isLoading: !_usesBackgroundPostUi,
         createPostRequest: _createPostRequest.toJson(),
       );
       if (apiResult.isSuccess) {
@@ -550,7 +674,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
           add(MediaProcessingEvent(postId: postId));
         } else {
           await _createPostData(postId);
-          emit(PostCreatedState(
+          final createdState = PostCreatedState(
             postDataModel: null,
             postSuccessMessage: _createPostRequest.scheduleTime != null
                 ? IsrTranslationFile.postScheduledSuccessfully
@@ -559,17 +683,27 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
                 ? IsrTranslationFile.successfullyScheduled
                 : IsrTranslationFile.successfullyPosted,
             mediaDataList: _createPostRequest.media,
-          ));
+          );
+          emit(createdState);
+          _afterEmitPostCreated(createdState, resolvedPostId: postId);
         }
       } else {
-        ErrorHandler.showAppError(appError: apiResult.error, isNeedToShowError: true);
+        if (_usesBackgroundPostUi) {
+          _notifyBackgroundApiFailure(apiResult.error, isEdit: false);
+        } else {
+          ErrorHandler.showAppError(appError: apiResult.error, isNeedToShowError: true);
+        }
       }
       return;
     }
 
+    if (_usesBackgroundPostUi) {
+      _notifyBackgroundCreatingPost();
+    }
+
     late ApiResult<CreatePostResponse?> apiResult;
     apiResult = await _createPostUseCase.executeEditPost(
-      isLoading: true,
+      isLoading: !_usesBackgroundPostUi,
       postId: _postData?.id ?? '',
       editPostRequest: _createPostRequest.toJson(),
     );
@@ -586,7 +720,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
         if (_isForEdit) {
           _updatePostData();
         }
-        emit(PostCreatedState(
+        final editCreatedState = PostCreatedState(
           postDataModel: _isForEdit ? _postData : null,
           postSuccessMessage: _isForEdit
               ? IsrTranslationFile.postUpdatedSuccessfully
@@ -599,10 +733,16 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
                   ? IsrTranslationFile.successfullyScheduled
                   : IsrTranslationFile.successfullyPosted,
           mediaDataList: _createPostRequest.media,
-        ));
+        );
+        emit(editCreatedState);
+        _afterEmitPostCreated(editCreatedState);
       }
     } else {
-      ErrorHandler.showAppError(appError: apiResult.error, isNeedToShowError: true);
+      if (_usesBackgroundPostUi) {
+        _notifyBackgroundApiFailure(apiResult.error, isEdit: true);
+      } else {
+        ErrorHandler.showAppError(appError: apiResult.error, isNeedToShowError: true);
+      }
     }
   }
 
@@ -950,7 +1090,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
       // Initial state will be handled by the view
 
-      emit(ShowProgressDialogState(
+      _emitOrBackgroundUploadProgress(emit, ShowProgressDialogState(
         progress: 0,
         title: IsrTranslationFile.uploadingMediaFiles,
         subTitle: '$fileName (1/$totalFiles)',
@@ -995,7 +1135,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
               // Check if emit is still valid before calling
               if (!emit.isDone) {
-                emit(ShowProgressDialogState(
+                _emitOrBackgroundUploadProgress(emit, ShowProgressDialogState(
                   progress: totalProgress.clamp(0.0, 100.0),
                   title: IsrTranslationFile.uploadingMediaFiles,
                   subTitle: fileInfo,
@@ -1011,7 +1151,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
             mediaData.fileExtension ?? '',
           );
           if (uploadedMediaUrl.isEmpty) {
-            emit(ShowProgressDialogState(
+            _emitOrBackgroundUploadProgress(emit, ShowProgressDialogState(
               progress: 0,
               title: IsrTranslationFile.uploadingMediaFiles,
               subTitle: IsrTranslationFile.uploadFailed,
@@ -1061,7 +1201,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
                   // Check if emit is still valid before calling
                   if (!emit.isDone) {
-                    emit(ShowProgressDialogState(
+                    _emitOrBackgroundUploadProgress(emit, ShowProgressDialogState(
                       progress: totalProgress.clamp(0.0, 100.0),
                       title: IsrTranslationFile.uploadingMediaFiles,
                       subTitle: fileInfo,
@@ -1075,7 +1215,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
                 mediaData.coverFileExtension ?? '',
               );
               if (uploadedPreviewUrl.isEmpty) {
-                emit(ShowProgressDialogState(
+                _emitOrBackgroundUploadProgress(emit, ShowProgressDialogState(
                   progress: 0,
                   title: IsrTranslationFile.uploadingMediaFiles,
                   subTitle: IsrTranslationFile.uploadFailed,
@@ -1099,7 +1239,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       // Emit final state to indicate all files are uploaded
       // Final state will be handled by the view
       if (!emit.isDone && !hasCoverMedia) {
-        emit(ShowProgressDialogState(
+        _emitOrBackgroundUploadProgress(emit, ShowProgressDialogState(
           progress: 100,
           title: IsrTranslationFile.uploadComplete,
           subTitle: IsrTranslationFile.allFilesUploadedSuccessfully,
@@ -1156,7 +1296,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
               final totalProgress = baseProgress + currentFileProgress;
 
               if (!emit.isDone) {
-                emit(ShowProgressDialogState(
+                _emitOrBackgroundUploadProgress(emit, ShowProgressDialogState(
                   progress: totalProgress.clamp(0.0, 100.0),
                   title: IsrTranslationFile.uploadingPreviewFiles,
                   subTitle: '$coverFileName',
@@ -1172,7 +1312,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
             _coverImageExtension,
           );
           if (uploadedUrl.isEmpty) {
-            emit(ShowProgressDialogState(
+            _emitOrBackgroundUploadProgress(emit, ShowProgressDialogState(
               progress: 0,
               title: IsrTranslationFile.uploadingPreviewFiles,
               subTitle: IsrTranslationFile.uploadFailed,
@@ -1188,7 +1328,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
           previewItem.url = uploadedUrl;
 
           if (!emit.isDone) {
-            emit(ShowProgressDialogState(
+            _emitOrBackgroundUploadProgress(emit, ShowProgressDialogState(
               progress: 100,
               title: IsrTranslationFile.uploadComplete,
               subTitle: IsrTranslationFile.allFilesUploadedSuccessfully,
@@ -1216,7 +1356,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       } else {
         await _createPostData(event.postId);
       }
-      emit(PostCreatedState(
+      final uploadDoneState = PostCreatedState(
         postDataModel: _postData,
         postSuccessMessage: _isForEdit
             ? IsrTranslationFile.postUpdatedSuccessfully
@@ -1229,7 +1369,9 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
                 ? IsrTranslationFile.successfullyScheduled
                 : IsrTranslationFile.successfullyPosted,
         mediaDataList: _createPostRequest.media,
-      ));
+      );
+      emit(uploadDoneState);
+      _afterEmitPostCreated(uploadDoneState);
     }
   }
 
@@ -1245,8 +1387,11 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   }
 
   FutureOr<void> _processMedia(MediaProcessingEvent event, Emitter<CreatePostState> emit) async {
+    if (_usesBackgroundPostUi) {
+      _notifyBackgroundProcessingMedia();
+    }
     final apiResult = await mediaProcessingUseCase.executeMediaProcessing(
-      isLoading: true,
+      isLoading: !_usesBackgroundPostUi,
       postId: event.postId,
     );
     if (apiResult.isSuccess) {
@@ -1255,7 +1400,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       } else {
         await _createPostData(event.postId);
       }
-      emit(PostCreatedState(
+      final processedState = PostCreatedState(
         postDataModel: _postData,
         postSuccessMessage: _isForEdit
             ? IsrTranslationFile.postUpdatedSuccessfully
@@ -1268,10 +1413,16 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
                 ? IsrTranslationFile.successfullyScheduled
                 : IsrTranslationFile.successfullyPosted,
         mediaDataList: _createPostRequest.media,
-      ));
+      );
+      emit(processedState);
+      _afterEmitPostCreated(processedState, resolvedPostId: event.postId);
       _resetData();
     } else {
-      ErrorHandler.showAppError(appError: apiResult.error, isNeedToShowError: true);
+      if (_usesBackgroundPostUi) {
+        _notifyBackgroundMediaProcessingFailure(apiResult.error);
+      } else {
+        ErrorHandler.showAppError(appError: apiResult.error, isNeedToShowError: true);
+      }
     }
   }
 

@@ -185,14 +185,14 @@ class IsrAppNavigator {
   }) async {
     final page = MultiBlocProvider(
       providers: [
-        BlocProvider<CreatePostBloc>(
-          create: (_) => IsmInjectionUtils.getBloc<CreatePostBloc>(),
+        BlocProvider<CreatePostBloc>.value(
+          value: IsmInjectionUtils.getBloc<CreatePostBloc>(),
         ),
-        BlocProvider<SearchUserBloc>(
-          create: (_) => IsmInjectionUtils.getBloc<SearchUserBloc>(),
+        BlocProvider<SearchUserBloc>.value(
+          value: IsmInjectionUtils.getBloc<SearchUserBloc>(),
         ),
-        BlocProvider<UploadProgressCubit>(
-          create: (_) => IsmInjectionUtils.getBloc<UploadProgressCubit>(),
+        BlocProvider<UploadProgressCubit>.value(
+          value: IsmInjectionUtils.getBloc<UploadProgressCubit>(),
         ),
       ],
       child: const CreatePostMultimediaWrapper(),

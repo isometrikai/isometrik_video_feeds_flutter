@@ -75,6 +75,10 @@ class _PostAttributeViewState extends State<PostAttributeView>
   PostAttributeUIConfig? get _postAttributeConfig => IsrVideoReelConfig
       .createEditPostConfig.createEditPostUIConfig?.postAttributeUIConfig;
 
+  bool get _useBackgroundPostUi =>
+      IsrVideoReelConfig.createEditPostConfig.createEditPostCallBackConfig?.onBackgroundPostOperation !=
+      null;
+
   @override
   void initState() {
     _createPostBloc = context.getOrCreateBloc();
@@ -372,7 +376,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
 
     // Check linked products changes by comparing with bloc's state (fallback)
     try {
-      final createPostBloc = BlocProvider.of<CreatePostBloc>(context);
+      final createPostBloc = context.getOrCreateBloc<CreatePostBloc>();
       final currentLinkedProducts = createPostBloc.linkedProducts;
 
       debugPrint('=== LINKED PRODUCTS CHECK ===');
@@ -489,6 +493,15 @@ class _PostAttributeViewState extends State<PostAttributeView>
           });
         }
         if (state is PostCreatedState) {
+          if (_useBackgroundPostUi) {
+            if (!mounted) return;
+            _doMediaCaching(state.mediaDataList);
+            final postData = state.postDataModel != null
+                ? jsonEncode(state.postDataModel!.toMap())
+                : null;
+            _popNavigatorStackForBackgroundPost(result: postData);
+            return;
+          }
           if (widget.isEditMode == true) {
             _socialActionCubit.onPostEdited(
                 postId: state.postDataModel?.id, postData: state.postDataModel);
@@ -522,7 +535,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
             Navigator.pop(context, postData);
           });
         }
-        if (state is ShowProgressDialogState) {
+        if (state is ShowProgressDialogState && !_useBackgroundPostUi) {
           if (!_isDialogOpen) {
             _isDialogOpen = true;
             _showProgressDialog(state.title ?? '', state.subTitle ?? '');
@@ -1001,7 +1014,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
               IsrStyles.secondaryText14.copyWith(color: IsrColors.colorBBBBBB),
           focusNode: _descriptionFocusNode,
           onChanged: (value) {
-            final createPostBloc = BlocProvider.of<CreatePostBloc>(context);
+            final createPostBloc = context.getOrCreateBloc<CreatePostBloc>();
             createPostBloc.descriptionText = _descriptionController.text;
 
             // Update PostAttributeClass
@@ -1544,7 +1557,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
     debugPrint('Current _mentionedUsers count: ${_mentionedUsers.length}');
     debugPrint('Current _hashTags count: ${_hashTags.length}');
 
-    final createPostBloc = BlocProvider.of<CreatePostBloc>(context);
+    final createPostBloc = context.getOrCreateBloc<CreatePostBloc>();
 
     debugPrint(
         'Current bloc mentionedUserData count: ${createPostBloc.mentionedUserData.length}');
@@ -1591,11 +1604,28 @@ class _PostAttributeViewState extends State<PostAttributeView>
 
   void _createPost() {
     _setPostRequest();
-    BlocProvider.of<CreatePostBloc>(context).add(PostCreateEvent(
+    context.getOrCreateBloc<CreatePostBloc>().add(PostCreateEvent(
       createPostRequest:
           _postAttributeClass?.createPostRequest ?? CreatePostRequest(),
       isForEdit: _isEditMode,
     ));
+    if (_useBackgroundPostUi) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _popNavigatorStackForBackgroundPost(result: null);
+      });
+    }
+  }
+
+  /// Pops the post-attribute route (and the rest of the create stack for new posts)
+  /// so the user can use the app while upload/create continues in the bloc.
+  void _popNavigatorStackForBackgroundPost({String? result}) {
+    if (!mounted) return;
+    if (widget.isEditMode != true) {
+      Navigator.pop(context, null);
+      Navigator.pop(context, null);
+    }
+    Navigator.pop(context, result);
   }
 
   void _setPostRequest() {
