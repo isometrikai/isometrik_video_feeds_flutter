@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:fluttertagger/fluttertagger.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
@@ -38,7 +39,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   var _isCommentsLoaded = false;
   CommentDataItem? _replyComment;
   var _commentModifiedCount = 0;
-  final _replyController = TextEditingController();
+  final _replyController = FlutterTaggerController();
   final _replyFocusNode = FocusNode();
   var _hasMoreComments = true;
   var _isLoadingMore = false;
@@ -866,7 +867,6 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
 
   final userMentions = <CommentMentionData>[];
   final tagMentions = <CommentMentionData>[];
-
   Widget _buildReplyField(CommentDataItem? commentDataItem) => StatefulBuilder(
         builder: (context, setState) => Column(
           mainAxisAlignment: MainAxisAlignment.end,
@@ -927,10 +927,13 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                     child: CommentTaggingTextField(
                       controller: _replyController,
                       focusNode: _replyFocusNode,
+                      overlayWidth: MediaQuery.sizeOf(context).width,
                       minLines: 1,
                       autoFocus: true,
                       hintText: IsrTranslationFile.addAComment,
-                      style: _replyFieldConfig?.inputTextStyle,
+                      textStyle: _replyFieldConfig?.inputTextStyle,
+                      userTagTextStyle: _replyFieldConfig?.inputUserTagTextStyle,
+                      hashtagTextStyle: _replyFieldConfig?.inputHashtagTextStyle,
                       decoration: _replyFieldConfig?.inputDecoration ??
                           const InputDecoration(
                             hintText: IsrTranslationFile.addAComment,
@@ -939,22 +942,28 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                             alignLabelWithHint: true,
                           ),
                       onRemoveHashTagData: (mentionData) {
-                        tagMentions.removeWhere(
-                            (_) => _.toJson() == mentionData.toJson());
-                      },
-                      onRemoveMentionData: (mentionData) {
-                        userMentions.removeWhere(
-                            (_) => _.toJson() == mentionData.toJson());
-                      },
-                      onAddHashTagData: (mentionData) {
+                        debugPrint('comment remove tagging: ${mentionData.toJson()}');
+                      tagMentions.removeWhere(
+                          (_) => _.toJson() == mentionData.toJson());
+                    },
+                    onRemoveMentionData: (mentionData) {
+                      debugPrint('comment remove user tagging: ${mentionData.toJson()}');
+                      userMentions.removeWhere(
+                          (_) => _.toJson() == mentionData.toJson());
+                    },
+                    onAddHashTagData: (mentionData) {
+                      debugPrint('comment tagging: ${mentionData.toJson()}');
                         if (!tagMentions
                             .any((_) => _.toJson() == mentionData.toJson())) {
-                          tagMentions.add(mentionData);
-                        }
-                      },
-                      onAddMentionData: (mentionData) {
-                        if (!userMentions
-                            .any((_) => _.toJson() == mentionData.toJson())) {
+                          debugPrint('comment tagging: ${mentionData.toJson()}');
+                        tagMentions.add(mentionData);
+                      }
+                    },
+                    onAddMentionData: (mentionData) {
+                      debugPrint('comment user tagging: ${mentionData.toJson()}');
+                      if (!userMentions
+                          .any((_) => _.toJson() == mentionData.toJson())) {
+                        debugPrint('comment user tagging: ${mentionData.toJson()}');
                           userMentions.add(mentionData);
                         }
                       },
@@ -993,7 +1002,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                         tagMentions.clear();
                         userMentions.clear();
                         _setReplyComment(null);
-
+                      debugPrint('comment tag data : ${currentTagMentions.map((e) => e.toJson())}');
+                      debugPrint('comment tag user data : ${currentUserMentions.map((e) => e.toJson())}');
                         // Send to server - Bloc will handle optimistic UI update
                         _socialBloc.add(
                           CommentActionEvent(

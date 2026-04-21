@@ -186,24 +186,32 @@ class CaptionInputConfig {
   const CaptionInputConfig({
     this.hintStyle,
     this.textStyle,
+    this.inputUserTagTextStyle,
+    this.inputHashtagTextStyle,
     this.maxLength,
     this.hintText,
   });
 
   final TextStyle? hintStyle;
   final TextStyle? textStyle;
+  final TextStyle? inputUserTagTextStyle;
+  final TextStyle? inputHashtagTextStyle;
   final int? maxLength;
   final String? hintText;
 
   CaptionInputConfig copyWith({
     TextStyle? hintStyle,
     TextStyle? textStyle,
+    TextStyle? inputUserTagTextStyle,
+    TextStyle? inputHashtagTextStyle,
     int? maxLength,
     String? hintText,
   }) =>
       CaptionInputConfig(
         hintStyle: hintStyle ?? this.hintStyle,
         textStyle: textStyle ?? this.textStyle,
+        inputUserTagTextStyle: inputUserTagTextStyle ?? this.inputUserTagTextStyle,
+        inputHashtagTextStyle: inputHashtagTextStyle ?? this.inputHashtagTextStyle,
         maxLength: maxLength ?? this.maxLength,
         hintText: hintText ?? this.hintText,
       );
