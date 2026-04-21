@@ -200,14 +200,51 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          widget.placeName.isEmptyOrNull == false
-                              ? (widget.placeName ?? '')
-                              : 'India - Bengaluru',
-                          style: TextStyle(
-                            fontSize: 16.responsiveDimension,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black87,
+                        Expanded(
+                          child: Text(
+                            widget.placeName.isEmptyOrNull == false
+                                ? (widget.placeName ?? '')
+                                : 'India - Bengaluru',
+                            style: TextStyle(
+                              fontSize: 16.responsiveDimension,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        SizedBox(width: 8.responsiveDimension),
+                        GestureDetector(
+                          onTap: _openDirections,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 12.responsiveDimension,
+                              vertical: 6.responsiveDimension,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.blue,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.directions,
+                                  color: Colors.white,
+                                  size: 16.responsiveDimension,
+                                ),
+                                SizedBox(width: 4.responsiveDimension),
+                                Text(
+                                  'Get Directions',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12.responsiveDimension,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
@@ -562,6 +599,37 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
           ],
         ),
       );
+
+  Future<void> _openDirections() async {
+    final lat = widget.latitude ?? 0.0;
+    final lng = widget.longitude ?? 0.0;
+
+    Uri uri;
+    if (Platform.isAndroid) {
+      uri = Uri.parse('google.navigation:q=$lat,$lng');
+    } else {
+      uri = Uri.parse(
+          'comgooglemaps://?daddr=$lat,$lng&directionsmode=driving');
+    }
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      return;
+    }
+
+    if (Platform.isIOS) {
+      final appleUri = Uri.parse('maps://?daddr=$lat,$lng');
+      if (await canLaunchUrl(appleUri)) {
+        await launchUrl(appleUri, mode: LaunchMode.externalApplication);
+        return;
+      }
+    }
+
+    final webUri = Uri.parse(
+      'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng',
+    );
+    await launchUrl(webUri, mode: LaunchMode.externalApplication);
+  }
 
   /// Returns true if the map was opened successfully, false otherwise
   /// First tries to open Google Maps app, then falls back to webview

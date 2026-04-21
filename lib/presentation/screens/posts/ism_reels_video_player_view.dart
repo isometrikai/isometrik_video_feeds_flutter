@@ -200,8 +200,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (_wasVisiblePost && !isVisible) {
       _logWatchPostEvent();
     }
-    if (isVisible && !_hasFetchedFloatingComments) {
-      _fetchFloatingCommentsIfNeeded();
+    if (isVisible) {
+      if (_isMuted != _globalMuteState) {
+        setState(() {
+          _isMuted = _globalMuteState;
+        });
+      }
+      if (!_hasFetchedFloatingComments) {
+        _fetchFloatingCommentsIfNeeded();
+      }
     }
     debugPrint(
         'IsmReelsVideoPlayerView: _onCurrentIndexChanged {Post index: ${widget.index}, currentIndex: ${widget.currentIndex.value}}');
@@ -834,6 +841,16 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   void _callOnTapMentionData(List<MentionMetaData> mentionDataList) {
     if (widget.onTapMentionTag == null) return;
     widget.onTapMentionTag?.call(mentionDataList);
+  }
+
+  void _onTapBelowCommentUserTag(String userId) {
+    if (userId.isStringEmptyOrNull) return;
+    _callOnTapMentionData([MentionMetaData(userId: userId)]);
+  }
+
+  void _onTapBelowCommentHashtag(String hashtag) {
+    if (hashtag.isStringEmptyOrNull) return;
+    _callOnTapMentionData([MentionMetaData(tag: hashtag)]);
   }
 
   Widget _buildMediaCounter(int currentPage) {
@@ -1674,6 +1691,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             IsrStyles.white12)
         .copyWith(
             color: IsrColors.white.changeOpacity(0.9), shadows: _textShadows);
+    final userTagStyle = (_belowCommentsConfig?.userTagTextStyle ??
+            commentStyle.copyWith(fontWeight: FontWeight.w600))
+        .copyWith(shadows: _textShadows);
+    final hashtagStyle = (_belowCommentsConfig?.hashtagTextStyle ??
+            commentStyle.copyWith(fontWeight: FontWeight.w600))
+        .copyWith(shadows: _textShadows);
     final buttonStyle = _belowCommentsConfig?.viewAllCommentsStyle ??
         _descriptionConfig?.expandTextStyle ??
         IsrStyles.white12;
@@ -1728,8 +1751,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                     children: [
                       TextSpan(text: username, style: usernameStyle),
                       const TextSpan(text: ' '),
-                      TextSpan(
-                          text: comment.comment ?? '', style: commentStyle),
+                      ...Utility.buildCommentTextSpans(
+                        comment.comment ?? '',
+                        commentStyle,
+                        comment.tags,
+                        userNameStyle: userTagStyle,
+                        hashTagStyle: hashtagStyle,
+                        onUsernameTap: _onTapBelowCommentUserTag,
+                        onHashtagTap: _onTapBelowCommentHashtag,
+                      ),
                     ],
                   ),
                 ),

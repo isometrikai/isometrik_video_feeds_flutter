@@ -246,6 +246,8 @@ class BelowCommentsConfig {
   const BelowCommentsConfig({
     this.usernameStyle,
     this.commentTextStyle,
+    this.userTagTextStyle,
+    this.hashtagTextStyle,
     this.viewAllCommentsStyle,
     this.viewAllCommentsText,
     this.commentSpacing,
@@ -260,6 +262,12 @@ class BelowCommentsConfig {
 
   /// Style for comment text content
   final TextStyle? commentTextStyle;
+
+  /// Style for @user tags in comment text
+  final TextStyle? userTagTextStyle;
+
+  /// Style for #hashtag tags in comment text
+  final TextStyle? hashtagTextStyle;
 
   /// Style for "View all comments" action
   final TextStyle? viewAllCommentsStyle;
@@ -285,6 +293,8 @@ class BelowCommentsConfig {
   BelowCommentsConfig copyWith({
     TextStyle? usernameStyle,
     TextStyle? commentTextStyle,
+    TextStyle? userTagTextStyle,
+    TextStyle? hashtagTextStyle,
     TextStyle? viewAllCommentsStyle,
     String? viewAllCommentsText,
     double? commentSpacing,
@@ -296,6 +306,8 @@ class BelowCommentsConfig {
       BelowCommentsConfig(
         usernameStyle: usernameStyle ?? this.usernameStyle,
         commentTextStyle: commentTextStyle ?? this.commentTextStyle,
+        userTagTextStyle: userTagTextStyle ?? this.userTagTextStyle,
+        hashtagTextStyle: hashtagTextStyle ?? this.hashtagTextStyle,
         viewAllCommentsStyle: viewAllCommentsStyle ?? this.viewAllCommentsStyle,
         viewAllCommentsText: viewAllCommentsText ?? this.viewAllCommentsText,
         commentSpacing: commentSpacing ?? this.commentSpacing,
