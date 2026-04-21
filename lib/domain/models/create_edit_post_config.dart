@@ -1164,16 +1164,105 @@ class LocationPermissionButtonConfig {
       );
 }
 
+/// Phase of the create/edit post pipeline when using [CreateEditPostCallBackConfig.onBackgroundPostOperation].
+enum BackgroundPostOperationPhase {
+  /// Uploading media and previews to cloud storage (includes compression when enabled).
+  uploading,
+
+  /// Create-post or edit-post API call in flight.
+  creatingPost,
+
+  /// Server-side media processing after create (when applicable).
+  processingMedia,
+
+  /// Post published, updated, or scheduled successfully.
+  success,
+
+  /// Upload, API, or processing failed — see [BackgroundPostOperationUpdate.failureMessage].
+  failure,
+}
+
+/// Which step failed when [BackgroundPostOperationPhase] is [BackgroundPostOperationPhase.failure].
+enum BackgroundPostFailureKind {
+  upload,
+  createOrEditApi,
+  mediaProcessing,
+}
+
+/// Payload for host overlays, notifications, or foreground services during background create post.
+class BackgroundPostOperationUpdate {
+  const BackgroundPostOperationUpdate({
+    required this.phase,
+    this.overallProgressPercent = 0,
+    this.title,
+    this.subtitle,
+    this.currentFileIndex = 0,
+    this.totalFiles = 0,
+    this.currentFileName,
+    this.isUploadError = false,
+    this.isAllFilesUploaded = false,
+    this.failureKind,
+    this.failureMessage,
+    this.httpStatusCode,
+    this.postId,
+    this.postData,
+    this.successTitle,
+    this.successMessage,
+    this.mediaDataList,
+    this.isEditMode = false,
+    this.retry,
+  });
+
+  final BackgroundPostOperationPhase phase;
+
+  /// Overall progress for upload phase (0–100). Other phases may use 0 or 100 as appropriate.
+  final double overallProgressPercent;
+
+  final String? title;
+  final String? subtitle;
+  final int currentFileIndex;
+  final int totalFiles;
+  final String? currentFileName;
+  final bool isUploadError;
+  final bool isAllFilesUploaded;
+  final BackgroundPostFailureKind? failureKind;
+  final String? failureMessage;
+  final int? httpStatusCode;
+
+  final String? postId;
+  final TimeLineData? postData;
+  final String? successTitle;
+  final String? successMessage;
+  final List<MediaData>? mediaDataList;
+  final bool isEditMode;
+
+  /// Retries the last create/edit post operation (same request). Only set when failure is recoverable.
+  final VoidCallback? retry;
+}
+
 class CreateEditPostCallBackConfig {
-  const CreateEditPostCallBackConfig({this.onLinkProduct});
+  const CreateEditPostCallBackConfig({
+    this.onLinkProduct,
+    this.onBackgroundPostOperation,
+  });
 
   final Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
       onLinkProduct;
 
-  CreateEditPostCallBackConfig copyWith(
-          {Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
-              onLinkProduct}) =>
+  /// When set, upload and create/edit post run without the SDK progress bottom sheet.
+  /// Use [BackgroundPostOperationUpdate] to drive your own overlay, in-app banner, or notification.
+  ///
+  /// The SDK invokes this from the create-post bloc so updates continue even if the user leaves the create screen.
+  final void Function(BackgroundPostOperationUpdate update)? onBackgroundPostOperation;
+
+  CreateEditPostCallBackConfig copyWith({
+    Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
+        onLinkProduct,
+    void Function(BackgroundPostOperationUpdate update)? onBackgroundPostOperation,
+  }) =>
       CreateEditPostCallBackConfig(
         onLinkProduct: onLinkProduct ?? this.onLinkProduct,
+        onBackgroundPostOperation:
+            onBackgroundPostOperation ?? this.onBackgroundPostOperation,
       );
 }

@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,6 +7,7 @@ import 'package:ism_video_reel_player_example/di/di.dart';
 import 'package:ism_video_reel_player_example/domain/domain.dart';
 import 'package:ism_video_reel_player_example/presentation/presentation.dart';
 import 'package:ism_video_reel_player_example/res/res.dart';
+import 'package:ism_video_reel_player_example/utils/background_post_upload_overlay.dart';
 import 'package:ism_video_reel_player_example/utils/utils.dart';
 
 export 'utils/utils.dart';
@@ -81,7 +80,11 @@ void _configureReelsSdk() {
       autoMoveToNextPost: true,
     ),
     tabConfig: const isr.TabConfig(),
-    createEditPostConfig: const isr.CreateEditPostConfig(),
+    createEditPostConfig: const isr.CreateEditPostConfig(
+      createEditPostCallBackConfig: isr.CreateEditPostCallBackConfig(
+        onBackgroundPostOperation: BackgroundPostUploadDemo.onSdkUpdate,
+      ),
+    ),
     socialConfig: isr.SocialConfig(
       googleCloudUpload: isr.GoogleCloudUpload(
         bucketName: AppConstants.bucketName,
@@ -224,6 +227,15 @@ class MyApp extends StatelessWidget {
                     debugShowCheckedModeBanner: false,
                     theme: appTheme,
                     routerConfig: AppRouter.router,
+                      builder: (context, child) {
+                        final content = child ?? const SizedBox.shrink();
+                        return Stack(
+                          children: [
+                            content,
+                            const BackgroundPostUploadBanner(),
+                          ],
+                        );
+                      }
                   ),
                 );
               },

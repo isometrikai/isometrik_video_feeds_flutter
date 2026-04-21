@@ -71,7 +71,7 @@ class BlocInjection {
           IsmInjectionUtils.getUseCase<GetTaggedPostsUseCase>(),
         ));
 
-    IsmInjectionUtils.registerBloc<CreatePostBloc>(() => CreatePostBloc(
+    IsmInjectionUtils.registerSingletonBloc<CreatePostBloc>(() => CreatePostBloc(
           IsmInjectionUtils.getUseCase<CreatePostUseCase>(),
           IsmInjectionUtils.getUseCase<GetSocialProductsUseCase>(),
           localDataUseCase,
