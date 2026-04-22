@@ -24,6 +24,7 @@ class IsmPostView extends StatefulWidget {
     this.onTapPlace,
     this.tabConfig,
     this.postConfig,
+    this.centralKey,
   });
 
   final List<TabDataModel> tabDataModelList;
@@ -31,12 +32,15 @@ class IsmPostView extends StatefulWidget {
   final bool? allowImplicitScrolling;
   final TabConfig? tabConfig;
   final PostConfig? postConfig;
+  final String? centralKey;
 
   /// Optional callback to override default place navigation
   /// If not provided, SDK will navigate to PlaceDetailsView automatically
   /// Parameters: placeId, placeName, latitude, longitude
   final Function(String placeId, String placeName, double lat, double long)?
       onTapPlace;
+
+  static Map<PostSectionType, List<TimeLineData>>? getLoadedTabReels(String cacheKey) => _PostViewState.getLoadedTabReels(cacheKey);
 
   @override
   State<IsmPostView> createState() => _PostViewState();
@@ -48,7 +52,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   var _currentIndex = 1;
   var _loggedInUserId = '';
   final ValueNotifier<bool> _tabsVisibilityNotifier = ValueNotifier<bool>(true);
-  List<TabStateModel> _tabDataModelList = [];
+  List<TabStateModel> get _tabDataModelList => _centralTadData.putIfAbsent(centralKey, () => <TabStateModel>[]);
   VideoCacheManager? _videoCacheManager;
   late SocialPostBloc _socialPostBloc; // Will be initialized from context
   late IsmSocialActionCubit _socialActionCubit;
@@ -64,6 +68,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   BackButtonConfig? get _backButtonConfig => _tabUIConfig?.backButtonConfig;
   LoadingViewConfig? get _loadingViewConfig => _tabUIConfig?.loadingViewConfig;
   StatusBarConfig? get _statusBarConfig => _tabUIConfig?.statusBarConfig;
+
+  //caches
+  static final Map<String, List<TabStateModel>> _centralTadData = {};
+  String get centralKey => widget.centralKey ?? '${runtimeType}_default_central';
+  static Map<PostSectionType, List<TimeLineData>>? getLoadedTabReels(String centralKey) => _centralTadData[centralKey]?.asMap().map((key, value) => MapEntry(value.tabDataModel.postSectionType, value.tabDataModel.reelsDataList.toList()));
 
   /// When false, tab bodies stay a cheap placeholder so the push transition
   /// is not competing with [PostItemWidget] / video precache on the GPU.
@@ -93,10 +102,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   }
 
   void _onStartInit() async {
-    _tabDataModelList = widget.tabDataModelList
+    _tabDataModelList.clear();
+    _tabDataModelList.addAll(widget.tabDataModelList
         .map((tab) => TabStateModel(
             isLoading: tab.reelsDataList.isEmpty, tabDataModel: tab))
-        .toList();
+        .toList());
     _currentIndex = (_tabDataModelList.length > (widget.startTabIndex ?? 0)) ? widget.startTabIndex?.toInt() ?? 0 : 0;
     _currentPostSectionType =
         _tabDataModelList[_currentIndex].tabDataModel.postSectionType;
@@ -753,6 +763,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   void dispose() {
     _tearDownRouteEnterListener();
     _postTabController?.dispose();
+    _centralTadData.remove(centralKey);
     for (var controller in _refreshControllers) {
       controller.dispose();
     }
