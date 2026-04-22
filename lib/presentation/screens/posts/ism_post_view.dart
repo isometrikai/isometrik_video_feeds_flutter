@@ -389,7 +389,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
             .map((_) => getReelData(_, loggedInUserId: _loggedInUserId))
             .toList(),
         reelsConfig: _getReelsConfig(tabState.tabDataModel),
-        onLoadMore: () async => await _handleLoadMore(tabState.tabDataModel),
+        onLoadMore: () async => await _handleLoadMore(tabState),
         onRefresh: () async {
           var result = await _handlePostRefresh(tabState);
           // Increment refresh count to force rebuild
@@ -590,16 +590,20 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   }
 
   /// Handles loading more posts for infinite scrolling
-  Future<List<ReelsData>> _handleLoadMore(TabDataModel tabData) async {
+  Future<List<ReelsData>> _handleLoadMore(TabStateModel tabState) async {
     try {
       final completer = Completer<List<TimeLineData>>();
       _socialPostBloc.add(GetMorePostEvent(
         isLoading: false,
         isPagination: true,
         isRefresh: false,
-        postSectionType: tabData.postSectionType,
+        postSectionType: tabState.tabDataModel.postSectionType,
         memberUserId: '',
-        onComplete: completer.complete,
+          onComplete: (value) async {
+            final newReels = value.where((newReel) => !tabState.tabDataModel.reelsDataList.any((existingReel) => existingReel.id == newReel.id));
+            tabState.tabDataModel.reelsDataList.addAll(newReels);
+            completer.complete(value);
+          }
       ));
       final timeLinePostList = await completer.future;
       if (timeLinePostList.isEmpty) return [];
@@ -1012,6 +1016,13 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     for (var tabData in _tabDataModelList) {
       tabData.tabDataModel.reelsDataList
           .removeWhere((element) => element.id == postId);
+    }
+    if (_tabConfig.exitOnEmptyReelsAfterModification) {
+      final isAllTabsEmpty = !_tabDataModelList
+          .any((tab) => tab.tabDataModel.reelsDataList.isNotEmpty);
+      if (isAllTabsEmpty && mounted && context.canPop()) {
+        context.pop();
+      }
     }
   }
 
