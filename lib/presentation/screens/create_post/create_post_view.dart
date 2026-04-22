@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -29,8 +30,11 @@ class CreatePostView extends StatefulWidget {
 class _CreatePostViewState extends State<CreatePostView> {
   final _mediaDataList = <MediaData>[];
 
-  CreatePostBloc get _createPostBloc =>
-      BlocProvider.of<CreatePostBloc>(context);
+  bool get _useBackgroundPostUi =>
+      IsrVideoReelConfig.createEditPostConfig.createEditPostCallBackConfig?.onBackgroundPostOperation !=
+      null;
+
+  CreatePostBloc get _createPostBloc => context.getOrCreateBloc();
   var _coverImage = '';
 
   bool get _isCreateButtonDisable {
@@ -392,6 +396,13 @@ class _CreatePostViewState extends State<CreatePostView> {
       BlocConsumer<CreatePostBloc, CreatePostState>(
         listener: (context, state) {
           if (state is PostCreatedState) {
+            if (_useBackgroundPostUi) {
+              if (!mounted) return;
+              _doMediaCaching(state.mediaDataList);
+              Navigator.pop(context, state.postDataModel);
+              Navigator.pop(context, state.postDataModel);
+              return;
+            }
             Utility.showBottomSheet(
               child: _buildSuccessBottomSheet(
                 onTapBack: () {
@@ -412,7 +423,7 @@ class _CreatePostViewState extends State<CreatePostView> {
               });
             }
           }
-          if (state is ShowProgressDialogState) {
+          if (state is ShowProgressDialogState && !_useBackgroundPostUi) {
             if (!_isDialogOpen) {
               _isDialogOpen = true;
               _showProgressDialog(state.title ?? '', state.subTitle ?? '');

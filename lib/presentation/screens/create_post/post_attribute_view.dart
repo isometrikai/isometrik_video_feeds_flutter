@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:fluttertagger/fluttertagger.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart'
     as mc;
@@ -47,7 +48,9 @@ class _PostAttributeViewState extends State<PostAttributeView>
   final List<ProductDataModel> _linkedProducts = [];
 
   // Description and mention handling
-  final _descriptionController = TextEditingController();
+  late FlutterTaggerController _descriptionController;
+  var _captionFieldGeneration = 0;
+  var _didApplyInitialCaptionTagHighlights = false;
   final int _maxLength = 200;
   final List<MentionData> _mentionedUsers = [];
   final List<MentionData> _hashTags = [];
@@ -72,6 +75,10 @@ class _PostAttributeViewState extends State<PostAttributeView>
   PostAttributeUIConfig? get _postAttributeConfig => IsrVideoReelConfig
       .createEditPostConfig.createEditPostUIConfig?.postAttributeUIConfig;
 
+  bool get _useBackgroundPostUi =>
+      IsrVideoReelConfig.createEditPostConfig.createEditPostCallBackConfig?.onBackgroundPostOperation !=
+      null;
+
   @override
   void initState() {
     _createPostBloc = context.getOrCreateBloc();
@@ -93,6 +100,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
         _performScrollToCaptionInput();
       }
     });
+    _descriptionController = FlutterTaggerController();
     super.initState();
   }
 
@@ -104,9 +112,20 @@ class _PostAttributeViewState extends State<PostAttributeView>
     _linkedProducts.clear();
     _linkedProducts.addAll(_postAttributeClass?.linkedProducts ?? []);
 
-    // Load existing description and mentions
-
-    _descriptionController.text = _createPostBloc.descriptionText;
+    // Load existing description and mentions (recreate controller + formatTags when caption has
+    // @/# so fluttertagger highlights existing tags — must run before CommentTaggingTextField mounts)
+    final caption = _createPostBloc.descriptionText;
+    if (!_didApplyInitialCaptionTagHighlights &&
+        caption.isNotEmpty &&
+        (caption.contains('@') || caption.contains('#'))) {
+      _descriptionController.dispose();
+      _descriptionController = FlutterTaggerController(text: caption);
+      CommentTaggingTextField.applyPlainTextTagHighlights(_descriptionController);
+      _captionFieldGeneration++;
+      _didApplyInitialCaptionTagHighlights = true;
+    } else if (_descriptionController.text != caption) {
+      _descriptionController.text = caption;
+    }
 
     // Load mentioned users and hashtags from bloc
     _mentionedUsers.clear();
@@ -357,7 +376,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
 
     // Check linked products changes by comparing with bloc's state (fallback)
     try {
-      final createPostBloc = BlocProvider.of<CreatePostBloc>(context);
+      final createPostBloc = context.getOrCreateBloc<CreatePostBloc>();
       final currentLinkedProducts = createPostBloc.linkedProducts;
 
       debugPrint('=== LINKED PRODUCTS CHECK ===');
@@ -474,6 +493,15 @@ class _PostAttributeViewState extends State<PostAttributeView>
           });
         }
         if (state is PostCreatedState) {
+          if (_useBackgroundPostUi) {
+            if (!mounted) return;
+            _doMediaCaching(state.mediaDataList);
+            final postData = state.postDataModel != null
+                ? jsonEncode(state.postDataModel!.toMap())
+                : null;
+            _popNavigatorStackForBackgroundPost(result: postData);
+            return;
+          }
           if (widget.isEditMode == true) {
             _socialActionCubit.onPostEdited(
                 postId: state.postDataModel?.id, postData: state.postDataModel);
@@ -507,7 +535,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
             Navigator.pop(context, postData);
           });
         }
-        if (state is ShowProgressDialogState) {
+        if (state is ShowProgressDialogState && !_useBackgroundPostUi) {
           if (!_isDialogOpen) {
             _isDialogOpen = true;
             _showProgressDialog(state.title ?? '', state.subTitle ?? '');
@@ -946,22 +974,47 @@ class _PostAttributeViewState extends State<PostAttributeView>
         ),
       );
 
+  MentionData _mentionDataFromComment(CommentMentionData c) => MentionData(
+        userId: c.userId,
+        username: c.username,
+        tag: c.tag,
+        name: c.name,
+        avatarUrl: c.avatarUrl,
+        textPosition: c.textPosition == null
+            ? null
+            : TaggedPosition(
+                start: c.textPosition!.start,
+                end: c.textPosition!.end,
+              ),
+      );
+
   /// Build caption input field
   Widget _buildCaptionInput() => Container(
         key: _captionInputKey,
-        child: UserMentionTextField(
+        child: CommentTaggingTextField(
+          key: ValueKey<int>(_captionFieldGeneration),
           controller: _descriptionController,
+          inlineSuggestionsBelow: true,
+          textFieldPadding: IsrDimens.edgeInsetsSymmetric(
+            horizontal: 10.responsiveDimension,
+          ),
+          maxOuterHeight: null,
+          wrapFieldInScrollView: false,
           hintText: _postAttributeConfig?.captionInputConfig?.hintText ??
               '${IsrTranslationFile.addCaption}...',
+          maxLines: 4,
+          minLines: 3,
           maxLength:
               _postAttributeConfig?.captionInputConfig?.maxLength ?? _maxLength,
-          style: _postAttributeConfig?.captionInputConfig?.textStyle ??
+          textStyle: _postAttributeConfig?.captionInputConfig?.textStyle ??
               IsrStyles.primaryText14,
+          userTagTextStyle: _postAttributeConfig?.captionInputConfig?.inputUserTagTextStyle,
+          hashtagTextStyle: _postAttributeConfig?.captionInputConfig?.inputHashtagTextStyle,
           hintStyle: _postAttributeConfig?.captionInputConfig?.hintStyle ??
               IsrStyles.secondaryText14.copyWith(color: IsrColors.colorBBBBBB),
           focusNode: _descriptionFocusNode,
           onChanged: (value) {
-            final createPostBloc = BlocProvider.of<CreatePostBloc>(context);
+            final createPostBloc = context.getOrCreateBloc<CreatePostBloc>();
             createPostBloc.descriptionText = _descriptionController.text;
 
             // Update PostAttributeClass
@@ -974,30 +1027,30 @@ class _PostAttributeViewState extends State<PostAttributeView>
             _updatePostButtonState();
           },
           onAddMentionData: (mentionData) {
-            if (!_mentionedUsers.any((u) => u.userId == mentionData.userId)) {
-              _mentionedUsers.add(mentionData);
-              // Immediately sync to bloc for real-time updates
+            final md = _mentionDataFromComment(mentionData);
+            if (!_mentionedUsers.any((u) => u.userId == md.userId)) {
+              _mentionedUsers.add(md);
               _syncMentionDataToBloc();
             }
             debugPrint('_mentionedUsers: ${jsonEncode(_mentionedUsers)}');
           },
           onRemoveMentionData: (mentionData) {
-            _mentionedUsers.removeWhere((u) => u.userId == mentionData.userId);
-            // Immediately sync to bloc for real-time updates
+            final md = _mentionDataFromComment(mentionData);
+            _mentionedUsers.removeWhere((u) => u.userId == md.userId);
             _syncMentionDataToBloc();
             debugPrint('_mentionedUsers: ${jsonEncode(_mentionedUsers)}');
           },
           onAddHashTagData: (hashTagData) {
-            if (!_hashTags.any((u) => u.tag == hashTagData.tag)) {
-              _hashTags.add(hashTagData);
-              // Immediately sync to bloc for real-time updates
+            final md = _mentionDataFromComment(hashTagData);
+            if (!_hashTags.any((u) => u.tag == md.tag)) {
+              _hashTags.add(md);
               _syncMentionDataToBloc();
             }
             debugPrint('hashTagData: ${jsonEncode(_hashTags)}');
           },
           onRemoveHashTagData: (hashTagData) {
-            _hashTags.removeWhere((u) => u.tag == hashTagData.tag);
-            // Immediately sync to bloc for real-time updates
+            final md = _mentionDataFromComment(hashTagData);
+            _hashTags.removeWhere((u) => u.tag == md.tag);
             _syncMentionDataToBloc();
             debugPrint('hashTagData: ${jsonEncode(_hashTags)}');
           },
@@ -1504,7 +1557,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
     debugPrint('Current _mentionedUsers count: ${_mentionedUsers.length}');
     debugPrint('Current _hashTags count: ${_hashTags.length}');
 
-    final createPostBloc = BlocProvider.of<CreatePostBloc>(context);
+    final createPostBloc = context.getOrCreateBloc<CreatePostBloc>();
 
     debugPrint(
         'Current bloc mentionedUserData count: ${createPostBloc.mentionedUserData.length}');
@@ -1551,11 +1604,28 @@ class _PostAttributeViewState extends State<PostAttributeView>
 
   void _createPost() {
     _setPostRequest();
-    BlocProvider.of<CreatePostBloc>(context).add(PostCreateEvent(
+    context.getOrCreateBloc<CreatePostBloc>().add(PostCreateEvent(
       createPostRequest:
           _postAttributeClass?.createPostRequest ?? CreatePostRequest(),
       isForEdit: _isEditMode,
     ));
+    if (_useBackgroundPostUi) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _popNavigatorStackForBackgroundPost(result: null);
+      });
+    }
+  }
+
+  /// Pops the post-attribute route (and the rest of the create stack for new posts)
+  /// so the user can use the app while upload/create continues in the bloc.
+  void _popNavigatorStackForBackgroundPost({String? result}) {
+    if (!mounted) return;
+    if (widget.isEditMode != true) {
+      Navigator.pop(context, null);
+      Navigator.pop(context, null);
+    }
+    Navigator.pop(context, result);
   }
 
   void _setPostRequest() {

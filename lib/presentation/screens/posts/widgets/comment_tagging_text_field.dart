@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:fluttertagger/fluttertagger.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -17,18 +20,38 @@ class CommentTaggingTextField extends StatefulWidget {
     this.maxLength,
     this.onChanged,
     this.onTap,
-    this.style,
+    this.textStyle,
+    this.userTagTextStyle,
+    this.hashtagTextStyle,
     this.hintStyle,
     this.decoration,
     this.onAddMentionData,
     this.onRemoveMentionData,
     this.onAddHashTagData,
     this.onRemoveHashTagData,
+    this.overlayPosition = OverlayPosition.top,
+    /// Width of the floating suggestion overlay (user + hashtag). When null, content uses
+    /// the full width of the text field (fluttertagger default).
+    this.overlayWidth,
     this.autoFocus,
     this.focusNode,
+    /// Puts @ / # suggestion lists below the field (create-post caption) instead of a floating overlay.
+    this.inlineSuggestionsBelow = false,
+    this.searchDebounce = const Duration(milliseconds: 10),
+    /// When set, search is skipped while the whole field text is shorter than this (caption UX).
+    this.minTotalTextLengthForSearch,
+    /// Search runs only when `query.length > minSearchQueryLength`. Default `1` matches comments (need 2+ query chars).
+    /// Use `2` for create-post (need 3+ chars after @/#), matching the previous caption field behavior.
+    this.minSearchQueryLength = 1,
+    /// Padding around the text field only (e.g. horizontal inset for caption).
+    this.textFieldPadding,
+    /// Max height of the outer wrapper when not inline. Defaults to `150` when null (comment sheet).
+    this.maxOuterHeight,
+    /// Wraps the field in a [SingleChildScrollView] (comment box); caption turns this off.
+    this.wrapFieldInScrollView = true,
   }) : super(key: key);
 
-  final TextEditingController controller;
+  final FlutterTaggerController controller;
   final String hintText;
   final int? maxLines;
   final int minLines;
@@ -40,11 +63,47 @@ class CommentTaggingTextField extends StatefulWidget {
   final Function(CommentMentionData)? onRemoveMentionData;
   final Function(CommentMentionData)? onAddHashTagData;
   final Function(CommentMentionData)? onRemoveHashTagData;
-  final TextStyle? style;
+  final TextStyle? textStyle;
+  final TextStyle? userTagTextStyle;
+  final TextStyle? hashtagTextStyle;
   final TextStyle? hintStyle;
   final InputDecoration? decoration;
   final bool? autoFocus;
   final FocusNode? focusNode;
+  final bool inlineSuggestionsBelow;
+  final OverlayPosition overlayPosition;
+  final double? overlayWidth;
+  final Duration searchDebounce;
+  final int? minTotalTextLengthForSearch;
+  final int minSearchQueryLength;
+  final EdgeInsetsGeometry? textFieldPadding;
+  final double? maxOuterHeight;
+  final bool wrapFieldInScrollView;
+
+  /// Registers plain `@name` / `#tag` segments in the tagger trie so they render with tag styling.
+  ///
+  /// Must be called on a **new** [FlutterTaggerController] whose text is already set, **before**
+  /// that controller is attached to a [FlutterTagger] (e.g. recreate the controller when loading
+  /// edit-post caption). Otherwise [FlutterTaggerController.formatTags] runs too late and the
+  /// package will not apply custom patterns.
+  static void applyPlainTextTagHighlights(FlutterTaggerController controller) {
+    final t = controller.text;
+    if (t.isEmpty) return;
+    controller.formatTags(
+      pattern: RegExp(r'(@[^\s@#]+|#[^\s@#]+)'),
+      parser: (String value) {
+        if (value.startsWith('@')) {
+          final name = value.substring(1);
+          return <String>[name, name];
+        }
+        if (value.startsWith('#')) {
+          final tag = value.substring(1);
+          return <String>[tag, tag];
+        }
+        return <String>['', value];
+      },
+    );
+  }
 
   @override
   State<CommentTaggingTextField> createState() =>
@@ -54,713 +113,990 @@ class CommentTaggingTextField extends StatefulWidget {
 class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
   final List<SocialUserData> _searchResults = [];
   final List<HashTagData> _hashTagResults = [];
-  bool _isSearching = false;
-  String _currentSearchTerm = '';
-  SearchUserBloc get _searchUserBloc => context.getOrCreateBloc();
+  final Map<String, SocialUserData> _userMetaById = {};
   final List<CommentMentionData> _addedHashtags = [];
   final List<CommentMentionData> _addedMentions = [];
-  bool _ignoreNextChange = false;
   Timer? _debounce;
+  String _activeTrigger = '';
+  var _committingTag = false;
+  var _showLoading = false;
 
-  // Track hashtag search state for auto-creation
-  bool _isHashtagSearchActive = false;
-  String _lastHashtagSearchTerm = '';
+  SearchUserBloc get _searchUserBloc => context.getOrCreateBloc();
 
-  // Overlay for popup suggestions
-  OverlayEntry? _overlayEntry;
-  final GlobalKey _textFieldKey = GlobalKey();
+  double? get _effectiveMaxOuterHeight =>
+      widget.inlineSuggestionsBelow ? null : (widget.maxOuterHeight ?? 150);
 
-  void _onTextChanged(String text) async {
-    if (_ignoreNextChange) return;
-
-    // If text is empty, clear all mentions and hashtags immediately
-    if (text.trim().isEmpty) {
-      _clearAllMentionsAndHashtags();
-    }
-
-    // Debounce: cancel previous timer and start a new one
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 10), () {
-      _searchMentions(text);
-    });
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_onControllerChanged);
   }
 
-  void _searchMentions(String text) async {
-    // 1. Handle empty text immediately
-    if (text.trim().length < 2) {
-      _currentSearchTerm = '';
-      _hideMentionSuggestions();
-      _hideTagSuggestions();
-      if (_isSearching) {
-        _isSearching = false;
-        setState(() {});
-      }
-      return; // Prevent further searching
+  @override
+  void didUpdateWidget(covariant CommentTaggingTextField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_onControllerChanged);
+      widget.controller.addListener(_onControllerChanged);
     }
+  }
 
-    widget.onChanged?.call(text);
+  void _onControllerChanged() {
+    if (!_committingTag) {
+      _tryCommitBareHashtagAtEnd();
+    }
+    if (!_committingTag) {
+      _reconcileSearchUiWhenCursorLeftTagQuery();
+    }
+    widget.onChanged?.call(widget.controller.text);
+    _syncMentionDataFromTags();
+  }
 
-    final cursorPosition = widget.controller.selection.baseOffset;
-    if (cursorPosition < 0) return;
-
-    final textBeforeCursor = text.substring(0, cursorPosition);
-
+  /// True while the caret is still inside an unfinished `@query` or `#query` (no space/newline in segment).
+  /// Matches the tagger's notion of "search active" so we can hide suggestions after space or backspace.
+  bool _isCursorInIncompleteTagSearch(String text, int cursor) {
+    if (cursor < 0) return false;
+    final textBeforeCursor = text.substring(0, cursor);
     final lastAtIndex = textBeforeCursor.lastIndexOf('@');
     final lastHashIndex = textBeforeCursor.lastIndexOf('#');
 
-    // Determine which trigger is more recent (closer to cursor)
-    var shouldSearchMentions = false;
-    var shouldSearchHashtags = false;
-    var searchTerm = '';
+    var inAt = false;
+    var inHash = false;
 
-    // Only process the most recent trigger character
     if (lastAtIndex != -1 && lastHashIndex != -1) {
-      // Both triggers exist, use the one closer to cursor
       if (lastAtIndex > lastHashIndex) {
-        // @ is more recent
-        final textFromAt = text.substring(lastAtIndex + 1, cursorPosition);
+        final textFromAt = text.substring(lastAtIndex + 1, cursor);
         final hasMultipleAts =
             lastAtIndex > 0 && textBeforeCursor[lastAtIndex - 1] == '@';
-
         if (!textFromAt.contains(' ') &&
             !textFromAt.contains('\n') &&
             !hasMultipleAts &&
             !textFromAt.contains('@') &&
             !textFromAt.contains('#')) {
-          shouldSearchMentions = true;
-          searchTerm = textFromAt;
+          inAt = true;
         }
       } else {
-        // # is more recent
-        final textFromHash = text.substring(lastHashIndex + 1, cursorPosition);
+        final textFromHash = text.substring(lastHashIndex + 1, cursor);
         final hasMultipleHashes =
             lastHashIndex > 0 && textBeforeCursor[lastHashIndex - 1] == '#';
-
         if (!textFromHash.contains(' ') &&
             !textFromHash.contains('\n') &&
             !hasMultipleHashes &&
             !textFromHash.contains('#') &&
             !textFromHash.contains('@')) {
-          shouldSearchHashtags = true;
-          searchTerm = textFromHash;
+          inHash = true;
         }
       }
     } else if (lastAtIndex != -1) {
-      // Only @ trigger exists
-      final textFromAt = text.substring(lastAtIndex + 1, cursorPosition);
+      final textFromAt = text.substring(lastAtIndex + 1, cursor);
       final hasMultipleAts =
           lastAtIndex > 0 && textBeforeCursor[lastAtIndex - 1] == '@';
-
       if (!textFromAt.contains(' ') &&
           !textFromAt.contains('\n') &&
           !hasMultipleAts &&
           !textFromAt.contains('@') &&
           !textFromAt.contains('#')) {
-        shouldSearchMentions = true;
-        searchTerm = textFromAt;
+        inAt = true;
       }
     } else if (lastHashIndex != -1) {
-      // Only # trigger exists
-      final textFromHash = text.substring(lastHashIndex + 1, cursorPosition);
+      final textFromHash = text.substring(lastHashIndex + 1, cursor);
       final hasMultipleHashes =
           lastHashIndex > 0 && textBeforeCursor[lastHashIndex - 1] == '#';
-
       if (!textFromHash.contains(' ') &&
           !textFromHash.contains('\n') &&
           !hasMultipleHashes &&
           !textFromHash.contains('#') &&
           !textFromHash.contains('@')) {
-        shouldSearchHashtags = true;
-        searchTerm = textFromHash;
+        inHash = true;
       }
     }
 
-    // Handle search based on which trigger is active
-    if (shouldSearchMentions && searchTerm.length > 1) {
-      _currentSearchTerm = searchTerm;
-      _isHashtagSearchActive = false; // Not in hashtag mode
-      _lastHashtagSearchTerm = '';
-      _searchUsers(searchTerm);
-      _hideTagSuggestions(); // Hide hashtag suggestions
-      if (!_isSearching) {
-        _isSearching = true;
-        setState(() {});
-      }
-    } else if (shouldSearchHashtags && searchTerm.length > 1) {
-      _currentSearchTerm = searchTerm;
-      _isHashtagSearchActive = true; // In hashtag mode
-      _lastHashtagSearchTerm = searchTerm;
-      await _searchHashtags(searchTerm);
-      _hideMentionSuggestions(); // Hide mention suggestions
-      if (!_isSearching) {
-        _isSearching = true;
-        setState(() {});
-      }
-    } else {
-      // Check if we just finished hashtag search and user pressed space
-      if (_isHashtagSearchActive &&
-          _lastHashtagSearchTerm.isNotEmpty &&
-          text.endsWith(' ')) {
-        _addHashtagFromSearch(_lastHashtagSearchTerm);
-      }
-
-      // Hide suggestions if search term is too short or no active search
-      if (shouldSearchMentions && searchTerm.length <= 1) {
-        _hideMentionSuggestions();
-      } else if (shouldSearchHashtags && searchTerm.length <= 1) {
-        _hideTagSuggestions();
-      } else {
-        // No active search
-        _isHashtagSearchActive = false;
-        _lastHashtagSearchTerm = '';
-        _hideMentionSuggestions();
-        _hideTagSuggestions();
-      }
-
-      if (_isSearching) {
-        _isSearching = false;
-        setState(() {});
-      }
-    }
-
-    _checkAndRemoveUnusedTags(text);
+    return inAt || inHash;
   }
 
-  /// Add hashtag from search when no results found and user presses space
-  void _addHashtagFromSearch(String hashtagText) {
-    debugPrint('Adding hashtag from search: "$hashtagText"');
+  /// Clears user/hashtag suggestion state when the cursor leaves an incomplete @/# search (e.g. space
+  /// typed without picking, or backspace). FlutterTagger hides its overlay internally; our inline
+  /// lists and [_activeTrigger] must be cleared the same way.
+  void _reconcileSearchUiWhenCursorLeftTagQuery() {
+    if (_committingTag) return;
 
-    // Find the position of the hashtag in the text
     final text = widget.controller.text;
-    final hashtagWithSymbol = '#$hashtagText';
-    final hashtagIndex = text.lastIndexOf(hashtagWithSymbol);
+    final sel = widget.controller.selection;
+    final len = text.length;
+    final cursor = !sel.isValid
+        ? len
+        : math.min(len, math.max(0, sel.baseOffset));
 
-    if (hashtagIndex != -1) {
-      final start = hashtagIndex;
-      final end = start + hashtagWithSymbol.length;
+    if (_isCursorInIncompleteTagSearch(text, cursor)) return;
 
-      final mentionData = CommentMentionData(
-        tag: hashtagText.trim(),
-        textPosition: CommentTaggedPosition(start: start, end: end),
-      );
+    if (_activeTrigger.isNotEmpty ||
+        _searchResults.isNotEmpty ||
+        _hashTagResults.isNotEmpty ||
+        _showLoading) {
+      _debounce?.cancel();
+      setState(() {
+        _activeTrigger = '';
+        _searchResults.clear();
+        _hashTagResults.clear();
+        _showLoading = false;
+      });
+      widget.controller.dismissOverlay();
+    }
+  }
 
-      // Check if not already added
-      if (!_addedHashtags
-          .any((existing) => existing.tag == hashtagText.trim())) {
-        _addedHashtags.add(mentionData);
-        widget.onAddHashTagData?.call(mentionData);
-        debugPrint('Hashtag added: ${mentionData.tag}');
-      }
+  /// Ensures a valid collapsed caret before addTag: fluttertagger uses the selection offset and
+  /// throws if the field reports an invalid selection (e.g. after tapping the suggestion overlay).
+  void _ensureCollapsedSelectionForAddTag() {
+    final text = widget.controller.text;
+    final len = text.length;
+    final sel = widget.controller.selection;
+    final offset = sel.baseOffset;
+    if (!sel.isValid || offset < 0 || offset > len) {
+      widget.controller.selection = TextSelection.collapsed(offset: len);
+    }
+  }
+
+  /// When the user finishes a hashtag with a space (#tag ), register it as a tag (parity with old behavior).
+  void _tryCommitBareHashtagAtEnd() {
+    final text = widget.controller.text;
+    if (text.isEmpty || !text.endsWith(' ')) return;
+
+    final match = RegExp(r'#([^\s#@]+) $').firstMatch(text);
+    if (match == null) return;
+
+    final tagName = match.group(1)!;
+    final alreadyTagged = widget.controller.tags.any(
+      (t) => t.triggerCharacter == '#' && t.text == tagName,
+    );
+    if (alreadyTagged) return;
+
+    _committingTag = true;
+    try {
+      _ensureCollapsedSelectionForAddTag();
+      widget.controller.addTag(id: tagName, name: tagName);
+    } finally {
+      _committingTag = false;
+    }
+    _scheduleEmitHashtag(tagName);
+  }
+
+  void _scheduleEmitHashtag(String tagName) {
+    _emitHashtagAfterAddTag(tagName);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _emitHashtagAfterAddTag(tagName);
+    });
+  }
+
+  void _scheduleEmitUserMention(SocialUserData user) {
+    _emitUserMentionAfterAddTag(user);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _emitUserMentionAfterAddTag(user);
+    });
+  }
+
+  /// Drops tracked mentions/hashtags that no longer appear in the field text. Add callbacks are
+  /// emitted from controller text right after addTag — the tagger's tags iterable is unreliable
+  /// immediately after a selection.
+  void _syncMentionDataFromTags() {
+    final text = widget.controller.text;
+
+    if (text.trim().isEmpty) {
+      _clearAllMentionsAndHashtags();
+      return;
     }
 
-    _hideSuggestions();
+    for (final old in List<CommentMentionData>.from(_addedMentions)) {
+      final u = (old.username ?? '').trim();
+      if (u.isEmpty) continue;
+      if (!text.contains('@$u')) {
+        _addedMentions.remove(old);
+        widget.onRemoveMentionData?.call(old);
+      }
+    }
+    for (final old in List<CommentMentionData>.from(_addedHashtags)) {
+      final t = (old.tag ?? '').trim();
+      if (t.isEmpty) continue;
+      if (!text.contains('#$t')) {
+        _addedHashtags.remove(old);
+        widget.onRemoveHashTagData?.call(old);
+      }
+    }
+  }
+
+  bool _hasMentionAt(SocialUserData user, int start, int end) {
+    final uid = user.id ?? '';
+    final uname = (user.username ?? '').trim();
+    return _addedMentions.any(
+      (m) =>
+          (m.userId ?? '') == uid &&
+          (m.username ?? '').trim() == uname &&
+          m.textPosition?.start == start &&
+          m.textPosition?.end == end,
+    );
+  }
+
+  bool _hasHashtagAt(String tag, int start, int end) =>
+      _addedHashtags.any(
+        (m) =>
+            (m.tag ?? '').trim() == tag.trim() &&
+            m.textPosition?.start == start &&
+            m.textPosition?.end == end,
+      );
+
+  void _emitUserMentionAfterAddTag(SocialUserData user) {
+    final uname = (user.username ?? '').trim();
+    if (uname.isEmpty) return;
+
+    final text = widget.controller.text;
+    final pattern = '@$uname';
+    final start = text.lastIndexOf(pattern);
+    if (start < 0) return;
+    final end = start + pattern.length;
+    if (_hasMentionAt(user, start, end)) return;
+
+    final data = CommentMentionData(
+      userId: user.id ?? '',
+      username: uname,
+      textPosition: CommentTaggedPosition(start: start, end: end),
+      avatarUrl: user.avatarUrl,
+      name: user.displayName ?? user.fullName,
+    );
+    _addedMentions.add(data);
+    widget.onAddMentionData?.call(data);
+  }
+
+  void _emitHashtagAfterAddTag(String rawTag) {
+    final tag = rawTag.trim();
+    if (tag.isEmpty) return;
+
+    final text = widget.controller.text;
+    final pattern = '#$tag';
+    final start = text.lastIndexOf(pattern);
+    if (start < 0) return;
+    final end = start + pattern.length;
+    if (_hasHashtagAt(tag, start, end)) return;
+
+    final data = CommentMentionData(
+      tag: tag,
+      textPosition: CommentTaggedPosition(start: start, end: end),
+    );
+    _addedHashtags.add(data);
+    widget.onAddHashTagData?.call(data);
   }
 
   void _clearAllMentionsAndHashtags() {
-    // Clear all hashtags one by one
     for (var tag in _addedHashtags) {
       widget.onRemoveHashTagData?.call(tag);
     }
     _addedHashtags.clear();
 
-    // Clear all mentions one by one
     for (var mention in _addedMentions) {
       widget.onRemoveMentionData?.call(mention);
     }
     _addedMentions.clear();
+    _userMetaById.clear();
   }
 
-  void _checkAndRemoveUnusedTags(String text) {
-    // Check hashtags - only remove if the hashtag is completely missing from text
-    final removedHashtags = _addedHashtags.where((tag) {
-      final hashtagText = '#${tag.tag}';
-      return !text.contains(hashtagText);
-    }).toList();
-    for (var tag in removedHashtags) {
-      _addedHashtags.remove(tag);
-      widget.onRemoveHashTagData?.call(tag); // Notify or handle removal
-    }
+  void _onSearch(String query, String triggerCharacter) {
+    _debounce?.cancel();
+    _debounce = Timer(widget.searchDebounce, () {
+      if (!mounted) return;
 
-    // Check mentions - only remove if the mention is completely missing from text
-    final removedMentions = _addedMentions.where((mention) {
-      final mentionText = '@${mention.username}';
-      return !text.contains(mentionText);
-    }).toList();
-    for (var mention in removedMentions) {
-      _addedMentions.remove(mention);
-      widget.onRemoveMentionData?.call(mention); // Notify or handle removal
-    }
-  }
+      _activeTrigger = triggerCharacter;
 
-  void _hideSuggestions() {
-    _currentSearchTerm = '';
-    _isSearching = false;
-    _isHashtagSearchActive = false;
-    _lastHashtagSearchTerm = '';
-    _removeOverlay();
-    setState(() {});
+      final minLen = widget.minTotalTextLengthForSearch;
+      if (minLen != null && widget.controller.text.trim().length < minLen) {
+        setState(() {
+          _activeTrigger = '';
+          _searchResults.clear();
+          _hashTagResults.clear();
+          _showLoading = false;
+        });
+        widget.controller.dismissOverlay();
+        return;
+      }
+
+      if (query.length <= widget.minSearchQueryLength) {
+        setState(() {
+          _activeTrigger = '';
+          _searchResults.clear();
+          _hashTagResults.clear();
+          _showLoading = false;
+        });
+        widget.controller.dismissOverlay();
+        return;
+      }
+
+      if (triggerCharacter == '@') {
+        setState(() {
+          _hashTagResults.clear();
+          _searchResults.clear();
+        });
+        _searchUsers(query);
+      } else if (triggerCharacter == '#') {
+        setState(() {
+          _searchResults.clear();
+          _hashTagResults.clear();
+        });
+        _searchHashtags(query);
+      }
+    });
   }
 
   void _searchUsers(String query) {
-    if (query.isEmpty) {
-      setState(() {
-        _searchResults.clear();
-        _isSearching = false;
-      });
-      return;
+    if (query.isEmpty) return;
+
+    if (widget.inlineSuggestionsBelow) {
+      setState(() => _showLoading = true);
     }
-
-    setState(() {
-      _isSearching = true;
-      _searchResults.clear();
-    });
-
-    final completer = Completer<void>();
 
     _searchUserBloc.add(
       SearchUserEvent(
         searchText: query,
         isLoading: false,
         onComplete: (userList) {
-          completer.complete();
-          if (!_isHashtagSearchActive && query == _currentSearchTerm) {
-            _setResult(userList);
-          }
+          if (!mounted) return;
+          if (_activeTrigger != '@') return;
+          setState(() {
+            _showLoading = false;
+            _searchResults
+              ..clear()
+              ..addAll(userList);
+          });
         },
       ),
     );
   }
 
-  Future<void> _searchHashtags(String query) async {
-    if (query.isEmpty) {
-      setState(() {
-        _searchResults.clear();
-        _isSearching = false;
-      });
-      return;
+  void _searchHashtags(String query) {
+    if (query.isEmpty) return;
+
+    if (widget.inlineSuggestionsBelow) {
+      setState(() => _showLoading = true);
     }
-
-    setState(() {
-      _isSearching = true; // Set to true to indicate searching
-      _hashTagResults.clear();
-    });
-
-    final completer = Completer<void>();
 
     _searchUserBloc.add(
       SearchTagEvent(
         searchText: query,
         isLoading: false,
         onComplete: (tagList) {
-          completer.complete();
-          if (_isHashtagSearchActive && query == _currentSearchTerm) {
-            _setHashtagResult(tagList, query);
-          }
+          if (!mounted) return;
+          if (_activeTrigger != '#') return;
+          setState(() {
+            _showLoading = false;
+            _hashTagResults
+              ..clear()
+              ..addAll(tagList);
+          });
         },
       ),
     );
   }
 
-  void _setResult(List<SocialUserData> userList) {
-    _isSearching = true;
-    _searchResults.clear();
-    _searchResults.addAll(userList);
-    if (mounted) {
-      setState(() {});
-      _showOverlay();
-    }
+  bool _hashTagInResults(String term) {
+    final t = term.trim().toLowerCase();
+    if (t.isEmpty) return false;
+    return _hashTagResults.any(
+      (h) => (h.hashtag ?? '').trim().toLowerCase() == t,
+    );
   }
 
-  void _setHashtagResult(List<HashTagData> userList, String query) {
-    _isSearching = true;
-    _hashTagResults.clear();
-    _hashTagResults.addAll(userList);
-    if (mounted) {
-      setState(() {});
-      _showOverlay();
-    }
-  }
-
-  void _hideMentionSuggestions() {
-    if (_isSearching) {
-      _isSearching = false;
+  /// Stops showing inline (or overlay) suggestions after a row is chosen. Without this,
+  /// `_activeTrigger` stays `#`/`@`, API results are cleared, and "Add tag" still matches
+  /// because `_hashTagInResults` is false on an empty list.
+  void _endSearchSessionAfterSelection() {
+    _debounce?.cancel();
+    setState(() {
+      _activeTrigger = '';
       _searchResults.clear();
-      _removeOverlay();
-      setState(() {});
-    }
-  }
-
-  void _hideTagSuggestions() {
-    if (_isSearching) {
-      _isSearching = false;
       _hashTagResults.clear();
-      _removeOverlay();
-      setState(() {});
-    }
+      _showLoading = false;
+    });
   }
 
   void _selectUser(SocialUserData user) {
-    final text = widget.controller.text;
-    final cursorPosition = widget.controller.selection.baseOffset;
-    final textBeforeCursor = text.substring(0, cursorPosition);
-    final lastAtIndex = textBeforeCursor.lastIndexOf('@');
-
-    if (lastAtIndex != -1) {
-      // Replace the @searcher with @username
-      final beforeAt = text.substring(0, lastAtIndex);
-      final afterCursor = text.substring(cursorPosition);
-      final mentionText = '@${user.username} ';
-      final newText = '$beforeAt$mentionText$afterCursor';
-
-      // Update the controller text
-      widget.controller.text = newText;
-
-      // Set new cursor position after the inserted mention
-      final newCursorPosition = lastAtIndex + mentionText.length;
-      widget.controller.selection = TextSelection.fromPosition(
-        TextPosition(offset: newCursorPosition),
-      );
-
-      // Calculate the position of the inserted mention
-      final start = lastAtIndex;
-      final end = start +
-          (mentionText
-              .trim()
-              .length); // trim() to remove trailing space if you don't want it included
-
-      final mentionData = CommentMentionData(
-        userId: user.id,
-        username: user.username,
-        textPosition: CommentTaggedPosition(start: start, end: end),
-        avatarUrl: user.avatarUrl,
-        name: user.displayName,
-      );
-
-      _addedMentions.add(mentionData);
-      // Add to mentioned users if not already added
-      widget.onAddMentionData?.call(mentionData);
-      widget.onChanged?.call(text);
+    final id = user.id ?? '';
+    final name = user.username ?? '';
+    if (id.isNotEmpty) {
+      _userMetaById[id] = user;
     }
-
-    _hideMentionSuggestions();
-  }
-
-  void _removeOverlay() {
-    _overlayEntry?.remove();
-    _overlayEntry = null;
-  }
-
-  bool get _isCurrentTagInSuggestions {
-    final term = _currentSearchTerm.trim().toLowerCase();
-    if (term.isEmpty) return false;
-    return _hashTagResults.any(
-      (t) => (t.hashtag ?? '').trim().toLowerCase() == term,
-    );
-  }
-
-  void _showOverlay() {
-    _removeOverlay();
-
-    final showAddTagOption = _isHashtagSearchActive &&
-        _currentSearchTerm.trim().isNotEmpty &&
-        !_isCurrentTagInSuggestions;
-    if (!_isSearching ||
-        (_searchResults.isEmpty &&
-            _hashTagResults.isEmpty &&
-            !showAddTagOption)) {
-      return;
+    _committingTag = true;
+    try {
+      _ensureCollapsedSelectionForAddTag();
+      widget.controller.addTag(id: id, name: name);
+    } finally {
+      _committingTag = false;
     }
-
-    final renderBox =
-        _textFieldKey.currentContext?.findRenderObject() as RenderBox?;
-    if (renderBox == null) return;
-
-    final position = renderBox.localToGlobal(Offset.zero);
-    final size = renderBox.size;
-
-    _overlayEntry = OverlayEntry(
-      builder: (context) => Positioned(
-        left: position.dx,
-        // top: position.dy - 200, // Show above the text field
-        bottom: MediaQuery.of(context).size.height - position.dy,
-        width: size.width,
-        child: Material(
-          color: Colors.transparent,
-          child: Container(
-            constraints: const BoxConstraints(
-              maxHeight: 200,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: _buildSuggestionsContent(),
-          ),
-        ),
-      ),
-    );
-
-    Overlay.of(context).insert(_overlayEntry!);
+    _scheduleEmitUserMention(user);
+    widget.controller.dismissOverlay();
+    _endSearchSessionAfterSelection();
   }
 
-  Widget _buildSuggestionsContent() {
-    if (_searchResults.isNotEmpty) {
+  void _selectHashTag(HashTagData hashTag) {
+    final tag = (hashTag.hashtag ?? '').trim();
+    if (tag.isEmpty) return;
+    _committingTag = true;
+    try {
+      _ensureCollapsedSelectionForAddTag();
+      widget.controller.addTag(id: tag, name: tag);
+    } finally {
+      _committingTag = false;
+    }
+    _scheduleEmitHashtag(tag);
+    widget.controller.dismissOverlay();
+    _endSearchSessionAfterSelection();
+  }
+
+  Widget _buildOverlay() {
+    if (_activeTrigger == '@') {
+      if (_searchResults.isEmpty) return const SizedBox.shrink();
       return _buildUserSuggestionsContent();
-    } else if (_hashTagResults.isNotEmpty ||
-        (_isHashtagSearchActive && _currentSearchTerm.trim().isNotEmpty)) {
+    }
+    if (_activeTrigger == '#') {
       return _buildHashtagSuggestionsContent();
     }
     return const SizedBox.shrink();
   }
 
-  Widget _buildUserSuggestionsContent() => ListView.separated(
-        shrinkWrap: true,
-        padding: const EdgeInsets.all(8),
-        itemCount: _searchResults.length,
-        separatorBuilder: (context, index) => const SizedBox(height: 4),
-        itemBuilder: (context, index) {
-          final user = _searchResults[index];
-          return InkWell(
-            onTap: () => _selectUser(user),
+  /// Best-effort: search query is the text after the last `#` up to the cursor (same as fluttertagger).
+  String _currentHashQuery() {
+    final text = widget.controller.text;
+    final pos = widget.controller.selection.baseOffset;
+    if (pos < 0) return '';
+    final before = text.substring(0, pos.clamp(0, text.length));
+    final hashIdx = before.lastIndexOf('#');
+    if (hashIdx < 0) return '';
+    return before.substring(hashIdx + 1);
+  }
+
+  Widget _buildUserSuggestionsContent() => Material(
+        color: Colors.transparent,
+        child: Container(
+          constraints: const BoxConstraints(maxHeight: 200),
+          decoration: BoxDecoration(
+            color: Colors.white,
             borderRadius: BorderRadius.circular(8),
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Row(
-                children: [
-                  AppImage.network(
-                    user.avatarUrl!,
-                    isProfileImage: true,
-                    height: 25.responsiveDimension,
-                    width: 25.responsiveDimension,
-                    border: Border.all(color: '979797'.toColor()),
-                    name: user.username?.substring(0, 1).toUpperCase() ?? '',
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: ListView.separated(
+            shrinkWrap: true,
+            padding: const EdgeInsets.all(8),
+            itemCount: _searchResults.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 4),
+            itemBuilder: (context, index) {
+              final user = _searchResults[index];
+              return InkWell(
+                onTap: () => _selectUser(user),
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Row(
+                    children: [
+                      AppImage.network(
+                        user.avatarUrl!,
+                        isProfileImage: true,
+                        height: 25.responsiveDimension,
+                        width: 25.responsiveDimension,
+                        border: Border.all(color: '979797'.toColor()),
+                        name: user.username?.substring(0, 1).toUpperCase() ?? '',
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Flexible(
-                              child: Text(
-                                user.displayName ?? '',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    user.displayName ?? '',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (user.displayName != user.username) ...[
+                              const SizedBox(height: 1),
+                              Text(
+                                user.username ?? '',
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 12,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
-                            ),
+                            ],
                           ],
                         ),
-                        if (user.displayName != user.username) ...[
-                          const SizedBox(height: 1),
-                          Text(
-                            user.username ?? '',
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontSize: 12,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+
+  Widget _buildInlineUserSuggestions() {
+    if (!widget.inlineSuggestionsBelow ||
+        _activeTrigger != '@' ||
+        _searchResults.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Column(
+      children: [
+        const Divider(height: 1, thickness: 1),
+        Container(
+          margin: const EdgeInsets.only(top: 8),
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.3,
+          ),
+          child: ListView.separated(
+            shrinkWrap: true,
+            padding: const EdgeInsets.all(8),
+            itemCount: _searchResults.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 4),
+            itemBuilder: (context, index) {
+              final user = _searchResults[index];
+              return InkWell(
+                onTap: () => _selectUser(user),
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Row(
+                    children: [
+                      if (!user.avatarUrl.isEmptyOrNull)
+                        AppImage.network(
+                          user.avatarUrl!,
+                          isProfileImage: true,
+                          height: 25.responsiveDimension,
+                          width: 25.responsiveDimension,
+                          border: Border.all(color: '979797'.toColor()),
+                          name: user.username
+                                  ?.substring(0, 1)
+                                  .toUpperCase() ??
+                              '',
+                        )
+                      else
+                        CircleAvatar(
+                          radius: IsrDimens.twelve,
+                          backgroundColor: IsrColors.white,
+                          child: Text(
+                            Utility.getInitials(
+                              firstName: user.displayName
+                                      ?.split(' ')
+                                      .firstOrNull ??
+                                  '',
+                              lastName: user.displayName
+                                      ?.split(' ')
+                                      .lastOrNull ??
+                                  '',
+                            ),
+                            style: IsrStyles.primaryText12.copyWith(
+                              color: IsrColors.appColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    user.displayName ?? '',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (user.displayName != user.username) ...[
+                              const SizedBox(height: 1),
+                              Text(
+                                user.username ?? '',
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 12,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInlineHashtagSuggestions() {
+    if (!widget.inlineSuggestionsBelow || _activeTrigger != '#') {
+      return const SizedBox.shrink();
+    }
+    final query = _currentHashQuery().trim();
+    final showHashtagResults = _hashTagResults.isNotEmpty;
+    final showAddTagOption = !_showLoading &&
+        query.isNotEmpty &&
+        !_hashTagInResults(query);
+    if (!showHashtagResults && !showAddTagOption) {
+      return const SizedBox.shrink();
+    }
+    final itemCount = _hashTagResults.length + (showAddTagOption ? 1 : 0);
+
+    return Column(
+      children: [
+        const Divider(height: 1, thickness: 1),
+        Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.4,
+          ),
+          child: ListView.separated(
+            shrinkWrap: true,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            itemCount: itemCount,
+            separatorBuilder: (context, index) => const Divider(
+              height: 1,
+              color: Colors.white,
+              indent: 16,
+              endIndent: 16,
+            ),
+            itemBuilder: (context, index) {
+              if (index < _hashTagResults.length) {
+                final hasTag = _hashTagResults[index];
+                return Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _selectHashTag(hasTag),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 12,
+                        horizontal: 16,
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '#${hasTag.hashtag ?? ''}',
+                              style: IsrStyles.primaryText14
+                                  .copyWith(fontWeight: FontWeight.w600),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (hasTag.usageCount != null &&
+                              hasTag.usageCount! > 0)
+                            Text(
+                              '${hasTag.usageCount} Posts',
+                              style: IsrStyles.primaryText14
+                                  .copyWith(color: '868686'.toColor()),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _selectHashTag(
+                    HashTagData(hashtag: query),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 16,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.add_circle_outline,
+                          size: 20,
+                          color: IsrColors.appColor,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Add tag #$query',
+                            style: IsrStyles.primaryText14.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: IsrColors.appColor,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
-                        ],
+                        ),
                       ],
                     ),
                   ),
-                ],
-              ),
-            ),
-          );
-        },
-      );
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
 
   Widget _buildHashtagSuggestionsContent() {
-    final showAddTagOption = _isHashtagSearchActive &&
-        _currentSearchTerm.trim().isNotEmpty &&
-        !_isCurrentTagInSuggestions;
-    final itemCount =
-        _hashTagResults.length + (showAddTagOption ? 1 : 0);
+    final query = _currentHashQuery().trim();
+    final showAddTagOption =
+        query.isNotEmpty && !_hashTagInResults(query);
+    final itemCount = _hashTagResults.length + (showAddTagOption ? 1 : 0);
+    if (itemCount == 0) return const SizedBox.shrink();
 
-    return ListView.separated(
-      shrinkWrap: true,
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: itemCount,
-      separatorBuilder: (context, index) => const Divider(
-        height: 1,
-        color: Colors.white,
-        indent: 16,
-        endIndent: 16,
-      ),
-      itemBuilder: (context, index) {
-        if (index < _hashTagResults.length) {
-          final hasTag = _hashTagResults[index];
-          return Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => _selectHashTag(hasTag),
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '#${hasTag.hashtag ?? ''}',
-                        style: IsrStyles.primaryText14
-                            .copyWith(fontWeight: FontWeight.w600),
-                        overflow: TextOverflow.ellipsis,
-                      ),
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        constraints: const BoxConstraints(maxHeight: 200),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: ListView.separated(
+          shrinkWrap: true,
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          itemCount: itemCount,
+          separatorBuilder: (context, index) => const Divider(
+            height: 1,
+            color: Colors.white,
+            indent: 16,
+            endIndent: 16,
+          ),
+          itemBuilder: (context, index) {
+            if (index < _hashTagResults.length) {
+              final hasTag = _hashTagResults[index];
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _selectHashTag(hasTag),
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '#${hasTag.hashtag ?? ''}',
+                            style: IsrStyles.primaryText14
+                                .copyWith(fontWeight: FontWeight.w600),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (hasTag.usageCount != null && hasTag.usageCount! > 0)
+                          Text(
+                            '${hasTag.usageCount} Posts',
+                            style: IsrStyles.primaryText14
+                                .copyWith(color: '868686'.toColor()),
+                          ),
+                      ],
                     ),
-                    if (hasTag.usageCount != null && hasTag.usageCount! > 0)
-                      Text(
-                        '${hasTag.usageCount} Posts',
-                        style: IsrStyles.primaryText14
-                            .copyWith(color: '868686'.toColor()),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }
-        return Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () => _selectHashTag(
-              HashTagData(hashtag: _currentSearchTerm.trim()),
-            ),
-            child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.add_circle_outline,
-                    size: 20,
-                    color: IsrColors.appColor,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Add tag #${_currentSearchTerm.trim()}',
-                      style: IsrStyles.primaryText14.copyWith(
-                        fontWeight: FontWeight.w600,
+                ),
+              );
+            }
+            return Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => _selectHashTag(
+                  HashTagData(hashtag: query),
+                ),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.add_circle_outline,
+                        size: 20,
                         color: IsrColors.appColor,
                       ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Add tag #$query',
+                          style: IsrStyles.primaryText14.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: IsrColors.appColor,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  /// Applies [CommentTaggingTextField.overlayWidth] to the fluttertagger overlay (shared by
+  /// user and hashtag lists). The package still positions using the text field width; this
+  /// constrains the suggestion panel width and centers it when narrower than the field.
+  Widget _wrapSuggestionOverlay(Widget overlayContent) {
+    final w = widget.overlayWidth;
+    if (w == null) return overlayContent;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxW = constraints.maxWidth;
+        final effectiveW = maxW.isFinite && maxW > 0
+            ? math.min(w, maxW)
+            : w;
+        return Align(
+          alignment: Alignment.topCenter,
+          child: SizedBox(
+            width: effectiveW,
+            child: overlayContent,
           ),
         );
       },
     );
   }
 
-  void _selectHashTag(HashTagData hashTag) {
-    final text = widget.controller.text;
-    final cursorPosition = widget.controller.selection.baseOffset;
-    final textBeforeCursor = text.substring(0, cursorPosition);
-    final lastAtIndex = textBeforeCursor.lastIndexOf('#');
+  Widget _buildFlutterTagger() {
+    final baseStyle = widget.textStyle ??
+        const TextStyle(
+          fontSize: 14,
+          color: Colors.black87,
+        );
+    final fieldStyle = widget.inlineSuggestionsBelow
+        ? baseStyle.copyWith(color: widget.textStyle?.color ?? Colors.black87)
+        : baseStyle;
 
-    if (lastAtIndex != -1) {
-      // Replace the #searchterm with #hashtag
-      final beforeAt = text.substring(0, lastAtIndex);
-      final afterCursor = text.substring(cursorPosition);
-      final tagText = '#${hashTag.hashtag} ';
-      final newText = '$beforeAt$tagText$afterCursor';
-
-      _ignoreNextChange = true;
-
-      // Update the controller text
-      widget.controller.text = newText;
-
-      // Set new cursor position after the inserted mention
-      final newCursorPosition = lastAtIndex + tagText.length;
-      widget.controller.selection = TextSelection.fromPosition(
-        TextPosition(offset: newCursorPosition),
-      );
-
-      // Calculate the position of the inserted mention
-      final start = lastAtIndex;
-      final end = start +
-          (tagText
-              .trim()
-              .length); // trim() to remove trailing space if you don't want it included
-
-      final mentionData = CommentMentionData(
-        tag: hashTag.hashtag,
-        textPosition: CommentTaggedPosition(start: start, end: end),
-      );
-
-      _addedHashtags.add(mentionData);
-      // Add to mentioned users if not already added
-      widget.onAddHashTagData?.call(mentionData);
-      widget.onChanged?.call(text);
-      _ignoreNextChange = false;
-    }
-
-    _isHashtagSearchActive = false;
-    _lastHashtagSearchTerm = '';
-    _hideTagSuggestions();
+    return FlutterTagger(
+      controller: widget.controller,
+      onSearch: _onSearch,
+      overlayHeight: widget.inlineSuggestionsBelow ? 1 : 200,
+      overlayPosition: widget.overlayPosition,
+      padding: EdgeInsets.zero,
+      triggerStrategy: TriggerStrategy.deferred,
+      searchRegex: RegExp(r'[^\s@#]'),
+      tagTextFormatter: (id, tag, triggerCharacter) =>
+          '$triggerCharacter$tag',
+      triggerCharacterAndStyles: {
+        '@': widget.userTagTextStyle ??
+            baseStyle.copyWith(
+              color: IsrColors.appColor,
+              fontWeight: FontWeight.w600,
+            ),
+        '#': widget.hashtagTextStyle ??
+            baseStyle.copyWith(
+              color: IsrColors.appColor,
+              fontWeight: FontWeight.w600,
+            ),
+      },
+      overlay: widget.inlineSuggestionsBelow
+          ? const SizedBox.shrink()
+          : _wrapSuggestionOverlay(_buildOverlay()),
+      builder: (context, textFieldKey) => TextField(
+        key: textFieldKey,
+        controller: widget.controller,
+        focusNode: widget.focusNode,
+        maxLength: widget.maxLength,
+        maxLines: widget.maxLines,
+        minLines: widget.minLines,
+        autocorrect: false,
+        expands: widget.expands,
+        autofocus: widget.autoFocus == true,
+        enableSuggestions: false,
+        keyboardType: TextInputType.multiline,
+        textInputAction: TextInputAction.newline,
+        style: fieldStyle,
+        decoration: widget.decoration ??
+            InputDecoration(
+              hintText: widget.hintText,
+              hintStyle: widget.hintStyle ??
+                  TextStyle(
+                    color: Colors.grey.shade500,
+                    fontSize: 14,
+                  ),
+              border: InputBorder.none,
+              counterText: '',
+              contentPadding: const EdgeInsets.all(16),
+            ),
+        onTap: widget.onTap,
+      ),
+    );
   }
 
   @override
-  Widget build(BuildContext context) => Container(
-        constraints: const BoxConstraints(
-          maxHeight: 150,
-        ),
-        child: SingleChildScrollView(
-          child: TextField(
-            key: _textFieldKey,
-            controller: widget.controller,
-            focusNode: widget.focusNode,
-            maxLength: widget.maxLength,
-            maxLines: widget.maxLines,
-            minLines: widget.minLines,
-            autocorrect: false,
-            expands: widget.expands,
-            autofocus: widget.autoFocus == true,
-            enableSuggestions: false,
-            keyboardType: TextInputType.multiline,
-            textInputAction: TextInputAction.newline,
-            style: widget.style ??
-                const TextStyle(
-                  fontSize: 14,
-                  color: Colors.black87,
-                ),
-            decoration: widget.decoration ??
-                InputDecoration(
-                  hintText: widget.hintText,
-                  hintStyle: widget.hintStyle ??
-                      TextStyle(
-                        color: Colors.grey.shade500,
-                        fontSize: 14,
-                      ),
-                  border: InputBorder.none,
-                  counterText: '',
-                  contentPadding: const EdgeInsets.all(16),
-                ),
-            onChanged: _onTextChanged,
-            onTap: widget.onTap,
+  Widget build(BuildContext context) {
+    if (widget.inlineSuggestionsBelow) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: widget.textFieldPadding ?? EdgeInsets.zero,
+            child: _buildFlutterTagger(),
           ),
-        ),
+          _buildInlineUserSuggestions(),
+          _buildInlineHashtagSuggestions(),
+          10.verticalSpace,
+          if (_showLoading)
+            const LinearProgressIndicator(
+              minHeight: 2,
+              backgroundColor: Colors.transparent,
+              color: Colors.blue,
+            )
+          else
+            const Divider(),
+        ],
       );
+    }
+
+    var inner = _buildFlutterTagger();
+    if (widget.wrapFieldInScrollView) {
+      inner = SingleChildScrollView(child: inner);
+    }
+    final maxH = _effectiveMaxOuterHeight;
+    if (maxH != null) {
+      return Container(
+        constraints: BoxConstraints(maxHeight: maxH),
+        child: inner,
+      );
+    }
+    return inner;
+  }
 
   @override
   void dispose() {
     _debounce?.cancel();
-    _removeOverlay();
+    widget.controller.removeListener(_onControllerChanged);
     super.dispose();
   }
 }
