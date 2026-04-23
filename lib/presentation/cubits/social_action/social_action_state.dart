@@ -270,6 +270,10 @@ class IsmUserChangedActionListenerState extends IsmSocialActionState {
         userId: userId ?? this.userId,
         userInfoClass: identical(userInfoClass, _noChange)
             ? this.userInfoClass
-            : userInfoClass as UserInfoClass?,
+            : userInfoClass is UserInfoClass
+                ? userInfoClass
+                : userInfoClass == null
+                    ? null
+                    : this.userInfoClass,
       );
 }

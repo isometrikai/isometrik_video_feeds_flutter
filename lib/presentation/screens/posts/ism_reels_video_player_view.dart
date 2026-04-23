@@ -1329,7 +1329,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (callback == null) return;
     final postData = _reelData.postData;
     if (postData is! TimeLineData) return;
-    await callback(postData);
+    try {
+      await callback(postData);
+    } catch (e) {
+      debugPrint('Failed to handle view count tap: $e');
+    }
   }
 
   Widget _buildActionButton({

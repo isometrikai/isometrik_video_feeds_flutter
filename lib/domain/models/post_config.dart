@@ -580,8 +580,8 @@ class PostCallBackConfig {
     Function(TimeLineData postData, bool isSaved)? onSaveChanged,
     Function(TimeLineData postData, bool isLiked)? onLikeChanged,
     Future<bool> Function(TimeLineData? postData, bool isLiked)? onLikeClick,
-    Future<bool> Function(TimeLineData? postData, bool isLiked)?
-        onFollowClicked,
+    Future<bool> Function(TimeLineData? postData, bool isFollow)?
+        onFollowClick,
     Future<bool> Function(TimeLineData? postData, bool isSaved)? onSaveClicked,
     Future<OnShareRequest?> Function(TimeLineData postData)? onShareClicked,
     Function(TimeLineData postData)? onCommentClick,
@@ -595,6 +595,7 @@ class PostCallBackConfig {
         onSaveChanged: onSaveChanged ?? this.onSaveChanged,
         onLikeChanged: onLikeChanged ?? this.onLikeChanged,
         onSaveClicked: onSaveClicked ?? this.onSaveClicked,
+        onFollowClick: onFollowClick ?? this.onFollowClick,
         onShareClicked: onShareClicked ?? this.onShareClicked,
         onLikeClick: onLikeClick ?? this.onLikeClick,
         onCommentClick: onCommentClick ?? this.onCommentClick,

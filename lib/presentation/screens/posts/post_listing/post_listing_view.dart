@@ -255,11 +255,18 @@ class _PostListingViewState extends State<PostListingView> {
     }
   }
 
-  void _performSearch(String searchQuery) {
+  Future<void> _performSearch(String searchQuery) async {
     final cleanQuery = searchQuery.replaceFirst('#', '');
     if (cleanQuery.isEmpty) return;
 
     if (!mounted) return;
+
+    // Re-verify Places permission/service state before permission-dependent search flow.
+    if (widget.tabList.contains(SearchTabType.places)) {
+      await _syncPlacesPermissionStatus();
+      if (!mounted) return;
+    }
+
     _updatePlacesPermissionSyncLifecycle();
 
     // Store the search query for pagination

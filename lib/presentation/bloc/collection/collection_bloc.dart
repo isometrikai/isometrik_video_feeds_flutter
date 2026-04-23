@@ -452,7 +452,11 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
       ));
       try {
         final socialActionCubit = IsmSocialActionCubit.instance();
-        socialActionCubit.onCollectionDeleted(collectionId: event.collectionId);
+        if (socialActionCubit != null) {
+          socialActionCubit.onCollectionDeleted(collectionId: event.collectionId);
+        } else {
+          debugPrint('IsmSocialActionCubit instance is null');
+        }
       } catch (e) {
         debugPrint('Failed to notify collection deletion listener: $e');
       }

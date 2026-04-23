@@ -858,7 +858,7 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
     }
 
     final progress = (location.views?.toDouble() ?? 0.0) /
-        (totalViews.toDouble().takeIf((e) => e > 0) ?? 1);
+        (totalViews > 0 ? totalViews.toDouble() : 1);
     final percentage = progress * 100;
 
     return Row(
