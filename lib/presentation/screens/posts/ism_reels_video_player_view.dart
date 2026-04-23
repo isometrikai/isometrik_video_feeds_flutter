@@ -1219,6 +1219,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                     );
                   },
                 ),
+              if (_postConfig.showViewCount)
+                _buildEyeViewAction(),
               if (_reelData.postSetting?.isCommentButtonVisible == true)
                 StatefulBuilder(
                   builder: (context, setBuilderState) => _buildActionButton(
@@ -1282,6 +1284,53 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           ),
         ),
       );
+
+  Widget _buildEyeViewAction() => GestureDetector(
+        onTap: _handleViewCountTap,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: _actionIconConfig?.iconShadow ??
+                    [
+                      BoxShadow(
+                        color: Colors.black.changeOpacity(0.2),
+                        blurRadius: IsrDimens.three,
+                        spreadRadius: IsrDimens.three,
+                      ),
+                    ],
+              ),
+              child: Icon(
+                Icons.remove_red_eye_outlined,
+                color: IsrColors.white,
+                size: _actionIconConfig?.iconSize ?? IsrDimens.twentyFive,
+                shadows: _textShadows,
+              ),
+            ),
+            IsrDimens.boxHeight(IsrDimens.four),
+            Text(
+              (_reelData.viewCount ?? 0).toString(),
+              style: _textStyleConfig?.actionLabelStyle ??
+                  IsrStyles.white12.copyWith(
+                    fontWeight: FontWeight.w500,
+                    decoration: TextDecoration.none,
+                    shadows: _textShadows,
+                  ),
+            ),
+          ],
+        ),
+      );
+
+  Future<void> _handleViewCountTap() async {
+    final callback = _postConfig.postCallBackConfig?.onViewCountClicked;
+    if (callback == null) return;
+    final postData = _reelData.postData;
+    if (postData is! TimeLineData) return;
+    await callback(postData);
+  }
 
   Widget _buildActionButton({
     required String icon,

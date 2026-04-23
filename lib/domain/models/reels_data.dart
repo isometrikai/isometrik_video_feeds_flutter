@@ -17,6 +17,7 @@ class ReelsData {
     this.isFollow,
     this.isLiked,
     this.likesCount,
+    this.viewCount,
     this.hasTags,
     this.showBlur,
     this.productCount,
@@ -52,6 +53,7 @@ class ReelsData {
   bool? isLiked;
   bool? isSavedPost;
   int? likesCount;
+  int? viewCount;
   int? commentCount;
   final List<String>? hasTags;
 
@@ -74,6 +76,7 @@ class ReelsData {
     bool? isLiked,
     bool? isSavedPost,
     int? likesCount,
+    int? viewCount,
     int? commentCount,
   }) =>
       ReelsData(
@@ -103,6 +106,7 @@ class ReelsData {
         isLiked: isLiked ?? this.isLiked,
         isSavedPost: isSavedPost ?? this.isSavedPost,
         likesCount: likesCount ?? this.likesCount,
+        viewCount: viewCount ?? this.viewCount,
         commentCount: commentCount ?? this.commentCount,
         interests: interests,
       );

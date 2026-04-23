@@ -8,6 +8,7 @@ class PostConfig {
     this.autoMoveToNextMedia = true,
     this.autoMoveToNextPost = true,
     this.isCaptionRequired = false,
+    this.showViewCount = false,
   });
 
   final PostUIConfig? postUIConfig;
@@ -15,6 +16,7 @@ class PostConfig {
   final bool autoMoveToNextMedia;
   final bool autoMoveToNextPost;
   final bool isCaptionRequired;
+  final bool showViewCount;
 
   PostConfig copyWith({
     PostUIConfig? postUIConfig,
@@ -22,6 +24,7 @@ class PostConfig {
     bool? autoMoveToNextMedia,
     bool? autoMoveToNextPost,
     bool? isCaptionRequired,
+    bool? showViewCount,
   }) =>
       PostConfig(
         postUIConfig: postUIConfig ?? this.postUIConfig,
@@ -29,6 +32,7 @@ class PostConfig {
         autoMoveToNextMedia: autoMoveToNextMedia ?? this.autoMoveToNextMedia,
         autoMoveToNextPost: autoMoveToNextPost ?? this.autoMoveToNextPost,
         isCaptionRequired: isCaptionRequired ?? this.isCaptionRequired,
+        showViewCount: showViewCount ?? this.showViewCount,
       );
 }
 
@@ -551,6 +555,7 @@ class PostCallBackConfig {
     this.onProfileClick,
     this.onTagProductClick,
     this.onPostChanged,
+    this.onViewCountClicked,
   });
 
   final Function(TimeLineData postData, bool isSaved)? onSaveChanged;
@@ -569,6 +574,7 @@ class PostCallBackConfig {
       onProfileClick;
   final Future<void> Function(TimeLineData postData)? onTagProductClick;
   final Function(TimeLineData postData, int index)? onPostChanged;
+  final Future<void> Function(TimeLineData postData)? onViewCountClicked;
 
   PostCallBackConfig copyWith({
     Function(TimeLineData postData, bool isSaved)? onSaveChanged,
@@ -583,6 +589,7 @@ class PostCallBackConfig {
         onProfileClick,
     Future<void> Function(TimeLineData postData)? onTagProductClick,
     Function(TimeLineData postData, int index)? onPostChanged,
+    Future<void> Function(TimeLineData postData)? onViewCountClicked,
   }) =>
       PostCallBackConfig(
         onSaveChanged: onSaveChanged ?? this.onSaveChanged,
@@ -594,5 +601,6 @@ class PostCallBackConfig {
         onProfileClick: onProfileClick ?? this.onProfileClick,
         onTagProductClick: onTagProductClick ?? this.onTagProductClick,
         onPostChanged: onPostChanged ?? this.onPostChanged,
+        onViewCountClicked: onViewCountClicked ?? this.onViewCountClicked,
       );
 }
