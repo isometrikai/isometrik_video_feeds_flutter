@@ -11,6 +11,7 @@ export 'footer_widget.dart';
 export 'form_field_widget.dart';
 export 'image_place_holder.dart';
 export 'ism_custom_app_bar_widget.dart';
+export 'location_permission_placeholder.dart';
 export 'show_profile_image_select_bottomsheet.dart';
 export 'tap_handler.dart';
 export 'underline_text.dart';
