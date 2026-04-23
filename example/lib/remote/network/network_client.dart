@@ -124,6 +124,7 @@ class NetworkClient with AppMixin {
       }
       return res;
     } on TimeoutException {
+      if (isLoading) Utility.closeProgressDialog();
       throw TimeoutError(TranslationFile.timeoutError);
     } catch (error, stackTrace) {
       if (isLoading) Utility.closeProgressDialog();

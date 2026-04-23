@@ -137,6 +137,20 @@ class IsmFollowActionListenerState extends IsmSocialActionState {
       );
 }
 
+class IsmCollectionDeletedActionListenerState extends IsmSocialActionState {
+  IsmCollectionDeletedActionListenerState({
+    required this.collectionId,
+  });
+
+  final String collectionId;
+
+  IsmCollectionDeletedActionListenerState copyWith({
+    String? collectionId,
+  }) =>
+      IsmCollectionDeletedActionListenerState(
+          collectionId: collectionId ?? this.collectionId);
+}
+
 class IsmLikeActionListenerState extends IsmSocialActionState {
   IsmLikeActionListenerState({
     required this.postId,

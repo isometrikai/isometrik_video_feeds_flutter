@@ -6,20 +6,24 @@ class TabConfig {
     this.tabCallBackConfig,
     this.tabUIConfig,
     this.autoMoveToNextPost = true,
+    this.exitOnEmptyReelsAfterModification = false,
   });
   final TabCallBackConfig? tabCallBackConfig;
   final TabUIConfig? tabUIConfig;
   final bool autoMoveToNextPost;
+  final bool exitOnEmptyReelsAfterModification;
 
   TabConfig copyWith({
     TabCallBackConfig? tabCallBackConfig,
     TabUIConfig? tabUIConfig,
     bool? autoMoveToNextPost,
+    bool? exitOnEmptyReelsAfterModification,
   }) =>
       TabConfig(
         tabCallBackConfig: tabCallBackConfig ?? this.tabCallBackConfig,
         tabUIConfig: tabUIConfig ?? this.tabUIConfig,
         autoMoveToNextPost: autoMoveToNextPost ?? this.autoMoveToNextPost,
+        exitOnEmptyReelsAfterModification: exitOnEmptyReelsAfterModification ?? this.exitOnEmptyReelsAfterModification,
       );
 }
 
