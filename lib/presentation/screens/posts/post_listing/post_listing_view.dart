@@ -32,8 +32,10 @@ class _PostListingViewState extends State<PostListingView> {
   late PostListingBloc _postListingBloc;
 
   Timer? _debounceTimer;
+  Timer? _placesPermissionSyncTimer;
   static const int _minCharacterLimit = 3;
   static const Duration _debounceDelay = Duration(milliseconds: 1000);
+  static const Duration _placesPermissionSyncInterval = Duration(seconds: 3);
   final _postList = <TimeLineData>[];
 
   // Track last search query to avoid unnecessary API calls
@@ -51,8 +53,10 @@ class _PostListingViewState extends State<PostListingView> {
   // Flag to prevent multiple initializations
   bool _isInitialized = false;
   bool _isCheckingPlacesPermission = false;
-  bool _isPlacesPermissionGranted = true;
-  bool _isLocationServiceEnabled = true;
+  bool _isPlacesPermissionGranted = false;
+  bool _isLocationServiceEnabled = false;
+  int _placesPermissionRequestId = 0;
+  Future<void>? _inFlightPlacesPermissionSync;
 
   SearchScreenConfig get _searchScreenConfig =>
       widget.config ?? IsrVideoReelConfig.searchScreenConfig;
@@ -95,59 +99,123 @@ class _PostListingViewState extends State<PostListingView> {
       _tabHasMoreData[tab] = true;
     }
 
-    // Load initial data based on search query or tag value
+    // Load initial data based on search query or tag value.
+    // For Places-enabled flows, verify permission/service status first.
     final searchQuery = widget.searchQuery ?? _getHasTagValue();
-    if (searchQuery.isNotEmpty) {
+    if (widget.tabList.contains(SearchTabType.places)) {
+      _syncPlacesPermissionStatus().whenComplete(() {
+        if (!mounted || searchQuery.isEmpty) return;
+        _performSearch(searchQuery);
+      });
+    } else if (searchQuery.isNotEmpty) {
       _performSearch(searchQuery);
     }
-
-    if (widget.tabList.contains(SearchTabType.places)) {
-      _syncPlacesPermissionStatus();
-    }
+    _updatePlacesPermissionSyncLifecycle();
   }
 
-  Future<void> _syncPlacesPermissionStatus() async {
+  Future<void> _syncPlacesPermissionStatus() {
+    if (_inFlightPlacesPermissionSync != null) {
+      return _inFlightPlacesPermissionSync!;
+    }
+
+    final requestId = ++_placesPermissionRequestId;
+    final future = _readPlacesPermissionSnapshot().then((snapshot) {
+      _applyPlacesPermissionSnapshot(
+        snapshot,
+        requestId: requestId,
+      );
+    }).catchError((_) {
+      // Ignore sync failures and keep the previous known state.
+    }).whenComplete(() {
+      _inFlightPlacesPermissionSync = null;
+    });
+
+    _inFlightPlacesPermissionSync = future;
+    return future;
+  }
+
+  Future<_PlacesPermissionSnapshot> _readPlacesPermissionSnapshot() async {
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
     final permission = await Geolocator.checkPermission();
-    final isGranted =
-        permission == LocationPermission.always ||
-        permission == LocationPermission.whileInUse;
-    if (!mounted) return;
+    return _PlacesPermissionSnapshot(
+      serviceEnabled: serviceEnabled,
+      permissionGranted:
+          permission == LocationPermission.always ||
+          permission == LocationPermission.whileInUse,
+    );
+  }
+
+  void _applyPlacesPermissionSnapshot(
+    _PlacesPermissionSnapshot snapshot, {
+    required int requestId,
+    bool isCheckingPermission = false,
+  }) {
+    if (!mounted || requestId != _placesPermissionRequestId) return;
+
+    final hasStateChanged =
+        _isLocationServiceEnabled != snapshot.serviceEnabled ||
+        _isPlacesPermissionGranted != snapshot.permissionGranted ||
+        _isCheckingPlacesPermission != isCheckingPermission;
+
+    if (!hasStateChanged) return;
+
     setState(() {
-      _isLocationServiceEnabled = serviceEnabled;
-      _isPlacesPermissionGranted = isGranted;
+      _isLocationServiceEnabled = snapshot.serviceEnabled;
+      _isPlacesPermissionGranted = snapshot.permissionGranted;
+      _isCheckingPlacesPermission = isCheckingPermission;
+      if (!snapshot.serviceEnabled || !snapshot.permissionGranted) {
+        _tabLoading[SearchTabType.places] = false;
+        _tabLoadingMore[SearchTabType.places] = false;
+      }
     });
+  }
+
+  bool get _shouldSyncPlacesPermission {
+    if (!widget.tabList.contains(SearchTabType.places)) return false;
+    final hasActiveQuery = _getHasTagValue().length >= _minCharacterLimit;
+    return _selectedTab == SearchTabType.places || hasActiveQuery;
+  }
+
+  void _updatePlacesPermissionSyncLifecycle() {
+    if (_shouldSyncPlacesPermission) {
+      _placesPermissionSyncTimer ??= Timer.periodic(
+        _placesPermissionSyncInterval,
+        (_) => _syncPlacesPermissionStatus(),
+      );
+      return;
+    }
+    _placesPermissionSyncTimer?.cancel();
+    _placesPermissionSyncTimer = null;
   }
 
   Future<void> _requestPlacesPermissionIfNeeded() async {
     if (_isCheckingPlacesPermission) return;
 
+    final requestId = ++_placesPermissionRequestId;
     setState(() => _isCheckingPlacesPermission = true);
     try {
       var serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         await Geolocator.openLocationSettings();
-        serviceEnabled = await Geolocator.isLocationServiceEnabled();
       }
 
       var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
+        await Geolocator.requestPermission();
       } else if (permission == LocationPermission.deniedForever) {
         await Geolocator.openAppSettings();
       }
 
-      final isGranted =
-          permission == LocationPermission.always ||
-          permission == LocationPermission.whileInUse;
-      if (!mounted) return;
-      setState(() {
-        _isLocationServiceEnabled = serviceEnabled;
-        _isPlacesPermissionGranted = isGranted;
-        _isCheckingPlacesPermission = false;
-      });
+      // Re-verify both values after settings/permission prompts for atomic UI update.
+      final snapshot = await _readPlacesPermissionSnapshot();
+      _applyPlacesPermissionSnapshot(
+        snapshot,
+        requestId: requestId,
+        isCheckingPermission: false,
+      );
+      _updatePlacesPermissionSyncLifecycle();
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || requestId != _placesPermissionRequestId) return;
       setState(() => _isCheckingPlacesPermission = false);
     }
   }
@@ -155,6 +223,7 @@ class _PostListingViewState extends State<PostListingView> {
   @override
   void dispose() {
     _debounceTimer?.cancel();
+    _placesPermissionSyncTimer?.cancel();
     _hashtagController.dispose();
     super.dispose();
   }
@@ -163,6 +232,7 @@ class _PostListingViewState extends State<PostListingView> {
     if (!mounted) return;
 
     setState(() {});
+    _updatePlacesPermissionSyncLifecycle();
 
     // Cancel previous timer
     _debounceTimer?.cancel();
@@ -190,6 +260,7 @@ class _PostListingViewState extends State<PostListingView> {
     if (cleanQuery.isEmpty) return;
 
     if (!mounted) return;
+    _updatePlacesPermissionSyncLifecycle();
 
     // Store the search query for pagination
     _lastSearchQuery = cleanQuery;
@@ -276,6 +347,7 @@ class _PostListingViewState extends State<PostListingView> {
         _tabLoading[tab] = false;
       }
     });
+    _updatePlacesPermissionSyncLifecycle();
   }
 
   void _clearCachedResults() {
@@ -343,6 +415,7 @@ class _PostListingViewState extends State<PostListingView> {
                 if (tab == SearchTabType.places) {
                   _syncPlacesPermissionStatus();
                 }
+                _updatePlacesPermissionSyncLifecycle();
                 _searchForSelectedTab();
               }
             },
@@ -564,6 +637,15 @@ class _PostListingViewState extends State<PostListingView> {
       if (!mounted) return;
 
       if (state is SearchResultsLoadedState) {
+        if (state.tabType == SearchTabType.places &&
+            (!_isLocationServiceEnabled || !_isPlacesPermissionGranted)) {
+          setState(() {
+            _tabLoading[state.tabType] = false;
+            _tabLoadingMore[state.tabType] = false;
+          });
+          return;
+        }
+
         final currentQuery = _hashtagController.text.trim().replaceFirst(
           '#',
           '',
@@ -685,6 +767,7 @@ class _PostListingViewState extends State<PostListingView> {
         if (newTab == SearchTabType.places) {
           _syncPlacesPermissionStatus();
         }
+        _updatePlacesPermissionSyncLifecycle();
         _searchForSelectedTab();
       }
     },
@@ -1696,4 +1779,14 @@ class _PostListingViewState extends State<PostListingView> {
       return const SizedBox.shrink();
     },
   );
+}
+
+class _PlacesPermissionSnapshot {
+  const _PlacesPermissionSnapshot({
+    required this.serviceEnabled,
+    required this.permissionGranted,
+  });
+
+  final bool serviceEnabled;
+  final bool permissionGranted;
 }

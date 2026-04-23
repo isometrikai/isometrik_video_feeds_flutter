@@ -212,9 +212,17 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
 
   // Convert predictions to unified location items
   void _setResultFromPredictions(List<Result> locationList) {
-    final unifiedItems = locationList
-        .map(UnifiedLocationItem.fromLocationResult)
-        .toList();
+    final unifiedItems = <UnifiedLocationItem>[];
+    for (final result in locationList) {
+      try {
+        final item = UnifiedLocationItem.fromLocationResult(result);
+        // Skip unusable entries that have no identifier and no display title.
+        if (item.placeId.isEmpty && item.title.trim().isEmpty) continue;
+        unifiedItems.add(item);
+      } catch (e) {
+        debugPrint('Skipping malformed location result: $e');
+      }
+    }
     _setResult(unifiedItems);
   }
 

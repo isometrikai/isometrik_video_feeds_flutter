@@ -81,6 +81,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   Animation<double>? _routeEnterAnimation;
   AnimationStatusListener? _routeEnterStatusListener;
   var _initialPostLoadDispatched = false;
+  var _tabChangeRequestId = 0;
 
   @override
   void initState() {
@@ -136,20 +137,30 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     _loggedInUserId = await _socialPostBloc.userId;
     _postTabController?.addListener(() async {
       if (!mounted) return;
-      final newIndex = _postTabController?.index ?? 0;
+      final controller = _postTabController;
+      if (controller == null || controller.indexIsChanging) return;
+
+      final newIndex = controller.index;
+      if (newIndex < 0 || newIndex >= _tabDataModelList.length) return;
       final lastIndex = _currentIndex;
       if (_currentIndex != newIndex) {
+        final requestId = ++_tabChangeRequestId;
         _currentIndex = newIndex;
         final tabData = _tabDataModelList[newIndex];
         if (tabData.tabDataModel.postSectionType.isUserDependent) {
           var isUserLoggedIn = await _socialPostBloc.isUserLoggedIn;
+          if (!mounted || requestId != _tabChangeRequestId) return;
           if (!isUserLoggedIn) {
             await _socialConfig.socialCallBackConfig?.onLoginInvoked?.call();
             isUserLoggedIn = await _socialPostBloc.isUserLoggedIn;
+            if (!mounted || requestId != _tabChangeRequestId) return;
           }
           if (!isUserLoggedIn) {
             _currentIndex = lastIndex;
-            _postTabController?.animateTo(_currentIndex);
+            final safeIndex = lastIndex.clamp(0, _tabDataModelList.length - 1);
+            if ((_postTabController?.index ?? safeIndex) != safeIndex) {
+              _postTabController?.animateTo(safeIndex);
+            }
             return;
           }
         }
@@ -163,9 +174,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
             debugPrint('Error during tab change: $e');
           }
         }
+        if (!mounted || requestId != _tabChangeRequestId) return;
         setState(() {});
         if (tabData.tabDataModel.reelsDataList.isEmpty && !tabData.isLoading) {
           final result = await _handlePostRefresh(tabData);
+          if (!mounted || requestId != _tabChangeRequestId) return;
           if (result) {
             setState(() {});
           }

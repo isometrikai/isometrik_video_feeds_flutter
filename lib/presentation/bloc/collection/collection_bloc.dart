@@ -450,8 +450,12 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
       emit(DeleteCollectionSuccessState(
         message: 'Collection deleted successfully',
       ));
-      IsmSocialActionCubit.instance()
-          .onCollectionDeleted(collectionId: event.collectionId);
+      try {
+        final socialActionCubit = IsmSocialActionCubit.instance();
+        socialActionCubit.onCollectionDeleted(collectionId: event.collectionId);
+      } catch (e) {
+        debugPrint('Failed to notify collection deletion listener: $e');
+      }
     } else {
       emit(DeleteCollectionErrorState(
         error:

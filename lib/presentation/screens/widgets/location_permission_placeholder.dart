@@ -48,7 +48,8 @@ class LocationPermissionPlaceholder extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: isLoading ? null : onPressed,
+              // Keep the button disabled while loading or when no action exists.
+              onPressed: (isLoading || onPressed == null) ? null : onPressed,
               style: ElevatedButton.styleFrom(
                 backgroundColor: IsrColors.appColor,
                 foregroundColor: IsrColors.white,
