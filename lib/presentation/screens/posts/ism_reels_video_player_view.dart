@@ -708,7 +708,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         width: double.infinity,
         decoration: BoxDecoration(
           color: _mediaIndicatorConfig?.completedColor ??
-              const Color(0xFFFFFFFF), // Pure white for completed
+              IsrColors.appColor.applyOpacity(0.5), // Pure white for completed
           borderRadius: borderRadius,
         ),
       );
@@ -764,7 +764,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 child: Container(
                   decoration: BoxDecoration(
                     color: _mediaIndicatorConfig?.progressColor ??
-                        const Color(0xFFFFFFFF), // Pure white for progressed
+                        IsrColors.appColor.applyOpacity(0.5), // Pure white for progressed
                     borderRadius: borderRadius,
                   ),
                 ),
@@ -795,7 +795,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               child: Container(
                 decoration: BoxDecoration(
                   color: _mediaIndicatorConfig?.progressColor ??
-                      const Color(0xFFFFFFFF), // Pure white for progressed
+                      IsrColors.appColor.applyOpacity(0.5), // Pure white for progressed
                   borderRadius: borderRadius,
                 ),
               ),
