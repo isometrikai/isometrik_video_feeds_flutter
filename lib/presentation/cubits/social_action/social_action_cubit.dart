@@ -671,4 +671,11 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
       return null;
     }
   }
+
+  void onCollectionDeleted({String? collectionId}) {
+    debugPrint(
+        'IsmSocialActionCubit onCollectionDeleted -> collectionId: $collectionId');
+    emit(IsmCollectionDeletedActionListenerState(
+        collectionId: collectionId ?? ''));
+  }
 }

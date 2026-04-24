@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -112,6 +113,7 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
               selectedValue: _postInsight?.followerSplit?.viewsFollowers ?? 0,
               // needed from API
               unselectedLabel: IsrTranslationFile.nonFollowers,
+              onTap: _onViewCountClickedFromInsight,
             ),
             IsrDimens.boxHeight(IsrDimens.twentyFour),
             _buildCircularGraphSection(
@@ -266,7 +268,11 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
           style: IsrStyles.primaryText14Bold,
         ),
         IsrDimens.boxHeight(IsrDimens.sixteen),
-        _buildOverviewItem(IsrTranslationFile.views, views.toString()),
+        _buildOverviewItem(
+          IsrTranslationFile.views,
+          views.toString(),
+          onTap: _onViewCountClickedFromInsight,
+        ),
         IsrDimens.boxHeight(IsrDimens.sixteen),
         _buildOverviewItem(
             IsrTranslationFile.interactions, interactions.toString()),
@@ -282,25 +288,33 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
     );
   }
 
-  Widget _buildOverviewItem(String label, String value) => Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: IsrStyles.primaryText12.copyWith(
-              color: '767676'.toColor(),
-              fontWeight: FontWeight.w500,
-            ),
+  Widget _buildOverviewItem(String label, String value, {VoidCallback? onTap}) {
+    final child = Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: IsrStyles.primaryText12.copyWith(
+            color: '767676'.toColor(),
+            fontWeight: FontWeight.w500,
           ),
-          Text(
-            value,
-            style: IsrStyles.primaryText12.copyWith(
-              color: '767676'.toColor(),
-              fontWeight: FontWeight.w500,
-            ),
+        ),
+        Text(
+          value,
+          style: IsrStyles.primaryText12.copyWith(
+            color: '767676'.toColor(),
+            fontWeight: FontWeight.w500,
           ),
-        ],
-      );
+        ),
+      ],
+    );
+    if (onTap == null) return child;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: child,
+    );
+  }
 
   Widget _buildCircularGraphSection({
     required String title,
@@ -309,12 +323,13 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
     required String selectedLabel,
     required num selectedValue,
     required String unselectedLabel,
+    VoidCallback? onTap,
   }) {
     final selectedPercentage =
         mainValue > 0 ? ((selectedValue / mainValue) * 100) : 0;
     final nonselectedPercentage = 100 - selectedPercentage;
 
-    return Column(
+    final content = Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Align(
@@ -378,6 +393,20 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
         IsrDimens.boxHeight(IsrDimens.eight),
       ],
     );
+    if (onTap == null) return content;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: content,
+    );
+  }
+
+  Future<void> _onViewCountClickedFromInsight() async {
+    final postData = _postData;
+    if (postData == null) return;
+    final callback = IsrVideoReelConfig.postConfig.postCallBackConfig?.onViewCountClicked;
+    if (callback == null) return;
+    await callback(postData);
   }
 
   Widget _buildChartLegend(
@@ -829,7 +858,7 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
     }
 
     final progress = (location.views?.toDouble() ?? 0.0) /
-        (totalViews.toDouble().takeIf((e) => e > 0) ?? 1);
+        (totalViews > 0 ? totalViews.toDouble() : 1);
     final percentage = progress * 100;
 
     return Row(

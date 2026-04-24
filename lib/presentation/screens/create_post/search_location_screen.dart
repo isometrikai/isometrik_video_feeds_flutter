@@ -14,10 +14,8 @@ import 'package:permission_handler/permission_handler.dart';
 
 // Full screen location picker
 class SearchLocationScreen extends StatefulWidget {
-  const SearchLocationScreen({
-    Key? key,
-    this.taggedPlaceList,
-  }) : super(key: key);
+  const SearchLocationScreen({Key? key, this.taggedPlaceList})
+    : super(key: key);
   final List<TaggedPlace>? taggedPlaceList;
 
   @override
@@ -38,7 +36,9 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
 
   // Configuration getters
   SearchLocationUIConfig? get _searchLocationConfig => IsrVideoReelConfig
-      .createEditPostConfig.createEditPostUIConfig?.searchLocationUIConfig;
+      .createEditPostConfig
+      .createEditPostUIConfig
+      ?.searchLocationUIConfig;
 
   @override
   void initState() {
@@ -58,17 +58,19 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
 
   /// Convert TaggedPlace list to UnifiedLocationItem list
   List<UnifiedLocationItem> _convertTaggedPlacesToUnified(
-          List<TaggedPlace> taggedPlaces) =>
-      taggedPlaces
-          .map((taggedPlace) => UnifiedLocationItem(
-                placeId: taggedPlace.placeId ?? '',
-                title: taggedPlace.placeName ?? 'Unknown Location',
-                subtitle: taggedPlace.address,
-                description: taggedPlace.address,
-                vicinity: taggedPlace.address,
-                isFromNearbyPlaces: false,
-              ))
-          .toList();
+    List<TaggedPlace> taggedPlaces,
+  ) => taggedPlaces
+      .map(
+        (taggedPlace) => UnifiedLocationItem(
+          placeId: taggedPlace.placeId ?? '',
+          title: taggedPlace.placeName ?? 'Unknown Location',
+          subtitle: taggedPlace.address,
+          description: taggedPlace.address,
+          vicinity: taggedPlace.address,
+          isFromNearbyPlaces: false,
+        ),
+      )
+      .toList();
 
   @override
   void dispose() {
@@ -89,7 +91,8 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
 
       // Check permission status
       final permission = await Geolocator.checkPermission();
-      final permissionGranted = permission == LocationPermission.always ||
+      final permissionGranted =
+          permission == LocationPermission.always ||
           permission == LocationPermission.whileInUse;
 
       setState(() {
@@ -140,8 +143,9 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content:
-                  Text('Location permission is required to find nearby places'),
+              content: Text(
+                'Location permission is required to find nearby places',
+              ),
               duration: Duration(seconds: 3),
             ),
           );
@@ -208,8 +212,17 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
 
   // Convert predictions to unified location items
   void _setResultFromPredictions(List<Result> locationList) {
-    final unifiedItems =
-        locationList.map(UnifiedLocationItem.fromLocationResult).toList();
+    final unifiedItems = <UnifiedLocationItem>[];
+    for (final result in locationList) {
+      try {
+        final item = UnifiedLocationItem.fromLocationResult(result);
+        // Skip unusable entries that have no identifier and no display title.
+        if (item.placeId.isEmpty && item.title.trim().isEmpty) continue;
+        unifiedItems.add(item);
+      } catch (e) {
+        debugPrint('Skipping malformed location result: $e');
+      }
+    }
     _setResult(unifiedItems);
   }
 
@@ -226,8 +239,9 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
     HapticFeedback.lightImpact();
 
     // Check if already selected
-    final isAlreadySelected =
-        _selectedLocations.any((place) => place.placeId == item.placeId);
+    final isAlreadySelected = _selectedLocations.any(
+      (place) => place.placeId == item.placeId,
+    );
 
     if (isAlreadySelected) {
       // Deselect - remove from selected locations
@@ -239,12 +253,15 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
 
       // Select - get place details and add
       final completer = Completer<void>();
-      _searchLocationBloc.add(GetPlaceDetails(
+      _searchLocationBloc.add(
+        GetPlaceDetails(
           placeId: item.placeId,
           onComplete: (placeDetails) {
             completer.complete();
             _setLocation(placeDetails);
-          }));
+          },
+        ),
+      );
     }
   }
 
@@ -287,7 +304,7 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
       country: country,
       coordinates: [
         result?.geometry?.location?.lat?.toDouble() ?? 0,
-        result?.geometry?.location?.lng?.toDouble() ?? 0
+        result?.geometry?.location?.lng?.toDouble() ?? 0,
       ],
       placeData: PlaceData(description: ''),
       placeId: result?.placeId,
@@ -299,14 +316,16 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
     setState(() {
       _taggedPlaces.add(location);
       // Also add to selected locations for UI display
-      _selectedLocations.add(UnifiedLocationItem(
-        placeId: location.placeId ?? '',
-        title: location.placeName ?? 'Unknown Location',
-        subtitle: location.address,
-        description: location.address,
-        vicinity: location.address,
-        isFromNearbyPlaces: false,
-      ));
+      _selectedLocations.add(
+        UnifiedLocationItem(
+          placeId: location.placeId ?? '',
+          title: location.placeName ?? 'Unknown Location',
+          subtitle: location.address,
+          description: location.address,
+          vicinity: location.address,
+          isFromNearbyPlaces: false,
+        ),
+      );
     });
 
     Navigator.pop(context, _taggedPlaces);
@@ -314,250 +333,255 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
 
   /// Build selected location display (single selection)
   Widget _buildSelectedLocations() => Container(
-        margin: IsrDimens.edgeInsetsSymmetric(
-            horizontal: 16.responsiveDimension,
-            vertical: 8.responsiveDimension),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Selected Location',
-              style:
-                  IsrStyles.primaryText14.copyWith(fontWeight: FontWeight.w600),
-            ),
-            8.verticalSpace,
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children:
-                    _selectedLocations.map(_buildSelectedLocationChip).toList(),
-              ),
-            ),
-          ],
+    margin: IsrDimens.edgeInsetsSymmetric(
+      horizontal: 16.responsiveDimension,
+      vertical: 8.responsiveDimension,
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Selected Location',
+          style: IsrStyles.primaryText14.copyWith(fontWeight: FontWeight.w600),
         ),
-      );
+        8.verticalSpace,
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: _selectedLocations
+                .map(_buildSelectedLocationChip)
+                .toList(),
+          ),
+        ),
+      ],
+    ),
+  );
 
   /// Build individual selected location chip
   Widget _buildSelectedLocationChip(UnifiedLocationItem location) => Container(
-        padding: IsrDimens.edgeInsetsSymmetric(
-            horizontal: 12.responsiveDimension,
-            vertical: 8.responsiveDimension),
-        decoration: BoxDecoration(
-          color: const Color(0xFFE3F2FD),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFF1976D2), width: 1),
+    padding: IsrDimens.edgeInsetsSymmetric(
+      horizontal: 12.responsiveDimension,
+      vertical: 8.responsiveDimension,
+    ),
+    decoration: BoxDecoration(
+      color: const Color(0xFFE3F2FD),
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: const Color(0xFF1976D2), width: 1),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          location.isFromNearbyPlaces ? Icons.near_me : Icons.location_on,
+          size: 16.responsiveDimension,
+          color: const Color(0xFF1976D2),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              location.isFromNearbyPlaces ? Icons.near_me : Icons.location_on,
-              size: 16.responsiveDimension,
-              color: const Color(0xFF1976D2),
+        6.horizontalSpace,
+        Flexible(
+          child: Text(
+            location.title,
+            style: IsrStyles.primaryText14.copyWith(
+              fontWeight: FontWeight.w500,
+              color: '1976D2'.toColor(),
             ),
-            6.horizontalSpace,
-            Flexible(
-              child: Text(
-                location.title,
-                style: IsrStyles.primaryText14.copyWith(
-                    fontWeight: FontWeight.w500, color: '1976D2'.toColor()),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            6.horizontalSpace,
-            GestureDetector(
-              onTap: () => _deselectLocation(location),
-              child: Container(
-                padding: IsrDimens.edgeInsetsAll(2.responsiveDimension),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF1976D2),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.close,
-                  size: 14.responsiveDimension,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
-      );
-
-  @override
-  Widget build(BuildContext context) => BlocProvider<SearchLocationBloc>(
-        create: (_) => _searchLocationBloc,
-        child: BlocConsumer<SearchLocationBloc, SearchLocationState>(
-          bloc: _searchLocationBloc,
-          listener: (context, state) {
-            if (state is NearbyPlacesState) {
-              _setResult(state.locations ?? []);
-            }
-          },
-          builder: (context, state) => Scaffold(
-            backgroundColor: Colors.white,
-            appBar: IsmCustomAppBarWidget(
-              backgroundColor:
-                  _searchLocationConfig?.appBarConfig?.backgroundColor ??
-                      Colors.white,
-              isCrossIcon: true,
-              titleText: IsrTranslationFile.selectALocation,
-              centerTitle: true,
-              titleStyle: _searchLocationConfig?.appBarConfig?.titleStyle,
+        6.horizontalSpace,
+        GestureDetector(
+          onTap: () => _deselectLocation(location),
+          child: Container(
+            padding: IsrDimens.edgeInsetsAll(2.responsiveDimension),
+            decoration: const BoxDecoration(
+              color: Color(0xFF1976D2),
+              shape: BoxShape.circle,
             ),
-            body: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Search bar
-                if (_isLocationServiceEnabled &&
-                    _isLocationPermissionGranted) ...[
-                  Container(
-                    margin: IsrDimens.edgeInsets(
-                        left: 16.responsiveDimension,
-                        top: 16.responsiveDimension,
-                        right: 16.responsiveDimension),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF5F5F5),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: TextField(
-                      controller: _searchController,
-                      focusNode: _focusNode,
-                      onChanged: _performSearch,
-                      autocorrect: false,
-                      enableSuggestions: false,
-                      style: IsrStyles.primaryText16,
-                      decoration: InputDecoration(
-                        hintText: IsrTranslationFile.searchForALocation,
-                        hintStyle: IsrStyles.primaryText16
-                            .copyWith(color: '999999'.toColor()),
-                        prefixIcon: Icon(
-                          Icons.search,
-                          color: '999999'.toColor(),
-                          size: 20.responsiveDimension,
-                        ),
-                        suffixIcon: _searchController.text.isNotEmpty
-                            ? GestureDetector(
-                                onTap: _clearSearch,
-                                child: Container(
-                                  padding: IsrDimens.edgeInsetsAll(
-                                      8.responsiveDimension),
-                                  child: Container(
-                                    width: 20.responsiveDimension,
-                                    height: 20.responsiveDimension,
-                                    decoration: BoxDecoration(
-                                      color: '999999'.toColor(),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      Icons.close,
-                                      color: Colors.white,
-                                      size: 14,
-                                    ),
-                                  ),
-                                ),
-                              )
-                            : null,
-                        border: InputBorder.none,
-                        contentPadding: IsrDimens.edgeInsetsSymmetric(
-                            vertical: 16.responsiveDimension),
-                      ),
-                    ),
-                  ),
-
-                  // Selected locations display
-                  if (_selectedLocations.isNotEmpty) _buildSelectedLocations(),
-                ],
-
-                // Search results or location permission UI
-                Expanded(
-                  child: _isSearching
-                      ? const SizedBox.shrink()
-                      : _searchResults.isNotEmpty
-                          ? ListView.builder(
-                              padding: IsrDimens.edgeInsets(
-                                top: 16.responsiveDimension,
-                              ),
-                              itemCount: _searchResults.length,
-                              itemBuilder: (context, index) {
-                                final location = _searchResults[index];
-                                final isSelected = _selectedLocations.any(
-                                  (place) => place.placeId == location.placeId,
-                                );
-                                return InkWell(
-                                  onTap: () => _selectLocation(location),
-                                  child: Container(
-                                    padding: IsrDimens.edgeInsetsSymmetric(
-                                      horizontal: 16.responsiveDimension,
-                                      vertical: 12.responsiveDimension,
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        // Location icon
-                                        Container(
-                                          width: 40.responsiveDimension,
-                                          height: 40.responsiveDimension,
-                                          decoration: const BoxDecoration(
-                                            color: Color(0xFFF5F5F5),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Icon(
-                                            location.isFromNearbyPlaces
-                                                ? Icons.near_me
-                                                : Icons.location_on_outlined,
-                                            color: const Color(0xFF666666),
-                                            size: 20,
-                                          ),
-                                        ),
-                                        12.horizontalSpace,
-                                        // Location info
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                location.title,
-                                                style: IsrStyles.primaryText16
-                                                    .copyWith(
-                                                        fontWeight: isSelected
-                                                            ? FontWeight.w600
-                                                            : FontWeight.w500),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                              if (location
-                                                      .subtitle?.isNotEmpty ==
-                                                  true) ...[
-                                                2.verticalSpace,
-                                                Text(
-                                                  location.subtitle!,
-                                                  style: IsrStyles.primaryText14
-                                                      .copyWith(
-                                                          color: '666666'
-                                                              .toColor()),
-                                                  maxLines: 1,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                ),
-                                              ],
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
-                            )
-                          : _buildEmptyState(),
-                ),
-              ],
+            child: Icon(
+              Icons.close,
+              size: 14.responsiveDimension,
+              color: Colors.white,
             ),
           ),
         ),
-      );
+      ],
+    ),
+  );
+
+  @override
+  Widget build(BuildContext context) => BlocProvider<SearchLocationBloc>(
+    create: (_) => _searchLocationBloc,
+    child: BlocConsumer<SearchLocationBloc, SearchLocationState>(
+      bloc: _searchLocationBloc,
+      listener: (context, state) {
+        if (state is NearbyPlacesState) {
+          _setResult(state.locations ?? []);
+        }
+      },
+      builder: (context, state) => Scaffold(
+        backgroundColor: Colors.white,
+        appBar: IsmCustomAppBarWidget(
+          backgroundColor:
+              _searchLocationConfig?.appBarConfig?.backgroundColor ??
+              Colors.white,
+          isCrossIcon: true,
+          titleText: IsrTranslationFile.selectALocation,
+          centerTitle: true,
+          titleStyle: _searchLocationConfig?.appBarConfig?.titleStyle,
+        ),
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Search bar
+            if (_isLocationServiceEnabled && _isLocationPermissionGranted) ...[
+              Container(
+                margin: IsrDimens.edgeInsets(
+                  left: 16.responsiveDimension,
+                  top: 16.responsiveDimension,
+                  right: 16.responsiveDimension,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F5F5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  focusNode: _focusNode,
+                  onChanged: _performSearch,
+                  autocorrect: false,
+                  enableSuggestions: false,
+                  style: IsrStyles.primaryText16,
+                  decoration: InputDecoration(
+                    hintText: IsrTranslationFile.searchForALocation,
+                    hintStyle: IsrStyles.primaryText16.copyWith(
+                      color: '999999'.toColor(),
+                    ),
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: '999999'.toColor(),
+                      size: 20.responsiveDimension,
+                    ),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? GestureDetector(
+                            onTap: _clearSearch,
+                            child: Container(
+                              padding: IsrDimens.edgeInsetsAll(
+                                8.responsiveDimension,
+                              ),
+                              child: Container(
+                                width: 20.responsiveDimension,
+                                height: 20.responsiveDimension,
+                                decoration: BoxDecoration(
+                                  color: '999999'.toColor(),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.close,
+                                  color: Colors.white,
+                                  size: 14,
+                                ),
+                              ),
+                            ),
+                          )
+                        : null,
+                    border: InputBorder.none,
+                    contentPadding: IsrDimens.edgeInsetsSymmetric(
+                      vertical: 16.responsiveDimension,
+                    ),
+                  ),
+                ),
+              ),
+
+              // Selected locations display
+              if (_selectedLocations.isNotEmpty) _buildSelectedLocations(),
+            ],
+
+            // Search results or location permission UI
+            Expanded(
+              child: _isSearching
+                  ? const SizedBox.shrink()
+                  : _searchResults.isNotEmpty
+                  ? ListView.builder(
+                      padding: IsrDimens.edgeInsets(
+                        top: 16.responsiveDimension,
+                      ),
+                      itemCount: _searchResults.length,
+                      itemBuilder: (context, index) {
+                        final location = _searchResults[index];
+                        final isSelected = _selectedLocations.any(
+                          (place) => place.placeId == location.placeId,
+                        );
+                        return InkWell(
+                          onTap: () => _selectLocation(location),
+                          child: Container(
+                            padding: IsrDimens.edgeInsetsSymmetric(
+                              horizontal: 16.responsiveDimension,
+                              vertical: 12.responsiveDimension,
+                            ),
+                            child: Row(
+                              children: [
+                                // Location icon
+                                Container(
+                                  width: 40.responsiveDimension,
+                                  height: 40.responsiveDimension,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFF5F5F5),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    location.isFromNearbyPlaces
+                                        ? Icons.near_me
+                                        : Icons.location_on_outlined,
+                                    color: const Color(0xFF666666),
+                                    size: 20,
+                                  ),
+                                ),
+                                12.horizontalSpace,
+                                // Location info
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        location.title,
+                                        style: IsrStyles.primaryText16.copyWith(
+                                          fontWeight: isSelected
+                                              ? FontWeight.w600
+                                              : FontWeight.w500,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      if (location.subtitle?.isNotEmpty ==
+                                          true) ...[
+                                        2.verticalSpace,
+                                        Text(
+                                          location.subtitle!,
+                                          style: IsrStyles.primaryText14
+                                              .copyWith(
+                                                color: '666666'.toColor(),
+                                              ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    )
+                  : _buildEmptyState(),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 
   /// Build empty state - shows location permission UI only if location services are disabled or permission not granted
   Widget _buildEmptyState() {
@@ -569,8 +593,9 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
     // If location services are enabled, show regular empty search state
     return Center(
       child: Padding(
-        padding:
-            IsrDimens.edgeInsetsSymmetric(horizontal: 32.responsiveDimension),
+        padding: IsrDimens.edgeInsetsSymmetric(
+          horizontal: 32.responsiveDimension,
+        ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -582,14 +607,16 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
             24.verticalSpace,
             Text(
               IsrTranslationFile.searchLocation,
-              style:
-                  IsrStyles.primaryText18.copyWith(fontWeight: FontWeight.w600),
+              style: IsrStyles.primaryText18.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
             8.verticalSpace,
             Text(
               IsrTranslationFile.startTypingToFindPlaces,
-              style:
-                  IsrStyles.primaryText14.copyWith(color: '666666'.toColor()),
+              style: IsrStyles.primaryText14.copyWith(
+                color: '666666'.toColor(),
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -599,73 +626,12 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
   }
 
   /// Build the location permission UI (matches the design)
-  Widget _buildLocationPermissionUI() => Center(
-        child: Padding(
-          padding:
-              IsrDimens.edgeInsetsSymmetric(horizontal: 32.responsiveDimension),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Location icon
-              const AppImage.svg(AssetConstants.icNearbyPlace),
-              32.verticalSpace,
-
-              // Title
-              Text(
-                IsrTranslationFile.seePlacesNearYou,
-                style: IsrStyles.primaryText20
-                    .copyWith(fontWeight: FontWeight.w600),
-              ),
-
-              12.verticalSpace,
-
-              // Subtitle
-              Text(
-                _getLocationSubtitle(),
-                textAlign: TextAlign.center,
-                style: IsrStyles.primaryText16
-                    .copyWith(color: '666666'.toColor(), height: 1.4),
-              ),
-
-              40.verticalSpace,
-
-              // Turn On Location Services button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed:
-                      _isCheckingLocation ? null : _requestLocationServices,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1976D2),
-                    foregroundColor: Colors.white,
-                    padding: IsrDimens.edgeInsetsSymmetric(
-                        vertical: 16.responsiveDimension),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: _isCheckingLocation
-                      ? SizedBox(
-                          height: 20.responsiveDimension,
-                          width: 20.responsiveDimension,
-                          child: const CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Text(
-                          _getLocationButtonText(),
-                          style: IsrStyles.primaryText16.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: IsrColors.white),
-                        ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
+  Widget _buildLocationPermissionUI() => LocationPermissionPlaceholder(
+    subtitle: _getLocationSubtitle(),
+    buttonText: _getLocationButtonText(),
+    isLoading: _isCheckingLocation,
+    onPressed: _requestLocationServices,
+  );
 
   /// Get appropriate subtitle text based on location status
   String _getLocationSubtitle() {

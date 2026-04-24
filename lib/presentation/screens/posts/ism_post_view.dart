@@ -24,6 +24,7 @@ class IsmPostView extends StatefulWidget {
     this.onTapPlace,
     this.tabConfig,
     this.postConfig,
+    this.centralKey,
   });
 
   final List<TabDataModel> tabDataModelList;
@@ -31,12 +32,15 @@ class IsmPostView extends StatefulWidget {
   final bool? allowImplicitScrolling;
   final TabConfig? tabConfig;
   final PostConfig? postConfig;
+  final String? centralKey;
 
   /// Optional callback to override default place navigation
   /// If not provided, SDK will navigate to PlaceDetailsView automatically
   /// Parameters: placeId, placeName, latitude, longitude
   final Function(String placeId, String placeName, double lat, double long)?
       onTapPlace;
+
+  static Map<PostSectionType, List<TimeLineData>>? getLoadedTabReels(String cacheKey) => _PostViewState.getLoadedTabReels(cacheKey);
 
   @override
   State<IsmPostView> createState() => _PostViewState();
@@ -48,7 +52,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   var _currentIndex = 1;
   var _loggedInUserId = '';
   final ValueNotifier<bool> _tabsVisibilityNotifier = ValueNotifier<bool>(true);
-  List<TabStateModel> _tabDataModelList = [];
+  List<TabStateModel> get _tabDataModelList => _centralTadData.putIfAbsent(centralKey, () => <TabStateModel>[]);
   VideoCacheManager? _videoCacheManager;
   late SocialPostBloc _socialPostBloc; // Will be initialized from context
   late IsmSocialActionCubit _socialActionCubit;
@@ -65,6 +69,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   LoadingViewConfig? get _loadingViewConfig => _tabUIConfig?.loadingViewConfig;
   StatusBarConfig? get _statusBarConfig => _tabUIConfig?.statusBarConfig;
 
+  //caches
+  static final Map<String, List<TabStateModel>> _centralTadData = {};
+  String get centralKey => widget.centralKey ?? '${runtimeType}_default_central';
+  static Map<PostSectionType, List<TimeLineData>>? getLoadedTabReels(String centralKey) => _centralTadData[centralKey]?.asMap().map((key, value) => MapEntry(value.tabDataModel.postSectionType, value.tabDataModel.reelsDataList.toList()));
+
   /// When false, tab bodies stay a cheap placeholder so the push transition
   /// is not competing with [PostItemWidget] / video precache on the GPU.
   var _reelsBodyReady = false;
@@ -72,6 +81,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   Animation<double>? _routeEnterAnimation;
   AnimationStatusListener? _routeEnterStatusListener;
   var _initialPostLoadDispatched = false;
+  var _tabChangeRequestId = 0;
 
   @override
   void initState() {
@@ -93,10 +103,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   }
 
   void _onStartInit() async {
-    _tabDataModelList = widget.tabDataModelList
+    _tabDataModelList.clear();
+    _tabDataModelList.addAll(widget.tabDataModelList
         .map((tab) => TabStateModel(
             isLoading: tab.reelsDataList.isEmpty, tabDataModel: tab))
-        .toList();
+        .toList());
     _currentIndex = (_tabDataModelList.length > (widget.startTabIndex ?? 0)) ? widget.startTabIndex?.toInt() ?? 0 : 0;
     _currentPostSectionType =
         _tabDataModelList[_currentIndex].tabDataModel.postSectionType;
@@ -126,20 +137,30 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     _loggedInUserId = await _socialPostBloc.userId;
     _postTabController?.addListener(() async {
       if (!mounted) return;
-      final newIndex = _postTabController?.index ?? 0;
+      final controller = _postTabController;
+      if (controller == null || controller.indexIsChanging) return;
+
+      final newIndex = controller.index;
+      if (newIndex < 0 || newIndex >= _tabDataModelList.length) return;
       final lastIndex = _currentIndex;
       if (_currentIndex != newIndex) {
+        final requestId = ++_tabChangeRequestId;
         _currentIndex = newIndex;
         final tabData = _tabDataModelList[newIndex];
         if (tabData.tabDataModel.postSectionType.isUserDependent) {
           var isUserLoggedIn = await _socialPostBloc.isUserLoggedIn;
+          if (!mounted || requestId != _tabChangeRequestId) return;
           if (!isUserLoggedIn) {
             await _socialConfig.socialCallBackConfig?.onLoginInvoked?.call();
             isUserLoggedIn = await _socialPostBloc.isUserLoggedIn;
+            if (!mounted || requestId != _tabChangeRequestId) return;
           }
           if (!isUserLoggedIn) {
             _currentIndex = lastIndex;
-            _postTabController?.animateTo(_currentIndex);
+            final safeIndex = lastIndex.clamp(0, _tabDataModelList.length - 1);
+            if ((_postTabController?.index ?? safeIndex) != safeIndex) {
+              _postTabController?.animateTo(safeIndex);
+            }
             return;
           }
         }
@@ -153,9 +174,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
             debugPrint('Error during tab change: $e');
           }
         }
+        if (!mounted || requestId != _tabChangeRequestId) return;
         setState(() {});
         if (tabData.tabDataModel.reelsDataList.isEmpty && !tabData.isLoading) {
           final result = await _handlePostRefresh(tabData);
+          if (!mounted || requestId != _tabChangeRequestId) return;
           if (result) {
             setState(() {});
           }
@@ -389,7 +412,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
             .map((_) => getReelData(_, loggedInUserId: _loggedInUserId))
             .toList(),
         reelsConfig: _getReelsConfig(tabState.tabDataModel),
-        onLoadMore: () async => await _handleLoadMore(tabState.tabDataModel),
+        onLoadMore: () async => await _handleLoadMore(tabState),
         onRefresh: () async {
           var result = await _handlePostRefresh(tabState);
           // Increment refresh count to force rebuild
@@ -590,16 +613,20 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   }
 
   /// Handles loading more posts for infinite scrolling
-  Future<List<ReelsData>> _handleLoadMore(TabDataModel tabData) async {
+  Future<List<ReelsData>> _handleLoadMore(TabStateModel tabState) async {
     try {
       final completer = Completer<List<TimeLineData>>();
       _socialPostBloc.add(GetMorePostEvent(
         isLoading: false,
         isPagination: true,
         isRefresh: false,
-        postSectionType: tabData.postSectionType,
+        postSectionType: tabState.tabDataModel.postSectionType,
         memberUserId: '',
-        onComplete: completer.complete,
+          onComplete: (value) async {
+            final newReels = value.where((newReel) => !tabState.tabDataModel.reelsDataList.any((existingReel) => existingReel.id == newReel.id));
+            tabState.tabDataModel.reelsDataList.addAll(newReels);
+            completer.complete(value);
+          }
       ));
       final timeLinePostList = await completer.future;
       if (timeLinePostList.isEmpty) return [];
@@ -749,6 +776,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   void dispose() {
     _tearDownRouteEnterListener();
     _postTabController?.dispose();
+    _centralTadData.remove(centralKey);
     for (var controller in _refreshControllers) {
       controller.dispose();
     }
@@ -1012,6 +1040,13 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     for (var tabData in _tabDataModelList) {
       tabData.tabDataModel.reelsDataList
           .removeWhere((element) => element.id == postId);
+    }
+    if (_tabConfig.exitOnEmptyReelsAfterModification) {
+      final isAllTabsEmpty = !_tabDataModelList
+          .any((tab) => tab.tabDataModel.reelsDataList.isNotEmpty);
+      if (isAllTabsEmpty && mounted && context.canPop()) {
+        context.pop();
+      }
     }
   }
 

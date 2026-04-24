@@ -937,6 +937,7 @@ ReelsData getReelData(TimeLineData postData, {String? loggedInUserId}) =>
               ?.lastOrNull ??
           '',
       likesCount: postData.engagementMetrics?.likeTypes?.like?.toInt() ?? 0,
+      viewCount: postData.engagementMetrics?.views?.toInt() ?? 0,
       commentCount: postData.engagementMetrics?.comments?.toInt() ?? 0,
       isFollow: postData.isFollowing == true,
       isLiked: postData.isLiked,

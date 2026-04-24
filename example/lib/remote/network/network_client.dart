@@ -114,7 +114,6 @@ class NetworkClient with AppMixin {
 
     try {
       final response = await getFinalResponse(finalUrl, headers, data, request);
-      if (isLoading) Utility.closeProgressDialog();
       final res = returnResponse(response);
 
       logRequest(this, response, data, finalUrl, headers, res, 0);
@@ -126,12 +125,13 @@ class NetworkClient with AppMixin {
     } on TimeoutException {
       throw TimeoutError(TranslationFile.timeoutError);
     } catch (error, stackTrace) {
-      if (isLoading) Utility.closeProgressDialog();
       Utility.debugCatchLog(error: error, stackTrace: stackTrace);
       if (error is AppError) {
         rethrow;
       }
       throw NetworkError(error.toString());
+    } finally {
+      if (isLoading) Utility.closeProgressDialog();
     }
   }
 
