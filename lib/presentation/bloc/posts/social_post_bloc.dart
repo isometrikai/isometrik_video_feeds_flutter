@@ -366,7 +366,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       tabAssistData.currentPage++;
     } else {
       tabAssistData.cursor = null;
-      ErrorHandler.showAppError(appError: apiError);
+      ErrorHandler.showAppError(appError: apiError, errorViewType: ErrorViewType.snackBar);
     }
     if (onComplete != null) {
       onComplete(postDataList);
