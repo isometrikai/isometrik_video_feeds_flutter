@@ -122,7 +122,7 @@ class IsrAppNavigator {
   }
 
   /// Navigate to full-screen reels player with post list
-  static void navigateToReelsPlayer(
+  static Future<void> navigateToReelsPlayer(
     BuildContext context, {
     required List<TimeLineData> postDataList,
     required int startingPostIndex,
@@ -131,9 +131,11 @@ class IsrAppNavigator {
     TagType? tagType,
     TabConfig? tabConfig,
     PostConfig? postConfig,
+    String? userId,
+    String? postId,
     Function(String, String, double, double)? onTapPlace,
     TransitionType transitionType = TransitionType.rightToLeft,
-  }) {
+  }) async {
     final tabData = TabDataModel(
       title: _getTabTitle(postSectionType),
       postSectionType: postSectionType,
@@ -141,6 +143,8 @@ class IsrAppNavigator {
       startingPostIndex: startingPostIndex,
       tagValue: tagValue,
       tagType: tagType,
+      userId: userId,
+      postId: postId,
     );
 
     final page = BlocProvider<SocialPostBloc>(
@@ -154,7 +158,7 @@ class IsrAppNavigator {
       ),
     );
 
-    Navigator.of(context, rootNavigator: true).push(
+    await Navigator.of(context, rootNavigator: true).push(
       _buildRoute(page: page, transitionType: transitionType),
     );
   }
