@@ -37,6 +37,8 @@ class CommentTaggingTextField extends StatefulWidget {
     this.focusNode,
     /// Puts @ / # suggestion lists below the field (create-post caption) instead of a floating overlay.
     this.inlineSuggestionsBelow = false,
+    /// Puts @ / # suggestion lists above the field (comments sheet) instead of a floating overlay.
+    this.inlineSuggestionsAbove = false,
     this.searchDebounce = const Duration(milliseconds: 10),
     /// When set, search is skipped while the whole field text is shorter than this (caption UX).
     this.minTotalTextLengthForSearch,
@@ -71,6 +73,7 @@ class CommentTaggingTextField extends StatefulWidget {
   final bool? autoFocus;
   final FocusNode? focusNode;
   final bool inlineSuggestionsBelow;
+  final bool inlineSuggestionsAbove;
   final OverlayPosition overlayPosition;
   final double? overlayWidth;
   final Duration searchDebounce;
@@ -123,8 +126,11 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
 
   SearchUserBloc get _searchUserBloc => context.getOrCreateBloc();
 
+  bool get _useInlineSuggestions =>
+      widget.inlineSuggestionsBelow || widget.inlineSuggestionsAbove;
+
   double? get _effectiveMaxOuterHeight =>
-      widget.inlineSuggestionsBelow ? null : (widget.maxOuterHeight ?? 150);
+      _useInlineSuggestions ? null : (widget.maxOuterHeight ?? 150);
 
   @override
   void initState() {
@@ -651,7 +657,7 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
       );
 
   Widget _buildInlineUserSuggestions() {
-    if (!widget.inlineSuggestionsBelow ||
+    if (!_useInlineSuggestions ||
         _activeTrigger != '@' ||
         _searchResults.isEmpty) {
       return const SizedBox.shrink();
@@ -756,7 +762,7 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
   }
 
   Widget _buildInlineHashtagSuggestions() {
-    if (!widget.inlineSuggestionsBelow || _activeTrigger != '#') {
+    if (!_useInlineSuggestions || _activeTrigger != '#') {
       return const SizedBox.shrink();
     }
     final query = _currentHashQuery().trim();
@@ -1000,7 +1006,7 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
     return FlutterTagger(
       controller: widget.controller,
       onSearch: _onSearch,
-      overlayHeight: widget.inlineSuggestionsBelow ? 1 : 200,
+      overlayHeight: _useInlineSuggestions ? 1 : 200,
       overlayPosition: widget.overlayPosition,
       padding: EdgeInsets.zero,
       triggerStrategy: TriggerStrategy.deferred,
@@ -1019,7 +1025,7 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
               fontWeight: FontWeight.w600,
             ),
       },
-      overlay: widget.inlineSuggestionsBelow
+      overlay: _useInlineSuggestions
           ? const SizedBox.shrink()
           : _wrapSuggestionOverlay(_buildOverlay()),
       builder: (context, textFieldKey) => TextField(
@@ -1055,6 +1061,27 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.inlineSuggestionsAbove) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_showLoading)
+            const LinearProgressIndicator(
+              minHeight: 2,
+              backgroundColor: Colors.transparent,
+              color: Colors.blue,
+            ),
+          _buildInlineUserSuggestions(),
+          _buildInlineHashtagSuggestions(),
+          Padding(
+            padding: widget.textFieldPadding ?? EdgeInsets.zero,
+            child: _buildFlutterTagger(),
+          ),
+        ],
+      );
+    }
+
     if (widget.inlineSuggestionsBelow) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,

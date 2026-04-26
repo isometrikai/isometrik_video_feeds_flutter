@@ -927,7 +927,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                     child: CommentTaggingTextField(
                       controller: _replyController,
                       focusNode: _replyFocusNode,
-                      overlayWidth: MediaQuery.sizeOf(context).width,
+                      inlineSuggestionsAbove: true,
                       minLines: 1,
                       autoFocus: true,
                       hintText: IsrTranslationFile.addAComment,

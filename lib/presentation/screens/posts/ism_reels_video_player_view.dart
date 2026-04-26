@@ -1219,8 +1219,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                     );
                   },
                 ),
-              if (_postConfig.showViewCount)
-                _buildEyeViewAction(),
+              if (_postConfig.showViewCount) _buildEyeViewAction(),
               if (_reelData.postSetting?.isCommentButtonVisible == true)
                 StatefulBuilder(
                   builder: (context, setBuilderState) => _buildActionButton(
@@ -1394,341 +1393,356 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         ),
       );
 
-  Widget _buildBottomSectionWithoutOverlay() => Padding(
-        padding: IsrDimens.edgeInsets(
-            left: IsrDimens.sixteen,
-            right: IsrDimens.sixteen,
-            bottom: IsrDimens.fifteen),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if ((_reelData.productCount ?? 0) > 0) ...[
-              TapHandler(
-                onTap: () {
-                  if (widget.onTapCartIcon == null) return;
-                  widget.onTapCartIcon?.call(_reelData.postId ?? '');
-                },
-                child: Container(
-                  padding: _shopUIConfig?.shopContainerPadding ??
-                      IsrDimens.edgeInsetsSymmetric(
-                        horizontal: IsrDimens.twelve,
-                        vertical: IsrDimens.eight,
-                      ),
-                  decoration: _shopUIConfig?.shopContainerDecoration ??
-                      BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(IsrDimens.ten),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.changeOpacity(0.1),
-                            spreadRadius: 1,
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      AppImage.svg(
-                        _shopUIConfig?.cartIcon ?? AssetConstants.icCartIcon,
-                        width: _shopUIConfig?.shopIconSize,
-                        height: _shopUIConfig?.shopIconSize,
-                        color: _shopUIConfig?.shopIconColor,
-                      ),
-                      IsrDimens.boxWidth(IsrDimens.eight),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            IsrTranslationFile.shop,
-                            style: _textStyleConfig?.shopTitleStyle ??
-                                IsrStyles.primaryText12.copyWith(
-                                    color: IsrColors.color0F1E91,
-                                    fontWeight: FontWeight.w700),
-                          ),
-                          IsrDimens.boxHeight(IsrDimens.four),
-                          Text(
-                            '${_reelData.productCount} ${_reelData.productCount == 1 ? IsrTranslationFile.product : IsrTranslationFile.products}',
-                            style: _textStyleConfig?.shopSubtitleStyle ??
-                                IsrStyles.primaryText10.copyWith(
-                                    color: IsrColors.color0F1E91,
-                                    fontWeight: FontWeight.w500),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+  Widget _buildBottomSectionWithoutOverlay() {
+    final publishedTimeLabel = _postPublishedTimeLabel();
+    return Padding(
+      padding: IsrDimens.edgeInsets(
+          left: IsrDimens.sixteen,
+          right: IsrDimens.sixteen,
+          bottom: IsrDimens.fifteen),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if ((_reelData.productCount ?? 0) > 0) ...[
+            TapHandler(
+              onTap: () {
+                if (widget.onTapCartIcon == null) return;
+                widget.onTapCartIcon?.call(_reelData.postId ?? '');
+              },
+              child: Container(
+                padding: _shopUIConfig?.shopContainerPadding ??
+                    IsrDimens.edgeInsetsSymmetric(
+                      horizontal: IsrDimens.twelve,
+                      vertical: IsrDimens.eight,
+                    ),
+                decoration: _shopUIConfig?.shopContainerDecoration ??
+                    BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(IsrDimens.ten),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.changeOpacity(0.1),
+                          spreadRadius: 1,
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AppImage.svg(
+                      _shopUIConfig?.cartIcon ?? AssetConstants.icCartIcon,
+                      width: _shopUIConfig?.shopIconSize,
+                      height: _shopUIConfig?.shopIconSize,
+                      color: _shopUIConfig?.shopIconColor,
+                    ),
+                    IsrDimens.boxWidth(IsrDimens.eight),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          IsrTranslationFile.shop,
+                          style: _textStyleConfig?.shopTitleStyle ??
+                              IsrStyles.primaryText12.copyWith(
+                                  color: IsrColors.color0F1E91,
+                                  fontWeight: FontWeight.w700),
+                        ),
+                        IsrDimens.boxHeight(IsrDimens.four),
+                        Text(
+                          '${_reelData.productCount} ${_reelData.productCount == 1 ? IsrTranslationFile.product : IsrTranslationFile.products}',
+                          style: _textStyleConfig?.shopSubtitleStyle ??
+                              IsrStyles.primaryText10.copyWith(
+                                  color: IsrColors.color0F1E91,
+                                  fontWeight: FontWeight.w500),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              IsrDimens.boxHeight(IsrDimens.sixteen),
-            ],
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: Row(
-                              children: [
-                                if (_reelData
-                                        .postSetting?.isProfilePicVisible ==
-                                    true) ...[
-                                  TapHandler(
-                                    borderRadius: IsrDimens.thirty,
-                                    onTap: () async {
-                                      if (widget.reelsConfig.onTapUserProfile ==
-                                          null) {
-                                        return;
-                                      }
-                                      await widget.reelsConfig
-                                          .onTapUserProfile!(_reelData);
-                                    },
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: Colors.transparent,
-                                        borderRadius: BorderRadius.circular(
-                                          _userProfileConfig
-                                                  ?.profileImageBorderRadius ??
-                                              IsrDimens.thirty,
-                                        ),
-                                        border: _userProfileConfig
-                                            ?.profileImageBorder,
-                                        boxShadow: _userProfileConfig
-                                                ?.profileImageShadow ??
-                                            [
-                                              BoxShadow(
-                                                color: Colors.black
-                                                    .changeOpacity(0.2),
-                                                spreadRadius: 2,
-                                                blurRadius: 5,
-                                                offset: const Offset(0, 2),
-                                              ),
-                                            ],
+            ),
+            IsrDimens.boxHeight(IsrDimens.sixteen),
+          ],
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Row(
+                            children: [
+                              if (_reelData.postSetting?.isProfilePicVisible ==
+                                  true) ...[
+                                TapHandler(
+                                  borderRadius: IsrDimens.thirty,
+                                  onTap: () async {
+                                    if (widget.reelsConfig.onTapUserProfile ==
+                                        null) {
+                                      return;
+                                    }
+                                    await widget.reelsConfig
+                                        .onTapUserProfile!(_reelData);
+                                  },
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.transparent,
+                                      borderRadius: BorderRadius.circular(
+                                        _userProfileConfig
+                                                ?.profileImageBorderRadius ??
+                                            IsrDimens.thirty,
                                       ),
-                                      child: AppImage.network(
-                                        _reelData.profilePhoto ?? '',
-                                        width: _userProfileConfig
-                                                ?.profileImageSize ??
-                                            IsrDimens.thirtyFive,
-                                        height: _userProfileConfig
-                                                ?.profileImageSize ??
-                                            IsrDimens.thirtyFive,
-                                        isProfileImage: true,
-                                        textColor: _userProfileConfig
-                                                ?.profileImagePlaceholderColor ??
-                                            IsrColors.white,
-                                        name:
-                                            '${_reelData.firstName ?? ''} ${_reelData.lastName ?? ''}',
-                                      ),
+                                      border: _userProfileConfig
+                                          ?.profileImageBorder,
+                                      boxShadow: _userProfileConfig
+                                              ?.profileImageShadow ??
+                                          [
+                                            BoxShadow(
+                                              color: Colors.black
+                                                  .changeOpacity(0.2),
+                                              spreadRadius: 2,
+                                              blurRadius: 5,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ],
                                     ),
-                                  ),
-                                  IsrDimens.boxWidth(IsrDimens.eight),
-                                ],
-                                Flexible(
-                                  child: TapHandler(
-                                    onTap: () async {
-                                      if (widget.reelsConfig.onTapUserProfile ==
-                                          null) {
-                                        return;
-                                      }
-                                      await widget.reelsConfig.onTapUserProfile
-                                          ?.call(_reelData);
-                                    },
-                                    child: Text(
-                                      _reelData.userName ?? '',
-                                      style: _textStyleConfig?.userNameStyle ??
-                                          IsrStyles.white14.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                            shadows: _textShadows,
-                                          ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+                                    child: AppImage.network(
+                                      _reelData.profilePhoto ?? '',
+                                      width: _userProfileConfig
+                                              ?.profileImageSize ??
+                                          IsrDimens.thirtyFive,
+                                      height: _userProfileConfig
+                                              ?.profileImageSize ??
+                                          IsrDimens.thirtyFive,
+                                      isProfileImage: true,
+                                      textColor: _userProfileConfig
+                                              ?.profileImagePlaceholderColor ??
+                                          IsrColors.white,
+                                      name:
+                                          '${_reelData.firstName ?? ''} ${_reelData.lastName ?? ''}',
                                     ),
                                   ),
                                 ),
                                 IsrDimens.boxWidth(IsrDimens.eight),
-                                _buildFollowButton(),
                               ],
-                            ),
+                              Flexible(
+                                child: TapHandler(
+                                  onTap: () async {
+                                    if (widget.reelsConfig.onTapUserProfile ==
+                                        null) {
+                                      return;
+                                    }
+                                    await widget.reelsConfig.onTapUserProfile
+                                        ?.call(_reelData);
+                                  },
+                                  child: Text(
+                                    _reelData.userName ?? '',
+                                    style: _textStyleConfig?.userNameStyle ??
+                                        IsrStyles.white14.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          shadows: _textShadows,
+                                        ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
+                              IsrDimens.boxWidth(IsrDimens.eight),
+                              _buildFollowButton(),
+                            ],
                           ),
-                        ],
-                      ),
-                      if (_postDescription.isStringEmptyOrNull == false) ...[
-                        IsrDimens.boxHeight(IsrDimens.eight),
-                        ConstrainedBox(
-                          constraints: BoxConstraints(
-                            maxHeight: 350.responsiveDimension,
-                            minHeight: 20, // Prevent grey box on empty content
-                          ),
-                          child: SingleChildScrollView(
-                            child: ValueListenableBuilder<bool>(
-                              valueListenable: _isExpandedDescription,
-                              builder: (context, value, child) {
-                                try {
-                                  final fullDescription =
-                                      _reelData.description ?? '';
+                        ),
+                      ],
+                    ),
+                    if (_postDescription.isStringEmptyOrNull == false) ...[
+                      IsrDimens.boxHeight(IsrDimens.eight),
+                      ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxHeight: 350.responsiveDimension,
+                          minHeight: 20, // Prevent grey box on empty content
+                        ),
+                        child: SingleChildScrollView(
+                          child: ValueListenableBuilder<bool>(
+                            valueListenable: _isExpandedDescription,
+                            builder: (context, value, child) {
+                              try {
+                                final fullDescription =
+                                    _reelData.description ?? '';
 
-                                  // Safety check: If empty after trimming, hide widget
-                                  if (fullDescription.trim().isEmpty) {
-                                    return const SizedBox.shrink();
-                                  }
-
-                                  final descriptionLineCount =
-                                      fullDescription.split('\n').length;
-                                  final shouldTruncate = fullDescription
-                                              .length >
-                                          _maxLengthToShow ||
-                                      descriptionLineCount > _maxLinesToShow;
-
-                                  // Show truncated version when collapsed, full version when expanded
-                                  // FIX: Prevent substring out of bounds error
-                                  String displayText;
-                                  if (shouldTruncate && !value) {
-                                    final safeLength = fullDescription.length <
-                                            _maxLengthToShow
-                                        ? fullDescription.length
-                                        : _maxLengthToShow;
-                                    displayText = fullDescription
-                                        .substring(0, safeLength)
-                                        .split('\n')
-                                        .take(_maxLinesToShow)
-                                        .join('\n');
-                                  } else {
-                                    displayText = fullDescription;
-                                  }
-
-                                  // OPTIMIZATION: Cache parsed description to avoid reparsing on every build
-                                  if (_lastParsedDescription !=
-                                          displayText.trim() ||
-                                      _cachedDescriptionTextSpan == null) {
-                                    _lastParsedDescription = displayText.trim();
-                                    _cachedDescriptionTextSpan =
-                                        _buildDescriptionTextSpan(
-                                      displayText.trim(),
-                                      _mentionedDataList,
-                                      _taggedDataList,
-                                      _textStyleConfig?.descriptionStyle ??
-                                          IsrStyles.white14.copyWith(
-                                            color: IsrColors.white
-                                                .changeOpacity(0.9),
-                                            shadows: _textShadows,
-                                          ),
-                                      (mention) =>
-                                          _callOnTapMentionData([mention]),
-                                    );
-                                  }
-
-                                  // Safety check: Ensure cached TextSpan is not null
-                                  if (_cachedDescriptionTextSpan == null) {
-                                    debugPrint(
-                                        '❌ Failed to build description TextSpan for post ${_reelData.postId}');
-                                    return const SizedBox.shrink();
-                                  }
-
-                                  return GestureDetector(
-                                    onTap: () {
-                                      if (shouldTruncate) {
-                                        _isExpandedDescription.value =
-                                            !_isExpandedDescription.value;
-                                      }
-                                    },
-                                    child: RichText(
-                                      text: TextSpan(
-                                        children: [
-                                          _cachedDescriptionTextSpan!,
-                                          if (shouldTruncate)
-                                            TextSpan(
-                                              text:
-                                                  value ? ' less' : ' ... more',
-                                              style: value
-                                                  ? (_descriptionConfig
-                                                          ?.collapseTextStyle ??
-                                                      IsrStyles.white14
-                                                          .copyWith(
-                                                        fontWeight:
-                                                            FontWeight.w700,
-                                                        color: IsrColors.white
-                                                            .changeOpacity(0.7),
-                                                        shadows: _textShadows,
-                                                      ))
-                                                  : (_descriptionConfig
-                                                          ?.expandTextStyle ??
-                                                      IsrStyles.white14
-                                                          .copyWith(
-                                                        fontWeight:
-                                                            FontWeight.w700,
-                                                        color: IsrColors.white
-                                                            .changeOpacity(0.7),
-                                                        shadows: _textShadows,
-                                                      )),
-                                              // Removed empty TapGestureRecognizer to prevent memory leak
-                                              // Parent GestureDetector handles the tap
-                                            ),
-                                        ],
-                                      ),
-                                    ),
-                                  );
-                                } catch (_) {
-                                  // Return empty widget instead of showing grey box
+                                // Safety check: If empty after trimming, hide widget
+                                if (fullDescription.trim().isEmpty) {
                                   return const SizedBox.shrink();
                                 }
-                              },
-                            ),
+
+                                final descriptionLineCount =
+                                    fullDescription.split('\n').length;
+                                final shouldTruncate =
+                                    fullDescription.length > _maxLengthToShow ||
+                                        descriptionLineCount > _maxLinesToShow;
+
+                                // Show truncated version when collapsed, full version when expanded
+                                // FIX: Prevent substring out of bounds error
+                                String displayText;
+                                if (shouldTruncate && !value) {
+                                  final safeLength =
+                                      fullDescription.length < _maxLengthToShow
+                                          ? fullDescription.length
+                                          : _maxLengthToShow;
+                                  displayText = fullDescription
+                                      .substring(0, safeLength)
+                                      .split('\n')
+                                      .take(_maxLinesToShow)
+                                      .join('\n');
+                                } else {
+                                  displayText = fullDescription;
+                                }
+
+                                // OPTIMIZATION: Cache parsed description to avoid reparsing on every build
+                                if (_lastParsedDescription !=
+                                        displayText.trim() ||
+                                    _cachedDescriptionTextSpan == null) {
+                                  _lastParsedDescription = displayText.trim();
+                                  _cachedDescriptionTextSpan =
+                                      _buildDescriptionTextSpan(
+                                    displayText.trim(),
+                                    _mentionedDataList,
+                                    _taggedDataList,
+                                    _textStyleConfig?.descriptionStyle ??
+                                        IsrStyles.white14.copyWith(
+                                          color: IsrColors.white
+                                              .changeOpacity(0.9),
+                                          shadows: _textShadows,
+                                        ),
+                                    (mention) =>
+                                        _callOnTapMentionData([mention]),
+                                  );
+                                }
+
+                                // Safety check: Ensure cached TextSpan is not null
+                                if (_cachedDescriptionTextSpan == null) {
+                                  debugPrint(
+                                      '❌ Failed to build description TextSpan for post ${_reelData.postId}');
+                                  return const SizedBox.shrink();
+                                }
+
+                                return GestureDetector(
+                                  onTap: () {
+                                    if (shouldTruncate) {
+                                      _isExpandedDescription.value =
+                                          !_isExpandedDescription.value;
+                                    }
+                                  },
+                                  child: RichText(
+                                    text: TextSpan(
+                                      children: [
+                                        _cachedDescriptionTextSpan!,
+                                        if (shouldTruncate)
+                                          TextSpan(
+                                            text: value ? ' less' : ' ... more',
+                                            style: value
+                                                ? (_descriptionConfig
+                                                        ?.collapseTextStyle ??
+                                                    IsrStyles.white14.copyWith(
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                      color: IsrColors.white
+                                                          .changeOpacity(0.7),
+                                                      shadows: _textShadows,
+                                                    ))
+                                                : (_descriptionConfig
+                                                        ?.expandTextStyle ??
+                                                    IsrStyles.white14.copyWith(
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                      color: IsrColors.white
+                                                          .changeOpacity(0.7),
+                                                      shadows: _textShadows,
+                                                    )),
+                                            // Removed empty TapGestureRecognizer to prevent memory leak
+                                            // Parent GestureDetector handles the tap
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              } catch (_) {
+                                // Return empty widget instead of showing grey box
+                                return const SizedBox.shrink();
+                              }
+                            },
                           ),
                         ),
-                      ],
-                      // Mentioned Users and Location in same row
-                      if (_reelData.mentions.isListEmptyOrNull == false ||
-                          _reelData.placeDataList?.isListEmptyOrNull ==
+                      ),
+                    ],
+                    // Mentioned Users and Location in same row
+                    if (_reelData.mentions.isListEmptyOrNull == false ||
+                        _reelData.placeDataList?.isListEmptyOrNull ==
+                            false) ...[
+                      IsrDimens.boxHeight(IsrDimens.eight),
+                      Row(
+                        children: [
+                          // Mentioned Users Section
+                          if (_reelData.mentions.isListEmptyOrNull ==
                               false) ...[
-                        IsrDimens.boxHeight(IsrDimens.eight),
-                        Row(
-                          children: [
-                            // Mentioned Users Section
-                            if (_reelData.mentions.isListEmptyOrNull ==
-                                false) ...[
-                              Expanded(
-                                child: _buildMentionedUsersSection(),
-                              ),
-                              if (_reelData.placeDataList?.isListEmptyOrNull ==
-                                  false) ...[
-                                IsrDimens.boxWidth(IsrDimens.ten),
-                              ],
-                            ],
-                            // Location Section
+                            Expanded(
+                              child: _buildMentionedUsersSection(),
+                            ),
                             if (_reelData.placeDataList?.isListEmptyOrNull ==
                                 false) ...[
-                              Expanded(
-                                child: _buildLocationSection(),
-                              ),
+                              IsrDimens.boxWidth(IsrDimens.ten),
                             ],
                           ],
-                        ),
-                      ],
+                          // Location Section
+                          if (_reelData.placeDataList?.isListEmptyOrNull ==
+                              false) ...[
+                            Expanded(
+                              child: _buildLocationSection(),
+                            ),
+                          ],
+                        ],
+                      ),
                     ],
-                  ),
+                  ],
                 ),
-              ],
-            ),
-            if ((_reelData.productCount ?? 0) > 0) ...[
-              IsrDimens.boxHeight(IsrDimens.eight),
-              _buildCommissionTag(),
+              ),
             ],
-            if (_showFloatingComments) ...[
-              IsrDimens.boxHeight(IsrDimens.eight),
-              _buildFloatingCommentsSection(),
-            ],
+          ),
+          if (_showFloatingComments) ...[
+            IsrDimens.boxHeight(IsrDimens.eight),
+            _buildFloatingCommentsSection(),
           ],
-        ),
-      );
+          if ((_reelData.productCount ?? 0) > 0) ...[
+            IsrDimens.boxHeight(IsrDimens.eight),
+            _buildCommissionTag(),
+          ],
+          if (publishedTimeLabel != null) ...[
+            IsrDimens.boxHeight(IsrDimens.six),
+            Text(publishedTimeLabel, style: IsrStyles.white12),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Uses [ReelsData.createOn] (timeline `published_at`) for upload/publish time.
+  String? _postPublishedTimeLabel() {
+    final raw = _reelData.createOn?.trim();
+    if (raw.isStringEmptyOrNull) return null;
+    try {
+      final dt = DateTime.parse(raw!);
+      final relative = DateTimeUtil.getTimeAgoFromDateTime(dt);
+      return relative.isEmpty ? null : relative;
+    } catch (_) {
+      return raw;
+    }
+  }
 
   Widget _buildFloatingCommentsSection() {
     if (_floatingComments.isEmpty) {
