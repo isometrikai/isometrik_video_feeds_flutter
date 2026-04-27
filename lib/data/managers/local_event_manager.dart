@@ -239,6 +239,13 @@ class LocalEventQueue with WidgetsBindingObserver {
       _addBackendEvent(eventName, payload);
     }
     if (_rudderIncludedEvents.contains(eventName)) {
+      IsrVideoReelConfig
+        .socialConfig.socialCallBackConfig?.onAnalyticEventTriggered
+        ?.call(eventName, payload, EventType.fromValue(eventName));
+    if (_backendEvents.contains(eventName)) {
+      _addBackendEvent(eventName, payload);
+    }
+    if (_rudderIncludedEvents.contains(eventName)) {
       final rudderProperties = RudderProperty();
       rudderProperties.putValue(map: payload);
       RudderController.instance.track(
