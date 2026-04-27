@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player_example/di/di.dart';
 import 'package:ism_video_reel_player_example/presentation/presentation.dart';
 import 'package:ism_video_reel_player_example/res/res.dart';
-import 'package:ism_video_reel_player_example/utils/background_post_upload_overlay.dart';
 import 'package:ism_video_reel_player_example/utils/utils.dart';
 
 class LandingView extends StatefulWidget {

@@ -629,14 +629,14 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     PostSectionType? postSectionType,
     int? watchDuration,
   }) {
-    if (saveAction == SaveAction.save) {
-      sendAnalyticsEvent(
-        EventType.postSaved.value,
-        {},
-        reelsData: reelsData,
-        postSectionType: postSectionType,
-      );
-    }
+    sendAnalyticsEvent(
+      saveAction == SaveAction.save
+          ? EventType.postSaved.value
+          : EventType.postUnsaved.value,
+      {},
+      reelsData: reelsData,
+      postSectionType: postSectionType,
+    );
   }
 
   /// Implementation of PostHelperCallBacks interface

@@ -773,7 +773,7 @@ class Utility {
         text.length > effectiveMaxLength;
 
     final displayText = (showViewMoreLess && !isExpanded)
-        ? text.substring(0, effectiveMaxLength!)
+        ? text.substring(0, effectiveMaxLength)
         : text;
 
     // Create a list of all tagged positions (mentions and hashtags)

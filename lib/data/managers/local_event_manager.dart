@@ -28,8 +28,10 @@ class EventQueueProvider {
     required String rudderStackWriteKey,
     required String rudderStackDataPlaneUrl,
   }) async {
-    final localDataUseCase = IsmInjectionUtils.getUseCase<IsmLocalDataUseCase>();
-    final deviceInfoManager = IsmInjectionUtils.getOtherClass<DeviceInfoManager>();
+    final localDataUseCase =
+        IsmInjectionUtils.getUseCase<IsmLocalDataUseCase>();
+    final deviceInfoManager =
+        IsmInjectionUtils.getOtherClass<DeviceInfoManager>();
 
     // Fetch all required data
     final userId = await localDataUseCase.getUserId();
@@ -75,7 +77,8 @@ class EventQueueProvider {
         'os': deviceInfoManager.deviceOs,
         'os_version': deviceInfoManager.deviceOsVersion,
         'type': deviceInfoManager.deviceType,
-        'name': '${deviceInfoManager.deviceManufacturer} ${deviceInfoManager.deviceModel}',
+        'name':
+            '${deviceInfoManager.deviceManufacturer} ${deviceInfoManager.deviceModel}',
       },
       'location': {
         'city': city,
@@ -115,7 +118,8 @@ class LocalEventQueue with WidgetsBindingObserver {
 
   static const _boxName = 'isometrik_social_local_events';
   static const _batchSize = 10;
-  static const _batchTimerDuration = AppConstants.impressionDataApiLogTimeDuration; // need to change to 10 mins
+  static const _batchTimerDuration = AppConstants
+      .impressionDataApiLogTimeDuration; // need to change to 10 mins
 
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   Timer? _batchTimer;
@@ -141,7 +145,8 @@ class LocalEventQueue with WidgetsBindingObserver {
 
     // observe connectivity changes
     await _connectivitySubscription?.cancel();
-    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((status) async {
+    _connectivitySubscription =
+        Connectivity().onConnectivityChanged.listen((status) async {
       if (status.contains(ConnectivityResult.none)) {
         await flush();
       }
@@ -158,7 +163,7 @@ class LocalEventQueue with WidgetsBindingObserver {
 
   final Uuid _uuid = const Uuid();
 
-  void addEvent(String eventName, Map<String, dynamic> payload) async {
+  void _addBackendEvent(String eventName, Map<String, dynamic> payload) async {
     try {
       // Ensure box is open before accessing
       if (!Hive.isBoxOpen(_boxName)) {
@@ -179,7 +184,8 @@ class LocalEventQueue with WidgetsBindingObserver {
       debugPrint('${runtimeType.toString()}:Box length: ${box.length}');
 
       if (eventName == EventType.postViewed.value) {
-        _talker?.info('${runtimeType.toString()}:Event Name: $eventName added with\n Event Data : ${jsonEncode(payload)}');
+        _talker?.info(
+            '${runtimeType.toString()}:Event Name: $eventName added with\n Event Data : ${jsonEncode(payload)}');
         if (box.length >= _batchSize) {
           await sendPendingEventsToBackend();
           return;
@@ -194,8 +200,6 @@ class LocalEventQueue with WidgetsBindingObserver {
             '${runtimeType.toString()}: Started ${_batchTimerDuration.inMinutes}-min batch timer',
           );
         }
-      } else {
-        logEvent(eventName, payload);
       }
     } catch (e, stackTrace) {
       debugPrint('LocalEventQueue.addEvent: Error adding event: $e');
@@ -204,27 +208,74 @@ class LocalEventQueue with WidgetsBindingObserver {
     }
   }
 
+  final _rudderIncludedEvents = [
+    EventType.userFollowed.value,
+    EventType.userUnFollowed.value,
+    EventType.videoStarted.value,
+    EventType.videoProgress.value,
+    EventType.videoPaused.value,
+    EventType.videoSoundToggled.value,
+    EventType.profileViewed.value,
+    EventType.hashTagClicked.value,
+    EventType.searchPerformed.value,
+    EventType.searchResultClicked.value,
+  ];
+
+  final _backendEvents = [EventType.postViewed.value];
+
   void logEvent(String eventName, Map<String, dynamic> payload) {
-    final excludedEvents = [
-      EventType.postLiked.value,
-      EventType.postUnliked.value,
-      EventType.postSaved.value,
-      EventType.postHidden.value,
-      EventType.postReported.value,
-      EventType.postViewed.value,
-      EventType.postShared.value,
-      EventType.commentCreated.value,
-      EventType.commentLiked.value,
-    ];
-    if (excludedEvents.contains(eventName)) return;
     debugPrint(
-        'Adding Event -> Event Triggered: $eventName\n Event Data : ${jsonEncode(payload)}');
-    final rudderProperties = RudderProperty();
-    rudderProperties.putValue(map: payload);
-    RudderController.instance.track(
-      eventName,
-      properties: rudderProperties,
+        'Logging Event -> Event Triggered: $eventName\n Event Data : ${jsonEncode(payload)}');
+    final eventType = EventType.fromValue(eventName);
+    final socialEventModel = SocialEventModel(
+      event: eventName,
+      properties: Map<String, dynamic>.from(payload),
+      category: _resolveEventCategory(eventType),
+      isSdkEvent: eventType != null,
     );
+    IsrVideoReelConfig.socialConfig.socialCallBackConfig?.onSocialEventTriggered
+        ?.call(socialEventModel);
+    if (_backendEvents.contains(eventName)) {
+      _addBackendEvent(eventName, payload);
+    }
+    if (_rudderIncludedEvents.contains(eventName)) {
+      final rudderProperties = RudderProperty();
+      rudderProperties.putValue(map: payload);
+      RudderController.instance.track(
+        eventName,
+        properties: rudderProperties,
+      );
+    }
+  }
+
+  EventCategory _resolveEventCategory(EventType? eventType) {
+    if (eventType == null) {
+      return EventCategory.system;
+    }
+    switch (eventType) {
+      case EventType.postLiked:
+      case EventType.postUnliked:
+      case EventType.postShared:
+      case EventType.postSaved:
+      case EventType.postUnsaved:
+      case EventType.postHidden:
+      case EventType.postReported:
+      case EventType.commentCreated:
+      case EventType.commentLiked:
+      case EventType.userFollowed:
+      case EventType.userUnFollowed:
+      case EventType.profileViewed:
+      case EventType.hashTagClicked:
+      case EventType.searchPerformed:
+      case EventType.searchResultClicked:
+        return EventCategory.userAction;
+      case EventType.postViewed:
+      case EventType.videoStarted:
+      case EventType.videoProgress:
+      case EventType.videoPaused:
+      case EventType.videoSoundToggled:
+        return EventCategory.system;
+    }
   }
 
   Future<void> sendPendingEventsToBackend() async {
@@ -242,12 +293,16 @@ class LocalEventQueue with WidgetsBindingObserver {
       for (final event in events) event.payload,
     ];
     try {
-      _talker?.info('${runtimeType.toString()}: Sending Event -> Event Data : $eventPayLoadList');
+      _talker?.info(
+          '${runtimeType.toString()}: Sending Event -> Event Data : $eventPayLoadList');
       final socialPostBloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
-      debugPrint('${runtimeType.toString()}: API Call Init -> payload:- $eventPayLoadList');
+      debugPrint(
+          '${runtimeType.toString()}: API Call Init -> payload:- $eventPayLoadList');
       final result = await socialPostBloc.sendEventsToBackend(eventPayLoadList);
-      _talker?.info('${runtimeType.toString()}: Sending Event -> Event result status : ${result.statusCode}, isSuccess: ${result.isSuccess}, errorIfAny: ${result.error?.message}');
-      debugPrint('${runtimeType.toString()}: API Call reslt -> ${result.statusCode}, isSuccess: ${result.isSuccess}, errorIfAny: ${result.error?.message}');
+      _talker?.info(
+          '${runtimeType.toString()}: Sending Event -> Event result status : ${result.statusCode}, isSuccess: ${result.isSuccess}, errorIfAny: ${result.error?.message}');
+      debugPrint(
+          '${runtimeType.toString()}: API Call reslt -> ${result.statusCode}, isSuccess: ${result.isSuccess}, errorIfAny: ${result.error?.message}');
       if (result.isSuccess || result.statusCode == 422) {
         try {
           await flush();
@@ -270,14 +325,16 @@ class LocalEventQueue with WidgetsBindingObserver {
       return;
     }
     final box = Hive.box<LocalEvent>(_boxName);
-    debugPrint('${runtimeType.toString()} Box length before flushing: ${box.length}');
+    debugPrint(
+        '${runtimeType.toString()} Box length before flushing: ${box.length}');
 
     final events = box.values.toList();
 
     if (events.isEmpty) return;
 
     await box.clear();
-    debugPrint('${runtimeType.toString()} Box length after flushing: ${box.length}');
+    debugPrint(
+        '${runtimeType.toString()} Box length after flushing: ${box.length}');
   }
 
   /// cleanup
@@ -290,94 +347,68 @@ class LocalEventQueue with WidgetsBindingObserver {
   }
 }
 
-enum EventType {
-  postViewed, // Triggered by viewport detection (1 sec visible)
-  postLiked, // Instant UI feedback when user taps heart
-  postUnliked, // Instant UI feedback
-  postShared, // User shares via device share sheet
-  postSaved, // User bookmarks post
-  postHidden, // when user taps not interested
-  postReported, // User submits report form
-  commentCreated, // Fires immediately when user submits comment
-  commentLiked, // Instant UI feedback when user taps heart
-  userFollowed, // User taps "Follow" button
-  userUnFollowed, // User taps "Unfollow" button
-  videoStarted, // Video player starts playback
-  videoProgress, // Video player hits 25%, 50%, 75%, 100%
-  videoPaused, // Video Paused
-  videoSoundToggled, // User mutes/unmutes
-  profileViewed, // User navigates to profile screen/page
-  hashTagClicked, // User click on hash tag
-  searchPerformed, // User performs a search
-  searchResultClicked, // User clicks on a search result
-}
+class SocialEventModel {
+  const SocialEventModel({
+    required this.event,
+    required this.properties,
+    required this.category,
+    required this.isSdkEvent,
+  });
 
-extension EventTypeExtension on EventType {
-  String get value {
-    switch (this) {
-      case EventType.postViewed:
-        return 'Post Viewed';
-      case EventType.postLiked:
-        return 'Post Liked';
-      case EventType.postUnliked:
-        return 'Post Unliked';
-      case EventType.postSaved:
-        return 'Post Saved';
-      case EventType.postShared:
-        return 'Post Shared';
-      case EventType.postHidden:
-        return 'Post Hidden';
-      case EventType.postReported:
-        return 'Post Reported';
-      case EventType.userFollowed:
-        return 'User Followed';
-      case EventType.userUnFollowed:
-        return 'User Unfollowed';
-      case EventType.commentCreated:
-        return 'Comment Created';
-      case EventType.commentLiked:
-        return 'Comment Liked';
-      case EventType.videoStarted:
-        return 'Video Started';
-      case EventType.videoProgress:
-        return 'Video Progress';
-      case EventType.videoPaused:
-        return 'Video Paused';
-      case EventType.videoSoundToggled:
-        return 'Video Sound Toggled';
-      case EventType.profileViewed:
-        return 'Profile Viewed';
-      case EventType.hashTagClicked:
-        return 'Hashtag Clicked';
-      case EventType.searchPerformed:
-        return 'Search Performed';
-      case EventType.searchResultClicked:
-        return 'Search Result Clicked';
-    }
-  }
+  final String event;
+  final Map<String, dynamic> properties;
+  final EventCategory category;
+  final bool isSdkEvent;
+
+  Map<String, dynamic> toMap() => {
+        'event': event,
+        'category': category.value,
+        'properties': properties,
+        'is_sdk_event': isSdkEvent,
+      };
 }
 
 enum EventCategory {
-  userIdentity,
-  navigation,
-  postEngagement,
-  socialGraph,
-  videoEngagement,
+  userAction('user_action'),
+  system('system'),
+  api('api'),
+  error('error');
+
+  const EventCategory(this.value);
+
+  final String value;
 }
 
-extension EventCategoryExtension on EventCategory {
-  String get value {
-    switch (this) {
-      case EventCategory.userIdentity:
-        return 'User Identity';
-      case EventCategory.navigation:
-        return 'Navigation';
-      case EventCategory.postEngagement:
-        return 'Post Engagement';
-      case EventCategory.socialGraph:
-        return 'Social Graph';
-      case EventCategory.videoEngagement:
-        return 'Video Engagement';
+enum EventType {
+  postViewed('Post Viewed'),
+  postLiked('Post Liked'),
+  postUnliked('Post Unliked'),
+  postShared('Post Shared'),
+  postSaved('Post Saved'),
+  postUnsaved('Post Unsaved'),
+  postHidden('Post Hidden'),
+  postReported('Post Reported'),
+  commentCreated('Comment Created'),
+  commentLiked('Comment Liked'),
+  userFollowed('User Followed'),
+  userUnFollowed('User Unfollowed'),
+  videoStarted('Video Started'),
+  videoProgress('Video Progress'),
+  videoPaused('Video Paused'),
+  videoSoundToggled('Video Sound Toggled'),
+  profileViewed('Profile Viewed'),
+  hashTagClicked('Hashtag Clicked'),
+  searchPerformed('Search Performed'),
+  searchResultClicked('Search Result Clicked');
+
+  const EventType(this.value);
+
+  final String value;
+
+  static EventType? fromValue(String value) {
+    for (final type in EventType.values) {
+      if (type.value == value) return type;
     }
+    return null; // or throw if you prefer strict behavior
   }
 }

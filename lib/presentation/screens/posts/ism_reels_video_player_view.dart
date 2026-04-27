@@ -298,7 +298,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       _startOrResumeImageProgress();
     }
 
-    _fetchFloatingCommentsIfNeeded();
+    unawaited(_fetchFloatingCommentsIfNeeded());
   }
 
   Future<void> _fetchFloatingCommentsIfNeeded(
@@ -306,8 +306,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (!_showFloatingComments || !mounted) return;
     if (!forceRefresh && _hasFetchedFloatingComments) return;
     if (widget.currentIndex.value != widget.index) return;
-    if ((_reelData.postSetting?.isCommentButtonVisible ?? false) == false)
+    if ((_reelData.postSetting?.isCommentButtonVisible ?? false) == false) {
       return;
+    }
     final postId = _reelData.postId;
     if (postId.isStringEmptyOrNull) return;
 
@@ -593,36 +594,39 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl,
       );
     } else {
-      return _buildVideoContent();
+      return _buildVideoContent(
+        media: _reelData.mediaMetaDataList[_currentPageNotifier.value],
+        key: _currentVideoPlayerKey,
+        logIndex: '${widget.index}-0}',
+      );
     }
   }
 
-  Widget _buildVideoContent() {
-    final media = _reelData.mediaMetaDataList[_currentPageNotifier.value];
-    return VideoPlayerWidget(
-      key: _currentVideoPlayerKey,
-      mediaUrl: media.mediaUrl,
-      thumbnailUrl: media.thumbnailUrl,
-      videoCacheManager: _videoCacheManager,
-      isMuted: _isMuted,
-      onVisibilityChanged: (isVisible) {
-        // Visibility is handled internally by VideoPlayerWidget
-      },
-      onVideoCompleted: _moveToNextMedia,
-      videoProgressCallBack: (totalDuration, currentPosition) {
-        _currentMediaWatchDuration = currentPosition;
-        // Update progress (0.0 to 1.0) only if not seeking
-        if (totalDuration.inMilliseconds > 0 && !_isSeeking) {
-          _currentMediaProgress.value =
-              currentPosition.inMilliseconds / totalDuration.inMilliseconds;
-        }
-        media.durationSeconds = totalDuration.inSeconds;
-        _updatePostProgress();
-      },
-      isPreloaded: _isPreloaded,
-      logIndex: '${widget.index}-0-}',
-    );
-  }
+  Widget _buildVideoContent(
+          {required MediaMetaData media, Key? key, String? logIndex}) =>
+      VideoPlayerWidget(
+        key: key,
+        mediaUrl: media.mediaUrl,
+        thumbnailUrl: media.thumbnailUrl,
+        videoCacheManager: _videoCacheManager,
+        isMuted: _isMuted,
+        onVisibilityChanged: (isVisible) {
+          // Visibility is handled internally by VideoPlayerWidget
+        },
+        onVideoCompleted: _moveToNextMedia,
+        videoProgressCallBack: (totalDuration, currentPosition) {
+          _currentMediaWatchDuration = currentPosition;
+          // Update progress (0.0 to 1.0) only if not seeking
+          if (totalDuration.inMilliseconds > 0 && !_isSeeking) {
+            _currentMediaProgress.value =
+                currentPosition.inMilliseconds / totalDuration.inMilliseconds;
+          }
+          media.durationSeconds = totalDuration.inSeconds;
+          _updatePostProgress();
+        },
+        isPreloaded: _isPreloaded,
+        logIndex: logIndex,
+      );
 
   void _toggleMentions() {
     if (_pageMentionMetaDataList.isListEmptyOrNull == false) {
@@ -2163,7 +2167,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   Widget _buildPageView(int index) {
     final media = _reelData.mediaMetaDataList[index];
-    final isMediaPreloaded = _currentPageNotifier.value != index;
     if (media.mediaType == kPictureType) {
       return SizedBox(
         key: ValueKey('media_$index'), // Consistent key
@@ -2179,28 +2182,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
       return SizedBox(
         key: ValueKey('media_$index'), // Consistent key
-        child: VideoPlayerWidget(
-            key: _videoPlayerKeys[index],
-            mediaUrl: media.mediaUrl,
-            thumbnailUrl: media.thumbnailUrl,
-            videoCacheManager: _videoCacheManager,
-            isMuted: _isMuted,
-            onVisibilityChanged: (isVisible) {
-              // Visibility is handled internally by VideoPlayerWidget
-            },
-            onVideoCompleted: _moveToNextMedia,
-            videoProgressCallBack: (totalDuration, currentPosition) {
-              _currentMediaWatchDuration = currentPosition;
-              // Update progress (0.0 to 1.0) only if not seeking
-              if (totalDuration.inMilliseconds > 0 && !_isSeeking) {
-                _currentMediaProgress.value = currentPosition.inMilliseconds /
-                    totalDuration.inMilliseconds;
-              }
-              media.durationSeconds = totalDuration.inSeconds;
-              _updatePostProgress();
-            },
-            isPreloaded: _isPreloaded || isMediaPreloaded,
-            logIndex: '${widget.index}-$index}'),
+        child: _buildVideoContent(
+          media: media,
+          key: _videoPlayerKeys[index],
+          logIndex: '${widget.index}-$index}',
+        ),
       );
     }
   }
@@ -2380,7 +2366,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
       debugPrint('📊 Post Viewed Event: ${jsonEncode(finalAnalyticsDataMap)}');
       EventQueueProvider.instance
-          .addEvent(eventName, finalAnalyticsDataMap.removeEmptyValues());
+          .logEvent(eventName, finalAnalyticsDataMap.removeEmptyValues());
     } catch (e) {
       debugPrint('❌ Error sending analytics event: $e');
       return null;

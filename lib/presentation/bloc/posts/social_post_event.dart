@@ -188,7 +188,7 @@ class GetPostCommentsEvent extends SocialPostEvent {
 
 class CommentActionEvent extends SocialPostEvent {
   CommentActionEvent({
-    this.postId,
+    required this.postId,
     this.userId,
     this.commentId,
     required this.commentAction,
@@ -206,7 +206,7 @@ class CommentActionEvent extends SocialPostEvent {
     this.postDataModel,
   });
 
-  final String? postId;
+  final String postId;
   final String? userId;
   final String? commentId;
   final List<String>? commentIds;

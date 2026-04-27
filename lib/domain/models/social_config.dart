@@ -1,6 +1,7 @@
 import 'dart:io' show File;
 
 import 'package:flutter/material.dart';
+import 'package:ism_video_reel_player/data/managers/managers.dart';
 import 'package:ism_video_reel_player/utils/enums.dart'
     show ButtonType, LoaderType, MediaType;
 
@@ -206,7 +207,16 @@ class SocialCallBackConfig {
     this.uploadMediaToCloud,
     this.convertToGumletUrl,
     this.placeHolderGenerator,
+    this.onSocialEventTriggered,
   });
+
+  /// Callback invoked with a unified SDK event model.
+  ///
+  /// Use this callback if you prefer one structured payload with:
+  /// - `event` (event name)
+  /// - `category` (`user_action`, `system`, `api`, `error`)
+  /// - `properties` (event attributes)
+  final Function(SocialEventModel eventModel)? onSocialEventTriggered;
 
   /// Callback invoked when login is required.
   /// Should return `true` if login was successful, `false` otherwise.
@@ -243,13 +253,15 @@ class SocialCallBackConfig {
     )? uploadMediaToCloud,
     String Function(String mediaUrl)? convertToGumletUrl,
     Widget? Function(double? height, double? width)? placeHolderGenerator,
+    Function(SocialEventModel eventModel)? onSocialEventTriggered,
   }) =>
       SocialCallBackConfig(
         onLoginInvoked: onLoginInvoked ?? this.onLoginInvoked,
         uploadMediaToCloud: uploadMediaToCloud ?? this.uploadMediaToCloud,
         convertToGumletUrl: convertToGumletUrl ?? this.convertToGumletUrl,
-        placeHolderGenerator:
-            placeHolderGenerator ?? this.placeHolderGenerator,
+        placeHolderGenerator: placeHolderGenerator ?? this.placeHolderGenerator,
+        onSocialEventTriggered:
+            onSocialEventTriggered ?? this.onSocialEventTriggered,
       );
 }
 
