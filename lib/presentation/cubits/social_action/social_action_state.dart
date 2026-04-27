@@ -137,6 +137,29 @@ class IsmFollowActionListenerState extends IsmSocialActionState {
       );
 }
 
+class IsmCreateCollectionActionListenerState extends IsmSocialActionState {
+  IsmCreateCollectionActionListenerState({
+    required this.collectionId,
+  });
+
+  final String collectionId;
+
+  IsmCreateCollectionActionListenerState copyWith({
+    String? collectionId,
+  }) =>
+      IsmCreateCollectionActionListenerState(
+        collectionId: collectionId ?? this.collectionId,
+      );
+}
+
+class IsmEditCollectionActionListenerState extends IsmSocialActionState {
+  IsmEditCollectionActionListenerState({
+    required this.collectionId,
+  });
+
+  final String collectionId;
+}
+
 class IsmCollectionDeletedActionListenerState extends IsmSocialActionState {
   IsmCollectionDeletedActionListenerState({
     required this.collectionId,
@@ -252,12 +275,11 @@ class IsmDeletedPostActionListenerState extends IsmSocialActionState {
 }
 
 class IsmUserChangedActionListenerState extends IsmSocialActionState {
-  static const Object _noChange = Object();
-
   IsmUserChangedActionListenerState({
     required this.userId,
     this.userInfoClass,
   });
+  static const Object _noChange = Object();
 
   final String userId;
   final UserInfoClass? userInfoClass;

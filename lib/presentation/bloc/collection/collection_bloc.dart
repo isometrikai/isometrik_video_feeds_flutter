@@ -118,6 +118,12 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
               final id = data is Map ? data['id'] : null;
               if (id is String) collectionId = id;
             }
+            try {
+              final socialActionCubit = IsmSocialActionCubit.instance();
+              socialActionCubit.onCollectionCreated(collectionId: collectionId);
+            } catch (_) {
+              debugPrint('Failed to notify collection creation listener: $_');
+            }
           } catch (_) {
             collectionId = '';
           }
@@ -151,6 +157,13 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
           editCollectionRequestModel: event.editedCollectionRequestModel,
           message:
               '${event.editedCollectionRequestModel.name} ${IsrTranslationFile.updatedSuccessfully}'));
+
+      try {
+        final socialActionCubit = IsmSocialActionCubit.instance();
+        socialActionCubit.onCollectionEdited(collectionId: event.collectionId);
+      } catch (_) {
+        debugPrint('Failed to notify collection creation listener: $_');
+      }
     } else {
       emit(EditCollectionErrorState(apiResult.error?.message ?? ''));
     }
@@ -452,11 +465,7 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
       ));
       try {
         final socialActionCubit = IsmSocialActionCubit.instance();
-        if (socialActionCubit != null) {
-          socialActionCubit.onCollectionDeleted(collectionId: event.collectionId);
-        } else {
-          debugPrint('IsmSocialActionCubit instance is null');
-        }
+        socialActionCubit.onCollectionDeleted(collectionId: event.collectionId);
       } catch (e) {
         debugPrint('Failed to notify collection deletion listener: $e');
       }
