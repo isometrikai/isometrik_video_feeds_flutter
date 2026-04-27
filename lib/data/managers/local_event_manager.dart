@@ -238,10 +238,6 @@ class LocalEventQueue with WidgetsBindingObserver {
     if (_backendEvents.contains(eventName)) {
       _addBackendEvent(eventName, payload);
     }
-    if (_rudderIncludedEvents.contains(eventName)) {
-      IsrVideoReelConfig
-        .socialConfig.socialCallBackConfig?.onAnalyticEventTriggered
-        ?.call(eventName, payload, EventType.fromValue(eventName));
     if (_backendEvents.contains(eventName)) {
       _addBackendEvent(eventName, payload);
     }

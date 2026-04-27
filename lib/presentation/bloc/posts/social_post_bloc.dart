@@ -673,7 +673,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       } else if (event.commentAction == CommentAction.delete &&
           event.commentId?.trim().isNotEmpty == true) {
         emit(CommentCountModified(
-            postId: event.postId ?? '', modifiedValue: -1));
+            postId: event.postId, modifiedValue: -1));
         final myUserId = await _localDataUseCase.getUserId();
         final commentList = event.postCommentList?.toList() ?? [];
         if (event.parentCommentId?.trim().isNotEmpty == true) {
@@ -785,11 +785,11 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     );
 
     if (apiResult.isSuccess) {
-      emit(CommentCountModified(postId: event.postId ?? '', modifiedValue: 1));
+      emit(CommentCountModified(postId: event.postId, modifiedValue: 1));
       _sendAnalyticsEvent(
           EventType.commentCreated.value,
           event.commentId ?? '',
-          event.postId ?? '',
+          event.postId,
           event.userId ?? '',
           event.commentMessage ?? '',
           event.postDataModel,
@@ -802,7 +802,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
 
       if (commentList != null) {
         // Store current comment list for this post to track in-review comments
-        _postsWithInReviewComments[event.postId ?? ''] = commentList;
+        _postsWithInReviewComments[event.postId] = commentList;
 
         emit(
           LoadPostCommentState(
@@ -814,13 +814,13 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       }
 
       // Start periodic update if not already running
-      _startInReviewUpdateTimer(event.postId ?? '');
+      _startInReviewUpdateTimer(event.postId);
 
       // Initial delay before first update
       Future.delayed(const Duration(seconds: 2), () {
         add(
           GetPostCommentsEvent(
-              postId: event.postId ?? '',
+              postId: event.postId,
               isLoading: false,
               createdComment: comment),
         );
