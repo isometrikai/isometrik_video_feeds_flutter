@@ -540,7 +540,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   FutureOr<void> _getPostComments(
       GetPostCommentsEvent event, Emitter<SocialPostState> emit) async {
     if (event.isLoading == true) {
-      emit(LoadingPostComment());
+      emit(LoadingPostComment(postId: event.postId));
     }
     _commentPage = event.isPagination ? _commentPage + 1 : 1;
     final apiResult = await _getPostCommentUseCase.executeGetPostComment(
@@ -589,6 +589,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     } else {
       emit(LoadPostCommentState(
         postCommentsList: finalCommentList,
+        postId: event.postId,
         myUserId: myUserId,
       ));
     }
@@ -599,6 +600,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     if (event.isLoading == true) {
       emit(LoadingPostCommentReplies(
         parentCommentId: event.parentComment.id ?? '',
+        postId: event.postId,
       ));
     }
     final apiResult = await _getPostCommentUseCase.executeGetPostComment(
@@ -631,6 +633,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     emit(LoadPostCommentRepliesState(
       postCommentRepliesList: finalRepliesList,
       parentCommentId: event.parentComment.id ?? '',
+      postId: event.postId,
       myUserId: myUserId,
     ));
   }
@@ -692,6 +695,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         emit(
           LoadPostCommentState(
             postCommentsList: commentList,
+            postId: event.postId,
             myUserId: myUserId,
           ),
         );
@@ -768,6 +772,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       emit(
         LoadPostCommentState(
           postCommentsList: commentList,
+          postId: event.postId,
           myUserId: myUserId,
         ),
       );
@@ -802,6 +807,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         emit(
           LoadPostCommentState(
             postCommentsList: commentList,
+            postId: event.postId,
             myUserId: myUserId,
           ),
         );
@@ -838,6 +844,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         emit(
           LoadPostCommentState(
             postCommentsList: commentList,
+            postId: event.postId,
             myUserId: myUserId,
           ),
         );

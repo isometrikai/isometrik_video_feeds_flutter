@@ -52,16 +52,19 @@ class SocialProductsLoaded extends SocialPostState {
 class LoadPostCommentState extends SocialPostState {
   LoadPostCommentState({
     required this.postCommentsList,
+    required this.postId,
     this.myUserId,
   });
 
   final List<CommentDataItem>? postCommentsList;
   final String? myUserId;
+  final String postId;
 }
 
 class LoadPostCommentRepliesState extends SocialPostState {
   LoadPostCommentRepliesState({
     required this.postCommentRepliesList,
+    required this.postId,
     this.myUserId,
     required this.parentCommentId,
   });
@@ -69,9 +72,14 @@ class LoadPostCommentRepliesState extends SocialPostState {
   final List<CommentDataItem>? postCommentRepliesList;
   final String? myUserId;
   final String parentCommentId;
+  final String postId;
 }
 
-class LoadingPostComment extends SocialPostState {}
+class LoadingPostComment extends SocialPostState {
+  LoadingPostComment({required this.postId});
+
+  final String postId;
+}
 
 class CommentCountModified extends SocialPostState {
   CommentCountModified({required this.modifiedValue, required this.postId});
@@ -80,8 +88,12 @@ class CommentCountModified extends SocialPostState {
 }
 
 class LoadingPostCommentReplies extends SocialPostState {
-  LoadingPostCommentReplies({required this.parentCommentId});
+  LoadingPostCommentReplies({
+    required this.parentCommentId,
+    required this.postId
+  });
   final String parentCommentId;
+  final String postId;
 }
 
 class PostInsightDetailsLoading extends SocialPostState {

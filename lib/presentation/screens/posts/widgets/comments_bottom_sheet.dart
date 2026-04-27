@@ -139,11 +139,15 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
         },
         child: BlocConsumer<SocialPostBloc, SocialPostState>(
           listenWhen: (previousState, currentState) =>
-              currentState is LoadPostCommentState ||
-              currentState is LoadingPostComment ||
-              currentState is CommentCountModified,
+              (currentState is LoadPostCommentState &&
+                  currentState.postId == widget.postId) ||
+              (currentState is LoadingPostComment &&
+                  currentState.postId == widget.postId) ||
+              (currentState is CommentCountModified &&
+                  currentState.postId == widget.postId),
           listener: (context, state) {
-            if (state is LoadPostCommentState) {
+            if (state is LoadPostCommentState &&
+                state.postId == widget.postId) {
               if (!_isCommentsLoaded) {
                 _isCommentsLoaded = true;
                 _myUserId = state.myUserId ?? '';
@@ -235,7 +239,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                         itemBuilder: (context, index) =>
                             _buildCommentItem(_postCommentList[index]),
                       )
-                    else if (!(state is LoadingPostComment))
+                    else if (!(state is LoadingPostComment && state.postId == widget.postId))
                       _buildPlaceHolder(),
                   ]),
                 ),
@@ -461,83 +465,80 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                   comment.id != null &&
                   comment.id!.isNotEmpty) ...[
                 BlocConsumer<SocialPostBloc, SocialPostState>(
-                    listenWhen: (previousState, currentState) =>
-                        (currentState is LoadPostCommentRepliesState &&
-                            currentState.parentCommentId == comment.id) ||
-                        (currentState is LoadingPostCommentReplies &&
-                            currentState.parentCommentId == comment.id),
-                    buildWhen: (previousState, currentState) =>
-                        (currentState is LoadPostCommentRepliesState &&
-                            currentState.parentCommentId == comment.id) ||
-                        (currentState is LoadingPostCommentReplies &&
-                            currentState.parentCommentId == comment.id),
-                    listener: (context, state) {
-                      switch (state) {
-                        case LoadPostCommentRepliesState():
-                          comment.childComments = state.postCommentRepliesList;
-                          if (state.postCommentRepliesList?.isNotEmpty !=
-                              true) {
-                            setState(() {
-                              comment.showReply = false;
-                            });
-                          }
-                          break;
-                      }
-                    },
-                    builder: (context, state) => switch (state) {
-                          LoadingPostCommentReplies() => Utility.loaderWidget(),
-                          _ => (comment.childComments?.isNotEmpty == true)
-                              ? Column(
-                                  children: [
-                                    ...List.generate(
-                                      comment.childComments?.length ?? 0,
-                                      (index) => Padding(
-                                        padding: _commentItemConfig
-                                                ?.childCommentPadding ??
-                                            IsrDimens.edgeInsets(
-                                                left: (_commentItemConfig
-                                                            ?.childCommentIndent ??
-                                                        32.0)
-                                                    .responsiveDimension,
-                                                top: 16.responsiveDimension),
-                                        child: _buildChildCommentItem(
-                                            comment.childComments![index],
-                                            false),
-                                      ),
+                  listenWhen: (previousState, currentState) =>
+                      (currentState is LoadPostCommentRepliesState &&
+                          currentState.parentCommentId == comment.id) ||
+                      (currentState is LoadingPostCommentReplies &&
+                          currentState.parentCommentId == comment.id),
+                  buildWhen: (previousState, currentState) =>
+                      (currentState is LoadPostCommentRepliesState &&
+                          currentState.parentCommentId == comment.id) ||
+                      (currentState is LoadingPostCommentReplies &&
+                          currentState.parentCommentId == comment.id),
+                  listener: (context, state) {
+                    switch (state) {
+                      case LoadPostCommentRepliesState():
+                        comment.childComments = state.postCommentRepliesList;
+                        if (state.postCommentRepliesList?.isNotEmpty != true) {
+                          setState(() {
+                            comment.showReply = false;
+                          });
+                        }
+                        break;
+                    }
+                  },
+                  builder: (context, state) => (state
+                              is LoadingPostCommentReplies &&
+                          state.parentCommentId == comment.id)
+                      ? Utility.loaderWidget()
+                      : (comment.childComments?.isNotEmpty == true)
+                          ? Column(
+                              children: [
+                                ...List.generate(
+                                  comment.childComments?.length ?? 0,
+                                  (index) => Padding(
+                                    padding: _commentItemConfig
+                                            ?.childCommentPadding ??
+                                        IsrDimens.edgeInsets(
+                                            left: (_commentItemConfig
+                                                        ?.childCommentIndent ??
+                                                    32.0)
+                                                .responsiveDimension,
+                                            top: 16.responsiveDimension),
+                                    child: _buildChildCommentItem(
+                                        comment.childComments![index], false),
+                                  ),
+                                ),
+                                TapHandler(
+                                  onTap: () {
+                                    setState(() {
+                                      comment.showReply = false;
+                                    });
+                                  },
+                                  child: Container(
+                                    alignment: Alignment.centerLeft,
+                                    padding: _commentItemConfig
+                                            ?.childCommentPadding ??
+                                        IsrDimens.edgeInsets(
+                                            left: (_commentItemConfig
+                                                        ?.childCommentIndent ??
+                                                    32.0)
+                                                .responsiveDimension,
+                                            top: 16.responsiveDimension),
+                                    child: Text(
+                                      IsrTranslationFile.hideReplies,
+                                      style: _commentItemConfig
+                                              ?.hideRepliesStyle ??
+                                          IsrStyles.secondaryText12.copyWith(
+                                              fontWeight: FontWeight.w700,
+                                              color: '94A0AF'.toColor()),
                                     ),
-                                    TapHandler(
-                                      onTap: () {
-                                        setState(() {
-                                          comment.showReply = false;
-                                        });
-                                      },
-                                      child: Container(
-                                        alignment: Alignment.centerLeft,
-                                        padding: _commentItemConfig
-                                                ?.childCommentPadding ??
-                                            IsrDimens.edgeInsets(
-                                                left: (_commentItemConfig
-                                                            ?.childCommentIndent ??
-                                                        32.0)
-                                                    .responsiveDimension,
-                                                top: 16.responsiveDimension),
-                                        child: Text(
-                                          IsrTranslationFile.hideReplies,
-                                          style: _commentItemConfig
-                                                  ?.hideRepliesStyle ??
-                                              IsrStyles.secondaryText12
-                                                  .copyWith(
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                      color:
-                                                          '94A0AF'.toColor()),
-                                        ),
-                                      ),
-                                    )
-                                  ],
+                                  ),
                                 )
-                              : const SizedBox.shrink(),
-                        }),
+                              ],
+                            )
+                          : const SizedBox.shrink(),
+                ),
               ],
             ],
           ),
