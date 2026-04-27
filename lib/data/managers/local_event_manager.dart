@@ -28,8 +28,10 @@ class EventQueueProvider {
     required String rudderStackWriteKey,
     required String rudderStackDataPlaneUrl,
   }) async {
-    final localDataUseCase = IsmInjectionUtils.getUseCase<IsmLocalDataUseCase>();
-    final deviceInfoManager = IsmInjectionUtils.getOtherClass<DeviceInfoManager>();
+    final localDataUseCase =
+        IsmInjectionUtils.getUseCase<IsmLocalDataUseCase>();
+    final deviceInfoManager =
+        IsmInjectionUtils.getOtherClass<DeviceInfoManager>();
 
     // Fetch all required data
     final userId = await localDataUseCase.getUserId();
@@ -75,7 +77,8 @@ class EventQueueProvider {
         'os': deviceInfoManager.deviceOs,
         'os_version': deviceInfoManager.deviceOsVersion,
         'type': deviceInfoManager.deviceType,
-        'name': '${deviceInfoManager.deviceManufacturer} ${deviceInfoManager.deviceModel}',
+        'name':
+            '${deviceInfoManager.deviceManufacturer} ${deviceInfoManager.deviceModel}',
       },
       'location': {
         'city': city,
@@ -115,7 +118,8 @@ class LocalEventQueue with WidgetsBindingObserver {
 
   static const _boxName = 'isometrik_social_local_events';
   static const _batchSize = 10;
-  static const _batchTimerDuration = AppConstants.impressionDataApiLogTimeDuration; // need to change to 10 mins
+  static const _batchTimerDuration = AppConstants
+      .impressionDataApiLogTimeDuration; // need to change to 10 mins
 
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   Timer? _batchTimer;
@@ -141,7 +145,8 @@ class LocalEventQueue with WidgetsBindingObserver {
 
     // observe connectivity changes
     await _connectivitySubscription?.cancel();
-    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((status) async {
+    _connectivitySubscription =
+        Connectivity().onConnectivityChanged.listen((status) async {
       if (status.contains(ConnectivityResult.none)) {
         await flush();
       }
@@ -179,7 +184,8 @@ class LocalEventQueue with WidgetsBindingObserver {
       debugPrint('${runtimeType.toString()}:Box length: ${box.length}');
 
       if (eventName == EventType.postViewed.value) {
-        _talker?.info('${runtimeType.toString()}:Event Name: $eventName added with\n Event Data : ${jsonEncode(payload)}');
+        _talker?.info(
+            '${runtimeType.toString()}:Event Name: $eventName added with\n Event Data : ${jsonEncode(payload)}');
         if (box.length >= _batchSize) {
           await sendPendingEventsToBackend();
           return;
@@ -219,10 +225,16 @@ class LocalEventQueue with WidgetsBindingObserver {
 
   void logEvent(String eventName, Map<String, dynamic> payload) {
     debugPrint(
-        'Adding Event -> Event Triggered: $eventName\n Event Data : ${jsonEncode(payload)}');
-    IsrVideoReelConfig
-        .socialConfig.socialCallBackConfig?.onAnalyticEventTriggered
-        ?.call(eventName, payload, EventType.fromValue(eventName));
+        'Logging Event -> Event Triggered: $eventName\n Event Data : ${jsonEncode(payload)}');
+    final eventType = EventType.fromValue(eventName);
+    final socialEventModel = SocialEventModel(
+      event: eventName,
+      properties: Map<String, dynamic>.from(payload),
+      category: _resolveEventCategory(eventType),
+      isSdkEvent: eventType != null,
+    );
+    IsrVideoReelConfig.socialConfig.socialCallBackConfig?.onSocialEventTriggered
+        ?.call(socialEventModel);
     if (_backendEvents.contains(eventName)) {
       _addBackendEvent(eventName, payload);
     }
@@ -233,6 +245,36 @@ class LocalEventQueue with WidgetsBindingObserver {
         eventName,
         properties: rudderProperties,
       );
+    }
+  }
+
+  EventCategory _resolveEventCategory(EventType? eventType) {
+    if (eventType == null) {
+      return EventCategory.system;
+    }
+    switch (eventType) {
+      case EventType.postLiked:
+      case EventType.postUnliked:
+      case EventType.postShared:
+      case EventType.postSaved:
+      case EventType.postUnsaved:
+      case EventType.postHidden:
+      case EventType.postReported:
+      case EventType.commentCreated:
+      case EventType.commentLiked:
+      case EventType.userFollowed:
+      case EventType.userUnFollowed:
+      case EventType.profileViewed:
+      case EventType.hashTagClicked:
+      case EventType.searchPerformed:
+      case EventType.searchResultClicked:
+        return EventCategory.userAction;
+      case EventType.postViewed:
+      case EventType.videoStarted:
+      case EventType.videoProgress:
+      case EventType.videoPaused:
+      case EventType.videoSoundToggled:
+        return EventCategory.system;
     }
   }
 
@@ -251,12 +293,16 @@ class LocalEventQueue with WidgetsBindingObserver {
       for (final event in events) event.payload,
     ];
     try {
-      _talker?.info('${runtimeType.toString()}: Sending Event -> Event Data : $eventPayLoadList');
+      _talker?.info(
+          '${runtimeType.toString()}: Sending Event -> Event Data : $eventPayLoadList');
       final socialPostBloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
-      debugPrint('${runtimeType.toString()}: API Call Init -> payload:- $eventPayLoadList');
+      debugPrint(
+          '${runtimeType.toString()}: API Call Init -> payload:- $eventPayLoadList');
       final result = await socialPostBloc.sendEventsToBackend(eventPayLoadList);
-      _talker?.info('${runtimeType.toString()}: Sending Event -> Event result status : ${result.statusCode}, isSuccess: ${result.isSuccess}, errorIfAny: ${result.error?.message}');
-      debugPrint('${runtimeType.toString()}: API Call reslt -> ${result.statusCode}, isSuccess: ${result.isSuccess}, errorIfAny: ${result.error?.message}');
+      _talker?.info(
+          '${runtimeType.toString()}: Sending Event -> Event result status : ${result.statusCode}, isSuccess: ${result.isSuccess}, errorIfAny: ${result.error?.message}');
+      debugPrint(
+          '${runtimeType.toString()}: API Call reslt -> ${result.statusCode}, isSuccess: ${result.isSuccess}, errorIfAny: ${result.error?.message}');
       if (result.isSuccess || result.statusCode == 422) {
         try {
           await flush();
@@ -279,14 +325,16 @@ class LocalEventQueue with WidgetsBindingObserver {
       return;
     }
     final box = Hive.box<LocalEvent>(_boxName);
-    debugPrint('${runtimeType.toString()} Box length before flushing: ${box.length}');
+    debugPrint(
+        '${runtimeType.toString()} Box length before flushing: ${box.length}');
 
     final events = box.values.toList();
 
     if (events.isEmpty) return;
 
     await box.clear();
-    debugPrint('${runtimeType.toString()} Box length after flushing: ${box.length}');
+    debugPrint(
+        '${runtimeType.toString()} Box length after flushing: ${box.length}');
   }
 
   /// cleanup
@@ -299,12 +347,45 @@ class LocalEventQueue with WidgetsBindingObserver {
   }
 }
 
+class SocialEventModel {
+  const SocialEventModel({
+    required this.event,
+    required this.properties,
+    required this.category,
+    required this.isSdkEvent,
+  });
+
+  final String event;
+  final Map<String, dynamic> properties;
+  final EventCategory category;
+  final bool isSdkEvent;
+
+  Map<String, dynamic> toMap() => {
+        'event': event,
+        'category': category.value,
+        'properties': properties,
+        'is_sdk_event': isSdkEvent,
+      };
+}
+
+enum EventCategory {
+  userAction('user_action'),
+  system('system'),
+  api('api'),
+  error('error');
+
+  const EventCategory(this.value);
+
+  final String value;
+}
+
 enum EventType {
   postViewed('Post Viewed'),
   postLiked('Post Liked'),
   postUnliked('Post Unliked'),
   postShared('Post Shared'),
   postSaved('Post Saved'),
+  postUnsaved('Post Unsaved'),
   postHidden('Post Hidden'),
   postReported('Post Reported'),
   commentCreated('Comment Created'),
