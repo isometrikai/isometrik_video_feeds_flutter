@@ -59,7 +59,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   bool _isDisposed = false;
   bool _listenersAttached = false;
   bool _isManuallyPaused = false; // Track if video was manually paused (e.g., long press)
-  bool _hasLoggedWatchEvent = false; // Track if watch event has been logged
   Duration _maxWatchPosition = Duration.zero; // Track maximum watch position
 
   // Track video start and progress milestones
@@ -255,7 +254,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     try {
       // Reset completion flag, manual pause state, and analytics tracking
       _isManuallyPaused = false;
-      _hasLoggedWatchEvent = false;
       _maxWatchPosition = Duration.zero;
       _hasLoggedVideoStarted = false;
       _loggedProgressMilestones.clear();
@@ -365,9 +363,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         }
       }
     }
-
-    // 3. Check if video has completed (with small threshold to account for timing)
-    if (duration == null || position == null) return;
 
     // 👇 Check if near end (within 500ms)
     final isAtEnd = position >= duration - const Duration(milliseconds: 500);
@@ -658,8 +653,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     // Cancel timers
     _stopStuckVideoDetection();
     _controllerReadyCheckTimer?.cancel();
-    // Log watch event when widget is disposed (user navigates away)
-    _logWatchEventIfNeeded();
     // Safety check: ensure controller is valid and not already disposed
     if (_videoPlayerController != null &&
         _videoPlayerController!.isInitialized &&
@@ -674,48 +667,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       // Don't dispose controller here - let cache manager handle it
     }
     super.dispose();
-  }
-
-  /// Log watch event only once per video when user leaves or video completes
-  void _logWatchEventIfNeeded() async {
-    // Only log if:
-    // 1. Not already logged for this video
-    // 2. User watched at least 25% of the video
-    // 3. postHelperCallBacks is provided
-    // Safety check: ensure controller is valid and not disposed
-    if (_hasLoggedWatchEvent == false &&
-        widget.postHelperCallBacks != null &&
-        _videoPlayerController != null &&
-        _videoPlayerController!.isInitialized &&
-        !_videoPlayerController!.isDisposed) {
-      try {
-        final duration = _videoPlayerController!.duration;
-        final watchedSeconds = _maxWatchPosition.inSeconds;
-        final totalSeconds = duration.inSeconds;
-
-        // Calculate completion rate as percentage
-        final completionRate =
-            totalSeconds > 0 ? ((watchedSeconds / totalSeconds) * 100).toInt() : 0;
-
-        // Only log if user watched at least 25% of the video
-        if (completionRate < 25) {
-          return;
-        }
-
-        final eventMap = <String, dynamic>{
-          'view_duration': watchedSeconds,
-          'view_completion_rate': completionRate,
-        };
-
-        // Mark as logged to prevent duplicate logging
-        _hasLoggedWatchEvent = true;
-
-        // Call the callback to send analytics
-        widget.postHelperCallBacks?.sendAnalyticsEvent(EventType.postViewed.value, eventMap);
-      } catch (e) {
-        debugPrint('❌ Error logging watch event: $e');
-      }
-    }
   }
 
   @override

@@ -1,6 +1,7 @@
 import 'dart:io' show File;
 
 import 'package:flutter/material.dart';
+import 'package:ism_video_reel_player/data/managers/managers.dart';
 import 'package:ism_video_reel_player/utils/enums.dart'
     show ButtonType, LoaderType, MediaType;
 
@@ -206,7 +207,11 @@ class SocialCallBackConfig {
     this.uploadMediaToCloud,
     this.convertToGumletUrl,
     this.placeHolderGenerator,
+    this.onAnalyticEventTriggered,
   });
+
+  /// Callback invoke to register or log analytic Events
+  final Function(String eventName, Map<String, dynamic> payload, EventType? event)? onAnalyticEventTriggered;
 
   /// Callback invoked when login is required.
   /// Should return `true` if login was successful, `false` otherwise.
@@ -243,6 +248,7 @@ class SocialCallBackConfig {
     )? uploadMediaToCloud,
     String Function(String mediaUrl)? convertToGumletUrl,
     Widget? Function(double? height, double? width)? placeHolderGenerator,
+    Function(String eventName, Map<String, dynamic> payload, EventType? event)? onAnalyticEventTriggered,
   }) =>
       SocialCallBackConfig(
         onLoginInvoked: onLoginInvoked ?? this.onLoginInvoked,
@@ -250,6 +256,7 @@ class SocialCallBackConfig {
         convertToGumletUrl: convertToGumletUrl ?? this.convertToGumletUrl,
         placeHolderGenerator:
             placeHolderGenerator ?? this.placeHolderGenerator,
+        onAnalyticEventTriggered: onAnalyticEventTriggered ?? this.onAnalyticEventTriggered,
       );
 }
 
