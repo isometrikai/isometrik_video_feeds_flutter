@@ -34,6 +34,21 @@ class SocialUserProfileResponse {
   final String? code;
   final SocialUserProfileData? data;
 
+  SocialUserProfileResponse copyWith({
+    String? status,
+    String? message,
+    num? statusCode,
+    String? code,
+    SocialUserProfileData? data,
+  }) =>
+      SocialUserProfileResponse(
+        status: status ?? this.status,
+        message: message ?? this.message,
+        statusCode: statusCode ?? this.statusCode,
+        code: code ?? this.code,
+        data: data ?? this.data,
+      );
+
   Map<String, dynamic> toJson() => {
         'status': status,
         'message': message,
@@ -90,6 +105,37 @@ class SocialUserProfileData {
   final num? followingCount;
   final bool? isFollowing;
   final num? postsCount;
+
+  SocialUserProfileData copyWith({
+    String? fullName,
+    String? avatarUrl,
+    num? followersCount,
+    Map<String, dynamic>? userMetadata,
+    String? displayName,
+    String? lastActivity,
+    String? loginTime,
+    bool? isOnline,
+    String? username,
+    String? id,
+    num? followingCount,
+    bool? isFollowing,
+    num? postsCount,
+  }) =>
+      SocialUserProfileData(
+        fullName: fullName ?? this.fullName,
+        avatarUrl: avatarUrl ?? this.avatarUrl,
+        followersCount: followersCount ?? this.followersCount,
+        userMetadata: userMetadata ?? this.userMetadata,
+        displayName: displayName ?? this.displayName,
+        lastActivity: lastActivity ?? this.lastActivity,
+        loginTime: loginTime ?? this.loginTime,
+        isOnline: isOnline ?? this.isOnline,
+        username: username ?? this.username,
+        id: id ?? this.id,
+        followingCount: followingCount ?? this.followingCount,
+        isFollowing: isFollowing ?? this.isFollowing,
+        postsCount: postsCount ?? this.postsCount,
+      );
 
   Map<String, dynamic> toJson() => {
         'full_name': fullName,

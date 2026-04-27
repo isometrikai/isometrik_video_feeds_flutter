@@ -673,7 +673,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       } else if (event.commentAction == CommentAction.delete &&
           event.commentId?.trim().isNotEmpty == true) {
         emit(CommentCountModified(
-            postId: event.postId ?? '', modifiedValue: -1));
+            postId: event.postId, modifiedValue: -1));
         final myUserId = await _localDataUseCase.getUserId();
         final commentList = event.postCommentList?.toList() ?? [];
         if (event.parentCommentId?.trim().isNotEmpty == true) {
@@ -785,11 +785,11 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     );
 
     if (apiResult.isSuccess) {
-      emit(CommentCountModified(postId: event.postId ?? '', modifiedValue: 1));
+      emit(CommentCountModified(postId: event.postId, modifiedValue: 1));
       _sendAnalyticsEvent(
           EventType.commentCreated.value,
           event.commentId ?? '',
-          event.postId ?? '',
+          event.postId,
           event.userId ?? '',
           event.commentMessage ?? '',
           event.postDataModel,
@@ -802,7 +802,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
 
       if (commentList != null) {
         // Store current comment list for this post to track in-review comments
-        _postsWithInReviewComments[event.postId ?? ''] = commentList;
+        _postsWithInReviewComments[event.postId] = commentList;
 
         emit(
           LoadPostCommentState(
@@ -814,13 +814,13 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       }
 
       // Start periodic update if not already running
-      _startInReviewUpdateTimer(event.postId ?? '');
+      _startInReviewUpdateTimer(event.postId);
 
       // Initial delay before first update
       Future.delayed(const Duration(seconds: 2), () {
         add(
           GetPostCommentsEvent(
-              postId: event.postId ?? '',
+              postId: event.postId,
               isLoading: false,
               createdComment: comment),
         );
@@ -1041,67 +1041,67 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     return null;
   }
 
-  /// Removes in-review comments that have been in that state for more than 10 seconds
+  /// Removes in-review comments that have been in that state for more than 20 seconds
   /// Returns true if any comments were removed
-  // bool _removeOldInReviewComments(
-  //     List<CommentDataItem> comments, String postId) {
-  //   var removedAny = false;
-  //   final now = DateTime.now();
-  //   final commentsToRemove = <CommentDataItem>[];
-  //   final childCommentsToRemove =
-  //       <MapEntry<CommentDataItem, CommentDataItem>>{};
+  bool _removeOldInReviewComments(
+      List<CommentDataItem> comments, String postId) {
+    var removedAny = false;
+    final now = DateTime.now();
+    final commentsToRemove = <CommentDataItem>[];
+    final childCommentsToRemove =
+        <MapEntry<CommentDataItem, CommentDataItem>>{};
 
-  //   void checkComments(List<CommentDataItem> commentList) {
-  //     for (final comment in commentList) {
-  //       if (comment.status == IsrTranslationFile.inReview &&
-  //           comment.commentedOn != null) {
-  //         final duration = now.difference(comment.commentedOn!);
-  //         if (duration.inSeconds > 10) {
-  //           // Mark for removal
-  //           if (comment.parentCommentId != null &&
-  //               comment.parentCommentId!.isNotEmpty) {
-  //             // This is a child comment, find parent recursively and mark for removal
-  //             final parentComment =
-  //                 _findCommentById(comments, comment.parentCommentId!);
-  //             if (parentComment != null) {
-  //               childCommentsToRemove.add(MapEntry(parentComment, comment));
-  //             }
-  //           } else {
-  //             // Top-level comment
-  //             commentsToRemove.add(comment);
-  //           }
-  //           removedAny = true;
-  //         }
-  //       }
+    void checkComments(List<CommentDataItem> commentList) {
+      for (final comment in commentList) {
+        if (comment.status == IsrTranslationFile.inReview &&
+            comment.commentedOn != null) {
+          final duration = now.difference(comment.commentedOn!);
+          if (duration.inSeconds > 20) {
+            // Mark for removal
+            if (comment.parentCommentId != null &&
+                comment.parentCommentId!.isNotEmpty) {
+              // This is a child comment, find parent recursively and mark for removal
+              final parentComment =
+                  _findCommentById(comments, comment.parentCommentId!);
+              if (parentComment != null) {
+                childCommentsToRemove.add(MapEntry(parentComment, comment));
+              }
+            } else {
+              // Top-level comment
+              commentsToRemove.add(comment);
+            }
+            removedAny = true;
+          }
+        }
 
-  //       // Check child comments recursively
-  //       if (comment.childComments != null &&
-  //           comment.childComments!.isNotEmpty) {
-  //         checkComments(comment.childComments!);
-  //       }
-  //     }
-  //   }
+        // Check child comments recursively
+        if (comment.childComments != null &&
+            comment.childComments!.isNotEmpty) {
+          checkComments(comment.childComments!);
+        }
+      }
+    }
 
-  //   checkComments(comments);
+    checkComments(comments);
 
-  //   // Remove top-level comments
-  //   for (final comment in commentsToRemove) {
-  //     comments.remove(comment);
-  //   }
+    // Remove top-level comments
+    for (final comment in commentsToRemove) {
+      comments.remove(comment);
+    }
 
-  //   // Remove child comments
-  //   for (final entry in childCommentsToRemove) {
-  //     final parent = entry.key;
-  //     final child = entry.value;
-  //     parent.childComments?.remove(child);
-  //     parent.childCommentCount = (parent.childCommentCount ?? 1) - 1;
-  //     if (parent.childComments?.isEmpty == true) {
-  //       parent.showReply = false;
-  //     }
-  //   }
+    // Remove child comments
+    for (final entry in childCommentsToRemove) {
+      final parent = entry.key;
+      final child = entry.value;
+      parent.childComments?.remove(child);
+      parent.childCommentCount = (parent.childCommentCount ?? 1) - 1;
+      if (parent.childComments?.isEmpty == true) {
+        parent.showReply = false;
+      }
+    }
 
-  //   return removedAny;
-  // }
+    return removedAny;
+  }
 
   /// Merges API response comments with existing in-review comments
   /// Updates only in-review comments while preserving other comments
@@ -1175,27 +1175,27 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         return;
       }
 
-      // Remove in-review comments that have been in that state for more than 10 seconds
-      // final removedAny = _removeOldInReviewComments(commentList, postId);
+      // Remove in-review comments that have been in that state for more than 20 seconds
+      final removedAny = _removeOldInReviewComments(commentList, postId);
 
       // Check if there are any in-review comments remaining
       if (!_hasInReviewComments(commentList)) {
         _stopInReviewUpdateTimer();
         _postsWithInReviewComments.remove(postId);
         // Update state if comments were removed
-        // if (removedAny) {
-        //   add(GetPostCommentsEvent(
-        //     postId: postId,
-        //     isLoading: false,
-        //   ));
-        // }
+        if (removedAny) {
+          add(GetPostCommentsEvent(
+            postId: postId,
+            isLoading: false,
+          ));
+        }
         return;
       }
 
       // Update stored comment list if comments were removed
-      // if (removedAny) {
-      //   _postsWithInReviewComments[postId] = commentList;
-      // }
+      if (removedAny) {
+        _postsWithInReviewComments[postId] = commentList;
+      }
 
       // Fetch updated comments from API (GetPostCommentsEvent will handle merging)
       add(GetPostCommentsEvent(

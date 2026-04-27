@@ -20,7 +20,7 @@ class RepositoryInjection {
         () => IsrLocalStorageRepositoryImpl(localStorageManager));
 
     IsmInjectionUtils.registerRepo<SocialRepository>(() => SocialRepositoryImpl(
-        IsmInjectionUtils.getApiService<SocialApiService>(), dataSource));
+        IsmInjectionUtils.getApiService<SocialApiService>(), dataSource, IsmInjectionUtils.getUseCase<IsmLocalDataUseCase>()));
     IsmInjectionUtils.registerRepo<GoogleRepository>(() => GoogleRepositoryImpl(
         IsmInjectionUtils.getApiService<GoogleApiService>()));
   }

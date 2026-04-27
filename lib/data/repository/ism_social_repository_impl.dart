@@ -6,12 +6,14 @@ import 'package:ism_video_reel_player/remote/remote.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
 class SocialRepositoryImpl implements SocialRepository {
-  SocialRepositoryImpl(this._apiService, this._dataSource);
+  SocialRepositoryImpl(this._apiService, this._dataSource, this._localDataUseCase);
 
   final SocialApiService _apiService;
   final DataSource _dataSource;
   final CommonMapper _mapper = CommonMapper();
   final SocialMapper _socialMapper = SocialMapper();
+  final IsmLocalDataUseCase _localDataUseCase;
+  final LocalActionManager _localActionManager = LocalActionManager();
 
   @override
   Future<CustomResponse<CreatePostResponse?>> createPost({
@@ -85,7 +87,7 @@ class SocialRepositoryImpl implements SocialRepository {
         cursor: cursor,
         limit: limit,
       );
-      return _socialMapper.mapTimelineDataResponse(response);
+      return await _mapTimelineDataResponseWithLocalActions(response);
     } catch (e) {
       rethrow;
     }
@@ -105,6 +107,7 @@ class SocialRepositoryImpl implements SocialRepository {
         followingId: followingId,
         followAction: followAction,
       );
+      await _storeFollowAction(followingId, followAction);
       return _socialMapper.mapFollowUnfollowData(response);
     } catch (e) {
       rethrow;
@@ -125,6 +128,7 @@ class SocialRepositoryImpl implements SocialRepository {
         postId: postId,
         socialPostAction: socialPostAction,
       );
+      await _storeSaveAction(postId, socialPostAction);
       return _mapper.mapResponseData(response);
     } catch (e) {
       rethrow;
@@ -145,6 +149,7 @@ class SocialRepositoryImpl implements SocialRepository {
         postId: postId,
         likeAction: likeAction,
       );
+      await _storeLikeAction(postId, likeAction);
       return _mapper.mapResponseData(response);
     } catch (e) {
       rethrow;
@@ -306,7 +311,7 @@ class SocialRepositoryImpl implements SocialRepository {
         postId: postId,
         header: await _dataSource.getHeader(),
       );
-      return _socialMapper.mapTimelineData(response);
+      return await _mapTimelineDataWithLocalActions(response);
     } catch (e) {
       rethrow;
     }
@@ -374,7 +379,7 @@ class SocialRepositoryImpl implements SocialRepository {
         postId: postId,
         header: await _dataSource.getHeader(),
       );
-      return _socialMapper.mapPostData(response);
+      return await _mapPostDataWithLocalActions(response);
     } catch (e) {
       rethrow;
     }
@@ -416,7 +421,7 @@ class SocialRepositoryImpl implements SocialRepository {
         page: page,
         pageLimit: pageLimit,
       );
-      return _socialMapper.mapTimelineResponse(response);
+      return await _mapTimelineResponseWithLocalActions(response);
     } catch (e) {
       rethrow;
     }
@@ -456,7 +461,7 @@ class SocialRepositoryImpl implements SocialRepository {
         page: page,
         searchText: searchText,
       );
-      return _socialMapper.mapSearchUserResponse(response);
+      return await _mapSearchUserResponseWithLocalActions(response);
     } catch (e) {
       rethrow;
     }
@@ -493,7 +498,7 @@ class SocialRepositoryImpl implements SocialRepository {
       final header = await _dataSource.getHeader();
       final response = await _apiService.getUserProfile(
           isLoading: isLoading, header: header, userId: userId);
-      return _socialMapper.mapUserProfileResponse(response);
+      return await _mapUserProfileResponseWithLocalActions(response);
     } catch (e) {
       rethrow;
     }
@@ -517,7 +522,7 @@ class SocialRepositoryImpl implements SocialRepository {
         tagValue: tagValue,
         tagType: tagType,
       );
-      return _socialMapper.mapTimelineResponse(response);
+      return await _mapTimelineResponseWithLocalActions(response);
     } catch (e) {
       rethrow;
     }
@@ -538,7 +543,7 @@ class SocialRepositoryImpl implements SocialRepository {
       pageSize: pageSize,
       collectionId: collectionId,
     );
-    return _socialMapper.mapTimelineResponse(response);
+    return await _mapTimelineResponseWithLocalActions(response);
   }
 
   @override
@@ -559,7 +564,7 @@ class SocialRepositoryImpl implements SocialRepository {
       scheduledOnly: scheduledOnly,
     );
 
-    return _socialMapper.mapTimelineResponse(response);
+    return await _mapTimelineResponseWithLocalActions(response);
   }
 
   @override
@@ -576,7 +581,7 @@ class SocialRepositoryImpl implements SocialRepository {
         cursor: cursor,
         limit: limit,
       );
-      return _socialMapper.mapTimelineDataResponse(response);
+      return await _mapTimelineDataResponseWithLocalActions(response);
     } catch (e) {
       rethrow;
     }
@@ -755,4 +760,179 @@ class SocialRepositoryImpl implements SocialRepository {
       rethrow;
     }
   }
+
+  Future<CustomResponse<TimelineResponse?>> _mapTimelineResponseWithLocalActions(
+      ResponseModel response) async {
+    final viewerId = await _getViewerId();
+    final mappedResponse = _socialMapper.mapTimelineResponse(response);
+    _applyLocalActionsToPosts(
+      mappedResponse.data?.data,
+      viewerId: viewerId,
+    );
+    return mappedResponse;
+  }
+
+  Future<CustomResponse<TimelineDataResponse?>>
+      _mapTimelineDataResponseWithLocalActions(
+      ResponseModel response) async {
+    final viewerId = await _getViewerId();
+    final mappedResponse = _socialMapper.mapTimelineDataResponse(response);
+    _applyLocalActionsToPosts(
+      mappedResponse.data?.data?.posts,
+      viewerId: viewerId,
+    );
+    return mappedResponse;
+  }
+
+  Future<CustomResponse<TimeLineData?>> _mapTimelineDataWithLocalActions(
+      ResponseModel response) async {
+    final viewerId = await _getViewerId();
+    final mappedResponse = _socialMapper.mapTimelineData(response);
+    _applyLocalActionsToPost(
+      mappedResponse.data,
+      viewerId: viewerId,
+    );
+    return mappedResponse;
+  }
+
+  Future<CustomResponse<PostData?>> _mapPostDataWithLocalActions(
+      ResponseModel response) async {
+    final viewerId = await _getViewerId();
+    final mappedResponse = _socialMapper.mapPostData(response);
+    final postId = mappedResponse.data?.id ?? mappedResponse.data?.postId;
+    if (postId?.isNotEmpty == true) {
+      final isLiked = postId!.isLiked(viewerId: viewerId);
+      if (isLiked != null) {
+        mappedResponse.data?.liked = isLiked;
+      }
+      final isSaved = postId.isSaved(viewerId: viewerId);
+      if (isSaved != null) {
+        mappedResponse.data?.isSavedPost = isSaved;
+      }
+    }
+    return mappedResponse;
+  }
+
+  void _applyLocalActionsToPosts(
+    List<TimeLineData>? posts, {
+    required String viewerId,
+  }) {
+    if (posts == null) return;
+    for (final post in posts) {
+      _applyLocalActionsToPost(
+        post,
+        viewerId: viewerId,
+      );
+    }
+  }
+
+  void _applyLocalActionsToPost(
+    TimeLineData? post, {
+    required String viewerId,
+  }) {
+    if (post == null) return;
+    final postId = post.id;
+    if (postId?.isNotEmpty == true) {
+      final isLiked = postId!.isLiked(viewerId: viewerId);
+      if (isLiked != null) {
+        post.isLiked = isLiked;
+      }
+      final isSaved = postId.isSaved(viewerId: viewerId);
+      if (isSaved != null) {
+        post.isSaved = isSaved;
+      }
+    }
+
+    final userId = post.userId ?? post.user?.id;
+    if (userId?.isNotEmpty == true) {
+      final isFollowing = userId!.isFollowing(viewerId: viewerId);
+      if (isFollowing != null) {
+        post.isFollowing = isFollowing;
+        post.user?.isFollowing = isFollowing;
+      }
+    }
+  }
+
+  Future<void> _storeFollowAction(
+      String followingId, FollowAction followAction) async {
+    final viewerId = await _getViewerId();
+    _localActionManager.storeAction(
+      action: followAction == FollowAction.follow
+          ? CacheActionType.followingUser
+          : CacheActionType.unFollowingUser,
+      relevantId: followingId,
+      viewerId: viewerId,
+    );
+  }
+
+  Future<void> _storeLikeAction(String postId, LikeAction likeAction) async {
+    final viewerId = await _getViewerId();
+    _localActionManager.storeAction(
+      action: likeAction == LikeAction.like
+          ? CacheActionType.likePost
+          : CacheActionType.deLikePost,
+      relevantId: postId,
+      viewerId: viewerId,
+    );
+  }
+
+  Future<void> _storeSaveAction(
+      String postId, SocialPostAction socialPostAction) async {
+    final cacheActionType = switch (socialPostAction) {
+      SocialPostAction.save => CacheActionType.savePost,
+      SocialPostAction.unSave => CacheActionType.unSavePost,
+      _ => null,
+    };
+    if (cacheActionType == null) return;
+    final viewerId = await _getViewerId();
+    _localActionManager.storeAction(
+      action: cacheActionType,
+      relevantId: postId,
+      viewerId: viewerId,
+    );
+  }
+
+  Future<CustomResponse<SocialUserProfileResponse?>>
+      _mapUserProfileResponseWithLocalActions(ResponseModel response) async {
+    final viewerId = await _getViewerId();
+    final mappedResponse = _socialMapper.mapUserProfileResponse(response);
+    final profileResponse = mappedResponse.data;
+    final profileData = profileResponse?.data;
+    final profileId = profileData?.id;
+    if (profileId?.isNotEmpty != true) {
+      return mappedResponse;
+    }
+
+    final isFollowing = profileId!.isFollowing(viewerId: viewerId);
+    if (isFollowing == null) {
+      return mappedResponse;
+    }
+
+    final updatedProfileResponse = profileResponse?.copyWith(
+      data: profileData?.copyWith(isFollowing: isFollowing),
+    );
+
+    return CustomResponse(
+      data: updatedProfileResponse,
+      responseCode: mappedResponse.responseCode,
+    );
+  }
+
+  Future<CustomResponse<SearchUserResponse?>>
+      _mapSearchUserResponseWithLocalActions(
+      ResponseModel response) async {
+    final viewerId = await _getViewerId();
+    final mappedResponse = _socialMapper.mapSearchUserResponse(response);
+    for (final user in mappedResponse.data?.data ?? <SocialUserData>[]) {
+      final userId = user.id;
+      if (userId?.isNotEmpty != true) continue;
+      final isFollowing = userId!.isFollowing(viewerId: viewerId);
+      if (isFollowing != null && isFollowing != user.isFollowing) {
+        user.isFollowing = isFollowing;
+      }
+    }
+    return mappedResponse;
+  }
+
+  Future<String> _getViewerId() => _localDataUseCase.getUserId();
 }

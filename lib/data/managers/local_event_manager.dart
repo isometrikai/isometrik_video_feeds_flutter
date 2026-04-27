@@ -238,6 +238,9 @@ class LocalEventQueue with WidgetsBindingObserver {
     if (_backendEvents.contains(eventName)) {
       _addBackendEvent(eventName, payload);
     }
+    if (_backendEvents.contains(eventName)) {
+      _addBackendEvent(eventName, payload);
+    }
     if (_rudderIncludedEvents.contains(eventName)) {
       final rudderProperties = RudderProperty();
       rudderProperties.putValue(map: payload);
