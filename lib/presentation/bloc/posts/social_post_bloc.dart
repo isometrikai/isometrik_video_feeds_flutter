@@ -442,7 +442,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
             .trim());
       }
     } else {
-      ErrorHandler.showAppError(appError: apiResult.error);
+      ErrorHandler.showAppError(appError: apiResult.error, isNeedToShowError: true);
       event.onComplete.call(false);
     }
   }
