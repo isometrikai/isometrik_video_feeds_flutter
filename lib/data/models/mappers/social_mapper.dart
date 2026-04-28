@@ -64,6 +64,22 @@ class SocialMapper {
           data: getFollowUnfollowResponseModelFromJson(response.data),
           responseCode: response.statusCode);
 
+  CustomResponse<FollowRequestsListResponse?> mapFollowRequestsList(
+      ResponseModel response) {
+    try {
+      final data = FollowRequestsListResponse.fromJson(response.data);
+      return CustomResponse(
+        data: data,
+        responseCode: response.statusCode,
+      );
+    } catch (_) {
+      return CustomResponse(
+        data: FollowRequestsListResponse(items: []),
+        responseCode: response.statusCode,
+      );
+    }
+  }
+
   CustomResponse<SearchUserResponse?> mapSearchUserResponse(
           ResponseModel response) =>
       CustomResponse(

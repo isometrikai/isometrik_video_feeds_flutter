@@ -1,6 +1,4 @@
-import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
-import 'package:ism_video_reel_player/remote/remote.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
@@ -167,12 +165,107 @@ class SocialApiServiceProvider extends SocialApiService {
             ? NetworkRequestType.post
             : NetworkRequestType.delete,
         followAction == FollowAction.follow ? map : null,
-        followAction == FollowAction.unfollow ? map : null,
+        followAction == FollowAction.unfollow
+            ? {'following_id': followingId}
+            : null,
         headers,
         isLoading,
       ),
     );
   }
+
+  @override
+  Future<ResponseModel> getFollowRequestsIncoming({
+    required bool isLoading,
+    required Header header,
+    required int page,
+    required int pageSize,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.getFollowRequestsIncoming,
+          NetworkRequestType.get,
+          null,
+          {
+            'page': page.toString(),
+            'page_size': pageSize.toString(),
+          },
+          headers,
+          isLoading,
+        ),
+      );
+
+  @override
+  Future<ResponseModel> getFollowRequestsOutgoing({
+    required bool isLoading,
+    required Header header,
+    required int page,
+    required int pageSize,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.getFollowRequestsOutgoing,
+          NetworkRequestType.get,
+          null,
+          {
+            'page': page.toString(),
+            'page_size': pageSize.toString(),
+          },
+          headers,
+          isLoading,
+        ),
+      );
+
+  @override
+  Future<ResponseModel> acceptFollowRequest({
+    required bool isLoading,
+    required Header header,
+    required String requestId,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.postFollowRequestAccept(requestId),
+          NetworkRequestType.post,
+          null,
+          null,
+          headers,
+          isLoading,
+        ),
+      );
+
+  @override
+  Future<ResponseModel> declineFollowRequest({
+    required bool isLoading,
+    required Header header,
+    required String requestId,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.postFollowRequestDecline(requestId),
+          NetworkRequestType.post,
+          null,
+          null,
+          headers,
+          isLoading,
+        ),
+      );
+
+  @override
+  Future<ResponseModel> cancelOutgoingFollowRequest({
+    required bool isLoading,
+    required Header header,
+    required String targetId,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.getFollowRequestsOutgoing,
+          NetworkRequestType.delete,
+          null,
+          {'target_id': targetId},
+          headers,
+          isLoading,
+        ),
+      );
 
   @override
   Future<ResponseModel> unFollowPost({
@@ -277,7 +370,7 @@ class SocialApiServiceProvider extends SocialApiService {
     required Header header,
   }) =>
       _getHeaders(header).then(
-            (headers) => networkClient.makeRequest(
+        (headers) => networkClient.makeRequest(
           SocialApiEndPoints.reportPost,
           NetworkRequestType.post,
           reportBody,
@@ -292,18 +385,19 @@ class SocialApiServiceProvider extends SocialApiService {
     required bool isLoading,
     required ReasonsFor reasonFor,
     required Header header,
-  }) => _getHeaders(header).then(
-      (headers) => networkClient.makeRequest(
-        SocialApiEndPoints.getReportReasons,
-        NetworkRequestType.get,
-        null,
-        {
-          'reason_type': reasonFor.reasonsForString,
-        },
-        headers,
-        isLoading,
-      ),
-    );
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.getReportReasons,
+          NetworkRequestType.get,
+          null,
+          {
+            'reason_type': reasonFor.reasonsForString,
+          },
+          headers,
+          isLoading,
+        ),
+      );
 
   @override
   Future<ResponseModel> getCloudDetails({
@@ -480,7 +574,7 @@ class SocialApiServiceProvider extends SocialApiService {
     required Header header,
   }) =>
       _getHeaders(header).then(
-            (headers) => networkClient.makeRequest(
+        (headers) => networkClient.makeRequest(
           SocialApiEndPoints.getPostInsights(postId),
           NetworkRequestType.get,
           null,
@@ -579,6 +673,27 @@ class SocialApiServiceProvider extends SocialApiService {
             'search': searchText,
             'page': page.toString(),
             'page_size': limit.toString(),
+          },
+          headers,
+          isLoading,
+        ),
+      );
+
+  @override
+  Future<ResponseModel> getPopularUsers({
+    required bool isLoading,
+    required int page,
+    required int pageSize,
+    required Header header,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.getPopularUsers,
+          NetworkRequestType.get,
+          null,
+          {
+            'page': page.toString(),
+            'page_size': pageSize.toString(),
           },
           headers,
           isLoading,

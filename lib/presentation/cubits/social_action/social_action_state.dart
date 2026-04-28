@@ -7,21 +7,25 @@ class IsmFollowUserState extends IsmSocialActionState {
   IsmFollowUserState({
     required this.userId,
     required this.isFollowing,
+    this.followRequestPending = false,
     this.isLoading = false,
   });
 
   final String userId;
   final bool isFollowing;
+  final bool followRequestPending;
   final bool isLoading;
 
   IsmFollowUserState copyWith({
     String? userId,
     bool? isFollowing,
+    bool? followRequestPending,
     bool? isLoading,
   }) =>
       IsmFollowUserState(
         userId: userId ?? this.userId,
         isFollowing: isFollowing ?? this.isFollowing,
+        followRequestPending: followRequestPending ?? this.followRequestPending,
         isLoading: isLoading ?? this.isLoading,
       );
 }
@@ -83,12 +87,14 @@ class IsmFollowErrorState extends IsmSocialActionState {
   IsmFollowErrorState({
     required this.userId,
     required this.errorMessage,
-    required this.wasFollowing,
+    this.wasFollowing = false,
+    this.wasRequestPending = false,
   });
 
   final String userId;
   final String errorMessage;
-  final bool wasFollowing; // State before error occurred
+  final bool wasFollowing;
+  final bool wasRequestPending;
 }
 
 class IsmLikeErrorState extends IsmSocialActionState {
@@ -122,18 +128,22 @@ class IsmFollowActionListenerState extends IsmSocialActionState {
   IsmFollowActionListenerState({
     required this.userId,
     required this.isFollowing,
+    this.followRequestPending = false,
   });
 
   final String userId;
   final bool isFollowing;
+  final bool followRequestPending;
 
   IsmFollowActionListenerState copyWith({
     String? userId,
     bool? isFollowing,
+    bool? followRequestPending,
   }) =>
       IsmFollowActionListenerState(
         userId: userId ?? this.userId,
         isFollowing: isFollowing ?? this.isFollowing,
+        followRequestPending: followRequestPending ?? this.followRequestPending,
       );
 }
 

@@ -260,24 +260,66 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
           ? FollowActionWidget(
               userId: userId,
               isFollowing: socialUserData?.isFollowing == true,
-              builder: (isLoading, isFollowing, onTap) {
+              isTargetPrivate: (socialUserData?.isPrivate ?? 0) == 1,
+              initialFollowStatus: socialUserData?.followStatus,
+              initialIsRequested: socialUserData?.isRequested,
+              builder: (isLoading, isFollowing, followRequestPending, onTap) {
                 socialUserData?.isFollowing = isFollowing;
+                if (followRequestPending) {
+                  return AppButton(
+                    onPress: onTap,
+                    height: 36.responsiveDimension,
+                    width: 100.responsiveDimension,
+                    borderRadius: 40.responsiveDimension,
+                    type: ButtonType.secondary,
+                    borderColor: IsrColors.appColor,
+                    backgroundColor: IsrColors.white,
+                    title: IsrTranslationFile.requested,
+                    isLoading: isLoading,
+                    textStyle: IsrStyles.primaryText12.copyWith(
+                      color: IsrColors.appColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  );
+                }
+                if (!isFollowing) {
+                  final private = (socialUserData?.isPrivate ?? 0) == 1;
+                  final showRequest = FollowRelationshipUi.showRequestPrimaryLabel(
+                    isFollowing: isFollowing,
+                    isPrivateAccount: private,
+                    isRequested: socialUserData?.isRequested,
+                    followStatus: socialUserData?.followStatus,
+                  );
+                  return AppButton(
+                    onPress: onTap,
+                    height: 36.responsiveDimension,
+                    width: 100.responsiveDimension,
+                    borderRadius: 40.responsiveDimension,
+                    type: ButtonType.primary,
+                    borderColor: IsrColors.transparent,
+                    backgroundColor: IsrColors.appColor,
+                    title: showRequest
+                        ? IsrTranslationFile.request
+                        : IsrTranslationFile.follow,
+                    isLoading: isLoading,
+                    textStyle: IsrStyles.primaryText12.copyWith(
+                      color: IsrColors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  );
+                }
                 return AppButton(
                   onPress: onTap,
                   height: 36.responsiveDimension,
                   width: 100.responsiveDimension,
                   borderRadius: 40.responsiveDimension,
-                  type: isFollowing ? ButtonType.secondary : ButtonType.primary,
-                  borderColor:
-                      isFollowing ? IsrColors.appColor : IsrColors.transparent,
-                  backgroundColor:
-                      isFollowing ? IsrColors.white : IsrColors.appColor,
-                  title: isFollowing
-                      ? IsrTranslationFile.following
-                      : IsrTranslationFile.follow,
+                  type: ButtonType.secondary,
+                  borderColor: IsrColors.appColor,
+                  backgroundColor: IsrColors.white,
+                  title: IsrTranslationFile.following,
                   isLoading: isLoading,
                   textStyle: IsrStyles.primaryText12.copyWith(
-                    color: isFollowing ? IsrColors.appColor : IsrColors.white,
+                    color: IsrColors.appColor,
                     fontWeight: FontWeight.w600,
                   ),
                 );

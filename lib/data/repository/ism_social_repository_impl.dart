@@ -112,6 +112,100 @@ class SocialRepositoryImpl implements SocialRepository {
   }
 
   @override
+  Future<CustomResponse<FollowRequestsListResponse?>> getFollowRequestsIncoming({
+    required bool isLoading,
+    required int page,
+    required int pageSize,
+  }) async {
+    try {
+      final header = await _dataSource.getHeader();
+      final response = await _apiService.getFollowRequestsIncoming(
+        isLoading: isLoading,
+        header: header,
+        page: page,
+        pageSize: pageSize,
+      );
+      return _socialMapper.mapFollowRequestsList(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<CustomResponse<FollowRequestsListResponse?>> getFollowRequestsOutgoing({
+    required bool isLoading,
+    required int page,
+    required int pageSize,
+  }) async {
+    try {
+      final header = await _dataSource.getHeader();
+      final response = await _apiService.getFollowRequestsOutgoing(
+        isLoading: isLoading,
+        header: header,
+        page: page,
+        pageSize: pageSize,
+      );
+      return _socialMapper.mapFollowRequestsList(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<CustomResponse<ResponseClass?>> acceptFollowRequest({
+    required bool isLoading,
+    required String requestId,
+  }) async {
+    try {
+      final header = await _dataSource.getHeader();
+      final response = await _apiService.acceptFollowRequest(
+        isLoading: isLoading,
+        header: header,
+        requestId: requestId,
+      );
+      return _mapper.mapResponseData(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<CustomResponse<ResponseClass?>> declineFollowRequest({
+    required bool isLoading,
+    required String requestId,
+  }) async {
+    try {
+      final header = await _dataSource.getHeader();
+      final response = await _apiService.declineFollowRequest(
+        isLoading: isLoading,
+        header: header,
+        requestId: requestId,
+      );
+      return _mapper.mapResponseData(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<CustomResponse<ResponseClass?>> cancelOutgoingFollowRequest({
+    required bool isLoading,
+    required String targetId,
+  }) async {
+    try {
+      final header = await _dataSource.getHeader();
+      final response = await _apiService.cancelOutgoingFollowRequest(
+        isLoading: isLoading,
+        header: header,
+        targetId: targetId,
+      );
+      return _mapper.mapResponseData(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
   Future<CustomResponse<ResponseClass?>> savePost({
     required bool isLoading,
     required String postId,
@@ -455,6 +549,26 @@ class SocialRepositoryImpl implements SocialRepository {
         limit: limit,
         page: page,
         searchText: searchText,
+      );
+      return _socialMapper.mapSearchUserResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<CustomResponse<SearchUserResponse?>> getPopularUsers({
+    required bool isLoading,
+    required int page,
+    required int pageSize,
+  }) async {
+    try {
+      final header = await _dataSource.getHeader();
+      final response = await _apiService.getPopularUsers(
+        isLoading: isLoading,
+        header: header,
+        page: page,
+        pageSize: pageSize,
       );
       return _socialMapper.mapSearchUserResponse(response);
     } catch (e) {

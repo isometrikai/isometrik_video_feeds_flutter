@@ -1862,10 +1862,17 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         ),
       );
 
-  Widget _buildFollowButton() => FollowActionWidget(
+  Widget _buildFollowButton() {
+    final timelineUser = _reelData.postData is TimeLineData
+        ? (_reelData.postData as TimeLineData).user
+        : null;
+    return FollowActionWidget(
         postId: _reelData.postId ?? '',
         userId: _reelData.userId ?? '',
-        builder: (isLoading, isFollowing, onTap) {
+        isTargetPrivate: (timelineUser?.isPrivate ?? 0) == 1,
+        initialFollowStatus: timelineUser?.followStatus,
+        initialIsRequested: timelineUser?.isRequested,
+        builder: (isLoading, isFollowing, followRequestPending, onTap) {
           // Update reel data state (non-blocking, for UI sync)
           _reelData.isFollow = isFollowing;
 
@@ -1894,8 +1901,56 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 ),
               ),
             );
-          } else if (!isFollowing &&
+          } else if (followRequestPending &&
               _reelData.postSetting?.isUnFollowButtonVisible == true) {
+            return Container(
+              height: _followButtonConfig?.followButtonHeight ??
+                  IsrDimens.twentyFour,
+              decoration: _followButtonConfig?.followingButtonDecoration ??
+                  BoxDecoration(
+                    borderRadius: BorderRadius.circular(IsrDimens.twenty),
+                    border: Border.all(
+                        color: Theme.of(context).primaryColor,
+                        width: IsrDimens.two),
+                  ),
+              child: MaterialButton(
+                minWidth: _followButtonConfig?.followButtonMinWidth ??
+                    IsrDimens.sixty,
+                height: _followButtonConfig?.followButtonHeight ??
+                    IsrDimens.twentyFour,
+                padding: _followButtonConfig?.followButtonPadding ??
+                    IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twelve),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(IsrDimens.twenty)),
+                onPressed: () => onTap(
+                  reelData: _reelData,
+                  postSectionType: widget.postSectionType,
+                  watchDuration: _postWatchDuration.inSeconds,
+                  apiCallBack: widget.onPressFollowButton != null
+                      ? () =>
+                          widget.onPressFollowButton!(_reelData, isFollowing)
+                      : null,
+                ),
+                child: Text(
+                  IsrTranslationFile.requested,
+                  style: _textStyleConfig?.followingButtonTextStyle ??
+                      IsrStyles.primaryText12.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: IsrColors.colorF4F4F4,
+                      ),
+                ),
+              ),
+            );
+          } else if (!isFollowing &&
+              !followRequestPending &&
+              _reelData.postSetting?.isUnFollowButtonVisible == true) {
+            final private = (timelineUser?.isPrivate ?? 0) == 1;
+            final showRequest = FollowRelationshipUi.showRequestPrimaryLabel(
+              isFollowing: isFollowing,
+              isPrivateAccount: private,
+              isRequested: timelineUser?.isRequested,
+              followStatus: timelineUser?.followStatus,
+            );
             return Container(
               height: _followButtonConfig?.followButtonHeight ??
                   IsrDimens.twentyFour,
@@ -1923,7 +1978,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       : null,
                 ),
                 child: Text(
-                  IsrTranslationFile.follow,
+                  showRequest
+                      ? IsrTranslationFile.request
+                      : IsrTranslationFile.follow,
                   style: _textStyleConfig?.followButtonTextStyle ??
                       IsrStyles.white12.copyWith(
                         fontWeight: FontWeight.w600,
@@ -1969,6 +2026,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           return const SizedBox.shrink();
         },
       );
+  }
 
   Future<void> _triggerLikeAnimation() async {
     _likeAnimationTimer?.cancel();

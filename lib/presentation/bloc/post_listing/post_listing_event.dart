@@ -22,12 +22,15 @@ class GetSearchResultsEvent extends PostListingEvent {
     required this.tabType,
     required this.isLoading,
     this.isFromPagination = false,
+    this.isPopular = false,
   });
 
   final String searchQuery;
   final SearchTabType tabType;
   final bool isLoading;
   final bool isFromPagination;
+
+  final bool isPopular;
 }
 
 class GetPlaceDetailsEvent extends PostListingEvent {

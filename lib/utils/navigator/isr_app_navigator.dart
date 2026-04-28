@@ -77,6 +77,24 @@ class IsrAppNavigator {
     );
   }
 
+  /// Navigate to follow requests (incoming / outgoing tabs).
+  static void navigateToFollowRequests(
+    BuildContext context, {
+    TransitionType? transitionType,
+  }) {
+    final page = BlocProvider<FollowRequestsCubit>(
+      create: (_) {
+        final cubit = IsmInjectionUtils.getBloc<FollowRequestsCubit>();
+        cubit.loadInitial();
+        return cubit;
+      },
+      child: const FollowRequestsView(),
+    );
+    Navigator.of(context, rootNavigator: true).push(
+      _buildRoute(page: page, transitionType: transitionType),
+    );
+  }
+
   /// Navigate to place details
   /// ✅ Wraps the destination with necessary BLoC providers
   static void navigateToPlaceDetails(

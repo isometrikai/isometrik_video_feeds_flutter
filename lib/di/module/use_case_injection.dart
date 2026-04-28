@@ -32,6 +32,21 @@ class UseCaseInjection {
     IsmInjectionUtils.registerUseCase<FollowUnFollowUserUseCase>(() =>
         FollowUnFollowUserUseCase(
             IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<GetIncomingFollowRequestsUseCase>(() =>
+        GetIncomingFollowRequestsUseCase(
+            IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<GetOutgoingFollowRequestsUseCase>(() =>
+        GetOutgoingFollowRequestsUseCase(
+            IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<AcceptFollowRequestUseCase>(() =>
+        AcceptFollowRequestUseCase(
+            IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<DeclineFollowRequestUseCase>(() =>
+        DeclineFollowRequestUseCase(
+            IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<CancelOutgoingFollowRequestUseCase>(() =>
+        CancelOutgoingFollowRequestUseCase(
+            IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<SavePostUseCase>(
         () => SavePostUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<GetUserPostDataUseCase>(() =>

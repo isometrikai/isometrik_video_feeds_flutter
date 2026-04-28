@@ -58,6 +58,9 @@ class SocialUserProfileData {
     this.followingCount,
     this.isFollowing,
     this.postsCount,
+    this.isPrivate,
+    this.followStatus,
+    this.isRequested,
   });
 
   factory SocialUserProfileData.fromJson(Map<String, dynamic> json) =>
@@ -75,7 +78,19 @@ class SocialUserProfileData {
         followingCount: json['following_count'] as num? ?? 0,
         isFollowing: json['is_following'] as bool? ?? false,
         postsCount: json['posts_count'] as num? ?? 0,
+        isPrivate: json['is_private'] as bool? ?? false,
+        followStatus:
+            (json['follow_status'] as num?) ?? (json['followStatus'] as num?),
+        isRequested: SocialUserProfileData._readRequested(json),
       );
+
+  static bool? _readRequested(Map<String, dynamic> json) {
+    final v = json['is_requested'] ?? json['isRequested'];
+    if (v == null) return null;
+    if (v is bool) return v;
+    if (v is num) return v != 0;
+    return null;
+  }
 
   final String? fullName;
   final String? avatarUrl;
@@ -90,6 +105,9 @@ class SocialUserProfileData {
   final num? followingCount;
   final bool? isFollowing;
   final num? postsCount;
+  final bool? isPrivate;
+  final num? followStatus;
+  final bool? isRequested;
 
   Map<String, dynamic> toJson() => {
         'full_name': fullName,
@@ -105,5 +123,8 @@ class SocialUserProfileData {
         'following_count': followingCount,
         'is_following': isFollowing,
         'posts_count': postsCount,
+        'is_private': isPrivate,
+        'follow_status': followStatus,
+        'is_requested': isRequested,
       };
 }

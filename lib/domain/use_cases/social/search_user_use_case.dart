@@ -27,4 +27,24 @@ class SearchUserUseCase extends BaseUseCase {
           );
         },
       );
+
+  Future<ApiResult<SearchUserResponse?>> executeGetPopularUsers({
+    required bool isLoading,
+    required int page,
+    required int pageSize,
+  }) async =>
+      await super.execute(
+        () async {
+          final response = await _repository.getPopularUsers(
+            isLoading: isLoading,
+            page: page,
+            pageSize: pageSize,
+          );
+          return ApiResult(
+            data: response.responseCode == 200 || response.responseCode == 201
+                ? response.data
+                : null,
+          );
+        },
+      );
 }

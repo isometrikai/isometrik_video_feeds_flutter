@@ -1,6 +1,7 @@
 export 'cached_video_player.dart';
 export 'collections/collections.dart';
 export 'create_post_bottom_sheet.dart';
+export 'follow_requests/follow_requests_view.dart';
 export 'image_cache_manager.dart';
 export 'ism_create_post_view.dart';
 export 'ism_post_view.dart';

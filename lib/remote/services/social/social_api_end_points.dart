@@ -4,6 +4,13 @@ class SocialApiEndPoints {
   static const getTrendingPosts = '/api/v1/posts/trending';
   static const postCreatePost = '/api/v1/posts';
   static const postFollowUser = '/api/v1/follows';
+  static const getFollowRequestsIncoming = '/api/v1/follows/requests/incoming';
+  /// GET: list outgoing. DELETE with query `target_id`: cancel a pending request you sent.
+  static const getFollowRequestsOutgoing = '/api/v1/follows/requests/outgoing';
+  static String postFollowRequestAccept(String requestId) =>
+      '/api/v1/follows/requests/$requestId/accept';
+  static String postFollowRequestDecline(String requestId) =>
+      '/api/v1/follows/requests/$requestId/decline';
   static const postSavePost = '/api/v1/posts/save';
   static const postLike = '/api/v1/likes/post';
   static const postUnLike = '/api/v1/likes/post';
@@ -31,6 +38,7 @@ class SocialApiEndPoints {
   static String postMediaProcess(String postId) =>
       '/api/v1/posts/$postId/start-processing';
   static const String getSearchUsers = '/api/v1/users/search';
+  static const String getPopularUsers = '/api/v1/users/popular';
   static const String getSearchTags = '/api/v1/tags/hashtags/search';
   static String getUserProfile(String userId) =>
       '/api/v1/users/$userId/profile';

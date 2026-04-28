@@ -94,7 +94,8 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
       emit(PostListingLoadingState(isLoading: event.isLoading));
     }
 
-    if (event.searchQuery.isEmpty) {
+    // Allow popular-users requests through even with an empty query string
+    if (event.searchQuery.isEmpty && !event.isPopular) {
       emit(SearchResultsLoadedState(results: [], tabType: event.tabType));
       return;
     }
@@ -108,8 +109,9 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
               await _searchPosts(event.searchQuery, event.isFromPagination);
           break;
         case SearchTabType.account:
-          results =
-              await _searchUsers(event.searchQuery, event.isFromPagination);
+          results = event.isPopular
+              ? await _getPopularUsers(event.isFromPagination)
+              : await _searchUsers(event.searchQuery, event.isFromPagination);
           break;
         case SearchTabType.tags:
           results =
@@ -276,6 +278,39 @@ class PostListingBloc extends Bloc<PostListingEvent, PostListingState> {
       return results;
     } else {
       // Decrement on error
+      _searchAccountsPage =
+          _searchAccountsPage > 1 ? _searchAccountsPage - 1 : 1;
+    }
+    return [];
+  }
+
+  Future<List<dynamic>> _getPopularUsers(bool isFromPagination) async {
+    if (isFromPagination) {
+      _searchAccountsPage = _searchAccountsPage + 1;
+    } else {
+      _searchAccountsPage = 1;
+    }
+
+    debugPrint(
+        '⭐ Popular users: Requesting page $_searchAccountsPage (pagination: $isFromPagination)');
+
+    final apiResult = await _searchUserUseCase.executeGetPopularUsers(
+      isLoading: false,
+      page: _searchAccountsPage,
+      pageSize: _searchPostLimit,
+    );
+    if (apiResult.isSuccess) {
+      final results = apiResult.data?.data ?? [];
+      debugPrint(
+          '✅ Popular users: Page $_searchAccountsPage returned ${results.length} items');
+      if (isFromPagination && results.isEmpty) {
+        _searchAccountsPage =
+            _searchAccountsPage > 1 ? _searchAccountsPage - 1 : 1;
+        debugPrint(
+            '⚠️ Popular users: No more data. Staying at page $_searchAccountsPage');
+      }
+      return results;
+    } else {
       _searchAccountsPage =
           _searchAccountsPage > 1 ? _searchAccountsPage - 1 : 1;
     }

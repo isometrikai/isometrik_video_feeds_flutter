@@ -33,6 +33,33 @@ abstract class SocialRepository extends BaseRepository {
     required FollowAction followAction,
   });
 
+  Future<CustomResponse<FollowRequestsListResponse?>> getFollowRequestsIncoming({
+    required bool isLoading,
+    required int page,
+    required int pageSize,
+  });
+
+  Future<CustomResponse<FollowRequestsListResponse?>> getFollowRequestsOutgoing({
+    required bool isLoading,
+    required int page,
+    required int pageSize,
+  });
+
+  Future<CustomResponse<ResponseClass?>> acceptFollowRequest({
+    required bool isLoading,
+    required String requestId,
+  });
+
+  Future<CustomResponse<ResponseClass?>> declineFollowRequest({
+    required bool isLoading,
+    required String requestId,
+  });
+
+  Future<CustomResponse<ResponseClass?>> cancelOutgoingFollowRequest({
+    required bool isLoading,
+    required String targetId,
+  });
+
   Future<CustomResponse<ResponseClass?>> savePost({
     required bool isLoading,
     required String postId,
@@ -139,6 +166,12 @@ abstract class SocialRepository extends BaseRepository {
     required int limit,
     required int page,
     required String searchText,
+  });
+
+  Future<CustomResponse<SearchUserResponse?>> getPopularUsers({
+    required bool isLoading,
+    required int page,
+    required int pageSize,
   });
 
   Future<CustomResponse<HashTagResponse?>> searchTag({
