@@ -588,8 +588,11 @@ class SocialUserData {
                 json['user_metadata'] as Map<String, dynamic>),
         isFollowing: json['is_following'] as bool? ?? false,
         isPrivate: _readPrivateFlag(json),
-        followStatus:
-            (json['follow_status'] as num?) ?? (json['followStatus'] as num?),
+        followStatus: FollowRelationshipStatus.parseFromApiFields(
+          followStatus: json['follow_status'] ?? json['followStatus'],
+          followRelationship:
+              json['follow_relationship'] ?? json['followRelationship'],
+        ),
         targetId: json['target_id'] as String? ?? '',
         isRequested: SocialUserData._readRequested(json),
       );
@@ -629,7 +632,7 @@ class SocialUserData {
   /// 1 / true from API (or num) => private account; host can pass via profile/search.
   num? isPrivate;
 
-  /// [FollowRelationshipStatus]: 0 none, 1 following, 2 follow request pending.
+  /// Numeric and/or derived from [`follow_relationship`] string (e.g. `pending_out`).
   num? followStatus;
   String? targetId;
 

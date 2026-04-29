@@ -23,6 +23,8 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
 
   final FollowUnFollowUserUseCase _followPostUseCase =
       IsmInjectionUtils.getUseCase<FollowUnFollowUserUseCase>();
+  final CancelOutgoingFollowRequestUseCase _cancelOutgoingFollowRequestUseCase =
+      IsmInjectionUtils.getUseCase<CancelOutgoingFollowRequestUseCase>();
   final GetPostDetailsUseCase _getPostDetailsUseCase =
       IsmInjectionUtils.getUseCase<GetPostDetailsUseCase>();
   final SocialUserProfileUseCase _socialUserProfileUseCase =
@@ -215,9 +217,7 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
           followRequestPending: pending,
           userId: userId,
         ));
-        _uniquePostList.values
-            .where((e) => e.userId == userId)
-            .forEach((e) {
+        _uniquePostList.values.where((e) => e.userId == userId).forEach((e) {
           e.isFollowing = following;
         });
 
@@ -308,6 +308,14 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
 
       if (apiCallBack != null) {
         isSuccess = await apiCallBack();
+      } else if (fromPendingRequest) {
+        final apiResult =
+            await _cancelOutgoingFollowRequestUseCase.cancel(
+          isLoading: false,
+          targetId: userId,
+        );
+        isSuccess = apiResult.isSuccess;
+        error = apiResult.error;
       } else {
         final apiResult = await _followPostUseCase.executeFollowUser(
           isLoading: false,
@@ -334,16 +342,20 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
           userId: userId,
         ));
 
-        _logFollowEvent(
-          FollowAction.unfollow,
-          reelsData: reelData,
-          watchDuration: watchDuration,
-          postSectionType: postSectionType,
-        );
+        if (!fromPendingRequest) {
+          _logFollowEvent(
+            FollowAction.unfollow,
+            reelsData: reelData,
+            watchDuration: watchDuration,
+            postSectionType: postSectionType,
+          );
+        }
       } else {
         // Emit error state first, then revert UI state
-        final errorMessage =
-            error?.message ?? 'Failed to unfollow user. Please try again.';
+        final errorMessage = error?.message ??
+            (fromPendingRequest
+                ? 'Failed to cancel request. Please try again.'
+                : 'Failed to unfollow user. Please try again.');
         emit(IsmFollowErrorState(
           userId: userId,
           errorMessage: errorMessage,

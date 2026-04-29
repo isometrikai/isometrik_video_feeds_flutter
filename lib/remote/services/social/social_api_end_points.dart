@@ -5,7 +5,6 @@ class SocialApiEndPoints {
   static const postCreatePost = '/api/v1/posts';
   static const postFollowUser = '/api/v1/follows';
   static const getFollowRequestsIncoming = '/api/v1/follows/requests/incoming';
-  /// GET: list outgoing. DELETE with query `target_id`: cancel a pending request you sent.
   static const getFollowRequestsOutgoing = '/api/v1/follows/requests/outgoing';
   static String postFollowRequestAccept(String requestId) =>
       '/api/v1/follows/requests/$requestId/accept';
@@ -22,7 +21,8 @@ class SocialApiEndPoints {
   static const String postCommentLike = '/api/v1/likes/comment';
   static const String postReportComment = '/api/v1/reports';
   static const String getPostDetails = '/api/v1/posts/detail';
-  static String getPostInsights(String postId) => '/api/v1/posts/$postId/insights';
+  static String getPostInsights(String postId) =>
+      '/api/v1/posts/$postId/insights';
   static String get getSocialProducts => '/fast/api/v1/social-pdp/bulk';
   // static String get getSocialProducts => switch (appFlavour) {
   //   AppFlavor.production => '/v1/product/socialpost/details',
@@ -55,5 +55,4 @@ class SocialApiEndPoints {
   static const String deleteCollection = '/api/v1/posts/collections';
   static const String postImpressions = '/api/v1/views';
   static const String onShareSuccess = '/api/v1/shares';
-
 }

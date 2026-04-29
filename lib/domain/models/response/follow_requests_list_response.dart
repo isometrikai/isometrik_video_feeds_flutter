@@ -133,4 +133,54 @@ abstract class FollowRelationshipStatus {
   static const int none = 0;
   static const int following = 1;
   static const int requested = 2;
+
+  /// Prefer numeric [`follow_status`]; string enums like `request_pending`; then [`follow_relationship`].
+  static num? parseFromApiFields({
+    dynamic followStatus,
+    dynamic followRelationship,
+  }) {
+    if (followStatus is num) return followStatus;
+
+    if (followStatus is String) {
+      final trimmed = followStatus.trim();
+      final asNum = num.tryParse(trimmed);
+      if (asNum != null) return asNum;
+      final fromStatus = parseRelationshipString(trimmed);
+      if (fromStatus != null) return fromStatus;
+    }
+
+    return parseRelationshipString(followRelationship);
+  }
+
+  static num? parseRelationshipString(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is num) return raw;
+    final s = raw.toString().trim().toLowerCase().replaceAll('-', '_');
+    switch (s) {
+      case '':
+      case 'none':
+      case 'not_following':
+        return none;
+      case 'following':
+      case 'follows':
+      case 'followed':
+      case 'accepted':
+        return following;
+      case 'requested':
+      case 'request_pending':
+      case 'follow_request_pending':
+      case 'pending_out':
+      case 'pending_sent':
+      case 'outgoing':
+      case 'outgoing_pending':
+      case 'sent':
+        return requested;
+      case 'pending_in':
+      case 'incoming':
+      case 'pending_received':
+      case 'request_received':
+        return none;
+    }
+    return null;
+  }
 }

@@ -43,6 +43,9 @@ class IsmDataProvider {
   DeletePostUseCase get _deletePostUseCase =>
       IsmInjectionUtils.getUseCase<DeletePostUseCase>();
 
+  CancelOutgoingFollowRequestUseCase get _cancelOutgoingFollowRequestUseCase =>
+      IsmInjectionUtils.getUseCase<CancelOutgoingFollowRequestUseCase>();
+
   /// Private generic handler to reduce code duplication
   Future<void> _executeApiCall<T>({
     required Future<ApiResult<T>> Function() apiCall,
@@ -371,6 +374,23 @@ class IsmDataProvider {
         userId: userId,
       ),
       toJson: (data) => data?.toJson() ?? {},
+      onSuccess: onSuccess,
+      onError: onError,
+    );
+  }
+
+  Future<void> cancelOutgoingFollowRequest({
+    required String targetId,
+    bool isLoading = false,
+    Function(String, int)? onSuccess,
+    Function(String, int)? onError,
+  }) async {
+    await _executeApiCall(
+      apiCall: () => _cancelOutgoingFollowRequestUseCase.cancel(
+        isLoading: isLoading,
+        targetId: targetId,
+      ),
+      toJson: (data) => data?.toMap() ?? {},
       onSuccess: onSuccess,
       onError: onError,
     );

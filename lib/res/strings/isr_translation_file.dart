@@ -18,6 +18,13 @@ class IsrTranslationFile {
   static const String follow = 'Follow';
   static const String request = 'Request';
   static const String requested = 'Requested';
+  static const String withdrawFollowRequestTitle = 'Withdraw request';
+  static const String withdrawFollowRequestMessage =
+      'Do you want to withdraw your request?';
+  /// Dismisses dialog and keeps the outgoing request as-is.
+  static const String keepFollowRequest = 'Keep request';
+  /// Confirms cancel outgoing follow request (DELETE).
+  static const String withdrawFollowRequest = 'Withdraw';
   static const String followRequests = 'Follow requests';
   static const String incoming = 'Incoming';
   static const String outgoing = 'Outgoing';
@@ -103,7 +110,8 @@ class IsrTranslationFile {
   static const String createPost = 'Create Post';
   static const moreOptions = 'More Options';
   static const reportPost = 'Report Post';
-  static String reportAlertTitle(String type) => 'Report ${type.capitalizeWords()}';
+  static String reportAlertTitle(String type) =>
+      'Report ${type.capitalizeWords()}';
   static const postReportedSuccessfully = 'Post reported successfully';
   static const report = 'Report';
   static const reports = 'Reports';
@@ -188,8 +196,7 @@ class IsrTranslationFile {
   static const String successfullyUploaded = 'Successfully Uploaded';
   static const String mediaUploadFailedTryAgain =
       'Upload failed. Please try again to upload pending files.';
-  static const String uploadFailed =
-      'Upload Failed';
+  static const String uploadFailed = 'Upload Failed';
   static const String yourMediaFilesHaveBeenUploadedSuccessfully =
       'Your media files have been uploaded successfully';
   static const String tagPeople = 'Tag People';

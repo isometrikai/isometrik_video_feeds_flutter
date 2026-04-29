@@ -2,8 +2,8 @@ import 'package:ism_video_reel_player/domain/models/response/follow_requests_lis
 
 /// Central rules for follow vs request vs requested UI.
 ///
-/// Uses today’s keys (`is_following`, `is_private`, optional `follow_status`) and
-/// forward-compat [`is_requested`] / [`isRequested`] when the backend adds them.
+/// Uses [`is_following`], [`is_private`], numeric [`follow_status`], string
+/// [`follow_relationship`] (e.g. `pending_out`), and optional [`is_requested`].
 class FollowRelationshipUi {
   FollowRelationshipUi._();
 

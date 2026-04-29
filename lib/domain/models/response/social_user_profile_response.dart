@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:ism_video_reel_player/domain/models/response/follow_requests_list_response.dart';
+
 SocialUserProfileResponse socialUserProfileResponseFromJson(String str) =>
     SocialUserProfileResponse.fromJson(
         json.decode(str) as Map<String, dynamic>);
@@ -79,8 +81,11 @@ class SocialUserProfileData {
         isFollowing: json['is_following'] as bool? ?? false,
         postsCount: json['posts_count'] as num? ?? 0,
         isPrivate: json['is_private'] as bool? ?? false,
-        followStatus:
-            (json['follow_status'] as num?) ?? (json['followStatus'] as num?),
+        followStatus: FollowRelationshipStatus.parseFromApiFields(
+          followStatus: json['follow_status'] ?? json['followStatus'],
+          followRelationship:
+              json['follow_relationship'] ?? json['followRelationship'],
+        ),
         isRequested: SocialUserProfileData._readRequested(json),
       );
 

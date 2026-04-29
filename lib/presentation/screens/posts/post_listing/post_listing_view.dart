@@ -1700,6 +1700,37 @@ class _PostListingViewState extends State<PostListingView> {
     );
   }
 
+  Future<void> _confirmWithdrawFollowRequest(
+    Future<void> Function({
+      ReelsData? reelData,
+      PostSectionType? postSectionType,
+      int? watchDuration,
+      Future<bool> Function()? apiCallBack,
+    }) onTap,
+  ) async {
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text(IsrTranslationFile.withdrawFollowRequestTitle),
+        content: const Text(IsrTranslationFile.withdrawFollowRequestMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text(IsrTranslationFile.keepFollowRequest),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text(IsrTranslationFile.withdrawFollowRequest),
+          ),
+        ],
+      ),
+    );
+    if (result == true && mounted) {
+      await onTap();
+    }
+  }
+
   // Follow button widget with API integration
   Widget _buildFollowButton(SocialUserData user) {
     final followCfg =
@@ -1713,9 +1744,6 @@ class _PostListingViewState extends State<PostListingView> {
       initialFollowStatus: user.followStatus,
       initialIsRequested: user.isRequested,
       builder: (isLoading, isFollowing, followRequestPending, onTap) {
-        if (isLoading) {
-          return Utility.loaderWidget(isAdaptive: false);
-        }
         if (followRequestPending) {
           return AppButton(
             height: followCfg?.height ?? 30.responsiveDimension,
@@ -1726,6 +1754,7 @@ class _PostListingViewState extends State<PostListingView> {
             borderColor: followCfg?.backgroundColor ?? IsrColors.appColor,
             backgroundColor:
                 followCfg?.requestedBackgroundColor ?? IsrColors.white,
+            isLoading: isLoading,
             textStyle: followCfg != null && followCfg.textStyle != null
                 ? followCfg.textStyle!.copyWith(
                     color: followCfg.textColor ?? IsrColors.appColor,
@@ -1735,7 +1764,7 @@ class _PostListingViewState extends State<PostListingView> {
                     fontWeight: FontWeight.w600,
                   ),
             onPress: () {
-              onTap.call();
+              unawaited(_confirmWithdrawFollowRequest(onTap));
             },
           );
         }
@@ -1743,8 +1772,8 @@ class _PostListingViewState extends State<PostListingView> {
           final showRequest = FollowRelationshipUi.showRequestPrimaryLabel(
             isFollowing: isFollowing,
             isPrivateAccount: isPrivate,
-            isRequested: user.isRequested,
-            followStatus: user.followStatus,
+            isRequested: followRequestPending ? true : false,
+            followStatus: followRequestPending ? user.followStatus : null,
           );
           final title = showRequest
               ? (followCfg?.requestText ?? IsrTranslationFile.request)
@@ -1755,6 +1784,7 @@ class _PostListingViewState extends State<PostListingView> {
             borderRadius: followCfg?.borderRadius ?? 20,
             title: title,
             backgroundColor: followCfg?.backgroundColor,
+            isLoading: isLoading,
             textStyle: followCfg?.textStyle ??
                 IsrStyles.primaryText12.copyWith(
                   color: followCfg?.textColor ?? IsrColors.white,
@@ -1765,7 +1795,28 @@ class _PostListingViewState extends State<PostListingView> {
             },
           );
         }
-        return const SizedBox.shrink();
+        return AppButton(
+          height: followCfg?.height ?? 30.responsiveDimension,
+          width: followCfg?.width ?? 95.responsiveDimension,
+          borderRadius: followCfg?.borderRadius ?? 20,
+          title: IsrTranslationFile.following,
+          type: ButtonType.secondary,
+          borderColor: followCfg?.backgroundColor ?? IsrColors.appColor,
+          backgroundColor:
+              followCfg?.requestedBackgroundColor ?? IsrColors.white,
+          isLoading: isLoading,
+          textStyle: followCfg != null && followCfg.textStyle != null
+              ? followCfg.textStyle!.copyWith(
+                  color: followCfg.textColor ?? IsrColors.appColor,
+                )
+              : IsrStyles.primaryText12.copyWith(
+                  color: followCfg?.textColor ?? IsrColors.appColor,
+                  fontWeight: FontWeight.w600,
+                ),
+          onPress: () {
+            onTap.call();
+          },
+        );
       },
     );
   }
