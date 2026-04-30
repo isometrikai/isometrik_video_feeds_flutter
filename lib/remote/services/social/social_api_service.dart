@@ -44,6 +44,38 @@ abstract class SocialApiService extends BaseService {
     required FollowAction followAction,
   });
 
+  Future<ResponseModel> getFollowRequestsIncoming({
+    required bool isLoading,
+    required Header header,
+    required int page,
+    required int pageSize,
+  });
+
+  Future<ResponseModel> getFollowRequestsOutgoing({
+    required bool isLoading,
+    required Header header,
+    required int page,
+    required int pageSize,
+  });
+
+  Future<ResponseModel> acceptFollowRequest({
+    required bool isLoading,
+    required Header header,
+    required String requestId,
+  });
+
+  Future<ResponseModel> declineFollowRequest({
+    required bool isLoading,
+    required Header header,
+    required String requestId,
+  });
+
+  Future<ResponseModel> cancelOutgoingFollowRequest({
+    required bool isLoading,
+    required Header header,
+    required String targetId,
+  });
+
   Future<ResponseModel> unFollowPost({
     required bool isLoading,
     required String followingId,
@@ -156,6 +188,13 @@ abstract class SocialApiService extends BaseService {
     required int limit,
     required int page,
     required String searchText,
+    required Header header,
+  });
+
+  Future<ResponseModel> getPopularUsers({
+    required bool isLoading,
+    required int page,
+    required int pageSize,
     required Header header,
   });
 

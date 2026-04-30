@@ -11,6 +11,7 @@ export 'request/request.dart';
 export 'response/response.dart';
 export 'search_screen_config.dart';
 export 'social_config.dart';
+export 'social_follow_relationship.dart';
 export 'tab_config.dart';
 export 'tab_data_model.dart';
 export 'tag_details_config.dart';

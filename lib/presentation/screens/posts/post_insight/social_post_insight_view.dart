@@ -186,13 +186,22 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
 
   Widget _buildPostTimestamp() {
     var formattedDate = '';
-    if (_postData?.publishedAt != null &&
-        _postData?.publishedAt?.isNotEmpty == true) {
+    final publishedAt = _postData?.publishedAt;
+    if (publishedAt != null && publishedAt.isNotEmpty) {
       try {
-        final dateTime = DateTime.parse(_postData!.publishedAt!);
-        formattedDate = DateFormat('MMMM d \'at\' h:mm a').format(dateTime);
+        var dateTime = DateTime.parse(publishedAt);
+
+        final hasTimezoneInfo =
+            RegExp(r'(Z|[+-]\d{2}:\d{2})$').hasMatch(publishedAt);
+        if (!hasTimezoneInfo) {
+          dateTime = DateTime.parse('${publishedAt}Z');
+        }
+
+        formattedDate = DateFormat(
+          'MMMM d \'at\' h:mm a',
+        ).format(dateTime.toLocal());
       } catch (e) {
-        formattedDate = _postData?.publishedAt ?? '';
+        formattedDate = publishedAt;
       }
     }
 
@@ -404,7 +413,8 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
   Future<void> _onViewCountClickedFromInsight() async {
     final postData = _postData;
     if (postData == null) return;
-    final callback = IsrVideoReelConfig.postConfig.postCallBackConfig?.onViewCountClicked;
+    final callback =
+        IsrVideoReelConfig.postConfig.postCallBackConfig?.onViewCountClicked;
     if (callback == null) return;
     await callback(postData);
   }
@@ -554,25 +564,28 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
   }
 
   Widget _buildMetricSelector() => Container(
-    constraints: BoxConstraints(maxWidth: 50.percentWidth),
-    child: SingleChildScrollView(
+        constraints: BoxConstraints(maxWidth: 50.percentWidth),
+        child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
             spacing: IsrDimens.eight,
             children: [
-              _buildMetricChip(TimeSeriesMetric.views, IsrTranslationFile.views),
               _buildMetricChip(
-                  TimeSeriesMetric.interactions, IsrTranslationFile.interactions),
-              _buildMetricChip(TimeSeriesMetric.likes, IsrTranslationFile.likes),
+                  TimeSeriesMetric.views, IsrTranslationFile.views),
+              _buildMetricChip(TimeSeriesMetric.interactions,
+                  IsrTranslationFile.interactions),
+              _buildMetricChip(
+                  TimeSeriesMetric.likes, IsrTranslationFile.likes),
               _buildMetricChip(
                   TimeSeriesMetric.comments, IsrTranslationFile.comments),
-              _buildMetricChip(TimeSeriesMetric.saves, IsrTranslationFile.saves),
+              _buildMetricChip(
+                  TimeSeriesMetric.saves, IsrTranslationFile.saves),
               _buildMetricChip(
                   TimeSeriesMetric.shares, IsrTranslationFile.shares),
             ],
           ),
         ),
-  );
+      );
 
   Widget _buildMetricChip(TimeSeriesMetric metric, String label) {
     final isSelected = _selectedMetric == metric;

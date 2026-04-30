@@ -103,6 +103,21 @@ class BlocInjection {
       ),
     );
 
+    IsmInjectionUtils.registerBloc<FollowRequestsCubit>(
+      () => FollowRequestsCubit(
+        getIncomingFollowRequestsUseCase:
+            IsmInjectionUtils.getUseCase<GetIncomingFollowRequestsUseCase>(),
+        getOutgoingFollowRequestsUseCase:
+            IsmInjectionUtils.getUseCase<GetOutgoingFollowRequestsUseCase>(),
+        acceptFollowRequestUseCase:
+            IsmInjectionUtils.getUseCase<AcceptFollowRequestUseCase>(),
+        declineFollowRequestUseCase:
+            IsmInjectionUtils.getUseCase<DeclineFollowRequestUseCase>(),
+        cancelOutgoingFollowRequestUseCase:
+            IsmInjectionUtils.getUseCase<CancelOutgoingFollowRequestUseCase>(),
+      ),
+    );
+
     IsmInjectionUtils.registerBloc<MediaSelectionBloc>(
       MediaSelectionBloc.new,
     );

@@ -112,38 +112,43 @@ class TimelineDataResponse {
   num? totalPages;
 
   Map<String, dynamic> toMap() => {
-    'status': status,
-    'message': message,
-    'statusCode': statusCode,
-    'code': code,
-    'data': data?.toMap(),
-    'total': total,
-    'page': page,
-    'page_size': pageSize,
-    'total_pages': totalPages,
-  };
+        'status': status,
+        'message': message,
+        'statusCode': statusCode,
+        'code': code,
+        'data': data?.toMap(),
+        'total': total,
+        'page': page,
+        'page_size': pageSize,
+        'total_pages': totalPages,
+      };
 }
 
 class TimeLineBodyData {
-
   TimeLineBodyData({
     this.posts,
     this.nextCursor,
   });
 
-  factory TimeLineBodyData.fromMap(Map<String, dynamic> json) => TimeLineBodyData(
-    posts: json['posts'] == null ? [] : List<TimeLineData>.from((json['posts'] as List?)?.map((x) => TimeLineData.fromMap(x as Map<String, dynamic>? ?? {})) ?? []),
-    nextCursor: json['next_cursor'] as String? ?? '',
-  );
-
+  factory TimeLineBodyData.fromMap(Map<String, dynamic> json) =>
+      TimeLineBodyData(
+        posts: json['posts'] == null
+            ? []
+            : List<TimeLineData>.from((json['posts'] as List?)?.map((x) =>
+                    TimeLineData.fromMap(x as Map<String, dynamic>? ?? {})) ??
+                []),
+        nextCursor: json['next_cursor'] as String? ?? '',
+      );
 
   List<TimeLineData>? posts;
   String? nextCursor;
 
   Map<String, dynamic> toMap() => {
-    'posts': posts == null ? [] : List<dynamic>.from(posts!.map((x) => x.toMap())),
-    'next_cursor': nextCursor,
-  };
+        'posts': posts == null
+            ? []
+            : List<dynamic>.from(posts!.map((x) => x.toMap())),
+        'next_cursor': nextCursor,
+      };
 }
 
 class TimeLineData {
@@ -562,6 +567,10 @@ class SocialUserData {
     this.userMetadata,
     this.profileType,
     this.isFollowing,
+    this.isPrivate,
+    this.followStatus,
+    this.targetId,
+    this.isRequested,
   });
 
   factory SocialUserData.fromMap(Map<String, dynamic> json) => SocialUserData(
@@ -578,7 +587,39 @@ class SocialUserData {
             : UserMetadata.fromMap(
                 json['user_metadata'] as Map<String, dynamic>),
         isFollowing: json['is_following'] as bool? ?? false,
+        isPrivate: _readPrivateFlag(json),
+        followStatus: FollowRelationshipStatus.parseFromApiFields(
+          followStatus: json['follow_status'] ?? json['followStatus'],
+          followRelationship:
+              json['follow_relationship'] ?? json['followRelationship'],
+        ),
+        targetId: json['target_id'] as String? ?? '',
+        isRequested: SocialUserData._readRequested(json),
       );
+
+  /// Pending follow request sent (`is_requested` when backend adds it).
+  static bool? _readRequested(Map<String, dynamic> json) {
+    final v = json['is_requested'] ?? json['isRequested'];
+    if (v == null) return null;
+    if (v is bool) return v;
+    if (v is num) return v != 0;
+    return null;
+  }
+
+  static num? _readPrivateFlag(Map<String, dynamic> json) {
+    if (json['is_private'] != null) {
+      final v = json['is_private'];
+      if (v is bool) return v ? 1 : 0;
+      if (v is num) return v;
+    }
+    if (json['isPrivate'] != null) {
+      final v = json['isPrivate'];
+      if (v is bool) return v ? 1 : 0;
+      if (v is num) return v;
+    }
+    return null;
+  }
+
   String? id;
   String? username;
   String? fullName;
@@ -587,6 +628,16 @@ class SocialUserData {
   String? profileType;
   UserMetadata? userMetadata;
   bool? isFollowing;
+
+  /// 1 / true from API (or num) => private account; host can pass via profile/search.
+  num? isPrivate;
+
+  /// Numeric and/or derived from [`follow_relationship`] string (e.g. `pending_out`).
+  num? followStatus;
+  String? targetId;
+
+  /// Outgoing follow request pending (`is_requested` / `isRequested` from API).
+  bool? isRequested;
 
   Map<String, dynamic> toMap() => {
         'id': id,
@@ -597,6 +648,10 @@ class SocialUserData {
         'profile_type': profileType,
         'user_metadata': userMetadata?.toMap(),
         'is_following': isFollowing,
+        'is_private': isPrivate,
+        'follow_status': followStatus,
+        'target_id': targetId,
+        'is_requested': isRequested,
       };
 }
 
@@ -949,7 +1004,9 @@ ReelsData getReelData(TimeLineData postData, {String? loggedInUserId}) =>
     );
 
 MediaMetaData _getMediaMetaData(MediaData mediaData) {
-  if (AppConstants.convertHlsPostMediaToImageMedia && mediaData.mediaType == 'video' && mediaData.url?.endsWith('.m3u8') == true) {
+  if (AppConstants.convertHlsPostMediaToImageMedia &&
+      mediaData.mediaType == 'video' &&
+      mediaData.url?.endsWith('.m3u8') == true) {
     return MediaMetaData(
       mediaType: 0,
       mediaUrl: mediaData.previewUrl ?? '',
@@ -961,7 +1018,10 @@ MediaMetaData _getMediaMetaData(MediaData mediaData) {
       mediaType: mediaData.mediaType == 'image' ? 0 : 1,
       mediaUrl: mediaData.url ?? '',
       thumbnailUrl: mediaData.previewUrl ?? '',
-      durationSeconds: (mediaData.mediaType == 'image' ? AppConstants.defaultImagePostDurationSeconds : mediaData.duration?.toInt()) ?? AppConstants.defaultImagePostDurationSeconds,
+      durationSeconds: (mediaData.mediaType == 'image'
+              ? AppConstants.defaultImagePostDurationSeconds
+              : mediaData.duration?.toInt()) ??
+          AppConstants.defaultImagePostDurationSeconds,
     );
   }
 }

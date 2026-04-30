@@ -254,6 +254,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
       IsmFollowActionListenerState state) async {
     var updateState = false;
     if (state.isFollowing &&
+        !state.followRequestPending &&
         !_reelsDataList.any((element) => element.userId == state.userId)) {
       final followedUserReels = await _ismSocialActionCubit.getUserPostList(
           state.userId,
@@ -280,6 +281,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
         updateState = true;
       }
     } else if (!state.isFollowing &&
+        !state.followRequestPending &&
         _reelsDataList.any((element) => element.userId == state.userId)) {
       _reelsDataList.removeWhere((element) => element.userId == state.userId);
       updateState = true;

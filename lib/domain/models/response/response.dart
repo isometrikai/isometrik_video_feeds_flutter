@@ -3,6 +3,7 @@ export 'collection_list_response.dart';
 export 'comments_response.dart';
 export 'create_post_response.dart';
 export 'custom_response.dart';
+export 'follow_requests_list_response.dart';
 export 'follow_unfollow_response_model.dart';
 export 'get_post_details_response.dart';
 export 'google_address_response.dart';

@@ -23,6 +23,8 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
 
   final FollowUnFollowUserUseCase _followPostUseCase =
       IsmInjectionUtils.getUseCase<FollowUnFollowUserUseCase>();
+  final CancelOutgoingFollowRequestUseCase _cancelOutgoingFollowRequestUseCase =
+      IsmInjectionUtils.getUseCase<CancelOutgoingFollowRequestUseCase>();
   final GetPostDetailsUseCase _getPostDetailsUseCase =
       IsmInjectionUtils.getUseCase<GetPostDetailsUseCase>();
   final SocialUserProfileUseCase _socialUserProfileUseCase =
@@ -130,13 +132,32 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
   getUserFollowState(String userId, {bool? isFollowing}) async {
     if (userId.isNotEmpty) {
       emit(IsmFollowUserState(
-          isFollowing: isFollowing == true, userId: userId, isLoading: true));
+        isFollowing: isFollowing == true,
+        followRequestPending: false,
+        userId: userId,
+        isLoading: true,
+      ));
       final userData = await _getSocialUserDetails(userId, showError: true);
-      final apiFollowStatue = userData?.isFollowing ?? isFollowing ?? false;
-      emit(IsmFollowUserState(isFollowing: apiFollowStatue, userId: userId));
+      final pending = FollowRelationshipUi.isRelationshipRequested(
+        isRequested: userData?.isRequested,
+        followStatus: userData?.followStatus,
+      );
+      var apiFollowStatue = userData?.isFollowing ?? isFollowing ?? false;
+      final fs = userData?.followStatus?.toInt();
+      if (fs != null) {
+        apiFollowStatue = fs == FollowRelationshipStatus.following;
+      }
+      emit(IsmFollowUserState(
+        isFollowing: apiFollowStatue,
+        followRequestPending: pending,
+        userId: userId,
+      ));
     } else {
-      emit(
-          IsmFollowUserState(isFollowing: isFollowing == true, userId: userId));
+      emit(IsmFollowUserState(
+        isFollowing: isFollowing == true,
+        followRequestPending: false,
+        userId: userId,
+      ));
     }
   }
 
@@ -151,10 +172,15 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
 
     try {
       emit(IsmFollowUserState(
-          isFollowing: true, isLoading: true, userId: userId));
+        isFollowing: false,
+        followRequestPending: false,
+        isLoading: true,
+        userId: userId,
+      ));
 
-      final bool isSuccess;
+      var isSuccess = false;
       AppError? error;
+      FollowUnfollowResponseModel? data;
 
       if (apiCallBack != null) {
         isSuccess = await apiCallBack();
@@ -166,22 +192,49 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
         );
         isSuccess = apiResult.isSuccess;
         error = apiResult.error;
+        data = apiResult.data;
       }
 
       if (isSuccess) {
-        emit(IsmFollowUserState(isFollowing: true, userId: userId));
-        _uniquePostList.values
-            .where((e) => e.userId == userId)
-            .forEach((e) => e.isFollowing = true);
+        var pending = false;
+        var following = true;
+        if (apiCallBack == null && data != null) {
+          pending = FollowRelationshipUi.pendingFromFollowResponse(
+            isRequested: data.isRequested,
+            followStatus: data.followStatus,
+          );
+          following = FollowRelationshipUi.followingFromFollowResponse(
+            isRequested: data.isRequested,
+            followStatus: data.followStatus,
+          );
+        } else {
+          following = true;
+          pending = false;
+        }
 
-        emit(IsmFollowActionListenerState(isFollowing: true, userId: userId));
+        emit(IsmFollowUserState(
+          isFollowing: following,
+          followRequestPending: pending,
+          userId: userId,
+        ));
+        _uniquePostList.values.where((e) => e.userId == userId).forEach((e) {
+          e.isFollowing = following;
+        });
 
-        _logFollowEvent(
-          FollowAction.follow,
-          reelsData: reelData,
-          watchDuration: watchDuration,
-          postSectionType: postSectionType,
-        );
+        emit(IsmFollowActionListenerState(
+          isFollowing: following,
+          followRequestPending: pending,
+          userId: userId,
+        ));
+
+        if (following) {
+          _logFollowEvent(
+            FollowAction.follow,
+            reelsData: reelData,
+            watchDuration: watchDuration,
+            postSectionType: postSectionType,
+          );
+        }
       } else {
         // Emit error state first, then revert UI state
         final errorMessage =
@@ -189,11 +242,14 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
         emit(IsmFollowErrorState(
           userId: userId,
           errorMessage: errorMessage,
-          wasFollowing: false,
         ));
 
         // Revert to previous state after error
-        emit(IsmFollowUserState(isFollowing: false, userId: userId));
+        emit(IsmFollowUserState(
+          isFollowing: false,
+          followRequestPending: false,
+          userId: userId,
+        ));
 
         // Show error to user - always show, not just NetworkError
         ErrorHandler.showAppError(
@@ -207,15 +263,18 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
       debugPrint('❌ Unexpected error in followUser: $e');
       debugPrint('   Stack trace: $stackTrace');
 
-      final errorMessage = 'An unexpected error occurred. Please try again.';
+      const errorMessage = 'An unexpected error occurred. Please try again.';
       emit(IsmFollowErrorState(
         userId: userId,
         errorMessage: errorMessage,
-        wasFollowing: false,
       ));
 
       // Revert state
-      emit(IsmFollowUserState(isFollowing: false, userId: userId));
+      emit(IsmFollowUserState(
+        isFollowing: false,
+        followRequestPending: false,
+        userId: userId,
+      ));
 
       // Show error
       ErrorHandler.showAppError(
@@ -232,18 +291,31 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     PostSectionType? postSectionType,
     int? watchDuration,
     Future<bool> Function()? apiCallBack,
+    bool fromPendingRequest = false,
   }) async {
     debugPrint('IsmSocialActionCubit hashCode -> $hashCode');
 
     try {
       emit(IsmFollowUserState(
-          isFollowing: false, isLoading: true, userId: userId));
+        isFollowing: fromPendingRequest ? false : true,
+        followRequestPending: fromPendingRequest,
+        isLoading: true,
+        userId: userId,
+      ));
 
-      final bool isSuccess;
+      var isSuccess = false;
       AppError? error;
 
       if (apiCallBack != null) {
         isSuccess = await apiCallBack();
+      } else if (fromPendingRequest) {
+        final apiResult =
+            await _cancelOutgoingFollowRequestUseCase.cancel(
+          isLoading: false,
+          targetId: userId,
+        );
+        isSuccess = apiResult.isSuccess;
+        error = apiResult.error;
       } else {
         final apiResult = await _followPostUseCase.executeFollowUser(
           isLoading: false,
@@ -255,31 +327,48 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
       }
 
       if (isSuccess) {
-        emit(IsmFollowUserState(isFollowing: false, userId: userId));
+        emit(IsmFollowUserState(
+          isFollowing: false,
+          followRequestPending: false,
+          userId: userId,
+        ));
         _uniquePostList.values
             .where((e) => e.userId == userId)
             .forEach((e) => e.isFollowing = false);
 
-        emit(IsmFollowActionListenerState(isFollowing: false, userId: userId));
+        emit(IsmFollowActionListenerState(
+          isFollowing: false,
+          followRequestPending: false,
+          userId: userId,
+        ));
 
-        _logFollowEvent(
-          FollowAction.unfollow,
-          reelsData: reelData,
-          watchDuration: watchDuration,
-          postSectionType: postSectionType,
-        );
+        if (!fromPendingRequest) {
+          _logFollowEvent(
+            FollowAction.unfollow,
+            reelsData: reelData,
+            watchDuration: watchDuration,
+            postSectionType: postSectionType,
+          );
+        }
       } else {
         // Emit error state first, then revert UI state
-        final errorMessage =
-            error?.message ?? 'Failed to unfollow user. Please try again.';
+        final errorMessage = error?.message ??
+            (fromPendingRequest
+                ? 'Failed to cancel request. Please try again.'
+                : 'Failed to unfollow user. Please try again.');
         emit(IsmFollowErrorState(
           userId: userId,
           errorMessage: errorMessage,
-          wasFollowing: true,
+          wasFollowing: !fromPendingRequest,
+          wasRequestPending: fromPendingRequest,
         ));
 
         // Revert to previous state after error
-        emit(IsmFollowUserState(isFollowing: true, userId: userId));
+        emit(IsmFollowUserState(
+          isFollowing: !fromPendingRequest,
+          followRequestPending: fromPendingRequest,
+          userId: userId,
+        ));
 
         // Show error to user - always show, not just NetworkError
         ErrorHandler.showAppError(
@@ -293,15 +382,20 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
       debugPrint('❌ Unexpected error in unfollowUser: $e');
       debugPrint('   Stack trace: $stackTrace');
 
-      final errorMessage = 'An unexpected error occurred. Please try again.';
+      const errorMessage = 'An unexpected error occurred. Please try again.';
       emit(IsmFollowErrorState(
         userId: userId,
         errorMessage: errorMessage,
-        wasFollowing: true,
+        wasFollowing: !fromPendingRequest,
+        wasRequestPending: fromPendingRequest,
       ));
 
       // Revert state
-      emit(IsmFollowUserState(isFollowing: true, userId: userId));
+      emit(IsmFollowUserState(
+        isFollowing: !fromPendingRequest,
+        followRequestPending: fromPendingRequest,
+        userId: userId,
+      ));
 
       // Show error
       ErrorHandler.showAppError(

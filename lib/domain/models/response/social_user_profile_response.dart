@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:ism_video_reel_player/domain/models/response/follow_requests_list_response.dart';
+
 SocialUserProfileResponse socialUserProfileResponseFromJson(String str) =>
     SocialUserProfileResponse.fromJson(
         json.decode(str) as Map<String, dynamic>);
@@ -73,6 +75,9 @@ class SocialUserProfileData {
     this.followingCount,
     this.isFollowing,
     this.postsCount,
+    this.isPrivate,
+    this.followStatus,
+    this.isRequested,
   });
 
   factory SocialUserProfileData.fromJson(Map<String, dynamic> json) =>
@@ -90,7 +95,22 @@ class SocialUserProfileData {
         followingCount: json['following_count'] as num? ?? 0,
         isFollowing: json['is_following'] as bool? ?? false,
         postsCount: json['posts_count'] as num? ?? 0,
+        isPrivate: json['is_private'] as bool? ?? false,
+        followStatus: FollowRelationshipStatus.parseFromApiFields(
+          followStatus: json['follow_status'] ?? json['followStatus'],
+          followRelationship:
+              json['follow_relationship'] ?? json['followRelationship'],
+        ),
+        isRequested: SocialUserProfileData._readRequested(json),
       );
+
+  static bool? _readRequested(Map<String, dynamic> json) {
+    final v = json['is_requested'] ?? json['isRequested'];
+    if (v == null) return null;
+    if (v is bool) return v;
+    if (v is num) return v != 0;
+    return null;
+  }
 
   final String? fullName;
   final String? avatarUrl;
@@ -105,6 +125,9 @@ class SocialUserProfileData {
   final num? followingCount;
   final bool? isFollowing;
   final num? postsCount;
+  final bool? isPrivate;
+  final num? followStatus;
+  final bool? isRequested;
 
   SocialUserProfileData copyWith({
     String? fullName,
@@ -151,5 +174,8 @@ class SocialUserProfileData {
         'following_count': followingCount,
         'is_following': isFollowing,
         'posts_count': postsCount,
+        'is_private': isPrivate,
+        'follow_status': followStatus,
+        'is_requested': isRequested,
       };
 }

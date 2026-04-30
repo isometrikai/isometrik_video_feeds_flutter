@@ -93,21 +93,26 @@ class SearchAppBarConfig {
     this.backgroundColor,
     this.showDivider,
     this.dividerColor,
+    this.showFollowRequestsAction,
   });
 
   final Color? backgroundColor;
   final bool? showDivider;
   final Color? dividerColor;
+  final bool? showFollowRequestsAction;
 
   SearchAppBarConfig copyWith({
     Color? backgroundColor,
     bool? showDivider,
     Color? dividerColor,
+    bool? showFollowRequestsAction,
   }) =>
       SearchAppBarConfig(
         backgroundColor: backgroundColor ?? this.backgroundColor,
         showDivider: showDivider ?? this.showDivider,
         dividerColor: dividerColor ?? this.dividerColor,
+        showFollowRequestsAction:
+            showFollowRequestsAction ?? this.showFollowRequestsAction,
       );
 }
 
@@ -590,6 +595,7 @@ class AccountsListConfig {
     this.fullNameStyle,
     this.followButtonConfig,
     this.spacing,
+    this.showPopularUsers,
   });
 
   final double? itemHeight;
@@ -603,6 +609,11 @@ class AccountsListConfig {
   final SearchScreenFollowButtonConfig? followButtonConfig;
   final double? spacing;
 
+  /// When true, the accounts tab will fetch and display popular users
+  /// when the search field is empty. Once the user types, normal search
+  /// takes over. Defaults to false.
+  final bool? showPopularUsers;
+
   AccountsListConfig copyWith({
     double? itemHeight,
     EdgeInsets? margin,
@@ -614,6 +625,7 @@ class AccountsListConfig {
     TextStyle? fullNameStyle,
     SearchScreenFollowButtonConfig? followButtonConfig,
     double? spacing,
+    bool? showPopularUsers,
   }) =>
       AccountsListConfig(
         itemHeight: itemHeight ?? this.itemHeight,
@@ -626,6 +638,7 @@ class AccountsListConfig {
         fullNameStyle: fullNameStyle ?? this.fullNameStyle,
         followButtonConfig: followButtonConfig ?? this.followButtonConfig,
         spacing: spacing ?? this.spacing,
+        showPopularUsers: showPopularUsers ?? this.showPopularUsers,
       );
 }
 
@@ -639,6 +652,9 @@ class SearchScreenFollowButtonConfig {
     this.textStyle,
     this.textColor,
     this.text,
+    this.requestText,
+    this.requestedText,
+    this.requestedBackgroundColor,
   });
 
   final double? height;
@@ -648,6 +664,9 @@ class SearchScreenFollowButtonConfig {
   final TextStyle? textStyle;
   final Color? textColor;
   final String? text;
+  final String? requestText;
+  final String? requestedText;
+  final Color? requestedBackgroundColor;
 
   SearchScreenFollowButtonConfig copyWith({
     double? height,
@@ -657,6 +676,9 @@ class SearchScreenFollowButtonConfig {
     TextStyle? textStyle,
     Color? textColor,
     String? text,
+    String? requestText,
+    String? requestedText,
+    Color? requestedBackgroundColor,
   }) =>
       SearchScreenFollowButtonConfig(
         height: height ?? this.height,
@@ -666,6 +688,10 @@ class SearchScreenFollowButtonConfig {
         textStyle: textStyle ?? this.textStyle,
         textColor: textColor ?? this.textColor,
         text: text ?? this.text,
+        requestText: requestText ?? this.requestText,
+        requestedText: requestedText ?? this.requestedText,
+        requestedBackgroundColor:
+            requestedBackgroundColor ?? this.requestedBackgroundColor,
       );
 }
 

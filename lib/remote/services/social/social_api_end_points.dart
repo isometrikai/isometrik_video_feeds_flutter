@@ -4,6 +4,12 @@ class SocialApiEndPoints {
   static const getTrendingPosts = '/api/v1/posts/trending';
   static const postCreatePost = '/api/v1/posts';
   static const postFollowUser = '/api/v1/follows';
+  static const getFollowRequestsIncoming = '/api/v1/follows/requests/incoming';
+  static const getFollowRequestsOutgoing = '/api/v1/follows/requests/outgoing';
+  static String postFollowRequestAccept(String requestId) =>
+      '/api/v1/follows/requests/$requestId/accept';
+  static String postFollowRequestDecline(String requestId) =>
+      '/api/v1/follows/requests/$requestId/decline';
   static const postSavePost = '/api/v1/posts/save';
   static const postLike = '/api/v1/likes/post';
   static const postUnLike = '/api/v1/likes/post';
@@ -15,7 +21,8 @@ class SocialApiEndPoints {
   static const String postCommentLike = '/api/v1/likes/comment';
   static const String postReportComment = '/api/v1/reports';
   static const String getPostDetails = '/api/v1/posts/detail';
-  static String getPostInsights(String postId) => '/api/v1/posts/$postId/insights';
+  static String getPostInsights(String postId) =>
+      '/api/v1/posts/$postId/insights';
   static String get getSocialProducts => '/fast/api/v1/social-pdp/bulk';
   // static String get getSocialProducts => switch (appFlavour) {
   //   AppFlavor.production => '/v1/product/socialpost/details',
@@ -31,6 +38,7 @@ class SocialApiEndPoints {
   static String postMediaProcess(String postId) =>
       '/api/v1/posts/$postId/start-processing';
   static const String getSearchUsers = '/api/v1/users/search';
+  static const String getPopularUsers = '/api/v1/users/popular';
   static const String getSearchTags = '/api/v1/tags/hashtags/search';
   static String getUserProfile(String userId) =>
       '/api/v1/users/$userId/profile';
@@ -47,5 +55,4 @@ class SocialApiEndPoints {
   static const String deleteCollection = '/api/v1/posts/collections';
   static const String postImpressions = '/api/v1/views';
   static const String onShareSuccess = '/api/v1/shares';
-
 }
