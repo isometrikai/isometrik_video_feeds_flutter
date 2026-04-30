@@ -51,6 +51,8 @@ class CommentTaggingTextField extends StatefulWidget {
     this.maxOuterHeight,
     /// Wraps the field in a [SingleChildScrollView] (comment box); caption turns this off.
     this.wrapFieldInScrollView = true,
+    /// Maximum viewport fraction used by inline suggestions list(s).
+    this.inlineSuggestionMaxHeightFactor = 0.3,
   }) : super(key: key);
 
   final FlutterTaggerController controller;
@@ -82,6 +84,7 @@ class CommentTaggingTextField extends StatefulWidget {
   final EdgeInsetsGeometry? textFieldPadding;
   final double? maxOuterHeight;
   final bool wrapFieldInScrollView;
+  final double inlineSuggestionMaxHeightFactor;
 
   /// Registers plain `@name` / `#tag` segments in the tagger trie so they render with tag styling.
   ///
@@ -668,7 +671,8 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
         Container(
           margin: const EdgeInsets.only(top: 8),
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.3,
+            maxHeight: MediaQuery.of(context).size.height *
+                widget.inlineSuggestionMaxHeightFactor,
           ),
           child: ListView.separated(
             shrinkWrap: true,
@@ -780,7 +784,8 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
         const Divider(height: 1, thickness: 1),
         Container(
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.4,
+            maxHeight: MediaQuery.of(context).size.height *
+                widget.inlineSuggestionMaxHeightFactor,
           ),
           child: ListView.separated(
             shrinkWrap: true,

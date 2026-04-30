@@ -921,19 +921,24 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                       horizontal: 10.responsiveDimension),
               child: Row(
                 mainAxisSize: MainAxisSize.max,
-                crossAxisAlignment: CrossAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Expanded(
                     child: CommentTaggingTextField(
                       controller: _replyController,
                       focusNode: _replyFocusNode,
-                      inlineSuggestionsAbove: true,
+                      inlineSuggestionsAbove:
+                          _replyFieldConfig?.showoverlaySuggestions ?? false,
+                      inlineSuggestionMaxHeightFactor: 0.2,
                       minLines: 1,
+                      maxLines: 4,
                       autoFocus: true,
                       hintText: IsrTranslationFile.addAComment,
                       textStyle: _replyFieldConfig?.inputTextStyle,
-                      userTagTextStyle: _replyFieldConfig?.inputUserTagTextStyle,
-                      hashtagTextStyle: _replyFieldConfig?.inputHashtagTextStyle,
+                      userTagTextStyle:
+                          _replyFieldConfig?.inputUserTagTextStyle,
+                      hashtagTextStyle:
+                          _replyFieldConfig?.inputHashtagTextStyle,
                       decoration: _replyFieldConfig?.inputDecoration ??
                           const InputDecoration(
                             hintText: IsrTranslationFile.addAComment,
@@ -942,28 +947,33 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                             alignLabelWithHint: true,
                           ),
                       onRemoveHashTagData: (mentionData) {
-                        debugPrint('comment remove tagging: ${mentionData.toJson()}');
-                      tagMentions.removeWhere(
-                          (_) => _.toJson() == mentionData.toJson());
-                    },
-                    onRemoveMentionData: (mentionData) {
-                      debugPrint('comment remove user tagging: ${mentionData.toJson()}');
-                      userMentions.removeWhere(
-                          (_) => _.toJson() == mentionData.toJson());
-                    },
-                    onAddHashTagData: (mentionData) {
-                      debugPrint('comment tagging: ${mentionData.toJson()}');
+                        debugPrint(
+                            'comment remove tagging: ${mentionData.toJson()}');
+                        tagMentions.removeWhere(
+                            (_) => _.toJson() == mentionData.toJson());
+                      },
+                      onRemoveMentionData: (mentionData) {
+                        debugPrint(
+                            'comment remove user tagging: ${mentionData.toJson()}');
+                        userMentions.removeWhere(
+                            (_) => _.toJson() == mentionData.toJson());
+                      },
+                      onAddHashTagData: (mentionData) {
+                        debugPrint('comment tagging: ${mentionData.toJson()}');
                         if (!tagMentions
                             .any((_) => _.toJson() == mentionData.toJson())) {
-                          debugPrint('comment tagging: ${mentionData.toJson()}');
-                        tagMentions.add(mentionData);
-                      }
-                    },
-                    onAddMentionData: (mentionData) {
-                      debugPrint('comment user tagging: ${mentionData.toJson()}');
-                      if (!userMentions
-                          .any((_) => _.toJson() == mentionData.toJson())) {
-                        debugPrint('comment user tagging: ${mentionData.toJson()}');
+                          debugPrint(
+                              'comment tagging: ${mentionData.toJson()}');
+                          tagMentions.add(mentionData);
+                        }
+                      },
+                      onAddMentionData: (mentionData) {
+                        debugPrint(
+                            'comment user tagging: ${mentionData.toJson()}');
+                        if (!userMentions
+                            .any((_) => _.toJson() == mentionData.toJson())) {
+                          debugPrint(
+                              'comment user tagging: ${mentionData.toJson()}');
                           userMentions.add(mentionData);
                         }
                       },
@@ -971,63 +981,70 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                   ),
                   ValueListenableBuilder<TextEditingValue>(
                     valueListenable: _replyController,
-                    builder: (context, value, child) => AppButton(
-                      width: 70.responsiveDimension,
-                      title: IsrTranslationFile.post,
-                      textStyle: _replyFieldConfig?.postButtonStyle ??
-                          IsrStyles.primaryText14.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: value.text.isStringEmptyOrNull
-                                ? Theme.of(context)
-                                    .primaryColor
-                                    .changeOpacity(0.5)
-                                : Theme.of(context).primaryColor,
-                          ),
-                      isDisable: value.text.isStringEmptyOrNull,
-                      type: ButtonType.text,
-                      onPress: () async {
-                        if (value.text.isStringEmptyOrNull) return;
+                    builder: (context, value, child) => Padding(
+                      padding:
+                          IsrDimens.edgeInsets(bottom: 10.responsiveDimension),
+                      child: AppButton(
+                        width: 70.responsiveDimension,
+                        title: IsrTranslationFile.post,
+                        textStyle: _replyFieldConfig?.postButtonStyle ??
+                            IsrStyles.primaryText14.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: value.text.isStringEmptyOrNull
+                                  ? Theme.of(context)
+                                      .primaryColor
+                                      .changeOpacity(0.5)
+                                  : Theme.of(context).primaryColor,
+                            ),
+                        isDisable: value.text.isStringEmptyOrNull,
+                        type: ButtonType.text,
+                        onPress: () async {
+                          if (value.text.isStringEmptyOrNull) return;
 
-                        final commentText = value.text;
-                        final postId = commentDataItem?.postId ?? widget.postId;
-                        final parentCommentId = commentDataItem?.id ?? '';
+                          final commentText = value.text;
+                          final postId =
+                              commentDataItem?.postId ?? widget.postId;
+                          final parentCommentId = commentDataItem?.id ?? '';
 
-                        // Clear input and hide keyboard immediately for better UX
-                        _replyFocusNode.unfocus();
-                        _replyController.clear();
-                        final currentTagMentions =
-                            List<CommentMentionData>.from(tagMentions);
-                        final currentUserMentions =
-                            List<CommentMentionData>.from(userMentions);
-                        tagMentions.clear();
-                        userMentions.clear();
-                        _setReplyComment(null);
-                      debugPrint('comment tag data : ${currentTagMentions.map((e) => e.toJson())}');
-                      debugPrint('comment tag user data : ${currentUserMentions.map((e) => e.toJson())}');
-                        // Send to server - Bloc will handle optimistic UI update
-                        _socialBloc.add(
-                          CommentActionEvent(
-                            userId: commentDataItem?.commentedByUserId,
-                            isLoading: false,
-                            parentCommentId: parentCommentId,
-                            postId: postId,
-                            replyText: commentText,
-                            commentAction: CommentAction.comment,
-                            postedBy: _myUserId,
-                            postCommentList: _postCommentList,
-                            commentTags: {
-                              'hashtags': currentTagMentions
-                                  .map((e) => e.toJson())
-                                  .toList(),
-                              'mentions': currentUserMentions
-                                  .map((e) => e.toJson())
-                                  .toList(),
-                            },
-                            postDataModel: widget.postData,
-                            tabDataModel: widget.tabData,
-                          ),
-                        );
-                      },
+                          // Clear input and hide keyboard immediately for better UX
+                          _replyFocusNode.unfocus();
+                          _replyController.clear();
+                          final currentTagMentions =
+                              List<CommentMentionData>.from(tagMentions);
+                          final currentUserMentions =
+                              List<CommentMentionData>.from(userMentions);
+                          tagMentions.clear();
+                          userMentions.clear();
+                          _setReplyComment(null);
+                          debugPrint(
+                              'comment tag data : ${currentTagMentions.map((e) => e.toJson())}');
+                          debugPrint(
+                              'comment tag user data : ${currentUserMentions.map((e) => e.toJson())}');
+                          // Send to server - Bloc will handle optimistic UI update
+                          _socialBloc.add(
+                            CommentActionEvent(
+                              userId: commentDataItem?.commentedByUserId,
+                              isLoading: false,
+                              parentCommentId: parentCommentId,
+                              postId: postId,
+                              replyText: commentText,
+                              commentAction: CommentAction.comment,
+                              postedBy: _myUserId,
+                              postCommentList: _postCommentList,
+                              commentTags: {
+                                'hashtags': currentTagMentions
+                                    .map((e) => e.toJson())
+                                    .toList(),
+                                'mentions': currentUserMentions
+                                    .map((e) => e.toJson())
+                                    .toList(),
+                              },
+                              postDataModel: widget.postData,
+                              tabDataModel: widget.tabData,
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ],

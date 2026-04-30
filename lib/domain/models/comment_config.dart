@@ -313,9 +313,8 @@ class BelowCommentsConfig {
         commentSpacing: commentSpacing ?? this.commentSpacing,
         maxLinesPerComment: maxLinesPerComment ?? this.maxLinesPerComment,
         maxVisibleComments: maxVisibleComments ?? this.maxVisibleComments,
-        animationDurationInMilliseconds:
-            animationDurationInMilliseconds ??
-                this.animationDurationInMilliseconds,
+        animationDurationInMilliseconds: animationDurationInMilliseconds ??
+            this.animationDurationInMilliseconds,
         animationOffsetY: animationOffsetY ?? this.animationOffsetY,
       );
 }
@@ -336,6 +335,7 @@ class ReplyFieldConfig {
     this.hintTextStyle,
     this.postButtonStyle,
     this.replyFieldPadding,
+    this.showoverlaySuggestions,
   });
 
   /// Background color for the "Replying to" section
@@ -377,6 +377,8 @@ class ReplyFieldConfig {
   /// Padding for the reply field container
   final EdgeInsetsGeometry? replyFieldPadding;
 
+  final bool? showoverlaySuggestions;
+
   ReplyFieldConfig copyWith({
     Color? replyingToBackgroundColor,
     TextStyle? replyingToTextStyle,
@@ -391,6 +393,7 @@ class ReplyFieldConfig {
     TextStyle? hintTextStyle,
     TextStyle? postButtonStyle,
     EdgeInsetsGeometry? replyFieldPadding,
+    bool? showoverlaySuggestions,
   }) =>
       ReplyFieldConfig(
         replyingToBackgroundColor:
@@ -402,11 +405,15 @@ class ReplyFieldConfig {
         closeReplyIconColor: closeReplyIconColor ?? this.closeReplyIconColor,
         inputDecoration: inputDecoration ?? this.inputDecoration,
         inputTextStyle: inputTextStyle ?? this.inputTextStyle,
-        inputUserTagTextStyle: inputUserTagTextStyle ?? this.inputUserTagTextStyle,
-        inputHashtagTextStyle: inputHashtagTextStyle ?? this.inputHashtagTextStyle,
+        inputUserTagTextStyle:
+            inputUserTagTextStyle ?? this.inputUserTagTextStyle,
+        inputHashtagTextStyle:
+            inputHashtagTextStyle ?? this.inputHashtagTextStyle,
         hintTextStyle: hintTextStyle ?? this.hintTextStyle,
         postButtonStyle: postButtonStyle ?? this.postButtonStyle,
         replyFieldPadding: replyFieldPadding ?? this.replyFieldPadding,
+        showoverlaySuggestions:
+            showoverlaySuggestions ?? this.showoverlaySuggestions,
       );
 }
 
