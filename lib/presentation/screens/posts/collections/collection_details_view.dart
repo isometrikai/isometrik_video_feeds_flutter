@@ -560,7 +560,13 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
             return TapHandler(
               key: ValueKey('post_${post.id}'),
               onTap: () {
-                // Navigate to post detail
+                IsrAppNavigator.navigateToReelsPlayer(
+                  context,
+                  postDataList: _posts,
+                  startingPostIndex: index,
+                  postSectionType: PostSectionType.singlePost,
+                  postId: post.id ?? '',
+                );
               },
               onLongPress: () => _showPostOptions(post),
               child: _buildPostCard(post, index),
