@@ -161,16 +161,24 @@ class PostSetting {
     return null;
   }
 
-  Map<String, dynamic> toJson() => {
-        'advance_interval': advanceInterval,
-        'age_restriction': ageRestriction,
-        'auto_advance': autoAdvance,
-        'comments_enabled': commentsEnabled,
-        'duet_enabled': duetEnabled,
-        'save_enabled': saveEnabled,
-        'stitch_enabled': stitchEnabled,
-        if (isPaid != null) 'is_paid': isPaid,
-        if (priceAmount != null) 'price_amount': priceAmount,
-        if (priceCurrency != null) 'price_currency': priceCurrency,
-      };
+  Map<String, dynamic> toJson() {
+    final payload = <String, dynamic>{
+      'advance_interval': advanceInterval,
+      'age_restriction': ageRestriction,
+      'auto_advance': autoAdvance,
+      'comments_enabled': commentsEnabled,
+      'duet_enabled': duetEnabled,
+      'save_enabled': saveEnabled,
+      'stitch_enabled': stitchEnabled,
+    };
+    final shouldSendPaidFields = isPaid == true &&
+        priceAmount != null &&
+        (priceCurrency?.trim().isNotEmpty ?? false);
+    if (shouldSendPaidFields) {
+      payload['is_paid'] = true;
+      payload['price_amount'] = priceAmount;
+      payload['price_currency'] = priceCurrency;
+    }
+    return payload;
+  }
 }
