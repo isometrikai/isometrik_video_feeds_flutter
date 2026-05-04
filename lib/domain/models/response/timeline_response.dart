@@ -483,19 +483,31 @@ class Settings {
     this.audioSettings,
   });
 
-  factory Settings.fromMap(Map<String, dynamic> json) => Settings(
-        commentsEnabled: json['comments_enabled'] as bool? ?? false,
-        duetEnabled: json['duet_enabled'] as bool? ?? false,
-        stitchEnabled: json['stitch_enabled'] as bool? ?? false,
-        saveEnabled: json['save_enabled'] as bool? ?? false,
-        isPaid: json['is_paid'] as bool?,
-        priceAmount: json['price_amount'],
-        priceCurrency: json['price_currency'] as String?,
-        ageRestriction: json['age_restriction'] as bool? ?? false,
-        autoAdvance: json['auto_advance'] as bool? ?? false,
-        advanceInterval: json['advance_interval'] as num? ?? 0,
-        audioSettings: json['audio_settings'],
-      );
+  factory Settings.fromMap(Map<String, dynamic> json) {
+    final isPaid = _readBool(json['is_paid'], key: 'is_paid');
+    final priceAmount =
+        _readPriceAmount(json['price_amount'], key: 'price_amount');
+    final normalizedIsPaid =
+        (isPaid == true && priceAmount == null) ? false : isPaid;
+
+    return Settings(
+      commentsEnabled:
+          _readBool(json['comments_enabled'], key: 'comments_enabled') ?? false,
+      duetEnabled: _readBool(json['duet_enabled'], key: 'duet_enabled') ?? false,
+      stitchEnabled:
+          _readBool(json['stitch_enabled'], key: 'stitch_enabled') ?? false,
+      saveEnabled: _readBool(json['save_enabled'], key: 'save_enabled') ?? false,
+      isPaid: normalizedIsPaid,
+      priceAmount: priceAmount,
+      priceCurrency: json['price_currency'] as String?,
+      ageRestriction:
+          _readBool(json['age_restriction'], key: 'age_restriction') ?? false,
+      autoAdvance: _readBool(json['auto_advance'], key: 'auto_advance') ?? false,
+      advanceInterval:
+          _readNum(json['advance_interval'], key: 'advance_interval') ?? 0,
+      audioSettings: json['audio_settings'],
+    );
+  }
   bool? commentsEnabled;
   bool? duetEnabled;
   bool? stitchEnabled;
@@ -507,6 +519,34 @@ class Settings {
   bool? autoAdvance;
   num? advanceInterval;
   dynamic audioSettings;
+
+  static bool? _readBool(dynamic value, {required String key}) {
+    if (value == null) return null;
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      if (normalized == 'true' || normalized == '1') return true;
+      if (normalized == 'false' || normalized == '0') return false;
+    }
+    return null;
+  }
+
+  static num? _readNum(dynamic value, {required String key}) {
+    if (value == null) return null;
+    if (value is num) return value;
+    if (value is String) {
+      final parsed = num.tryParse(value);
+      if (parsed != null) return parsed;
+    }
+    return null;
+  }
+
+  static Object? _readPriceAmount(dynamic value, {required String key}) {
+    if (value == null) return null;
+    if (value is num || value is String) return value;
+    return null;
+  }
 
   Map<String, dynamic> toMap() => {
         'comments_enabled': commentsEnabled,

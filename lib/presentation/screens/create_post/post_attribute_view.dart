@@ -335,8 +335,16 @@ class _PostAttributeViewState extends State<PostAttributeView>
     if (!_isPaidPostEnabled) return true;
     final settings = _postAttributeClass?.createPostRequest?.settings;
     if (settings?.isPaid != true) return true;
-    final amount = int.tryParse(_paidAmountController.text.trim());
+    final amount = num.tryParse(_paidAmountController.text.trim());
     return (amount ?? 0) > 0;
+  }
+
+  String? _getPaidAmountErrorText() {
+    if (!_isPaidPostEnabled) return null;
+    final settings = _postAttributeClass?.createPostRequest?.settings;
+    if (settings?.isPaid != true) return null;
+    if (_paidAmountController.text.trim().isEmpty) return null;
+    return _isPaidAmountValid() ? null : 'Amount must be greater than 0';
   }
 
   /// Check if there are any changes compared to original data
@@ -1206,16 +1214,14 @@ class _PostAttributeViewState extends State<PostAttributeView>
           value: isPaid,
           onChanged: (value) {
             setState(() {
+              final currentAmount =
+                  num.tryParse(_paidAmountController.text.trim());
               _postAttributeClass?.createPostRequest?.settings = PostSettingModel(
                 commentsEnabled:
                     settings?.commentsEnabled ?? _postAttributeClass?.allowComment ?? true,
                 saveEnabled: settings?.saveEnabled ?? _postAttributeClass?.allowSave ?? true,
                 isPaid: value,
-                priceAmount: value
-                    ? (_paidAmountController.text.trim().isEmpty
-                        ? null
-                        : _paidAmountController.text.trim())
-                    : null,
+                priceAmount: value ? currentAmount : null,
                 priceCurrency: value
                     ? IsrVideoReelConfig.createEditPostConfig.paidPostCurrency
                     : null,
@@ -1248,6 +1254,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
                   onChanged: (value) {
                     final oldSettings =
                         _postAttributeClass?.createPostRequest?.settings;
+                    final parsedAmount = num.tryParse(value.trim());
                     _postAttributeClass?.createPostRequest?.settings = PostSettingModel(
                       commentsEnabled: oldSettings?.commentsEnabled ??
                           _postAttributeClass?.allowComment ??
@@ -1255,14 +1262,16 @@ class _PostAttributeViewState extends State<PostAttributeView>
                       saveEnabled:
                           oldSettings?.saveEnabled ?? _postAttributeClass?.allowSave ?? true,
                       isPaid: true,
-                      priceAmount: value.trim().isEmpty ? null : value.trim(),
+                      priceAmount: parsedAmount,
                       priceCurrency:
                           IsrVideoReelConfig.createEditPostConfig.paidPostCurrency,
                     );
+                    setState(() {});
                     _updatePostButtonState();
                   },
                   decoration: InputDecoration(
                     hintText: 'Enter amount',
+                    errorText: _getPaidAmountErrorText(),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -1295,7 +1304,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
                                   _postAttributeClass?.allowSave ??
                                   true,
                               isPaid: true,
-                              priceAmount: amount.toString(),
+                              priceAmount: amount,
                               priceCurrency: IsrVideoReelConfig
                                   .createEditPostConfig.paidPostCurrency,
                             );
@@ -1789,6 +1798,12 @@ class _PostAttributeViewState extends State<PostAttributeView>
   }
 
   void _createPost() {
+    if (!_isPaidAmountValid()) {
+      Utility.showAppDialog(
+        message: 'Please enter a paid amount greater than 0',
+      );
+      return;
+    }
     _setPostRequest();
     context.getOrCreateBloc<CreatePostBloc>().add(PostCreateEvent(
       createPostRequest:
@@ -1826,7 +1841,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
         priceAmount: _isPaidPostEnabled &&
                 (_postAttributeClass?.createPostRequest?.settings?.isPaid == true) &&
                 _paidAmountController.text.trim().isNotEmpty
-            ? _paidAmountController.text.trim()
+            ? num.tryParse(_paidAmountController.text.trim())
             : null,
         priceCurrency: _isPaidPostEnabled &&
                 (_postAttributeClass?.createPostRequest?.settings?.isPaid == true)
