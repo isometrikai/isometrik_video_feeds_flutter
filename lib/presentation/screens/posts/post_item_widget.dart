@@ -56,6 +56,11 @@ class _PostItemWidgetState extends State<PostItemWidget>
   // Track refresh count for each index to force rebuild
   final Map<int, int> _refreshCounts = {};
 
+  /// [PreloadPageController.page] asserts when no [PreloadPageView] is attached.
+  int get _resolvedCurrentPageIndex => _pageController.hasClients
+      ? _pageController.page!.round()
+      : _currentIndex.value;
+
   @override
   void initState() {
     _onStartInit();
@@ -240,7 +245,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
 
   Future<void> updateStateByKey() async {
     // Get current index before refresh
-    final currentIndex = _pageController.page?.toInt() ?? 0;
+    final currentIndex = _resolvedCurrentPageIndex;
     debugPrint('🔄 MainWidget: Starting update at index $currentIndex');
 
     // Increment refresh count to force rebuild
@@ -665,7 +670,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
         final result = await widget.onRefresh?.call();
         if (result == true) {
           // Get current index before refresh
-          final currentIndex = _pageController.page?.toInt() ?? 0;
+          final currentIndex = _resolvedCurrentPageIndex;
           debugPrint('🔄 MainWidget: Starting refresh at index $currentIndex');
 
           // Increment refresh count to force rebuild

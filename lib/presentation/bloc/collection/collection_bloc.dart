@@ -179,19 +179,23 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
     final imageFile = File(pickedFile.path);
     final croppedFile = await ImageCropper().cropImage(
       sourcePath: imageFile.path,
+      // Locks crop to 1:1 on both platforms; Android still needs
+      // lockAspectRatio: false so uCrop uses freeStyleCrop (pan, pinch, drag handles).
+      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
       uiSettings: [
         AndroidUiSettings(
-            toolbarTitle: 'Choose Image',
-            toolbarColor: IsrColors.white,
-            toolbarWidgetColor: IsrColors.black,
-            initAspectRatio: CropAspectRatioPreset.original,
-            lockAspectRatio: true,
-            cropStyle: CropStyle.rectangle,
-            aspectRatioPresets: [CropAspectRatioPreset.square]),
+          toolbarTitle: 'Choose Image',
+          toolbarColor: IsrColors.white,
+          toolbarWidgetColor: IsrColors.black,
+          initAspectRatio: CropAspectRatioPreset.square,
+          lockAspectRatio: false,
+          cropStyle: CropStyle.rectangle,
+          aspectRatioPresets: const [CropAspectRatioPreset.square],
+        ),
         IOSUiSettings(
-          minimumAspectRatio: 1.0,
           title: 'Choose Image',
           cropStyle: CropStyle.rectangle,
+          aspectRatioPresets: const [CropAspectRatioPreset.square],
         ),
       ],
     );
