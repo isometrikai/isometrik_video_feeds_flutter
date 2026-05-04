@@ -92,6 +92,9 @@ class PostSetting {
         duetEnabled: json['duet_enabled'] as bool? ?? false,
         saveEnabled: json['save_enabled'] as bool? ?? false,
         stitchEnabled: json['stitch_enabled'] as bool? ?? false,
+        isPaid: json['is_paid'] as bool?,
+        priceAmount: json['price_amount'],
+        priceCurrency: json['price_currency'] as String?,
       );
 
   PostSetting({
@@ -102,6 +105,9 @@ class PostSetting {
     this.duetEnabled,
     this.saveEnabled,
     this.stitchEnabled,
+    this.isPaid,
+    this.priceAmount,
+    this.priceCurrency,
   });
 
   final num? advanceInterval;
@@ -111,6 +117,9 @@ class PostSetting {
   final bool? duetEnabled;
   final bool? saveEnabled;
   final bool? stitchEnabled;
+  final bool? isPaid;
+  final Object? priceAmount;
+  final String? priceCurrency;
 
   Map<String, dynamic> toJson() => {
         'advance_interval': advanceInterval,
@@ -120,5 +129,8 @@ class PostSetting {
         'duet_enabled': duetEnabled,
         'save_enabled': saveEnabled,
         'stitch_enabled': stitchEnabled,
+        if (isPaid != null) 'is_paid': isPaid,
+        if (priceAmount != null) 'price_amount': priceAmount,
+        if (priceCurrency != null) 'price_currency': priceCurrency,
       };
 }

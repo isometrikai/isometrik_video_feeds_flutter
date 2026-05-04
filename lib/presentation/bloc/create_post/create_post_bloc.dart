@@ -971,6 +971,21 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     _postAttributeClass.taggedPlaces = locationTagDataList;
     _postAttributeClass.allowSave = _postData?.settings?.saveEnabled;
     _postAttributeClass.allowComment = _postData?.settings?.commentsEnabled;
+    final postSettings = _postData?.settings;
+    if (postSettings != null) {
+      _createPostRequest.settings = PostSettingModel(
+        advanceInterval: postSettings.advanceInterval,
+        ageRestriction: postSettings.ageRestriction,
+        autoAdvance: postSettings.autoAdvance,
+        commentsEnabled: postSettings.commentsEnabled,
+        duetEnabled: postSettings.duetEnabled,
+        saveEnabled: postSettings.saveEnabled,
+        stitchEnabled: postSettings.stitchEnabled,
+        isPaid: postSettings.isPaid,
+        priceAmount: postSettings.priceAmount,
+        priceCurrency: postSettings.priceCurrency,
+      );
+    }
   }
 
   bool checkForChangesInLinkedProducts(List<ProductDataModel> linkedProducts) {

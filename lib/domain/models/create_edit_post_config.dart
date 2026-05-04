@@ -8,16 +8,25 @@ class CreateEditPostConfig {
     this.createEditPostCallBackConfig,
     this.createEditPostUIConfig,
     this.autoMoveToNextPost = true,
+    this.enablePaidPost = false,
+    this.paidPostCurrency = 'coin',
+    this.paidPostAmountSuggestions = const [10, 50, 100, 150],
   });
 
   final CreateEditPostCallBackConfig? createEditPostCallBackConfig;
   final CreateEditPostUIConfig? createEditPostUIConfig;
   final bool autoMoveToNextPost;
+  final bool enablePaidPost;
+  final String paidPostCurrency;
+  final List<int> paidPostAmountSuggestions;
 
   CreateEditPostConfig copyWith({
     CreateEditPostCallBackConfig? createEditPostCallBackConfig,
     CreateEditPostUIConfig? createEditPostUIConfig,
     bool? autoMoveToNextPost,
+    bool? enablePaidPost,
+    String? paidPostCurrency,
+    List<int>? paidPostAmountSuggestions,
   }) =>
       CreateEditPostConfig(
         createEditPostCallBackConfig:
@@ -25,6 +34,10 @@ class CreateEditPostConfig {
         createEditPostUIConfig:
             createEditPostUIConfig ?? this.createEditPostUIConfig,
         autoMoveToNextPost: autoMoveToNextPost ?? this.autoMoveToNextPost,
+        enablePaidPost: enablePaidPost ?? this.enablePaidPost,
+        paidPostCurrency: paidPostCurrency ?? this.paidPostCurrency,
+        paidPostAmountSuggestions:
+            paidPostAmountSuggestions ?? this.paidPostAmountSuggestions,
       );
 }
 
