@@ -78,6 +78,7 @@ class SocialUserProfileData {
     this.isPrivate,
     this.followStatus,
     this.isRequested,
+    this.verificationStatus,
   });
 
   factory SocialUserProfileData.fromJson(Map<String, dynamic> json) =>
@@ -102,6 +103,7 @@ class SocialUserProfileData {
               json['follow_relationship'] ?? json['followRelationship'],
         ),
         isRequested: SocialUserProfileData._readRequested(json),
+        verificationStatus: json['verification_status'] as String? ?? '',
       );
 
   static bool? _readRequested(Map<String, dynamic> json) {
@@ -128,6 +130,7 @@ class SocialUserProfileData {
   final bool? isPrivate;
   final num? followStatus;
   final bool? isRequested;
+  final String? verificationStatus;
 
   SocialUserProfileData copyWith({
     String? fullName,
@@ -143,6 +146,10 @@ class SocialUserProfileData {
     num? followingCount,
     bool? isFollowing,
     num? postsCount,
+    bool? isPrivate,
+    num? followStatus,
+    bool? isRequested,
+    String? verificationStatus,
   }) =>
       SocialUserProfileData(
         fullName: fullName ?? this.fullName,
@@ -158,6 +165,7 @@ class SocialUserProfileData {
         followingCount: followingCount ?? this.followingCount,
         isFollowing: isFollowing ?? this.isFollowing,
         postsCount: postsCount ?? this.postsCount,
+        verificationStatus: verificationStatus ?? this.verificationStatus,
       );
 
   Map<String, dynamic> toJson() => {
@@ -177,5 +185,6 @@ class SocialUserProfileData {
         'is_private': isPrivate,
         'follow_status': followStatus,
         'is_requested': isRequested,
+        'verification_status': verificationStatus,
       };
 }
