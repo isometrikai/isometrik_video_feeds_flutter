@@ -293,8 +293,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _resetPostProgress();
 
     // Start image view timer only if current media is an image
-    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType ==
-        kPictureType) {
+    final mediaList = _reelData.mediaMetaDataList;
+    final page = _currentPageNotifier.value;
+    if (mediaList.isNotEmpty &&
+        page < mediaList.length &&
+        mediaList[page].mediaType == kPictureType) {
       _startOrResumeImageProgress();
     }
 

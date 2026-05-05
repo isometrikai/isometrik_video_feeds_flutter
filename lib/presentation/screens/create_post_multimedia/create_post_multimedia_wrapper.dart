@@ -13,6 +13,7 @@ import 'package:ism_video_reel_player/presentation/screens/media/media_selection
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/extensions.dart';
 import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 
 class CreatePostMultimediaWrapper extends StatefulWidget {
   const CreatePostMultimediaWrapper({super.key});
@@ -213,9 +214,16 @@ class _CreatePostMultimediaWrapperState
     if (videoPath == null || videoPath.isEmpty) return null;
 
     try {
+      final documentsDir = await getApplicationDocumentsDirectory();
+      final thumbDir = Directory(
+        path.join(documentsDir.path, 'media', 'import_thumbs'),
+      );
+      if (!await thumbDir.exists()) {
+        await thumbDir.create(recursive: true);
+      }
       final thumbnailFile = await VideoThumbnail.thumbnailFile(
         video: videoPath,
-        thumbnailPath: (await Directory.systemTemp.createTemp()).path,
+        thumbnailPath: thumbDir.path,
         quality: 75,
       );
 
