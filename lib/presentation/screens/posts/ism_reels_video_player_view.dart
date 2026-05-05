@@ -276,8 +276,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     return isPaidLocked;
   }
 
-  TimeLineData? get _timelinePost =>
-      _reelData.postData is TimeLineData ? _reelData.postData as TimeLineData : null;
+  TimeLineData? get _timelinePost => _reelData.postData is TimeLineData
+      ? _reelData.postData as TimeLineData
+      : null;
 
   static bool _looksLikeStreamingOrVideoUrl(String url) {
     final u = url.trim().toLowerCase();
@@ -309,8 +310,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
 
     if (_reelData.mediaMetaDataList.isNotEmpty) {
-      final meta =
-          _reelData.mediaMetaDataList[_currentPageNotifier.value];
+      final meta = _reelData.mediaMetaDataList[_currentPageNotifier.value];
       if (meta.mediaType == kVideoType) {
         final thumb = usableStill(meta.thumbnailUrl);
         if (thumb != null) return thumb;
@@ -384,11 +384,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     // Initialize PageController for carousel
     _pageController = PreloadPageController(initialPage: 0);
-
-    if (_reelData.mediaMetaDataList.isEmpty) {
-      unawaited(_fetchFloatingCommentsIfNeeded());
-      return;
-    }
 
     if (!_shouldShowPaidLockOverlay) {
       _preloadNextVideos();
@@ -624,89 +619,89 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     const blurSigma = 28.0;
     final primary = Theme.of(context).colorScheme.primary;
 
-    Widget chrome({Widget? blurredChild}) {
-      return Stack(
-        fit: StackFit.expand,
-        children: [
-          if (blurredChild != null)
-            ImageFiltered(
-              imageFilter:
-                  ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
-              child: blurredChild,
-            )
-          else
-            ColoredBox(color: Colors.grey.shade900),
-          Container(color: Colors.black.withValues(alpha: 0.42)),
-          Center(
-            child: Padding(
-              padding: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twentyEight),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: IsrDimens.edgeInsetsAll(IsrDimens.eighteen),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.lock_rounded,
-                      color: Colors.white,
-                      size: IsrDimens.forty,
-                    ),
-                  ),
-                  IsrDimens.boxHeight(IsrDimens.sixteen),
-                  Text(
-                    IsrTranslationFile.paidPostLockedTitle,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: IsrDimens.eighteen,
-                      fontWeight: FontWeight.w600,
-                      shadows: _textShadows,
-                    ),
-                  ),
-                  IsrDimens.boxHeight(IsrDimens.eight),
-                  Text(
-                    IsrTranslationFile.paidPostLockedSubtitle,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.88),
-                      fontSize: IsrDimens.fourteen,
-                      height: 1.35,
-                    ),
-                  ),
-                  IsrDimens.boxHeight(IsrDimens.twentyTwo),
-                  OutlinedButton(
-                    onPressed: _onPaidUnlockPressed,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: primary,
-                      side: BorderSide(color: primary.withValues(alpha: 0.9)),
-                      padding: IsrDimens.edgeInsetsSymmetric(
-                        horizontal: IsrDimens.twentyTwo,
-                        vertical: IsrDimens.twelve,
+    Widget chrome({Widget? blurredChild}) => Stack(
+          fit: StackFit.expand,
+          children: [
+            if (blurredChild != null)
+              ImageFiltered(
+                imageFilter:
+                    ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+                child: blurredChild,
+              )
+            else
+              ColoredBox(color: Colors.grey.shade900),
+            Container(color: Colors.black.withValues(alpha: 0.42)),
+            Center(
+              child: Padding(
+                padding: IsrDimens.edgeInsetsSymmetric(
+                    horizontal: IsrDimens.twentyEight),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: IsrDimens.edgeInsetsAll(IsrDimens.eighteen),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
                       ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(IsrDimens.twentyFive),
+                      child: Icon(
+                        Icons.lock_rounded,
+                        color: Colors.white,
+                        size: IsrDimens.forty,
                       ),
                     ),
-                    child: Text(
-                      _paidUnlockPriceLabel().isEmpty
-                          ? IsrTranslationFile.unlockFor
-                          : '${IsrTranslationFile.unlockFor} ${_paidUnlockPriceLabel()}',
+                    IsrDimens.boxHeight(IsrDimens.sixteen),
+                    Text(
+                      IsrTranslationFile.paidPostLockedTitle,
+                      textAlign: TextAlign.center,
                       style: TextStyle(
+                        color: Colors.white,
+                        fontSize: IsrDimens.eighteen,
                         fontWeight: FontWeight.w600,
-                        fontSize: IsrDimens.fifteen,
+                        shadows: _textShadows,
                       ),
                     ),
-                  ),
-                ],
+                    IsrDimens.boxHeight(IsrDimens.eight),
+                    Text(
+                      IsrTranslationFile.paidPostLockedSubtitle,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.88),
+                        fontSize: IsrDimens.fourteen,
+                        height: 1.35,
+                      ),
+                    ),
+                    IsrDimens.boxHeight(IsrDimens.twentyTwo),
+                    OutlinedButton(
+                      onPressed: _onPaidUnlockPressed,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: primary,
+                        side: BorderSide(color: primary.withValues(alpha: 0.9)),
+                        padding: IsrDimens.edgeInsetsSymmetric(
+                          horizontal: IsrDimens.twentyTwo,
+                          vertical: IsrDimens.twelve,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(IsrDimens.twentyFive),
+                        ),
+                      ),
+                      child: Text(
+                        _paidUnlockPriceLabel().isEmpty
+                            ? IsrTranslationFile.unlockFor
+                            : '${IsrTranslationFile.unlockFor} ${_paidUnlockPriceLabel()}',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: IsrDimens.fifteen,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
-      );
-    }
+          ],
+        );
 
     final imageUrl = _paidLockStillImageUrl();
     if (imageUrl == null || imageUrl.isStringEmptyOrNull == true) {
@@ -983,7 +978,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 child: Container(
                   decoration: BoxDecoration(
                     color: _mediaIndicatorConfig?.progressColor ??
-                        IsrColors.appColor.applyOpacity(0.5), // Pure white for progressed
+                        IsrColors.appColor
+                            .applyOpacity(0.5), // Pure white for progressed
                     borderRadius: borderRadius,
                   ),
                 ),
@@ -1014,7 +1010,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               child: Container(
                 decoration: BoxDecoration(
                   color: _mediaIndicatorConfig?.progressColor ??
-                      IsrColors.appColor.applyOpacity(0.5), // Pure white for progressed
+                      IsrColors.appColor
+                          .applyOpacity(0.5), // Pure white for progressed
                   borderRadius: borderRadius,
                 ),
               ),
@@ -1239,20 +1236,18 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         // Only the main GestureDetector as child of the outer Stack
         GestureDetector(
           onTap: _shouldShowPaidLockOverlay ? null : _toggleMuteAndUnMute,
-          onLongPressStart: _shouldShowPaidLockOverlay
-              ? null
-              : (_) => _togglePlayPause(),
+          onLongPressStart:
+              _shouldShowPaidLockOverlay ? null : (_) => _togglePlayPause(),
           onDoubleTap:
               _shouldShowPaidLockOverlay ? null : _triggerLikeAnimation,
-          onLongPressEnd: _shouldShowPaidLockOverlay
-              ? null
-              : (_) => _resumePlayback(),
+          onLongPressEnd:
+              _shouldShowPaidLockOverlay ? null : (_) => _resumePlayback(),
           child: Stack(
             fit: StackFit.expand,
             alignment: Alignment.center,
             children: [
               _buildMediaContent(),
-              if (_showLikeAnimation)
+              if (!_shouldShowPaidLockOverlay && _showLikeAnimation)
                 Center(
                   child: Lottie.asset(
                     AssetConstants.heartAnimation,
@@ -1261,9 +1256,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                     repeat: false,
                   ),
                 ),
-              if (_showMuteAnimation &&
-                  !_shouldShowPaidLockOverlay &&
-                  _reelData.mediaMetaDataList.isNotEmpty &&
+              if (!_shouldShowPaidLockOverlay &&
+                  _showMuteAnimation &&
                   _reelData.mediaMetaDataList[_currentPageNotifier.value]
                           .mediaType ==
                       kVideoType)
@@ -1335,18 +1329,20 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
               //right action
               //kept separate so that it does not bloc touch/gesture to underlying widgets
-              Positioned(
-                right: widget.reelsConfig.overlayPadding
-                        ?.resolve(TextDirection.ltr)
-                        .right ??
-                    0,
-                bottom: widget.reelsConfig.overlayPadding
-                        ?.resolve(TextDirection.ltr)
-                        .bottom ??
-                    0,
-                child: widget.reelsConfig.actionWidget?.call(_reelData).child ??
-                    _buildRightSideActions(),
-              ),
+              if (!_shouldShowPaidLockOverlay)
+                Positioned(
+                  right: widget.reelsConfig.overlayPadding
+                          ?.resolve(TextDirection.ltr)
+                          .right ??
+                      0,
+                  bottom: widget.reelsConfig.overlayPadding
+                          ?.resolve(TextDirection.ltr)
+                          .bottom ??
+                      0,
+                  child:
+                      widget.reelsConfig.actionWidget?.call(_reelData).child ??
+                          _buildRightSideActions(),
+                ),
 
               //bottom section
               //kept separate so that it does not bloc touch/gesture to underlying widgets
@@ -2094,165 +2090,162 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         ? (_reelData.postData as TimeLineData).user
         : null;
     return FollowActionWidget(
-        postId: _reelData.postId ?? '',
-        userId: _reelData.userId ?? '',
-        isTargetPrivate: (timelineUser?.isPrivate ?? 0) == 1,
-        initialFollowStatus: timelineUser?.followStatus,
-        initialIsRequested: timelineUser?.isRequested,
-        builder: (isLoading, isFollowing, followRequestPending, onTap) {
-          // Update reel data state (non-blocking, for UI sync)
-          _reelData.isFollow = isFollowing;
+      postId: _reelData.postId ?? '',
+      userId: _reelData.userId ?? '',
+      isTargetPrivate: (timelineUser?.isPrivate ?? 0) == 1,
+      initialFollowStatus: timelineUser?.followStatus,
+      initialIsRequested: timelineUser?.isRequested,
+      builder: (isLoading, isFollowing, followRequestPending, onTap) {
+        // Update reel data state (non-blocking, for UI sync)
+        _reelData.isFollow = isFollowing;
 
-          // Show loading indicator during API call
-          if (isLoading) {
-            return Container(
-              width:
+        // Show loading indicator during API call
+        if (isLoading) {
+          return Container(
+            width: _followButtonConfig?.followButtonMinWidth ?? IsrDimens.sixty,
+            height:
+                _followButtonConfig?.followButtonHeight ?? IsrDimens.twentyFour,
+            decoration: BoxDecoration(
+              color: Theme.of(context).primaryColor.withValues(alpha: 0.7),
+              borderRadius: BorderRadius.circular(IsrDimens.twenty),
+            ),
+            child: Center(
+              child: SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    _followButtonConfig?.loadingIndicatorColor ??
+                        IsrColors.white,
+                  ),
+                ),
+              ),
+            ),
+          );
+        } else if (followRequestPending &&
+            _reelData.postSetting?.isUnFollowButtonVisible == true) {
+          return Container(
+            height:
+                _followButtonConfig?.followButtonHeight ?? IsrDimens.twentyFour,
+            decoration: _followButtonConfig?.followingButtonDecoration ??
+                BoxDecoration(
+                  borderRadius: BorderRadius.circular(IsrDimens.twenty),
+                  border: Border.all(
+                      color: Theme.of(context).primaryColor,
+                      width: IsrDimens.two),
+                ),
+            child: MaterialButton(
+              minWidth:
                   _followButtonConfig?.followButtonMinWidth ?? IsrDimens.sixty,
               height: _followButtonConfig?.followButtonHeight ??
                   IsrDimens.twentyFour,
-              decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor.withValues(alpha: 0.7),
-                borderRadius: BorderRadius.circular(IsrDimens.twenty),
+              padding: _followButtonConfig?.followButtonPadding ??
+                  IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twelve),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(IsrDimens.twenty)),
+              onPressed: () => onTap(
+                reelData: _reelData,
+                postSectionType: widget.postSectionType,
+                watchDuration: _postWatchDuration.inSeconds,
+                apiCallBack: widget.onPressFollowButton != null
+                    ? () => widget.onPressFollowButton!(_reelData, isFollowing)
+                    : null,
               ),
-              child: Center(
-                child: SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      _followButtonConfig?.loadingIndicatorColor ??
-                          IsrColors.white,
+              child: Text(
+                IsrTranslationFile.requested,
+                style: _textStyleConfig?.followingButtonTextStyle ??
+                    IsrStyles.primaryText12.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: IsrColors.colorF4F4F4,
                     ),
-                  ),
-                ),
               ),
-            );
-          } else if (followRequestPending &&
-              _reelData.postSetting?.isUnFollowButtonVisible == true) {
-            return Container(
-              height: _followButtonConfig?.followButtonHeight ??
-                  IsrDimens.twentyFour,
-              decoration: _followButtonConfig?.followingButtonDecoration ??
-                  BoxDecoration(
-                    borderRadius: BorderRadius.circular(IsrDimens.twenty),
-                    border: Border.all(
-                        color: Theme.of(context).primaryColor,
-                        width: IsrDimens.two),
-                  ),
-              child: MaterialButton(
-                minWidth: _followButtonConfig?.followButtonMinWidth ??
-                    IsrDimens.sixty,
-                height: _followButtonConfig?.followButtonHeight ??
-                    IsrDimens.twentyFour,
-                padding: _followButtonConfig?.followButtonPadding ??
-                    IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twelve),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(IsrDimens.twenty)),
-                onPressed: () => onTap(
-                  reelData: _reelData,
-                  postSectionType: widget.postSectionType,
-                  watchDuration: _postWatchDuration.inSeconds,
-                  apiCallBack: widget.onPressFollowButton != null
-                      ? () =>
-                          widget.onPressFollowButton!(_reelData, isFollowing)
-                      : null,
-                ),
-                child: Text(
-                  IsrTranslationFile.requested,
-                  style: _textStyleConfig?.followingButtonTextStyle ??
-                      IsrStyles.primaryText12.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: IsrColors.colorF4F4F4,
-                      ),
-                ),
-              ),
-            );
-          } else if (!isFollowing &&
-              !followRequestPending &&
-              _reelData.postSetting?.isUnFollowButtonVisible == true) {
-            final private = (timelineUser?.isPrivate ?? 0) == 1;
-            final showRequest = FollowRelationshipUi.showRequestPrimaryLabel(
-              isFollowing: isFollowing,
-              isPrivateAccount: private,
-              isRequested: timelineUser?.isRequested,
-              followStatus: timelineUser?.followStatus,
-            );
-            return Container(
-              height: _followButtonConfig?.followButtonHeight ??
-                  IsrDimens.twentyFour,
-              decoration: _followButtonConfig?.followButtonDecoration ??
-                  BoxDecoration(
-                    color: Theme.of(context).primaryColor,
-                    borderRadius: BorderRadius.circular(IsrDimens.twenty),
-                  ),
-              child: MaterialButton(
-                minWidth: _followButtonConfig?.followButtonMinWidth ??
-                    IsrDimens.sixty,
-                height: _followButtonConfig?.followButtonHeight ??
-                    IsrDimens.twentyFour,
-                padding: _followButtonConfig?.followButtonPadding ??
-                    IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twelve),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(IsrDimens.twenty)),
-                onPressed: () => onTap(
-                  reelData: _reelData,
-                  postSectionType: widget.postSectionType,
-                  watchDuration: _postWatchDuration.inSeconds,
-                  apiCallBack: widget.onPressFollowButton != null
-                      ? () =>
-                          widget.onPressFollowButton!(_reelData, isFollowing)
-                      : null,
-                ),
-                child: Text(
-                  showRequest
-                      ? IsrTranslationFile.request
-                      : IsrTranslationFile.follow,
-                  style: _textStyleConfig?.followButtonTextStyle ??
-                      IsrStyles.white12.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-              ),
-            );
-          } else if (isFollowing &&
-              _reelData.postSetting?.isFollowButtonVisible == true) {
-            return Container(
-              height: _followButtonConfig?.followButtonHeight ??
-                  IsrDimens.twentyFour,
-              decoration: _followButtonConfig?.followingButtonDecoration ??
-                  BoxDecoration(
-                    borderRadius: BorderRadius.circular(IsrDimens.twenty),
-                    border: Border.all(
-                        color: Theme.of(context).primaryColor,
-                        width: IsrDimens.two),
-                  ),
-              child: MaterialButton(
-                minWidth: _followButtonConfig?.followButtonMinWidth ??
-                    IsrDimens.sixty,
-                height: _followButtonConfig?.followButtonHeight ??
-                    IsrDimens.twentyFour,
-                padding: _followButtonConfig?.followButtonPadding ??
-                    IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twelve),
-                shape: RoundedRectangleBorder(
+            ),
+          );
+        } else if (!isFollowing &&
+            !followRequestPending &&
+            _reelData.postSetting?.isUnFollowButtonVisible == true) {
+          final private = (timelineUser?.isPrivate ?? 0) == 1;
+          final showRequest = FollowRelationshipUi.showRequestPrimaryLabel(
+            isFollowing: isFollowing,
+            isPrivateAccount: private,
+            isRequested: timelineUser?.isRequested,
+            followStatus: timelineUser?.followStatus,
+          );
+          return Container(
+            height:
+                _followButtonConfig?.followButtonHeight ?? IsrDimens.twentyFour,
+            decoration: _followButtonConfig?.followButtonDecoration ??
+                BoxDecoration(
+                  color: Theme.of(context).primaryColor,
                   borderRadius: BorderRadius.circular(IsrDimens.twenty),
                 ),
-                onPressed: () => onTap(reelData: _reelData),
-                // <-- your unfollow logic
-                child: Text(
-                  IsrTranslationFile.following,
-                  style: _textStyleConfig?.followingButtonTextStyle ??
-                      IsrStyles.primaryText12.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: IsrColors.colorF4F4F4,
-                      ),
-                ),
+            child: MaterialButton(
+              minWidth:
+                  _followButtonConfig?.followButtonMinWidth ?? IsrDimens.sixty,
+              height: _followButtonConfig?.followButtonHeight ??
+                  IsrDimens.twentyFour,
+              padding: _followButtonConfig?.followButtonPadding ??
+                  IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twelve),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(IsrDimens.twenty)),
+              onPressed: () => onTap(
+                reelData: _reelData,
+                postSectionType: widget.postSectionType,
+                watchDuration: _postWatchDuration.inSeconds,
+                apiCallBack: widget.onPressFollowButton != null
+                    ? () => widget.onPressFollowButton!(_reelData, isFollowing)
+                    : null,
               ),
-            );
-          }
-          return const SizedBox.shrink();
-        },
-      );
+              child: Text(
+                showRequest
+                    ? IsrTranslationFile.request
+                    : IsrTranslationFile.follow,
+                style: _textStyleConfig?.followButtonTextStyle ??
+                    IsrStyles.white12.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ),
+          );
+        } else if (isFollowing &&
+            _reelData.postSetting?.isFollowButtonVisible == true) {
+          return Container(
+            height:
+                _followButtonConfig?.followButtonHeight ?? IsrDimens.twentyFour,
+            decoration: _followButtonConfig?.followingButtonDecoration ??
+                BoxDecoration(
+                  borderRadius: BorderRadius.circular(IsrDimens.twenty),
+                  border: Border.all(
+                      color: Theme.of(context).primaryColor,
+                      width: IsrDimens.two),
+                ),
+            child: MaterialButton(
+              minWidth:
+                  _followButtonConfig?.followButtonMinWidth ?? IsrDimens.sixty,
+              height: _followButtonConfig?.followButtonHeight ??
+                  IsrDimens.twentyFour,
+              padding: _followButtonConfig?.followButtonPadding ??
+                  IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twelve),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(IsrDimens.twenty),
+              ),
+              onPressed: () => onTap(reelData: _reelData),
+              // <-- your unfollow logic
+              child: Text(
+                IsrTranslationFile.following,
+                style: _textStyleConfig?.followingButtonTextStyle ??
+                    IsrStyles.primaryText12.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: IsrColors.colorF4F4F4,
+                    ),
+              ),
+            ),
+          );
+        }
+        return const SizedBox.shrink();
+      },
+    );
   }
 
   Future<void> _triggerLikeAnimation() async {
