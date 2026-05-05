@@ -509,21 +509,24 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       },
       onTapComment: (reelsData, totalCommentsCount) async {
         _socialPostBloc.add(PlayPauseVideoEvent(play: false));
-        var isUserLoggedIn = await _socialActionCubit.isUserLoggedIn;
-        if (!isUserLoggedIn) {
-          await _socialConfig.socialCallBackConfig?.onLoginInvoked?.call();
+        try {
+          var isUserLoggedIn = await _socialActionCubit.isUserLoggedIn;
+          if (!isUserLoggedIn) {
+            await _socialConfig.socialCallBackConfig?.onLoginInvoked?.call();
+          }
+          isUserLoggedIn = await _socialActionCubit.isUserLoggedIn;
+          if (!isUserLoggedIn) return totalCommentsCount;
+          final result = await _handleCommentAction(
+              reelsData.postId ?? '',
+              totalCommentsCount,
+              tabData,
+              reelsData.postData is TimeLineData
+                  ? reelsData.postData as TimeLineData
+                  : null);
+          return result;
+        } finally {
+          _socialPostBloc.add(PlayPauseVideoEvent(play: true));
         }
-        isUserLoggedIn = await _socialActionCubit.isUserLoggedIn;
-        if (!isUserLoggedIn) return totalCommentsCount;
-        final result = await _handleCommentAction(
-            reelsData.postId ?? '',
-            totalCommentsCount,
-            tabData,
-            reelsData.postData is TimeLineData
-                ? reelsData.postData as TimeLineData
-                : null);
-        _socialPostBloc.add(PlayPauseVideoEvent(play: true));
-        return result;
       },
       onPressMoreButton: (reelsData) async {
         if (reelsData.postData is TimeLineData) {
