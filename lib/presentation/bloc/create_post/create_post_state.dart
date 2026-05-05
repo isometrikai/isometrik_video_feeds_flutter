@@ -66,6 +66,8 @@ class PostCreatedState extends CreatePostState {
   final List<MediaData>? mediaDataList;
 }
 
+class DismissCreatePostFlowForBackgroundState extends CreatePostState {}
+
 class GetProductsLoadingState extends CreatePostState {
   GetProductsLoadingState({this.isLoading = false});
 
@@ -93,16 +95,15 @@ class LoadLinkedProductsState extends CreatePostState {
 }
 
 class ShowProgressDialogState extends CreatePostState {
-  ShowProgressDialogState({
-    this.progress = 0,
-    this.title,
-    this.subTitle,
-    this.currentFileIndex = 0,
-    this.totalFiles = 0,
-    this.currentFileName = '',
-    this.isAllFilesUploaded = false,
-    this.isErrorUploading = false
-  });
+  ShowProgressDialogState(
+      {this.progress = 0,
+      this.title,
+      this.subTitle,
+      this.currentFileIndex = 0,
+      this.totalFiles = 0,
+      this.currentFileName = '',
+      this.isAllFilesUploaded = false,
+      this.isErrorUploading = false});
 
   final double? progress;
   final String? title;

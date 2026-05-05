@@ -50,11 +50,17 @@ class _PostItemWidgetState extends State<PostItemWidget>
   List<ReelsData> _reelsDataList = [];
   late final IsmSocialActionCubit _ismSocialActionCubit;
   late final ValueNotifier<int> _currentIndex;
+  bool _isPlaybackBlocked = false;
 
   bool _isInitialized = false;
 
   // Track refresh count for each index to force rebuild
   final Map<int, int> _refreshCounts = {};
+
+  /// [PreloadPageController.page] asserts when no [PreloadPageView] is attached.
+  int get _resolvedCurrentPageIndex => _pageController.hasClients
+      ? _pageController.page!.round()
+      : _currentIndex.value;
 
   @override
   void initState() {
@@ -194,9 +200,17 @@ class _PostItemWidgetState extends State<PostItemWidget>
             _updateWithEditAction(state);
           }
         },
-        child: _reelsDataList.isListEmptyOrNull == true
-            ? _buildPlaceHolder(context)
-            : _buildContent(context),
+        child: BlocListener<SocialPostBloc, SocialPostState>(
+          listenWhen: (previous, current) => current is PlayPauseVideoState,
+          listener: (context, state) {
+            if (state is PlayPauseVideoState) {
+              _isPlaybackBlocked = !state.play;
+            }
+          },
+          child: _reelsDataList.isListEmptyOrNull == true
+              ? _buildPlaceHolder(context)
+              : _buildContent(context),
+        ),
       ),
     );
   }
@@ -240,7 +254,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
 
   Future<void> updateStateByKey() async {
     // Get current index before refresh
-    final currentIndex = _pageController.page?.toInt() ?? 0;
+    final currentIndex = _resolvedCurrentPageIndex;
     debugPrint('🔄 MainWidget: Starting update at index $currentIndex');
 
     // Increment refresh count to force rebuild
@@ -626,6 +640,11 @@ class _PostItemWidgetState extends State<PostItemWidget>
       debugPrint('🎬 PostItemWidget: Early return - not mounted or empty list');
       return;
     }
+    if (_isPlaybackBlocked) {
+      debugPrint(
+          '🎬 PostItemWidget: Ignoring auto-scroll because playback is blocked');
+      return;
+    }
 
     // Check if there's a next post available
     if (currentIndex < _reelsDataList.length - 1) {
@@ -665,7 +684,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
         final result = await widget.onRefresh?.call();
         if (result == true) {
           // Get current index before refresh
-          final currentIndex = _pageController.page?.toInt() ?? 0;
+          final currentIndex = _resolvedCurrentPageIndex;
           debugPrint('🔄 MainWidget: Starting refresh at index $currentIndex');
 
           // Increment refresh count to force rebuild

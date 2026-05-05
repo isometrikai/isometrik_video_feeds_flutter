@@ -538,8 +538,17 @@ class _PostAttributeViewState extends State<PostAttributeView>
       listenWhen: (previousState, currentState) =>
           currentState is PostCreatedState ||
           currentState is ShowProgressDialogState ||
-          currentState is PostAttributionUpdatedState,
+          currentState is PostAttributionUpdatedState ||
+          currentState is DismissCreatePostFlowForBackgroundState,
       listener: (context, state) {
+        if (state is DismissCreatePostFlowForBackgroundState &&
+            _useBackgroundPostUi) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            _popNavigatorStackForBackgroundPost(result: null);
+          });
+          return;
+        }
         if (state is PostAttributionUpdatedState &&
             state.postAttributeClass != _postAttributeClass) {
           setState(() {
@@ -1810,12 +1819,6 @@ class _PostAttributeViewState extends State<PostAttributeView>
           _postAttributeClass?.createPostRequest ?? CreatePostRequest(),
       isForEdit: _isEditMode,
     ));
-    if (_useBackgroundPostUi) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        _popNavigatorStackForBackgroundPost(result: null);
-      });
-    }
   }
 
   /// Pops the post-attribute route (and the rest of the create stack for new posts)
