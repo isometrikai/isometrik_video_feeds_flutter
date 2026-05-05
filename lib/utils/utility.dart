@@ -135,13 +135,14 @@ class Utility {
   }) {
     final dialogConfig = IsrVideoReelConfig.socialConfig.dialogConfig;
     final borderRadius = dialogConfig?.borderRadius ?? IsrDimens.twelve;
-    final backgroundColor = dialogConfig?.backgroundColor ??
-        IsrColors.dialogColor;
-    final padding = dialogConfig?.padding ??
-        IsrDimens.edgeInsetsAll(IsrDimens.fourteen);
+    final backgroundColor =
+        dialogConfig?.backgroundColor ?? IsrColors.dialogColor;
+    final padding =
+        dialogConfig?.padding ?? IsrDimens.edgeInsetsAll(IsrDimens.fourteen);
     final titleStyle = dialogConfig?.titleTextStyle ??
         IsrStyles.secondaryText14.copyWith(fontWeight: FontWeight.w700);
-    final messageStyle = dialogConfig?.messageTextStyle ?? IsrStyles.primaryText14;
+    final messageStyle =
+        dialogConfig?.messageTextStyle ?? IsrStyles.primaryText14;
 
     showDialog(
       context: context ?? IsrVideoReelConfig.buildContext!,
@@ -188,7 +189,8 @@ class Utility {
                   Expanded(
                     child: _buildDialogButton(
                       title: positiveButtonText ?? IsrTranslationFile.ok,
-                      buttonConfig: IsrVideoReelConfig.socialConfig.primaryButton,
+                      buttonConfig:
+                          IsrVideoReelConfig.socialConfig.primaryButton,
                       onPress: () {
                         closeOpenDialog();
                         if (onPressPositiveButton != null) {
@@ -202,7 +204,8 @@ class Utility {
                     Expanded(
                       child: _buildDialogButton(
                         title: negativeButtonText ?? IsrTranslationFile.cancel,
-                        buttonConfig: IsrVideoReelConfig.socialConfig.secondaryButton,
+                        buttonConfig:
+                            IsrVideoReelConfig.socialConfig.secondaryButton,
                         buttonType: ButtonType.secondary,
                         onPress: () {
                           closeOpenDialog();
@@ -230,16 +233,17 @@ class Utility {
     ButtonConfig? buttonConfig,
     ButtonType buttonType = ButtonType.primary,
     required VoidCallback? onPress,
-  }) => AppButton(
-      width: IsrDimens.twoHundredFifty,
-      title: title,
-      type: buttonType,
-      onPress: onPress,
-      backgroundColor: buttonConfig?.backgroundColor,
-      textColor: buttonConfig?.textColor,
-      borderColor: buttonConfig?.borderColor,
-      borderRadius: buttonConfig?.borderRadius,
-    );
+  }) =>
+      AppButton(
+        width: IsrDimens.twoHundredFifty,
+        title: title,
+        type: buttonType,
+        onPress: onPress,
+        backgroundColor: buttonConfig?.backgroundColor,
+        textColor: buttonConfig?.textColor,
+        borderColor: buttonConfig?.borderColor,
+        borderRadius: buttonConfig?.borderRadius,
+      );
 
   /// shows bottom sheet
   static Future<T?> showBottomSheet<T>({
@@ -269,8 +273,8 @@ class Utility {
 
     final defaultBackgroundColor = isDarkBG
         ? Theme.of(contextToUse).primaryColor
-        : (IsrVideoReelConfig.socialConfig.colorsConfig
-                ?.bottomSheetBackgroundColor ??
+        : (IsrVideoReelConfig
+                .socialConfig.colorsConfig?.bottomSheetBackgroundColor ??
             IsrColors.white);
 
     return showModalBottomSheet<T>(
@@ -564,8 +568,7 @@ class Utility {
     );
   }
 
-  static ToastGravity? _mapToastGravityType(
-      ToastGravityType? gravityType) {
+  static ToastGravity? _mapToastGravityType(ToastGravityType? gravityType) {
     if (gravityType == null) return null;
     switch (gravityType) {
       case ToastGravityType.top:
@@ -606,7 +609,11 @@ class Utility {
 
   /// returns gumlet image url
   static String buildGumletImageUrl(
-      {required String imageUrl, double? width, double? height}) => IsrVideoReelConfig.socialConfig.socialCallBackConfig?.convertToGumletUrl?.call(imageUrl).takeIfNotEmpty() ?? imageUrl;
+          {required String imageUrl, double? width, double? height}) =>
+      IsrVideoReelConfig.socialConfig.socialCallBackConfig?.convertToGumletUrl
+          ?.call(imageUrl)
+          .takeIfNotEmpty() ??
+      imageUrl;
 
   /// removes source url and extract only file name
   static String removeSourceUrl(String url) {
@@ -632,13 +639,13 @@ class Utility {
 
   ///show custom widget dialog
   static Future<void> showCustomDialog(
-          {required BuildContext context, required Widget child}) {
+      {required BuildContext context, required Widget child}) {
     final dialogConfig = IsrVideoReelConfig.socialConfig.dialogConfig;
     final borderRadius = dialogConfig?.borderRadius ?? IsrDimens.twelve;
-    final backgroundColor = dialogConfig?.backgroundColor ??
-        IsrColors.dialogColor;
-    final padding = dialogConfig?.padding ??
-        IsrDimens.edgeInsetsAll(IsrDimens.twelve);
+    final backgroundColor =
+        dialogConfig?.backgroundColor ?? IsrColors.dialogColor;
+    final padding =
+        dialogConfig?.padding ?? IsrDimens.edgeInsetsAll(IsrDimens.twelve);
 
     return showDialog(
       context: context,
@@ -855,9 +862,10 @@ class Utility {
 
       switch (position.type) {
         case Tag.mention:
-          taggedStyle = userNameStyle ?? baseStyle.copyWith(
-            fontWeight: FontWeight.w600,
-          );
+          taggedStyle = userNameStyle ??
+              baseStyle.copyWith(
+                fontWeight: FontWeight.w600,
+              );
           recognizer = TapGestureRecognizer()
             ..onTap = () {
               if (onUsernameTap != null &&
@@ -869,9 +877,10 @@ class Utility {
           break;
 
         case Tag.hashtag:
-          taggedStyle = hashTagStyle ?? baseStyle.copyWith(
-            fontWeight: FontWeight.w600,
-          );
+          taggedStyle = hashTagStyle ??
+              baseStyle.copyWith(
+                fontWeight: FontWeight.w600,
+              );
           recognizer = TapGestureRecognizer()
             ..onTap = () {
               if (onHashtagTap != null && position.data is CommentMentionData) {
@@ -989,6 +998,34 @@ class Utility {
     }
 
     return '${difference.inDays ~/ 365}y';
+  }
+
+  static String formatPublishedTimeAgo(DateTime dateTime) {
+    final now = DateTime.now();
+    if (dateTime.isAfter(now)) return 'just now';
+
+    final difference = now.difference(dateTime);
+
+    if (difference.inSeconds < 60) return 'just now';
+    if (difference.inMinutes < 60) {
+      final minutes = difference.inMinutes;
+      return '$minutes min ago';
+    }
+    if (difference.inHours < 24) {
+      final hours = difference.inHours;
+      return hours == 1 ? '1 hour ago' : '$hours hours ago';
+    }
+    if (difference.inDays < 30) {
+      final days = difference.inDays;
+      return days == 1 ? '1 day ago' : '$days days ago';
+    }
+    if (difference.inDays < 365) {
+      final months = difference.inDays ~/ 30;
+      return months == 1 ? '1 month ago' : '$months months ago';
+    }
+
+    final years = difference.inDays ~/ 365;
+    return years == 1 ? '1 year ago' : '$years years ago';
   }
 
   //Show bottom sheet with Customized child

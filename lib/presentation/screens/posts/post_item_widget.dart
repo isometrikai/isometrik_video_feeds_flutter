@@ -50,6 +50,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
   List<ReelsData> _reelsDataList = [];
   late final IsmSocialActionCubit _ismSocialActionCubit;
   late final ValueNotifier<int> _currentIndex;
+  bool _isPlaybackBlocked = false;
 
   bool _isInitialized = false;
 
@@ -199,9 +200,17 @@ class _PostItemWidgetState extends State<PostItemWidget>
             _updateWithEditAction(state);
           }
         },
-        child: _reelsDataList.isListEmptyOrNull == true
-            ? _buildPlaceHolder(context)
-            : _buildContent(context),
+        child: BlocListener<SocialPostBloc, SocialPostState>(
+          listenWhen: (previous, current) => current is PlayPauseVideoState,
+          listener: (context, state) {
+            if (state is PlayPauseVideoState) {
+              _isPlaybackBlocked = !state.play;
+            }
+          },
+          child: _reelsDataList.isListEmptyOrNull == true
+              ? _buildPlaceHolder(context)
+              : _buildContent(context),
+        ),
       ),
     );
   }
@@ -629,6 +638,11 @@ class _PostItemWidgetState extends State<PostItemWidget>
 
     if (!mounted || _reelsDataList.isEmpty) {
       debugPrint('🎬 PostItemWidget: Early return - not mounted or empty list');
+      return;
+    }
+    if (_isPlaybackBlocked) {
+      debugPrint(
+          '🎬 PostItemWidget: Ignoring auto-scroll because playback is blocked');
       return;
     }
 
