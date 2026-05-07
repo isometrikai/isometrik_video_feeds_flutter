@@ -555,6 +555,7 @@ class PostCallBackConfig {
     this.onProfileClick,
     this.onTagProductClick,
     this.onPostChanged,
+    this.onLikeCountClicked,
     this.onViewCountClicked,
     this.onPaidPostUnlock,
   });
@@ -575,6 +576,7 @@ class PostCallBackConfig {
       onProfileClick;
   final Future<void> Function(TimeLineData postData)? onTagProductClick;
   final Function(TimeLineData postData, int index)? onPostChanged;
+  final Future<void> Function(TimeLineData postData)? onLikeCountClicked;
   final Future<void> Function(TimeLineData postData)? onViewCountClicked;
 
   /// Host app handles purchase / coin flow when the user taps unlock on a paid post.
@@ -593,6 +595,7 @@ class PostCallBackConfig {
         onProfileClick,
     Future<void> Function(TimeLineData postData)? onTagProductClick,
     Function(TimeLineData postData, int index)? onPostChanged,
+    Future<void> Function(TimeLineData postData)? onLikeCountClicked,
     Future<void> Function(TimeLineData postData)? onViewCountClicked,
     Future<void> Function(TimeLineData postData)? onPaidPostUnlock,
   }) =>
@@ -607,6 +610,7 @@ class PostCallBackConfig {
         onProfileClick: onProfileClick ?? this.onProfileClick,
         onTagProductClick: onTagProductClick ?? this.onTagProductClick,
         onPostChanged: onPostChanged ?? this.onPostChanged,
+        onLikeCountClicked: onLikeCountClicked ?? this.onLikeCountClicked,
         onViewCountClicked: onViewCountClicked ?? this.onViewCountClicked,
         onPaidPostUnlock: onPaidPostUnlock ?? this.onPaidPostUnlock,
       );

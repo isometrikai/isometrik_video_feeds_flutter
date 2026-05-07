@@ -125,6 +125,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     int? watchDuration,
     Future<bool> Function()? apiCallBack,
   })? _onLikeTap;
+  bool _isLikeActionLoading = false;
 
   // Audio state management
   static bool _globalMuteState =
@@ -1438,26 +1439,47 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 LikeActionWidget(
                   postId: _reelData.postId ?? '',
                   builder: (isLoading, isLiked, likeCount, onTap) {
+                    _isLikeActionLoading = isLoading;
                     _reelData.isLiked = isLiked;
                     _reelData.likesCount = likeCount;
                     _onLikeTap = onTap;
-                    return _buildActionButton(
-                      icon: isLiked == true
-                          ? (_actionIconConfig?.likeIconSelected ??
-                              AssetConstants.icLikeSelected)
-                          : (_actionIconConfig?.likeIconUnselected ??
-                              AssetConstants.icLikeUnSelected),
-                      label: likeCount.toString(),
-                      onTap: () => onTap(
-                        reelData: _reelData,
-                        watchDuration: _postWatchDuration.inSeconds,
-                        postSectionType: widget.postSectionType,
-                        apiCallBack: widget.onPressLikeButton != null
-                            ? () =>
-                                widget.onPressLikeButton!(_reelData, isLiked)
-                            : null,
-                      ),
-                      isLoading: false, //isLoading,
+                    final likeIcon = isLiked == true
+                        ? (_actionIconConfig?.likeIconSelected ??
+                            AssetConstants.icLikeSelected)
+                        : (_actionIconConfig?.likeIconUnselected ??
+                            AssetConstants.icLikeUnSelected);
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildActionButton(
+                          icon: likeIcon,
+                          onTap: () => onTap(
+                            reelData: _reelData,
+                            watchDuration: _postWatchDuration.inSeconds,
+                            postSectionType: widget.postSectionType,
+                            apiCallBack: widget.onPressLikeButton != null
+                                ? () => widget.onPressLikeButton!(
+                                    _reelData,
+                                    isLiked,
+                                  )
+                                : null,
+                          ),
+                          isLoading: false, //isLoading,
+                        ),
+                        IsrDimens.boxHeight(IsrDimens.four),
+                        GestureDetector(
+                          onTap: _handleLikeCountTap,
+                          child: Text(
+                            likeCount.toString(),
+                            style: _textStyleConfig?.actionLabelStyle ??
+                                IsrStyles.white12.copyWith(
+                                  fontWeight: FontWeight.w500,
+                                  decoration: TextDecoration.none,
+                                  shadows: _textShadows,
+                                ),
+                          ),
+                        ),
+                      ],
                     );
                   },
                 ),
@@ -1574,6 +1596,19 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       await callback(postData);
     } catch (e) {
       debugPrint('Failed to handle view count tap: $e');
+    }
+  }
+
+  Future<void> _handleLikeCountTap() async {
+    if (_isLikeActionLoading) return;
+    final callback = _postConfig.postCallBackConfig?.onLikeCountClicked;
+    if (callback == null) return;
+    final postData = _reelData.postData;
+    if (postData is! TimeLineData) return;
+    try {
+      await callback(postData);
+    } catch (e) {
+      debugPrint('Failed to handle like count tap: $e');
     }
   }
 
