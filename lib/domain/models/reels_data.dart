@@ -34,6 +34,11 @@ class ReelsData {
     this.createOn,
     this.watchDuration,
     this.interests,
+    this.isLocked,
+    this.lockReason,
+    this.isPaid,
+    this.priceAmount,
+    this.priceCurrency,
   });
 
   final dynamic postData;
@@ -71,6 +76,13 @@ class ReelsData {
   final num? watchDuration;
   final List<String>? interests;
 
+  /// Timeline / API: `is_locked`, `lock_reason`, paid pricing in `settings`.
+  final bool? isLocked;
+  final String? lockReason;
+  final bool? isPaid;
+  final Object? priceAmount;
+  final String? priceCurrency;
+
   ReelsData copyWith({
     bool? isFollow,
     bool? isLiked,
@@ -78,6 +90,11 @@ class ReelsData {
     int? likesCount,
     int? viewCount,
     int? commentCount,
+    bool? isLocked,
+    String? lockReason,
+    bool? isPaid,
+    Object? priceAmount,
+    String? priceCurrency,
   }) =>
       ReelsData(
         postData: postData,
@@ -109,6 +126,11 @@ class ReelsData {
         viewCount: viewCount ?? this.viewCount,
         commentCount: commentCount ?? this.commentCount,
         interests: interests,
+        isLocked: isLocked ?? this.isLocked,
+        lockReason: lockReason ?? this.lockReason,
+        isPaid: isPaid ?? this.isPaid,
+        priceAmount: priceAmount ?? this.priceAmount,
+        priceCurrency: priceCurrency ?? this.priceCurrency,
       );
 }
 

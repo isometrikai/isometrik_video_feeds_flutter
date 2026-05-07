@@ -174,6 +174,8 @@ class TimeLineData {
     this.interests,
     this.status,
     this.scheduledAt,
+    this.isLocked,
+    this.lockReason,
   });
 
   factory TimeLineData.fromMap(Map<String, dynamic> json) => TimeLineData(
@@ -220,6 +222,8 @@ class TimeLineData {
             : List<String>.from(json['interests'] as List)
                 .map((item) => item)
                 .toList(),
+        isLocked: json['is_locked'] as bool?,
+        lockReason: json['lock_reason'] as String?,
       );
   dynamic textFormatting;
   String? publishedAt;
@@ -243,6 +247,8 @@ class TimeLineData {
   bool? isFollowing;
   String? status;
   List<String>? interests;
+  bool? isLocked;
+  String? lockReason;
 
   Map<String, dynamic> toMap() => {
         'text_formatting': textFormatting,
@@ -273,6 +279,8 @@ class TimeLineData {
             ? []
             : List<dynamic>.from(interests!.map((x) => x)),
         'scheduled_at': scheduledAt,
+        'is_locked': isLocked,
+        'lock_reason': lockReason,
       };
 }
 
@@ -466,36 +474,88 @@ class Settings {
     this.duetEnabled,
     this.stitchEnabled,
     this.saveEnabled,
+    this.isPaid,
+    this.priceAmount,
+    this.priceCurrency,
     this.ageRestriction,
     this.autoAdvance,
     this.advanceInterval,
     this.audioSettings,
   });
 
-  factory Settings.fromMap(Map<String, dynamic> json) => Settings(
-        commentsEnabled: json['comments_enabled'] as bool? ?? false,
-        duetEnabled: json['duet_enabled'] as bool? ?? false,
-        stitchEnabled: json['stitch_enabled'] as bool? ?? false,
-        saveEnabled: json['save_enabled'] as bool? ?? false,
-        ageRestriction: json['age_restriction'] as bool? ?? false,
-        autoAdvance: json['auto_advance'] as bool? ?? false,
-        advanceInterval: json['advance_interval'] as num? ?? 0,
-        audioSettings: json['audio_settings'],
-      );
+  factory Settings.fromMap(Map<String, dynamic> json) {
+    final isPaid = _readBool(json['is_paid'], key: 'is_paid');
+    final priceAmount =
+        _readPriceAmount(json['price_amount'], key: 'price_amount');
+    final normalizedIsPaid =
+        (isPaid == true && priceAmount == null) ? false : isPaid;
+
+    return Settings(
+      commentsEnabled:
+          _readBool(json['comments_enabled'], key: 'comments_enabled') ?? false,
+      duetEnabled: _readBool(json['duet_enabled'], key: 'duet_enabled') ?? false,
+      stitchEnabled:
+          _readBool(json['stitch_enabled'], key: 'stitch_enabled') ?? false,
+      saveEnabled: _readBool(json['save_enabled'], key: 'save_enabled') ?? false,
+      isPaid: normalizedIsPaid,
+      priceAmount: priceAmount,
+      priceCurrency: json['price_currency'] as String?,
+      ageRestriction:
+          _readBool(json['age_restriction'], key: 'age_restriction') ?? false,
+      autoAdvance: _readBool(json['auto_advance'], key: 'auto_advance') ?? false,
+      advanceInterval:
+          _readNum(json['advance_interval'], key: 'advance_interval') ?? 0,
+      audioSettings: json['audio_settings'],
+    );
+  }
   bool? commentsEnabled;
   bool? duetEnabled;
   bool? stitchEnabled;
   bool? saveEnabled;
+  bool? isPaid;
+  Object? priceAmount;
+  String? priceCurrency;
   bool? ageRestriction;
   bool? autoAdvance;
   num? advanceInterval;
   dynamic audioSettings;
+
+  static bool? _readBool(dynamic value, {required String key}) {
+    if (value == null) return null;
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      if (normalized == 'true' || normalized == '1') return true;
+      if (normalized == 'false' || normalized == '0') return false;
+    }
+    return null;
+  }
+
+  static num? _readNum(dynamic value, {required String key}) {
+    if (value == null) return null;
+    if (value is num) return value;
+    if (value is String) {
+      final parsed = num.tryParse(value);
+      if (parsed != null) return parsed;
+    }
+    return null;
+  }
+
+  static Object? _readPriceAmount(dynamic value, {required String key}) {
+    if (value == null) return null;
+    if (value is num || value is String) return value;
+    return null;
+  }
 
   Map<String, dynamic> toMap() => {
         'comments_enabled': commentsEnabled,
         'duet_enabled': duetEnabled,
         'stitch_enabled': stitchEnabled,
         'save_enabled': saveEnabled,
+        if (isPaid != null) 'is_paid': isPaid,
+        if (priceAmount != null) 'price_amount': priceAmount,
+        if (priceCurrency != null) 'price_currency': priceCurrency,
         'age_restriction': ageRestriction,
         'auto_advance': autoAdvance,
         'advance_interval': advanceInterval,
@@ -952,10 +1012,39 @@ class PlaceData {
       };
 }
 
+List<MediaMetaData> reelMediaMetaDataFromTimeline(TimeLineData postData) {
+  if (postData.media.isListEmptyOrNull == false) {
+    return postData.media!.map(_getMediaMetaData).toList();
+  }
+  final previews = postData.previews;
+  if (previews.isListEmptyOrNull == false) {
+    final sorted = List<PreviewMedia>.from(previews!)
+      ..sort((a, b) => (a.position ?? 0).compareTo(b.position ?? 0));
+    return sorted.map((p) {
+      final isImage = (p.mediaType ?? '').toLowerCase() == 'image';
+      final url = p.url ?? '';
+      return MediaMetaData(
+        mediaUrl: url,
+        thumbnailUrl: url,
+        mediaType: isImage ? 0 : 1,
+        durationSeconds: isImage
+            ? AppConstants.defaultImagePostDurationSeconds
+            : AppConstants.defaultImagePostDurationSeconds,
+      );
+    }).toList();
+  }
+  return [];
+}
+
 ReelsData getReelData(TimeLineData postData, {String? loggedInUserId}) =>
     ReelsData(
       postData: postData,
       createOn: postData.publishedAt,
+      isLocked: postData.isLocked,
+      lockReason: postData.lockReason,
+      isPaid: postData.settings?.isPaid,
+      priceAmount: postData.settings?.priceAmount,
+      priceCurrency: postData.settings?.priceCurrency,
       postSetting: PostSetting(
         isProfilePicVisible: true,
         isCreatePostButtonVisible: false,
@@ -981,7 +1070,7 @@ ReelsData getReelData(TimeLineData postData, {String? loggedInUserId}) =>
           : null,
       postId: postData.id,
       tags: postData.tags,
-      mediaMetaDataList: postData.media?.map(_getMediaMetaData).toList() ?? [],
+      mediaMetaDataList: reelMediaMetaDataFromTimeline(postData),
       userId: postData.user?.id ?? '',
       userName: postData.user?.username ?? '',
       profilePhoto: postData.user?.avatarUrl ?? '',
