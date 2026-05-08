@@ -50,7 +50,7 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
     if (widget.collection != null) {
       _collectionNameController.text = widget.collection!.name ?? '';
       _descriptionController.text = widget.collection!.description ?? '';
-      _isPrivate.value = widget.collection!.isPrivate ?? true;
+      _isPrivate.value = widget.collection!.isPrivate ?? false;
       imageUrl.value = widget.collection!.image ?? '';
       // _enableCreateButton.value = true;
     }

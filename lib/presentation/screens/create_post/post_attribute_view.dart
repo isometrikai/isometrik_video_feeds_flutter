@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fluttertagger/fluttertagger.dart';
@@ -42,6 +43,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
   final GlobalKey _captionInputKey = GlobalKey();
   bool isKeyboardVisible = false;
   final FocusNode _descriptionFocusNode = FocusNode();
+  final TextEditingController _paidAmountController = TextEditingController();
 
   // State variables for tracking changes
   bool _isPostButtonEnabled = true;
@@ -78,6 +80,8 @@ class _PostAttributeViewState extends State<PostAttributeView>
   bool get _useBackgroundPostUi =>
       IsrVideoReelConfig.createEditPostConfig.createEditPostCallBackConfig?.onBackgroundPostOperation !=
       null;
+  bool get _isPaidPostEnabled =>
+      IsrVideoReelConfig.createEditPostConfig.enablePaidPost;
 
   @override
   void initState() {
@@ -141,6 +145,15 @@ class _PostAttributeViewState extends State<PostAttributeView>
     // Set default values for new posts
     _postAttributeClass?.allowComment ??= true;
     _postAttributeClass?.allowSave ??= true;
+    _postAttributeClass?.createPostRequest?.settings ??= PostSettingModel(
+      commentsEnabled: _postAttributeClass?.allowComment ?? true,
+      saveEnabled: _postAttributeClass?.allowSave ?? true,
+      isPaid: false,
+    );
+    final existingAmount =
+        _postAttributeClass?.createPostRequest?.settings?.priceAmount;
+    _paidAmountController.text =
+        existingAmount == null ? '' : existingAmount.toString();
 
     // Store original values for change detection in edit mode
     _originalPostAttributeClass = _copyPostAttributeClass(_postAttributeClass);
@@ -226,6 +239,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _descriptionController.dispose();
+    _paidAmountController.dispose();
     _scrollController.dispose();
     // Dispose all video controllers
     for (final controller in _videoControllers.values) {
@@ -269,7 +283,21 @@ class _PostAttributeViewState extends State<PostAttributeView>
       final copyRequest = CreatePostRequest();
       copyRequest.caption = originalRequest.caption;
       copyRequest.tags = originalRequest.tags;
-      copyRequest.settings = originalRequest.settings;
+      final originalSettings = originalRequest.settings;
+      if (originalSettings != null) {
+        copyRequest.settings = PostSettingModel(
+          advanceInterval: originalSettings.advanceInterval,
+          ageRestriction: originalSettings.ageRestriction,
+          autoAdvance: originalSettings.autoAdvance,
+          commentsEnabled: originalSettings.commentsEnabled,
+          duetEnabled: originalSettings.duetEnabled,
+          saveEnabled: originalSettings.saveEnabled,
+          stitchEnabled: originalSettings.stitchEnabled,
+          isPaid: originalSettings.isPaid,
+          priceAmount: originalSettings.priceAmount,
+          priceCurrency: originalSettings.priceCurrency,
+        );
+      }
       copy.createPostRequest = copyRequest;
     }
 
@@ -286,7 +314,8 @@ class _PostAttributeViewState extends State<PostAttributeView>
     // Simple and clear logic:
     // - If it's a new post: ALWAYS enabled
     // - If it's edit mode: Only enabled if there are changes
-    final shouldEnable = _isEditMode ? _hasChanges() : true;
+    final shouldEnable =
+        (_isEditMode ? _hasChanges() : true) && _isPaidAmountValid();
 
     debugPrint('shouldEnable result: $shouldEnable');
     debugPrint('Current _isPostButtonEnabled: $_isPostButtonEnabled');
@@ -300,6 +329,22 @@ class _PostAttributeViewState extends State<PostAttributeView>
       debugPrint('⚪ Button state unchanged');
     }
     debugPrint('=== END _updatePostButtonState ===');
+  }
+
+  bool _isPaidAmountValid() {
+    if (!_isPaidPostEnabled) return true;
+    final settings = _postAttributeClass?.createPostRequest?.settings;
+    if (settings?.isPaid != true) return true;
+    final amount = num.tryParse(_paidAmountController.text.trim());
+    return (amount ?? 0) > 0;
+  }
+
+  String? _getPaidAmountErrorText() {
+    if (!_isPaidPostEnabled) return null;
+    final settings = _postAttributeClass?.createPostRequest?.settings;
+    if (settings?.isPaid != true) return null;
+    if (_paidAmountController.text.trim().isEmpty) return null;
+    return _isPaidAmountValid() ? null : 'Amount must be greater than 0';
   }
 
   /// Check if there are any changes compared to original data
@@ -349,6 +394,15 @@ class _PostAttributeViewState extends State<PostAttributeView>
     if (original.allowComment != current.allowComment ||
         original.allowSave != current.allowSave) {
       debugPrint('Changes detected in settings');
+      return true;
+    }
+    final originalSettings = original.createPostRequest?.settings;
+    final currentSettings = current.createPostRequest?.settings;
+    if (originalSettings?.isPaid != currentSettings?.isPaid ||
+        originalSettings?.priceAmount?.toString() !=
+            currentSettings?.priceAmount?.toString() ||
+        originalSettings?.priceCurrency != currentSettings?.priceCurrency) {
+      debugPrint('Changes detected in paid post settings');
       return true;
     }
 
@@ -803,6 +857,8 @@ class _PostAttributeViewState extends State<PostAttributeView>
                         // Add Location
                         _buildLocationTile(),
 
+                        if (_isPaidPostEnabled) _buildPaidPostSection(),
+
                         // Allow Comments
                         _buildSwitchTile(
                           icon: AssetConstants.icAllowComment,
@@ -1150,6 +1206,145 @@ class _PostAttributeViewState extends State<PostAttributeView>
                 });
               });
             },
+    );
+  }
+
+  Widget _buildPaidPostSection() {
+    final settings = _postAttributeClass?.createPostRequest?.settings;
+    final isPaid = settings?.isPaid == true;
+    final amountSuggestions =
+        IsrVideoReelConfig.createEditPostConfig.paidPostAmountSuggestions;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSwitchTile(
+          icon: AssetConstants.icAllowComment,
+          title: 'Paid Post',
+          value: isPaid,
+          onChanged: (value) {
+            setState(() {
+              final currentAmount =
+                  num.tryParse(_paidAmountController.text.trim());
+              _postAttributeClass?.createPostRequest?.settings = PostSettingModel(
+                commentsEnabled:
+                    settings?.commentsEnabled ?? _postAttributeClass?.allowComment ?? true,
+                saveEnabled: settings?.saveEnabled ?? _postAttributeClass?.allowSave ?? true,
+                isPaid: value,
+                priceAmount: value ? currentAmount : null,
+                priceCurrency: value
+                    ? IsrVideoReelConfig.createEditPostConfig.paidPostCurrency
+                    : null,
+              );
+              if (!value) {
+                _paidAmountController.clear();
+              }
+            });
+            _updatePostButtonState();
+          },
+        ),
+        if (isPaid)
+          Padding(
+            padding: IsrDimens.edgeInsetsSymmetric(
+              horizontal: 20.responsiveDimension,
+              vertical: 8.responsiveDimension,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Amount',
+                  style: IsrStyles.primaryText14.copyWith(fontWeight: FontWeight.w600),
+                ),
+                8.verticalSpace,
+                TextFormField(
+                  controller: _paidAmountController,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  onChanged: (value) {
+                    final oldSettings =
+                        _postAttributeClass?.createPostRequest?.settings;
+                    final parsedAmount = num.tryParse(value.trim());
+                    _postAttributeClass?.createPostRequest?.settings = PostSettingModel(
+                      commentsEnabled: oldSettings?.commentsEnabled ??
+                          _postAttributeClass?.allowComment ??
+                          true,
+                      saveEnabled:
+                          oldSettings?.saveEnabled ?? _postAttributeClass?.allowSave ?? true,
+                      isPaid: true,
+                      priceAmount: parsedAmount,
+                      priceCurrency:
+                          IsrVideoReelConfig.createEditPostConfig.paidPostCurrency,
+                    );
+                    setState(() {});
+                    _updatePostButtonState();
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Enter amount',
+                    errorText: _getPaidAmountErrorText(),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    contentPadding: IsrDimens.edgeInsetsSymmetric(
+                      horizontal: 12.responsiveDimension,
+                      vertical: 10.responsiveDimension,
+                    ),
+                  ),
+                ),
+                10.verticalSpace,
+                Text(
+                  'Choose your coin',
+                  style: IsrStyles.primaryText14.copyWith(fontWeight: FontWeight.w600),
+                ),
+                8.verticalSpace,
+                Wrap(
+                  spacing: 8.responsiveDimension,
+                  runSpacing: 8.responsiveDimension,
+                  children: amountSuggestions
+                      .map(
+                        (amount) => InkWell(
+                          onTap: () {
+                            _paidAmountController.text = amount.toString();
+                            _postAttributeClass?.createPostRequest?.settings =
+                                PostSettingModel(
+                              commentsEnabled: settings?.commentsEnabled ??
+                                  _postAttributeClass?.allowComment ??
+                                  true,
+                              saveEnabled: settings?.saveEnabled ??
+                                  _postAttributeClass?.allowSave ??
+                                  true,
+                              isPaid: true,
+                              priceAmount: amount,
+                              priceCurrency: IsrVideoReelConfig
+                                  .createEditPostConfig.paidPostCurrency,
+                            );
+                            setState(() {});
+                            _updatePostButtonState();
+                          },
+                          child: Container(
+                            padding: IsrDimens.edgeInsetsSymmetric(
+                              horizontal: 16.responsiveDimension,
+                              vertical: 10.responsiveDimension,
+                            ),
+                            decoration: BoxDecoration(
+                              color: IsrColors.appColor.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(8),
+                              border:
+                                  Border.all(color: IsrColors.appColor.withValues(alpha: 0.25)),
+                            ),
+                            child: Text(
+                              amount.toString(),
+                              style:
+                                  IsrStyles.primaryText14.copyWith(fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 
@@ -1612,6 +1807,12 @@ class _PostAttributeViewState extends State<PostAttributeView>
   }
 
   void _createPost() {
+    if (!_isPaidAmountValid()) {
+      Utility.showAppDialog(
+        message: 'Please enter a paid amount greater than 0',
+      );
+      return;
+    }
     _setPostRequest();
     context.getOrCreateBloc<CreatePostBloc>().add(PostCreateEvent(
       createPostRequest:
@@ -1637,6 +1838,18 @@ class _PostAttributeViewState extends State<PostAttributeView>
       final settings = PostSettingModel(
         saveEnabled: _postAttributeClass?.allowSave,
         commentsEnabled: _postAttributeClass?.allowComment,
+        isPaid: _isPaidPostEnabled
+            ? (_postAttributeClass?.createPostRequest?.settings?.isPaid ?? false)
+            : null,
+        priceAmount: _isPaidPostEnabled &&
+                (_postAttributeClass?.createPostRequest?.settings?.isPaid == true) &&
+                _paidAmountController.text.trim().isNotEmpty
+            ? num.tryParse(_paidAmountController.text.trim())
+            : null,
+        priceCurrency: _isPaidPostEnabled &&
+                (_postAttributeClass?.createPostRequest?.settings?.isPaid == true)
+            ? IsrVideoReelConfig.createEditPostConfig.paidPostCurrency
+            : null,
       );
       createPostRequest.settings = settings;
 

@@ -71,6 +71,12 @@ class IsrTranslationFile {
   static const viewMore = 'View More';
   static const viewLess = 'View Less';
 
+  /// Shown when a post is locked as paid content (viewer is not the author).
+  static const String paidPostLockedTitle = 'Paid content';
+  static const String paidPostLockedSubtitle =
+      'Unlock this post to view the full media.';
+  static const String unlockFor = 'Unlock for';
+
   static const uploadPhotoOrVideo = 'Upload a photo or a video';
   static const uploadPhotoOrVideoToInspire =
       'Upload a photo or a video to inspire and connect with our ${AppConstants.appName} community.';
