@@ -633,7 +633,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   Widget _buildPaidLockedLayer() {
     const blurSigma = 28.0;
-    final primary = Theme.of(context).colorScheme.primary;
+    // final primary = Theme.of(context).colorScheme.primary;
 
     Widget chrome({Widget? blurredChild}) => Stack(
           fit: StackFit.expand,
@@ -674,6 +674,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                         color: Colors.white,
                         fontSize: IsrDimens.eighteen,
                         fontWeight: FontWeight.w600,
+                        decoration: TextDecoration.none,
                         shadows: _textShadows,
                       ),
                     ),
@@ -685,6 +686,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                         color: Colors.white.withValues(alpha: 0.88),
                         fontSize: IsrDimens.fourteen,
                         height: 1.35,
+                        decoration: TextDecoration.none,
                       ),
                     ),
                     IsrDimens.boxHeight(IsrDimens.twentyTwo),
@@ -711,6 +713,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: IsrDimens.fifteen,
+                                decoration: TextDecoration.none,
                               ),
                             )
                           : Row(
@@ -721,6 +724,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                   style: TextStyle(
                                     fontWeight: FontWeight.w600,
                                     fontSize: IsrDimens.fifteen,
+                                    decoration: TextDecoration.none,
                                   ),
                                 ),
                                 IsrDimens.boxWidth(IsrDimens.six),
@@ -737,6 +741,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                   style: TextStyle(
                                     fontWeight: FontWeight.w600,
                                     fontSize: IsrDimens.fifteen,
+                                    decoration: TextDecoration.none,
                                   ),
                                 ),
                               ],
@@ -1392,9 +1397,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                             ?.resolve(TextDirection.ltr)
                             .bottom ??
                         0,
-                    child:
-                        widget.reelsConfig.actionWidget?.call(_reelData).child ??
-                            _buildRightSideActions(),
+                    child: widget.reelsConfig.actionWidget
+                            ?.call(_reelData)
+                            .child ??
+                        _buildRightSideActions(),
                   ),
 
                 //bottom section
@@ -1494,9 +1500,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                             postSectionType: widget.postSectionType,
                             apiCallBack: widget.onPressLikeButton != null
                                 ? () => widget.onPressLikeButton!(
-                                    _reelData,
-                                    isLiked,
-                                  )
+                                      _reelData,
+                                      isLiked,
+                                    )
                                 : null,
                           ),
                           isLoading: false, //isLoading,
