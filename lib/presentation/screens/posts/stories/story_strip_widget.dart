@@ -15,14 +15,18 @@ class StoryStripWidget extends StatelessWidget {
     final currentUserId = context.select((StoryCubit cubit) => cubit.currentUserId);
     return BlocBuilder<StoryCubit, StoryState>(
       builder: (context, state) {
+        final cubit = context.read<StoryCubit>();
         final density = Theme.of(context).visualDensity;
         final avatarSize =
             uiConfig.avatarSize ?? 48.0 + density.horizontal * 2;
         final itemSpacing =
             uiConfig.itemSpacing ?? 8.0 + density.horizontal.abs();
+        // Transient states (e.g. StoryActionSuccess after add-to-highlight) replace
+        // StoryFeedLoaded but cached rings are unchanged — keep showing them.
         final groups = switch (state) {
-          StoryFeedLoaded() => [...state.unViewed, ...state.viewed],
-          _ => <StoryGroup>[],
+          StoryFeedLoaded(:final unViewed, :final viewed) =>
+            [...unViewed, ...viewed],
+          _ => cubit.cachedStoryGroups,
         };
         if (groups.isEmpty) {
           return const SizedBox.shrink();

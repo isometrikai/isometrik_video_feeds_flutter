@@ -25,7 +25,8 @@ class StoryViewerActions {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: Icon(Icons.bookmark_add_outlined, color: IsrColors.white),
+              leading:
+                  Icon(Icons.bookmark_add_outlined, color: IsrColors.white),
               title: Text(
                 'Add to highlight',
                 style: IsrStyles.white14,
@@ -34,7 +35,8 @@ class StoryViewerActions {
             ),
             if ((highlightId ?? '').trim().isNotEmpty)
               ListTile(
-                leading: const Icon(Icons.remove_circle_outline, color: Colors.redAccent),
+                leading: const Icon(Icons.remove_circle_outline,
+                    color: Colors.redAccent),
                 title: Text(
                   'Remove from highlight',
                   style: IsrStyles.white14.copyWith(color: Colors.redAccent),
@@ -43,7 +45,8 @@ class StoryViewerActions {
               )
             else
               ListTile(
-                leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                leading:
+                    const Icon(Icons.delete_outline, color: Colors.redAccent),
                 title: Text(
                   'Delete story',
                   style: IsrStyles.white14.copyWith(color: Colors.redAccent),
@@ -56,7 +59,8 @@ class StoryViewerActions {
     );
     if (!context.mounted || action == null) return;
     if (action == 'add_to_highlight') {
-      await _addToHighlight(context: context, story: story, storyCubit: storyCubit);
+      await _addToHighlight(
+          context: context, story: story, storyCubit: storyCubit);
       return;
     }
     if (action == 'remove_from_highlight') {
@@ -137,7 +141,8 @@ class StoryViewerActions {
         child: ListView.separated(
           shrinkWrap: true,
           itemCount: highlights.length,
-          separatorBuilder: (_, __) => const Divider(height: 1, color: Colors.white12),
+          separatorBuilder: (_, __) =>
+              const Divider(height: 1, color: Colors.white12),
           itemBuilder: (context, index) {
             final highlight = highlights[index];
             return ListTile(
@@ -146,7 +151,9 @@ class StoryViewerActions {
                 color: Colors.white,
               ),
               title: Text(
-                highlight.title.isEmpty ? 'Untitled highlight' : highlight.title,
+                highlight.title.isEmpty
+                    ? 'Untitled highlight'
+                    : highlight.title,
                 style: IsrStyles.white14,
               ),
               onTap: () => Navigator.of(context).pop(highlight),
@@ -156,12 +163,14 @@ class StoryViewerActions {
       ),
     );
     if (!context.mounted || selected == null) return;
-    final callback = IsrVideoReelConfig.storyConfig?.storyCallbackConfig.onHighlightTap;
+    final callback =
+        IsrVideoReelConfig.storyConfig?.storyCallbackConfig.onHighlightTap;
     if (callback != null) {
       await callback(selected);
     }
     if (!context.mounted) return;
-    await storyCubit.addStoryToHighlight(highlightId: selected.id, storyId: story.id);
+    await storyCubit.addStoryToHighlight(
+        highlightId: selected.id, storyId: story.id);
   }
 
   static Future<void> _createNewHighlightForStory({
@@ -175,7 +184,8 @@ class StoryViewerActions {
       isScrollControlled: true,
       backgroundColor: const Color(0xFF1D1D1D),
       builder: (context) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        padding:
+            EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
         child: SafeArea(
           child: Padding(
             padding: IsrDimens.edgeInsets(
@@ -191,7 +201,8 @@ class StoryViewerActions {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Create highlight',
-                    style: IsrStyles.white16.copyWith(fontWeight: FontWeight.w600),
+                    style:
+                        IsrStyles.white16.copyWith(fontWeight: FontWeight.w600),
                   ),
                 ),
                 SizedBox(height: IsrDimens.twelve),
@@ -220,10 +231,10 @@ class StoryViewerActions {
                       child: TextField(
                         autofocus: true,
                         onChanged: (value) => title = value,
-                        style: IsrStyles.white14,
+                        style: IsrStyles.primaryText14,
                         decoration: InputDecoration(
                           hintText: 'Highlight name',
-                          hintStyle: IsrStyles.white14.copyWith(color: Colors.white54),
+                          hintStyle: IsrStyles.primaryText14,
                           enabledBorder: const UnderlineInputBorder(
                             borderSide: BorderSide(color: Colors.white24),
                           ),
@@ -250,7 +261,8 @@ class StoryViewerActions {
                         onPressed: () async {
                           final highlightTitle = title.trim();
                           if (highlightTitle.isEmpty) return;
-                          final created = await storyCubit.createHighlightWithStories(
+                          final created =
+                              await storyCubit.createHighlightWithStories(
                             title: highlightTitle,
                             coverUrl: story.mediaUrl,
                             sortOrder: 0,
@@ -273,14 +285,17 @@ class StoryViewerActions {
     if (!context.mounted || created != true) return;
     final highlights = await storyCubit.getHighlightsForCurrentUser();
     if (!context.mounted) return;
-    final callback = IsrVideoReelConfig.storyConfig?.storyCallbackConfig.onHighlightTap;
+    final callback =
+        IsrVideoReelConfig.storyConfig?.storyCallbackConfig.onHighlightTap;
     if (callback != null) {
       final matched = highlights.where((h) {
         final hasStory = h.items.any((item) => item.storyId == story.id);
         if (!hasStory) return false;
         return h.coverUrl == story.mediaUrl || h.title == title.trim();
       }).toList();
-      final tapped = matched.isNotEmpty ? matched.first : (highlights.isNotEmpty ? highlights.first : null);
+      final tapped = matched.isNotEmpty
+          ? matched.first
+          : (highlights.isNotEmpty ? highlights.first : null);
       if (tapped != null) {
         await callback(tapped);
       }
@@ -290,4 +305,3 @@ class StoryViewerActions {
     );
   }
 }
-

@@ -34,6 +34,9 @@ class _StoryViewerViewState extends State<StoryViewerView> {
   Timer? _imageTimer;
   VideoPlayerController? _video;
 
+  /// >0 while playback is held (long-press or modal sheets). Image timer skips ticks; video is paused.
+  int _playbackPauseDepth = 0;
+
   @override
   void initState() {
     super.initState();
@@ -106,6 +109,7 @@ class _StoryViewerViewState extends State<StoryViewerView> {
 
   void _syncMedia() {
     if (!mounted) return;
+    _playbackPauseDepth = 0;
     _imageTimer?.cancel();
     _disposeVideo();
     _viewerCubit.resetProgress();
@@ -123,7 +127,9 @@ class _StoryViewerViewState extends State<StoryViewerView> {
         ..initialize().then((_) {
           if (!mounted || _story?.id != story.id) return;
           setState(() {});
-          _video!.play();
+          if (_playbackPauseDepth == 0) {
+            _video!.play();
+          }
         })
         ..addListener(_onVideoTick);
     } else {
@@ -132,6 +138,7 @@ class _StoryViewerViewState extends State<StoryViewerView> {
       final totalMs = total.inMilliseconds;
       var elapsedMs = 0;
       _imageTimer = Timer.periodic(tick, (timer) {
+        if (_playbackPauseDepth > 0) return;
         elapsedMs += tick.inMilliseconds;
         final nextProgress = (elapsedMs / totalMs).clamp(0.0, 1.0);
         if (mounted) _viewerCubit.setProgress(nextProgress);
@@ -185,19 +192,46 @@ class _StoryViewerViewState extends State<StoryViewerView> {
     }
   }
 
+  void _pausePlayback() {
+    if (_playbackPauseDepth == 0) {
+      _video?.pause();
+    }
+    _playbackPauseDepth++;
+  }
+
+  void _resumePlayback() {
+    if (_playbackPauseDepth <= 0) return;
+    _playbackPauseDepth--;
+    if (_playbackPauseDepth != 0) return;
+    final story = _story;
+    final v = _video;
+    if (v != null &&
+        story != null &&
+        _isVideo(story) &&
+        v.value.isInitialized &&
+        !v.value.isCompleted) {
+      v.play();
+    }
+  }
+
   bool get _canManageCurrentStory {
     final story = _story;
     return _viewerCubit.state.isCurrentStoryOwner(story: story, group: _group);
   }
 
   Future<void> _onMoreActionsPressed() async {
-    await StoryViewerActions.handleMoreActions(
-      context: context,
-      story: _story,
-      canManageCurrentStory: _canManageCurrentStory,
-      highlightId: widget.highlightId,
-      onAdvanceAfterMutation: _goNext,
-    );
+    _pausePlayback();
+    try {
+      await StoryViewerActions.handleMoreActions(
+        context: context,
+        story: _story,
+        canManageCurrentStory: _canManageCurrentStory,
+        highlightId: widget.highlightId,
+        onAdvanceAfterMutation: _goNext,
+      );
+    } finally {
+      if (mounted) _resumePlayback();
+    }
   }
 
   @override
@@ -209,46 +243,52 @@ class _StoryViewerViewState extends State<StoryViewerView> {
             final story = _story;
             return Scaffold(
               backgroundColor: Colors.black,
-              body: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTapUp: _onTapUp,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    if (story != null)
-                      StoryViewerMediaContent(
-                        story: story,
-                        isVideo: _isVideo,
-                        videoController: _video,
+              body: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (story != null)
+                    StoryViewerMediaContent(
+                      story: story,
+                      isVideo: _isVideo,
+                      videoController: _video,
+                    ),
+                  Positioned.fill(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      onTapUp: _onTapUp,
+                      onLongPressStart: (_) => _pausePlayback(),
+                      onLongPressEnd: (_) => _resumePlayback(),
+                      onLongPressCancel: _resumePlayback,
+                      child: const SizedBox.expand(),
+                    ),
+                  ),
+                  SafeArea(
+                    child: Padding(
+                      padding: IsrDimens.edgeInsetsSymmetric(
+                        horizontal: IsrDimens.eight,
+                        vertical: IsrDimens.eight,
                       ),
-                    SafeArea(
-                      child: Padding(
-                        padding: IsrDimens.edgeInsetsSymmetric(
-                          horizontal: IsrDimens.eight,
-                          vertical: IsrDimens.eight,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (g != null)
-                              StoryViewerProgressBar(
-                                group: g,
-                                state: _viewerCubit.state,
-                              ),
-                            SizedBox(height: IsrDimens.eight),
-                            StoryViewerHeader(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (g != null)
+                            StoryViewerProgressBar(
                               group: g,
-                              story: story,
-                              canManageCurrentStory: _canManageCurrentStory,
-                              onClose: () => Navigator.of(context).pop(),
-                              onMoreActionsPressed: _onMoreActionsPressed,
+                              state: _viewerCubit.state,
                             ),
-                          ],
-                        ),
+                          SizedBox(height: IsrDimens.eight),
+                          StoryViewerHeader(
+                            group: g,
+                            story: story,
+                            canManageCurrentStory: _canManageCurrentStory,
+                            onClose: () => Navigator.of(context).pop(),
+                            onMoreActionsPressed: _onMoreActionsPressed,
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             );
           },
