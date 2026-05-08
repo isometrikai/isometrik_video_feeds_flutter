@@ -343,7 +343,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                 if (_tabDataModelList.length > 1) ...[
                   _buildTabBar()
                 ] else ...[
-                  _buildBackButton()
+                  _buildSingleTabTopBar()
                 ],
               ],
             ),
@@ -374,6 +374,42 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           ),
         ),
       );
+
+  Widget _buildSingleTabTopBar() {
+    final rightWidget = _tabBarConfig?.rightWidget;
+    final showRight = rightWidget != null;
+
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 8,
+      left: 12,
+      right: 12,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            decoration: _backButtonConfig?.buttonDecoration ??
+                BoxDecoration(
+                  color: Colors.black.applyOpacity(0.5),
+                  shape: BoxShape.circle,
+                ),
+            child: IconButton(
+              icon: _backButtonConfig?.icon ??
+                  Icon(
+                    Icons.arrow_back,
+                    color: _backButtonConfig?.iconColor ?? Colors.white,
+                    size: _backButtonConfig?.iconSize,
+                  ),
+              onPressed: () {
+                context.pop();
+              },
+            ),
+          ),
+          if (showRight) rightWidget,
+        ],
+      ),
+    );
+  }
 
   Widget _buildTabView(TabStateModel tab) =>
       BlocBuilder<SocialPostBloc, SocialPostState>(
