@@ -19,5 +19,6 @@ export 'response_class.dart';
 export 'search_user_response.dart';
 export 'signup_response_model.dart';
 export 'social_user_profile_response.dart';
+export 'story_response.dart';
 export 'timeline_response.dart';
 export 'user_collection_response.dart';

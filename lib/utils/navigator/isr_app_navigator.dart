@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/models/models.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart' as ms;
+import 'package:ism_video_reel_player/utils/navigator/highlight_open_coordinator.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
 part 'isr_app_routes.dart';
@@ -225,6 +227,128 @@ class IsrAppNavigator {
       _buildRoute(page: page, transitionType: transitionType),
     );
     return result;
+  }
+
+  /// Opens the SDK story composer (image/video + caption). Call this from your
+  /// settings / account UI, or set [StoryCallbackConfig.navigateToCreateStory] for a custom screen.
+  static Future<void> goToCreateStoryView(
+    BuildContext context, {
+    TransitionType? transitionType,
+  }) async {
+    final cubit = _storyCubitFrom(context);
+    final page = BlocProvider<StoryCubit>.value(
+      value: cubit,
+      child: const StoryCreateView(),
+    );
+    await Navigator.of(context, rootNavigator: true).push<void>(
+      _buildRoute(page: page, transitionType: transitionType),
+    );
+  }
+
+  /// Instagram-style full-screen story viewer (image/video, tap zones, close).
+  static Future<void> presentStoryViewer(
+    BuildContext context, {
+    required List<StoryGroup> groups,
+    required int initialGroupIndex,
+    String? highlightId,
+    TransitionType transitionType = TransitionType.fade,
+  }) async {
+    if (groups.isEmpty) return;
+    final cubit = _storyCubitFrom(context);
+    final page = BlocProvider<StoryCubit>.value(
+      value: cubit,
+      child: StoryViewerView(
+        groups: List<StoryGroup>.from(groups),
+        initialGroupIndex: initialGroupIndex,
+        highlightId: highlightId,
+      ),
+    );
+    await Navigator.of(context, rootNavigator: true).push<void>(
+      _buildRoute(page: page, transitionType: transitionType),
+    );
+  }
+
+  static bool hasStoryCubitInContext(BuildContext context) {
+    try {
+      context.read<StoryCubit>();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static StoryCubit _storyCubitFrom(BuildContext context) {
+    try {
+      debugPrint('IsrAppNavigator: StoryCubit resolved from context');
+      return context.read<StoryCubit>();
+    } catch (_) {
+      debugPrint('IsrAppNavigator: StoryCubit missing in context, using DI');
+      return IsmInjectionUtils.getBloc<StoryCubit>();
+    }
+  }
+
+  static Future<HighlightOpenResult> presentHighlightViewer(
+    BuildContext context, {
+    required String highlightId,
+    String? userId,
+    List<String>? storyIds,
+    TransitionType transitionType = TransitionType.fade,
+  }) async {
+    final cubit = _storyCubitFrom(context);
+    final resolved = await HighlightOpenCoordinator.resolve(
+      cubit: cubit,
+      highlightId: highlightId,
+      userId: userId,
+      storyIds: storyIds,
+    );
+    final group = resolved.group;
+    if (group == null) return resolved.result;
+    await presentStoryViewer(
+      context,
+      groups: [group],
+      initialGroupIndex: 0,
+      highlightId: resolved.result.highlightId,
+      transitionType: transitionType,
+    );
+    return resolved.result;
+  }
+
+  static Future<HighlightOpenResult> openHighlightById(
+    String highlightId, {
+    String? userId,
+    TransitionType transitionType = TransitionType.fade,
+  }) async {
+    final context =
+        IsrVideoReelConfig.getBuildContext?.call() ?? IsrVideoReelConfig.buildContext;
+    if (context == null) {
+      const reason = 'BuildContext unavailable for highlight navigation.';
+      IsrVideoReelConfig.storyConfig?.storyCallbackConfig.onStoryActionError
+          ?.call('open_highlight_by_id', reason);
+      IsrVideoReelConfig
+          .storyConfig?.storyCallbackConfig.onHighlightOpenDiagnostics
+          ?.call(
+        HighlightOpenDiagnostics(
+          highlightId: highlightId.trim(),
+          targetStoryIds: const [],
+          resolvedStoryIds: const [],
+          stepsAttempted: const ['resolve_context_failed'],
+          reason: reason,
+          opened: false,
+        ),
+      );
+      return HighlightOpenResult(
+        opened: false,
+        reason: reason,
+        resolvedStoryCount: 0,
+        highlightId: highlightId.trim(),
+      );
+    }
+    return IsrAppNavigator.presentHighlightViewer(
+      context,
+      highlightId: highlightId,
+      userId: userId,
+      transitionType: transitionType,
+    );
   }
 
   static Future<String?> goToEditPostView(

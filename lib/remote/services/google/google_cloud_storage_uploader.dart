@@ -14,6 +14,15 @@ import 'package:talker/talker.dart';
 import 'package:talker_dio_logger/talker_dio_logger.dart';
 
 class GoogleCloudStorageUploader {
+  static String objectFileName(String fileName, String fileExtension) {
+    final ext =
+        fileExtension.replaceFirst(RegExp(r'^\.'), '').toLowerCase().trim();
+    if (ext.isEmpty) return fileName;
+    final lower = fileName.toLowerCase();
+    if (lower.endsWith('.$ext')) return fileName;
+    return '$fileName.$ext';
+  }
+
   static Future<String?> uploadFile({
     required File file,
     required String fileName,
@@ -25,9 +34,10 @@ class GoogleCloudStorageUploader {
     try {
       final finalFileName =
           '${DateTime.now().millisecondsSinceEpoch}_$fileName';
+      final resolvedName = objectFileName(finalFileName, fileExtension);
       final normalizedFolder = cloudFolderName.isStringEmptyOrNull == false
-          ? cloudFolderName?.trim() ?? ''
-          : '${AppConstants.tenantId}/${AppConstants.projectId}/user_$userId/posts/$finalFileName$fileExtension';
+          ? '${AppConstants.tenantId}/${AppConstants.projectId}/user_$userId/${cloudFolderName!.trim()}/$resolvedName'
+          : '${AppConstants.tenantId}/${AppConstants.projectId}/user_$userId/posts/$resolvedName';
 
       final serviceJsonFile =
           await rootBundle.loadString(AssetConstants.googleServiceJson);
@@ -137,9 +147,10 @@ class GoogleCloudStorageUploader {
   }) async {
     try {
       final finalFileName = fileName;
+      final resolvedName = objectFileName(finalFileName, fileExtension);
       final normalizedFolder = cloudFolderName.isStringEmptyOrNull == false
-          ? cloudFolderName?.trim() ?? ''
-          : '${AppConstants.tenantId}/${AppConstants.projectId}/user_$userId/posts/$finalFileName$fileExtension';
+          ? '${AppConstants.tenantId}/${AppConstants.projectId}/user_$userId/${cloudFolderName!.trim()}/$resolvedName'
+          : '${AppConstants.tenantId}/${AppConstants.projectId}/user_$userId/posts/$resolvedName';
 
       final serviceJsonFile =
           await rootBundle.loadString(AssetConstants.googleServiceJson);
@@ -180,7 +191,7 @@ class GoogleCloudStorageUploader {
       dio.options.receiveTimeout = const Duration(minutes: 5);
       dio.options.sendTimeout = const Duration(minutes: 5);
 
-      int _logProgress = 0;
+      var _logProgress = 0;
       final response = await dio.post(
         uploadUrl,
         data: bytes,
@@ -237,9 +248,10 @@ class GoogleCloudStorageUploader {
     try {
       final finalFileName =
           '${DateTime.now().millisecondsSinceEpoch}_$fileName';
+      final resolvedName = objectFileName(finalFileName, fileExtension);
       final normalizedFolder = cloudFolderName.isStringEmptyOrNull == false
-          ? cloudFolderName?.trim() ?? ''
-          : '${AppConstants.tenantId}/${AppConstants.projectId}/user_$userId/posts/$finalFileName$fileExtension';
+          ? '${AppConstants.tenantId}/${AppConstants.projectId}/user_$userId/${cloudFolderName!.trim()}/$resolvedName'
+          : '${AppConstants.tenantId}/${AppConstants.projectId}/user_$userId/posts/$resolvedName';
 
       debugPrint('1. Starting upload process...');
 

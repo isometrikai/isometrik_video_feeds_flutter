@@ -80,6 +80,7 @@ void _configureReelsSdk() {
       autoMoveToNextPost: true,
     ),
     tabConfig: const isr.TabConfig(),
+    storyConfig: const isr.StoryConfig(),
     createEditPostConfig: const isr.CreateEditPostConfig(
       createEditPostCallBackConfig: isr.CreateEditPostCallBackConfig(
         onBackgroundPostOperation: BackgroundPostUploadDemo.onSdkUpdate,

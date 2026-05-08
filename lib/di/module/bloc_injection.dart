@@ -118,6 +118,14 @@ class BlocInjection {
       ),
     );
 
+    IsmInjectionUtils.registerSingletonBloc<StoryCubit>(
+      () => StoryCubit(
+        IsmInjectionUtils.getUseCase<StoryUseCase>(),
+        localDataUseCase,
+        IsmInjectionUtils.getUseCase<GoogleCloudStorageUploaderUseCase>(),
+      ),
+    );
+
     IsmInjectionUtils.registerBloc<MediaSelectionBloc>(
       MediaSelectionBloc.new,
     );

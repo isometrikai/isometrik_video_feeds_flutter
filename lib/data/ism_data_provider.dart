@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:ism_video_reel_player/core/core.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
 class IsmDataProvider {
@@ -45,6 +46,9 @@ class IsmDataProvider {
 
   CancelOutgoingFollowRequestUseCase get _cancelOutgoingFollowRequestUseCase =>
       IsmInjectionUtils.getUseCase<CancelOutgoingFollowRequestUseCase>();
+
+  StoryUseCase get _storyUseCase =>
+      IsmInjectionUtils.getUseCase<StoryUseCase>();
 
   /// Private generic handler to reduce code duplication
   Future<void> _executeApiCall<T>({
@@ -394,5 +398,218 @@ class IsmDataProvider {
       onSuccess: onSuccess,
       onError: onError,
     );
+  }
+
+  Future<void> getStoryHighlights({
+    required String userId,
+    int? page,
+    int? pageSize,
+    bool isLoading = false,
+    Function(String, int)? onSuccess,
+    Function(String, int)? onError,
+  }) async {
+    await _executeApiCall(
+      apiCall: () => _storyUseCase.executeGetStoryHighlights(
+        isLoading: isLoading,
+        userId: userId,
+        page: page,
+        pageSize: pageSize,
+      ),
+      toJson: (data) => {
+        'data': (data ?? const <StoryHighlightData>[])
+            .map((highlight) => {
+                  'id': highlight.id,
+                  'user_id': highlight.userId,
+                  'title': highlight.title,
+                  'cover_url': highlight.coverUrl,
+                  'sort_order': highlight.sortOrder,
+                  'items': highlight.items
+                      .map((item) => {
+                            'item_id': item.itemId,
+                            'story_id': item.storyId,
+                          })
+                      .toList(),
+                })
+            .toList(),
+      },
+      onSuccess: onSuccess,
+      onError: onError,
+    );
+  }
+
+  Future<void> deleteStoryHighlight({
+    required String highlightId,
+    bool isLoading = false,
+    Function(String, int)? onSuccess,
+    Function(String, int)? onError,
+  }) async {
+    await _executeApiCall(
+      apiCall: () => _storyUseCase.executeDeleteStoryHighlight(
+        isLoading: isLoading,
+        highlightId: highlightId,
+      ),
+      toJson: (data) => data?.toMap() ?? {},
+      onSuccess: onSuccess,
+      onError: onError,
+    );
+  }
+
+  Future<void> createStoryHighlight({
+    required Map<String, dynamic> requestMap,
+    bool isLoading = false,
+    Function(String, int)? onSuccess,
+    Function(String, int)? onError,
+  }) async {
+    final title = requestMap['title']?.toString() ?? '';
+    if (title.trim().isEmpty) {
+      onError?.call(
+        'Invalid request: `title` is required for createStoryHighlight.',
+        400,
+      );
+      return;
+    }
+    final coverUrl = requestMap['cover_url']?.toString();
+    final sortOrder = (requestMap['sort_order'] as num?)?.toInt();
+    final storyIds =
+        (requestMap['story_ids'] as List?)?.map((e) => e.toString()).toList();
+
+    await _executeApiCall(
+      apiCall: () => _storyUseCase.executeCreateStoryHighlight(
+        isLoading: isLoading,
+        request: CreateStoryHighlightRequest(
+          title: title,
+          coverUrl: coverUrl,
+          sortOrder: sortOrder,
+          storyIds: storyIds,
+        ),
+      ),
+      toJson: (data) => data?.toMap() ?? {},
+      successStatusCode: 201,
+      onSuccess: onSuccess,
+      onError: onError,
+    );
+  }
+
+  Future<void> updateStoryHighlight({
+    required String highlightId,
+    required Map<String, dynamic> requestMap,
+    bool isLoading = false,
+    Function(String, int)? onSuccess,
+    Function(String, int)? onError,
+  }) async {
+    final title = requestMap['title']?.toString() ?? '';
+    if (title.trim().isEmpty) {
+      onError?.call(
+        'Invalid request: `title` is required for updateStoryHighlight.',
+        400,
+      );
+      return;
+    }
+    final coverUrl = requestMap['cover_url']?.toString();
+    final sortOrder = (requestMap['sort_order'] as num?)?.toInt();
+
+    await _executeApiCall(
+      apiCall: () => _storyUseCase.executeUpdateStoryHighlight(
+        isLoading: isLoading,
+        highlightId: highlightId,
+        request: UpdateStoryHighlightRequest(
+          title: title,
+          coverUrl: coverUrl,
+          sortOrder: sortOrder,
+        ),
+      ),
+      toJson: (data) => data?.toMap() ?? {},
+      onSuccess: onSuccess,
+      onError: onError,
+    );
+  }
+
+  Future<void> removeStoryFromHighlight({
+    required String highlightId,
+    required String storyId,
+    bool isLoading = false,
+    Function(String, int)? onSuccess,
+    Function(String, int)? onError,
+  }) async {
+    await _executeApiCall(
+      apiCall: () => _storyUseCase.executeRemoveStoryFromHighlight(
+        isLoading: isLoading,
+        highlightId: highlightId,
+        storyId: storyId,
+      ),
+      toJson: (data) => data?.toMap() ?? {},
+      onSuccess: onSuccess,
+      onError: onError,
+    );
+  }
+
+  Future<void> removeStoriesFromHighlight({
+    required String highlightId,
+    required List<String> storyIds,
+    bool isLoading = false,
+    Function(String, int)? onSuccess,
+    Function(String, int)? onError,
+  }) async {
+    if (storyIds.isEmpty) {
+      onError?.call(
+        'Invalid request: `storyIds` cannot be empty for removeStoriesFromHighlight.',
+        400,
+      );
+      return;
+    }
+    for (final storyId in storyIds) {
+      await removeStoryFromHighlight(
+        highlightId: highlightId,
+        storyId: storyId,
+        isLoading: isLoading,
+        onSuccess: onSuccess,
+        onError: onError,
+      );
+    }
+  }
+
+  Future<void> deleteStory({
+    required String storyId,
+    bool isLoading = false,
+    Function(String, int)? onSuccess,
+    Function(String, int)? onError,
+  }) async {
+    await _executeApiCall(
+      apiCall: () => _storyUseCase.executeDeleteStory(
+        isLoading: isLoading,
+        storyId: storyId,
+      ),
+      toJson: (data) => data?.toMap() ?? {},
+      onSuccess: onSuccess,
+      onError: onError,
+    );
+  }
+
+  Future<void> addStoriesToHighlight({
+    required String highlightId,
+    required List<String> storyIds,
+    bool isLoading = false,
+    Function(String, int)? onSuccess,
+    Function(String, int)? onError,
+  }) async {
+    await _executeApiCall(
+      apiCall: () => _storyUseCase.executeAddStoriesToHighlight(
+        isLoading: isLoading,
+        highlightId: highlightId,
+        request: AddStoriesToHighlightRequest(storyIds: storyIds),
+      ),
+      toJson: (data) => data?.toMap() ?? {},
+      onSuccess: onSuccess,
+      onError: onError,
+    );
+  }
+
+  Future<void> onStoryHighlightTap({
+    required Map<String, dynamic> highlightMap,
+  }) async {
+    final callback =
+        IsrVideoReelConfig.storyConfig?.storyCallbackConfig.onHighlightTap;
+    if (callback == null) return;
+    await callback(StoryHighlightData.fromMap(highlightMap));
   }
 }

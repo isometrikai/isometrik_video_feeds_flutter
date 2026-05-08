@@ -22,6 +22,8 @@ class ApiServiceInjection {
         SocialApiServiceProvider(
             networkClient: networkClient,
             deviceInfoManager: deviceInfoManager));
+    IsmInjectionUtils.registerApiService<StoryApiService>(() =>
+        StoryApiServiceProvider(networkClient: networkClient));
     IsmInjectionUtils.registerApiService<GoogleApiService>(() =>
         GoogleApiServiceProvider(localStorageManager,
             apiKey: 'AIzaSyAtEV8g9_ndGsbBaeZuIpTpFRqpd8JE1RY'));

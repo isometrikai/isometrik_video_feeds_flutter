@@ -229,7 +229,7 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
   Future<bool?> _showReportPostDialog(BuildContext context, String type) =>
       showDialog<bool>(
         context: context,
-        barrierDismissible: false,
+        barrierDismissible: true,
         builder: (context) => Dialog(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),

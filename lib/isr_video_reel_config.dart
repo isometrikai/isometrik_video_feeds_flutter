@@ -70,6 +70,9 @@ class IsrVideoReelConfig {
   /// Search Screen configuration used by SDK modules.
   static SearchScreenConfig searchScreenConfig = const SearchScreenConfig();
 
+  /// Story configuration used by SDK modules; when null, stories stay hidden.
+  static StoryConfig? storyConfig;
+
   /// Convenience accessor for the SDK's singleton [IsmSocialActionCubit].
   static IsmSocialActionCubit get socialActionCubit =>
       IsmInjectionUtils.getBloc<IsmSocialActionCubit>();
@@ -191,6 +194,7 @@ class IsrVideoReelConfig {
     CreateEditPostConfig? createEditPostConfig,
     TagDetailsConfig? tagDetailsConfig,
     SearchScreenConfig? searchScreenConfig,
+    StoryConfig? storyConfig,
   }) {
     IsrVideoReelConfig.socialConfig = socialConfig ?? IsrVideoReelConfig.socialConfig;
     IsrVideoReelConfig.postConfig = postConfig ?? IsrVideoReelConfig.postConfig;
@@ -199,6 +203,7 @@ class IsrVideoReelConfig {
     IsrVideoReelConfig.createEditPostConfig = createEditPostConfig ?? IsrVideoReelConfig.createEditPostConfig;
     IsrVideoReelConfig.tagDetailsConfig = tagDetailsConfig ?? IsrVideoReelConfig.tagDetailsConfig;
     IsrVideoReelConfig.searchScreenConfig = searchScreenConfig ?? IsrVideoReelConfig.searchScreenConfig;
+    IsrVideoReelConfig.storyConfig = storyConfig;
   }
 
   static Future<void> _updateHeaderAddressFromIp() async {

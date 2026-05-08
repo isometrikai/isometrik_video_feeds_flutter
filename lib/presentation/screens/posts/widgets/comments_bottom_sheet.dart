@@ -239,7 +239,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                         itemBuilder: (context, index) =>
                             _buildCommentItem(_postCommentList[index]),
                       )
-                    else if (!(state is LoadingPostComment && state.postId == widget.postId))
+                    else if (!(state is LoadingPostComment &&
+                        state.postId == widget.postId))
                       _buildPlaceHolder(),
                   ]),
                 ),
@@ -777,6 +778,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                         context.pop();
                         await showDialog<dynamic>(
                           context: context,
+                          barrierDismissible: true,
                           builder: (_) => ReportReasonDialog(
                             reasonFor: ReasonsFor.comment,
                             contentId: comment.id ?? '',
@@ -851,7 +853,24 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
       ),
       backgroundColor: Colors.transparent,
       elevation: 0,
-      child: child,
+      insetPadding: EdgeInsets.zero,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => Navigator.of(context, rootNavigator: true).pop(),
+              child: const SizedBox.expand(),
+            ),
+          ),
+          Center(
+            child: GestureDetector(
+              onTap: () {},
+              child: child,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
