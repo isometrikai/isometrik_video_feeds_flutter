@@ -100,6 +100,9 @@ class FollowRequestItem {
     if (map['user'] is Map<String, dynamic>) {
       return map['user'] as Map<String, dynamic>;
     }
+    if (map['requester'] is Map<String, dynamic>) {
+      return map['requester'] as Map<String, dynamic>;
+    }
     if (map['follower'] is Map<String, dynamic>) {
       return map['follower'] as Map<String, dynamic>;
     }
@@ -116,7 +119,10 @@ class FollowRequestItem {
       return map['target_user'] as Map<String, dynamic>;
     }
     // Flat user fields on the request object
-    if (map['username'] != null || map['id'] != null) {
+    if (map['username'] != null ||
+        map['full_name'] != null ||
+        map['display_name'] != null ||
+        map['avatar_url'] != null) {
       final m = Map<String, dynamic>.from(map);
       m.remove('request_id');
       m.remove('follow_request_id');

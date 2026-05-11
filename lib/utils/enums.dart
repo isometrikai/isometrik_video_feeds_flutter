@@ -154,3 +154,10 @@ enum DoActionOnCollection {
 
   final String value;
 }
+
+enum StoryViewerNavResult {
+  advanced,
+  movedBack,
+  completed,
+  noChange,
+}

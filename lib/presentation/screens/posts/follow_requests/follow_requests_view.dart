@@ -172,9 +172,6 @@ class _RequestList extends StatelessWidget {
           itemBuilder: (context, index) {
             final item = items[index];
             final u = item.user;
-            AppLog.error(u.avatarUrl);
-            AppLog.error(u.fullName);
-            AppLog.error(u.displayName);
 
             return Padding(
               padding: IsrDimens.edgeInsetsSymmetric(

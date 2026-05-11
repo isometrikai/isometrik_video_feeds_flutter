@@ -96,6 +96,8 @@ class UseCaseInjection {
         () => CollectionUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<PostImpressionUseCase>(() =>
         PostImpressionUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<StoryUseCase>(
+        () => StoryUseCase(IsmInjectionUtils.getRepo<StoryRepository>()));
 
     // Google Repository use cases
     IsmInjectionUtils.registerUseCase<GetAddressFromPinCodeUseCase>(() =>

@@ -342,9 +342,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (amount.isEmpty) return '';
     final c = (_reelData.priceCurrency ?? '').trim().toLowerCase();
     if (c.isEmpty || c == '-') return amount;
-    if (c == 'coin' || c == 'coins') return '$amount coins';
+    if (c == 'coin' || c == 'coins') return amount;
     if (c == 'usd') return '\$$amount';
     return '$amount $c'.trim();
+  }
+
+  bool get _isCoinCurrency {
+    final c = (_reelData.priceCurrency ?? '').trim().toLowerCase();
+    return c == 'coin' || c == 'coins';
   }
 
   Future<void> _onPaidUnlockPressed() async {
@@ -628,7 +633,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   Widget _buildPaidLockedLayer() {
     const blurSigma = 28.0;
-    final primary = Theme.of(context).colorScheme.primary;
+    // final primary = Theme.of(context).colorScheme.primary;
 
     Widget chrome({Widget? blurredChild}) => Stack(
           fit: StackFit.expand,
@@ -669,6 +674,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                         color: Colors.white,
                         fontSize: IsrDimens.eighteen,
                         fontWeight: FontWeight.w600,
+                        decoration: TextDecoration.none,
                         shadows: _textShadows,
                       ),
                     ),
@@ -680,14 +686,18 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                         color: Colors.white.withValues(alpha: 0.88),
                         fontSize: IsrDimens.fourteen,
                         height: 1.35,
+                        decoration: TextDecoration.none,
                       ),
                     ),
                     IsrDimens.boxHeight(IsrDimens.twentyTwo),
                     OutlinedButton(
                       onPressed: _onPaidUnlockPressed,
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: primary,
-                        side: BorderSide(color: primary.withValues(alpha: 0.9)),
+                        foregroundColor: Colors.white,
+                        side: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.92),
+                        ),
+                        backgroundColor: Colors.white.withValues(alpha: 0.08),
                         padding: IsrDimens.edgeInsetsSymmetric(
                           horizontal: IsrDimens.twentyTwo,
                           vertical: IsrDimens.twelve,
@@ -697,15 +707,45 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                               BorderRadius.circular(IsrDimens.twentyFive),
                         ),
                       ),
-                      child: Text(
-                        _paidUnlockPriceLabel().isEmpty
-                            ? IsrTranslationFile.unlockFor
-                            : '${IsrTranslationFile.unlockFor} ${_paidUnlockPriceLabel()}',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: IsrDimens.fifteen,
-                        ),
-                      ),
+                      child: _paidUnlockPriceLabel().isEmpty
+                          ? Text(
+                              IsrTranslationFile.unlockFor,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: IsrDimens.fifteen,
+                                decoration: TextDecoration.none,
+                              ),
+                            )
+                          : Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  IsrTranslationFile.unlockFor,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: IsrDimens.fifteen,
+                                    decoration: TextDecoration.none,
+                                  ),
+                                ),
+                                IsrDimens.boxWidth(IsrDimens.six),
+                                if (_isCoinCurrency) ...[
+                                  const Icon(
+                                    Icons.monetization_on_rounded,
+                                    size: 16,
+                                    color: Colors.white,
+                                  ),
+                                  IsrDimens.boxWidth(IsrDimens.four),
+                                ],
+                                Text(
+                                  _paidUnlockPriceLabel(),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: IsrDimens.fifteen,
+                                    decoration: TextDecoration.none,
+                                  ),
+                                ),
+                              ],
+                            ),
                     ),
                   ],
                 ),
@@ -1357,9 +1397,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                             ?.resolve(TextDirection.ltr)
                             .bottom ??
                         0,
-                    child:
-                        widget.reelsConfig.actionWidget?.call(_reelData).child ??
-                            _buildRightSideActions(),
+                    child: widget.reelsConfig.actionWidget
+                            ?.call(_reelData)
+                            .child ??
+                        _buildRightSideActions(),
                   ),
 
                 //bottom section
@@ -1459,9 +1500,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                             postSectionType: widget.postSectionType,
                             apiCallBack: widget.onPressLikeButton != null
                                 ? () => widget.onPressLikeButton!(
-                                    _reelData,
-                                    isLiked,
-                                  )
+                                      _reelData,
+                                      isLiked,
+                                    )
                                 : null,
                           ),
                           isLoading: false, //isLoading,

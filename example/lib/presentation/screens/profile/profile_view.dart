@@ -41,6 +41,16 @@ class _ProfileViewState extends State<ProfileView> {
               ),
               const Divider(),
 
+              if (isr.IsrVideoReelConfig.storyConfig != null) ...[
+                ListTile(
+                  leading: const Icon(Icons.auto_stories_outlined),
+                  title: const Text('Add your story'),
+                  subtitle: const Text('Photo or video'),
+                  onTap: () => _addYourStory(context),
+                ),
+                const Divider(),
+              ],
+
               // search Tile
               ListTile(
                 leading: const Icon(Icons.search),
@@ -65,9 +75,7 @@ class _ProfileViewState extends State<ProfileView> {
               ListTile(
                 leading: const Icon(Icons.settings),
                 title: const Text('Settings'),
-                onTap: () {
-                  // Handle settings action
-                },
+                onTap: () {},
               ),
               const Divider(),
 
@@ -96,6 +104,17 @@ class _ProfileViewState extends State<ProfileView> {
 
   void _createPost(BuildContext context) {
     isr.IsrAppNavigator.goToCreatePostView(context);
+  }
+
+  Future<void> _addYourStory(BuildContext context) async {
+    final config = isr.IsrVideoReelConfig.storyConfig;
+    if (config == null) return;
+    final custom = config.storyCallbackConfig.navigateToCreateStory;
+    if (custom != null) {
+      await custom(context);
+      return;
+    }
+    await isr.IsrAppNavigator.goToCreateStoryView(context);
   }
 
   void _schedulePostListing(BuildContext context) {
