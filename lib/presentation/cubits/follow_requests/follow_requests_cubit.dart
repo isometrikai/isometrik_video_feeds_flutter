@@ -39,6 +39,7 @@ class FollowRequestsCubit extends Cubit<FollowRequestsState> {
   }
 
   Future<void> loadIncoming({required bool refresh}) async {
+    if (!refresh && state.incomingLoading) return;
     if (refresh) {
       emit(state.copyWith(
         incomingPage: 1,
@@ -79,6 +80,7 @@ class FollowRequestsCubit extends Cubit<FollowRequestsState> {
   }
 
   Future<void> loadOutgoing({required bool refresh}) async {
+    if (!refresh && state.outgoingLoading) return;
     if (refresh) {
       emit(state.copyWith(
         outgoingPage: 1,

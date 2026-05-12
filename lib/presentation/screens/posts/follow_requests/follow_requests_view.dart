@@ -152,7 +152,11 @@ class _RequestList extends StatelessWidget {
 
     return NotificationListener<ScrollNotification>(
       onNotification: (n) {
-        if (n.metrics.pixels >= n.metrics.maxScrollExtent - 80) {
+        final m = n.metrics;
+        // Short lists are not scrollable (maxScrollExtent == 0); without this
+        // check, "near bottom" is always true and spams pagination during load.
+        if (m.maxScrollExtent > 0 &&
+            m.pixels >= m.maxScrollExtent - 80) {
           onScrollEnd();
         }
         return false;

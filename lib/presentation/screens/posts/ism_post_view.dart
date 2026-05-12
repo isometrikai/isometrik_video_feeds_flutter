@@ -40,7 +40,9 @@ class IsmPostView extends StatefulWidget {
   final Function(String placeId, String placeName, double lat, double long)?
       onTapPlace;
 
-  static Map<PostSectionType, List<TimeLineData>>? getLoadedTabReels(String cacheKey) => _PostViewState.getLoadedTabReels(cacheKey);
+  static Map<PostSectionType, List<TimeLineData>>? getLoadedTabReels(
+          String cacheKey) =>
+      _PostViewState.getLoadedTabReels(cacheKey);
 
   @override
   State<IsmPostView> createState() => _PostViewState();
@@ -52,7 +54,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   var _currentIndex = 1;
   var _loggedInUserId = '';
   final ValueNotifier<bool> _tabsVisibilityNotifier = ValueNotifier<bool>(true);
-  List<TabStateModel> get _tabDataModelList => _centralTadData.putIfAbsent(centralKey, () => <TabStateModel>[]);
+  List<TabStateModel> get _tabDataModelList =>
+      _centralTadData.putIfAbsent(centralKey, () => <TabStateModel>[]);
   VideoCacheManager? _videoCacheManager;
   late SocialPostBloc _socialPostBloc; // Will be initialized from context
   late IsmSocialActionCubit _socialActionCubit;
@@ -71,8 +74,13 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   //caches
   static final Map<String, List<TabStateModel>> _centralTadData = {};
-  String get centralKey => widget.centralKey ?? '${runtimeType}_default_central';
-  static Map<PostSectionType, List<TimeLineData>>? getLoadedTabReels(String centralKey) => _centralTadData[centralKey]?.asMap().map((key, value) => MapEntry(value.tabDataModel.postSectionType, value.tabDataModel.reelsDataList.toList()));
+  String get centralKey =>
+      widget.centralKey ?? '${runtimeType}_default_central';
+  static Map<PostSectionType, List<TimeLineData>>? getLoadedTabReels(
+          String centralKey) =>
+      _centralTadData[centralKey]?.asMap().map((key, value) => MapEntry(
+          value.tabDataModel.postSectionType,
+          value.tabDataModel.reelsDataList.toList()));
 
   /// When false, tab bodies stay a cheap placeholder so the push transition
   /// is not competing with [PostItemWidget] / video precache on the GPU.
@@ -108,7 +116,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         .map((tab) => TabStateModel(
             isLoading: tab.reelsDataList.isEmpty, tabDataModel: tab))
         .toList());
-    _currentIndex = (_tabDataModelList.length > (widget.startTabIndex ?? 0)) ? widget.startTabIndex?.toInt() ?? 0 : 0;
+    _currentIndex = (_tabDataModelList.length > (widget.startTabIndex ?? 0))
+        ? widget.startTabIndex?.toInt() ?? 0
+        : 0;
     _currentPostSectionType =
         _tabDataModelList[_currentIndex].tabDataModel.postSectionType;
     if (_currentIndex >= _tabDataModelList.length) {
@@ -351,29 +361,29 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         ),
       );
 
-  Widget _buildBackButton() => Positioned(
-        top: MediaQuery.of(context).padding.top +
-            (_backButtonConfig?.topOffset ?? 10),
-        left: (_backButtonConfig?.leftOffset ?? 16.0).responsiveDimension,
-        child: Container(
-          decoration: _backButtonConfig?.buttonDecoration ??
-              BoxDecoration(
-                color: Colors.black.applyOpacity(0.5),
-                shape: BoxShape.circle,
-              ),
-          child: IconButton(
-            icon: _backButtonConfig?.icon ??
-                Icon(
-                  Icons.arrow_back,
-                  color: _backButtonConfig?.iconColor ?? Colors.white,
-                  size: _backButtonConfig?.iconSize,
-                ),
-            onPressed: () {
-              context.pop();
-            },
-          ),
-        ),
-      );
+  // Widget _buildBackButton() => Positioned(
+  //       top: MediaQuery.of(context).padding.top +
+  //           (_backButtonConfig?.topOffset ?? 10),
+  //       left: (_backButtonConfig?.leftOffset ?? 16.0).responsiveDimension,
+  //       child: Container(
+  //         decoration: _backButtonConfig?.buttonDecoration ??
+  //             BoxDecoration(
+  //               color: Colors.black.applyOpacity(0.5),
+  //               shape: BoxShape.circle,
+  //             ),
+  //         child: IconButton(
+  //           icon: _backButtonConfig?.icon ??
+  //               Icon(
+  //                 Icons.arrow_back,
+  //                 color: _backButtonConfig?.iconColor ?? Colors.white,
+  //                 size: _backButtonConfig?.iconSize,
+  //               ),
+  //           onPressed: () {
+  //             context.pop();
+  //           },
+  //         ),
+  //       ),
+  //     );
 
   Widget _buildSingleTabTopBar() {
     final rightWidget = _tabBarConfig?.rightWidget;
@@ -430,7 +440,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         key: ValueKey(_getUniqueKey(tabState.tabDataModel, index)),
         videoCacheManager:
             _loggedInUserId.isNotEmpty ? _videoCacheManager : null,
-        getEmptyScreen: () => _tabConfig.tabCallBackConfig?.getEmptyScreen?.call(tabState.tabDataModel),
+        getEmptyScreen: () => _tabConfig.tabCallBackConfig?.getEmptyScreen
+            ?.call(tabState.tabDataModel),
         onTapPlaceHolder: () {
           if ((_postTabController?.length ?? 0) > 1) {
             _tabsVisibilityNotifier.value = true;
@@ -496,8 +507,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           final shareRes = await _postConfig.postCallBackConfig?.onShareClicked
               ?.call(reelsData.postData as TimeLineData);
           _socialPostBloc.add(PlayPauseVideoEvent(play: true));
-          if (shareRes != null){
-            _socialPostBloc.add(OnShareSuccessEvent(shareSuccessData: shareRes));
+          if (shareRes != null) {
+            _socialPostBloc
+                .add(OnShareSuccessEvent(shareSuccessData: shareRes));
           }
         }
       },
@@ -525,8 +537,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           }
         } else if (reelData.postData is TimeLineData) {
           _socialPostBloc.add(PlayPauseVideoEvent(play: false));
-          final res = await _showMentionList(mentionList, tabData.postSectionType,
-              reelData.postData as TimeLineData);
+          final res = await _showMentionList(mentionList,
+              tabData.postSectionType, reelData.postData as TimeLineData);
           _socialPostBloc.add(PlayPauseVideoEvent(play: true));
           return res;
         }
@@ -656,17 +668,18 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     try {
       final completer = Completer<List<TimeLineData>>();
       _socialPostBloc.add(GetMorePostEvent(
-        isLoading: false,
-        isPagination: true,
-        isRefresh: false,
-        postSectionType: tabState.tabDataModel.postSectionType,
-        memberUserId: '',
+          isLoading: false,
+          isPagination: true,
+          isRefresh: false,
+          postSectionType: tabState.tabDataModel.postSectionType,
+          memberUserId: '',
           onComplete: (value) async {
-            final newReels = value.where((newReel) => !tabState.tabDataModel.reelsDataList.any((existingReel) => existingReel.id == newReel.id));
+            final newReels = value.where((newReel) => !tabState
+                .tabDataModel.reelsDataList
+                .any((existingReel) => existingReel.id == newReel.id));
             tabState.tabDataModel.reelsDataList.addAll(newReels);
             completer.complete(value);
-          }
-      ));
+          }));
       final timeLinePostList = await completer.future;
       if (timeLinePostList.isEmpty) return [];
       final timeLineReelDataList = timeLinePostList
