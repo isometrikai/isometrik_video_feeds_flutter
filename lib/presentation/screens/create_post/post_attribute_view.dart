@@ -2041,6 +2041,8 @@ class _PostAttributeViewState extends State<PostAttributeView>
               Navigator.pop(context);
               return null;
             },
+            onAddSoundTap: IsrVideoReelConfig.createEditPostConfig
+                .createEditPostCallBackConfig?.onAddSoundFromCamera,
           ),
         ),
       );

@@ -206,6 +206,8 @@ class _CreatePostMultimediaWrapperState
               Navigator.pop(context);
               return null;
             },
+            onAddSoundTap: IsrVideoReelConfig.createEditPostConfig
+                .createEditPostCallBackConfig?.onAddSoundFromCamera,
           ),
         ),
       );

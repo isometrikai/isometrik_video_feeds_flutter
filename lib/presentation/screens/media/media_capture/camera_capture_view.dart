@@ -11,10 +11,12 @@ class CameraCaptureView extends StatefulWidget {
     super.key,
     this.mediaType = MediaType.both,
     this.onGalleryClick,
+    this.onAddSoundTap,
   });
 
   final MediaType mediaType;
   final Future<String?> Function()? onGalleryClick;
+  final void Function(BuildContext context)? onAddSoundTap;
 
   @override
   State<CameraCaptureView> createState() => _CameraCaptureViewState();
@@ -30,10 +32,6 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
     super.initState();
     _cameraBloc = context.getOrCreateBloc();
     WidgetsBinding.instance.addObserver(this);
-    // Lock orientation to portrait mode
-    // SystemChrome.setPreferredOrientations([
-    //   DeviceOrientation.portraitUp,
-    // ]);
     _initializeCameraWithRetry();
   }
 
@@ -43,20 +41,12 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
         mediaType: widget.mediaType == MediaType.both
             ? MediaType.photo
             : widget.mediaType));
-    // Auto-select 15 seconds duration by default
     _cameraBloc.add(CameraSetDurationEvent(duration: 15));
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    // // Unlock orientation when leaving camera screen
-    // SystemChrome.setPreferredOrientations([
-    //   DeviceOrientation.portraitUp,
-    //   DeviceOrientation.portraitDown,
-    //   DeviceOrientation.landscapeLeft,
-    //   DeviceOrientation.landscapeRight,
-    // ]);
     _cameraBloc.add(CameraDisposeEvent());
     super.dispose();
   }
@@ -72,7 +62,9 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
 
     if (state == AppLifecycleState.inactive ||
         state == AppLifecycleState.paused) {
+      _cameraBloc.add(CameraFramingMusicAppPausedEvent(true));
     } else if (state == AppLifecycleState.resumed) {
+      _cameraBloc.add(CameraFramingMusicAppPausedEvent(false));
       if (controller.value.hasError || !controller.value.isInitialized) {
         _cameraBloc.add(CameraInitializeEvent());
       }
@@ -94,17 +86,9 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
             } else if (state is CameraRecordingConfirmedState) {
               if (!_isNavigatingToEdit) {
                 _isNavigatingToEdit = true;
-                // Pass segments if available (for segment recordings)
                 final segments = state.segments != null
                     ? List<VideoSegment>.from(state.segments!)
                     : null;
-
-                debugPrint(
-                    'Navigating to edit with ${segments?.length ?? 0} segments');
-                if (segments != null) {
-                  debugPrint(
-                      'Segment paths: ${segments.map((s) => s.path).toList()}');
-                }
 
                 _navigateToEditScreenWithSegments(
                   state.mediaPath,
@@ -112,15 +96,6 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
                   segments,
                 );
               }
-              // // Always navigate when recording is confirmed (either manual or auto-stop)
-              // debugPrint(
-              //     'CameraRecordingConfirmedState received, mediaPath: ${state.mediaPath}');
-              // if (!_isNavigatingToEdit) {
-              //   _isNavigatingToEdit = true;
-              //   debugPrint(
-              //       'Navigating to edit screen with video: ${state.mediaPath}');
-              //   _navigateToEditScreen(state.mediaPath, MediaType.video);
-              // }
             } else if (state is CameraRecordingReadyState &&
                 !_isNavigatingToEdit) {}
           },
@@ -172,7 +147,8 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
                 state is CameraFilterAppliedState ||
                 state is CameraSpeedChangedState ||
                 state is CameraSegmentRecordingState ||
-                state is CameraBottomLoadingState) {
+                state is CameraBottomLoadingState ||
+                state is CameraMusicSelectedState) {
               if (mounted && context.mounted) {
                 return _buildCameraView(state);
               }
@@ -208,13 +184,15 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
         child: Scaffold(
           backgroundColor: IsrColors.black,
           body: Stack(
-            // fit: StackFit.expand,
             children: [
               CameraPreviewWidget(
                 cameraBloc: _cameraBloc,
                 state: state,
               ),
-              CameraTopControls(cameraBloc: _cameraBloc),
+              CameraTopControls(
+                cameraBloc: _cameraBloc,
+                onAddSoundTap: widget.onAddSoundTap,
+              ),
               CameraBottomControls(
                 cameraBloc: _cameraBloc,
                 onGalleryClick: widget.onGalleryClick,
@@ -226,7 +204,6 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
                   }
                 },
               ),
-              // if (_cameraBloc.isSegmentRecording) const CameraRecordingSplash(),
             ],
           ),
         ),

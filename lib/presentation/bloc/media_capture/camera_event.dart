@@ -2,7 +2,12 @@ part of 'camera_bloc.dart';
 
 abstract class CameraEvent {}
 
-class CameraInitializeEvent extends CameraEvent {}
+class CameraInitializeEvent extends CameraEvent {
+  CameraInitializeEvent({this.preserveCapturePaths = false});
+
+  /// Keeps in-flight capture paths when re-initializing the camera.
+  final bool preserveCapturePaths;
+}
 
 class CameraStartRecordingEvent extends CameraEvent {}
 
@@ -65,13 +70,36 @@ class CameraSetExternalMediaEvent extends CameraEvent {
 }
 
 class CameraSetMusicEvent extends CameraEvent {
-  CameraSetMusicEvent({this.musicId, this.musicName, this.musicArtist});
+  CameraSetMusicEvent({
+    this.musicId,
+    this.musicName,
+    this.musicArtist,
+    this.musicThumbnailUrl,
+    this.musicDurationSeconds,
+    this.musicPreviewUrl,
+  });
+
   final String? musicId;
   final String? musicName;
   final String? musicArtist;
+  final String? musicThumbnailUrl;
+  final int? musicDurationSeconds;
+  final String? musicPreviewUrl;
 }
 
 class CameraRemoveMusicEvent extends CameraEvent {}
+
+/// Pauses in-camera framing music while the sound library route (or similar) is on top.
+class CameraFramingMusicRouteObscuredEvent extends CameraEvent {
+  CameraFramingMusicRouteObscuredEvent(this.obscured);
+  final bool obscured;
+}
+
+/// Pauses framing music when the app goes inactive / background.
+class CameraFramingMusicAppPausedEvent extends CameraEvent {
+  CameraFramingMusicAppPausedEvent(this.paused);
+  final bool paused;
+}
 
 class CameraSetSpeedEvent extends CameraEvent {
   CameraSetSpeedEvent({required this.speed});

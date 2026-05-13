@@ -55,6 +55,7 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
 
   Future<void> _initializeVideo() async {
     await _disposeVideoController();
+    if (!mounted) return;
     await _createVideoController(widget.mediaEditItem);
   }
 
@@ -69,65 +70,71 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
   Future<void> _createVideoController(MediaEditItem mediaItem) async {
     try {
       final videoPath = mediaItem.editedPath ?? mediaItem.originalPath;
-      if (videoPath.isNotEmpty && File(videoPath).existsSync()) {
-        debugPrint('Initializing video: $videoPath');
+      if (videoPath.isEmpty) return;
 
-        // Check if file exists
-        final file = File(videoPath);
-        if (!await file.exists()) {
-          debugPrint('Video file does not exist: $videoPath');
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Video file not found'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-          return;
+      final file = File(videoPath);
+      if (!await file.exists()) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Video file not found'),
+              backgroundColor: Colors.red,
+            ),
+          );
         }
+        return;
+      }
 
-        // Dispose existing controller
-        await _videoController?.dispose();
+      final previous = _videoController;
+      if (previous != null) {
+        previous.removeListener(_videoErrorListener);
+        await previous.dispose();
+      }
+      _videoController = null;
+      if (!mounted) return;
 
-        // Create new controller
-        _videoController = VideoPlayerController.file(file);
+      _videoController = VideoPlayerController.file(
+        file,
+        videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+      );
+      _videoController!.addListener(_videoErrorListener);
 
-        // Add error listener
-        _videoController!.addListener(_videoErrorListener);
+      await _videoController!.initialize().timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw Exception(
+              'Video initialization timeout - file may be corrupted or too large');
+        },
+      );
 
-        // Add timeout for initialization
-        await _videoController!.initialize().timeout(
-          const Duration(seconds: 15),
-          onTimeout: () {
-            debugPrint('Video initialization timeout');
-            throw Exception(
-                'Video initialization timeout - file may be corrupted or too large');
-          },
-        );
+      if (!mounted) {
+        final c = _videoController;
+        _videoController = null;
+        if (c != null) {
+          c.removeListener(_videoErrorListener);
+          await c.dispose();
+        }
+        return;
+      }
 
-        debugPrint(
-            'Video controller initialized: ${_videoController!.value.isInitialized}');
+      if (_videoController!.value.isInitialized) {
+        await _videoController!.setLooping(true);
+        await _videoController!.setVolume(1.0);
 
-        if (_videoController!.value.isInitialized) {
-          await _videoController!.setLooping(true);
-
-          if (mounted) {
-            setState(() {});
-          }
-        } else {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Failed to initialize video player'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
+        if (mounted) {
+          setState(() {});
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to initialize video player'),
+              backgroundColor: Colors.red,
+            ),
+          );
         }
       }
     } catch (e) {
-      debugPrint('Error initializing video controller: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -141,6 +148,7 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
   }
 
   void _handlePlayPause() {
+    if (!mounted) return;
     if (_videoController != null && _videoController!.value.isInitialized) {
       if (_videoController!.value.isPlaying) {
         _videoController!.pause();
@@ -149,11 +157,14 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
         _videoController!.play();
         _showPauseIconTemporarily();
       }
-      setState(() {});
+      if (mounted) {
+        setState(() {});
+      }
     }
   }
 
   void _showPauseIconTemporarily() {
+    if (!mounted) return;
     setState(() {
       _showPauseIcon = true;
     });
@@ -170,6 +181,7 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
 
   void _hidePauseIcon() {
     _pauseIconTimer?.cancel();
+    if (!mounted) return;
     setState(() {
       _showPauseIcon = false;
     });
@@ -177,8 +189,6 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
 
   void _videoErrorListener() {
     if (_videoController != null && _videoController!.value.hasError) {
-      debugPrint(
-          'Video player error: ${_videoController!.value.errorDescription}');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -192,6 +202,7 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
   }
 
   void _onVisibilityChanged(VisibilityInfo visibilityInfo) {
+    if (!mounted) return;
     final isVisible = visibilityInfo.visibleFraction >= 1.0; // Fully visible
 
     if (_isVideoVisible != isVisible) {

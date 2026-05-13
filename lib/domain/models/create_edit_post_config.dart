@@ -1257,6 +1257,7 @@ class CreateEditPostCallBackConfig {
   const CreateEditPostCallBackConfig({
     this.onLinkProduct,
     this.onBackgroundPostOperation,
+    this.onAddSoundFromCamera,
   });
 
   final Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
@@ -1268,14 +1269,20 @@ class CreateEditPostCallBackConfig {
   /// The SDK invokes this from the create-post bloc so updates continue even if the user leaves the create screen.
   final void Function(BackgroundPostOperationUpdate update)? onBackgroundPostOperation;
 
+  /// Host app: user tapped **Add a sound** on the reel camera when **15s** or **60s** mode is active.
+  final void Function(BuildContext context)? onAddSoundFromCamera;
+
   CreateEditPostCallBackConfig copyWith({
     Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
         onLinkProduct,
     void Function(BackgroundPostOperationUpdate update)? onBackgroundPostOperation,
+    void Function(BuildContext context)? onAddSoundFromCamera,
   }) =>
       CreateEditPostCallBackConfig(
         onLinkProduct: onLinkProduct ?? this.onLinkProduct,
         onBackgroundPostOperation:
             onBackgroundPostOperation ?? this.onBackgroundPostOperation,
+        onAddSoundFromCamera:
+            onAddSoundFromCamera ?? this.onAddSoundFromCamera,
       );
 }
