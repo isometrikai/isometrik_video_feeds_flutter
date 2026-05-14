@@ -9,6 +9,7 @@ import 'package:ism_video_reel_player/core/core.dart';
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/isr_feed_cache_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:talker/talker.dart';
@@ -72,6 +73,10 @@ class IsrVideoReelConfig {
 
   /// Story configuration used by SDK modules; when null, stories stay hidden.
   static StoryConfig? storyConfig;
+
+  /// When null, reels/post tabs use legacy route gating and load semantics.
+  /// When non-null, the SDK enables host-cache-friendly timing and merging.
+  static IsrFeedCacheConfig? feedCacheConfig;
 
   /// Convenience accessor for the SDK's singleton [IsmSocialActionCubit].
   static IsmSocialActionCubit get socialActionCubit =>
@@ -186,6 +191,8 @@ class IsrVideoReelConfig {
   /// - [createEditPostConfig]: Create and edit post flows and validation.
   /// - [tagDetailsConfig]: Tagging people and tag UI.
   /// - [searchScreenConfig]: In-SDK search screen layout and options.
+  /// - [feedCacheConfig]: When non-null, enables cache-friendly reels load and
+  ///   merge behavior; when null, legacy SDK behavior (same as omitting).
   static void setUpConfig({
     SocialConfig? socialConfig,
     PostConfig? postConfig,
@@ -195,6 +202,7 @@ class IsrVideoReelConfig {
     TagDetailsConfig? tagDetailsConfig,
     SearchScreenConfig? searchScreenConfig,
     StoryConfig? storyConfig,
+    IsrFeedCacheConfig? feedCacheConfig,
   }) {
     IsrVideoReelConfig.socialConfig = socialConfig ?? IsrVideoReelConfig.socialConfig;
     IsrVideoReelConfig.postConfig = postConfig ?? IsrVideoReelConfig.postConfig;
@@ -204,6 +212,7 @@ class IsrVideoReelConfig {
     IsrVideoReelConfig.tagDetailsConfig = tagDetailsConfig ?? IsrVideoReelConfig.tagDetailsConfig;
     IsrVideoReelConfig.searchScreenConfig = searchScreenConfig ?? IsrVideoReelConfig.searchScreenConfig;
     IsrVideoReelConfig.storyConfig = storyConfig;
+    IsrVideoReelConfig.feedCacheConfig = feedCacheConfig;
   }
 
   static Future<void> _updateHeaderAddressFromIp() async {

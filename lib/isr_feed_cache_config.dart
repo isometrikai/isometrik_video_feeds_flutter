@@ -1,0 +1,3 @@
+class IsrFeedCacheConfig {
+  const IsrFeedCacheConfig();
+}

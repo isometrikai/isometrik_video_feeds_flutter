@@ -21,8 +21,10 @@ class IsrTranslationFile {
   static const String withdrawFollowRequestTitle = 'Withdraw request';
   static const String withdrawFollowRequestMessage =
       'Do you want to withdraw your request?';
+
   /// Dismisses dialog and keeps the outgoing request as-is.
   static const String keepFollowRequest = 'Keep request';
+
   /// Confirms cancel outgoing follow request (DELETE).
   static const String withdrawFollowRequest = 'Withdraw';
   static const String followRequests = 'Follow requests';
@@ -281,4 +283,11 @@ class IsrTranslationFile {
   static const String addNewScheduledPosts = 'Add new Scheduled Posts';
   static const String postNow = 'Post Now';
   static const String modifySchedule = 'Modify Schedule';
+  static const String newStory = 'New Story';
+  static const String createNewHighlight = 'Create new highlight';
+  static const String addToExistingHighlight = 'Add to existing highlight';
+  static const String pickPhoto = 'Pick photo';
+  static const String pickVideo = 'Pick video';
+  static const String writeToAddToStory = ' Add caption to your story';
+  static const String shareStory = 'Share story';
 }

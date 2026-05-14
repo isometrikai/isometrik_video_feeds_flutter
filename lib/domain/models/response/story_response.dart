@@ -197,6 +197,7 @@ class StoryHighlightData {
     this.coverUrl = '',
     this.sortOrder = 0,
     this.items = const [],
+    this.embeddedStories = const [],
   });
 
   factory StoryHighlightData.fromMap(Map<String, dynamic> map) =>
@@ -207,34 +208,56 @@ class StoryHighlightData {
         coverUrl: map['cover_url']?.toString() ?? '',
         sortOrder: (map['sort_order'] as num?)?.toInt() ?? 0,
         items: _highlightItemsFromMap(map),
+        embeddedStories: _embeddedStoriesFromHighlightMap(map),
       );
+
+  /// Full story rows from `GET .../highlights/:id` (`data.stories`). Used to open
+  /// the highlight viewer without calling `/stories` or per-story detail (which
+  /// may be empty or fail for archived / highlight-only stories).
+  static List<StoryData> _embeddedStoriesFromHighlightMap(
+    Map<String, dynamic> map,
+  ) {
+    final dynamic raw = map['stories'];
+    if (raw is! List<dynamic> || raw.isEmpty) return const [];
+    return raw
+        .map((e) => e is Map ? Map<String, dynamic>.from(e) : null)
+        .whereType<Map<String, dynamic>>()
+        .map(StoryData.fromMap)
+        .where(
+          (s) =>
+              s.id.trim().isNotEmpty && s.mediaUrl.trim().isNotEmpty,
+        )
+        .toList();
+  }
 
   static List<StoryHighlightItem> _highlightItemsFromMap(
     Map<String, dynamic> map,
   ) {
-    final dynamic rawItems = map['items'];
-    if (rawItems is List<dynamic> && rawItems.isNotEmpty) {
-      return rawItems
-          .whereType<Map>()
-          .map(
-            (e) => StoryHighlightItem.fromMap(Map<String, dynamic>.from(e)),
-          )
-          .toList();
-    }
-
+    // Prefer `stories` when the API sends it (detail + full payloads). A
+    // non-empty but partial `items` list must not hide additional stories.
     final dynamic rawStories = map['stories'];
     if (rawStories is List<dynamic> && rawStories.isNotEmpty) {
       return rawStories
-          .whereType<Map>()
-          .map((e) {
-            final storyMap = Map<String, dynamic>.from(e);
-            return StoryHighlightItem(
+          .map((e) => e is Map ? Map<String, dynamic>.from(e) : null)
+          .whereType<Map<String, dynamic>>()
+          .map(
+            (storyMap) => StoryHighlightItem(
               itemId: storyMap['item_id']?.toString() ?? '',
               storyId: storyMap['story_id']?.toString() ??
                   storyMap['id']?.toString() ??
                   '',
-            );
-          })
+            ),
+          )
+          .where((item) => item.storyId.trim().isNotEmpty)
+          .toList();
+    }
+
+    final dynamic rawItems = map['items'];
+    if (rawItems is List<dynamic> && rawItems.isNotEmpty) {
+      return rawItems
+          .map((e) => e is Map ? Map<String, dynamic>.from(e) : null)
+          .whereType<Map<String, dynamic>>()
+          .map(StoryHighlightItem.fromMap)
           .where((item) => item.storyId.trim().isNotEmpty)
           .toList();
     }
@@ -248,6 +271,7 @@ class StoryHighlightData {
   final String coverUrl;
   final int sortOrder;
   final List<StoryHighlightItem> items;
+  final List<StoryData> embeddedStories;
 }
 
 class StoryHighlightItem {
@@ -259,7 +283,7 @@ class StoryHighlightItem {
   factory StoryHighlightItem.fromMap(Map<String, dynamic> map) =>
       StoryHighlightItem(
         itemId: map['item_id']?.toString() ?? '',
-        storyId: map['story_id']?.toString() ?? '',
+        storyId: map['story_id']?.toString() ?? map['id']?.toString() ?? '',
       );
 
   final String itemId;

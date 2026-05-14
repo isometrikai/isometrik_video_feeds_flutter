@@ -4,7 +4,6 @@ import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/cubits/story/story.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 
-/// SDK full-screen story composer (photo/video + caption), similar flow to create post media pick + upload.
 class StoryCreateView extends StatefulWidget {
   const StoryCreateView({super.key});
 
@@ -48,20 +47,20 @@ class _StoryCreateViewState extends State<StoryCreateView> {
     required VoidCallback onTap,
   }) =>
       OutlinedButton.icon(
-      onPressed: composerState.isSubmitting ? null : onTap,
-      icon: Icon(icon),
-      label: Text(text, style: IsrStyles.primaryText14),
-      style: OutlinedButton.styleFrom(
-        padding: IsrDimens.edgeInsetsSymmetric(
-          vertical: IsrDimens.twelve,
-          horizontal: IsrDimens.twelve,
+        onPressed: composerState.isSubmitting ? null : onTap,
+        icon: Icon(icon),
+        label: Text(text, style: IsrStyles.primaryText14),
+        style: OutlinedButton.styleFrom(
+          padding: IsrDimens.edgeInsetsSymmetric(
+            vertical: IsrDimens.twelve,
+            horizontal: IsrDimens.twelve,
+          ),
+          side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(IsrDimens.fourteen),
+          ),
         ),
-        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(IsrDimens.fourteen),
-        ),
-      ),
-    );
+      );
 
   @override
   Widget build(BuildContext context) => BlocProvider.value(
@@ -70,7 +69,8 @@ class _StoryCreateViewState extends State<StoryCreateView> {
           listenWhen: (prev, next) =>
               next is StoryActionSuccess || next is StoryError,
           listener: (context, state) {
-            if (state is StoryActionSuccess && state.actionName == 'create_story') {
+            if (state is StoryActionSuccess &&
+                state.actionName == 'create_story') {
               Navigator.of(context).pop();
               return;
             }
@@ -83,7 +83,7 @@ class _StoryCreateViewState extends State<StoryCreateView> {
           child: BlocBuilder<StoryComposerCubit, StoryComposerState>(
             builder: (context, composerState) => Scaffold(
               appBar: AppBar(
-                title: const Text('New story'),
+                title: const Text(IsrTranslationFile.newStory),
                 leading: IconButton(
                   icon: const Icon(Icons.arrow_back_ios_new_rounded),
                   onPressed: () => Navigator.of(context).pop(),
@@ -140,14 +140,15 @@ class _StoryCreateViewState extends State<StoryCreateView> {
                             if (composerState.file != null)
                               SizedBox(height: IsrDimens.twelve),
                             TextField(
-                              maxLines: 2,
+                              maxLines: 5,
                               minLines: 1,
                               enabled: !composerState.isSubmitting,
                               textInputAction: TextInputAction.done,
-                              onChanged:
-                                  context.read<StoryComposerCubit>().updateCaption,
+                              onChanged: context
+                                  .read<StoryComposerCubit>()
+                                  .updateCaption,
                               decoration: InputDecoration(
-                                hintText: 'Write to add to story',
+                                hintText: IsrTranslationFile.writeToAddToStory,
                                 prefixIcon:
                                     const Icon(Icons.mode_edit_outline_rounded),
                                 border: OutlineInputBorder(
@@ -168,9 +169,11 @@ class _StoryCreateViewState extends State<StoryCreateView> {
                                   child: _pickerButton(
                                     context: context,
                                     composerState: composerState,
-                                    text: 'Pick photo',
+                                    text: IsrTranslationFile.pickPhoto,
                                     icon: Icons.photo_library_outlined,
-                                    onTap: context.read<StoryComposerCubit>().pickPhoto,
+                                    onTap: context
+                                        .read<StoryComposerCubit>()
+                                        .pickPhoto,
                                   ),
                                 ),
                                 SizedBox(width: IsrDimens.ten),
@@ -178,9 +181,11 @@ class _StoryCreateViewState extends State<StoryCreateView> {
                                   child: _pickerButton(
                                     context: context,
                                     composerState: composerState,
-                                    text: 'Pick video',
+                                    text: IsrTranslationFile.pickVideo,
                                     icon: Icons.video_library_outlined,
-                                    onTap: context.read<StoryComposerCubit>().pickVideo,
+                                    onTap: context
+                                        .read<StoryComposerCubit>()
+                                        .pickVideo,
                                   ),
                                 ),
                               ],

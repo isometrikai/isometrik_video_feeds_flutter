@@ -35,6 +35,18 @@ class StoryUseCase extends BaseUseCase {
         );
       });
 
+  Future<ApiResult<List<StoryData>?>> executeGetMyStories({
+    required bool isLoading,
+  }) async =>
+      execute(() async {
+        final response = await _repository.getMyStories(
+          isLoading: isLoading,
+        );
+        return ApiResult(
+          data: response.responseCode == 200 ? response.data : null,
+        );
+      });
+
   Future<ApiResult<ResponseClass?>> executeCreateStory({
     required bool isLoading,
     required CreateStoryRequest request,

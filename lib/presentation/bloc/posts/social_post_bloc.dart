@@ -9,6 +9,21 @@ import 'package:ism_video_reel_player/utils/utils.dart';
 part 'social_post_event.dart';
 part 'social_post_state.dart';
 
+/// Compares engagement snapshots for host-cache silent post-detail refresh.
+bool _silentPostDetailSnapshotsEqual(
+  (Map<String, Object?>, Map<String, Object?>) pair,
+) {
+  final a = pair.$1;
+  final b = pair.$2;
+  for (final k in a.keys) {
+    if (a[k] != b[k]) return false;
+  }
+  for (final k in b.keys) {
+    if (a[k] != b[k]) return false;
+  }
+  return true;
+}
+
 class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   SocialPostBloc(
       this._localDataUseCase,
@@ -111,6 +126,12 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   // Map to track posts with in-review comments: postId -> current comment list
   final Map<String, List<CommentDataItem>> _postsWithInReviewComments = {};
 
+  /// Dedupes background `GET /api/v1/posts/detail` for the same post (host
+  /// cache can otherwise re-trigger refresh every rebuild / poll).
+  final Set<String> _postDetailRefreshInFlight = {};
+  final Map<String, DateTime> _lastPostDetailRefreshAt = {};
+  static const Duration _minPostDetailRefreshGap = Duration(minutes: 2);
+
   void _onStartPost(StartPost event, Emitter<SocialPostState> emit) async {}
 
   Future<String> get userId => _localDataUseCase.getUserId();
@@ -131,12 +152,51 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         tabList.insert(0, startTab);
       }
       final isUserLoggedIn = await this.isUserLoggedIn;
-      for (final postTab in tabList) {
-        emit(PostLoadingState(
-            isLoading: true, postType: postTab.postSectionType));
-        if (postTab.postList.isEmpty) {
-          if (postTab.postId?.trim().isNotEmpty == true &&
-              postTab.postList.isEmpty) {
+      final useFeedHostCache = IsrVideoReelConfig.feedCacheConfig != null;
+      if (!useFeedHostCache) {
+        for (final postTab in tabList) {
+          emit(PostLoadingState(
+              isLoading: true, postType: postTab.postSectionType));
+          if (postTab.postList.isEmpty) {
+            if (postTab.postId?.trim().isNotEmpty == true &&
+                postTab.postList.isEmpty) {
+              final postIdData = await _getPostDetails(postTab.postId ?? '');
+              if (postIdData != null) {
+                postTab.postList.add(postIdData);
+                add(LoadPostsEvent(
+                  postType: postTab.postSectionType,
+                  postList: postTab.postList,
+                ));
+              }
+            }
+            if (!postTab.postSectionType.isUserDependent || isUserLoggedIn) {
+              await _callGetTabPost(postTab, false, false, false, null);
+            }
+          }
+          add(LoadPostsEvent(
+            postType: postTab.postSectionType,
+            postList: postTab.postList,
+          ));
+          _socialActionCubit.updatePostList(postTab.postList);
+        }
+      } else {
+        for (final postTab in tabList) {
+          // If the host supplied a seeded list (Hive cache), surface it
+          // immediately as a loaded state so the UI shows the cached posts
+          // while the API call below runs in the background.
+          final hasSeededList = postTab.postList.isNotEmpty;
+          if (hasSeededList) {
+            add(LoadPostsEvent(
+              postType: postTab.postSectionType,
+              postList: postTab.postList,
+            ));
+            _socialActionCubit.updatePostList(postTab.postList);
+          } else {
+            emit(PostLoadingState(
+                isLoading: true, postType: postTab.postSectionType));
+          }
+          if (postTab.postList.isEmpty &&
+              postTab.postId?.trim().isNotEmpty == true) {
             final postIdData = await _getPostDetails(postTab.postId ?? '');
             if (postIdData != null) {
               postTab.postList.add(postIdData);
@@ -146,15 +206,24 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
               ));
             }
           }
+          // Always hit the API on initial mount so new items can be
+          // prepended on top of the seeded cached list.
           if (!postTab.postSectionType.isUserDependent || isUserLoggedIn) {
-            await _callGetTabPost(postTab, false, false, false, null);
+            await _callGetTabPost(
+              postTab,
+              false,
+              false,
+              false,
+              null,
+              mergeWithExisting: hasSeededList,
+            );
           }
+          add(LoadPostsEvent(
+            postType: postTab.postSectionType,
+            postList: postTab.postList,
+          ));
+          _socialActionCubit.updatePostList(postTab.postList);
         }
-        add(LoadPostsEvent(
-          postType: postTab.postSectionType,
-          postList: postTab.postList,
-        ));
-        _socialActionCubit.updatePostList(postTab.postList);
       }
     } catch (error) {
       emit(SocialPostError(error.toString()));
@@ -189,14 +258,25 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     bool isFromRefresh,
     bool isFromPagination,
     bool isLoading,
-    Function(List<TimeLineData>)? onComplete,
-  ) async {
+    Function(List<TimeLineData>)? onComplete, {
+    bool mergeWithExisting = false,
+  }) async {
     final postSectionType = postTabAssistData.postSectionType;
     final tabAssistData = _getTabAssistData(postSectionType);
+    final feedHostCacheOn = IsrVideoReelConfig.feedCacheConfig != null;
+    // Treat host-cache refresh as a merge so the visible list is never wiped
+    // when the user pulls to refresh; new items still land on top via
+    // `mergeWithExisting`'s prepend branch below.
+    final mergeEnabled =
+        feedHostCacheOn && (mergeWithExisting || isFromRefresh);
 
-    // For refresh, clear cache and start from page 1
+    // For refresh, clear cache and start from page 1. With host-cache enabled,
+    // keep the existing list visible and merge new items at the top instead
+    // (pull-to-refresh becomes "fetch fresh, prepend new").
     if (isFromRefresh) {
-      tabAssistData.postList.clear();
+      if (!feedHostCacheOn) {
+        tabAssistData.postList.clear();
+      }
       tabAssistData.currentPage = 1;
       tabAssistData.isLoadingMore = false;
       tabAssistData.cursor = null;
@@ -226,6 +306,12 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       postIdPostData = postTabAssistData.postList
           .where((e) => e.id == postTabAssistData.postId)
           .firstOrNull;
+      // Seeded cache may satisfy postId from disk; still merge fresh engagement
+      // from detail API without blocking the timeline request.
+      if (feedHostCacheOn && postIdPostData != null) {
+        unawaited(_refreshPostFromDetailForHostCache(
+            postTabAssistData.postId!.trim()));
+      }
     }
 
     // Route to the correct use case based on PostSectionType
@@ -357,19 +443,55 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       _socialActionCubit.updatePostList(postDataList);
 
       if (isFromPagination) {
-        tabAssistData.postList.addAll(postDataList);
+        if (feedHostCacheOn) {
+          // De-dupe by post id so cached/seeded rows don't reappear when the
+          // server overlaps the next page with items we already display.
+          final existingIds = tabAssistData.postList
+              .map((p) => p.id)
+              .where((id) => id != null && id.isNotEmpty)
+              .toSet();
+          final paginationOnly = postDataList
+              .where((p) =>
+                  p.id == null || p.id!.isEmpty || !existingIds.contains(p.id))
+              .toList();
+          tabAssistData.postList.addAll(paginationOnly);
+        } else {
+          tabAssistData.postList.addAll(postDataList);
+        }
+      } else if (mergeEnabled && tabAssistData.postList.isNotEmpty) {
+        // Prepend only the API items we haven't already cached. This keeps
+        // the existing seeded list visible and inserts "new posts" at the
+        // top, instead of wiping cache with the first API page.
+        final existingIds = tabAssistData.postList
+            .map((p) => p.id)
+            .where((id) => id != null && id.isNotEmpty)
+            .toSet();
+        final newOnly = postDataList
+            .where((p) =>
+                p.id != null && p.id!.isNotEmpty && !existingIds.contains(p.id))
+            .toList();
+        if (newOnly.isNotEmpty) {
+          tabAssistData.postList.insertAll(0, newOnly);
+        }
       } else {
         tabAssistData.postList
           ..clear()
           ..addAll(postDataList);
       }
       tabAssistData.currentPage++;
-    } else {
+    } else if (!mergeEnabled) {
       tabAssistData.cursor = null;
-      ErrorHandler.showAppError(appError: apiError, errorViewType: ErrorViewType.snackBar);
+      ErrorHandler.showAppError(
+          appError: apiError, errorViewType: ErrorViewType.snackBar);
     }
     if (onComplete != null) {
-      onComplete(postDataList);
+      // When merging (host-cache enabled refresh or seeded mount), hand the
+      // caller the FULL merged list so refresh UIs that do
+      // `reelsDataList..clear()..addAll(result)` don't wipe cached items when
+      // the API page is empty or fully overlaps the cache.
+      onComplete(mergeEnabled
+          ? List<TimeLineData>.from(tabAssistData.postList)
+          : postDataList);
     }
 
     tabAssistData.isLoadingMore = false;
@@ -442,7 +564,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
             .trim());
       }
     } else {
-      ErrorHandler.showAppError(appError: apiResult.error, isNeedToShowError: true);
+      ErrorHandler.showAppError(
+          appError: apiResult.error, isNeedToShowError: true);
       event.onComplete.call(false);
     }
   }
@@ -549,6 +672,13 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       page: _commentPage,
       pageLimit: 20,
     );
+    if (apiResult.isError) {
+      _maybeNotifyPostDeleted(
+        postId: event.postId,
+        statusCode: apiResult.error?.statusCode ?? apiResult.statusCode,
+        errorMessage: apiResult.error?.message,
+      );
+    }
     final postCommentsList = apiResult.data?.data;
 
     if (event.createdComment != null &&
@@ -592,6 +722,17 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         postId: event.postId,
         myUserId: myUserId,
       ));
+    }
+
+    final feedHostCacheOn = IsrVideoReelConfig.feedCacheConfig != null;
+    final shouldBackgroundRefreshPost = feedHostCacheOn &&
+        apiResult.isSuccess &&
+        !event.isPagination &&
+        (event.isLoading == true ||
+            event.createdComment != null ||
+            event.refreshPostDetailAfterComments);
+    if (shouldBackgroundRefreshPost) {
+      unawaited(_refreshPostFromDetailForHostCache(event.postId));
     }
   }
 
@@ -672,8 +813,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
             IsrTranslationFile.commentReportedSuccessfully);
       } else if (event.commentAction == CommentAction.delete &&
           event.commentId?.trim().isNotEmpty == true) {
-        emit(CommentCountModified(
-            postId: event.postId, modifiedValue: -1));
+        emit(CommentCountModified(postId: event.postId, modifiedValue: -1));
         final myUserId = await _localDataUseCase.getUserId();
         final commentList = event.postCommentList?.toList() ?? [];
         if (event.parentCommentId?.trim().isNotEmpty == true) {
@@ -820,9 +960,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       Future.delayed(const Duration(seconds: 2), () {
         add(
           GetPostCommentsEvent(
-              postId: event.postId,
-              isLoading: false,
-              createdComment: comment),
+              postId: event.postId, isLoading: false, createdComment: comment),
         );
       });
     } else {
@@ -968,14 +1106,150 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       _socialActionCubit.updatePostList([timeLineData]);
     }
 
-    if (result.isError && showError) {
-      ErrorHandler.showAppError(
-          appError: result.error,
-          isNeedToShowError: true,
-          errorViewType: ErrorViewType.toast);
+    if (result.isError) {
+      _maybeNotifyPostDeleted(
+        postId: postId,
+        statusCode: result.error?.statusCode ?? result.statusCode,
+        errorMessage: result.error?.message,
+      );
+      if (showError) {
+        ErrorHandler.showAppError(
+            appError: result.error,
+            isNeedToShowError: true,
+            errorViewType: ErrorViewType.toast);
+      }
     }
 
     return result.data;
+  }
+
+  /// Replaces [fresh] wherever it appears in tab post lists (bloc-owned copy).
+  void _replacePostInTabLists(TimeLineData fresh) {
+    final id = fresh.id;
+    if (id == null || id.isEmpty) return;
+    for (final tab in _postsByTab) {
+      final i = tab.postList.indexWhere((p) => p.id == id);
+      if (i != -1) {
+        tab.postList[i] = fresh;
+      }
+    }
+  }
+
+  TimeLineData? _findTimelinePostForCompare(String postId) {
+    for (final tab in _postsByTab) {
+      for (final p in tab.postList) {
+        if (p.id == postId) return p;
+      }
+    }
+    return _socialActionCubit.getPostById(postId);
+  }
+
+  Map<String, Object?> _snapshotForSilentPostDetailCompare(TimeLineData d) {
+    final em = d.engagementMetrics;
+    final lt = em?.likeTypes;
+    final s = d.settings;
+    return {
+      'comments': em?.comments,
+      'views': em?.views,
+      'shares': em?.shares,
+      'saves': em?.saves,
+      'watch_time': em?.watchTime,
+      'like': lt?.like,
+      'love': lt?.love,
+      'haha': lt?.haha,
+      'wow': lt?.wow,
+      'sad': lt?.sad,
+      'angry': lt?.angry,
+      'isLiked': d.isLiked,
+      'isSaved': d.isSaved,
+      'isFollowing': d.isFollowing,
+      'caption': d.caption,
+      'status': d.status,
+      'is_locked': d.isLocked,
+      'lock_reason': d.lockReason,
+      'settings_is_paid': s?.isPaid,
+      'settings_price_amount': s?.priceAmount?.toString(),
+      'settings_price_currency': s?.priceCurrency,
+    };
+  }
+
+  /// Fire-and-forget: `GET /api/v1/posts/detail` then merge + notify so host
+  /// cache / feed UI can pick up fresh engagement (e.g. comment counts).
+  /// Throttled per [postId] so overlapping triggers do not call in a loop.
+  /// Uses `isLoading: false` on the detail request (no global loader), compares
+  /// snapshots off the current event work (microtask), and skips UI merge when
+  /// nothing changed.
+  Future<void> _refreshPostFromDetailForHostCache(String postId) async {
+    if (IsrVideoReelConfig.feedCacheConfig == null) return;
+    if (postId.isEmpty) return;
+    if (_postDetailRefreshInFlight.contains(postId)) return;
+
+    final now = DateTime.now();
+    final last = _lastPostDetailRefreshAt[postId];
+    if (last != null && now.difference(last) < _minPostDetailRefreshGap) {
+      return;
+    }
+
+    _postDetailRefreshInFlight.add(postId);
+    _lastPostDetailRefreshAt[postId] = now;
+    try {
+      final before = _findTimelinePostForCompare(postId);
+      final snapBefore =
+          before != null ? _snapshotForSilentPostDetailCompare(before) : null;
+
+      final result = await _getPostDetailsUseCase.executeGetPostDetails(
+        isLoading: false,
+        postId: postId,
+      );
+
+      if (result.isError) {
+        _maybeNotifyPostDeleted(
+          postId: postId,
+          statusCode: result.error?.statusCode ?? result.statusCode,
+          errorMessage: result.error?.message,
+        );
+        return;
+      }
+
+      final fresh = result.data;
+      if (fresh == null) return;
+
+      final snapFresh = _snapshotForSilentPostDetailCompare(fresh);
+      final unchanged = snapBefore != null &&
+          await Future<bool>.microtask(
+            () => _silentPostDetailSnapshotsEqual((snapBefore, snapFresh)),
+          );
+      if (unchanged) return;
+
+      _socialActionCubit.updatePostList([fresh]);
+      _replacePostInTabLists(fresh);
+      _socialActionCubit.onPostEdited(postId: postId, postData: fresh);
+    } catch (_) {
+    } finally {
+      _postDetailRefreshInFlight.remove(postId);
+    }
+  }
+
+  /// When host-cache integration is enabled, surface a deletion signal via
+  /// [IsmSocialActionCubit.onPostDeleted] for 404/410 responses (or matching
+  /// error text). Hosts wired to [IsmDeletedPostActionListenerState] then
+  /// evict the post from their cache and from any visible feed.
+  void _maybeNotifyPostDeleted({
+    required String postId,
+    int? statusCode,
+    String? errorMessage,
+  }) {
+    if (IsrVideoReelConfig.feedCacheConfig == null) return;
+    if (postId.isEmpty) return;
+    final code = statusCode;
+    final looksDeleted = code == 404 || code == 410;
+    final msg = (errorMessage ?? '').toLowerCase();
+    final messageHints = looksDeleted ||
+        msg.contains('not found') ||
+        msg.contains('post deleted') ||
+        msg.contains('410');
+    if (!messageHints) return;
+    _socialActionCubit.onPostDeleted(postId: postId);
   }
 
   void _sendAnalyticsEvent(

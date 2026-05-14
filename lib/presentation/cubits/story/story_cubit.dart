@@ -237,6 +237,79 @@ class StoryCubit extends Cubit<StoryState> {
     await createStory(request);
   }
 
+  /// Uploads a local image and returns a public URL for a highlight cover.
+  /// Uses the same upload configuration as story media (host callback or GCS).
+  /// Does not emit [StoryState] so callers can handle failures in UI.
+  Future<String?> uploadHighlightCoverFile(File file) async {
+    final filePath = file.path;
+    if (filePath.isEmpty) return null;
+
+    final storyConfig = IsrVideoReelConfig.storyConfig;
+    final callbackConfig = storyConfig?.storyCallbackConfig;
+    final socialUpload = IsrVideoReelConfig
+        .socialConfig.socialCallBackConfig?.uploadMediaToCloud;
+    final callback = storyConfig?.uploadMediaToCloud ??
+        callbackConfig?.uploadMediaToCloud ??
+        socialUpload;
+
+    final fileName = filePath.split('/').last;
+    final dotIndex = fileName.lastIndexOf('.');
+    final extension = dotIndex > 0 ? fileName.substring(dotIndex + 1) : 'jpg';
+
+    if (callback != null) {
+      try {
+        final uploadedUrl = await callback(
+          File(filePath),
+          fileName,
+          MediaType.photo,
+          (_) {},
+          'highlights',
+          extension,
+        );
+        final url = uploadedUrl.trim();
+        return url.isEmpty ? null : url;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    final uploadMode = storyConfig?.uploadMode ??
+        callbackConfig?.uploadMode ??
+        StoryUploadMode.hostProvidedUrl;
+    if (uploadMode == StoryUploadMode.sdkManagedGoogleCloud) {
+      final userId = await _localDataUseCase.getUserId();
+      final uploadedUrl =
+          await _googleCloudStorageUploaderUseCase.executeGoogleCloudStorageUploader(
+        file: File(filePath),
+        fileName: fileName,
+        userId: userId,
+        fileExtension: extension,
+        cloudFolderName: 'highlights',
+      );
+      final url = (uploadedUrl ?? '').trim();
+      return url.isEmpty ? null : url;
+    }
+
+    final gcs = IsrVideoReelConfig.socialConfig.googleCloudUpload;
+    if (gcs != null &&
+        gcs.bucketName.isNotEmpty &&
+        gcs.credentialsJsonPath.isNotEmpty) {
+      final userId = await _localDataUseCase.getUserId();
+      final uploadedUrl =
+          await _googleCloudStorageUploaderUseCase.executeGoogleCloudStorageUploader(
+        file: File(filePath),
+        fileName: fileName,
+        userId: userId,
+        fileExtension: extension,
+        cloudFolderName: 'highlights',
+      );
+      final url = (uploadedUrl ?? '').trim();
+      return url.isEmpty ? null : url;
+    }
+
+    return null;
+  }
+
   Future<void> _mergeCurrentUserStoryRing({
     required String userId,
     required List<StoryData> stories,
@@ -382,7 +455,7 @@ class StoryCubit extends Cubit<StoryState> {
     }
   }
 
-  Future<void> addReaction({
+  Future<bool> addReaction({
     required String storyId,
     required String reactionType,
   }) async {
@@ -400,14 +473,15 @@ class StoryCubit extends Cubit<StoryState> {
           result.error?.message ?? 'Unable to add reaction.',
         );
       }
-      return;
+      return result.isSuccess;
     }
     emit(result.isSuccess
         ? const StoryActionSuccess('add_story_reaction')
         : StoryError(result.error?.message ?? 'Unable to add reaction.'));
+    return result.isSuccess;
   }
 
-  Future<void> removeReaction(String storyId) async {
+  Future<bool> removeReaction(String storyId) async {
     final result = await _storyUseCase.executeRemoveStoryReaction(
       isLoading: false,
       storyId: storyId,
@@ -421,11 +495,12 @@ class StoryCubit extends Cubit<StoryState> {
           result.error?.message ?? 'Unable to remove reaction.',
         );
       }
-      return;
+      return result.isSuccess;
     }
     emit(result.isSuccess
         ? const StoryActionSuccess('remove_story_reaction')
         : StoryError(result.error?.message ?? 'Unable to remove reaction.'));
+    return result.isSuccess;
   }
 
   Future<void> loadHighlights({String? userId}) async {
@@ -489,7 +564,7 @@ class StoryCubit extends Cubit<StoryState> {
         : StoryError(result.error?.message ?? 'Unable to update highlight.'));
   }
 
-  Future<void> deleteHighlight(String highlightId) async {
+  Future<bool> deleteHighlight(String highlightId) async {
     final result = await _storyUseCase.executeDeleteStoryHighlight(
       isLoading: false,
       highlightId: highlightId,
@@ -497,6 +572,7 @@ class StoryCubit extends Cubit<StoryState> {
     emit(result.isSuccess
         ? const StoryActionSuccess('delete_highlight')
         : StoryError(result.error?.message ?? 'Unable to delete highlight.'));
+    return result.isSuccess;
   }
 
   Future<void> addStoriesToHighlight({
@@ -508,9 +584,13 @@ class StoryCubit extends Cubit<StoryState> {
       highlightId: highlightId,
       request: AddStoriesToHighlightRequest(storyIds: storyIds),
     );
-    emit(result.isSuccess
-        ? const StoryActionSuccess('add_stories_to_highlight')
-        : StoryError(result.error?.message ?? 'Unable to update highlight stories.'));
+    if (result.isSuccess) {
+      await getStoryHighlightById(highlightId);
+      emit(const StoryActionSuccess('add_stories_to_highlight'));
+    } else {
+      emit(StoryError(
+          result.error?.message ?? 'Unable to update highlight stories.'));
+    }
   }
 
   Future<List<StoryHighlightData>> getHighlightsForCurrentUser() async {
@@ -559,7 +639,7 @@ class StoryCubit extends Cubit<StoryState> {
     }
   }
 
-  Future<void> addStoryToHighlight({
+  Future<StoryHighlightData?> addStoryToHighlight({
     required String highlightId,
     required String storyId,
   }) async {
@@ -568,9 +648,14 @@ class StoryCubit extends Cubit<StoryState> {
       highlightId: highlightId,
       request: AddStoriesToHighlightRequest(storyIds: [storyId]),
     );
-    emit(result.isSuccess
-        ? const StoryActionSuccess('add_story_to_highlight')
-        : StoryError(result.error?.message ?? 'Unable to add story to highlight.'));
+    if (result.isSuccess) {
+      final fresh = await getStoryHighlightById(highlightId);
+      emit(const StoryActionSuccess('add_story_to_highlight'));
+      return fresh;
+    }
+    emit(StoryError(
+        result.error?.message ?? 'Unable to add story to highlight.'));
+    return null;
   }
 
   Future<void> deleteStory(String storyId) async {

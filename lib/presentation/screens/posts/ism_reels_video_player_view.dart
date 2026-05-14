@@ -428,6 +428,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           GetPostCommentsEvent(
             postId: postId!,
             isLoading: false,
+            refreshPostDetailAfterComments:
+                IsrVideoReelConfig.feedCacheConfig != null,
             onComplete: (comments) {
               if (!mounted) return;
               final sortedComments = comments.toList()

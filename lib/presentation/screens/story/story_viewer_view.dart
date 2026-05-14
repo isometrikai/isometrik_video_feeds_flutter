@@ -30,11 +30,15 @@ class StoryViewerView extends StatefulWidget {
 }
 
 class _StoryViewerViewState extends State<StoryViewerView> {
+  static const String _storyLoveReactionType = 'love';
+
   late final StoryViewerCubit _viewerCubit;
   Timer? _imageTimer;
   VideoPlayerController? _video;
 
-  /// >0 while playback is held (long-press or modal sheets). Image timer skips ticks; video is paused.
+  /// Story IDs the viewer has marked as loved this session (API has no field yet).
+  final Set<String> _viewerLovedStoryIds = {};
+
   int _playbackPauseDepth = 0;
 
   @override
@@ -219,6 +223,58 @@ class _StoryViewerViewState extends State<StoryViewerView> {
     return _viewerCubit.state.isCurrentStoryOwner(story: story, group: _group);
   }
 
+  /// Reactions are only for signed-in viewers who are not the story owner.
+  bool get _canReactToStory {
+    final story = _story;
+    final vu = _viewerCubit.state.viewerUserId;
+    if (story == null || story.id.isEmpty || vu.isEmpty) return false;
+    return !_viewerCubit.state.isCurrentStoryOwner(story: story, group: _group);
+  }
+
+  /// True when this session has toggled love on for the current story.
+  bool get _storyIsLoved {
+    final story = _story;
+    return story != null && _viewerLovedStoryIds.contains(story.id);
+  }
+
+  // Future<void> _sendStoryReaction(String reactionType) async {
+  //   final story = _story;
+  //   if (story == null || !_canReactToStory) return;
+  //   _pausePlayback();
+  //   try {
+  //     await context.read<StoryCubit>().addReaction(
+  //           storyId: story.id,
+  //           reactionType: reactionType,
+  //         );
+  //   } finally {
+  //     if (mounted) _resumePlayback();
+  //   }
+  // }
+
+  // Future<void> _toggleStoryLove() async {
+  //   final story = _story;
+  //   if (story == null || !_canReactToStory) return;
+  //   _pausePlayback();
+  //   try {
+  //     if (_storyIsLoved) {
+  //       final ok = await context.read<StoryCubit>().removeReaction(story.id);
+  //       if (mounted && ok) {
+  //         setState(() => _viewerLovedStoryIds.remove(story.id));
+  //       }
+  //     } else {
+  //       final ok = await context.read<StoryCubit>().addReaction(
+  //             storyId: story.id,
+  //             reactionType: _storyLoveReactionType,
+  //           );
+  //       if (mounted && ok) {
+  //         setState(() => _viewerLovedStoryIds.add(story.id));
+  //       }
+  //     }
+  //   } finally {
+  //     if (mounted) _resumePlayback();
+  //   }
+  // }
+
   Future<void> _onMoreActionsPressed() async {
     _pausePlayback();
     try {
@@ -226,7 +282,24 @@ class _StoryViewerViewState extends State<StoryViewerView> {
         context: context,
         story: _story,
         canManageCurrentStory: _canManageCurrentStory,
+        canReactToStory: _canReactToStory,
+        viewerHasLovedStory: _storyIsLoved,
+        onViewerLoveUpdated: (loved) {
+          if (!mounted) return;
+          final id = _story?.id;
+          if (id == null || id.isEmpty) return;
+          setState(() {
+            if (loved) {
+              _viewerLovedStoryIds.add(id);
+            } else {
+              _viewerLovedStoryIds.remove(id);
+            }
+          });
+        },
         highlightId: widget.highlightId,
+        highlightStoryCount: (widget.highlightId ?? '').trim().isNotEmpty
+            ? (_group?.stories.length ?? 0)
+            : null,
         onAdvanceAfterMutation: _goNext,
       );
     } finally {
@@ -247,10 +320,12 @@ class _StoryViewerViewState extends State<StoryViewerView> {
                 fit: StackFit.expand,
                 children: [
                   if (story != null)
-                    StoryViewerMediaContent(
-                      story: story,
-                      isVideo: _isVideo,
-                      videoController: _video,
+                    Positioned.fill(
+                      child: StoryViewerMediaContent(
+                        story: story,
+                        isVideo: _isVideo,
+                        videoController: _video,
+                      ),
                     ),
                   Positioned.fill(
                     child: GestureDetector(
@@ -260,6 +335,30 @@ class _StoryViewerViewState extends State<StoryViewerView> {
                       onLongPressEnd: (_) => _resumePlayback(),
                       onLongPressCancel: _resumePlayback,
                       child: const SizedBox.expand(),
+                    ),
+                  ),
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black.withValues(alpha: 0.75),
+                              Colors.black.withValues(alpha: 0.35),
+                              Colors.transparent,
+                            ],
+                            stops: const [0, 0.45, 1],
+                          ),
+                        ),
+                        child: SizedBox(
+                          height: MediaQuery.paddingOf(context).top + 140,
+                        ),
+                      ),
                     ),
                   ),
                   SafeArea(
@@ -281,6 +380,7 @@ class _StoryViewerViewState extends State<StoryViewerView> {
                             group: g,
                             story: story,
                             canManageCurrentStory: _canManageCurrentStory,
+                            canReactToStory: _canReactToStory,
                             onClose: () => Navigator.of(context).pop(),
                             onMoreActionsPressed: _onMoreActionsPressed,
                           ),
@@ -288,6 +388,57 @@ class _StoryViewerViewState extends State<StoryViewerView> {
                       ),
                     ),
                   ),
+                  // if (_canReactToStory)
+                  //   Positioned(
+                  //     left: 0,
+                  //     right: 0,
+                  //     bottom: 0,
+                  //     child: SafeArea(
+                  //       child: Padding(
+                  //         padding: IsrDimens.edgeInsets(
+                  //           bottom: IsrDimens.sixteen,
+                  //         ),
+                  //         child: Row(
+                  //           mainAxisAlignment: MainAxisAlignment.center,
+                  //           children: [
+                  //             Material(
+                  //               color: Colors.black45,
+                  //               shape: const CircleBorder(),
+                  //               clipBehavior: Clip.antiAlias,
+                  //               child: IconButton(
+                  //                 tooltip: 'Like',
+                  //                 icon: const Icon(
+                  //                   Icons.favorite_border,
+                  //                   color: Colors.white,
+                  //                 ),
+                  //                 onPressed: () =>
+                  //                     unawaited(_sendStoryReaction('like')),
+                  //               ),
+                  //             ),
+                  //             SizedBox(width: IsrDimens.sixteen),
+                  //             Material(
+                  //               color: Colors.black45,
+                  //               shape: const CircleBorder(),
+                  //               clipBehavior: Clip.antiAlias,
+                  //               child: IconButton(
+                  //                 tooltip: _storyIsLoved ? 'Remove love' : 'Love',
+                  //                 icon: Icon(
+                  //                   _storyIsLoved
+                  //                       ? Icons.favorite
+                  //                       : Icons.favorite_border,
+                  //                   color: _storyIsLoved
+                  //                       ? const Color(0xFFE91E63)
+                  //                       : Colors.white,
+                  //                 ),
+                  //                 onPressed: () =>
+                  //                     unawaited(_toggleStoryLove()),
+                  //               ),
+                  //             ),
+                  //           ],
+                  //         ),
+                  //       ),
+                  //     ),
+                  //   ),
                 ],
               ),
             );

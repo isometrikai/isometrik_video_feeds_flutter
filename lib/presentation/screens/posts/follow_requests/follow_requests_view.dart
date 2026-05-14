@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -153,10 +154,8 @@ class _RequestList extends StatelessWidget {
     return NotificationListener<ScrollNotification>(
       onNotification: (n) {
         final m = n.metrics;
-        // Short lists are not scrollable (maxScrollExtent == 0); without this
-        // check, "near bottom" is always true and spams pagination during load.
-        if (m.maxScrollExtent > 0 &&
-            m.pixels >= m.maxScrollExtent - 80) {
+
+        if (m.maxScrollExtent > 0 && m.pixels >= m.maxScrollExtent - 80) {
           onScrollEnd();
         }
         return false;
@@ -185,48 +184,59 @@ class _RequestList extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Container(
-                    width: 48.responsiveDimension,
-                    height: 48.responsiveDimension,
-                    decoration: const BoxDecoration(shape: BoxShape.circle),
-                    child: ClipOval(
-                      child: AppImage.network(
-                        u.avatarUrl.isEmptyOrNull ? '' : u.avatarUrl!,
-                        height: 48.responsiveDimension,
-                        width: 48.responsiveDimension,
-                        fit: BoxFit.cover,
-                        isProfileImage: true,
-                        name: u.fullName ?? '',
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 4.responsiveDimension),
                   Expanded(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          u.username.isEmptyOrNull
-                              ? '@unKnownUser'
-                              : u.username!,
-                          style: IsrStyles.primaryText16Bold,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          u.fullName.isEmptyOrNull
-                              ? u.displayName.isEmptyOrNull
-                                  ? 'unknown user'
-                                  : u.displayName!
-                              : u.fullName!,
-                          style: IsrStyles.primaryText14.copyWith(
-                            color: IsrColors.color9B9B9B,
+                    child: TapHandler(
+                      onTap: () => _openUserProfileFromRequest(item.user),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 48.responsiveDimension,
+                            height: 48.responsiveDimension,
+                            decoration:
+                                const BoxDecoration(shape: BoxShape.circle),
+                            child: ClipOval(
+                              child: AppImage.network(
+                                u.avatarUrl.isEmptyOrNull ? '' : u.avatarUrl!,
+                                height: 48.responsiveDimension,
+                                width: 48.responsiveDimension,
+                                fit: BoxFit.cover,
+                                isProfileImage: true,
+                                name: u.fullName ?? '',
+                              ),
+                            ),
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+                          SizedBox(width: 4.responsiveDimension),
+                          Expanded(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  u.username.isEmptyOrNull
+                                      ? '@unKnownUser'
+                                      : u.username!,
+                                  style: IsrStyles.primaryText16Bold,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Text(
+                                  u.fullName.isEmptyOrNull
+                                      ? u.displayName.isEmptyOrNull
+                                          ? 'unknown user'
+                                          : u.displayName!
+                                      : u.fullName!,
+                                  style: IsrStyles.primaryText14.copyWith(
+                                    color: IsrColors.color9B9B9B,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   trailing(item),
@@ -238,4 +248,14 @@ class _RequestList extends StatelessWidget {
       ),
     );
   }
+}
+
+void _openUserProfileFromRequest(SocialUserData user) {
+  final id = user.id;
+  if (id == null || id.isEmpty) return;
+  IsrVideoReelConfig.postConfig.postCallBackConfig?.onProfileClick?.call(
+    null,
+    id,
+    user.isFollowing,
+  );
 }

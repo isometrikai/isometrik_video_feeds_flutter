@@ -88,6 +88,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   var _routeEnterListenerScheduled = false;
   Animation<double>? _routeEnterAnimation;
   AnimationStatusListener? _routeEnterStatusListener;
+  VoidCallback? _routeEnterValueListener;
   var _initialPostLoadDispatched = false;
   var _tabChangeRequestId = 0;
 
@@ -144,6 +145,12 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       // _tabsVisibilityNotifier.value = false;
     }
     _scheduleReelsBodyWhenRouteSettled();
+    if (IsrVideoReelConfig.feedCacheConfig != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _dispatchInitialPostLoad();
+      });
+    }
     _loggedInUserId = await _socialPostBloc.userId;
     _postTabController?.addListener(() async {
       if (!mounted) return;
@@ -202,6 +209,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     _routeEnterListenerScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      final useFeedHostCache = IsrVideoReelConfig.feedCacheConfig != null;
       final animation = ModalRoute.of(context)?.animation;
       void onEnterCompleted() {
         if (!mounted || _reelsBodyReady) return;
@@ -209,6 +217,23 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         _reelsBodyReady = true;
         _dispatchInitialPostLoad();
         setState(() {});
+      }
+
+      if (!useFeedHostCache) {
+        if (animation == null ||
+            animation.status == AnimationStatus.completed) {
+          onEnterCompleted();
+          return;
+        }
+
+        _routeEnterAnimation = animation;
+        _routeEnterStatusListener = (AnimationStatus status) {
+          if (status == AnimationStatus.completed) {
+            onEnterCompleted();
+          }
+        };
+        animation.addStatusListener(_routeEnterStatusListener!);
+        return;
       }
 
       if (animation == null ||
@@ -220,22 +245,49 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
       _routeEnterAnimation = animation;
       _routeEnterStatusListener = (AnimationStatus status) {
-        if (status == AnimationStatus.completed) {
+        // Dismissed covers reverse transitions; some shells never emit completed.
+        if (status == AnimationStatus.completed ||
+            status == AnimationStatus.dismissed) {
           onEnterCompleted();
         }
       };
       animation.addStatusListener(_routeEnterStatusListener!);
+
+      // Value listener: forward progress to 1.0 without relying on status alone.
+      _routeEnterValueListener = () {
+        if (!mounted || _reelsBodyReady) return;
+        if (animation.value >= 1.0) {
+          onEnterCompleted();
+        }
+      };
+      animation.addListener(_routeEnterValueListener!);
+
+      // Bottom-nav / nested shells may keep a route animation pending forever;
+      // never block the first feed load on it.
+      unawaited(
+        Future<void>.delayed(const Duration(milliseconds: 500), () {
+          if (!mounted) return;
+          onEnterCompleted();
+        }),
+      );
     });
   }
 
   void _tearDownRouteEnterListener() {
     final anim = _routeEnterAnimation;
     final listener = _routeEnterStatusListener;
-    if (anim != null && listener != null) {
-      anim.removeStatusListener(listener);
+    final valueListener = _routeEnterValueListener;
+    if (anim != null) {
+      if (listener != null) {
+        anim.removeStatusListener(listener);
+      }
+      if (valueListener != null) {
+        anim.removeListener(valueListener);
+      }
     }
     _routeEnterAnimation = null;
     _routeEnterStatusListener = null;
+    _routeEnterValueListener = null;
   }
 
   void _dispatchInitialPostLoad() {

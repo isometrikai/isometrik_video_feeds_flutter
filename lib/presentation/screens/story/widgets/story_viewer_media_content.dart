@@ -22,12 +22,18 @@ class StoryViewerMediaContent extends StatelessWidget {
     final isVideoStory = isVideo(current);
     if (isVideoStory && videoController?.value.isInitialized == true) {
       final controller = videoController!;
-      return Center(
-        child: AspectRatio(
-          aspectRatio: controller.value.aspectRatio == 0
-              ? 1
-              : controller.value.aspectRatio,
-          child: VideoPlayer(controller),
+      final size = controller.value.size;
+      final ar = controller.value.aspectRatio == 0 ? 1.0 : controller.value.aspectRatio;
+      return ColoredBox(
+        color: Colors.black,
+        child: FittedBox(
+          fit: BoxFit.cover,
+          clipBehavior: Clip.hardEdge,
+          child: SizedBox(
+            width: size.width > 0 ? size.width : ar,
+            height: size.height > 0 ? size.height : 1,
+            child: VideoPlayer(controller),
+          ),
         ),
       );
     }
@@ -36,10 +42,15 @@ class StoryViewerMediaContent extends StatelessWidget {
         child: CircularProgressIndicator(color: Colors.white),
       );
     }
-    return Center(
-      child: AppImage.network(
-        current.mediaUrl,
-        fit: BoxFit.contain,
+    return LayoutBuilder(
+      builder: (context, constraints) => ColoredBox(
+        color: Colors.black,
+        child: AppImage.network(
+          current.mediaUrl,
+          fit: BoxFit.cover,
+          width: constraints.maxWidth,
+          height: constraints.maxHeight,
+        ),
       ),
     );
   }

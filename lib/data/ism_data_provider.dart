@@ -437,6 +437,79 @@ class IsmDataProvider {
     );
   }
 
+  /// Single highlight with items (`GET /api/v1/stories/highlights/:highlightId`).
+  Future<void> getStoryHighlightById({
+    required String highlightId,
+    bool isLoading = false,
+    Function(String, int)? onSuccess,
+    Function(String, int)? onError,
+  }) async {
+    await _executeApiCall<StoryHighlightData?>(
+      apiCall: () => _storyUseCase.executeGetStoryHighlightById(
+        isLoading: isLoading,
+        highlightId: highlightId,
+      ),
+      toJson: (StoryHighlightData? highlight) {
+        if (highlight == null) {
+          return <String, dynamic>{};
+        }
+        return {
+          'data': {
+            'id': highlight.id,
+            'user_id': highlight.userId,
+            'title': highlight.title,
+            'cover_url': highlight.coverUrl,
+            'sort_order': highlight.sortOrder,
+            'items': highlight.items
+                .map(
+                  (item) => {
+                    'item_id': item.itemId,
+                    'story_id': item.storyId,
+                  },
+                )
+                .toList(),
+          },
+        };
+      },
+      onSuccess: onSuccess,
+      onError: onError,
+    );
+  }
+
+  /// Active stories for the signed-in user (`GET /api/v1/stories/me`).
+  Future<void> getMyStories({
+    bool isLoading = false,
+    Function(String, int)? onSuccess,
+    Function(String, int)? onError,
+  }) async {
+    await _executeApiCall(
+      apiCall: () => _storyUseCase.executeGetMyStories(
+        isLoading: isLoading,
+      ),
+      toJson: (data) => {
+        'data': (data ?? const <StoryData>[])
+            .map(
+              (s) => {
+                'id': s.id,
+                'user_id': s.userId,
+                'media_url': s.mediaUrl,
+                'media_type': s.mediaType,
+                'caption': s.caption,
+                'username': s.username,
+                'full_name': s.fullName,
+                'avatar_url': s.avatarUrl,
+                'created_at': s.createdAt,
+                'expires_at': s.expiresAt,
+                'is_viewed': s.isViewed,
+              },
+            )
+            .toList(),
+      },
+      onSuccess: onSuccess,
+      onError: onError,
+    );
+  }
+
   Future<void> deleteStoryHighlight({
     required String highlightId,
     bool isLoading = false,

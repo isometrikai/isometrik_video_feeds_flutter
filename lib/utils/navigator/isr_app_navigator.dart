@@ -4,7 +4,8 @@ import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/models/models.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
-import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart' as ms;
+import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart'
+    as ms;
 import 'package:ism_video_reel_player/utils/navigator/highlight_open_coordinator.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
@@ -42,17 +43,18 @@ class IsrAppNavigator {
   /// ✅ Wraps the destination with necessary BLoC providers
   /// Uses rootNavigator to hide bottom navigation bar
   static void navigateToSearch(
-      BuildContext context, {
-        String? search,
-        List<SearchTabType>? tabList = SearchTabType.values,
-        SearchScreenConfig? config,
-        TransitionType? transitionType,
-      }) {
+    BuildContext context, {
+    String? search,
+    List<SearchTabType>? tabList = SearchTabType.values,
+    SearchScreenConfig? config,
+    TransitionType? transitionType,
+  }) {
     final page = BlocProvider<PostListingBloc>(
       create: (_) => IsmInjectionUtils.getBloc<PostListingBloc>(),
       child: PostListingView(
         searchQuery: search ?? '',
-        tabList: tabList?.takeIf((list) => list.isNotEmpty) ?? SearchTabType.values,
+        tabList:
+            tabList?.takeIf((list) => list.isNotEmpty) ?? SearchTabType.values,
         config: config,
       ),
     );
@@ -318,8 +320,8 @@ class IsrAppNavigator {
     String? userId,
     TransitionType transitionType = TransitionType.fade,
   }) async {
-    final context =
-        IsrVideoReelConfig.getBuildContext?.call() ?? IsrVideoReelConfig.buildContext;
+    final context = IsrVideoReelConfig.getBuildContext?.call() ??
+        IsrVideoReelConfig.buildContext;
     if (context == null) {
       const reason = 'BuildContext unavailable for highlight navigation.';
       IsrVideoReelConfig.storyConfig?.storyCallbackConfig.onStoryActionError
@@ -430,7 +432,8 @@ class IsrAppNavigator {
     String? postId,
     TransitionType? transitionType,
   }) async {
-    debugPrint('goToTagPeopleScreen:- MentionDataList: ${mentionDataList?.map((e) => e.toJson()).toList()}');
+    debugPrint(
+        'goToTagPeopleScreen:- MentionDataList: ${mentionDataList?.map((e) => e.toJson()).toList()}');
     final page = MultiBlocProvider(
       providers: [
         BlocProvider.value(value: context.getOrCreateBloc<CreatePostBloc>()),

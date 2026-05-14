@@ -62,7 +62,14 @@ class HighlightOpenCoordinator {
       (highlightData?.items ?? const <StoryHighlightItem>[])
           .map((item) => item.storyId),
     );
-    final targetIds = idsFromServer.isNotEmpty ? idsFromServer : idsFromInput;
+    var targetIds = idsFromServer.isNotEmpty ? idsFromServer : idsFromInput;
+    final embeddedPreview =
+        highlightData?.embeddedStories ?? const <StoryData>[];
+    if (targetIds.isEmpty && embeddedPreview.isNotEmpty) {
+      targetIds = HighlightViewerResolver.normalizedStoryIds(
+        embeddedPreview.map((s) => s.id),
+      );
+    }
     debugPrint(
       'HighlightOpenCoordinator: resolved ids input=${idsFromInput.length} server=${idsFromServer.length}',
     );
@@ -83,13 +90,22 @@ class HighlightOpenCoordinator {
       );
     }
 
-    steps.add('resolve_from_cached_feed');
-    final cachedStories =
-        HighlightViewerResolver.storiesFromGroups(cubit.cachedStoryGroups);
+    steps.add('resolve_from_highlight_detail');
+    final embedded = highlightData?.embeddedStories ?? const <StoryData>[];
     var resolvedStories = HighlightViewerResolver.resolveStoriesByIds(
-      stories: cachedStories,
+      stories: embedded,
       storyIds: targetIds,
     );
+
+    if (resolvedStories.isEmpty) {
+      steps.add('resolve_from_cached_feed');
+      final cachedStories =
+          HighlightViewerResolver.storiesFromGroups(cubit.cachedStoryGroups);
+      resolvedStories = HighlightViewerResolver.resolveStoriesByIds(
+        stories: cachedStories,
+        storyIds: targetIds,
+      );
+    }
 
     if (resolvedStories.isEmpty && (userId ?? '').trim().isNotEmpty) {
       steps.add('resolve_from_user_stories');

@@ -17,6 +17,7 @@ export 'di/di.dart';
 export 'domain/domain.dart';
 export 'domain/models/user_info_class.dart';
 /// SDK configuration exports.
+export 'isr_feed_cache_config.dart';
 export 'isr_video_reel_config.dart';
 /// Presentation exports.
 export 'presentation/presentation.dart';
