@@ -2340,6 +2340,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                     IsrStyles.primaryText12.copyWith(
                       fontWeight: FontWeight.w600,
                       color: IsrColors.colorF4F4F4,
+                      shadows: _textShadows,
                     ),
               ),
             ),
