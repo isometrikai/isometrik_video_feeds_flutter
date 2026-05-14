@@ -40,6 +40,25 @@ class IsmPostView extends StatefulWidget {
   final Function(String placeId, String placeName, double lat, double long)?
       onTapPlace;
 
+  /// Matches the cache key used when [centralKey] is null (tab metadata only).
+  static String centralKeyForTabData(List<TabDataModel> tabDataModelList) {
+    if (tabDataModelList.isEmpty) return 'IsmPostView_empty_tabs';
+    final payload = tabDataModelList
+        .map(
+          (t) => <String, Object?>{
+            'postSectionType': t.postSectionType.name,
+            'userId': t.userId,
+            'postId': t.postId,
+            'tagValue': t.tagValue,
+            'tagType': t.tagType?.name,
+            'title': t.title,
+            'startingPostIndex': t.startingPostIndex,
+          },
+        )
+        .toList();
+    return 'IsmPostView_${jsonEncode(payload)}';
+  }
+
   static Map<PostSectionType, List<TimeLineData>>? getLoadedTabReels(String cacheKey) => _PostViewState.getLoadedTabReels(cacheKey);
 
   @override
@@ -71,7 +90,23 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   //caches
   static final Map<String, List<TabStateModel>> _centralTadData = {};
-  String get centralKey => widget.centralKey ?? '${runtimeType}_default_central';
+  String? _memoDerivedCentralKey;
+  List<TabDataModel>? _memoTabListRef;
+
+  String get centralKey {
+    final explicit = widget.centralKey;
+    if (explicit != null) {
+      _memoDerivedCentralKey = null;
+      _memoTabListRef = null;
+      return explicit;
+    }
+    if (_memoTabListRef != widget.tabDataModelList) {
+      _memoTabListRef = widget.tabDataModelList;
+      _memoDerivedCentralKey =
+          IsmPostView.centralKeyForTabData(widget.tabDataModelList);
+    }
+    return _memoDerivedCentralKey!;
+  }
   static Map<PostSectionType, List<TimeLineData>>? getLoadedTabReels(String centralKey) => _centralTadData[centralKey]?.asMap().map((key, value) => MapEntry(value.tabDataModel.postSectionType, value.tabDataModel.reelsDataList.toList()));
 
   /// When false, tab bodies stay a cheap placeholder so the push transition
