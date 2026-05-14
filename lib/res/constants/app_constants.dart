@@ -1,10 +1,11 @@
+import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 
 class AppConstants {
   AppConstants._();
 
   static const String boxName = 'flutter_reels';
-  static const String appName = 'Reels Player';
+  static String get appName => IsrVideoReelConfig.appName;
 
   static const int otpDuration = 60;
 
