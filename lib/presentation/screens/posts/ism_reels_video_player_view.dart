@@ -1123,21 +1123,24 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   Widget _buildMediaCounter(int currentPage) {
     if (!_hasMultipleMedia) return const SizedBox.shrink();
 
-    return Container(
-      padding: IsrDimens.edgeInsetsSymmetric(
-        horizontal: IsrDimens.eight,
-        vertical: IsrDimens.four,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.black.changeOpacity(0.6),
-        borderRadius: BorderRadius.circular(IsrDimens.twelve),
-      ),
-      child: Text(
-        '${currentPage + 1}/${_reelData.mediaMetaDataList.length}',
-        style: _textStyleConfig?.mediaCounterStyle ??
-            IsrStyles.white12.copyWith(
-              fontWeight: FontWeight.w500,
-            ),
+    return Material(
+      type: MaterialType.transparency,
+      child: Container(
+        padding: IsrDimens.edgeInsetsSymmetric(
+          horizontal: IsrDimens.eight,
+          vertical: IsrDimens.four,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.black.changeOpacity(0.6),
+          borderRadius: BorderRadius.circular(IsrDimens.twelve),
+        ),
+        child: Text(
+          '${currentPage + 1}/${_reelData.mediaMetaDataList.length}',
+          style: _textStyleConfig?.mediaCounterStyle ??
+              IsrStyles.white12.copyWith(
+                fontWeight: FontWeight.w500,
+              ),
+        ),
       ),
     );
   }
