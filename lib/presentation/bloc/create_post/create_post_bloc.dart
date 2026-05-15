@@ -472,15 +472,12 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       if (mediaType == MediaType.photo) {
         result = await ImagePicker().pickMultiImage(limit: 4);
       } else if (mediaType == MediaType.video) {
-        result = await ImagePicker().pickMultiVideo(
-          limit: 2,
-          maxDuration: const Duration(seconds: 30),
-        );
+        result = await ImagePicker().pickMultiVideo(limit: 2);
       }
 
       if (result.isNotEmpty) {
         for (final file in result) {
-          final path = file.path;
+          var path = file.path;
 
           final isVideo = path.isVideoFile;
           var duration = 0;
@@ -491,6 +488,15 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
           }
           if (isMinResolution) {
             if (isVideo) {
+              if (context.mounted) {
+                final trimmed = await GalleryVideoTrimUtil.trimVideo(
+                  context,
+                  videoPath: path,
+                );
+                if (!context.mounted) continue;
+                if (trimmed == null) continue;
+                path = trimmed;
+              }
               final mediaInfo = await VideoCompress.getMediaInfo(path);
               duration = (mediaInfo.duration ?? 0).toInt();
             }
@@ -520,7 +526,6 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     return pickedMedia;
   }
 
-  // Add this method in _CameraViewState
   Future<MediaInfoClass?> _pickFromFromCamera(
     BuildContext context,
     MediaType mediaType,
@@ -561,7 +566,6 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     return null;
   }
 
-  // Add this method in _CameraViewState
   Future<MediaInfoClass?> _pickFromGallery(BuildContext context,
       MediaType mediaType, MediaSource mediaSource) async {
     final picker = ImagePicker();
@@ -570,10 +574,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       var duration = 0;
 
       if (mediaType == MediaType.video) {
-        file = await picker.pickVideo(
-          source: ImageSource.gallery,
-          maxDuration: const Duration(seconds: 30),
-        );
+        file = await picker.pickVideo(source: ImageSource.gallery);
         final isMinResolution = await file?.path.hasMinResolution();
         if (isMinResolution == false) {
           ErrorHandler.showAppError(
@@ -584,6 +585,15 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
           return null;
         }
         if (file != null) {
+          if (context.mounted) {
+            final trimmed = await GalleryVideoTrimUtil.trimVideo(
+              context,
+              videoPath: file.path,
+            );
+            if (!context.mounted) return null;
+            if (trimmed == null) return null;
+            file = XFile(trimmed);
+          }
           final mediaInfo = await VideoCompress.getMediaInfo(file.path);
           duration = (mediaInfo.duration ?? 0).toInt();
         }

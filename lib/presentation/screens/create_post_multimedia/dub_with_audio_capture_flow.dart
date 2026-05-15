@@ -53,13 +53,7 @@ class DubWithAudioCaptureCoordinator {
 
     if (videoPath == null || videoPath.isEmpty) return;
 
-    final mediaEditConfig = me.MediaEditConfig(
-      primaryColor: IsrColors.appColor,
-      primaryTextColor: IsrColors.primaryTextColor,
-      backgroundColor: Colors.white,
-      appBarColor: Colors.white,
-      primaryFontFamily: AppConstants.primaryFontFamily,
-    );
+    final mediaEditConfig = GalleryVideoTrimUtil.defaultMediaEditConfig();
 
     final thumb = await _resolvePreviewThumbnail(
       videoPath: videoPath,

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart'
@@ -39,17 +41,30 @@ class _CreatePostMultimediaWrapperState
     mediaListType: ms.MediaListType.imageVideo,
   );
 
-  late final mediaEditConfig = me.MediaEditConfig(
-    primaryColor: IsrColors.appColor,
-    primaryTextColor: IsrColors.primaryTextColor,
-    backgroundColor: Colors.white,
-    appBarColor: Colors.white,
-    primaryFontFamily: AppConstants.primaryFontFamily,
-  );
+  late final mediaEditConfig = GalleryVideoTrimUtil.defaultMediaEditConfig();
 
   Future<bool> _onMediaSelectionComplete(
       List<ms.MediaAssetData> selectedMedia) async {
     for (final media in selectedMedia) {
+      if (media.mediaType == ms.SelectedMediaType.video) {
+        final path = media.localPath;
+        if (path != null && path.isNotEmpty) {
+          final trimmedPath = await GalleryVideoTrimUtil.trimVideo(
+            context,
+            videoPath: path,
+          );
+          if (!mounted) return false;
+          if (trimmedPath == null) return false;
+          media.localPath = trimmedPath;
+          media.file = File(trimmedPath);
+          final trimmedDuration =
+              await GalleryVideoTrimUtil.durationSeconds(trimmedPath);
+          if (trimmedDuration != null) {
+            media.duration = trimmedDuration;
+          }
+        }
+      }
+
       if (media.mediaType == ms.SelectedMediaType.video &&
           (media.thumbnailPath == null || media.thumbnailPath!.isEmpty)) {
         final thumbnailPath = await _generateVideoThumbnail(media.localPath);

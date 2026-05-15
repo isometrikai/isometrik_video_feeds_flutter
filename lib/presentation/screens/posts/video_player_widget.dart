@@ -594,7 +594,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     }
   }
 
-  /// Resumes after an overlay (create post / dub) blocked playback.
   void forceResume() {
     if (_isDisposed) return;
     _isManuallyPaused = false;

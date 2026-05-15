@@ -15,7 +15,6 @@ class SoundSelectionScreen extends StatefulWidget {
   });
 
   final CameraBloc cameraBloc;
-  /// When non-null, only these tracks are shown (e.g. one extracted dub stem).
   final List<SoundTrack>? restrictedTracks;
 
   @override
@@ -432,7 +431,6 @@ class _SoundRowSection extends StatelessWidget {
   }
 }
 
-/// Single-track (or short list) picker used when dubbing with extracted reel audio.
 class _RestrictedSoundPickerBody extends StatelessWidget {
   const _RestrictedSoundPickerBody({
     required this.tracks,

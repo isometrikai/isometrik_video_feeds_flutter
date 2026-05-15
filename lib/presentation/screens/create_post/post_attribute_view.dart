@@ -29,7 +29,6 @@ class PostAttributeView extends StatefulWidget {
   final bool? isEditMode;
   final List<MediaData>? newMediaDataList;
   final TimeLineData? postData;
-  /// When true (dub-with-audio), close/back dismisses the full create-post stack.
   final bool dismissEntireFlowOnClose;
 
   @override

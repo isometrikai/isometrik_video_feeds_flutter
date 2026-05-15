@@ -100,22 +100,12 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
             } else if (state is CameraPhotoCapturedState &&
                 !_isNavigatingToEdit) {
               _isNavigatingToEdit = true;
-              _navigateToEditScreen(state.photoPath, MediaType.photo);
-            } else if (state is CameraRecordingConfirmedState) {
-              if (!_isNavigatingToEdit) {
-                _isNavigatingToEdit = true;
-                final segments = state.segments != null
-                    ? List<VideoSegment>.from(state.segments!)
-                    : null;
-
-                _navigateToEditScreenWithSegments(
-                  state.mediaPath,
-                  MediaType.video,
-                  segments,
-                );
-              }
-            } else if (state is CameraRecordingReadyState &&
-                !_isNavigatingToEdit) {}
+              _popWithCapturedMedia(state.photoPath);
+            } else if (state is CameraRecordingConfirmedState &&
+                !_isNavigatingToEdit) {
+              _isNavigatingToEdit = true;
+              _popWithCapturedMedia(state.mediaPath);
+            }
           },
           builder: (context, state) {
             if (state is CameraLoadingState) {
@@ -219,10 +209,10 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
                 dubWithAudioMode: widget.dubWithAudioMode,
                 onGalleryClick: widget.onGalleryClick,
                 state: state,
-                onMediaPicked: (path, type) {
+                onMediaPicked: (path, _) {
                   if (!_isNavigatingToEdit) {
                     _isNavigatingToEdit = true;
-                    _navigateToEditScreen(path, type);
+                    _popWithCapturedMedia(path);
                   }
                 },
               ),
@@ -231,18 +221,7 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
         ),
       );
 
-  void _navigateToEditScreen(String mediaPath, MediaType mediaTypeOverride) {
-    final segments =
-        _cameraBloc.videoSegments.isNotEmpty ? _cameraBloc.videoSegments : null;
-
-    _navigateToEditScreenWithSegments(mediaPath, mediaTypeOverride, segments);
-  }
-
-  void _navigateToEditScreenWithSegments(
-    String mediaPath,
-    MediaType mediaTypeOverride,
-    List<VideoSegment>? segments,
-  ) {
+  void _popWithCapturedMedia(String mediaPath) {
     Navigator.pop(context, mediaPath);
     _isNavigatingToEdit = false;
 

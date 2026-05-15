@@ -664,6 +664,11 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
       _videoPlayerController =
           VideoPlayerController.file(File(_recordedVideoPath!));
       await _videoPlayerController!.initialize();
+      emit(CameraRecordingReadyState(
+        videoPath: _recordedVideoPath!,
+        videoController: _videoPlayerController!,
+        recordingDuration: 0,
+      ));
     } else {
       _capturedPhotoPath = event.mediaPath;
       _recordedVideoPath = null;

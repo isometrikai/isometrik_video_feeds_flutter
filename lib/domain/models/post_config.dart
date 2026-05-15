@@ -19,7 +19,6 @@ class PostConfig {
   final bool isCaptionRequired;
   final bool showViewCount;
 
-  /// When true, other users' video reels can show **Dub with audio** in the more menu.
   final bool enableDubWithAudio;
 
   PostConfig copyWith({
@@ -589,7 +588,6 @@ class PostCallBackConfig {
   /// Host app handles purchase / coin flow when the user taps unlock on a paid post.
   final Future<void> Function(TimeLineData postData)? onPaidPostUnlock;
 
-  /// Shown on other users' reels in the "more" sheet when non-null (e.g. open dub / remix flow).
   final Future<void> Function(TimeLineData postData)? onDubWithAudio;
 
   PostCallBackConfig copyWith({

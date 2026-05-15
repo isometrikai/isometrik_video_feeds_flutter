@@ -65,7 +65,6 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
           bottom: false,
           child: BlocBuilder<CameraBloc, CameraState>(
             builder: (BuildContext context, CameraState state) {
-              // Show loading state with progress indicator in place of record button
               if (state is CameraBottomLoadingState) {
                 return Container(
                   height: 180.responsiveDimension,
@@ -90,7 +89,6 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
                 );
               }
 
-              // Normal UI
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -325,7 +323,6 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
 
   void _handleTap(
       bool isRecording, bool isSegmentRecording, bool hasRecordedVideo) {
-    // Prevent rapid multiple taps
     if (_isProcessingTap) return;
 
     _isProcessingTap = true;
@@ -350,7 +347,6 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
         }
       }
     } finally {
-      // Reset flag after a short delay to prevent rapid taps
       Future.delayed(const Duration(milliseconds: 500), () {
         if (mounted) {
           _isProcessingTap = false;
@@ -426,6 +422,13 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
             maintainSize: true,
             maintainAnimation: true,
             maintainState: true,
+            child: _buildModeButton('Gallery', Icons.photo_library, null),
+          ),
+          Visibility(
+            visible: _showDurationPicker,
+            maintainSize: true,
+            maintainAnimation: true,
+            maintainState: true,
             child: _buildDurationButton('15', 'Sec', 15),
           ),
           Visibility(
@@ -459,7 +462,6 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
             maintainState: true,
             child: _buildModeButton('Photo', Icons.camera_alt, MediaType.photo),
           ),
-          // _buildModeButton('Video', Icons.videocam, MediaType.video),
           Visibility(
             visible: !widget.cameraBloc.isRecording ||
                 !widget.cameraBloc.isSegmentRecording ||
@@ -524,6 +526,10 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
   }
 
   void _galleryClick() async {
+    if (widget.dubWithAudioMode) {
+      await _pickDubVideoFromGallery();
+      return;
+    }
     if (widget.onGalleryClick != null) {
       try {
         final path = await widget.onGalleryClick!();
@@ -541,7 +547,6 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
     }
   }
 
-  /// Determines if the file is a video or image based on file extension
   Future<MediaType> _getMediaType(File file) async {
     final filePath = file.path;
     if (filePath.isVideoFile) {
@@ -549,7 +554,6 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
     } else if (filePath.isImageFile) {
       return MediaType.photo;
     } else {
-      // Default to image if extension is not recognized
       return MediaType.photo;
     }
   }
@@ -559,7 +563,6 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
         widget.cameraBloc.selectedMediaType == MediaType.video;
     return GestureDetector(
       onTap: () {
-        // Auto-switch to video mode when duration is selected
         if (widget.cameraBloc.selectedMediaType != MediaType.video) {
           widget.cameraBloc
               .add(CameraSetMediaTypeEvent(mediaType: MediaType.video));
@@ -730,18 +733,66 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
     }
   }
 
+  Future<void> _pickDubVideoFromGallery() async {
+    final maxSec = widget.cameraBloc.selectedDuration;
+    if (maxSec != 15 && maxSec != 60) {
+      Utility.showToastMessage('Choose 15 or 60 sec for your dub');
+      return;
+    }
+    try {
+      final video = await _imagePicker.pickVideo(source: ImageSource.gallery);
+      if (video == null || !mounted) return;
+
+      final trimmedPath = await GalleryVideoTrimUtil.trimVideo(
+        context,
+        videoPath: video.path,
+        maxSeconds: maxSec,
+        outputFilename: 'dub_gallery_trim.mp4',
+        forceTrimUi: true,
+      );
+      if (!mounted || trimmedPath == null || trimmedPath.isEmpty) return;
+
+      var outputPath = trimmedPath;
+      final musicPath = widget.cameraBloc.selectedMusicPreviewUrl;
+      if (widget.cameraBloc.hasMusicSelected &&
+          (musicPath?.isNotEmpty ?? false)) {
+        final muxed = await MediaUtil.muxVideoWithMusicFromUrl(
+          videoPath: trimmedPath,
+          musicUrlOrPath: musicPath!,
+        );
+        if (muxed != null && await File(muxed).exists()) {
+          if (muxed != trimmedPath) {
+            try {
+              await File(trimmedPath).delete();
+            } catch (_) {}
+          }
+          outputPath = muxed;
+        }
+      }
+
+      if (!mounted) return;
+      widget.onMediaPicked(outputPath, MediaType.video);
+    } catch (e) {
+      Utility.showToastMessage('Error picking video: $e');
+    }
+  }
+
   Future<void> _pickVideoFromGallery() async {
     try {
-      final video = await _imagePicker.pickVideo(
-        source: ImageSource.gallery,
-        maxDuration: const Duration(seconds: 60),
-      );
+      final video = await _imagePicker.pickVideo(source: ImageSource.gallery);
+      if (video == null || !mounted) return;
 
-      if (video != null) {
-        widget.cameraBloc.add(CameraSetExternalMediaEvent(
-            mediaPath: video.path, mediaType: MediaType.video));
-        widget.onMediaPicked(video.path, MediaType.video);
-      }
+      final trimmedPath = await GalleryVideoTrimUtil.trimVideo(
+        context,
+        videoPath: video.path,
+      );
+      if (!mounted || trimmedPath == null || trimmedPath.isEmpty) return;
+
+      widget.cameraBloc.add(CameraSetExternalMediaEvent(
+        mediaPath: trimmedPath,
+        mediaType: MediaType.video,
+      ));
+      widget.onMediaPicked(trimmedPath, MediaType.video);
     } catch (e) {
       Utility.showToastMessage('Error picking video: $e');
     }
