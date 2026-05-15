@@ -10,6 +10,7 @@ export 'gallery_video_trim_util.dart';
 export 'isr_size_config.dart';
 export 'media_compressor.dart';
 export 'media_util.dart';
+export 'reel_dub_audio_util.dart';
 export 'navigator/navigator.dart';
 export 'rectangular_progress_bar.dart';
 export 'triangle_painter.dart';

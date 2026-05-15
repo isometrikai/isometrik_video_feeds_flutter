@@ -1,5 +1,6 @@
 export 'comment_config.dart';
 export 'create_post_launch_config.dart';
+export 'dub_with_audio_config.dart';
 export 'create_edit_post_config.dart';
 export 'highlight_open_result.dart';
 export 'isr_reels_properties.dart';

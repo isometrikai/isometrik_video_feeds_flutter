@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -16,6 +17,66 @@ import 'package:path_provider/path_provider.dart';
 
 class DubWithAudioCaptureCoordinator {
   DubWithAudioCaptureCoordinator._();
+
+  static Future<void> handleFromPost(
+    BuildContext context,
+    TimeLineData post, {
+    DubWithAudioConfig? config,
+    Future<void> Function(TimeLineData post)? customHandler,
+  }) async {
+    if (customHandler != null) {
+      await customHandler(post);
+      return;
+    }
+
+    if (!context.mounted) return;
+
+    if (post.isLocked == true) {
+      if (config?.onLockedPost != null) {
+        config!.onLockedPost!(context, post);
+      } else {
+        Utility.showToastMessage(IsrTranslationFile.dubLockedPostMessage);
+      }
+      return;
+    }
+
+    final canStart = config?.canStart;
+    if (canStart != null) {
+      final allowed = await canStart(context, post);
+      if (!allowed || !context.mounted) return;
+    }
+
+    final videoUrl = ReelDubAudioUtil.reelVideoUrlForDub(post);
+    if (videoUrl == null) {
+      Utility.showToastMessage(IsrTranslationFile.dubNoVideoMessage);
+      return;
+    }
+
+    final audioPath = await _extractAudioWithLoader(context, videoUrl);
+    if (!context.mounted) return;
+
+    if (audioPath == null) {
+      IsrVideoReelConfig.resumeFeedPlayback();
+      Utility.showToastMessage(IsrTranslationFile.dubExtractAudioFailedMessage);
+      return;
+    }
+
+    try {
+      await start(
+        context,
+        CreatePostLaunchConfig.dubWithExtractedAudio(
+          dubAudioFilePath: audioPath,
+          dubSoundTrack: ReelDubAudioUtil.dubSoundTrackForPost(
+            audioFilePath: audioPath,
+            post: post,
+            durationSeconds: ReelDubAudioUtil.reelVideoDurationSecondsForDub(post),
+          ),
+        ),
+      );
+    } finally {
+      IsrVideoReelConfig.resumeFeedPlayback();
+    }
+  }
 
   static Future<void> start(
     BuildContext context,
@@ -176,6 +237,30 @@ class DubWithAudioCaptureCoordinator {
     if (fromReel != null) return fromReel;
 
     return videoPath;
+  }
+
+  static Future<String?> _extractAudioWithLoader(
+    BuildContext context,
+    String videoUrl,
+  ) async {
+    try {
+      unawaited(
+        showDialog<void>(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => const PopScope(
+            canPop: false,
+            child: Center(child: AppLoader()),
+          ),
+        ),
+      );
+      return await MediaUtil.extractAudioFromVideoToM4a(videoUrl);
+    } finally {
+      if (context.mounted) {
+        final nav = Navigator.of(context, rootNavigator: true);
+        if (nav.canPop()) nav.pop();
+      }
+    }
   }
 
   static Future<String?> _cacheReelThumbnail(String url) async {

@@ -549,8 +549,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
             tabData,
           );
           if (sheetResult == MoreOptionsSheetResult.dubWithAudio) {
-            await _postConfig.postCallBackConfig?.onDubWithAudio?.call(
+            await DubWithAudioCaptureCoordinator.handleFromPost(
+              context,
               reelsData.postData as TimeLineData,
+              config: _postConfig.dubWithAudioConfig,
+              customHandler: _postConfig.postCallBackConfig?.onDubWithAudio,
             );
             _socialPostBloc.add(PlayPauseVideoEvent(play: true));
             IsrVideoReelConfig.resumeFeedPlayback();
@@ -945,7 +948,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   bool _shouldOfferDubWithAudio(TimeLineData post) {
     if (!_postConfig.enableDubWithAudio) return false;
-    if (_postConfig.postCallBackConfig?.onDubWithAudio == null) return false;
     if (post.user?.id == _loggedInUserId) return false;
     final media = post.media;
     if (media == null || media.isEmpty) return false;

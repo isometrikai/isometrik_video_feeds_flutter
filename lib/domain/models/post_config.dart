@@ -10,6 +10,7 @@ class PostConfig {
     this.isCaptionRequired = false,
     this.showViewCount = false,
     this.enableDubWithAudio = false,
+    this.dubWithAudioConfig,
   });
 
   final PostUIConfig? postUIConfig;
@@ -20,6 +21,7 @@ class PostConfig {
   final bool showViewCount;
 
   final bool enableDubWithAudio;
+  final DubWithAudioConfig? dubWithAudioConfig;
 
   PostConfig copyWith({
     PostUIConfig? postUIConfig,
@@ -29,6 +31,7 @@ class PostConfig {
     bool? isCaptionRequired,
     bool? showViewCount,
     bool? enableDubWithAudio,
+    DubWithAudioConfig? dubWithAudioConfig,
   }) =>
       PostConfig(
         postUIConfig: postUIConfig ?? this.postUIConfig,
@@ -38,6 +41,7 @@ class PostConfig {
         isCaptionRequired: isCaptionRequired ?? this.isCaptionRequired,
         showViewCount: showViewCount ?? this.showViewCount,
         enableDubWithAudio: enableDubWithAudio ?? this.enableDubWithAudio,
+        dubWithAudioConfig: dubWithAudioConfig ?? this.dubWithAudioConfig,
       );
 }
 

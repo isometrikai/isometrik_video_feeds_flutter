@@ -121,6 +121,11 @@ class IsrTranslationFile {
   static const postReportedSuccessfully = 'Post reported successfully';
   static const report = 'Report';
   static const dubWithAudio = 'Dub with audio';
+  static const dubLockedPostMessage =
+      'Unlock this post before recording a dub.';
+  static const dubNoVideoMessage = 'This post has no video to dub.';
+  static const dubExtractAudioFailedMessage =
+      'Could not extract audio from this reel.';
   static const reports = 'Reports';
   static const confirm = 'Confirm';
   static const failedToLoadReportReasons = 'Failed to load report reasons';
