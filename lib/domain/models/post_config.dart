@@ -9,6 +9,7 @@ class PostConfig {
     this.autoMoveToNextPost = true,
     this.isCaptionRequired = false,
     this.showViewCount = false,
+    this.enableDubWithAudio = false,
   });
 
   final PostUIConfig? postUIConfig;
@@ -18,6 +19,9 @@ class PostConfig {
   final bool isCaptionRequired;
   final bool showViewCount;
 
+  /// When true, other users' video reels can show **Dub with audio** in the more menu.
+  final bool enableDubWithAudio;
+
   PostConfig copyWith({
     PostUIConfig? postUIConfig,
     PostCallBackConfig? postCallBackConfig,
@@ -25,6 +29,7 @@ class PostConfig {
     bool? autoMoveToNextPost,
     bool? isCaptionRequired,
     bool? showViewCount,
+    bool? enableDubWithAudio,
   }) =>
       PostConfig(
         postUIConfig: postUIConfig ?? this.postUIConfig,
@@ -33,6 +38,7 @@ class PostConfig {
         autoMoveToNextPost: autoMoveToNextPost ?? this.autoMoveToNextPost,
         isCaptionRequired: isCaptionRequired ?? this.isCaptionRequired,
         showViewCount: showViewCount ?? this.showViewCount,
+        enableDubWithAudio: enableDubWithAudio ?? this.enableDubWithAudio,
       );
 }
 

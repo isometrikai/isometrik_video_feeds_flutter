@@ -212,6 +212,7 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
                 onAddSoundTap: widget.onAddSoundTap,
                 onDismissEntireFlow: widget.onDismissEntireFlow,
                 dubSoundPickerTracks: widget.dubSoundPickerTracks,
+                dubWithAudioMode: widget.dubWithAudioMode,
               ),
               CameraBottomControls(
                 cameraBloc: _cameraBloc,

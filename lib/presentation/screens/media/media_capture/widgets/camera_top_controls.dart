@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/domain/models/sound_library_models.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/sound_selection/sound_selection_screen.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -12,15 +13,18 @@ class CameraTopControls extends StatelessWidget {
     this.onAddSoundTap,
     this.onDismissEntireFlow,
     this.dubSoundPickerTracks,
+    this.dubWithAudioMode = false,
   });
 
   final CameraBloc cameraBloc;
   final void Function(BuildContext context)? onAddSoundTap;
   final VoidCallback? onDismissEntireFlow;
-  /// When set, sound library only lists these tracks (dub stem).
   final List<SoundTrack>? dubSoundPickerTracks;
+  final bool dubWithAudioMode;
 
   bool get _showAddSound =>
+      !dubWithAudioMode &&
+      IsrVideoReelConfig.createEditPostConfig.enableAddSoundOnCamera &&
       cameraBloc.selectedMediaType == MediaType.video &&
       (cameraBloc.selectedDuration == 15 ||
           cameraBloc.selectedDuration == 60);

@@ -967,6 +967,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   }
 
   bool _shouldOfferDubWithAudio(TimeLineData post) {
+    if (!_postConfig.enableDubWithAudio) return false;
     if (_postConfig.postCallBackConfig?.onDubWithAudio == null) return false;
     if (post.user?.id == _loggedInUserId) return false;
     final media = post.media;
