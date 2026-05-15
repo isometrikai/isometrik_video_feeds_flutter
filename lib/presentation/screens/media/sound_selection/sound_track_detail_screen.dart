@@ -6,6 +6,7 @@ import 'package:ism_video_reel_player/domain/models/sound_library_models.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/sound_selection/sound_library_mock_data.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/sound_selection/sound_selection_theme.dart';
+import 'package:ism_video_reel_player/utils/audio_source_util.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
 /// Full-bleed preview for a single track with preview playback and **Use this sound**.
@@ -52,7 +53,7 @@ class _SoundTrackDetailScreenState extends State<SoundTrackDetailScreen> {
       if (_player.state == PlayerState.playing) {
         await _player.pause();
       } else {
-        await _player.play(UrlSource(_previewUrl));
+        await _player.play(audioSourceFromUrlOrPath(_previewUrl));
       }
     } catch (_) {
       if (mounted) {

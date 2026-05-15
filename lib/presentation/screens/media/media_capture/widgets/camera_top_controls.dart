@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ism_video_reel_player/domain/models/sound_library_models.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/sound_selection/sound_selection_screen.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -9,10 +10,15 @@ class CameraTopControls extends StatelessWidget {
     super.key,
     required this.cameraBloc,
     this.onAddSoundTap,
+    this.onDismissEntireFlow,
+    this.dubSoundPickerTracks,
   });
 
   final CameraBloc cameraBloc;
   final void Function(BuildContext context)? onAddSoundTap;
+  final VoidCallback? onDismissEntireFlow;
+  /// When set, sound library only lists these tracks (dub stem).
+  final List<SoundTrack>? dubSoundPickerTracks;
 
   bool get _showAddSound =>
       cameraBloc.selectedMediaType == MediaType.video &&
@@ -52,7 +58,11 @@ class CameraTopControls extends StatelessWidget {
                         cameraBloc.add(CameraDiscardRecordingEvent());
                       },
                       onPressNegativeButton: () {
-                        Navigator.pop(context);
+                        if (onDismissEntireFlow != null) {
+                          onDismissEntireFlow!();
+                        } else {
+                          Navigator.pop(context);
+                        }
                       },
                     );
                   },
@@ -82,6 +92,7 @@ class CameraTopControls extends StatelessWidget {
                       MaterialPageRoute<void>(
                         builder: (_) => SoundSelectionScreen(
                           cameraBloc: cameraBloc,
+                          restrictedTracks: dubSoundPickerTracks,
                         ),
                       ),
                     );

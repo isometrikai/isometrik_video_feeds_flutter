@@ -173,7 +173,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
       if (_framingMusicLoadedUrl != url) {
         await p.stop();
         _framingMusicLoadedUrl = url;
-        await p.play(UrlSource(url));
+        await p.play(audioSourceFromUrlOrPath(url));
         return;
       }
 
@@ -195,7 +195,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
         _capturedPhotoPath = null;
       }
 
-      final wantEnableAudio = !_isVideoWithSelectedSound;
+      final wantEnableAudio = _wantsCameraMicEnabled;
 
       if (_cameraController != null &&
           _cameraController!.value.isInitialized &&
@@ -259,10 +259,31 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
           cameraController: _cameraController!,
           isFlashAvailable: hasFlash,
           maxZoom: 4.0));
+      if (hasMusicSelected && _selectedMediaType == MediaType.video) {
+        unawaited(_preloadFramingMusic());
+      }
       unawaited(_syncFramingMusicPlayback());
     } catch (e) {
       AppLog.error('Camera initialization error: $e');
       emit(CameraErrorState('Failed to initialize camera: $e'));
+    }
+  }
+
+  Future<void> _preloadFramingMusic() async {
+    final url = _selectedMusicPreviewUrl;
+    if (url == null || url.isEmpty) return;
+    try {
+      _framingMusicPlayer ??= AudioPlayer();
+      final player = _framingMusicPlayer!;
+      await player.setReleaseMode(ReleaseMode.loop);
+      if (_framingMusicLoadedUrl != url) {
+        await player.stop();
+        _framingMusicLoadedUrl = url;
+        await player.play(audioSourceFromUrlOrPath(url));
+      }
+      await player.pause();
+    } catch (e) {
+      AppLog.error('Framing music preload: $e');
     }
   }
 
@@ -349,7 +370,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
           targetIndex ?? ((_selectedCameraIndex + 1) % _cameras.length);
 
       // Create new controller with the new camera
-      final wantEnableAudio = !_isVideoWithSelectedSound;
+      final wantEnableAudio = _wantsCameraMicEnabled;
       _cameraBuiltWithEnableAudio = wantEnableAudio;
       _cameraController = CameraController(
         _cameras[_selectedCameraIndex],
@@ -472,11 +493,13 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
       musicName: _selectedMusicName,
       musicArtist: _selectedMusicArtist,
     ));
-    await _ensureMicPolicyAfterMusicChange(emit);
+    await _reinitCameraIfMicPolicyMismatch(emit);
     unawaited(_syncFramingMusicPlayback());
   }
 
-  Future<void> _ensureMicPolicyAfterMusicChange(
+  bool get _wantsCameraMicEnabled => !_isVideoWithSelectedSound;
+
+  Future<void> _reinitCameraIfMicPolicyMismatch(
     Emitter<CameraState> emit,
   ) async {
     if (_selectedMediaType != MediaType.video) return;
@@ -486,6 +509,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
         _cameraController!.value.hasError) {
       return;
     }
+    if (_cameraBuiltWithEnableAudio == _wantsCameraMicEnabled) return;
     await _initializeCamera(
       CameraInitializeEvent(preserveCapturePaths: true),
       emit,
@@ -522,7 +546,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     if (_cameraController != null &&
         _cameraController!.value.isInitialized &&
         !_cameraController!.value.hasError) {
-      await _ensureMicPolicyAfterMusicChange(emit);
+      await _reinitCameraIfMicPolicyMismatch(emit);
     } else {
       emit(CameraInitialState());
     }
@@ -814,7 +838,6 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     _framingMusicAppPaused = false;
     _recordingTimer?.cancel();
     _recordingTimer = null;
-    _recordingTimer?.cancel();
     _segmentTimer?.cancel();
     _videoSegments.clear();
 
@@ -900,8 +923,12 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     if (_isSegmentRecording) return;
 
     try {
-      if (_isVideoWithSelectedSound && _cameraBuiltWithEnableAudio) {
-        await _ensureMicPolicyAfterMusicChange(emit);
+      if (_cameraBuiltWithEnableAudio != _wantsCameraMicEnabled) {
+        await _reinitCameraIfMicPolicyMismatch(emit);
+        if (_cameraController == null ||
+            !_cameraController!.value.isInitialized) {
+          return;
+        }
       }
       await _cameraController!.startVideoRecording();
       _isSegmentRecording = true;

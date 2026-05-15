@@ -19,6 +19,7 @@ class MediaEditView extends StatefulWidget {
     required this.mediaDataList,
     required this.mediaEditConfig,
     this.onComplete,
+    this.onDismissEntireFlow,
     this.onSelectSound,
     this.addMoreMedia,
     this.pickCoverPic,
@@ -27,6 +28,7 @@ class MediaEditView extends StatefulWidget {
   final List<MediaEditItem> mediaDataList;
   final MediaEditConfig mediaEditConfig;
   final Future<bool> Function(List<MediaEditItem> editededMedia)? onComplete;
+  final VoidCallback? onDismissEntireFlow;
   final Future<MediaEditSoundItem?> Function(MediaEditSoundItem? sound)?
       onSelectSound;
   final Future<List<MediaEditItem>?> Function(
@@ -242,7 +244,11 @@ class _MediaEditViewState extends State<MediaEditView> {
             if (state is MediaEditCompletedState) {
               _handleMediaEditComplete(state.mediaEditItems);
             } else if (state is MediaEditEmptyState) {
-              Navigator.pop(context);
+              if (widget.onDismissEntireFlow != null) {
+                widget.onDismissEntireFlow!();
+              } else {
+                Navigator.pop(context);
+              }
             }
           },
           child: Scaffold(
@@ -348,7 +354,13 @@ class _MediaEditViewState extends State<MediaEditView> {
               children: [
                 _buildAppBarIcon(
                   icon: Icons.close,
-                  onTap: () => Navigator.pop(context),
+                  onTap: () {
+                    if (widget.onDismissEntireFlow != null) {
+                      widget.onDismissEntireFlow!();
+                    } else {
+                      Navigator.pop(context);
+                    }
+                  },
                 ),
               ],
             ),

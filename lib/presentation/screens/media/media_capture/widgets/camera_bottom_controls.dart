@@ -17,12 +17,14 @@ class CameraBottomControls extends StatefulWidget {
     required this.onMediaPicked,
     this.onGalleryClick,
     required this.state,
+    this.dubWithAudioMode = false,
   });
 
   final CameraBloc cameraBloc;
   final Function(String path, MediaType type) onMediaPicked;
   final Future<String?> Function()? onGalleryClick;
   final CameraState state;
+  final bool dubWithAudioMode;
 
   @override
   State<CameraBottomControls> createState() => _CameraBottomControlsState();
@@ -235,57 +237,49 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
 
     return Listener(
       onPointerDown: (details) {
-        // Only handle hold gesture for video mode
         if (!isVideoMode || !isControllerReady) return;
-
         if (isSegmentRecording && !_isHoldRecording) return;
 
         _isHolding = true;
         _holdTimer = Timer(const Duration(milliseconds: 300), () {
           if (_isHolding) {
-            setState(() {
-              _isHoldRecording = true;
-            });
+            _isHoldRecording = true;
             widget.cameraBloc.add(CameraStartSegmentRecordingEvent());
+            if (mounted) setState(() {});
           }
         });
       },
       onPointerUp: (details) {
-        // Prevent multiple simultaneous taps
         if (_isProcessingTap) return;
 
-        // Check camera readiness
         if (!isControllerReady) {
           Utility.showToastMessage('Camera not ready');
           return;
         }
 
-        // Handle video mode with hold/tap logic
         if (isVideoMode) {
           _isHolding = false;
           _holdTimer?.cancel();
 
-          if (_isHoldRecording) {
-            setState(() {
-              _isHoldRecording = false;
-            });
+          if (_isHoldRecording || isSegmentRecording) {
+            _isHoldRecording = false;
             widget.cameraBloc.add(CameraStopSegmentRecordingEvent());
-          } else {
-            _handleTap(isRecording, isSegmentRecording, hasRecordedVideo);
+            setState(() {});
+            return;
           }
+
+          _handleTap(isRecording, isSegmentRecording, hasRecordedVideo);
         } else {
-          // Photo mode - just handle tap
           _handleTap(isRecording, isSegmentRecording, hasRecordedVideo);
         }
       },
       onPointerCancel: (details) {
         _isHolding = false;
         _holdTimer?.cancel();
-        if (_isHoldRecording) {
-          setState(() {
-            _isHoldRecording = false;
-          });
+        if (_isHoldRecording || widget.cameraBloc.isSegmentRecording) {
+          _isHoldRecording = false;
           widget.cameraBloc.add(CameraStopSegmentRecordingEvent());
+          if (mounted) setState(() {});
         }
       },
       child: AnimatedBuilder(
@@ -312,11 +306,7 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
                   shape: BoxShape.circle,
                   color: isRecording || isSegmentRecording
                       ? Colors.red
-                      :
-                      // : hasRecordedVideo
-                      //     ? Colors.green
-                      //     :
-                      IsrColors.white,
+                      : IsrColors.white,
                 ),
                 child: hasRecordedVideo && !isRecording && !isSegmentRecording
                     ? Icon(
@@ -421,39 +411,34 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
         ),
       );
 
-  // Widget _buildDiscardButton() => GestureDetector(
-  //       onTap: () => widget.cameraBloc.add(CameraDiscardRecordingEvent()),
-  //       child: Container(
-  //         padding: IsrDimens.edgeInsetsAll(IsrDimens.twelve),
-  //         decoration: const BoxDecoration(
-  //           color: Colors.black54,
-  //           shape: BoxShape.circle,
-  //         ),
-  //         child: Icon(
-  //           Icons.close,
-  //           color: Colors.red,
-  //           size: IsrDimens.twentyFour,
-  //         ),
-  //       ),
-  //     );
+  bool get _showDurationPicker =>
+      !widget.cameraBloc.isRecording &&
+      !widget.cameraBloc.isSegmentRecording &&
+      widget.cameraBloc.videoSegments.isEmpty;
 
-  // Widget _buildRetakeButton() => GestureDetector(
-  //       onTap: () => widget.cameraBloc.add(CameraDiscardRecordingEvent()),
-  //       child: Container(
-  //         padding: IsrDimens.edgeInsetsAll(IsrDimens.twelve),
-  //         decoration: const BoxDecoration(
-  //           color: Colors.black54,
-  //           shape: BoxShape.circle,
-  //         ),
-  //         child: Icon(
-  //           Icons.refresh,
-  //           color: Colors.white,
-  //           size: IsrDimens.twentyFour,
-  //         ),
-  //       ),
-  //     );
-
-  Widget _buildModeSelection() => Row(
+  Widget _buildModeSelection() {
+    if (widget.dubWithAudioMode) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          Visibility(
+            visible: _showDurationPicker,
+            maintainSize: true,
+            maintainAnimation: true,
+            maintainState: true,
+            child: _buildDurationButton('15', 'Sec', 15),
+          ),
+          Visibility(
+            visible: _showDurationPicker,
+            maintainSize: true,
+            maintainAnimation: true,
+            maintainState: true,
+            child: _buildDurationButton('60', 'Sec', 60),
+          ),
+        ],
+      );
+    }
+    return Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           Visibility(
@@ -495,6 +480,7 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
           ),
         ],
       );
+  }
 
   Widget _buildModeButton(String label, IconData icon, MediaType? mediaType) {
     final isSelected = mediaType == null

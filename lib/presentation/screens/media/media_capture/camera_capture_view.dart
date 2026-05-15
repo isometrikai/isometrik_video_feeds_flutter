@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ism_video_reel_player/domain/models/sound_library_models.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -12,11 +13,19 @@ class CameraCaptureView extends StatefulWidget {
     this.mediaType = MediaType.both,
     this.onGalleryClick,
     this.onAddSoundTap,
+    this.onDismissEntireFlow,
+    this.dubWithAudioMode = false,
+    this.initialCameraMusic,
+    this.dubSoundPickerTracks,
   });
 
   final MediaType mediaType;
   final Future<String?> Function()? onGalleryClick;
   final void Function(BuildContext context)? onAddSoundTap;
+  final VoidCallback? onDismissEntireFlow;
+  final bool dubWithAudioMode;
+  final CameraSetMusicEvent? initialCameraMusic;
+  final List<SoundTrack>? dubSoundPickerTracks;
 
   @override
   State<CameraCaptureView> createState() => _CameraCaptureViewState();
@@ -36,12 +45,21 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
   }
 
   Future<void> _initializeCameraWithRetry() async {
-    _cameraBloc.add(CameraInitializeEvent());
-    _cameraBloc.add(CameraSetMediaTypeEvent(
-        mediaType: widget.mediaType == MediaType.both
-            ? MediaType.photo
-            : widget.mediaType));
-    _cameraBloc.add(CameraSetDurationEvent(duration: 15));
+    if (widget.dubWithAudioMode) {
+      _cameraBloc.add(CameraSetMediaTypeEvent(mediaType: MediaType.video));
+      _cameraBloc.add(CameraSetDurationEvent(duration: 15));
+      if (widget.initialCameraMusic != null) {
+        _cameraBloc.add(widget.initialCameraMusic!);
+      }
+      _cameraBloc.add(CameraInitializeEvent());
+    } else {
+      _cameraBloc.add(CameraInitializeEvent());
+      _cameraBloc.add(CameraSetMediaTypeEvent(
+          mediaType: widget.mediaType == MediaType.both
+              ? MediaType.photo
+              : widget.mediaType));
+      _cameraBloc.add(CameraSetDurationEvent(duration: 15));
+    }
   }
 
   @override
@@ -192,9 +210,12 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
               CameraTopControls(
                 cameraBloc: _cameraBloc,
                 onAddSoundTap: widget.onAddSoundTap,
+                onDismissEntireFlow: widget.onDismissEntireFlow,
+                dubSoundPickerTracks: widget.dubSoundPickerTracks,
               ),
               CameraBottomControls(
                 cameraBloc: _cameraBloc,
+                dubWithAudioMode: widget.dubWithAudioMode,
                 onGalleryClick: widget.onGalleryClick,
                 state: state,
                 onMediaPicked: (path, type) {

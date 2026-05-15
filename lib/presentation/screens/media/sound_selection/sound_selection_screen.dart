@@ -11,9 +11,12 @@ class SoundSelectionScreen extends StatefulWidget {
   const SoundSelectionScreen({
     super.key,
     required this.cameraBloc,
+    this.restrictedTracks,
   });
 
   final CameraBloc cameraBloc;
+  /// When non-null, only these tracks are shown (e.g. one extracted dub stem).
+  final List<SoundTrack>? restrictedTracks;
 
   @override
   State<SoundSelectionScreen> createState() => _SoundSelectionScreenState();
@@ -62,6 +65,14 @@ class _SoundSelectionScreenState extends State<SoundSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final restricted = widget.restrictedTracks;
+    if (restricted != null && restricted.isNotEmpty) {
+      return _RestrictedSoundPickerBody(
+        tracks: restricted,
+        cameraBloc: widget.cameraBloc,
+      );
+    }
+
     final padTop = MediaQuery.paddingOf(context).top;
     final st = SoundPickerTheme.of(context);
     final recent = _filter(SoundLibraryMockData.recent);
@@ -417,6 +428,107 @@ class _SoundRowSection extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Single-track (or short list) picker used when dubbing with extracted reel audio.
+class _RestrictedSoundPickerBody extends StatelessWidget {
+  const _RestrictedSoundPickerBody({
+    required this.tracks,
+    required this.cameraBloc,
+  });
+
+  final List<SoundTrack> tracks;
+  final CameraBloc cameraBloc;
+
+  Future<void> _openDetail(BuildContext context, SoundTrack track) async {
+    final used = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (context) => SoundTrackDetailScreen(
+          track: track,
+          cameraBloc: cameraBloc,
+        ),
+      ),
+    );
+    if (used == true && context.mounted) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final padTop = MediaQuery.paddingOf(context).top;
+    final st = SoundPickerTheme.of(context);
+    return Scaffold(
+      backgroundColor: st.scaffoldBackground,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(height: padTop + 8.responsiveDimension),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.responsiveDimension),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: Icon(Icons.close, color: st.onSurface),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                Expanded(
+                  child: Text(
+                    'Sound',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: st.onSurface,
+                      fontSize: 18.responsiveDimension,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                SizedBox(width: 48.responsiveDimension),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView.separated(
+              padding: EdgeInsets.all(16.responsiveDimension),
+              itemCount: tracks.length,
+              separatorBuilder: (_, __) =>
+                  SizedBox(height: 12.responsiveDimension),
+              itemBuilder: (context, i) {
+                final t = tracks[i];
+                return TapHandler(
+                  onTap: () => _openDetail(context, t),
+                  child: ListTile(
+                    leading: ClipRRect(
+                      borderRadius:
+                          BorderRadius.circular(8.responsiveDimension),
+                      child: AppImage.network(
+                        t.thumbnailUrl,
+                        width: 48.responsiveDimension,
+                        height: 48.responsiveDimension,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    title: Text(
+                      t.title,
+                      style: TextStyle(
+                        color: st.onSurface,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    subtitle: Text(
+                      t.author,
+                      style: TextStyle(color: st.onSurfaceSecondary),
+                    ),
+                    trailing: Icon(Icons.chevron_right, color: st.onSurface),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

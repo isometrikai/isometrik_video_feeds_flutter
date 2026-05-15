@@ -59,6 +59,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   bool _isDisposed = false;
   bool _listenersAttached = false;
   bool _isManuallyPaused = false; // Track if video was manually paused (e.g., long press)
+  bool _pendingBlocResume = false;
   Duration _maxWatchPosition = Duration.zero; // Track maximum watch position
 
   // Track video start and progress milestones
@@ -431,6 +432,11 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       widget.onVisibilityChanged(_isVisible);
     }
 
+    if (_isVisible && _pendingBlocResume && !_isManuallyPaused) {
+      _pendingBlocResume = false;
+      play();
+    }
+
     // Control playback based on visibility (only if not manually paused)
     // Safety check: ensure controller is valid and not disposed
     if (!_isDisposed &&
@@ -559,12 +565,12 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   void pause() {
     if (_isDisposed) return; // Safety check: Don't operate on disposed widget
 
+    _isManuallyPaused = true;
     // Safety check: ensure controller is valid and not disposed
     if (_videoPlayerController != null &&
         _videoPlayerController!.isInitialized &&
         !_videoPlayerController!.isDisposed &&
         _videoPlayerController!.isPlaying) {
-      _isManuallyPaused = true;
       _videoPlayerController!.pause();
       _logVideoStartedEvent();
     }
@@ -573,18 +579,31 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   void play() {
     if (_isDisposed) return; // Safety check: Don't operate on disposed widget
 
+    _isManuallyPaused = false;
+    _pendingBlocResume = false;
     // Safety check: ensure controller is valid and not disposed
     if (_videoPlayerController != null &&
         _videoPlayerController!.isInitialized &&
         !_videoPlayerController!.isDisposed &&
         !_videoPlayerController!.isPlaying) {
-      _isManuallyPaused = false;
       // Only play if visible
       if (_isVisible) {
         _videoPlayerController!.play();
       }
       _logVideoStartedEvent();
     }
+  }
+
+  /// Resumes after an overlay (create post / dub) blocked playback.
+  void forceResume() {
+    if (_isDisposed) return;
+    _isManuallyPaused = false;
+    if (_isVisible && _isInitialized) {
+      play();
+      return;
+    }
+    _pendingBlocResume = true;
+    VisibilityDetectorController.instance.notifyNow();
   }
 
   /// Seek to a specific position in the video
@@ -680,10 +699,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
             if (state is PlayPauseVideoState) {
               if (state.play) {
-                if (_isVisible && mounted && _isManuallyPaused) {
-                  play();
-                }
+                forceResume();
               } else {
+                _pendingBlocResume = false;
                 pause();
               }
             }

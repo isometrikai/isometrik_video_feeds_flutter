@@ -16,6 +16,27 @@ final GlobalKey<NavigatorState> ismNavigatorKey = GlobalKey<NavigatorState>();
 class IsrAppNavigator {
   IsrAppNavigator._();
 
+  static const Set<String> _createPostFlowRouteNames = {
+    IsrRouteNames.createPostView,
+    IsrRouteNames.cameraView,
+    IsrRouteNames.mediaEditView,
+    IsrRouteNames.postAttributeView,
+    IsrRouteNames.videoTrimView,
+  };
+
+  static void dismissCreatePostFlow(BuildContext context) {
+    final nav = Navigator.of(context, rootNavigator: true);
+    if (!nav.canPop()) {
+      IsrVideoReelConfig.resumeFeedPlayback();
+      return;
+    }
+    nav.popUntil((route) {
+      final name = route.settings.name;
+      return name == null || !_createPostFlowRouteNames.contains(name);
+    });
+    IsrVideoReelConfig.resumeFeedPlayback();
+  }
+
   /// Navigate to post listing screen
   /// ✅ Wraps the destination with necessary BLoC providers
   /// Uses rootNavigator to hide bottom navigation bar
@@ -203,6 +224,13 @@ class IsrAppNavigator {
     }
   }
 
+  static Future<void> goToDubWithAudioCapture(
+    BuildContext context, {
+    required CreatePostLaunchConfig launchConfig,
+  }) async {
+    await DubWithAudioCaptureCoordinator.start(context, launchConfig);
+  }
+
   static Future<String?> goToCreatePostView(
     BuildContext context, {
     TransitionType? transitionType,
@@ -224,7 +252,11 @@ class IsrAppNavigator {
 
     final result =
         await Navigator.of(context, rootNavigator: true).push<String>(
-      _buildRoute(page: page, transitionType: transitionType),
+      _buildRoute(
+        page: page,
+        transitionType: transitionType,
+        routeName: IsrRouteNames.createPostView,
+      ),
     );
     return result;
   }
@@ -379,6 +411,7 @@ class IsrAppNavigator {
   static Future<String?> goToCreatePostAttributionView(
     BuildContext context, {
     List<MediaData>? newMediaDataList,
+    bool dismissEntireFlowOnClose = false,
     TransitionType transitionType = TransitionType.bottomToTop,
   }) async {
     final page = MultiBlocProvider(
@@ -391,12 +424,17 @@ class IsrAppNavigator {
       child: PostAttributeView(
         newMediaDataList: newMediaDataList,
         isEditMode: false,
+        dismissEntireFlowOnClose: dismissEntireFlowOnClose,
       ),
     );
 
     final result =
         await Navigator.of(context, rootNavigator: true).push<String>(
-      _buildRoute(page: page, transitionType: transitionType),
+      _buildRoute(
+        page: page,
+        transitionType: transitionType,
+        routeName: IsrRouteNames.postAttributeView,
+      ),
     );
     return result;
   }
@@ -527,14 +565,19 @@ class IsrAppNavigator {
   static Route<T> _buildRoute<T>({
     required Widget page,
     TransitionType? transitionType,
+    String? routeName,
   }) {
+    final settings =
+        routeName != null ? RouteSettings(name: routeName) : null;
     if (transitionType == null) {
       return MaterialPageRoute<T>(
         builder: (context) => page,
+        settings: settings,
       );
     }
 
     return PageRouteBuilder<T>(
+      settings: settings,
       pageBuilder: (context, animation, secondaryAnimation) => page,
       transitionsBuilder: (context, animation, secondaryAnimation, child) =>
           _buildTransition(

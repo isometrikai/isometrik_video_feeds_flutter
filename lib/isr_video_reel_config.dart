@@ -12,6 +12,7 @@ import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:talker/talker.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 /// SDK configuration and initialization entrypoint.
 ///
@@ -72,6 +73,25 @@ class IsrVideoReelConfig {
 
   /// Story configuration used by SDK modules; when null, stories stay hidden.
   static StoryConfig? storyConfig;
+
+  static void resumeFeedPlayback() {
+    void emitResume() {
+      try {
+        final bloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
+        bloc.add(PlayPauseVideoEvent(play: false));
+        bloc.add(PlayPauseVideoEvent(play: true));
+      } catch (e) {
+        debugPrint('IsrVideoReelConfig.resumeFeedPlayback: $e');
+      }
+      VisibilityDetectorController.instance.notifyNow();
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      emitResume();
+      WidgetsBinding.instance.addPostFrameCallback((_) => emitResume());
+    });
+    Future.delayed(const Duration(milliseconds: 350), emitResume);
+  }
 
   /// Convenience accessor for the SDK's singleton [IsmSocialActionCubit].
   static IsmSocialActionCubit get socialActionCubit =>

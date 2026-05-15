@@ -4,7 +4,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:get_thumbnail_video/video_thumbnail.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ism_video_reel_player/core/api_result.dart';
 import 'package:ism_video_reel_player/core/errors/app_error.dart';
@@ -1835,13 +1834,21 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       );
       newMediaData.fileExtension = _getFileExtension(permanentMediaFile.path);
       if (mediaType == MediaType.video) {
-        final videoThumbnailFile =
-            await _safeCreateVideoThumbnail(permanentMediaFile.path);
-        newMediaData.previewUrl =
-            videoThumbnailFile?.path.isEmptyOrNull == false
-                ? videoThumbnailFile!.path
-                : '';
-        newMediaData.coverFileLocalPath = newMediaData.previewUrl;
+        final persistedCover = await _persistLocalCoverImage(
+          mediaData.coverFileLocalPath ?? mediaData.previewUrl,
+        );
+        if (persistedCover != null) {
+          newMediaData.previewUrl = persistedCover;
+          newMediaData.coverFileLocalPath = persistedCover;
+        } else {
+          final videoThumbnailFile =
+              await _safeCreateVideoThumbnail(permanentMediaFile.path);
+          newMediaData.previewUrl =
+              videoThumbnailFile?.path.isEmptyOrNull == false
+                  ? videoThumbnailFile!.path
+                  : '';
+          newMediaData.coverFileLocalPath = newMediaData.previewUrl;
+        }
         newMediaData.coverFileName =
             _getFileName(newMediaData.previewUrl, 'thumbnail');
         newMediaData.coverFileExtension =
@@ -2100,6 +2107,16 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     }
   }
 
+  Future<String?> _persistLocalCoverImage(String? coverPath) async {
+    if (coverPath.isEmptyOrNull || !Utility.isLocalUrl(coverPath!)) {
+      return null;
+    }
+    final file = File(coverPath);
+    if (!await file.exists()) return null;
+    final permanent = await _createPermanentMediaCopy(file, MediaType.photo);
+    return permanent?.path;
+  }
+
   /// Safely creates video thumbnail, handling long filename issues by copying to temp file first
   Future<XFile?> _safeCreateVideoThumbnail(String videoPath) async {
     // First check if the video file exists
@@ -2109,20 +2126,16 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     }
 
     try {
-      // Try creating thumbnail directly first
-      final thumbnailFile = await VideoThumbnail.thumbnailFile(
-        video: videoPath,
-        quality: 50,
+      final thumbPath = await MediaUtil.pickBestVideoThumbnailPath(
+        videoPath: videoPath,
         thumbnailPath: (await getTemporaryDirectory()).path,
+        quality: 50,
       );
-
-      // Check if thumbnail was created successfully
-      if (thumbnailFile.path.isEmpty) {
+      if (thumbPath == null || thumbPath.isEmpty) {
         return null;
       }
 
-      // Always ensure the thumbnail has a safe path for Image.file()
-      final safe = await _ensureSafeThumbnailPath(thumbnailFile);
+      final safe = await _ensureSafeThumbnailPath(XFile(thumbPath));
       return await _finalizeThumbnailForStorage(safe);
     } catch (e) {
       if (e is FileSystemException && e.osError?.errorCode == 63) {
@@ -2142,11 +2155,10 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
           // Copy the original video to temp location
           final tempFile = await videoFile.copy(tempVideoPath);
 
-          // Create thumbnail from temporary video file
-          final thumbnailFile = await VideoThumbnail.thumbnailFile(
-            video: tempFile.path,
-            quality: 50,
+          final thumbPath = await MediaUtil.pickBestVideoThumbnailPath(
+            videoPath: tempFile.path,
             thumbnailPath: tempDir.path,
+            quality: 50,
           );
 
           // Clean up temp video file
@@ -2156,13 +2168,11 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
             debugPrint('Failed to cleanup temp video file: $tempVideoPath');
           }
 
-          // Check if thumbnail was created successfully
-          if (thumbnailFile.path.isEmpty) {
+          if (thumbPath == null || thumbPath.isEmpty) {
             return null;
           }
 
-          // Ensure safe path for the thumbnail
-          final safe = await _ensureSafeThumbnailPath(thumbnailFile);
+          final safe = await _ensureSafeThumbnailPath(XFile(thumbPath));
           return await _finalizeThumbnailForStorage(safe);
         } catch (copyError) {
           debugPrint('Error copying video to temp location: $copyError');
