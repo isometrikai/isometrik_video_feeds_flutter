@@ -352,30 +352,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         ),
       );
 
-  Widget _buildBackButton() => Positioned(
-        top: MediaQuery.of(context).padding.top +
-            (_backButtonConfig?.topOffset ?? 10),
-        left: (_backButtonConfig?.leftOffset ?? 16.0).responsiveDimension,
-        child: Container(
-          decoration: _backButtonConfig?.buttonDecoration ??
-              BoxDecoration(
-                color: Colors.black.applyOpacity(0.5),
-                shape: BoxShape.circle,
-              ),
-          child: IconButton(
-            icon: _backButtonConfig?.icon ??
-                Icon(
-                  Icons.arrow_back,
-                  color: _backButtonConfig?.iconColor ?? Colors.white,
-                  size: _backButtonConfig?.iconSize,
-                ),
-            onPressed: () {
-              context.pop();
-            },
-          ),
-        ),
-      );
-
   Widget _buildSingleTabTopBar() {
     final rightWidget = _tabBarConfig?.rightWidget;
     final showRight = rightWidget != null;
