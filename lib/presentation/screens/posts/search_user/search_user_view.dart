@@ -10,9 +10,17 @@ import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
 class SearchUserView extends StatefulWidget {
-  const SearchUserView({super.key, required this.socialUserList});
+  const SearchUserView({
+    super.key,
+    required this.socialUserList,
+    this.maxSelectablePeople,
+  });
 
   final List<SocialUserData> socialUserList;
+
+  /// When set, caps how many users can be selected in this session.
+  /// When null, uses [TagPeopleScreenConfig.maxTaggedPeople] (default 20).
+  final int? maxSelectablePeople;
 
   @override
   _SearchUserViewState createState() => _SearchUserViewState();
@@ -39,6 +47,17 @@ class _SearchUserViewState extends State<SearchUserView>
       .createEditPostUIConfig
       ?.tagPeopleUIConfig
       ?.searchUserScreenConfig;
+
+  TagPeopleScreenConfig? get _tagPeopleScreenConfig => IsrVideoReelConfig
+      .createEditPostConfig
+      .createEditPostUIConfig
+      ?.tagPeopleUIConfig
+      ?.tagPeopleScreenConfig;
+
+  int get _selectionCap =>
+      widget.maxSelectablePeople ??
+      _tagPeopleScreenConfig?.maxTaggedPeople ??
+      20;
 
   @override
   void initState() {
@@ -521,6 +540,13 @@ class _SearchUserViewState extends State<SearchUserView>
     if (wasSelected) {
       _selectedUsers.removeWhere((e) => e.id == user.id);
     } else {
+      if (_selectedUsers.length >= _selectionCap) {
+        Utility.showToastMessage(
+          'You can tag up to $_selectionCap people',
+        );
+        _isSelectingUser = false;
+        return;
+      }
       _selectedUsers.add(user);
     }
 

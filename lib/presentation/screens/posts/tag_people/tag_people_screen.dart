@@ -871,8 +871,18 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
             ))
         .toList();
 
-    final taggedUserList = await IsrAppNavigator.goToSearchUserScreen(context,
-        socialUserList: selectedUsers);
+    final configMax = _tagPeopleConfig?.maxTaggedPeople ?? 20;
+    final mentionsOnOtherMedia = _mediaMentionedMap.entries
+        .where((e) => e.key != currentMediaPosition)
+        .fold<int>(0, (sum, e) => sum + e.value.length);
+    final maxSelectableThisSession =
+        (configMax - mentionsOnOtherMedia).clamp(0, configMax);
+
+    final taggedUserList = await IsrAppNavigator.goToSearchUserScreen(
+      context,
+      socialUserList: selectedUsers,
+      maxSelectablePeople: maxSelectableThisSession,
+    );
 
     if (taggedUserList.isEmptyOrNull) return;
     _setMentionedUserPosition(taggedUserList, mediaIndex, relativePosition);
