@@ -520,6 +520,9 @@ class IsrAppNavigator {
   static Future<List<SocialUserData>> goToSearchUserScreen(
     BuildContext context, {
     List<SocialUserData>? socialUserList,
+    /// Max selections allowed this session (e.g. remaining total tag slots).
+    /// When null, [SearchUserView] uses [TagPeopleScreenConfig.maxTaggedPeople].
+    int? maxSelectablePeople,
     TransitionType? transitionType,
   }) async {
     final page = MultiBlocProvider(
@@ -531,6 +534,7 @@ class IsrAppNavigator {
       ],
       child: SearchUserView(
         socialUserList: socialUserList ?? [],
+        maxSelectablePeople: maxSelectablePeople,
       ),
     );
 

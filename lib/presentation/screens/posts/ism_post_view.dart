@@ -71,7 +71,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   //caches
   static final Map<String, List<TabStateModel>> _centralTadData = {};
-  String get centralKey => widget.centralKey ?? '${runtimeType}_default_central';
+  late String centralKey;
   static Map<PostSectionType, List<TimeLineData>>? getLoadedTabReels(String centralKey) => _centralTadData[centralKey]?.asMap().map((key, value) => MapEntry(value.tabDataModel.postSectionType, value.tabDataModel.reelsDataList.toList()));
 
   /// When false, tab bodies stay a cheap placeholder so the push transition
@@ -85,6 +85,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   @override
   void initState() {
+    centralKey = widget.centralKey ?? '${runtimeType}_${DateTime.now().millisecondsSinceEpoch}_default_central';
     _socialPostBloc = context.getOrCreateBloc();
     if (_socialPostBloc.isClosed) {
       isrConfigureInjection();
@@ -347,30 +348,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                 ],
               ],
             ),
-          ),
-        ),
-      );
-
-  Widget _buildBackButton() => Positioned(
-        top: MediaQuery.of(context).padding.top +
-            (_backButtonConfig?.topOffset ?? 10),
-        left: (_backButtonConfig?.leftOffset ?? 16.0).responsiveDimension,
-        child: Container(
-          decoration: _backButtonConfig?.buttonDecoration ??
-              BoxDecoration(
-                color: Colors.black.applyOpacity(0.5),
-                shape: BoxShape.circle,
-              ),
-          child: IconButton(
-            icon: _backButtonConfig?.icon ??
-                Icon(
-                  Icons.arrow_back,
-                  color: _backButtonConfig?.iconColor ?? Colors.white,
-                  size: _backButtonConfig?.iconSize,
-                ),
-            onPressed: () {
-              context.pop();
-            },
           ),
         ),
       );

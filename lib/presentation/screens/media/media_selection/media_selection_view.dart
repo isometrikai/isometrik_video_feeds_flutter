@@ -34,6 +34,9 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
   late final MediaSelectionBloc _bloc;
   late ScrollController _scrollController;
 
+  Animation<double>? _routeTransitionAnimation;
+  AnimationStatusListener? _routeTransitionListener;
+
   @override
   void initState() {
     super.initState();
@@ -41,19 +44,52 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addObserver(this);
-    // Defer initial load to after the first frame so the push transition
-    // animates smoothly without jank from permission/album loading.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    // Wait until this route's push animation finishes before touching the bloc.
+    // Otherwise synchronous emits (e.g. loading) rebuild mid-slide and the
+    // transition appears to stall halfway.
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _scheduleInitialLoadAfterTransition());
+  }
+
+  void _removeRouteTransitionListener() {
+    if (_routeTransitionListener != null &&
+        _routeTransitionAnimation != null) {
+      _routeTransitionAnimation!.removeStatusListener(_routeTransitionListener!);
+      _routeTransitionListener = null;
+      _routeTransitionAnimation = null;
+    }
+  }
+
+  void _scheduleInitialLoadAfterTransition() {
+    if (!mounted) return;
+
+    void kickOff() {
       if (!mounted) return;
       _bloc.add(MediaSelectionInitialEvent(
         selectedMedia: widget.selectedMedia,
         config: widget.mediaSelectionConfig,
       ));
-    });
+    }
+
+    final animation = ModalRoute.of(context)?.animation;
+    if (animation == null || animation.status == AnimationStatus.completed) {
+      kickOff();
+      return;
+    }
+
+    _routeTransitionAnimation = animation;
+    _routeTransitionListener = (AnimationStatus status) {
+      if (status == AnimationStatus.completed) {
+        _removeRouteTransitionListener();
+        kickOff();
+      }
+    };
+    animation.addStatusListener(_routeTransitionListener!);
   }
 
   @override
   void dispose() {
+    _removeRouteTransitionListener();
     WidgetsBinding.instance.removeObserver(this);
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();

@@ -1,4 +1,4 @@
-import 'package:ism_video_reel_player/res/res.dart';
+import 'package:ism_video_reel_player_example/res/res.dart';
 
 class TranslationFile {
   TranslationFile._();

@@ -19,6 +19,8 @@ class ErrorHandler {
       return NetworkError(error.message, statusCode: error.statusCode);
     } else if (error is ApiError) {
       return AppError(error.message, statusCode: error.statusCode);
+    } else if (error is AppError) {
+      return error;
     } else {
       return AppError('An unexpected error occurred: $error', statusCode: 500);
     }
