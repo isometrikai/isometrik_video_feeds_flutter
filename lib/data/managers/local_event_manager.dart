@@ -123,6 +123,8 @@ class LocalEventQueue with WidgetsBindingObserver {
 
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   Timer? _batchTimer;
+  bool _isSending = false;
+  bool _sendAgainAfterCurrent = false;
 
   Talker? get _talker => IsmInjectionUtils.getOtherClassIfPresent();
 
@@ -147,8 +149,8 @@ class LocalEventQueue with WidgetsBindingObserver {
     await _connectivitySubscription?.cancel();
     _connectivitySubscription =
         Connectivity().onConnectivityChanged.listen((status) async {
-      if (status.contains(ConnectivityResult.none)) {
-        await flush();
+      if (!status.contains(ConnectivityResult.none)) {
+        await sendPendingEventsToBackend();
       }
     });
   }
@@ -156,22 +158,21 @@ class LocalEventQueue with WidgetsBindingObserver {
   /// Called when app lifecycle state changes
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      flush();
+    if (state == AppLifecycleState.resumed ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      sendPendingEventsToBackend();
     }
   }
 
   final Uuid _uuid = const Uuid();
 
-  void _addBackendEvent(String eventName, Map<String, dynamic> payload) async {
+  Future<void> _addBackendEvent(
+    String eventName,
+    Map<String, dynamic> payload,
+  ) async {
     try {
-      // Ensure box is open before accessing
-      if (!Hive.isBoxOpen(_boxName)) {
-        debugPrint('LocalEventQueue.addEvent: Box not open, opening now...');
-        await Hive.openBox<LocalEvent>(_boxName);
-        debugPrint('LocalEventQueue.addEvent: Box opened successfully');
-      }
-      final box = Hive.box<LocalEvent>(_boxName);
+      final box = await _openBox();
       final event = LocalEvent(
         id: _uuid.v4(),
         eventName: eventName,
@@ -190,22 +191,41 @@ class LocalEventQueue with WidgetsBindingObserver {
           await sendPendingEventsToBackend();
           return;
         }
-
-        if (box.length > 0 && _batchTimer == null) {
-          _batchTimer = Timer(_batchTimerDuration, () async {
-            _batchTimer = null;
-            await sendPendingEventsToBackend();
-          });
-          debugPrint(
-            '${runtimeType.toString()}: Started ${_batchTimerDuration.inMinutes}-min batch timer',
-          );
-        }
+        _scheduleBatchTimerIfNeeded();
       }
     } catch (e, stackTrace) {
       debugPrint('LocalEventQueue.addEvent: Error adding event: $e');
       debugPrint('StackTrace: $stackTrace');
       rethrow;
     }
+  }
+
+  Future<Box<LocalEvent>> _openBox() async {
+    if (!Hive.isBoxOpen(_boxName)) {
+      debugPrint('LocalEventQueue.addEvent: Box not open, opening now...');
+      await Hive.openBox<LocalEvent>(_boxName);
+      debugPrint('LocalEventQueue.addEvent: Box opened successfully');
+    }
+    return Hive.box<LocalEvent>(_boxName);
+  }
+
+  void _scheduleBatchTimerIfNeeded() {
+    if (_batchTimer != null) return;
+    final box = Hive.isBoxOpen(_boxName) ? Hive.box<LocalEvent>(_boxName) : null;
+    if (box == null || box.isEmpty) return;
+
+    _batchTimer = Timer(_batchTimerDuration, () {
+      _batchTimer = null;
+      sendPendingEventsToBackend();
+    });
+    debugPrint(
+      '${runtimeType.toString()}: Started ${_batchTimerDuration.inMinutes}-min batch timer',
+    );
+  }
+
+  void _cancelBatchTimer() {
+    _batchTimer?.cancel();
+    _batchTimer = null;
   }
 
   final _rudderIncludedEvents = [
@@ -236,10 +256,7 @@ class LocalEventQueue with WidgetsBindingObserver {
     IsrVideoReelConfig.socialConfig.socialCallBackConfig?.onSocialEventTriggered
         ?.call(socialEventModel);
     if (_backendEvents.contains(eventName)) {
-      _addBackendEvent(eventName, payload);
-    }
-    if (_backendEvents.contains(eventName)) {
-      _addBackendEvent(eventName, payload);
+      unawaited(_addBackendEvent(eventName, payload));
     }
     if (_rudderIncludedEvents.contains(eventName)) {
       final rudderProperties = RudderProperty();
@@ -282,68 +299,82 @@ class LocalEventQueue with WidgetsBindingObserver {
   }
 
   Future<void> sendPendingEventsToBackend() async {
-    _batchTimer?.cancel();
-    _batchTimer = null;
-    if (!Hive.isBoxOpen(_boxName)) {
-      debugPrint('${runtimeType.toString()}: Box not open, opening now...');
-      await Hive.openBox<LocalEvent>(_boxName);
-      debugPrint('${runtimeType.toString()}: Box opened successfully');
+    if (_isSending) {
+      _sendAgainAfterCurrent = true;
+      return;
     }
-    final box = Hive.box<LocalEvent>(_boxName);
-    final events = box.values.toList();
-    if (events.isEmpty) return;
-    final eventPayLoadList = <Map<String, dynamic>>[
-      for (final event in events) event.payload,
-    ];
+
+    _isSending = true;
     try {
-      _talker?.info(
-          '${runtimeType.toString()}: Sending Event -> Event Data : $eventPayLoadList');
-      final socialPostBloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
-      debugPrint(
-          '${runtimeType.toString()}: API Call Init -> payload:- $eventPayLoadList');
-      final result = await socialPostBloc.sendEventsToBackend(eventPayLoadList);
-      _talker?.info(
-          '${runtimeType.toString()}: Sending Event -> Event result status : ${result.statusCode}, isSuccess: ${result.isSuccess}, errorIfAny: ${result.error?.message}');
-      debugPrint(
-          '${runtimeType.toString()}: API Call reslt -> ${result.statusCode}, isSuccess: ${result.isSuccess}, errorIfAny: ${result.error?.message}');
-      if (result.isSuccess || result.statusCode == 422) {
+      do {
+        _sendAgainAfterCurrent = false;
+        _cancelBatchTimer();
+
+        if (!Hive.isBoxOpen(_boxName)) {
+          debugPrint('${runtimeType.toString()}: Box not open, opening now...');
+          await Hive.openBox<LocalEvent>(_boxName);
+        }
+        final box = Hive.box<LocalEvent>(_boxName);
+        final events = box.values.toList();
+        if (events.isEmpty) break;
+
+        final sentEventIds = events.map((e) => e.id).toList();
+        final eventPayLoadList = events.map((e) => e.payload).toList();
+
         try {
-          await flush();
+          _talker?.info(
+              '${runtimeType.toString()}: Sending ${events.length} event(s) -> $eventPayLoadList');
+          final socialPostBloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
+          debugPrint(
+              '${runtimeType.toString()}: API Call Init -> count: ${events.length}, payload:- $eventPayLoadList');
+          final result =
+              await socialPostBloc.sendEventsToBackend(eventPayLoadList);
+          _talker?.info(
+              '${runtimeType.toString()}: Sending Event -> Event result status : ${result.statusCode}, isSuccess: ${result.isSuccess}, errorIfAny: ${result.error?.message}');
+          debugPrint(
+              '${runtimeType.toString()}: API Call result -> ${result.statusCode}, isSuccess: ${result.isSuccess}, errorIfAny: ${result.error?.message}');
+          if (result.isSuccess || result.statusCode == 422) {
+            await _removeSentEvents(sentEventIds);
+            debugPrint(
+                '${runtimeType.toString()}: Removed ${sentEventIds.length} sent event(s), box length: ${box.length}',
+            );
+          }
         } catch (e) {
           debugPrint(
-            '${runtimeType.toString()} Error in callback: $e, skipping flush',
+              '${runtimeType.toString()} sendPendingEventsToBackend: $e',
           );
+          break;
         }
-      }
-    } catch (e) {
-      debugPrint('${runtimeType.toString()} _sendPendingEventsToBackend: $e');
+      } while (_sendAgainAfterCurrent);
+
+      _scheduleBatchTimerIfNeeded();
+    } finally {
+      _isSending = false;
     }
   }
 
-  Future<void> flush() async {
-    _batchTimer?.cancel();
-    _batchTimer = null;
-    // Ensure box is open before accessing
-    if (!Hive.isBoxOpen(_boxName)) {
-      return;
-    }
+  Future<void> _removeSentEvents(List<String> eventIds) async {
+    if (!Hive.isBoxOpen(_boxName) || eventIds.isEmpty) return;
+
     final box = Hive.box<LocalEvent>(_boxName);
-    debugPrint(
-        '${runtimeType.toString()} Box length before flushing: ${box.length}');
+    final idsToRemove = eventIds.toSet();
+    final keysToDelete = <dynamic>[];
 
-    final events = box.values.toList();
+    for (final key in box.keys) {
+      final event = box.get(key);
+      if (event != null && idsToRemove.contains(event.id)) {
+        keysToDelete.add(key);
+      }
+    }
 
-    if (events.isEmpty) return;
+    if (keysToDelete.isEmpty) return;
 
-    await box.clear();
-    debugPrint(
-        '${runtimeType.toString()} Box length after flushing: ${box.length}');
+    await box.deleteAll(keysToDelete);
   }
 
   /// cleanup
   void dispose() {
-    _batchTimer?.cancel();
-    _batchTimer = null;
+    _cancelBatchTimer();
     _connectivitySubscription?.cancel();
     _connectivitySubscription = null;
     WidgetsBinding.instance.removeObserver(this);
