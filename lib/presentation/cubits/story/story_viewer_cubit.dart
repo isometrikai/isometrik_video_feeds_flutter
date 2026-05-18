@@ -31,6 +31,16 @@ class StoryViewerCubit extends Cubit<StoryViewerState> {
     emit(state.copyWith(storyProgress: 0));
   }
 
+  void jumpToStory(int storyIndex) {
+    if (storyIndex == state.storyIndex) return;
+    emit(
+      state.copyWith(
+        storyIndex: storyIndex,
+        storyProgress: 0,
+      ),
+    );
+  }
+
   bool markViewedIfNeeded(String storyId) {
     final next = state.markedViewedWith(storyId);
     if (identical(next, state.markedViewedStoryIds)) return false;

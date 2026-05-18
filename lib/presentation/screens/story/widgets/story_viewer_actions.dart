@@ -21,6 +21,7 @@ class StoryViewerActions {
     required String? highlightId,
     int? highlightStoryCount,
     required VoidCallback onAdvanceAfterMutation,
+    ValueChanged<String>? onHighlightStoryRemoved,
   }) async {
     if (story == null || story.id.isEmpty) return;
     if (!canManageCurrentStory && !canReactToStory) return;
@@ -131,12 +132,24 @@ class StoryViewerActions {
     }
     if (action == 'remove_story_from_highlight') {
       if (trimmedHighlightId.isEmpty) return;
+      // Last story in highlight: delete the highlight (not remove story) to avoid
+      // empty highlights and API edge cases.
+      if (singleStoryHighlight) {
+        final ok = await storyCubit.deleteHighlight(trimmedHighlightId);
+        if (!context.mounted || !ok) return;
+        Navigator.of(context).pop();
+        return;
+      }
       await storyCubit.removeStoryFromHighlight(
         highlightId: trimmedHighlightId,
         storyId: story.id,
       );
       if (!context.mounted) return;
-      onAdvanceAfterMutation();
+      if (onHighlightStoryRemoved != null) {
+        onHighlightStoryRemoved(story.id);
+      } else {
+        onAdvanceAfterMutation();
+      }
       return;
     }
     if (action == 'delete_story') {

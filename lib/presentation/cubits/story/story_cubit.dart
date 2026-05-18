@@ -522,6 +522,9 @@ class StoryCubit extends Cubit<StoryState> {
       isLoading: true,
       request: request,
     );
+    if (result.isSuccess) {
+      _notifyHostHighlightsChanged();
+    }
     emit(result.isSuccess
         ? const StoryActionSuccess('create_highlight')
         : StoryError(result.error?.message ?? 'Unable to create highlight.'));
@@ -546,6 +549,7 @@ class StoryCubit extends Cubit<StoryState> {
       emit(StoryError(result.error?.message ?? 'Unable to create highlight.'));
       return false;
     }
+    _notifyHostHighlightsChanged();
     emit(const StoryActionSuccess('create_highlight'));
     return true;
   }
@@ -559,6 +563,9 @@ class StoryCubit extends Cubit<StoryState> {
       highlightId: highlightId,
       request: request,
     );
+    if (result.isSuccess) {
+      _notifyHostHighlightsChanged();
+    }
     emit(result.isSuccess
         ? const StoryActionSuccess('update_highlight')
         : StoryError(result.error?.message ?? 'Unable to update highlight.'));
@@ -569,6 +576,9 @@ class StoryCubit extends Cubit<StoryState> {
       isLoading: false,
       highlightId: highlightId,
     );
+    if (result.isSuccess) {
+      _notifyHostHighlightsChanged();
+    }
     emit(result.isSuccess
         ? const StoryActionSuccess('delete_highlight')
         : StoryError(result.error?.message ?? 'Unable to delete highlight.'));
@@ -586,6 +596,7 @@ class StoryCubit extends Cubit<StoryState> {
     );
     if (result.isSuccess) {
       await getStoryHighlightById(highlightId);
+      _notifyHostHighlightsChanged();
       emit(const StoryActionSuccess('add_stories_to_highlight'));
     } else {
       emit(StoryError(
@@ -650,6 +661,7 @@ class StoryCubit extends Cubit<StoryState> {
     );
     if (result.isSuccess) {
       final fresh = await getStoryHighlightById(highlightId);
+      _notifyHostHighlightsChanged();
       emit(const StoryActionSuccess('add_story_to_highlight'));
       return fresh;
     }
@@ -681,9 +693,17 @@ class StoryCubit extends Cubit<StoryState> {
       highlightId: highlightId,
       storyId: storyId,
     );
+    if (result.isSuccess) {
+      _notifyHostHighlightsChanged();
+    }
     emit(result.isSuccess
         ? const StoryActionSuccess('remove_story_from_highlight')
         : StoryError(result.error?.message ?? 'Unable to remove story from highlight.'));
+  }
+
+  void _notifyHostHighlightsChanged() {
+    IsrVideoReelConfig.storyConfig?.storyCallbackConfig.onHighlightsChanged
+        ?.call();
   }
 
   void _removeStoryLocally(String storyId) {

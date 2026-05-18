@@ -33,6 +33,7 @@ class _StoryViewerViewState extends State<StoryViewerView> {
   static const String _storyLoveReactionType = 'love';
 
   late final StoryViewerCubit _viewerCubit;
+  late List<StoryGroup> _groups;
   Timer? _imageTimer;
   VideoPlayerController? _video;
 
@@ -44,13 +45,22 @@ class _StoryViewerViewState extends State<StoryViewerView> {
   @override
   void initState() {
     super.initState();
+    _groups = widget.groups.map(_copyStoryGroup).toList();
     _viewerCubit = StoryViewerCubit(
       initialGroupIndex: widget.initialGroupIndex,
-      totalGroups: widget.groups.length,
+      totalGroups: _groups.length,
     );
     _loadViewerUserId();
     WidgetsBinding.instance.addPostFrameCallback((_) => _syncMedia());
   }
+
+  StoryGroup _copyStoryGroup(StoryGroup group) => StoryGroup(
+        userId: group.userId,
+        username: group.username,
+        avatarUrl: group.avatarUrl,
+        isViewed: group.isViewed,
+        stories: List<StoryData>.from(group.stories),
+      );
 
   Future<void> _loadViewerUserId() async {
     try {
@@ -69,10 +79,53 @@ class _StoryViewerViewState extends State<StoryViewerView> {
     super.dispose();
   }
 
-  StoryGroup? get _group => widget.groups.isEmpty ||
-          _viewerCubit.state.groupIndex >= widget.groups.length
+  StoryGroup? get _group => _groups.isEmpty ||
+          _viewerCubit.state.groupIndex >= _groups.length
       ? null
-      : widget.groups[_viewerCubit.state.groupIndex];
+      : _groups[_viewerCubit.state.groupIndex];
+
+  int get _highlightStoryCount {
+    if ((widget.highlightId ?? '').trim().isEmpty) return 0;
+    return _group?.stories.length ?? 0;
+  }
+
+  void _onHighlightStoryRemoved(String storyId) {
+    final removeIndex = _group?.stories.indexWhere((s) => s.id == storyId) ?? -1;
+    setState(() {
+      _groups = _groups
+          .map(
+            (g) => StoryGroup(
+              userId: g.userId,
+              username: g.username,
+              avatarUrl: g.avatarUrl,
+              isViewed: g.isViewed,
+              stories: g.stories.where((s) => s.id != storyId).toList(),
+            ),
+          )
+          .where((g) => g.stories.isNotEmpty)
+          .toList();
+    });
+    if (!mounted) return;
+    if (_groups.isEmpty) {
+      Navigator.of(context).pop();
+      return;
+    }
+    final g = _group;
+    if (g == null || g.stories.isEmpty) {
+      Navigator.of(context).pop();
+      return;
+    }
+    var nextIndex = _viewerCubit.state.storyIndex;
+    if (removeIndex >= 0 && removeIndex < nextIndex) {
+      nextIndex -= 1;
+    } else if (removeIndex == nextIndex) {
+      nextIndex = nextIndex.clamp(0, g.stories.length - 1);
+    }
+    if (nextIndex != _viewerCubit.state.storyIndex) {
+      _viewerCubit.jumpToStory(nextIndex);
+    }
+    _syncMedia();
+  }
 
   StoryData? get _story {
     final g = _group;
@@ -167,7 +220,7 @@ class _StoryViewerViewState extends State<StoryViewerView> {
       Navigator.of(context).pop();
       return;
     }
-    final result = _viewerCubit.goNext(widget.groups);
+    final result = _viewerCubit.goNext(_groups);
     if (result == StoryViewerNavResult.advanced) {
       _syncMedia();
       return;
@@ -180,7 +233,7 @@ class _StoryViewerViewState extends State<StoryViewerView> {
   void _goPrev() {
     _imageTimer?.cancel();
     _video?.removeListener(_onVideoTick);
-    final result = _viewerCubit.goPrev(widget.groups);
+    final result = _viewerCubit.goPrev(_groups);
     if (result == StoryViewerNavResult.movedBack) {
       _syncMedia();
     }
@@ -298,9 +351,12 @@ class _StoryViewerViewState extends State<StoryViewerView> {
         },
         highlightId: widget.highlightId,
         highlightStoryCount: (widget.highlightId ?? '').trim().isNotEmpty
-            ? (_group?.stories.length ?? 0)
+            ? _highlightStoryCount
             : null,
         onAdvanceAfterMutation: _goNext,
+        onHighlightStoryRemoved: (widget.highlightId ?? '').trim().isNotEmpty
+            ? _onHighlightStoryRemoved
+            : null,
       );
     } finally {
       if (mounted) _resumePlayback();

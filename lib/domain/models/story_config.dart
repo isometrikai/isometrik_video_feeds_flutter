@@ -149,6 +149,7 @@ class StoryCallbackConfig {
     this.onStoryActionError,
     this.onHighlightTap,
     this.onHighlightOpenDiagnostics,
+    this.onHighlightsChanged,
     this.uploadMode = StoryUploadMode.hostProvidedUrl,
   });
 
@@ -174,6 +175,8 @@ class StoryCallbackConfig {
   final Future<void> Function(StoryHighlightData highlight)? onHighlightTap;
   final void Function(HighlightOpenDiagnostics diagnostics)?
       onHighlightOpenDiagnostics;
+  /// Host app should refresh profile highlight strip / list.
+  final void Function()? onHighlightsChanged;
   final StoryUploadMode uploadMode;
 }
 
