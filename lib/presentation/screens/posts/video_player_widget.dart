@@ -99,8 +99,56 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     _startControllerReadyCheck();
   }
 
+  /// Sync play/pause with widget state; detach controller when UI is disposed.
+  void _syncPlaybackState() {
+    final controller = _videoPlayerController;
+
+    if (_isDisposed || !mounted) {
+      if (controller == null) return;
+      _detachControllerListeners();
+      try {
+        if (controller.isInitialized && !controller.isDisposed) {
+          unawaited(controller.pause());
+        }
+        widget.videoCacheManager.detachedFromWidget(widget.mediaUrl, controller);
+      } catch (e) {
+        debugPrint('⚠️ VideoPlayerWidget: Error detaching on dispose: $e');
+      }
+      _videoPlayerController = null;
+      return;
+    }
+
+    if (controller == null || !controller.isInitialized || controller.isDisposed) {
+      return;
+    }
+
+    final shouldPlay = _isVisible && !_isManuallyPaused;
+
+    try {
+      if (shouldPlay) {
+        if (!controller.isPlaying) {
+          unawaited(controller.setVolume(widget.isMuted ? 0.0 : 1.0));
+          unawaited(controller.play());
+          widget.videoCacheManager.markAsVisible(widget.mediaUrl);
+          _startStuckVideoDetection();
+        }
+      } else {
+        if (controller.isPlaying) {
+          unawaited(controller.pause());
+        }
+        widget.videoCacheManager.markAsNotVisible(widget.mediaUrl);
+        _stopStuckVideoDetection();
+      }
+    } catch (e) {
+      debugPrint('⚠️ VideoPlayerWidget: Error syncing playback state: $e');
+    }
+  }
+
   /// Called when the video playing state changes
   void _onPlayingStateChanged() {
+    if (_isDisposed || !mounted) return;
+
+    _syncPlaybackState();
     if (_isDisposed || !mounted) return;
 
     // If video started playing, ensure UI shows the video player
@@ -144,6 +192,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         _controllerReadyCheckTimer?.cancel();
         _videoPlayerController = cachedController;
         _setupVideoController().then((_) {
+          _syncPlaybackState();
           if (mounted) {
             setState(() {
               _isInitialized = true;
@@ -193,10 +242,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         if (controller != null && controller is IVideoPlayerController) {
           _videoPlayerController = controller;
         }
-        if (_isDisposed && _videoPlayerController != null && _videoPlayerController?.isInitialized == true) { // if widget is disposed, detach controller
-          widget.videoCacheManager.detachedFromWidget(widget.mediaUrl, _videoPlayerController);
-          _videoPlayerController = null;
-        }
+        _syncPlaybackState();
+        if (_videoPlayerController == null) return;
       }
 
       // Setup only if controller is now initialized
@@ -204,6 +251,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           _videoPlayerController!.isInitialized &&
           !_videoPlayerController!.isDisposed) {
         await _setupVideoController();
+        _syncPlaybackState();
         if (mounted) {
           setState(() {
             _isInitialized = true;
@@ -272,16 +320,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         _videoPlayerController!.setVolume(widget.isMuted ? 0.0 : 1.0),
       ]);
 
-      // If widget is visible when initialized, start playing immediately
-      if (_isVisible) {
-        // Don't await play - let it start immediately
-        unawaited(_videoPlayerController!.play());
-        widget.videoCacheManager.markAsVisible(widget.mediaUrl);
-        // Start stuck video detection to handle videos that don't start
-        _startStuckVideoDetection();
-      } else {
-        widget.videoCacheManager.markAsNotVisible(widget.mediaUrl);
-      }
+      _syncPlaybackState();
     } catch (e) {
       debugPrint('❌ VideoPlayerWidget: Error setting up controller: $e');
     }
@@ -431,34 +470,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       widget.onVisibilityChanged(_isVisible);
     }
 
-    // Control playback based on visibility (only if not manually paused)
-    // Safety check: ensure controller is valid and not disposed
-    if (!_isDisposed &&
-        _videoPlayerController != null &&
-        _videoPlayerController!.isInitialized &&
-        !_videoPlayerController!.isDisposed) {
-      try {
-        if (_isVisible &&
-            !_videoPlayerController!.isPlaying &&
-            !_isManuallyPaused) {
-          // Ensure volume is set correctly before playing
-          unawaited(_videoPlayerController!.setVolume(widget.isMuted ? 0.0 : 1.0));
-          // OPTIMIZATION: Don't await - fire and forget for instant response
-          unawaited(_videoPlayerController!.play());
-          widget.videoCacheManager.markAsVisible(widget.mediaUrl);
-          // Start stuck video detection for visible video
-          _startStuckVideoDetection();
-        } else if (!_isVisible && _videoPlayerController!.isPlaying) {
-          // Video is not visible - pause it
-          unawaited(_videoPlayerController!.pause());
-          widget.videoCacheManager.markAsNotVisible(widget.mediaUrl);
-          // Stop stuck video detection when not visible
-          _stopStuckVideoDetection();
-        }
-      } catch (e) {
-        debugPrint('⚠️ VideoPlayerWidget: Error in visibility change handler: $e');
-      }
-    } else if (_isVisible) {
+    _syncPlaybackState();
+
+    if (_isVisible) {
       // OPTIMIZATION: If visible but not initialized/initializing, start initialization immediately
       if (!_isInitializing && !_isInitialized) {
         debugPrint('🔄 VideoPlayerWidget: Visible but not initialized, starting initialization...');
@@ -650,22 +664,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   void dispose() {
     debugPrint('⚠️ state VideoPlayerWidget: (${widget.logIndex}) dispose');
     _isDisposed = true;
-    // Cancel timers
     _stopStuckVideoDetection();
     _controllerReadyCheckTimer?.cancel();
-    // Safety check: ensure controller is valid and not already disposed
-    if (_videoPlayerController != null &&
-        _videoPlayerController!.isInitialized &&
-        !_videoPlayerController!.isDisposed) {
-      try {
-        _detachControllerListeners();
-        _videoPlayerController!.pause();
-        widget.videoCacheManager.detachedFromWidget(widget.mediaUrl, _videoPlayerController);
-      } catch (e) {
-        debugPrint('⚠️ VideoPlayerWidget: Error during dispose: $e');
-      }
-      // Don't dispose controller here - let cache manager handle it
-    }
+    _syncPlaybackState();
     super.dispose();
   }
 
