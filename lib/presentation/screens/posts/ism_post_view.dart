@@ -556,7 +556,16 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       onPressMoreButton: (reelsData) async {
         if (reelsData.postData is TimeLineData) {
           _socialPostBloc.add(PlayPauseVideoEvent(play: false));
-          await _handleMoreOptions(reelsData.postData as TimeLineData, tabState.tabDataModel);
+          final postId = reelsData.postId;
+          if (postId != null && postId.isNotEmpty) {
+            final postData = (reelsData.postData is TimeLineData &&
+                    (reelsData.postData as TimeLineData).id == postId)
+                ? reelsData.postData as TimeLineData
+                : await _socialActionCubit.getAsyncPostById(postId);
+            if (postData != null) {
+              await _handleMoreOptions(postData, tabState.tabDataModel);
+            }
+          }
           _socialPostBloc.add(PlayPauseVideoEvent(play: true));
         }
       },
