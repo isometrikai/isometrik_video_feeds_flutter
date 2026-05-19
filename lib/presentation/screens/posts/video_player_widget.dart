@@ -29,6 +29,7 @@ class VideoPlayerWidget extends StatefulWidget {
     this.videoProgressCallBack,
     this.isPreloaded = false,
     this.logIndex,
+    this.isParentVisible,
   });
 
   final String mediaUrl;
@@ -41,6 +42,7 @@ class VideoPlayerWidget extends StatefulWidget {
   final PostHelperCallBacks? postHelperCallBacks;
   final bool isPreloaded;
   final Function(Duration totalDuration, Duration curentDuration)? videoProgressCallBack;
+  final bool Function()? isParentVisible;
   final String? logIndex;
 
   @override
@@ -122,7 +124,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       return;
     }
 
-    final shouldPlay = _isVisible && !_isManuallyPaused;
+    final shouldPlay = _isVisible && !_isManuallyPaused && (widget.isParentVisible?.call() ?? true);
 
     try {
       if (shouldPlay) {

@@ -887,6 +887,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         },
         isPreloaded: _isPreloaded,
         logIndex: logIndex,
+        isParentVisible: widget.reelsConfig.isTabVisible,
       );
 
   void _toggleMentions() {
