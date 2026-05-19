@@ -117,6 +117,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   var _isDataLoading = false;
   var _detailsCurrentPage = 1;
   var _commentPage = 1;
+  static const int _mentionedUsersPageLimit = 20;
 
   final List<ProductDataModel> _detailsProductList = [];
 
@@ -1000,10 +1001,19 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     final apiResult = await _getMentionedUsersUseCase.executeGetMentionedUser(
       isLoading: false,
       postId: event.postId,
-      page: 1,
-      pageLimit: 10,
+      page: event.page,
+      pageLimit: _mentionedUsersPageLimit,
     );
-    event.onComplete?.call(apiResult.data?.data ?? []);
+
+    final users = apiResult.data?.data ?? [];
+    final totalPages = apiResult.data?.totalPages?.toInt() ?? 0;
+    final currentPage = apiResult.data?.page?.toInt() ?? event.page;
+    final hasMore = totalPages > 0
+        ? currentPage < totalPages
+        : users.length >= _mentionedUsersPageLimit;
+
+    event.onComplete?.call(users, hasMore);
+
     if (apiResult.isError) {
       ErrorHandler.showAppError(
           appError: apiResult.error,

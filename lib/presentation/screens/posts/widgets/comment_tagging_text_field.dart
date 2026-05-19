@@ -1056,7 +1056,6 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
                     fontSize: 14,
                   ),
               border: InputBorder.none,
-              counterText: '',
               contentPadding: const EdgeInsets.all(16),
             ),
         onTap: widget.onTap,

@@ -81,6 +81,7 @@ class TabStateModel {
   TabStateModel({
     required this.tabDataModel,
     bool isLoading = false,
+    this.isVisible = true,
   }) {
     _isLoading = ValueNotifier<bool>(isLoading && tabDataModel.reelsDataList.isEmpty);
   }
@@ -90,6 +91,7 @@ class TabStateModel {
   }
 
   bool get isLoading => _isLoading.value;
+  bool isVisible;
 
   ValueNotifier<bool> get loadingNotifier => _isLoading;
 

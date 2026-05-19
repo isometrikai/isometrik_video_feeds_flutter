@@ -535,6 +535,7 @@ class TagPeopleScreenConfig {
     this.mediaCarouselConfig,
     this.tagButtonConfig,
     this.taggedPeopleListConfig,
+    this.maxTaggedPeople,
   });
 
   final AppBarConfig? appBarConfig;
@@ -542,11 +543,15 @@ class TagPeopleScreenConfig {
   final TagButtonConfig? tagButtonConfig;
   final TaggedPeopleListConfig? taggedPeopleListConfig;
 
+  /// Maximum people that can be tagged on the post in total (all media).
+  final int? maxTaggedPeople;
+
   TagPeopleScreenConfig copyWith({
     AppBarConfig? appBarConfig,
     MediaCarouselConfig? mediaCarouselConfig,
     TagButtonConfig? tagButtonConfig,
     TaggedPeopleListConfig? taggedPeopleListConfig,
+    int? maxTaggedPeople,
   }) =>
       TagPeopleScreenConfig(
         appBarConfig: appBarConfig ?? this.appBarConfig,
@@ -554,6 +559,7 @@ class TagPeopleScreenConfig {
         tagButtonConfig: tagButtonConfig ?? this.tagButtonConfig,
         taggedPeopleListConfig:
             taggedPeopleListConfig ?? this.taggedPeopleListConfig,
+        maxTaggedPeople: maxTaggedPeople ?? this.maxTaggedPeople,
       );
 }
 

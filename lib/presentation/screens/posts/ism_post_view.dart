@@ -14,6 +14,7 @@ import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart' hide RefreshIndicator;
+import 'package:visibility_detector/visibility_detector.dart';
 
 class IsmPostView extends StatefulWidget {
   const IsmPostView({
@@ -74,8 +75,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   //caches
   static final Map<String, List<TabStateModel>> _centralTadData = {};
-  String get centralKey =>
-      widget.centralKey ?? '${runtimeType}_default_central';
+  late String centralKey;
   static Map<PostSectionType, List<TimeLineData>>? getLoadedTabReels(
           String centralKey) =>
       _centralTadData[centralKey]?.asMap().map((key, value) => MapEntry(
@@ -94,6 +94,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   @override
   void initState() {
+    centralKey = widget.centralKey ?? '${runtimeType}_${DateTime.now().millisecondsSinceEpoch}_default_central';
     _socialPostBloc = context.getOrCreateBloc();
     if (_socialPostBloc.isClosed) {
       isrConfigureInjection();
@@ -115,7 +116,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     _tabDataModelList.clear();
     _tabDataModelList.addAll(widget.tabDataModelList
         .map((tab) => TabStateModel(
-            isLoading: tab.reelsDataList.isEmpty, tabDataModel: tab))
+              isLoading: tab.reelsDataList.isEmpty,
+              tabDataModel: tab,
+            ))
         .toList());
     _currentIndex = (_tabDataModelList.length > (widget.startTabIndex ?? 0))
         ? widget.startTabIndex?.toInt() ?? 0
@@ -413,30 +416,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         ),
       );
 
-  // Widget _buildBackButton() => Positioned(
-  //       top: MediaQuery.of(context).padding.top +
-  //           (_backButtonConfig?.topOffset ?? 10),
-  //       left: (_backButtonConfig?.leftOffset ?? 16.0).responsiveDimension,
-  //       child: Container(
-  //         decoration: _backButtonConfig?.buttonDecoration ??
-  //             BoxDecoration(
-  //               color: Colors.black.applyOpacity(0.5),
-  //               shape: BoxShape.circle,
-  //             ),
-  //         child: IconButton(
-  //           icon: _backButtonConfig?.icon ??
-  //               Icon(
-  //                 Icons.arrow_back,
-  //                 color: _backButtonConfig?.iconColor ?? Colors.white,
-  //                 size: _backButtonConfig?.iconSize,
-  //               ),
-  //           onPressed: () {
-  //             context.pop();
-  //           },
-  //         ),
-  //       ),
-  //     );
-
   Widget _buildSingleTabTopBar() {
     final rightWidget = _tabBarConfig?.rightWidget;
     final showRight = rightWidget != null;
@@ -473,20 +452,28 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildTabView(TabStateModel tab) =>
-      BlocBuilder<SocialPostBloc, SocialPostState>(
-          buildWhen: (previousState, currentState) =>
-              currentState is SocialPostLoadedState &&
-                  currentState.postType == tab.tabDataModel.postSectionType ||
-              currentState is PostLoadingState &&
-                  currentState.postType == tab.tabDataModel.postSectionType,
-          builder: (BuildContext context, SocialPostState state) =>
-              ValueListenableBuilder(
-                valueListenable: tab.loadingNotifier,
-                builder: (context, value, child) => value
-                    ? _buildInitialLoadingView()
-                    : _buildTabBarView(tab, _tabDataModelList.indexOf(tab)),
-              ));
+  Widget _buildTabView(TabStateModel tab) => VisibilityDetector(
+        key: Key(
+            'reels_tab_${tab.tabDataModel.title}_${tab.tabDataModel.postSectionType.name}_${tab.tabDataModel.tagValue}_${tab.tabDataModel.userId}_${tab.tabDataModel.postId}_'),
+        onVisibilityChanged: (VisibilityInfo info) {
+          final isVisible = info.visibleFraction >= 1.0; // Fully visible
+          tab.isVisible = isVisible;
+          debugPrint('reels_tab: isVisible: ${tab.isVisible}');
+        },
+        child: BlocBuilder<SocialPostBloc, SocialPostState>(
+            buildWhen: (previousState, currentState) =>
+                currentState is SocialPostLoadedState &&
+                    currentState.postType == tab.tabDataModel.postSectionType ||
+                currentState is PostLoadingState &&
+                    currentState.postType == tab.tabDataModel.postSectionType,
+            builder: (BuildContext context, SocialPostState state) =>
+                ValueListenableBuilder(
+                  valueListenable: tab.loadingNotifier,
+                  builder: (context, value, child) => value
+                      ? _buildInitialLoadingView()
+                      : _buildTabBarView(tab, _tabDataModelList.indexOf(tab)),
+                )),
+      );
 
   Widget _buildTabBarView(TabStateModel tabState, int index) => PostItemWidget(
         key: ValueKey(_getUniqueKey(tabState.tabDataModel, index)),
@@ -510,7 +497,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         reelsDataList: tabState.tabDataModel.reelsDataList
             .map((_) => getReelData(_, loggedInUserId: _loggedInUserId))
             .toList(),
-        reelsConfig: _getReelsConfig(tabState.tabDataModel),
+        reelsConfig: _getReelsConfig(tabState),
         onLoadMore: () async => await _handleLoadMore(tabState),
         onRefresh: () async {
           var result = await _handlePostRefresh(tabState);
@@ -526,8 +513,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         postSectionType: tabState.tabDataModel.postSectionType,
       );
 
-  ReelsConfig _getReelsConfig(TabDataModel tabData) => ReelsConfig(
+  ReelsConfig _getReelsConfig(TabStateModel tabState) => ReelsConfig(
       postConfig: _postConfig,
+      isTabVisible: () => tabState.isVisible,
       overlayPadding: _postConfig.postUIConfig?.overlayPadding,
       autoMoveNextMedia: _postConfig.autoMoveToNextMedia ||
           _tabConfig.autoMoveToNextPost ||
@@ -536,7 +524,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         if (placeList.isListEmptyOrNull) return;
         if (placeList.length == 1) {
           _goToPlaceDetailsView(
-            tabData.postSectionType,
+            tabState.tabDataModel.postSectionType,
             placeList.first,
             TagType.place,
             reelData.postId ?? '',
@@ -572,7 +560,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           if (mention.tag.isStringEmptyOrNull == false) {
             _redirectToHashtag(
               mention.tag,
-              tabData.postSectionType,
+              tabState.tabDataModel.postSectionType,
               reelData.postId ?? '',
             );
             return null;
@@ -590,13 +578,13 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         } else if (reelData.postData is TimeLineData) {
           _socialPostBloc.add(PlayPauseVideoEvent(play: false));
           final res = await _showMentionList(mentionList,
-              tabData.postSectionType, reelData.postData as TimeLineData);
+              tabState.tabDataModel.postSectionType, reelData.postData as TimeLineData);
           _socialPostBloc.add(PlayPauseVideoEvent(play: true));
           return res;
         }
         return mentionList;
       },
-      onCreatePost: (reelsData) async => await _handleCreatePost(tabData),
+      onCreatePost: (reelsData) async => await _handleCreatePost(tabState.tabDataModel),
       onTapUserProfile: (reelsData) async {
         final postData =
             await _socialActionCubit.getAsyncPostById(reelsData.postId ?? '');
@@ -619,7 +607,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           final result = await _handleCommentAction(
               reelsData.postId ?? '',
               totalCommentsCount,
-              tabData,
+              tabState.tabDataModel,
               reelsData.postData is TimeLineData
                   ? reelsData.postData as TimeLineData
                   : null);
@@ -631,7 +619,16 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       onPressMoreButton: (reelsData) async {
         if (reelsData.postData is TimeLineData) {
           _socialPostBloc.add(PlayPauseVideoEvent(play: false));
-          await _handleMoreOptions(reelsData.postData as TimeLineData, tabData);
+          final postId = reelsData.postId;
+          if (postId != null && postId.isNotEmpty) {
+            final postData = (reelsData.postData is TimeLineData &&
+                    (reelsData.postData as TimeLineData).id == postId)
+                ? reelsData.postData as TimeLineData
+                : await _socialActionCubit.getAsyncPostById(postId);
+            if (postData != null) {
+              await _handleMoreOptions(postData, tabState.tabDataModel);
+            }
+          }
           _socialPostBloc.add(PlayPauseVideoEvent(play: true));
         }
       },
@@ -1033,18 +1030,12 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
             builder: (_) => ReportReasonDialog(
               reasonFor: ReasonsFor.socialPost,
               contentId: postDataModel.id ?? '',
-              showToastOnSuccess: false,
+              showToastOnSuccess: true,
               onReportInvoked: (reason) {
                 completer.complete(true);
               },
               onReportCanceled: (reason) {
                 completer.complete(false);
-              },
-              onReportSuccess: (reason) {
-                Utility.showInSnackBar(
-                    IsrTranslationFile.postReportedSuccessfully, context,
-                    isSuccessIcon: true);
-                _logReportEvent(postDataModel, reason.name ?? '', tabData);
               },
             ),
           );

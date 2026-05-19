@@ -861,12 +861,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         media: _reelData.mediaMetaDataList[_currentPageNotifier.value],
         key: _currentVideoPlayerKey,
         logIndex: '${widget.index}-0}',
+        isPreloaded: _isPreloaded,
       );
     }
   }
 
   Widget _buildVideoContent(
-          {required MediaMetaData media, Key? key, String? logIndex}) =>
+          {required MediaMetaData media, Key? key, String? logIndex, bool isPreloaded = false}) =>
       VideoPlayerWidget(
         key: key,
         mediaUrl: media.mediaUrl,
@@ -887,8 +888,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           media.durationSeconds = totalDuration.inSeconds;
           _updatePostProgress();
         },
-        isPreloaded: _isPreloaded,
+        isPreloaded: isPreloaded,
         logIndex: logIndex,
+        isParentVisible: widget.reelsConfig.isTabVisible,
       );
 
   void _toggleMentions() {
@@ -1125,21 +1127,24 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   Widget _buildMediaCounter(int currentPage) {
     if (!_hasMultipleMedia) return const SizedBox.shrink();
 
-    return Container(
-      padding: IsrDimens.edgeInsetsSymmetric(
-        horizontal: IsrDimens.eight,
-        vertical: IsrDimens.four,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.black.changeOpacity(0.6),
-        borderRadius: BorderRadius.circular(IsrDimens.twelve),
-      ),
-      child: Text(
-        '${currentPage + 1}/${_reelData.mediaMetaDataList.length}',
-        style: _textStyleConfig?.mediaCounterStyle ??
-            IsrStyles.white12.copyWith(
-              fontWeight: FontWeight.w500,
-            ),
+    return Material(
+      type: MaterialType.transparency,
+      child: Container(
+        padding: IsrDimens.edgeInsetsSymmetric(
+          horizontal: IsrDimens.eight,
+          vertical: IsrDimens.four,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.black.changeOpacity(0.6),
+          borderRadius: BorderRadius.circular(IsrDimens.twelve),
+        ),
+        child: Text(
+          '${currentPage + 1}/${_reelData.mediaMetaDataList.length}',
+          style: _textStyleConfig?.mediaCounterStyle ??
+              IsrStyles.white12.copyWith(
+                fontWeight: FontWeight.w500,
+              ),
+        ),
       ),
     );
   }
@@ -2342,6 +2347,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                     IsrStyles.primaryText12.copyWith(
                       fontWeight: FontWeight.w600,
                       color: IsrColors.colorF4F4F4,
+                      shadows: _textShadows,
                     ),
               ),
             ),
@@ -2564,6 +2570,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           media: media,
           key: _videoPlayerKeys[index],
           logIndex: '${widget.index}-$index}',
+          isPreloaded: _isPreloaded || index != _currentPageNotifier.value
         ),
       );
     }
