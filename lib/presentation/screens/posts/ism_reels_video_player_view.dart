@@ -859,12 +859,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         media: _reelData.mediaMetaDataList[_currentPageNotifier.value],
         key: _currentVideoPlayerKey,
         logIndex: '${widget.index}-0}',
+        isPreloaded: _isPreloaded,
       );
     }
   }
 
   Widget _buildVideoContent(
-          {required MediaMetaData media, Key? key, String? logIndex}) =>
+          {required MediaMetaData media, Key? key, String? logIndex, bool isPreloaded = false}) =>
       VideoPlayerWidget(
         key: key,
         mediaUrl: media.mediaUrl,
@@ -885,8 +886,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           media.durationSeconds = totalDuration.inSeconds;
           _updatePostProgress();
         },
-        isPreloaded: _isPreloaded,
+        isPreloaded: isPreloaded,
         logIndex: logIndex,
+        isParentVisible: widget.reelsConfig.isTabVisible,
       );
 
   void _toggleMentions() {
@@ -2566,6 +2568,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           media: media,
           key: _videoPlayerKeys[index],
           logIndex: '${widget.index}-$index}',
+          isPreloaded: _isPreloaded || index != _currentPageNotifier.value
         ),
       );
     }

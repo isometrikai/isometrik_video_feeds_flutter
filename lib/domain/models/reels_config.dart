@@ -23,6 +23,7 @@ class ReelsConfig {
     this.onTapMentionTag,
     this.onTapPlace,
     this.autoMoveNextMedia = true,
+    required this.isTabVisible,
     required this.postConfig,
   });
 
@@ -51,6 +52,7 @@ class ReelsConfig {
   final Future<void> Function(ReelsData reelsData)? onTapReport;
   final Future<void> Function(ReelsData reelsData)? onPressMoreButton;
   final Future<ReelsData?> Function(ReelsData reelsData)? onCreatePost;
+  final bool Function() isTabVisible;
 
   final void Function(ReelsData reelsData, int index)? onReelsChange;
 
