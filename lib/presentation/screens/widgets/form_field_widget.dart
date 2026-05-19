@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 
 /// A form field widget which will handle form ui.
@@ -199,7 +200,7 @@ class FormFieldWidget extends StatelessWidget {
                     child: Text(
                       '$currentLength/$maxLength${(showCountCharacterText ?? false) ? ' ${IsrTranslationFile.characters}' : ''}', // Display the current length and max length
                       style: IsrStyles.primaryText12.copyWith(
-                        color: IsrColors.color828282,
+                        color: IsrColors.secondaryTextColor,
                       ),
                     ),
                   )
@@ -231,15 +232,17 @@ class FormFieldWidget extends StatelessWidget {
           contentPadding: contentPadding ??
               IsrDimens.edgeInsetsSymmetric(
                   horizontal: IsrDimens.twelve, vertical: IsrDimens.fourteen),
-          fillColor: fillColor ?? IsrColors.white,
+          fillColor: fillColor ??
+              IsrVideoReelConfig.socialConfig.colorsConfig?.dialogColor ??
+              IsrColors.white,
           border: formBorder ?? defaultBorder(borderColor: borderColor),
           enabledBorder: formBorder ?? defaultBorder(borderColor: borderColor),
           hintText: hintText,
           isDense: true,
           hintStyle: hintStyle ??
               IsrStyles.secondaryText14.copyWith(
-                  // color: IsrColors.color848484,
-                  color: IsrColors.colorB5B3B3),
+                color: IsrColors.secondaryTextColor,
+              ),
           errorText: errorText,
           errorStyle: errorStyle ??
               IsrStyles.secondaryText10.copyWith(
@@ -266,7 +269,7 @@ class FormFieldWidget extends StatelessWidget {
         keyboardType: textInputType,
         style: formStyle ??
             IsrStyles.secondaryText14.copyWith(
-              color: IsrColors.color333333,
+              color: IsrColors.primaryTextColor,
               fontWeight: FontWeight.w500,
               height: 1.1,
             ),

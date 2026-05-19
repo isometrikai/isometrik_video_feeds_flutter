@@ -181,9 +181,6 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         }
       } else {
         for (final postTab in tabList) {
-          // If the host supplied a seeded list (Hive cache), surface it
-          // immediately as a loaded state so the UI shows the cached posts
-          // while the API call below runs in the background.
           final hasSeededList = postTab.postList.isNotEmpty;
           if (hasSeededList) {
             add(LoadPostsEvent(
@@ -206,8 +203,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
               ));
             }
           }
-          // Always hit the API on initial mount so new items can be
-          // prepended on top of the seeded cached list.
+
           if (!postTab.postSectionType.isUserDependent || isUserLoggedIn) {
             await _callGetTabPost(
               postTab,

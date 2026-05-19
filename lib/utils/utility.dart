@@ -1060,7 +1060,11 @@ class Utility {
       isDismissible: isDismissible,
       isScrollControlled: isScrollControlled,
       backgroundColor: backgroundColor ??
-          (isDarkBG ? Theme.of(contextToUse).primaryColor : IsrColors.white),
+          (isDarkBG
+              ? Theme.of(contextToUse).primaryColor
+              : (IsrVideoReelConfig.socialConfig.colorsConfig
+                      ?.bottomSheetBackgroundColor ??
+                  IsrColors.white)),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(

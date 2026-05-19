@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/res/res.dart';
+import 'package:ism_video_reel_player/utils/utility.dart';
 
 class StoryViewerHeader extends StatelessWidget {
   const StoryViewerHeader({
@@ -11,15 +12,24 @@ class StoryViewerHeader extends StatelessWidget {
     required this.canReactToStory,
     required this.onClose,
     required this.onMoreActionsPressed,
+    this.showAddToHighlight = false,
+    this.inHighlightViewer = false,
+    this.onAddToHighlightPressed,
+    this.onDeleteStoryPressed,
   });
 
   final StoryGroup? group;
   final StoryData? story;
   final bool canManageCurrentStory;
+
   /// Viewers who can send reactions (e.g. love) see the same overflow entry point.
   final bool canReactToStory;
   final VoidCallback onClose;
   final VoidCallback onMoreActionsPressed;
+  final bool showAddToHighlight;
+  final bool inHighlightViewer;
+  final VoidCallback? onAddToHighlightPressed;
+  final VoidCallback? onDeleteStoryPressed;
 
   static TextStyle _usernameStyle(BuildContext context) =>
       IsrStyles.primaryText16Bold.copyWith(
@@ -33,9 +43,35 @@ class StoryViewerHeader extends StatelessWidget {
         ],
       );
 
+  static TextStyle _timestampStyle(BuildContext context) =>
+      IsrStyles.getTextStyles(
+        color: Colors.white.withValues(alpha: 0.75),
+        fontSize: IsrDimens.thirteen,
+      ).copyWith(
+        shadows: const [
+          Shadow(
+            offset: Offset(0, 1),
+            blurRadius: 3,
+            color: Color(0x80000000),
+          ),
+        ],
+      );
+
+  static String? _storyTimestamp(StoryData? story) {
+    final raw = story?.createdAt.trim() ?? '';
+    if (raw.isEmpty) return null;
+    try {
+      final parsed = DateTime.parse(raw).toLocal();
+      return Utility.formatPublishedTimeAgo(parsed);
+    } catch (_) {
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final g = group;
+    final timestamp = _storyTimestamp(story);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -58,22 +94,50 @@ class StoryViewerHeader extends StatelessWidget {
                   g.username.isEmpty ? 'Story' : g.username,
                   style: _usernameStyle(context),
                 ),
-                if (story != null && story!.caption.isNotEmpty)
-                  _StoryCaptionReadMore(
-                    key: ValueKey(story!.caption),
-                    caption: story!.caption,
+                if (timestamp != null)
+                  Padding(
+                    padding: EdgeInsets.only(top: IsrDimens.two),
+                    child: Text(
+                      timestamp,
+                      style: _timestampStyle(context),
+                    ),
                   ),
               ],
             ),
           ),
-          if (canManageCurrentStory || canReactToStory)
-            IconButton(
-              icon: const Icon(Icons.more_horiz, color: Colors.white),
+          if (showAddToHighlight && onAddToHighlightPressed != null) ...[
+            _StoryOverlayIconButton(
+              icon: Icons.star_border_rounded,
+              onPressed: onAddToHighlightPressed!,
+            ),
+            SizedBox(width: IsrDimens.six),
+          ],
+          if (canManageCurrentStory &&
+              onDeleteStoryPressed != null &&
+              !inHighlightViewer) ...[
+            _StoryOverlayIconButton(
+              icon: Icons.delete_outline_rounded,
+              onPressed: onDeleteStoryPressed!,
+            ),
+            SizedBox(width: IsrDimens.six),
+          ],
+          if (canManageCurrentStory && inHighlightViewer) ...[
+            _StoryOverlayIconButton(
+              icon: Icons.more_horiz,
               onPressed: onMoreActionsPressed,
             ),
+            SizedBox(width: IsrDimens.six),
+          ],
+          if (!canManageCurrentStory) ...[
+            _StoryOverlayIconButton(
+              icon: Icons.more_horiz,
+              onPressed: onMoreActionsPressed,
+            ),
+            SizedBox(width: IsrDimens.six),
+          ],
         ],
-        IconButton(
-          icon: const Icon(Icons.close, color: Colors.white),
+        _StoryOverlayIconButton(
+          icon: Icons.close,
           onPressed: onClose,
         ),
       ],
@@ -81,90 +145,26 @@ class StoryViewerHeader extends StatelessWidget {
   }
 }
 
-class _StoryCaptionReadMore extends StatefulWidget {
-  const _StoryCaptionReadMore({
-    super.key,
-    required this.caption,
+class _StoryOverlayIconButton extends StatelessWidget {
+  const _StoryOverlayIconButton({
+    required this.icon,
+    required this.onPressed,
   });
 
-  final String caption;
+  final IconData icon;
+  final VoidCallback onPressed;
 
   @override
-  State<_StoryCaptionReadMore> createState() => _StoryCaptionReadMoreState();
-}
-
-class _StoryCaptionReadMoreState extends State<_StoryCaptionReadMore> {
-  static const int _collapsedMaxLines = 2;
-  bool _expanded = false;
-
-  TextStyle _captionStyle(BuildContext context) => IsrStyles.getTextStyles(
-        color: Colors.white.withValues(alpha: 0.92),
-        fontSize: IsrDimens.thirteen,
-      ).copyWith(
-        shadows: const [
-          Shadow(
-            offset: Offset(0, 1),
-            blurRadius: 3,
-            color: Color(0x80000000),
+  Widget build(BuildContext context) => Material(
+        color: Colors.black.withValues(alpha: 0.35),
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onPressed,
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Icon(icon, color: Colors.white, size: 22),
           ),
-        ],
-      );
-
-  TextStyle _toggleStyle(BuildContext context) =>
-      _captionStyle(context).copyWith(
-        fontWeight: FontWeight.w600,
-        color: Colors.white,
-      );
-
-  @override
-  Widget build(BuildContext context) => LayoutBuilder(
-        builder: (context, constraints) {
-          final style = _captionStyle(context);
-          final painter = TextPainter(
-            text: TextSpan(text: widget.caption, style: style),
-            maxLines: _collapsedMaxLines,
-            textDirection: Directionality.of(context),
-          )..layout(maxWidth: constraints.maxWidth);
-          final exceeds = painter.didExceedMaxLines;
-
-          return Padding(
-            padding: EdgeInsets.only(top: IsrDimens.four),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  widget.caption,
-                  style: style,
-                  maxLines: _expanded ? null : _collapsedMaxLines,
-                  overflow:
-                      _expanded ? TextOverflow.visible : TextOverflow.ellipsis,
-                ),
-                if (exceeds && !_expanded)
-                  Padding(
-                    padding: EdgeInsets.only(top: IsrDimens.two),
-                    child: GestureDetector(
-                      onTap: () => setState(() => _expanded = true),
-                      child: Text(
-                        IsrTranslationFile.viewMore,
-                        style: _toggleStyle(context),
-                      ),
-                    ),
-                  ),
-                if (exceeds && _expanded)
-                  Padding(
-                    padding: EdgeInsets.only(top: IsrDimens.two),
-                    child: GestureDetector(
-                      onTap: () => setState(() => _expanded = false),
-                      child: Text(
-                        IsrTranslationFile.viewLess,
-                        style: _toggleStyle(context),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          );
-        },
+        ),
       );
 }

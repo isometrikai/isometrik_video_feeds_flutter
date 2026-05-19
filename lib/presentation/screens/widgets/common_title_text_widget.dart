@@ -9,7 +9,7 @@ class CommonTitleTextWidget extends StatelessWidget {
     super.key,
     required this.title,
     this.showCloseIcon = true,
-    this.titleColor = Colors.black,
+    this.titleColor,
     this.removePadding = false,
     this.titleCenter = false,
     this.titleAlign = TextAlign.left,
@@ -17,7 +17,7 @@ class CommonTitleTextWidget extends StatelessWidget {
   });
   final String title;
   final bool showCloseIcon;
-  final Color titleColor;
+  final Color? titleColor;
   final bool removePadding;
   final bool titleCenter;
   final TextAlign titleAlign;
@@ -42,7 +42,7 @@ class CommonTitleTextWidget extends StatelessWidget {
                 style: IsrStyles.getTextStyles(
                   fontSize: IsrDimens.eighteen,
                   fontWeight: FontWeight.w700,
-                  color: titleColor,
+                  color: titleColor ?? IsrColors.primaryTextColor,
                 ),
               ),
             ),

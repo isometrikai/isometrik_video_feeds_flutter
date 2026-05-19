@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 
 class MoreOptionsBottomSheet extends StatefulWidget {
@@ -22,11 +23,23 @@ class MoreOptionsBottomSheet extends StatefulWidget {
 }
 
 class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
+  Color get _backgroundColor =>
+      IsrVideoReelConfig.socialConfig.colorsConfig?.bottomSheetBackgroundColor ??
+      IsrColors.white;
+
+  Color get _textColor => IsrColors.primaryTextColor;
+
+  Color get _secondaryTextColor => IsrColors.secondaryTextColor;
+
+  Color get _deleteTextColor => IsrColors.error;
+
+  Color get _dividerColor => IsrColors.dividerColor;
+
   @override
   Widget build(BuildContext context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+        decoration: BoxDecoration(
+          color: _backgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
         ),
         child: SafeArea(
           child: Column(
@@ -48,7 +61,7 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
                     await widget.onEditPost?.call();
                   },
                 ),
-                const Divider(height: 1),
+                Divider(height: 1, color: _dividerColor),
                 _buildOption(
                   title: IsrTranslationFile.postInsight,
                   onTap: () async {
@@ -56,21 +69,20 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
                     await widget.onShowPostInsight?.call();
                   },
                 ),
-                const Divider(height: 1),
+                Divider(height: 1, color: _dividerColor),
                 _buildOption(
                   title: IsrTranslationFile.delete,
+                  textColor: _deleteTextColor,
                   onTap: () async {
                     Navigator.pop(context, true);
                     await widget.onDeletePost?.call();
                   },
-                )
+                ),
               ],
-
-              const Divider(height: 1),
-
-              /// Cancel
+              Divider(height: 1, color: _dividerColor),
               _buildOption(
                 title: IsrTranslationFile.cancel,
+                textColor: _secondaryTextColor,
                 onTap: () => Navigator.pop(context),
               ),
             ],
@@ -81,6 +93,7 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
   Widget _buildOption({
     required String title,
     required VoidCallback onTap,
+    Color? textColor,
   }) =>
       ListTile(
         titleAlignment: ListTileTitleAlignment.center,
@@ -89,7 +102,7 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
           textAlign: TextAlign.center,
           style: IsrStyles.primaryText16.copyWith(
             fontWeight: FontWeight.w500,
-            color: IsrColors.black,
+            color: textColor ?? _textColor,
           ),
         ),
         onTap: onTap,

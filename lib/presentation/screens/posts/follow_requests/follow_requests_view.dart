@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/follow_requests/follow_requests_theme_resolver.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
@@ -15,21 +16,28 @@ class FollowRequestsView extends StatelessWidget {
   Widget build(BuildContext context) => DefaultTabController(
         length: 2,
         child: Scaffold(
-          backgroundColor: IsrColors.white,
+          backgroundColor: FollowRequestsThemeResolver.scaffoldBackground,
           appBar: IsmCustomAppBarWidget(
             titleText: IsrTranslationFile.followRequests,
-            backgroundColor: IsrColors.white,
+            backgroundColor: FollowRequestsThemeResolver.scaffoldBackground,
+            iconColor: FollowRequestsThemeResolver.textPrimary,
+            titleColor: FollowRequestsThemeResolver.textPrimary,
+            statusBarIconBrightness:
+                FollowRequestsThemeResolver.statusBarIconBrightness,
+            statusBarBrightness:
+                FollowRequestsThemeResolver.statusBarBrightness,
             showDivider: true,
-            dividerColor: IsrColors.colorEFEFEF,
+            dividerColor: FollowRequestsThemeResolver.divider,
           ),
           body: Column(
             children: [
               Material(
-                color: IsrColors.white,
+                color: FollowRequestsThemeResolver.surface,
                 child: TabBar(
-                  labelColor: IsrColors.appColor,
-                  unselectedLabelColor: IsrColors.color9B9B9B,
-                  indicatorColor: IsrColors.appColor,
+                  labelColor: FollowRequestsThemeResolver.primary,
+                  unselectedLabelColor:
+                      FollowRequestsThemeResolver.textSecondary,
+                  indicatorColor: FollowRequestsThemeResolver.primary,
                   tabs: const [
                     Tab(text: IsrTranslationFile.incoming),
                     Tab(text: IsrTranslationFile.outgoing),
@@ -75,7 +83,7 @@ class FollowRequestsView extends StatelessWidget {
                                   .read<FollowRequestsCubit>()
                                   .acceptRequest(item),
                               textStyle: IsrStyles.primaryText12.copyWith(
-                                color: IsrColors.white,
+                                color: FollowRequestsThemeResolver.onPrimary,
                               ),
                             ),
                           ],
@@ -144,8 +152,9 @@ class _RequestList extends StatelessWidget {
           child: Text(
             emptyMessage,
             textAlign: TextAlign.center,
-            style:
-                IsrStyles.primaryText14.copyWith(color: IsrColors.color9B9B9B),
+            style: IsrStyles.primaryText14.copyWith(
+              color: FollowRequestsThemeResolver.textSecondary,
+            ),
           ),
         ),
       );
@@ -161,7 +170,7 @@ class _RequestList extends StatelessWidget {
         return false;
       },
       child: RefreshIndicator(
-        color: IsrColors.appColor,
+        color: FollowRequestsThemeResolver.primary,
         onRefresh: onRefresh,
         child: ListView.separated(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -169,7 +178,7 @@ class _RequestList extends StatelessWidget {
           itemCount: items.length,
           separatorBuilder: (_, __) => Divider(
             height: 1,
-            color: IsrColors.colorEFEFEF,
+            color: FollowRequestsThemeResolver.divider,
             indent: 16.responsiveDimension + 48.responsiveDimension + 12,
           ),
           itemBuilder: (context, index) {
@@ -216,7 +225,10 @@ class _RequestList extends StatelessWidget {
                                   u.username.isEmptyOrNull
                                       ? '@unKnownUser'
                                       : u.username!,
-                                  style: IsrStyles.primaryText16Bold,
+                                  style: IsrStyles.primaryText16Bold.copyWith(
+                                    color:
+                                        FollowRequestsThemeResolver.textPrimary,
+                                  ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -227,7 +239,8 @@ class _RequestList extends StatelessWidget {
                                           : u.displayName!
                                       : u.fullName!,
                                   style: IsrStyles.primaryText14.copyWith(
-                                    color: IsrColors.color9B9B9B,
+                                    color: FollowRequestsThemeResolver
+                                        .textSecondary,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,

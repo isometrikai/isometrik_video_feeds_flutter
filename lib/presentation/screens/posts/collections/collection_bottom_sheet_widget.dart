@@ -212,7 +212,7 @@ class _CollectionBottomSheetWidgetState
                       IsrTranslationFile.collections,
                       style: IsrStyles.primaryText16.copyWith(
                         fontWeight: FontWeight.w500,
-                        color: IsrColors.black,
+                        color: CollectionThemeResolver.textPrimary,
                       ),
                     ),
                     CustomTextButtonWidget(
@@ -252,8 +252,12 @@ class _CollectionBottomSheetWidgetState
                     builder: (context, state) {
                       if (state is UserCollectionLoadingState) {
                         return Shimmer.fromColors(
-                          baseColor: Colors.grey[300]!,
-                          highlightColor: Colors.grey[100]!,
+                          baseColor: CollectionThemeResolver.isDark
+                              ? CollectionThemeResolver.mutedSurface
+                              : Colors.grey[300]!,
+                          highlightColor: CollectionThemeResolver.isDark
+                              ? CollectionThemeResolver.imagePickerBackground
+                              : Colors.grey[100]!,
                           child: _buildShimmerTile(),
                         );
                       } else if (state is UserCollectionFetchState) {
@@ -376,9 +380,9 @@ class _CollectionBottomSheetWidgetState
         fillColor: WidgetStateProperty.resolveWith<Color>(
           (Set<WidgetState> states) => states.contains(WidgetState.selected)
               ? Theme.of(context).primaryColor
-              : IsrColors.white,
+              : CollectionThemeResolver.surfaceCard,
         ),
-        side: const BorderSide(color: IsrColors.colorDBDBDB),
+        side: BorderSide(color: CollectionThemeResolver.border),
         value: isSelected,
         title: GestureDetector(
           onTap: () async {
@@ -401,7 +405,7 @@ class _CollectionBottomSheetWidgetState
                 height: 50.responsiveDimension,
                 width: 50.responsiveDimension,
                 decoration: BoxDecoration(
-                  color: IsrColors.colorF5F5F5,
+                  color: CollectionThemeResolver.imagePickerBackground,
                   borderRadius: IsrDimens.borderRadiusAll(IsrDimens.eight),
                 ),
                 child: collectionImage.isNotEmpty
@@ -428,6 +432,7 @@ class _CollectionBottomSheetWidgetState
                       collection.name ?? '',
                       style: IsrStyles.primaryText14.copyWith(
                         fontWeight: FontWeight.w600,
+                        color: CollectionThemeResolver.textPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -443,7 +448,7 @@ class _CollectionBottomSheetWidgetState
                         return Text(
                           '${(collection.isPrivate ?? false) ? IsrTranslationFile.private : IsrTranslationFile.public}', // count not present in api yet • $totalCount ${totalCount <= 1 ? "Item" : "Items"}',
                           style: IsrStyles.primaryText12.copyWith(
-                            color: '767676'.toColor(),
+                            color: CollectionThemeResolver.textSecondary,
                           ),
                         );
                       },
@@ -465,8 +470,12 @@ class _CollectionBottomSheetWidgetState
           borderRadius: IsrDimens.borderRadiusAll(IsrDimens.four),
         ),
         onChanged: null,
-        fillColor: WidgetStateProperty.all(IsrColors.white),
-        side: BorderSide(color: IsrColors.colorDBDBDB, width: IsrDimens.two),
+        fillColor:
+            WidgetStateProperty.all(CollectionThemeResolver.surfaceCard),
+        side: BorderSide(
+          color: CollectionThemeResolver.border,
+          width: IsrDimens.two,
+        ),
         value: false,
         title: Row(
           children: [
@@ -474,7 +483,7 @@ class _CollectionBottomSheetWidgetState
               height: IsrDimens.thirtyTwo,
               width: IsrDimens.thirtyTwo,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: CollectionThemeResolver.imagePickerBackground,
                 borderRadius: IsrDimens.borderRadiusAll(IsrDimens.eight),
               ),
             ),
@@ -485,13 +494,13 @@ class _CollectionBottomSheetWidgetState
                 Container(
                   height: IsrDimens.ten,
                   width: IsrDimens.hundred,
-                  color: Colors.white,
+                  color: CollectionThemeResolver.imagePickerBackground,
                 ),
                 IsrDimens.boxHeight(IsrDimens.four),
                 Container(
                   height: IsrDimens.ten,
                   width: IsrDimens.eighty,
-                  color: Colors.white,
+                  color: CollectionThemeResolver.imagePickerBackground,
                 ),
               ],
             ),
@@ -528,7 +537,7 @@ class _CollectionBottomSheetWidgetState
                 fit: BoxFit.cover,
                 height: 50.responsiveDimension,
                 width: 50.responsiveDimension,
-                border: Border.all(color: Colors.grey.shade200),
+                border: Border.all(color: CollectionThemeResolver.border),
                 borderRadius: IsrDimens.borderRadiusAll(8.responsiveDimension),
               ),
               12.responsiveHorizontalSpace,
@@ -539,6 +548,7 @@ class _CollectionBottomSheetWidgetState
                     IsrTranslationFile.savedPosts,
                     style: IsrStyles.primaryText12.copyWith(
                       fontWeight: FontWeight.w600,
+                      color: CollectionThemeResolver.textPrimary,
                     ),
                   ),
                   4.responsiveVerticalSpace,
@@ -548,11 +558,13 @@ class _CollectionBottomSheetWidgetState
                       Text(
                         'Private',
                         style: IsrStyles.primaryText10.copyWith(
-                          color: '767676'.color,
+                          color: CollectionThemeResolver.textSecondary,
                         ),
                       ),
                       DotCircle(
-                          color: '767676'.color, size: 2.responsiveDimension),
+                        color: CollectionThemeResolver.textSecondary,
+                        size: 2.responsiveDimension,
+                      ),
                       ValueListenableBuilder<int>(
                         valueListenable: totalPostNotifier,
                         builder: (context, totalPost, child) =>
@@ -621,7 +633,7 @@ class _CollectionBottomSheetWidgetState
                                     ? 'No items'
                                     : '$totalPost ${totalPost > 1 ? 'items' : 'item'}',
                                 style: IsrStyles.primaryText10.copyWith(
-                                  color: '767676'.color,
+                                  color: CollectionThemeResolver.textSecondary,
                                 ),
                               );
                             },

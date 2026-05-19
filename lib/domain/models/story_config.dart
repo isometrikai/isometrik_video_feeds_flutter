@@ -56,8 +56,20 @@ class StoryUiConfig {
     this.hasUnviewedRingColor,
     this.seenBorderColor,
     this.unseenBorderColor,
+    this.unseenRingGradientColors,
     this.titleStyle,
+    this.addStoryLabelStyle,
+    this.addStoryAccentColor,
+    this.addStoryTitle,
     this.showTitles = true,
+    this.showAddStoryTile = true,
+    this.bottomSheetBackgroundColor,
+    this.bottomSheetTextColor,
+    this.bottomSheetSecondaryTextColor,
+    this.destructiveColor,
+    this.successColor,
+    this.primaryButtonColor,
+    this.onPrimaryButtonColor,
   });
 
   final EdgeInsetsGeometry? containerPadding;
@@ -68,8 +80,22 @@ class StoryUiConfig {
   final Color? hasUnviewedRingColor;
   final Color? seenBorderColor;
   final Color? unseenBorderColor;
+  /// Gradient colors for unviewed story / highlight rings (host theme).
+  final List<Color>? unseenRingGradientColors;
   final TextStyle? titleStyle;
+  final TextStyle? addStoryLabelStyle;
+  final Color? addStoryAccentColor;
+  final String? addStoryTitle;
   final bool showTitles;
+  /// When true, shows the first "Add Story" tile with a + badge on the strip.
+  final bool showAddStoryTile;
+  final Color? bottomSheetBackgroundColor;
+  final Color? bottomSheetTextColor;
+  final Color? bottomSheetSecondaryTextColor;
+  final Color? destructiveColor;
+  final Color? successColor;
+  final Color? primaryButtonColor;
+  final Color? onPrimaryButtonColor;
 
   StoryUiConfig copyWith({
     EdgeInsetsGeometry? containerPadding,
@@ -80,8 +106,20 @@ class StoryUiConfig {
     Color? hasUnviewedRingColor,
     Color? seenBorderColor,
     Color? unseenBorderColor,
+    List<Color>? unseenRingGradientColors,
     TextStyle? titleStyle,
+    TextStyle? addStoryLabelStyle,
+    Color? addStoryAccentColor,
+    String? addStoryTitle,
     bool? showTitles,
+    bool? showAddStoryTile,
+    Color? bottomSheetBackgroundColor,
+    Color? bottomSheetTextColor,
+    Color? bottomSheetSecondaryTextColor,
+    Color? destructiveColor,
+    Color? successColor,
+    Color? primaryButtonColor,
+    Color? onPrimaryButtonColor,
   }) =>
       StoryUiConfig(
         containerPadding: containerPadding ?? this.containerPadding,
@@ -92,8 +130,25 @@ class StoryUiConfig {
         hasUnviewedRingColor: hasUnviewedRingColor ?? this.hasUnviewedRingColor,
         seenBorderColor: seenBorderColor ?? this.seenBorderColor,
         unseenBorderColor: unseenBorderColor ?? this.unseenBorderColor,
+        unseenRingGradientColors:
+            unseenRingGradientColors ?? this.unseenRingGradientColors,
         titleStyle: titleStyle ?? this.titleStyle,
+        addStoryLabelStyle: addStoryLabelStyle ?? this.addStoryLabelStyle,
+        addStoryAccentColor: addStoryAccentColor ?? this.addStoryAccentColor,
+        addStoryTitle: addStoryTitle ?? this.addStoryTitle,
         showTitles: showTitles ?? this.showTitles,
+        showAddStoryTile: showAddStoryTile ?? this.showAddStoryTile,
+        bottomSheetBackgroundColor:
+            bottomSheetBackgroundColor ?? this.bottomSheetBackgroundColor,
+        bottomSheetTextColor:
+            bottomSheetTextColor ?? this.bottomSheetTextColor,
+        bottomSheetSecondaryTextColor: bottomSheetSecondaryTextColor ??
+            this.bottomSheetSecondaryTextColor,
+        destructiveColor: destructiveColor ?? this.destructiveColor,
+        successColor: successColor ?? this.successColor,
+        primaryButtonColor: primaryButtonColor ?? this.primaryButtonColor,
+        onPrimaryButtonColor:
+            onPrimaryButtonColor ?? this.onPrimaryButtonColor,
       );
 }
 
@@ -150,6 +205,8 @@ class StoryCallbackConfig {
     this.onHighlightTap,
     this.onHighlightOpenDiagnostics,
     this.onHighlightsChanged,
+    this.resolveCurrentUserAvatarUrl,
+    this.onReportStory,
     this.uploadMode = StoryUploadMode.hostProvidedUrl,
   });
 
@@ -177,6 +234,10 @@ class StoryCallbackConfig {
       onHighlightOpenDiagnostics;
   /// Host app should refresh profile highlight strip / list.
   final void Function()? onHighlightsChanged;
+  /// Host provides the signed-in user's profile image for the Add Story tile.
+  final Future<String?> Function()? resolveCurrentUserAvatarUrl;
+  /// Called when a viewer reports someone else's story (not shown for own stories).
+  final Future<void> Function(StoryData story)? onReportStory;
   final StoryUploadMode uploadMode;
 }
 

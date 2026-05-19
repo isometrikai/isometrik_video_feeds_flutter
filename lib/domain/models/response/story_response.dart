@@ -133,6 +133,19 @@ class StoryGroup {
       stories.isEmpty ? isViewed : stories.every((s) => s.isViewed);
 }
 
+int _storyViewCountFromMap(
+  Map<String, dynamic>? engagementMap,
+  Map<String, dynamic> map,
+) {
+  final fromEngagement = engagementMap?['view_count'];
+  if (fromEngagement is num) return fromEngagement.toInt();
+  if (fromEngagement is String) return int.tryParse(fromEngagement) ?? 0;
+  final topLevel = map['view_count'];
+  if (topLevel is num) return topLevel.toInt();
+  if (topLevel is String) return int.tryParse(topLevel) ?? 0;
+  return 0;
+}
+
 class StoryData {
   StoryData({
     this.id = '',
@@ -146,6 +159,8 @@ class StoryData {
     this.createdAt = '',
     this.expiresAt = '',
     this.isViewed = false,
+    this.isReacted = false,
+    this.viewCount = 0,
   });
 
   factory StoryData.fromMap(Map<String, dynamic> map) {
@@ -153,6 +168,9 @@ class StoryData {
     final mediaMap = media is Map<String, dynamic> ? media : null;
     final user = map['user'];
     final userMap = user is Map<String, dynamic> ? user : null;
+    final engagement = map['engagement_metrics'];
+    final engagementMap =
+        engagement is Map<String, dynamic> ? engagement : null;
     return StoryData(
       id: map['id']?.toString() ?? '',
       userId: map['user_id']?.toString() ?? '',
@@ -173,8 +191,41 @@ class StoryData {
       createdAt: map['created_at']?.toString() ?? '',
       expiresAt: map['expires_at']?.toString() ?? '',
       isViewed: map['is_viewed'] as bool? ?? false,
+      isReacted: map['is_reacted'] as bool? ?? false,
+      viewCount: _storyViewCountFromMap(engagementMap, map),
     );
   }
+
+  StoryData copyWith({
+    String? id,
+    String? userId,
+    String? mediaUrl,
+    String? mediaType,
+    String? caption,
+    String? username,
+    String? fullName,
+    String? avatarUrl,
+    String? createdAt,
+    String? expiresAt,
+    bool? isViewed,
+    bool? isReacted,
+    int? viewCount,
+  }) =>
+      StoryData(
+        id: id ?? this.id,
+        userId: userId ?? this.userId,
+        mediaUrl: mediaUrl ?? this.mediaUrl,
+        mediaType: mediaType ?? this.mediaType,
+        caption: caption ?? this.caption,
+        username: username ?? this.username,
+        fullName: fullName ?? this.fullName,
+        avatarUrl: avatarUrl ?? this.avatarUrl,
+        createdAt: createdAt ?? this.createdAt,
+        expiresAt: expiresAt ?? this.expiresAt,
+        isViewed: isViewed ?? this.isViewed,
+        isReacted: isReacted ?? this.isReacted,
+        viewCount: viewCount ?? this.viewCount,
+      );
 
   final String id;
   final String userId;
@@ -187,6 +238,8 @@ class StoryData {
   final String createdAt;
   final String expiresAt;
   final bool isViewed;
+  final bool isReacted;
+  final int viewCount;
 }
 
 class StoryHighlightData {

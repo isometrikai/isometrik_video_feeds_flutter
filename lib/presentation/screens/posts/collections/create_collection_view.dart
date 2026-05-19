@@ -230,15 +230,15 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
                           children: [
                             Row(
                               children: [
-                                const AppImage.svg(
+                                AppImage.svg(
                                   AssetConstants.icLockIcon,
-                                  color: IsrColors.color333333,
+                                  color: CollectionThemeResolver.textPrimary,
                                 ),
                                 8.responsiveHorizontalSpace,
                                 Text(
                                   IsrTranslationFile.makeThisCollectionPrivate,
                                   style: IsrStyles.secondaryText14.copyWith(
-                                    color: IsrColors.color333333,
+                                    color: CollectionThemeResolver.textPrimary,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -360,7 +360,7 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
         radius: 6.responsiveDimension,
         dashSpace: 6.responsiveDimension,
         dashWidth: 6.responsiveDimension,
-        color: IsrColors.colorDBDBDB,
+        color: CollectionThemeResolver.border,
         padding: IsrDimens.edgeInsetsAll(12.responsiveDimension),
         child: SizedBox(
           // color: IsrColors.colorEEEEEE,
@@ -369,7 +369,7 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
               width: 98.responsiveDimension,
               height: 98.responsiveDimension,
               decoration: BoxDecoration(
-                color: IsrColors.colorF4F4F4,
+                color: CollectionThemeResolver.imagePickerBackground,
                 borderRadius: IsrDimens.borderRadiusAll(IsrDimens.eight),
               ),
               child: ValueListenableBuilder2<String, File?>(
@@ -455,9 +455,12 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
 
   Widget _buildFieldLabel(String label) => Padding(
         padding: IsrDimens.edgeInsets(bottom: IsrDimens.four),
-        child: Text(label,
-            style:
-                IsrStyles.primaryText12.copyWith(color: IsrColors.color4A4A4A)),
+        child: Text(
+          label,
+          style: IsrStyles.primaryText12.copyWith(
+            color: CollectionThemeResolver.textSecondary,
+          ),
+        ),
       );
 
   Widget _buildInputField(
@@ -473,7 +476,14 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
     final maxCharacterLimit =
         maxLength ?? (maxLines > 1 ? 240 : TextField.noMaxLength);
     return FormFieldWidget(
-      formStyle: IsrStyles.primaryText14.copyWith(color: IsrColors.color333333),
+      fillColor: CollectionThemeResolver.inputFill,
+      borderColor: CollectionThemeResolver.border,
+      formStyle: IsrStyles.primaryText14.copyWith(
+        color: CollectionThemeResolver.textPrimary,
+      ),
+      hintStyle: IsrStyles.secondaryText14.copyWith(
+        color: CollectionThemeResolver.textSecondary,
+      ),
       autoFocus: false,
       focusNode: focusNode,
       onChange: onChange,

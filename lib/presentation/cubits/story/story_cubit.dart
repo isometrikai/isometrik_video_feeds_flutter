@@ -319,22 +319,32 @@ class StoryCubit extends Cubit<StoryState> {
     _viewed.removeWhere((g) => g.userId == userId);
     final username = await _localDataUseCase.getUserName();
     final avatarUrl = await _localDataUseCase.getProfilePic();
-    final normalized = stories
-        .map(
-          (s) => s.userId.isEmpty
-              ? StoryData(
-                  id: s.id,
-                  userId: userId,
-                  mediaUrl: s.mediaUrl,
-                  mediaType: s.mediaType,
-                  caption: s.caption,
-                  createdAt: s.createdAt,
-                  expiresAt: s.expiresAt,
-                  isViewed: s.isViewed,
-                )
-              : s,
-        )
-        .toList();
+    final existingById = <String, StoryData>{};
+    for (final g in [..._unViewed, ..._viewed]) {
+      if (g.userId != userId) continue;
+      for (final s in g.stories) {
+        existingById[s.id] = s;
+      }
+    }
+
+    StoryData mergeWithFeed(StoryData s) {
+      final base =
+          s.userId.isEmpty ? s.copyWith(userId: userId) : s;
+      final existing = existingById[base.id];
+      if (existing == null) return base;
+      return base.copyWith(
+        viewCount: base.viewCount > 0 ? base.viewCount : existing.viewCount,
+        caption: base.caption.isNotEmpty ? base.caption : existing.caption,
+        username:
+            base.username.isNotEmpty ? base.username : existing.username,
+        fullName: base.fullName.isNotEmpty ? base.fullName : existing.fullName,
+        avatarUrl:
+            base.avatarUrl.isNotEmpty ? base.avatarUrl : existing.avatarUrl,
+        isReacted: base.isReacted || existing.isReacted,
+      );
+    }
+
+    final normalized = stories.map(mergeWithFeed).toList();
     _unViewed.insert(
       0,
       StoryGroup(
@@ -392,18 +402,8 @@ class StoryCubit extends Cubit<StoryState> {
   }
 
   void _markStoryViewedLocally(String storyId) {
-    StoryData viewedCopy(StoryData s) => s.id == storyId
-        ? StoryData(
-            id: s.id,
-            userId: s.userId,
-            mediaUrl: s.mediaUrl,
-            mediaType: s.mediaType,
-            caption: s.caption,
-            createdAt: s.createdAt,
-            expiresAt: s.expiresAt,
-            isViewed: true,
-          )
-        : s;
+    StoryData viewedCopy(StoryData s) =>
+        s.id == storyId ? s.copyWith(isViewed: true) : s;
 
     StoryGroup mapGroup(StoryGroup g) {
       final nextStories = g.stories.map(viewedCopy).toList();

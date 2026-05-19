@@ -531,6 +531,19 @@ class _PostListingViewState extends State<PostListingView> {
         isBackButtonVisible: true,
         backgroundColor: _searchScreenUIConfig?.appBarConfig?.backgroundColor ??
             IsrColors.white,
+        iconColor: IsrColors.primaryTextColor,
+        statusBarIconBrightness:
+            (IsrVideoReelConfig.socialConfig.themeConfig?.brightness ??
+                    Brightness.light) ==
+                Brightness.dark
+            ? Brightness.light
+            : Brightness.dark,
+        statusBarBrightness:
+            (IsrVideoReelConfig.socialConfig.themeConfig?.brightness ??
+                    Brightness.light) ==
+                Brightness.dark
+            ? Brightness.dark
+            : Brightness.light,
         titleWidget: _buildHashtagSearchBar(),
         showTitleWidget: true,
         showDivider: _searchScreenUIConfig?.appBarConfig?.showDivider ?? true,

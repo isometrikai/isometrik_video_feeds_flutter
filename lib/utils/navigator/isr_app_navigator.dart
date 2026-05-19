@@ -81,7 +81,6 @@ class IsrAppNavigator {
     );
   }
 
-  /// Navigate to follow requests (incoming / outgoing tabs).
   static void navigateToFollowRequests(
     BuildContext context, {
     TransitionType? transitionType,
@@ -99,8 +98,6 @@ class IsrAppNavigator {
     );
   }
 
-  /// Navigate to place details
-  /// ✅ Wraps the destination with necessary BLoC providers
   static void navigateToPlaceDetails(
     BuildContext context, {
     required String placeId,
@@ -231,23 +228,13 @@ class IsrAppNavigator {
     return result;
   }
 
-  /// Opens the SDK story composer (image/video + caption). Call this from your
-  /// settings / account UI, or set [StoryCallbackConfig.navigateToCreateStory] for a custom screen.
   static Future<void> goToCreateStoryView(
     BuildContext context, {
     TransitionType? transitionType,
   }) async {
-    final cubit = _storyCubitFrom(context);
-    final page = BlocProvider<StoryCubit>.value(
-      value: cubit,
-      child: const StoryCreateView(),
-    );
-    await Navigator.of(context, rootNavigator: true).push<void>(
-      _buildRoute(page: page, transitionType: transitionType),
-    );
+    await StoryCreateFlow.open(context);
   }
 
-  /// Instagram-style full-screen story viewer (image/video, tap zones, close).
   static Future<void> presentStoryViewer(
     BuildContext context, {
     required List<StoryGroup> groups,

@@ -6,10 +6,24 @@ import 'package:image_picker/image_picker.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/cubits/story/story.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/stories/story_theme_resolver.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/report_reason_dialog.dart';
+import 'package:ism_video_reel_player/presentation/screens/story/widgets/add_to_highlights_bottom_sheet.dart';
+import 'package:ism_video_reel_player/presentation/screens/story/widgets/delete_story_confirmation_dialog.dart';
 import 'package:ism_video_reel_player/res/res.dart';
+import 'package:ism_video_reel_player/utils/enums.dart';
+import 'package:ism_video_reel_player/utils/utility.dart';
 
 class StoryViewerActions {
   const StoryViewerActions._();
+
+  /// Opens the highlight picker sheet (star action on own story).
+  static Future<void> openAddToHighlights({
+    required BuildContext context,
+    required StoryData story,
+    required StoryCubit storyCubit,
+  }) =>
+      _addToHighlight(context: context, story: story, storyCubit: storyCubit);
 
   static Future<void> handleMoreActions({
     required BuildContext context,
@@ -24,16 +38,23 @@ class StoryViewerActions {
     ValueChanged<String>? onHighlightStoryRemoved,
   }) async {
     if (story == null || story.id.isEmpty) return;
-    if (!canManageCurrentStory && !canReactToStory) return;
+
+    final canReportStory = !canManageCurrentStory;
+    if (!canManageCurrentStory && !canReactToStory && !canReportStory) return;
+
     final storyCubit = context.read<StoryCubit>();
     final trimmedHighlightId = (highlightId ?? '').trim();
     final inHighlight = trimmedHighlightId.isNotEmpty;
     final storiesInHighlight = highlightStoryCount ?? 0;
     final singleStoryHighlight = inHighlight && storiesInHighlight <= 1;
 
+    final theme = StoryThemeResolver.of(context);
     final action = await showModalBottomSheet<String>(
       context: context,
-      backgroundColor: const Color(0xFF1D1D1D),
+      backgroundColor: theme.scaffoldBackground,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (context) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -41,33 +62,43 @@ class StoryViewerActions {
             if (canReactToStory)
               ListTile(
                 leading: Icon(
-                  viewerHasLovedStory
-                      ? Icons.favorite
-                      : Icons.favorite_border,
+                  viewerHasLovedStory ? Icons.favorite : Icons.favorite_border,
                   color: viewerHasLovedStory
                       ? const Color(0xFFE91E63)
-                      : IsrColors.white,
+                      : theme.textPrimary,
                 ),
                 title: Text(
                   viewerHasLovedStory ? 'Remove love' : 'Love',
-                  style: IsrStyles.white14,
+                  style: IsrStyles.primaryText14.copyWith(
+                    color: theme.textPrimary,
+                  ),
                 ),
                 onTap: () => Navigator.of(context).pop(
                   viewerHasLovedStory ? 'remove_love' : 'add_love',
                 ),
               ),
-            if (canManageCurrentStory) ...[
+            if (canReportStory) ...[
               if (canReactToStory)
-                const Divider(height: 1, color: Colors.white12),
-              if (!inHighlight)
-                ListTile(
-                  leading:
-                      Icon(Icons.bookmark_add_outlined, color: IsrColors.white),
-                  title: Text(
-                    'Add to highlight',
-                    style: IsrStyles.white14,
+                Divider(
+                  height: 1,
+                  color: theme.textSecondary.withValues(alpha: 0.2),
+                ),
+              ListTile(
+                leading: Icon(Icons.flag_outlined, color: theme.textPrimary),
+                title: Text(
+                  IsrTranslationFile.reportStory,
+                  style: IsrStyles.primaryText14.copyWith(
+                    color: theme.textPrimary,
                   ),
-                  onTap: () => Navigator.of(context).pop('add_to_highlight'),
+                ),
+                onTap: () => Navigator.of(context).pop('report_story'),
+              ),
+            ],
+            if (canManageCurrentStory) ...[
+              if (canReactToStory || canReportStory)
+                Divider(
+                  height: 1,
+                  color: theme.textSecondary.withValues(alpha: 0.2),
                 ),
               if (inHighlight)
                 ListTile(
@@ -75,13 +106,15 @@ class StoryViewerActions {
                     singleStoryHighlight
                         ? Icons.delete_outline
                         : Icons.remove_circle_outline,
-                    color: Colors.redAccent,
+                    color: theme.destructive,
                   ),
                   title: Text(
                     singleStoryHighlight
                         ? 'Delete highlight'
                         : 'Delete story from highlight',
-                    style: IsrStyles.white14.copyWith(color: Colors.redAccent),
+                    style: IsrStyles.primaryText14.copyWith(
+                      color: theme.destructive,
+                    ),
                   ),
                   onTap: () => Navigator.of(context).pop(
                     singleStoryHighlight
@@ -91,11 +124,12 @@ class StoryViewerActions {
                 )
               else
                 ListTile(
-                  leading: const Icon(Icons.delete_outline,
-                      color: Colors.redAccent),
+                  leading: Icon(Icons.delete_outline, color: theme.destructive),
                   title: Text(
                     'Delete story',
-                    style: IsrStyles.white14.copyWith(color: Colors.redAccent),
+                    style: IsrStyles.primaryText14.copyWith(
+                      color: theme.destructive,
+                    ),
                   ),
                   onTap: () => Navigator.of(context).pop('delete_story'),
                 ),
@@ -118,9 +152,8 @@ class StoryViewerActions {
       if (context.mounted && ok) onViewerLoveUpdated?.call(false);
       return;
     }
-    if (action == 'add_to_highlight') {
-      await _addToHighlight(
-          context: context, story: story, storyCubit: storyCubit);
+    if (action == 'report_story') {
+      await _reportStory(context: context, story: story);
       return;
     }
     if (action == 'delete_highlight') {
@@ -132,8 +165,6 @@ class StoryViewerActions {
     }
     if (action == 'remove_story_from_highlight') {
       if (trimmedHighlightId.isEmpty) return;
-      // Last story in highlight: delete the highlight (not remove story) to avoid
-      // empty highlights and API edge cases.
       if (singleStoryHighlight) {
         final ok = await storyCubit.deleteHighlight(trimmedHighlightId);
         if (!context.mounted || !ok) return;
@@ -153,10 +184,37 @@ class StoryViewerActions {
       return;
     }
     if (action == 'delete_story') {
+      final confirmed = await DeleteStoryConfirmationDialog.show(context);
+      if (!context.mounted || !confirmed) return;
       await storyCubit.deleteStory(story.id);
       if (!context.mounted) return;
       onAdvanceAfterMutation();
     }
+  }
+
+  static Future<void> _reportStory({
+    required BuildContext context,
+    required StoryData story,
+  }) async {
+    final hostCallback =
+        IsrVideoReelConfig.storyConfig?.storyCallbackConfig.onReportStory;
+    if (hostCallback != null) {
+      await hostCallback(story);
+      return;
+    }
+    if (!context.mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (_) => ReportReasonDialog(
+        reasonFor: ReasonsFor.story,
+        contentId: story.id,
+        onReportSuccess: (_) {
+          Utility.showToastMessage(
+            IsrTranslationFile.reportedSuccessfully('story'),
+          );
+        },
+      ),
+    );
   }
 
   static Future<void> _addToHighlight({
@@ -164,93 +222,34 @@ class StoryViewerActions {
     required StoryData story,
     required StoryCubit storyCubit,
   }) async {
-    final action = await showModalBottomSheet<String>(
+    final highlights = await storyCubit.getHighlightsForCurrentUser();
+    if (!context.mounted) return;
+
+    await AddToHighlightsBottomSheet.show(
       context: context,
-      backgroundColor: const Color(0xFF1D1D1D),
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: Icon(Icons.add_circle_outline, color: IsrColors.white),
-              title: Text(
-                'Create new highlight',
-                style: IsrStyles.white14,
-              ),
-              onTap: () => Navigator.of(context).pop('create'),
-            ),
-            ListTile(
-              leading: const Icon(
-                Icons.collections_bookmark_outlined,
-                color: Colors.white,
-              ),
-              title: Text(
-                'Add to existing highlight',
-                style: IsrStyles.white14,
-              ),
-              onTap: () => Navigator.of(context).pop('existing'),
-            ),
-          ],
-        ),
-      ),
-    );
-    if (!context.mounted || action == null) return;
-    if (action == 'create') {
-      await _createNewHighlightForStory(
+      highlights: highlights,
+      onCreateNewHighlight: () => _createNewHighlightForStory(
         context: context,
         story: story,
         storyCubit: storyCubit,
-      );
-      return;
-    }
-
-    final highlights = await storyCubit.getHighlightsForCurrentUser();
-    if (!context.mounted) return;
-    if (highlights.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No highlights found. Create one first.')),
-      );
-      return;
-    }
-    final selected = await showModalBottomSheet<StoryHighlightData>(
-      context: context,
-      backgroundColor: const Color(0xFF1D1D1D),
-      builder: (context) => SafeArea(
-        child: ListView.separated(
-          shrinkWrap: true,
-          itemCount: highlights.length,
-          separatorBuilder: (_, __) =>
-              const Divider(height: 1, color: Colors.white12),
-          itemBuilder: (context, index) {
-            final highlight = highlights[index];
-            return ListTile(
-              leading: const Icon(
-                Icons.collections_bookmark_outlined,
-                color: Colors.white,
-              ),
-              title: Text(
-                highlight.title.isEmpty
-                    ? 'Untitled highlight'
-                    : highlight.title,
-                style: IsrStyles.white14,
-              ),
-              onTap: () => Navigator.of(context).pop(highlight),
-            );
-          },
-        ),
       ),
+      onHighlightSelected: (selected) async {
+        final fresh = await storyCubit.addStoryToHighlight(
+          highlightId: selected.id,
+          storyId: story.id,
+        );
+        if (!context.mounted) return;
+        final callback =
+            IsrVideoReelConfig.storyConfig?.storyCallbackConfig.onHighlightTap;
+        if (callback != null) {
+          await callback(fresh ?? selected);
+        }
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Added to highlight.')),
+        );
+      },
     );
-    if (!context.mounted || selected == null) return;
-    final fresh = await storyCubit.addStoryToHighlight(
-      highlightId: selected.id,
-      storyId: story.id,
-    );
-    if (!context.mounted) return;
-    final callback =
-        IsrVideoReelConfig.storyConfig?.storyCallbackConfig.onHighlightTap;
-    if (callback != null) {
-      await callback(fresh ?? selected);
-    }
   }
 
   static Future<void> _createNewHighlightForStory({
@@ -262,14 +261,19 @@ class StoryViewerActions {
     String? pickedCoverUrl;
     var uploadingCover = false;
     final picker = ImagePicker();
+    final theme = StoryThemeResolver.of(context);
 
     final created = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF1D1D1D),
+      backgroundColor: theme.scaffoldBackground,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (sheetContext) => Padding(
-        padding:
-            EdgeInsets.only(bottom: MediaQuery.of(sheetContext).viewInsets.bottom),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+        ),
         child: SafeArea(
           child: StatefulBuilder(
             builder: (context, setModalState) => Padding(
@@ -281,13 +285,13 @@ class StoryViewerActions {
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'Create highlight',
-                      style: IsrStyles.white16
-                          .copyWith(fontWeight: FontWeight.w600),
+                  Text(
+                    IsrTranslationFile.createNewHighlight,
+                    style: IsrStyles.primaryText16.copyWith(
+                      color: theme.textPrimary,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   SizedBox(height: IsrDimens.twelve),
@@ -303,30 +307,12 @@ class StoryViewerActions {
                                 width: IsrDimens.fiftySix,
                                 height: IsrDimens.fiftySix,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Container(
-                                  width: IsrDimens.fiftySix,
-                                  height: IsrDimens.fiftySix,
-                                  color: Colors.white12,
-                                  child: const Icon(
-                                    Icons.image_not_supported_outlined,
-                                    color: Colors.white54,
-                                  ),
-                                ),
                               )
                             : Image.network(
                                 story.mediaUrl,
                                 width: IsrDimens.fiftySix,
                                 height: IsrDimens.fiftySix,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Container(
-                                  width: IsrDimens.fiftySix,
-                                  height: IsrDimens.fiftySix,
-                                  color: Colors.white12,
-                                  child: const Icon(
-                                    Icons.image_not_supported_outlined,
-                                    color: Colors.white54,
-                                  ),
-                                ),
                               ),
                       ),
                       SizedBox(width: IsrDimens.twelve),
@@ -334,15 +320,23 @@ class StoryViewerActions {
                         child: TextField(
                           autofocus: true,
                           onChanged: (value) => title = value,
-                          style: IsrStyles.primaryText14,
+                          style: IsrStyles.primaryText14.copyWith(
+                            color: theme.textPrimary,
+                          ),
                           decoration: InputDecoration(
                             hintText: 'Highlight name',
-                            hintStyle: IsrStyles.primaryText14,
-                            enabledBorder: const UnderlineInputBorder(
-                              borderSide: BorderSide(color: Colors.white24),
+                            hintStyle: IsrStyles.primaryText14.copyWith(
+                              color: theme.textSecondary,
                             ),
-                            focusedBorder: const UnderlineInputBorder(
-                              borderSide: BorderSide(color: Colors.white54),
+                            enabledBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(
+                                color: theme.textSecondary.withValues(
+                                  alpha: 0.35,
+                                ),
+                              ),
+                            ),
+                            focusedBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: theme.primary),
                             ),
                           ),
                         ),
@@ -369,58 +363,20 @@ class StoryViewerActions {
                                   pickedCoverUrl = url;
                                 }
                               });
-                              if (url == null || url.isEmpty) {
-                                if (sheetContext.mounted) {
-                                  ScaffoldMessenger.of(sheetContext)
-                                      .showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Could not upload cover image. Check upload configuration.',
-                                      ),
-                                    ),
-                                  );
-                                }
-                              }
                             },
-                      icon: uploadingCover
-                          ? SizedBox(
-                              width: IsrDimens.sixteen,
-                              height: IsrDimens.sixteen,
-                              child: const CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white70,
-                              ),
-                            )
-                          : const Icon(
-                              Icons.photo_library_outlined,
-                              color: Colors.white70,
-                              size: 20,
-                            ),
-                      label: Text(
-                        uploadingCover
-                            ? 'Uploading cover…'
-                            : 'Pick cover image',
-                        style: IsrStyles.white14,
+                      icon: Icon(
+                        Icons.photo_library_outlined,
+                        color: theme.primary,
+                        size: 20,
                       ),
-                    ),
-                  ),
-                  if (pickedCoverUrl != null && pickedCoverUrl!.isNotEmpty)
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: TextButton(
-                        onPressed: uploadingCover
-                            ? null
-                            : () => setModalState(() => pickedCoverUrl = null),
-                        child: Text(
-                          'Use story as cover',
-                          style: IsrStyles.white14.copyWith(
-                            color: Colors.white54,
-                            decoration: TextDecoration.underline,
-                            decorationColor: Colors.white54,
-                          ),
+                      label: Text(
+                        uploadingCover ? 'Uploading…' : 'Pick cover image',
+                        style: IsrStyles.primaryText14.copyWith(
+                          color: theme.primary,
                         ),
                       ),
                     ),
+                  ),
                   SizedBox(height: IsrDimens.sixteen),
                   Row(
                     children: [
@@ -429,12 +385,17 @@ class StoryViewerActions {
                           onPressed: uploadingCover
                               ? null
                               : () => Navigator.of(sheetContext).pop(false),
-                          child: Text('Cancel', style: IsrStyles.white14),
+                          child: Text(
+                            'Cancel',
+                            style: IsrStyles.primaryText14.copyWith(
+                              color: theme.textPrimary,
+                            ),
+                          ),
                         ),
                       ),
                       SizedBox(width: IsrDimens.twelve),
                       Expanded(
-                        child: ElevatedButton(
+                        child: FilledButton(
                           onPressed: uploadingCover
                               ? null
                               : () async {
@@ -442,8 +403,8 @@ class StoryViewerActions {
                                   if (highlightTitle.isEmpty) return;
                                   final coverForApi =
                                       pickedCoverUrl ?? story.mediaUrl;
-                                  final ok =
-                                      await storyCubit.createHighlightWithStories(
+                                  final ok = await storyCubit
+                                      .createHighlightWithStories(
                                     title: highlightTitle,
                                     coverUrl: coverForApi,
                                     sortOrder: 0,
@@ -452,7 +413,16 @@ class StoryViewerActions {
                                   if (!sheetContext.mounted) return;
                                   Navigator.of(sheetContext).pop(ok);
                                 },
-                          child: Text('Create', style: IsrStyles.white14),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: theme.primary,
+                            foregroundColor: theme.onPrimary,
+                          ),
+                          child: Text(
+                            'Create',
+                            style: IsrStyles.white14.copyWith(
+                              color: theme.onPrimary,
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -465,6 +435,8 @@ class StoryViewerActions {
       ),
     );
     if (!context.mounted || created != true) return;
+    IsrVideoReelConfig.storyConfig?.storyCallbackConfig.onHighlightsChanged
+        ?.call();
     final highlights = await storyCubit.getHighlightsForCurrentUser();
     if (!context.mounted) return;
     final callback =

@@ -6,6 +6,7 @@ import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/cubits/story/story.dart';
 import 'package:ism_video_reel_player/presentation/screens/story/widgets/story_viewer_actions.dart';
+import 'package:ism_video_reel_player/presentation/screens/story/widgets/story_viewer_footer.dart';
 import 'package:ism_video_reel_player/presentation/screens/story/widgets/story_viewer_header.dart';
 import 'package:ism_video_reel_player/presentation/screens/story/widgets/story_viewer_media_content.dart';
 import 'package:ism_video_reel_player/presentation/screens/story/widgets/story_viewer_progress_bar.dart';
@@ -36,9 +37,6 @@ class _StoryViewerViewState extends State<StoryViewerView> {
   late List<StoryGroup> _groups;
   Timer? _imageTimer;
   VideoPlayerController? _video;
-
-  /// Story IDs the viewer has marked as loved this session (API has no field yet).
-  final Set<String> _viewerLovedStoryIds = {};
 
   int _playbackPauseDepth = 0;
 
@@ -284,10 +282,29 @@ class _StoryViewerViewState extends State<StoryViewerView> {
     return !_viewerCubit.state.isCurrentStoryOwner(story: story, group: _group);
   }
 
-  /// True when this session has toggled love on for the current story.
-  bool get _storyIsLoved {
-    final story = _story;
-    return story != null && _viewerLovedStoryIds.contains(story.id);
+  /// True when the viewer has reacted to the current story (from API or toggle).
+  bool get _storyIsLoved => _story?.isReacted ?? false;
+
+  void _setStoryReacted(String storyId, bool isReacted) {
+    setState(() {
+      _groups = _groups
+          .map(
+            (g) => StoryGroup(
+              userId: g.userId,
+              username: g.username,
+              avatarUrl: g.avatarUrl,
+              isViewed: g.isViewed,
+              stories: g.stories
+                  .map(
+                    (s) => s.id == storyId
+                        ? s.copyWith(isReacted: isReacted)
+                        : s,
+                  )
+                  .toList(),
+            ),
+          )
+          .toList();
+    });
   }
 
   // Future<void> _sendStoryReaction(String reactionType) async {
@@ -328,6 +345,39 @@ class _StoryViewerViewState extends State<StoryViewerView> {
   //   }
   // }
 
+  bool get _inHighlightViewer => (widget.highlightId ?? '').trim().isNotEmpty;
+
+  bool get _showAddToHighlight =>
+      _canManageCurrentStory && !_inHighlightViewer;
+
+  Future<void> _onAddToHighlightPressed() async {
+    final story = _story;
+    if (story == null || !_canManageCurrentStory) return;
+    _pausePlayback();
+    try {
+      await StoryViewerActions.openAddToHighlights(
+        context: context,
+        story: story,
+        storyCubit: context.read<StoryCubit>(),
+      );
+    } finally {
+      if (mounted) _resumePlayback();
+    }
+  }
+
+  Future<void> _onDeleteStoryPressed() async {
+    final story = _story;
+    if (story == null || !_canManageCurrentStory) return;
+    _pausePlayback();
+    try {
+      await context.read<StoryCubit>().deleteStory(story.id);
+      if (!mounted) return;
+      _goNext();
+    } finally {
+      if (mounted) _resumePlayback();
+    }
+  }
+
   Future<void> _onMoreActionsPressed() async {
     _pausePlayback();
     try {
@@ -341,13 +391,7 @@ class _StoryViewerViewState extends State<StoryViewerView> {
           if (!mounted) return;
           final id = _story?.id;
           if (id == null || id.isEmpty) return;
-          setState(() {
-            if (loved) {
-              _viewerLovedStoryIds.add(id);
-            } else {
-              _viewerLovedStoryIds.remove(id);
-            }
-          });
+          _setStoryReacted(id, loved);
         },
         highlightId: widget.highlightId,
         highlightStoryCount: (widget.highlightId ?? '').trim().isNotEmpty
@@ -437,10 +481,37 @@ class _StoryViewerViewState extends State<StoryViewerView> {
                             story: story,
                             canManageCurrentStory: _canManageCurrentStory,
                             canReactToStory: _canReactToStory,
+                            showAddToHighlight: _showAddToHighlight,
+                            inHighlightViewer: _inHighlightViewer,
+                            onAddToHighlightPressed: _showAddToHighlight
+                                ? _onAddToHighlightPressed
+                                : null,
+                            onDeleteStoryPressed: _canManageCurrentStory &&
+                                    !_inHighlightViewer
+                                ? _onDeleteStoryPressed
+                                : null,
                             onClose: () => Navigator.of(context).pop(),
                             onMoreActionsPressed: _onMoreActionsPressed,
                           ),
                         ],
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: IgnorePointer(
+                      child: SafeArea(
+                        child: Padding(
+                          padding: IsrDimens.edgeInsets(
+                            bottom: IsrDimens.sixteen,
+                          ),
+                          child: StoryViewerFooter(
+                            story: story,
+                            showViewCount: _canManageCurrentStory,
+                          ),
+                        ),
                       ),
                     ),
                   ),
