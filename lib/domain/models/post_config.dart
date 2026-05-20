@@ -173,6 +173,7 @@ class TextStyleConfig {
     this.locationStyle,
     this.mentionStyle,
     this.hashtagStyle,
+    this.urlStyle,
     this.mediaCounterStyle,
     this.shopTitleStyle,
     this.shopSubtitleStyle,
@@ -199,6 +200,9 @@ class TextStyleConfig {
   /// Style for hashtag text (#hashtag)
   final TextStyle? hashtagStyle;
 
+  /// Style for URL links in post description text
+  final TextStyle? urlStyle;
+
   /// Style for media counter (e.g., "1/3")
   final TextStyle? mediaCounterStyle;
 
@@ -224,6 +228,7 @@ class TextStyleConfig {
     TextStyle? locationStyle,
     TextStyle? mentionStyle,
     TextStyle? hashtagStyle,
+    TextStyle? urlStyle,
     TextStyle? mediaCounterStyle,
     TextStyle? shopTitleStyle,
     TextStyle? shopSubtitleStyle,
@@ -238,6 +243,7 @@ class TextStyleConfig {
         locationStyle: locationStyle ?? this.locationStyle,
         mentionStyle: mentionStyle ?? this.mentionStyle,
         hashtagStyle: hashtagStyle ?? this.hashtagStyle,
+        urlStyle: urlStyle ?? this.urlStyle,
         mediaCounterStyle: mediaCounterStyle ?? this.mediaCounterStyle,
         shopTitleStyle: shopTitleStyle ?? this.shopTitleStyle,
         shopSubtitleStyle: shopSubtitleStyle ?? this.shopSubtitleStyle,

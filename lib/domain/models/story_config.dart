@@ -4,6 +4,56 @@ import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/utils/enums.dart' show MediaType;
 
+/// Phase of the story create pipeline when using [StoryCallbackConfig.onBackgroundStoryOperation].
+enum BackgroundStoryOperationPhase {
+  uploading,
+  creatingStory,
+  processingMedia,
+  success,
+  failure,
+}
+
+enum BackgroundStoryFailureKind {
+  upload,
+  createApi,
+  mediaProcessing,
+}
+
+/// Payload for host overlays during background story upload (mirrors post background API).
+class BackgroundStoryOperationUpdate {
+  const BackgroundStoryOperationUpdate({
+    required this.phase,
+    this.overallProgressPercent = 0,
+    this.title,
+    this.subtitle,
+    this.currentFileIndex = 0,
+    this.totalFiles = 0,
+    this.currentFileName,
+    this.isUploadError = false,
+    this.failureKind,
+    this.failureMessage,
+    this.storyId,
+    this.successTitle,
+    this.successMessage,
+    this.retry,
+  });
+
+  final BackgroundStoryOperationPhase phase;
+  final double overallProgressPercent;
+  final String? title;
+  final String? subtitle;
+  final int currentFileIndex;
+  final int totalFiles;
+  final String? currentFileName;
+  final bool isUploadError;
+  final BackgroundStoryFailureKind? failureKind;
+  final String? failureMessage;
+  final String? storyId;
+  final String? successTitle;
+  final String? successMessage;
+  final VoidCallback? retry;
+}
+
 class StoryConfig {
   const StoryConfig({
     this.storyUiConfig = const StoryUiConfig(),
@@ -208,6 +258,7 @@ class StoryCallbackConfig {
     this.resolveCurrentUserAvatarUrl,
     this.onReportStory,
     this.uploadMode = StoryUploadMode.hostProvidedUrl,
+    this.onBackgroundStoryOperation,
   });
 
   final Future<void> Function(StoryData story)? onStoryTap;
@@ -239,6 +290,11 @@ class StoryCallbackConfig {
   /// Called when a viewer reports someone else's story (not shown for own stories).
   final Future<void> Function(StoryData story)? onReportStory;
   final StoryUploadMode uploadMode;
+
+  /// When set, story upload + create run without blocking the compose screen.
+  /// The host drives banners/notifications via [BackgroundStoryOperationUpdate].
+  final void Function(BackgroundStoryOperationUpdate update)?
+      onBackgroundStoryOperation;
 }
 
 class HighlightOpenDiagnostics {

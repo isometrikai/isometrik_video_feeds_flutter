@@ -4,7 +4,6 @@ import 'package:ism_video_reel_player/presentation/screens/posts/stories/story_t
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/extensions.dart';
 
-/// Confirmation dialog shown before deleting a story.
 class DeleteStoryConfirmationDialog extends StatelessWidget {
   const DeleteStoryConfirmationDialog({super.key});
 
@@ -67,9 +66,9 @@ class DeleteStoryConfirmationDialog extends StatelessWidget {
             Text(
               IsrTranslationFile.deleteStoryConfirmation,
               textAlign: TextAlign.center,
-              style: (dialogConfig?.messageTextStyle ??
-                      IsrStyles.secondaryText14)
-                  .copyWith(
+              style:
+                  (dialogConfig?.messageTextStyle ?? IsrStyles.secondaryText14)
+                      .copyWith(
                 color: theme.textSecondary,
                 height: 1.4,
               ),
@@ -86,8 +85,7 @@ class DeleteStoryConfirmationDialog extends StatelessWidget {
                     vertical: 14.responsiveDimension,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(14.responsiveDimension),
+                    borderRadius: BorderRadius.circular(14.responsiveDimension),
                   ),
                 ),
                 child: Text(
@@ -113,8 +111,7 @@ class DeleteStoryConfirmationDialog extends StatelessWidget {
                     vertical: 14.responsiveDimension,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(14.responsiveDimension),
+                    borderRadius: BorderRadius.circular(14.responsiveDimension),
                   ),
                 ),
                 child: Text(

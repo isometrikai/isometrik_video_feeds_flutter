@@ -276,6 +276,23 @@ class IsrAppNavigator {
     }
   }
 
+  /// Full highlight composer: pick stories (optional) → create new OR add to existing.
+  static Future<void> presentHighlightComposerFlow(
+    BuildContext context, {
+    StoryData? seedStory,
+    List<String>? preselectedStoryIds,
+    bool openViewerAfterAdd = false,
+  }) async {
+    final cubit = _storyCubitFrom(context);
+    await HighlightComposerCoordinator.run(
+      context: context,
+      cubit: cubit,
+      seedStory: seedStory,
+      preselectedStoryIds: preselectedStoryIds,
+      openViewerAfterAdd: openViewerAfterAdd,
+    );
+  }
+
   static Future<HighlightOpenResult> presentHighlightViewer(
     BuildContext context, {
     required String highlightId,

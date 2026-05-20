@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/cubits/story/story.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/stories/story_theme_resolver.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/stories/widgets/story_posted_success_dialog.dart';
@@ -50,19 +52,28 @@ class _StoryComposeViewState extends State<StoryComposeView> {
     super.dispose();
   }
 
+  bool get _useBackgroundStoryUi =>
+      IsrVideoReelConfig.storyConfig?.storyCallbackConfig
+          .onBackgroundStoryOperation !=
+      null;
+
   Future<void> _submit(BuildContext context) async {
     if (_isSubmitting) return;
     setState(() => _isSubmitting = true);
-    await context.read<StoryCubit>().createStoryFromPayload(
-          StoryUploadPayload(
-            file: widget.file,
-            mediaType: widget.mediaType,
-            mediaPosition: 1,
-            caption: _captionController.text.trim(),
-            videoDurationSeconds:
-                _isVideo ? _videoController?.value.duration.inSeconds : null,
-          ),
-        );
+    final payload = StoryUploadPayload(
+      file: widget.file,
+      mediaType: widget.mediaType,
+      mediaPosition: 1,
+      caption: _captionController.text.trim(),
+      videoDurationSeconds:
+          _isVideo ? _videoController?.value.duration.inSeconds : null,
+    );
+    if (_useBackgroundStoryUi) {
+      unawaited(context.read<StoryCubit>().createStoryFromPayload(payload));
+      if (context.mounted) Navigator.of(context).pop();
+      return;
+    }
+    await context.read<StoryCubit>().createStoryFromPayload(payload);
   }
 
   @override
@@ -71,7 +82,8 @@ class _StoryComposeViewState extends State<StoryComposeView> {
 
     return BlocListener<StoryCubit, StoryState>(
       listenWhen: (prev, next) =>
-          next is StoryActionSuccess || next is StoryError,
+          !_useBackgroundStoryUi &&
+          (next is StoryActionSuccess || next is StoryError),
       listener: (context, state) {
         if (state is StoryError) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -206,7 +218,7 @@ class _StoryComposeViewState extends State<StoryComposeView> {
         );
       }
       return FittedBox(
-        fit: BoxFit.cover,
+        fit: BoxFit.contain,
         child: SizedBox(
           width: controller.value.size.width,
           height: controller.value.size.height,

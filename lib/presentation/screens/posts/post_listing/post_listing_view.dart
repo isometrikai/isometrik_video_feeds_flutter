@@ -534,16 +534,16 @@ class _PostListingViewState extends State<PostListingView> {
         iconColor: IsrColors.primaryTextColor,
         statusBarIconBrightness:
             (IsrVideoReelConfig.socialConfig.themeConfig?.brightness ??
-                    Brightness.light) ==
-                Brightness.dark
-            ? Brightness.light
-            : Brightness.dark,
+                        Brightness.light) ==
+                    Brightness.dark
+                ? Brightness.light
+                : Brightness.dark,
         statusBarBrightness:
             (IsrVideoReelConfig.socialConfig.themeConfig?.brightness ??
-                    Brightness.light) ==
-                Brightness.dark
-            ? Brightness.dark
-            : Brightness.light,
+                        Brightness.light) ==
+                    Brightness.dark
+                ? Brightness.dark
+                : Brightness.light,
         titleWidget: _buildHashtagSearchBar(),
         showTitleWidget: true,
         showDivider: _searchScreenUIConfig?.appBarConfig?.showDivider ?? true,
@@ -1757,6 +1757,8 @@ class _PostListingViewState extends State<PostListingView> {
       initialFollowStatus: user.followStatus,
       initialIsRequested: user.isRequested,
       builder: (isLoading, isFollowing, followRequestPending, onTap) {
+        final outlinedLabelColor =
+            followCfg?.backgroundColor ?? IsrColors.appColor;
         if (followRequestPending) {
           return AppButton(
             height: followCfg?.height ?? 30.responsiveDimension,
@@ -1764,18 +1766,18 @@ class _PostListingViewState extends State<PostListingView> {
             borderRadius: followCfg?.borderRadius ?? 20,
             title: followCfg?.requestedText ?? IsrTranslationFile.requested,
             type: ButtonType.secondary,
-            borderColor: followCfg?.backgroundColor ?? IsrColors.appColor,
+            borderColor: outlinedLabelColor,
             backgroundColor:
                 followCfg?.requestedBackgroundColor ?? IsrColors.white,
             isLoading: isLoading,
-            textStyle: followCfg != null && followCfg.textStyle != null
-                ? followCfg.textStyle!.copyWith(
-                    color: followCfg.textColor ?? IsrColors.appColor,
-                  )
-                : IsrStyles.primaryText12.copyWith(
-                    color: followCfg?.textColor ?? IsrColors.appColor,
-                    fontWeight: FontWeight.w600,
-                  ),
+            textStyle: followCfg?.textStyle?.copyWith(
+                  color: outlinedLabelColor,
+                  fontWeight: FontWeight.w600,
+                ) ??
+                IsrStyles.primaryText12.copyWith(
+                  color: outlinedLabelColor,
+                  fontWeight: FontWeight.w600,
+                ),
             onPress: () {
               unawaited(_confirmWithdrawFollowRequest(onTap));
             },
@@ -1814,18 +1816,18 @@ class _PostListingViewState extends State<PostListingView> {
           borderRadius: followCfg?.borderRadius ?? 20,
           title: IsrTranslationFile.following,
           type: ButtonType.secondary,
-          borderColor: followCfg?.backgroundColor ?? IsrColors.appColor,
+          borderColor: outlinedLabelColor,
           backgroundColor:
               followCfg?.requestedBackgroundColor ?? IsrColors.white,
           isLoading: isLoading,
-          textStyle: followCfg != null && followCfg.textStyle != null
-              ? followCfg.textStyle!.copyWith(
-                  color: followCfg.textColor ?? IsrColors.appColor,
-                )
-              : IsrStyles.primaryText12.copyWith(
-                  color: followCfg?.textColor ?? IsrColors.appColor,
-                  fontWeight: FontWeight.w600,
-                ),
+          textStyle: followCfg?.textStyle?.copyWith(
+                color: outlinedLabelColor,
+                fontWeight: FontWeight.w600,
+              ) ??
+              IsrStyles.primaryText12.copyWith(
+                color: outlinedLabelColor,
+                fontWeight: FontWeight.w600,
+              ),
           onPress: () {
             onTap.call();
           },

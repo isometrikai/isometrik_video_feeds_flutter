@@ -739,6 +739,134 @@ class Utility {
     return '${firstName[0].toUpperCase()}${lastName[0].toUpperCase()}';
   }
 
+  /// Regex for detecting http(s) and www URLs in caption/comment text.
+  static final RegExp captionUrlRegex =
+      RegExp(r'(https?:\/\/\S+|www\.\S+)', caseSensitive: false);
+
+  static bool _isUrlText(String text) {
+    final lower = text.toLowerCase();
+    return lower.startsWith('http://') ||
+        lower.startsWith('https://') ||
+        lower.startsWith('www.');
+  }
+
+  static String _urlToLaunch(String urlText) =>
+      urlText.toLowerCase().startsWith('http') ? urlText : 'https://$urlText';
+
+  static TextStyle _defaultUrlStyle(TextStyle baseStyle, TextStyle? urlStyle) =>
+      urlStyle ??
+      baseStyle.copyWith(
+        color: IsrColors.appColor,
+        decoration: TextDecoration.underline,
+      );
+
+  /// Builds a [TextSpan] for post/reel descriptions with @mentions, #hashtags,
+  /// and clickable URLs.
+  static TextSpan buildPostDescriptionTextSpan(
+    String description,
+    List<MentionMetaData> mentions,
+    List<MentionMetaData> hashtags,
+    TextStyle defaultStyle,
+    void Function(MentionMetaData) onMentionTap, {
+    TextStyle? mentionStyle,
+    TextStyle? hashtagStyle,
+    TextStyle? urlStyle,
+  }) {
+    final spans = <InlineSpan>[];
+    final pattern = RegExp(
+      r'(@[a-zA-Z0-9_]+)|(#[a-zA-Z0-9_]+)|(https?:\/\/\S+|www\.\S+)',
+      caseSensitive: false,
+    );
+    final matches = pattern.allMatches(description).toList();
+
+    var lastIndex = 0;
+
+    for (final match in matches) {
+      final start = match.start;
+      final end = match.end;
+      final matchedText = match.group(0)!;
+
+      if (lastIndex < start) {
+        final textBefore = description.substring(lastIndex, start);
+        if (textBefore.trim().isNotEmpty) {
+          spans.add(TextSpan(text: textBefore, style: defaultStyle));
+        } else if (textBefore.isNotEmpty) {
+          spans.add(TextSpan(text: textBefore, style: defaultStyle));
+        }
+      }
+
+      if (matchedText.startsWith('@') && mentions.isNotEmpty) {
+        final matchingMentions =
+            mentions.where((m) => '@${m.username}' == matchedText);
+
+        if (matchingMentions.isNotEmpty) {
+          final mention = matchingMentions.first;
+          spans.add(TextSpan(
+            text: matchedText,
+            style: mentionStyle ??
+                defaultStyle.copyWith(
+                  fontWeight: FontWeight.w800,
+                  decoration: TextDecoration.none,
+                ),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () => onMentionTap(mention),
+          ));
+        } else if (matchedText.isNotEmpty) {
+          spans.add(TextSpan(text: matchedText, style: defaultStyle));
+        }
+      } else if (matchedText.startsWith('#') && hashtags.isNotEmpty) {
+        final matchingHashtags =
+            hashtags.where((m) => '#${m.tag}' == matchedText);
+
+        if (matchingHashtags.isNotEmpty) {
+          final hashTag = matchingHashtags.first;
+          spans.add(TextSpan(
+            text: matchedText,
+            style: hashtagStyle ??
+                defaultStyle.copyWith(
+                  fontWeight: FontWeight.w800,
+                  decoration: TextDecoration.none,
+                ),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () => onMentionTap(hashTag),
+          ));
+        } else if (matchedText.isNotEmpty) {
+          spans.add(TextSpan(
+            text: matchedText,
+            style: defaultStyle.copyWith(
+              fontWeight: FontWeight.w800,
+              decoration: TextDecoration.none,
+            ),
+          ));
+        }
+      } else if (_isUrlText(matchedText)) {
+        final urlToLaunch = _urlToLaunch(matchedText);
+        spans.add(TextSpan(
+          text: matchedText,
+          style: _defaultUrlStyle(defaultStyle, urlStyle),
+          recognizer: TapGestureRecognizer()
+            ..onTap = () => launchExternalUrl(urlToLaunch),
+        ));
+      } else if (matchedText.isNotEmpty) {
+        spans.add(TextSpan(
+          text: matchedText,
+          style: defaultStyle.copyWith(fontWeight: FontWeight.w400),
+        ));
+      }
+
+      lastIndex = end;
+    }
+
+    if (lastIndex < description.length) {
+      final remainingText = description.substring(lastIndex);
+      if (remainingText.trim().isNotEmpty) {
+        spans.add(TextSpan(text: remainingText, style: defaultStyle));
+      }
+    }
+
+    return TextSpan(children: spans, style: defaultStyle);
+  }
+
   /// Builds text spans with highlighted usernames and hashtags from comment tags
   ///
   /// This function processes comment text and highlights usernames (@username) and
@@ -826,8 +954,7 @@ class Utility {
     taggedPositions.sort((a, b) => a.start.compareTo(b.start));
 
     // Also handle URLs (only within displayText range when truncated)
-    final urlRegex = RegExp(r'(https?:\/\/\S+|www\.\S+)', caseSensitive: false);
-    final urlMatches = urlRegex.allMatches(displayText);
+    final urlMatches = captionUrlRegex.allMatches(displayText);
     for (final match in urlMatches) {
       if (match.end <= displayText.length) {
         taggedPositions.add(TagPosition(
@@ -891,16 +1018,11 @@ class Utility {
           break;
 
         case Tag.url:
-          taggedStyle = baseStyle.copyWith(
-            color: IsrColors.appColor,
-            decoration: TextDecoration.underline,
-          );
-          final urlToLaunch = taggedText.startsWith('http')
-              ? taggedText
-              : 'https://$taggedText';
+          taggedStyle = _defaultUrlStyle(baseStyle, null);
+          final urlToLaunch = _urlToLaunch(taggedText);
           recognizer = TapGestureRecognizer()
             ..onTap = () {
-              Utility.launchExternalUrl(urlToLaunch);
+              launchExternalUrl(urlToLaunch);
             };
           break;
       }

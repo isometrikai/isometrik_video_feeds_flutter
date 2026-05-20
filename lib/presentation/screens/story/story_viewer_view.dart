@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/cubits/story/story.dart';
+import 'package:ism_video_reel_player/presentation/screens/story/widgets/delete_story_confirmation_dialog.dart';
 import 'package:ism_video_reel_player/presentation/screens/story/widgets/story_viewer_actions.dart';
 import 'package:ism_video_reel_player/presentation/screens/story/widgets/story_viewer_footer.dart';
 import 'package:ism_video_reel_player/presentation/screens/story/widgets/story_viewer_header.dart';
@@ -370,6 +371,8 @@ class _StoryViewerViewState extends State<StoryViewerView> {
     if (story == null || !_canManageCurrentStory) return;
     _pausePlayback();
     try {
+      final confirmed = await DeleteStoryConfirmationDialog.show(context);
+      if (!mounted || !confirmed) return;
       await context.read<StoryCubit>().deleteStory(story.id);
       if (!mounted) return;
       _goNext();

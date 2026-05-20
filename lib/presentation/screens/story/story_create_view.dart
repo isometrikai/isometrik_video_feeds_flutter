@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/cubits/story/story.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 
@@ -20,20 +23,29 @@ class _StoryCreateViewState extends State<StoryCreateView> {
     super.dispose();
   }
 
+  bool get _useBackgroundStoryUi =>
+      IsrVideoReelConfig.storyConfig?.storyCallbackConfig
+          .onBackgroundStoryOperation !=
+      null;
+
   Future<void> _submit(BuildContext context) async {
     final composerState = _composerCubit.state;
     if (!composerState.hasSelectedMedia || composerState.isSubmitting) return;
     _composerCubit.setSubmitting(true);
+    final payload = StoryUploadPayload(
+      file: composerState.file,
+      mediaType: composerState.mediaType,
+      mediaPosition: 1,
+      caption: composerState.caption.trim(),
+      videoDurationSeconds: composerState.videoDurationSeconds,
+    );
+    if (_useBackgroundStoryUi) {
+      unawaited(context.read<StoryCubit>().createStoryFromPayload(payload));
+      if (context.mounted) Navigator.of(context).pop();
+      return;
+    }
     try {
-      await context.read<StoryCubit>().createStoryFromPayload(
-            StoryUploadPayload(
-              file: composerState.file,
-              mediaType: composerState.mediaType,
-              mediaPosition: 1,
-              caption: composerState.caption.trim(),
-              videoDurationSeconds: composerState.videoDurationSeconds,
-            ),
-          );
+      await context.read<StoryCubit>().createStoryFromPayload(payload);
     } finally {
       if (mounted) _composerCubit.setSubmitting(false);
     }
@@ -67,7 +79,8 @@ class _StoryCreateViewState extends State<StoryCreateView> {
         value: _composerCubit,
         child: BlocListener<StoryCubit, StoryState>(
           listenWhen: (prev, next) =>
-              next is StoryActionSuccess || next is StoryError,
+              !_useBackgroundStoryUi &&
+              (next is StoryActionSuccess || next is StoryError),
           listener: (context, state) {
             if (state is StoryActionSuccess &&
                 state.actionName == 'create_story') {
