@@ -80,7 +80,7 @@ class IsrTranslationFile {
   static const String unlockFor = 'Unlock for';
 
   static const uploadPhotoOrVideo = 'Upload a photo or a video';
-  static const uploadPhotoOrVideoToInspire =
+  static String get uploadPhotoOrVideoToInspire =>
       'Upload a photo or a video to inspire and connect with our ${AppConstants.appName} community.';
   static const description = 'Description';
   static const writeDescription = 'Write a description';

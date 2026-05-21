@@ -271,11 +271,13 @@ class RemoveMentionEvent extends SocialPostEvent {
 class GetMentionedUserEvent extends SocialPostEvent {
   GetMentionedUserEvent({
     required this.postId,
+    required this.page,
     this.onComplete,
   });
 
   final String postId;
-  final Function(List<SocialUserData>)? onComplete;
+  final int page;
+  final Function(List<SocialUserData> users, bool hasMore)? onComplete;
 }
 
 class GetPostInsightDetailsEvent extends SocialPostEvent {
