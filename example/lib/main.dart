@@ -81,9 +81,10 @@ void _configureReelsSdk() {
     ),
     tabConfig: const isr.TabConfig(),
     storyConfig: const isr.StoryConfig(),
-    createEditPostConfig: const isr.CreateEditPostConfig(
+    createEditPostConfig: isr.CreateEditPostConfig(
       createEditPostCallBackConfig: isr.CreateEditPostCallBackConfig(
         onBackgroundPostOperation: BackgroundPostUploadDemo.onSdkUpdate,
+        licenseAgreementAfterMediaEdit: (mediaList) async => true,
       ),
     ),
     socialConfig: isr.SocialConfig(
