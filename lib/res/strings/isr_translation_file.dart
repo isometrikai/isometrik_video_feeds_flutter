@@ -21,8 +21,10 @@ class IsrTranslationFile {
   static const String withdrawFollowRequestTitle = 'Withdraw request';
   static const String withdrawFollowRequestMessage =
       'Do you want to withdraw your request?';
+
   /// Dismisses dialog and keeps the outgoing request as-is.
   static const String keepFollowRequest = 'Keep request';
+
   /// Confirms cancel outgoing follow request (DELETE).
   static const String withdrawFollowRequest = 'Withdraw';
   static const String followRequests = 'Follow requests';
@@ -144,6 +146,9 @@ class IsrTranslationFile {
   static const String deletePost = 'Delete Post';
   static const String deletePostConfirmation =
       'Are you sure you want to delete this post?';
+  static const String deleteStory = 'Delete Story?';
+  static const String deleteStoryConfirmation =
+      'Are you sure you want to delete this story? This action cannot be undone.';
   static const String postNowConfirmation =
       'Are you sure you want to Post Now?';
   static const String reportPostConfirmation =
@@ -281,4 +286,15 @@ class IsrTranslationFile {
   static const String addNewScheduledPosts = 'Add new Scheduled Posts';
   static const String postNow = 'Post Now';
   static const String modifySchedule = 'Modify Schedule';
+  static const String newStory = 'New Story';
+  static const String createNewHighlight = 'Create new highlight';
+  static const String addToExistingHighlight = 'Add to existing highlight';
+  static const String addToHighlights = 'Add to highlights';
+  static const String noHighlightsCreateFirst =
+      'No highlights yet. Tap + to create one.';
+  static const String reportStory = 'Report';
+  static const String pickPhoto = 'Pick photo';
+  static const String pickVideo = 'Pick video';
+  static const String writeToAddToStory = ' Add caption to your story';
+  static const String shareStory = 'Share story';
 }

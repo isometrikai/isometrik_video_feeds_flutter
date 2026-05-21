@@ -87,8 +87,19 @@ class FollowRequestItem {
         '';
     if (id.isEmpty) return null;
 
-    final userMap = _userMapFrom(map);
+    var userMap = _userMapFrom(map);
     if (userMap == null) return null;
+
+    final rootTargetId = map['target_id'] as String?;
+    if (rootTargetId != null && rootTargetId.isNotEmpty) {
+      final existing = userMap['target_id'];
+      final existingStr =
+          existing is String ? existing : existing?.toString() ?? '';
+      if (existingStr.isEmpty) {
+        userMap = Map<String, dynamic>.from(userMap);
+        userMap['target_id'] = rootTargetId;
+      }
+    }
 
     return FollowRequestItem(
       id: id,
@@ -99,6 +110,13 @@ class FollowRequestItem {
   static Map<String, dynamic>? _userMapFrom(Map<String, dynamic> map) {
     if (map['user'] is Map<String, dynamic>) {
       return map['user'] as Map<String, dynamic>;
+    }
+    // Outgoing requests: API sends `target_user` (+ root `target_id`), not `target`.
+    if (map['target'] is Map<String, dynamic>) {
+      return map['target'] as Map<String, dynamic>;
+    }
+    if (map['target_user'] is Map<String, dynamic>) {
+      return map['target_user'] as Map<String, dynamic>;
     }
     if (map['requester'] is Map<String, dynamic>) {
       return map['requester'] as Map<String, dynamic>;
@@ -112,13 +130,6 @@ class FollowRequestItem {
     if (map['following'] is Map<String, dynamic>) {
       return map['following'] as Map<String, dynamic>;
     }
-    if (map['target'] is Map<String, dynamic>) {
-      return map['target'] as Map<String, dynamic>;
-    }
-    if (map['target_user'] is Map<String, dynamic>) {
-      return map['target_user'] as Map<String, dynamic>;
-    }
-    // Flat user fields on the request object
     if (map['username'] != null ||
         map['full_name'] != null ||
         map['display_name'] != null ||
@@ -133,6 +144,15 @@ class FollowRequestItem {
 
   final String id;
   final SocialUserData user;
+
+  /// Target user id for cancel-outgoing; API may only send `target_user.id` or root `target_id`.
+  String? get outgoingCancelTargetId {
+    final t = user.targetId;
+    if (t != null && t.isNotEmpty) return t;
+    final uid = user.id;
+    if (uid != null && uid.isNotEmpty) return uid;
+    return null;
+  }
 }
 
 abstract class FollowRelationshipStatus {
@@ -140,7 +160,6 @@ abstract class FollowRelationshipStatus {
   static const int following = 1;
   static const int requested = 2;
 
-  /// Prefer numeric [`follow_status`]; string enums like `request_pending`; then [`follow_relationship`].
   static num? parseFromApiFields({
     dynamic followStatus,
     dynamic followRelationship,

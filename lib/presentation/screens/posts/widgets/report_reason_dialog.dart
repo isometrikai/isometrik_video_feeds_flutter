@@ -50,8 +50,7 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
           _reportReasons.addAll(reasons as Iterable<ReportReason>);
           _isLoading = false;
           if (mounted) {
-            setState(() {
-            });
+            setState(() {});
           }
         },
         reasonsFor: widget.reasonFor,
@@ -202,6 +201,11 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
                             );
                             if (confirmation == true) {
                               widget.onReportInvoked?.call(_selectedReason!);
+                              if (widget.reasonFor == ReasonsFor.story) {
+                                Utility.showToastMessage(
+                                    ' report story not added from backend coming soon');
+                                return;
+                              }
                               _socialPostBloc.add(ReportEvent(
                                 contentId: widget.contentId,
                                 reportReason: _selectedReason!,

@@ -12,6 +12,10 @@ abstract class StoryRepository extends BaseRepository {
     required String userId,
   });
 
+  Future<CustomResponse<List<StoryData>?>> getMyStories({
+    required bool isLoading,
+  });
+
   Future<CustomResponse<ResponseClass?>> startStoryProcessing({
     required bool isLoading,
     required String storyId,

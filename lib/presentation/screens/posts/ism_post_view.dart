@@ -41,7 +41,9 @@ class IsmPostView extends StatefulWidget {
   final Function(String placeId, String placeName, double lat, double long)?
       onTapPlace;
 
-  static Map<PostSectionType, List<TimeLineData>>? getLoadedTabReels(String cacheKey) => _PostViewState.getLoadedTabReels(cacheKey);
+  static Map<PostSectionType, List<TimeLineData>>? getLoadedTabReels(
+          String cacheKey) =>
+      _PostViewState.getLoadedTabReels(cacheKey);
 
   @override
   State<IsmPostView> createState() => _PostViewState();
@@ -53,7 +55,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   var _currentIndex = 1;
   var _loggedInUserId = '';
   final ValueNotifier<bool> _tabsVisibilityNotifier = ValueNotifier<bool>(true);
-  List<TabStateModel> get _tabDataModelList => _centralTadData.putIfAbsent(centralKey, () => <TabStateModel>[]);
+  List<TabStateModel> get _tabDataModelList =>
+      _centralTadData.putIfAbsent(centralKey, () => <TabStateModel>[]);
   VideoCacheManager? _videoCacheManager;
   late SocialPostBloc _socialPostBloc; // Will be initialized from context
   late IsmSocialActionCubit _socialActionCubit;
@@ -81,6 +84,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   var _routeEnterListenerScheduled = false;
   Animation<double>? _routeEnterAnimation;
   AnimationStatusListener? _routeEnterStatusListener;
+  VoidCallback? _routeEnterValueListener;
   var _initialPostLoadDispatched = false;
   var _tabChangeRequestId = 0;
 
@@ -112,7 +116,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
               tabDataModel: tab,
             ))
         .toList());
-    _currentIndex = (_tabDataModelList.length > (widget.startTabIndex ?? 0)) ? widget.startTabIndex?.toInt() ?? 0 : 0;
+    _currentIndex = (_tabDataModelList.length > (widget.startTabIndex ?? 0))
+        ? widget.startTabIndex?.toInt() ?? 0
+        : 0;
     _currentPostSectionType =
         _tabDataModelList[_currentIndex].tabDataModel.postSectionType;
     if (_currentIndex >= _tabDataModelList.length) {
@@ -138,6 +144,12 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       // _tabsVisibilityNotifier.value = false;
     }
     _scheduleReelsBodyWhenRouteSettled();
+    if (IsrVideoReelConfig.feedCacheConfig != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _dispatchInitialPostLoad();
+      });
+    }
     _loggedInUserId = await _socialPostBloc.userId;
     _postTabController?.addListener(() async {
       if (!mounted) return;
@@ -196,6 +208,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     _routeEnterListenerScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      final useFeedHostCache = IsrVideoReelConfig.feedCacheConfig != null;
       final animation = ModalRoute.of(context)?.animation;
       void onEnterCompleted() {
         if (!mounted || _reelsBodyReady) return;
@@ -203,6 +216,23 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         _reelsBodyReady = true;
         _dispatchInitialPostLoad();
         setState(() {});
+      }
+
+      if (!useFeedHostCache) {
+        if (animation == null ||
+            animation.status == AnimationStatus.completed) {
+          onEnterCompleted();
+          return;
+        }
+
+        _routeEnterAnimation = animation;
+        _routeEnterStatusListener = (AnimationStatus status) {
+          if (status == AnimationStatus.completed) {
+            onEnterCompleted();
+          }
+        };
+        animation.addStatusListener(_routeEnterStatusListener!);
+        return;
       }
 
       if (animation == null ||
@@ -214,22 +244,49 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
       _routeEnterAnimation = animation;
       _routeEnterStatusListener = (AnimationStatus status) {
-        if (status == AnimationStatus.completed) {
+        // Dismissed covers reverse transitions; some shells never emit completed.
+        if (status == AnimationStatus.completed ||
+            status == AnimationStatus.dismissed) {
           onEnterCompleted();
         }
       };
       animation.addStatusListener(_routeEnterStatusListener!);
+
+      // Value listener: forward progress to 1.0 without relying on status alone.
+      _routeEnterValueListener = () {
+        if (!mounted || _reelsBodyReady) return;
+        if (animation.value >= 1.0) {
+          onEnterCompleted();
+        }
+      };
+      animation.addListener(_routeEnterValueListener!);
+
+      // Bottom-nav / nested shells may keep a route animation pending forever;
+      // never block the first feed load on it.
+      unawaited(
+        Future<void>.delayed(const Duration(milliseconds: 500), () {
+          if (!mounted) return;
+          onEnterCompleted();
+        }),
+      );
     });
   }
 
   void _tearDownRouteEnterListener() {
     final anim = _routeEnterAnimation;
     final listener = _routeEnterStatusListener;
-    if (anim != null && listener != null) {
-      anim.removeStatusListener(listener);
+    final valueListener = _routeEnterValueListener;
+    if (anim != null) {
+      if (listener != null) {
+        anim.removeStatusListener(listener);
+      }
+      if (valueListener != null) {
+        anim.removeListener(valueListener);
+      }
     }
     _routeEnterAnimation = null;
     _routeEnterStatusListener = null;
+    _routeEnterValueListener = null;
   }
 
   void _dispatchInitialPostLoad() {
@@ -418,7 +475,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         key: ValueKey(_getUniqueKey(tabState.tabDataModel, index)),
         videoCacheManager:
             _loggedInUserId.isNotEmpty ? _videoCacheManager : null,
-        getEmptyScreen: () => _tabConfig.tabCallBackConfig?.getEmptyScreen?.call(tabState.tabDataModel),
+        getEmptyScreen: () => _tabConfig.tabCallBackConfig?.getEmptyScreen
+            ?.call(tabState.tabDataModel),
         onTapPlaceHolder: () {
           if ((_postTabController?.length ?? 0) > 1) {
             _tabsVisibilityNotifier.value = true;
@@ -485,8 +543,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           final shareRes = await _postConfig.postCallBackConfig?.onShareClicked
               ?.call(reelsData.postData as TimeLineData);
           _socialPostBloc.add(PlayPauseVideoEvent(play: true));
-          if (shareRes != null){
-            _socialPostBloc.add(OnShareSuccessEvent(shareSuccessData: shareRes));
+          if (shareRes != null) {
+            _socialPostBloc
+                .add(OnShareSuccessEvent(shareSuccessData: shareRes));
           }
         }
       },
@@ -654,17 +713,18 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     try {
       final completer = Completer<List<TimeLineData>>();
       _socialPostBloc.add(GetMorePostEvent(
-        isLoading: false,
-        isPagination: true,
-        isRefresh: false,
-        postSectionType: tabState.tabDataModel.postSectionType,
-        memberUserId: '',
+          isLoading: false,
+          isPagination: true,
+          isRefresh: false,
+          postSectionType: tabState.tabDataModel.postSectionType,
+          memberUserId: '',
           onComplete: (value) async {
-            final newReels = value.where((newReel) => !tabState.tabDataModel.reelsDataList.any((existingReel) => existingReel.id == newReel.id));
+            final newReels = value.where((newReel) => !tabState
+                .tabDataModel.reelsDataList
+                .any((existingReel) => existingReel.id == newReel.id));
             tabState.tabDataModel.reelsDataList.addAll(newReels);
             completer.complete(value);
-          }
-      ));
+          }));
       final timeLinePostList = await completer.future;
       if (timeLinePostList.isEmpty) return [];
       final timeLineReelDataList = timeLinePostList

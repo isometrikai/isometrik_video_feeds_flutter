@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:ism_video_reel_player/ism_video_reel_player.dart';
+import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/stories/story_theme_resolver.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/stories/widgets/story_ring_avatar.dart';
 
-/// Small reusable avatar tile for one story group entry in strip.
 class StoryAvatarItemWidget extends StatelessWidget {
   const StoryAvatarItemWidget({
     super.key,
@@ -21,21 +22,10 @@ class StoryAvatarItemWidget extends StatelessWidget {
   final bool showTitle;
   final VoidCallback? onTap;
   final TextStyle? titleStyle;
-
   final Color? fullyViewedRingColor;
-
   final Color? hasUnviewedRingColor;
-
   final Color? seenBorderColor;
-
   final Color? unseenBorderColor;
-
-  Color _ringColor(ColorScheme scheme) {
-    final viewed = fullyViewedRingColor ?? seenBorderColor ?? scheme.outline;
-    final unviewed =
-        hasUnviewedRingColor ?? unseenBorderColor ?? scheme.primary;
-    return group.allStoriesViewed ? viewed : unviewed;
-  }
 
   String get _resolvedAvatarUrl {
     final avatar = group.avatarUrl.trim();
@@ -48,45 +38,32 @@ class StoryAvatarItemWidget extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
-        child: SizedBox(
-          width: avatarSize + 8,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: avatarSize,
-                height: avatarSize,
-                padding: const EdgeInsets.all(2),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: _ringColor(Theme.of(context).colorScheme),
-                    width: 2,
-                  ),
-                ),
-                child: ClipOval(
-                  child: _resolvedAvatarUrl.isEmpty
-                      ? Container(color: Colors.white24)
-                      : AppImage.network(
-                          _resolvedAvatarUrl,
-                          fit: BoxFit.cover,
-                        ),
-                ),
+  Widget build(BuildContext context) {
+    final theme = StoryThemeResolver.of(context);
+    return GestureDetector(
+      onTap: onTap,
+      child: SizedBox(
+        width: avatarSize + 8,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            StoryRingAvatar(
+              size: avatarSize,
+              imageUrl: _resolvedAvatarUrl,
+              hasUnviewed: !group.allStoriesViewed,
+            ),
+            if (showTitle) ...[
+              const SizedBox(height: 6),
+              Text(
+                group.username,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: titleStyle ?? theme.titleStyle,
               ),
-              if (showTitle) ...[
-                const SizedBox(height: 6),
-                Text(group.username,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: titleStyle ??
-                        Theme.of(context).textTheme.labelSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            )),
-              ],
             ],
-          ),
+          ],
         ),
-      );
+      ),
+    );
+  }
 }

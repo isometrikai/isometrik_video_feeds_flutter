@@ -428,6 +428,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           GetPostCommentsEvent(
             postId: postId!,
             isLoading: false,
+            refreshPostDetailAfterComments:
+                IsrVideoReelConfig.feedCacheConfig != null,
             onComplete: (comments) {
               if (!mounted) return;
               final sortedComments = comments.toList()
@@ -1933,7 +1935,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                     _cachedDescriptionTextSpan == null) {
                                   _lastParsedDescription = displayText.trim();
                                   _cachedDescriptionTextSpan =
-                                      _buildDescriptionTextSpan(
+                                      Utility.buildPostDescriptionTextSpan(
                                     displayText.trim(),
                                     _mentionedDataList,
                                     _taggedDataList,
@@ -1945,6 +1947,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                         ),
                                     (mention) =>
                                         _callOnTapMentionData([mention]),
+                                    mentionStyle: _textStyleConfig?.mentionStyle,
+                                    hashtagStyle: _textStyleConfig?.hashtagStyle,
+                                    urlStyle: _textStyleConfig?.urlStyle,
                                   );
                                 }
 
@@ -2264,7 +2269,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 style: _textStyleConfig?.followingButtonTextStyle ??
                     IsrStyles.primaryText12.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: IsrColors.colorF4F4F4,
+                      color: Theme.of(context).primaryColor,
                     ),
               ),
             ),
@@ -2344,7 +2349,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 style: _textStyleConfig?.followingButtonTextStyle ??
                     IsrStyles.primaryText12.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: IsrColors.colorF4F4F4,
+                      color: Theme.of(context).primaryColor,
                       shadows: _textShadows,
                     ),
               ),
@@ -2409,131 +2414,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         });
       }
     });
-  }
-
-  TextSpan _buildDescriptionTextSpan(
-    String description,
-    List<MentionMetaData> mentions,
-    List<MentionMetaData> hashtags,
-    TextStyle defaultStyle,
-    void Function(MentionMetaData) onMentionTap,
-  ) {
-    final spans = <InlineSpan>[];
-    final pattern = RegExp(r'(@[a-zA-Z0-9_]+)|(#[a-zA-Z0-9_]+)');
-    final matches = pattern.allMatches(description).toList();
-
-    var lastIndex = 0;
-
-    // Process each match
-    for (final match in matches) {
-      final start = match.start;
-      final end = match.end;
-      final matchedText = match.group(0)!;
-
-      // Add normal text before the match (only if not empty/whitespace)
-      if (lastIndex < start) {
-        final textBefore = description.substring(lastIndex, start);
-        if (textBefore.trim().isNotEmpty) {
-          spans.add(TextSpan(
-            text: textBefore,
-            style: defaultStyle,
-          ));
-        } else if (textBefore.isNotEmpty) {
-          // Add whitespace as-is for proper spacing
-          spans.add(TextSpan(
-            text: textBefore,
-            style: defaultStyle,
-          ));
-        }
-      }
-
-      if (matchedText.startsWith('@') && mentions.isNotEmpty) {
-        // Find the mention by username using where
-        final matchingMentions = mentions.where(
-          (m) => '@${m.username}' == matchedText,
-        );
-
-        if (matchingMentions.isNotEmpty && matchedText.isNotEmpty) {
-          final mention = matchingMentions.first;
-          final mentionStyle = _textStyleConfig?.mentionStyle ??
-              defaultStyle.copyWith(
-                fontWeight: FontWeight.w800,
-                decoration: TextDecoration.none,
-              );
-          spans.add(TextSpan(
-            text: matchedText,
-            style: mentionStyle,
-            recognizer: TapGestureRecognizer()
-              ..onTap = () {
-                onMentionTap(mention);
-              },
-          ));
-        } else {
-          if (matchedText.isNotEmpty) {
-            spans.add(TextSpan(
-              text: matchedText,
-              style: defaultStyle,
-            ));
-          }
-        }
-      } else if (matchedText.startsWith('#') && hashtags.isNotEmpty) {
-        // Find the hashtag by tag using where
-        final matchingHashtags = hashtags.where(
-          (m) => '#${m.tag}' == matchedText,
-        );
-
-        if (matchingHashtags.isNotEmpty && matchedText.isNotEmpty) {
-          final hashTag = matchingHashtags.first;
-          final hashtagStyle = _textStyleConfig?.hashtagStyle ??
-              defaultStyle.copyWith(
-                fontWeight: FontWeight.w800,
-                decoration: TextDecoration.none,
-              );
-          spans.add(TextSpan(
-            text: matchedText,
-            style: hashtagStyle,
-            recognizer: TapGestureRecognizer()
-              ..onTap = () {
-                onMentionTap(hashTag);
-              },
-          ));
-        } else {
-          if (matchedText.isNotEmpty) {
-            spans.add(TextSpan(
-              text: matchedText,
-              style: defaultStyle.copyWith(
-                fontWeight: FontWeight.w800,
-                decoration: TextDecoration.none,
-              ),
-            ));
-          }
-        }
-      } else {
-        if (matchedText.isNotEmpty) {
-          spans.add(TextSpan(
-            text: matchedText,
-            style: defaultStyle.copyWith(fontWeight: FontWeight.w400),
-          ));
-        }
-      }
-
-      lastIndex = end;
-    }
-
-    // Add remaining text after last match
-    if (lastIndex < description.length) {
-      final remainingText = description.substring(lastIndex);
-      if (remainingText.trim().isNotEmpty) {
-        spans.add(TextSpan(
-          text: remainingText,
-          style: defaultStyle,
-        ));
-      }
-    }
-
-    final textSpan = TextSpan(children: spans, style: defaultStyle);
-
-    return textSpan;
   }
 
   void _handleCommentClick([StateSetter? setBuilderState]) async {

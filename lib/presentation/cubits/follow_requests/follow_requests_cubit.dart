@@ -39,6 +39,7 @@ class FollowRequestsCubit extends Cubit<FollowRequestsState> {
   }
 
   Future<void> loadIncoming({required bool refresh}) async {
+    if (!refresh && state.incomingLoading) return;
     if (refresh) {
       emit(state.copyWith(
         incomingPage: 1,
@@ -79,6 +80,7 @@ class FollowRequestsCubit extends Cubit<FollowRequestsState> {
   }
 
   Future<void> loadOutgoing({required bool refresh}) async {
+    if (!refresh && state.outgoingLoading) return;
     if (refresh) {
       emit(state.copyWith(
         outgoingPage: 1,
@@ -143,11 +145,12 @@ class FollowRequestsCubit extends Cubit<FollowRequestsState> {
   }
 
   Future<void> cancelOutgoingRequest(FollowRequestItem item) async {
-    final userId = item.user.targetId ?? '';
-    if (userId.isEmpty) return;
+    final targetId = item.outgoingCancelTargetId;
+    if (targetId == null || targetId.isEmpty) return;
+
     final ok = await _cancelOutgoing.cancel(
       isLoading: true,
-      targetId: userId,
+      targetId: targetId,
     );
     if (ok.isSuccess && !isClosed) {
       emit(state.copyWith(

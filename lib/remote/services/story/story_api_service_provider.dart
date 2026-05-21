@@ -95,6 +95,18 @@ class StoryApiServiceProvider extends StoryApiService {
       );
 
   @override
+  Future<ResponseModel> getMyStories({
+    required bool isLoading,
+    required Header header,
+  }) =>
+      _makeRequest(
+        header: header,
+        endpoint: StoryApiEndPoints.getMyStories,
+        requestType: NetworkRequestType.get,
+        isLoading: isLoading,
+      );
+
+  @override
   Future<ResponseModel> startStoryProcessing({
     required bool isLoading,
     required Header header,

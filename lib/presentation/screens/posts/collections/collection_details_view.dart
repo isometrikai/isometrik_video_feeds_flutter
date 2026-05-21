@@ -85,6 +85,7 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
           canPop: false,
           onPopInvokedWithResult: (didPop, result) => _handlePopResult(didPop),
           child: Scaffold(
+            backgroundColor: CollectionThemeResolver.scaffoldBackground,
             appBar: _buildCollectionAppBar(),
             body: _buildCollectionBody(),
           ),
@@ -151,11 +152,14 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
 
   /// Builds the app bar with collection actions
   PreferredSizeWidget _buildCollectionAppBar() => IsmCustomAppBarWidget(
-        backgroundColor: IsrColors.white,
+        backgroundColor: CollectionThemeResolver.scaffoldBackground,
+        iconColor: CollectionThemeResolver.textPrimary,
+        titleColor: CollectionThemeResolver.textPrimary,
         titleText: collection?.name ?? '',
         isBackButtonVisible: true,
         onTap: () => context.pop(collection),
         showDivider: true,
+        dividerColor: CollectionThemeResolver.divider,
         centerTitle: false,
         showTitleWidget: false,
         showActions: true,
@@ -195,7 +199,7 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
         padding: IsrDimens.edgeInsetsAll(0),
         icon: Icon(
           Icons.more_vert,
-          color: IsrColors.black,
+          color: CollectionThemeResolver.textPrimary,
           size: 24.responsiveDimension,
         ),
         style: const ButtonStyle(
@@ -204,7 +208,7 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
           visualDensity: VisualDensity.compact,
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        color: Colors.white,
+        color: CollectionThemeResolver.surfaceCard,
         elevation: 4,
         offset: Offset(0, 30.responsiveDimension),
         itemBuilder: (BuildContext context) => [
@@ -231,27 +235,28 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
           label,
           style: IsrStyles.primaryText12.copyWith(
             fontWeight: FontWeight.w500,
-            color: IsrColors.color333333,
+            color: CollectionThemeResolver.textPrimary,
           ),
         ),
       );
 
   /// Builds a divider for the popup menu
-  PopupMenuItem<String> _buildDividerForMenu() => const PopupMenuItem(
+  PopupMenuItem<String> _buildDividerForMenu() => PopupMenuItem(
         enabled: false,
         height: 1,
         child: Divider(
           height: 1,
           thickness: 1,
-          color: IsrColors.colorDBDBDB,
+          color: CollectionThemeResolver.divider,
         ),
       );
 
   /// Builds the main body of the collection details view
   Widget _buildBody() => Material(
-        color: IsrColors.white,
+        color: CollectionThemeResolver.scaffoldBackground,
         child: RefreshIndicator(
-          backgroundColor: IsrColors.white,
+          backgroundColor: CollectionThemeResolver.surfaceCard,
+          color: Theme.of(context).primaryColor,
           onRefresh: _refreshPage,
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -422,7 +427,7 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
               width: double.infinity,
               padding: IsrDimens.edgeInsetsAll(12.responsiveDimension),
               decoration: BoxDecoration(
-                color: 'F8F9FA'.toColor(),
+                color: CollectionThemeResolver.mutedSurface,
                 borderRadius: IsrDimens.borderRadiusAll(12.responsiveDimension),
               ),
               child: Row(
@@ -431,14 +436,14 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
                   Icon(
                     Icons.format_quote_rounded,
                     size: 18.responsiveDimension,
-                    color: '9CA3AF'.toColor(),
+                    color: CollectionThemeResolver.textSecondary,
                   ),
                   8.responsiveHorizontalSpace,
                   Expanded(
                     child: Text(
                       collection?.description ?? '',
                       style: IsrStyles.primaryText12.copyWith(
-                        color: '4B5563'.toColor(),
+                        color: CollectionThemeResolver.textSecondary,
                         height: 1.4,
                       ),
                       maxLines: 3,
@@ -467,7 +472,7 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
                 'Posts',
                 style: IsrStyles.primaryText16.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: '1F2937'.toColor(),
+                  color: CollectionThemeResolver.textPrimary,
                 ),
               ),
             ],
@@ -503,7 +508,9 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
           child: Icon(
             icon,
             size: 18.responsiveDimension,
-            color: isDestructive ? Colors.white : IsrColors.color333333,
+            color: isDestructive
+                ? Colors.white
+                : CollectionThemeResolver.textPrimary,
           ),
         ),
       );
@@ -601,7 +608,7 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
   /// Builds a post card - same style as tag_details_view
   Widget _buildPostCard(TimeLineData post, int index) => Container(
         decoration: BoxDecoration(
-          color: IsrColors.white,
+          color: CollectionThemeResolver.surfaceCard,
           borderRadius: BorderRadius.circular(8.responsiveDimension),
         ),
         child: ClipRRect(
@@ -624,10 +631,10 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
 
     if (coverUrl.isEmptyOrNull) {
       return Container(
-        color: IsrColors.colorF5F5F5,
+        color: CollectionThemeResolver.mutedSurface,
         child: Icon(
           Icons.image,
-          color: IsrColors.color9B9B9B,
+          color: CollectionThemeResolver.textSecondary,
           size: IsrDimens.forty,
         ),
       );
@@ -696,15 +703,21 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
   void _showPostOptions(TimeLineData post) {
     Utility.showBottomSheet(
       child: Container(
+        color: CollectionThemeResolver.scaffoldBackground,
         padding: IsrDimens.edgeInsetsAll(IsrDimens.sixteen),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.delete_outline, color: Colors.red),
+              leading: Icon(
+                Icons.delete_outline,
+                color: CollectionThemeResolver.destructive,
+              ),
               title: Text(
                 IsrTranslationFile.removeFromCollection,
-                style: IsrStyles.primaryText14.copyWith(color: Colors.red),
+                style: IsrStyles.primaryText14.copyWith(
+                  color: CollectionThemeResolver.destructive,
+                ),
               ),
               onTap: () {
                 context.pop();
@@ -732,10 +745,10 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
         margin:
             IsrDimens.edgeInsetsSymmetric(horizontal: 16.responsiveDimension),
         decoration: BoxDecoration(
-          color: 'F9FAFB'.toColor(),
+          color: CollectionThemeResolver.mutedSurface,
           borderRadius: IsrDimens.borderRadiusAll(16.responsiveDimension),
           border: Border.all(
-            color: 'E5E7EB'.toColor(),
+            color: CollectionThemeResolver.mutedBorder,
             width: 1,
           ),
         ),
@@ -746,7 +759,7 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
               Container(
                 padding: IsrDimens.edgeInsetsAll(20.responsiveDimension),
                 decoration: BoxDecoration(
-                  color: 'EEF2FF'.toColor(),
+                  color: Theme.of(context).primaryColor.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
                 child: AppImage.svg(
@@ -761,7 +774,7 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
                 'No posts yet',
                 style: IsrStyles.primaryText16.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: '1F2937'.toColor(),
+                  color: CollectionThemeResolver.textPrimary,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -769,7 +782,7 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
               Text(
                 'Start adding posts to\nthis collection',
                 style: IsrStyles.primaryText14.copyWith(
-                  color: '6B7280'.toColor(),
+                  color: CollectionThemeResolver.textSecondary,
                   height: 1.4,
                 ),
                 textAlign: TextAlign.center,
@@ -814,14 +827,17 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
           children: [
             Text(
               'Delete Collection',
-              style:
-                  IsrStyles.primaryText16.copyWith(fontWeight: FontWeight.w600),
+              style: IsrStyles.primaryText16.copyWith(
+                fontWeight: FontWeight.w600,
+                color: CollectionThemeResolver.textPrimary,
+              ),
             ),
             12.responsiveVerticalSpace,
             Text(
               'Are you sure you want to delete this collection?',
-              style: IsrStyles.primaryText14
-                  .copyWith(color: IsrColors.color333333),
+              style: IsrStyles.primaryText14.copyWith(
+                color: CollectionThemeResolver.textSecondary,
+              ),
             ),
             24.responsiveVerticalSpace,
             Row(
@@ -831,7 +847,7 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
                     title: IsrTranslationFile.cancel,
                     type: ButtonType.secondary,
                     onPress: () => context.pop(),
-                    backgroundColor: IsrColors.colorF5F5F5,
+                    backgroundColor: CollectionThemeResolver.mutedSurface,
                   ),
                 ),
                 12.responsiveHorizontalSpace,
