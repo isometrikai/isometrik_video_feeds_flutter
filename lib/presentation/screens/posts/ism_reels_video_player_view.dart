@@ -977,7 +977,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         width: double.infinity,
         decoration: BoxDecoration(
           color: _mediaIndicatorConfig?.completedColor ??
-              IsrColors.appColor.applyOpacity(0.5), // Pure white for completed
+              IsrColors.appColor.applyOpacity(0.7), // Pure white for completed
           borderRadius: borderRadius,
         ),
       );
@@ -1034,7 +1034,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   decoration: BoxDecoration(
                     color: _mediaIndicatorConfig?.progressColor ??
                         IsrColors.appColor
-                            .applyOpacity(0.5), // Pure white for progressed
+                            .applyOpacity(0.7), // Pure white for progressed
                     borderRadius: borderRadius,
                   ),
                 ),
@@ -1066,7 +1066,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 decoration: BoxDecoration(
                   color: _mediaIndicatorConfig?.progressColor ??
                       IsrColors.appColor
-                          .applyOpacity(0.5), // Pure white for progressed
+                          .applyOpacity(0.7), // Pure white for progressed
                   borderRadius: borderRadius,
                 ),
               ),
@@ -1344,26 +1344,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                     ),
                   ),
 
-                // show progress indicator if there are multiple videos or single media is video or autoMoveNextMedia is true
-                if (!_shouldShowPaidLockOverlay &&
-                    (_reelData.mediaMetaDataList.isNotEmpty ||
-                        _reelData.mediaMetaDataList.firstOrNull?.mediaType ==
-                            kVideoType ||
-                        widget.onVideoCompleted != null))
-                  Positioned(
-                    bottom: widget.reelsConfig.overlayPadding
-                            ?.resolve(TextDirection.ltr)
-                            .bottom ??
-                        0 + 3,
-                    left: 0,
-                    right: 0,
-                    child: ValueListenableBuilder<int>(
-                      valueListenable: _currentPageNotifier,
-                      builder: (context, value, child) =>
-                          _buildMediaIndicators(value),
-                    ),
-                  ),
-
                 // Bottom gradient overlay for text readability
                 Positioned(
                   left: 0,
@@ -1391,6 +1371,26 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                     ),
                   ),
                 ),
+
+                // show progress indicator if there are multiple videos or single media is video or autoMoveNextMedia is true
+                if (!_shouldShowPaidLockOverlay &&
+                    (_reelData.mediaMetaDataList.isNotEmpty ||
+                        _reelData.mediaMetaDataList.firstOrNull?.mediaType ==
+                            kVideoType ||
+                        widget.onVideoCompleted != null))
+                  Positioned(
+                    bottom: widget.reelsConfig.overlayPadding
+                        ?.resolve(TextDirection.ltr)
+                        .bottom ??
+                        0 + 3,
+                    left: 0,
+                    right: 0,
+                    child: ValueListenableBuilder<int>(
+                      valueListenable: _currentPageNotifier,
+                      builder: (context, value, child) =>
+                          _buildMediaIndicators(value),
+                    ),
+                  ),
 
                 //right action
                 //kept separate so that it does not bloc touch/gesture to underlying widgets
@@ -1496,38 +1496,22 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                             AssetConstants.icLikeSelected)
                         : (_actionIconConfig?.likeIconUnselected ??
                             AssetConstants.icLikeUnSelected);
-                    return Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildActionButton(
-                          icon: likeIcon,
-                          onTap: () => onTap(
-                            reelData: _reelData,
-                            watchDuration: _postWatchDuration.inSeconds,
-                            postSectionType: widget.postSectionType,
-                            apiCallBack: widget.onPressLikeButton != null
-                                ? () => widget.onPressLikeButton!(
-                                      _reelData,
-                                      isLiked,
-                                    )
-                                : null,
-                          ),
-                          isLoading: false, //isLoading,
-                        ),
-                        IsrDimens.boxHeight(IsrDimens.four),
-                        GestureDetector(
-                          onTap: _handleLikeCountTap,
-                          child: Text(
-                            likeCount.toString(),
-                            style: _textStyleConfig?.actionLabelStyle ??
-                                IsrStyles.white12.copyWith(
-                                  fontWeight: FontWeight.w500,
-                                  decoration: TextDecoration.none,
-                                  shadows: _textShadows,
-                                ),
-                          ),
-                        ),
-                      ],
+                    return _buildActionButton(
+                      icon: likeIcon,
+                      onTap: () => onTap(
+                        reelData: _reelData,
+                        watchDuration: _postWatchDuration.inSeconds,
+                        postSectionType: widget.postSectionType,
+                        apiCallBack: widget.onPressLikeButton != null
+                            ? () => widget.onPressLikeButton!(
+                                  _reelData,
+                                  isLiked,
+                                )
+                            : null,
+                      ),
+                      onLabelTap: _handleLikeCountTap,
+                      label: likeCount.toString(),
+                      isLoading: false, //isLoading,
                     );
                   },
                 ),
@@ -1664,6 +1648,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     required String icon,
     String? label,
     required VoidCallback onTap,
+    VoidCallback? onIconTap,
+    VoidCallback? onLabelTap,
     bool isLoading = false,
   }) =>
       GestureDetector(
@@ -1671,47 +1657,51 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            isLoading
-                ? SizedBox(
-                    width: IsrDimens.twenty,
-                    height: IsrDimens.twenty,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                          Theme.of(context).primaryColor),
-                    ),
-                  )
-                : Container(
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: _actionIconConfig?.iconShadow ??
-                          [
-                            BoxShadow(
-                              color: Colors.black.changeOpacity(0.2),
-                              blurRadius: IsrDimens.three,
-                              spreadRadius: IsrDimens.three,
-                            ),
-                          ],
-                    ),
-                    child: AppImage.svg(
-                      icon,
-                      width:
-                          _actionIconConfig?.iconSize ?? IsrDimens.twentyFive,
-                      height:
-                          _actionIconConfig?.iconSize ?? IsrDimens.twentyFive,
-                    ),
+            if (isLoading)
+              SizedBox(
+                width: IsrDimens.twenty,
+                height: IsrDimens.twenty,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                      Theme.of(context).primaryColor),
+                ),
+              )
+            else
+              GestureDetector(
+                onTap: onIconTap ?? onTap,
+                child: Container(
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: _actionIconConfig?.iconShadow ??
+                        [
+                          BoxShadow(
+                            color: Colors.black.changeOpacity(0.2),
+                            blurRadius: IsrDimens.three,
+                            spreadRadius: IsrDimens.three,
+                          ),
+                        ],
                   ),
+                  child: AppImage.svg(
+                    icon,
+                    width: _actionIconConfig?.iconSize ?? IsrDimens.twentyFive,
+                    height: _actionIconConfig?.iconSize ?? IsrDimens.twentyFive,
+                  ),
+                ),
+              ),
             if (label.isStringEmptyOrNull == false) ...[
               IsrDimens.boxHeight(IsrDimens.four),
-              Text(
-                label ?? '',
-                style: _textStyleConfig?.actionLabelStyle ??
-                    IsrStyles.white12.copyWith(
-                      fontWeight: FontWeight.w500,
-                      decoration: TextDecoration.none,
-                      shadows: _textShadows,
-                    ),
+              GestureDetector(
+                onTap: onLabelTap ?? onTap,
+                child: Text(
+                  label ?? '',
+                  style: _textStyleConfig?.actionLabelStyle ??
+                      IsrStyles.white12.copyWith(
+                        fontWeight: FontWeight.w500,
+                        shadows: _textShadows,
+                      ),
+                ),
               ),
             ],
           ],

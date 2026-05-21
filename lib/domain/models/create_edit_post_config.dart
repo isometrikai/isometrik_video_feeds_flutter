@@ -1283,10 +1283,15 @@ class CreateEditPostCallBackConfig {
   const CreateEditPostCallBackConfig({
     this.onLinkProduct,
     this.onBackgroundPostOperation,
+    this.licenseAgreementAfterMediaEdit,
   });
 
   final Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
       onLinkProduct;
+
+  /// called when edit is completed and confirm License Agreement, true to proceed and false to halt
+  final Future<bool> Function(List<MediaData> mediaList)?
+      licenseAgreementAfterMediaEdit;
 
   /// When set, upload and create/edit post run without the SDK progress bottom sheet.
   /// Use [BackgroundPostOperationUpdate] to drive your own overlay, in-app banner, or notification.
@@ -1298,11 +1303,15 @@ class CreateEditPostCallBackConfig {
   CreateEditPostCallBackConfig copyWith({
     Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
         onLinkProduct,
+    Future<bool> Function(List<MediaData> mediaList)?
+        licenseAgreementAfterMediaEdit,
     void Function(BackgroundPostOperationUpdate update)?
         onBackgroundPostOperation,
   }) =>
       CreateEditPostCallBackConfig(
         onLinkProduct: onLinkProduct ?? this.onLinkProduct,
+        licenseAgreementAfterMediaEdit: licenseAgreementAfterMediaEdit ??
+            this.licenseAgreementAfterMediaEdit,
         onBackgroundPostOperation:
             onBackgroundPostOperation ?? this.onBackgroundPostOperation,
       );

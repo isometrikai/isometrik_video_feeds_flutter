@@ -84,6 +84,7 @@ void _configureReelsSdk() {
     createEditPostConfig: const isr.CreateEditPostConfig(
       createEditPostCallBackConfig: isr.CreateEditPostCallBackConfig(
         onBackgroundPostOperation: BackgroundPostUploadDemo.onSdkUpdate,
+        // licenseAgreementAfterMediaEdit: (mediaList) async => true,
       ),
     ),
     socialConfig: isr.SocialConfig(

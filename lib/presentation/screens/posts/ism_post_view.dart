@@ -1033,6 +1033,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
               onReportCanceled: (reason) {
                 completer.complete(false);
               },
+              onReportSuccess: (reason) {
+                _logReportEvent(postDataModel, reason.name ?? '', tabData);
+              },
             ),
           );
           if (!completer.isCompleted && result != true) {

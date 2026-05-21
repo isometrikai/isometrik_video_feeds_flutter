@@ -181,9 +181,14 @@ class _CreatePostMultimediaWrapperState
               fileExtension: _getFileExtension(
                   editItem.editedPath ?? editItem.originalPath)))
           .toList();
-      await IsrAppNavigator.goToCreatePostAttributionView(context, newMediaDataList: _mediaDataList);
-      // _createPostBloc.goToPostAttributeView(context,
-      //     newMediaDataList: _mediaDataList, onTagProduct: widget.onTagProduct);
+      var licenseAgreementAccepted = true;
+      final licenseAgreementCallBack = IsrVideoReelConfig.createEditPostConfig.createEditPostCallBackConfig?.licenseAgreementAfterMediaEdit;
+      if (licenseAgreementCallBack != null) {
+        licenseAgreementAccepted = await licenseAgreementCallBack.call(_mediaDataList.toList());
+      }
+      if (licenseAgreementAccepted) {
+        await IsrAppNavigator.goToCreatePostAttributionView(context, newMediaDataList: _mediaDataList);
+      }
       return false;
     }
     return false;
