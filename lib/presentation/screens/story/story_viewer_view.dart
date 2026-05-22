@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/di/di.dart';
@@ -106,12 +107,12 @@ class _StoryViewerViewState extends State<StoryViewerView> {
     });
     if (!mounted) return;
     if (_groups.isEmpty) {
-      Navigator.of(context).pop();
+      _closeViewer();
       return;
     }
     final g = _group;
     if (g == null || g.stories.isEmpty) {
-      Navigator.of(context).pop();
+      _closeViewer();
       return;
     }
     var nextIndex = _viewerCubit.state.storyIndex;
@@ -131,6 +132,11 @@ class _StoryViewerViewState extends State<StoryViewerView> {
     if (g == null || g.stories.isEmpty) return null;
     if (_viewerCubit.state.storyIndex >= g.stories.length) return null;
     return g.stories[_viewerCubit.state.storyIndex];
+  }
+
+  void _closeViewer() {
+    if (!mounted) return;
+    Navigator.of(context).pop(_groups);
   }
 
   bool _isVideo(StoryData s) {
@@ -171,7 +177,7 @@ class _StoryViewerViewState extends State<StoryViewerView> {
     _viewerCubit.resetProgress();
     final story = _story;
     if (story == null) {
-      Navigator.of(context).maybePop();
+      _closeViewer();
       return;
     }
 
@@ -189,25 +195,76 @@ class _StoryViewerViewState extends State<StoryViewerView> {
         })
         ..addListener(_onVideoTick);
     } else {
-      const total = Duration(seconds: 6);
-      const tick = Duration(milliseconds: 50);
-      final totalMs = total.inMilliseconds;
-      var elapsedMs = 0;
-      _imageTimer = Timer.periodic(tick, (timer) {
-        if (_playbackPauseDepth > 0) return;
-        elapsedMs += tick.inMilliseconds;
-        final nextProgress = (elapsedMs / totalMs).clamp(0.0, 1.0);
-        if (mounted) _viewerCubit.setProgress(nextProgress);
-        if (elapsedMs >= totalMs) {
-          timer.cancel();
-          if (mounted) _goNext();
-        }
+      _startImageProgressTimer();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(_precacheAdjacentStories());
       });
     }
   }
 
+  Future<void> _precacheAdjacentStories() async {
+    if (!mounted) return;
+    final g = _group;
+    if (g == null || g.stories.isEmpty) return;
+    final index = _viewerCubit.state.storyIndex;
+    final targets = <int>[
+      index,
+      if (index + 1 < g.stories.length) index + 1,
+      if (index > 0) index - 1,
+    ];
+    for (final i in targets) {
+      final candidate = g.stories[i];
+      if (_isVideo(candidate)) continue;
+      final url = candidate.mediaUrl.trim();
+      if (url.isEmpty) continue;
+      try {
+        await precacheImage(CachedNetworkImageProvider(url), context);
+      } catch (_) {}
+      if (!mounted) return;
+    }
+  }
+
+  void _startImageProgressTimer() {
+    _imageTimer?.cancel();
+    _viewerCubit.resetProgress();
+    const total = Duration(seconds: 6);
+    const tick = Duration(milliseconds: 50);
+    final totalMs = total.inMilliseconds;
+    var elapsedMs = 0;
+    _imageTimer = Timer.periodic(tick, (timer) {
+      if (_playbackPauseDepth > 0) return;
+      elapsedMs += tick.inMilliseconds;
+      final nextProgress = (elapsedMs / totalMs).clamp(0.0, 1.0);
+      if (mounted) _viewerCubit.setProgress(nextProgress);
+      if (elapsedMs >= totalMs) {
+        timer.cancel();
+        if (mounted) _goNext();
+      }
+    });
+  }
+
+  StoryGroup _markStoryViewedInGroup(StoryGroup group, String storyId) {
+    final nextStories = group.stories
+        .map(
+          (s) => s.id == storyId ? s.copyWith(isViewed: true) : s,
+        )
+        .toList();
+    final allDone = nextStories.isNotEmpty &&
+        nextStories.every((s) => s.isViewed);
+    return StoryGroup(
+      userId: group.userId,
+      username: group.username,
+      avatarUrl: group.avatarUrl,
+      isViewed: allDone,
+      stories: nextStories,
+    );
+  }
+
   void _markViewed(String id) {
     if (!_viewerCubit.markViewedIfNeeded(id)) return;
+    setState(() {
+      _groups = _groups.map((g) => _markStoryViewedInGroup(g, id)).toList();
+    });
     unawaited(context.read<StoryCubit>().markStoryViewed(id));
   }
 
@@ -216,7 +273,7 @@ class _StoryViewerViewState extends State<StoryViewerView> {
     _video?.removeListener(_onVideoTick);
     final g = _group;
     if (g == null) {
-      Navigator.of(context).pop();
+      _closeViewer();
       return;
     }
     final result = _viewerCubit.goNext(_groups);
@@ -225,7 +282,7 @@ class _StoryViewerViewState extends State<StoryViewerView> {
       return;
     }
     if (result == StoryViewerNavResult.completed) {
-      Navigator.of(context).pop();
+      _closeViewer();
     }
   }
 
@@ -414,7 +471,7 @@ class _StoryViewerViewState extends State<StoryViewerView> {
   Widget build(BuildContext context) => BlocProvider.value(
         value: _viewerCubit,
         child: BlocBuilder<StoryViewerCubit, StoryViewerState>(
-          builder: (context, _) {
+          builder: (context, viewerState) {
             final g = _group;
             final story = _story;
             return Scaffold(
@@ -425,6 +482,7 @@ class _StoryViewerViewState extends State<StoryViewerView> {
                   if (story != null)
                     Positioned.fill(
                       child: StoryViewerMediaContent(
+                        key: ValueKey(story.id),
                         story: story,
                         isVideo: _isVideo,
                         videoController: _video,
@@ -476,7 +534,7 @@ class _StoryViewerViewState extends State<StoryViewerView> {
                           if (g != null)
                             StoryViewerProgressBar(
                               group: g,
-                              state: _viewerCubit.state,
+                              state: viewerState,
                             ),
                           SizedBox(height: IsrDimens.eight),
                           StoryViewerHeader(
@@ -493,7 +551,7 @@ class _StoryViewerViewState extends State<StoryViewerView> {
                                     !_inHighlightViewer
                                 ? _onDeleteStoryPressed
                                 : null,
-                            onClose: () => Navigator.of(context).pop(),
+                            onClose: _closeViewer,
                             onMoreActionsPressed: _onMoreActionsPressed,
                           ),
                         ],

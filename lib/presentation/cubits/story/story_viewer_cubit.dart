@@ -22,7 +22,7 @@ class StoryViewerCubit extends Cubit<StoryViewerState> {
 
   void setProgress(double progress) {
     final next = progress.clamp(0.0, 1.0);
-    if ((state.storyProgress - next).abs() < 0.01) return;
+    if ((state.storyProgress - next).abs() < 0.001) return;
     emit(state.copyWith(storyProgress: next));
   }
 

@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/cubits/story/story.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/stories/story_image_cropper.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/stories/story_theme_resolver.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/stories/widgets/story_posted_success_dialog.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -29,6 +30,7 @@ class _StoryComposeViewState extends State<StoryComposeView> {
   final _captionController = TextEditingController();
   VideoPlayerController? _videoController;
   var _isSubmitting = false;
+  late File _mediaFile = widget.file;
 
   bool get _isVideo => widget.mediaType == 'video';
 
@@ -36,7 +38,7 @@ class _StoryComposeViewState extends State<StoryComposeView> {
   void initState() {
     super.initState();
     if (_isVideo) {
-      _videoController = VideoPlayerController.file(widget.file)
+      _videoController = VideoPlayerController.file(_mediaFile)
         ..initialize().then((_) {
           if (mounted) setState(() {});
           _videoController?.setLooping(true);
@@ -57,11 +59,18 @@ class _StoryComposeViewState extends State<StoryComposeView> {
           .onBackgroundStoryOperation !=
       null;
 
+  Future<void> _recropImage() async {
+    if (_isVideo || _isSubmitting) return;
+    final cropped = await StoryImageCropper.crop(_mediaFile.path);
+    if (!mounted || cropped == null) return;
+    setState(() => _mediaFile = cropped);
+  }
+
   Future<void> _submit(BuildContext context) async {
     if (_isSubmitting) return;
     setState(() => _isSubmitting = true);
     final payload = StoryUploadPayload(
-      file: widget.file,
+      file: _mediaFile,
       mediaType: widget.mediaType,
       mediaPosition: 1,
       caption: _captionController.text.trim(),
@@ -128,6 +137,13 @@ class _StoryComposeViewState extends State<StoryComposeView> {
                         _CircleIconButton(
                           onTap: () => Navigator.of(context).pop(),
                         ),
+                        if (!_isVideo) ...[
+                          const SizedBox(width: 8),
+                          _CircleIconButton(
+                            icon: Icons.crop_rounded,
+                            onTap: _isSubmitting ? () {} : _recropImage,
+                          ),
+                        ],
                         const Spacer(),
                         FilledButton(
                           onPressed:
@@ -226,14 +242,18 @@ class _StoryComposeViewState extends State<StoryComposeView> {
         ),
       );
     }
-    return Image.file(widget.file, fit: BoxFit.cover);
+    return Image.file(_mediaFile, fit: BoxFit.cover);
   }
 }
 
 class _CircleIconButton extends StatelessWidget {
-  const _CircleIconButton({required this.onTap});
+  const _CircleIconButton({
+    required this.onTap,
+    this.icon = Icons.arrow_back_ios_new_rounded,
+  });
 
   final VoidCallback onTap;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) => Material(
@@ -242,10 +262,10 @@ class _CircleIconButton extends StatelessWidget {
         child: InkWell(
           customBorder: const CircleBorder(),
           onTap: onTap,
-          child: const Padding(
-            padding: EdgeInsets.all(10),
+          child: Padding(
+            padding: const EdgeInsets.all(10),
             child: Icon(
-              Icons.arrow_back_ios_new_rounded,
+              icon,
               color: Colors.white,
               size: 20,
             ),

@@ -867,7 +867,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   Widget _buildVideoContent(
-          {required MediaMetaData media, Key? key, String? logIndex, bool isPreloaded = false}) =>
+          {required MediaMetaData media,
+          Key? key,
+          String? logIndex,
+          bool isPreloaded = false}) =>
       VideoPlayerWidget(
         key: key,
         mediaUrl: media.mediaUrl,
@@ -1380,8 +1383,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                         widget.onVideoCompleted != null))
                   Positioned(
                     bottom: widget.reelsConfig.overlayPadding
-                        ?.resolve(TextDirection.ltr)
-                        .bottom ??
+                            ?.resolve(TextDirection.ltr)
+                            .bottom ??
                         0 + 3,
                     left: 0,
                     right: 0,
@@ -1700,6 +1703,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       IsrStyles.white12.copyWith(
                         fontWeight: FontWeight.w500,
                         shadows: _textShadows,
+                        decoration: TextDecoration.none,
                       ),
                 ),
               ),
@@ -1937,8 +1941,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                         ),
                                     (mention) =>
                                         _callOnTapMentionData([mention]),
-                                    mentionStyle: _textStyleConfig?.mentionStyle,
-                                    hashtagStyle: _textStyleConfig?.hashtagStyle,
+                                    mentionStyle:
+                                        _textStyleConfig?.mentionStyle,
+                                    hashtagStyle:
+                                        _textStyleConfig?.hashtagStyle,
                                     urlStyle: _textStyleConfig?.urlStyle,
                                   );
                                 }
@@ -2435,11 +2441,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       return SizedBox(
         key: ValueKey('media_$index'), // Consistent key
         child: _buildVideoContent(
-          media: media,
-          key: _videoPlayerKeys[index],
-          logIndex: '${widget.index}-$index}',
-          isPreloaded: _isPreloaded || index != _currentPageNotifier.value
-        ),
+            media: media,
+            key: _videoPlayerKeys[index],
+            logIndex: '${widget.index}-$index}',
+            isPreloaded: _isPreloaded || index != _currentPageNotifier.value),
       );
     }
   }

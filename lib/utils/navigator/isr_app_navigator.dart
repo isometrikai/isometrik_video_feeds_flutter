@@ -235,14 +235,14 @@ class IsrAppNavigator {
     await StoryCreateFlow.open(context);
   }
 
-  static Future<void> presentStoryViewer(
+  static Future<List<StoryGroup>?> presentStoryViewer(
     BuildContext context, {
     required List<StoryGroup> groups,
     required int initialGroupIndex,
     String? highlightId,
     TransitionType transitionType = TransitionType.fade,
   }) async {
-    if (groups.isEmpty) return;
+    if (groups.isEmpty) return null;
     final cubit = _storyCubitFrom(context);
     final page = BlocProvider<StoryCubit>.value(
       value: cubit,
@@ -252,7 +252,7 @@ class IsrAppNavigator {
         highlightId: highlightId,
       ),
     );
-    await Navigator.of(context, rootNavigator: true).push<void>(
+    return Navigator.of(context, rootNavigator: true).push<List<StoryGroup>>(
       _buildRoute(page: page, transitionType: transitionType),
     );
   }
