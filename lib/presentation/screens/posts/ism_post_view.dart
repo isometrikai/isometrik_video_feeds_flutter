@@ -615,6 +615,22 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       onPressMoreButton: (reelsData) async {
         if (reelsData.postData is TimeLineData) {
           _socialPostBloc.add(PlayPauseVideoEvent(play: false));
+          final sheetResult = await _handleMoreOptions(
+            reelsData.postData as TimeLineData,
+            tabData,
+          );
+          if (sheetResult == MoreOptionsSheetResult.dubWithAudio) {
+            await DubWithAudioCaptureCoordinator.handleFromPost(
+              context,
+              reelsData.postData as TimeLineData,
+              config: _postConfig.dubWithAudioConfig,
+              customHandler: _postConfig.postCallBackConfig?.onDubWithAudio,
+            );
+            _socialPostBloc.add(PlayPauseVideoEvent(play: true));
+            IsrVideoReelConfig.resumeFeedPlayback();
+          } else {
+            _socialPostBloc.add(PlayPauseVideoEvent(play: true));
+          }
           final postId = reelsData.postId;
           if (postId != null && postId.isNotEmpty) {
             final postData = (reelsData.postData is TimeLineData &&
@@ -884,7 +900,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   String _getUniqueKey(TabDataModel tabData, int index) {
     _refreshCounts[index] ??= 0;
-    return '${tabData.reelsDataList.length}_${_refreshCounts[index]}';
+    return '${tabData.postSectionType.name}_${index}_${_refreshCounts[index]}';
   }
 
   bool _isFollowingPostsEmpty() {
@@ -1013,12 +1029,25 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     return await completer.future;
   }
 
+  bool _shouldOfferDubWithAudio(TimeLineData post) {
+    if (!_postConfig.enableDubWithAudio) return false;
+    if (post.user?.id == _loggedInUserId) return false;
+    final media = post.media;
+    if (media == null || media.isEmpty) return false;
+    return media.any(
+      (m) =>
+          m.postType == PostType.video ||
+          (m.mediaType?.toLowerCase().contains('video') ?? false),
+    );
+  }
+
   /// Handles the more options menu for a post
   Future<dynamic> _handleMoreOptions(
       TimeLineData postDataModel, TabDataModel tabData) async {
     try {
       return await _showMoreOptionsDialog(
         tabData: tabData,
+        showDubWithAudio: _shouldOfferDubWithAudio(postDataModel),
         onReportPost: () async {
           final completer = Completer<dynamic>();
           final result = await showDialog<dynamic>(
@@ -1158,50 +1187,49 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   // Additional handlers for likes, follows, etc.
   // ... (implement other handlers similarly)
-  Future<dynamic> _showMoreOptionsDialog({
+  Future<String?> _showMoreOptionsDialog({
     Future<dynamic> Function()? onReportPost,
+    bool showDubWithAudio = false,
     Future<dynamic> Function()? onDeletePost,
     Future<dynamic> Function()? onEditPost,
     Future<dynamic> Function()? onShowPostInsight,
     bool? isSelfProfile,
     required TabDataModel tabData,
   }) async {
-    final completer = Completer<dynamic>();
-    final result = await Utility.showBottomSheet<dynamic>(
+    final sheetResult = await Utility.showBottomSheet<String?>(
       isDismissible: true,
       child: MoreOptionsBottomSheet(
-        onReportPost: () async {
-          if (onReportPost != null) {
-            await onReportPost();
-          }
-          completer.complete(true);
-        },
+        showDubWithAudio: showDubWithAudio,
         isSelfProfile: isSelfProfile == true,
-        onDeletePost: () async {
-          if (onDeletePost != null) {
-            await onDeletePost();
-          }
-          completer.complete(true);
-        },
-        onEditPost: () async {
-          if (onEditPost != null) {
-            await onEditPost();
-          }
-          completer.complete(true);
-        },
-        onShowPostInsight: () async {
-          if (onShowPostInsight != null) {
-            await onShowPostInsight();
-          }
-          completer.complete(true);
-        },
       ),
     );
-    // If the bottom sheet was dismissed without any action, complete the completer with null
-    if (!completer.isCompleted && result != true) {
-      completer.complete(result);
+
+    switch (sheetResult) {
+      case MoreOptionsSheetResult.dubWithAudio:
+        return sheetResult;
+      case MoreOptionsSheetResult.report:
+        if (onReportPost != null) {
+          await onReportPost();
+        }
+        return null;
+      case MoreOptionsSheetResult.delete:
+        if (onDeletePost != null) {
+          await onDeletePost();
+        }
+        return null;
+      case MoreOptionsSheetResult.edit:
+        if (onEditPost != null) {
+          await onEditPost();
+        }
+        return null;
+      case MoreOptionsSheetResult.insight:
+        if (onShowPostInsight != null) {
+          await onShowPostInsight();
+        }
+        return null;
+      default:
+        return null;
     }
-    return completer.future;
   }
 
   Future<bool?> _showDeletePostDialog(BuildContext context) {

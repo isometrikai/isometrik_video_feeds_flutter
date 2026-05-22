@@ -22,6 +22,8 @@ class ProVideoEditorWrapper extends StatefulWidget {
     this.filename,
     this.editingMode,
     this.saveLocally = false, // Default to temp save
+    this.maxTrimDuration,
+    this.minTrimDuration,
   });
 
   final String mediaPath;
@@ -30,6 +32,8 @@ class ProVideoEditorWrapper extends StatefulWidget {
   final String? filename;
   final String? editingMode;
   final bool saveLocally; // true = save locally, false = save in temp/cache
+  final Duration? maxTrimDuration;
+  final Duration? minTrimDuration;
 
   @override
   State<ProVideoEditorWrapper> createState() => _ProVideoEditorWrapperState();
@@ -57,7 +61,9 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
       initialPlay: false,
       isAudioSupported: true,
       enablePlayButton: true,
-      minTrimDuration: const Duration(seconds: 5),
+      minTrimDuration:
+          widget.minTrimDuration ?? const Duration(seconds: 5),
+      maxTrimDuration: widget.maxTrimDuration,
       controlsPosition: VideoEditorControlPosition.bottom,
       style: VideoEditorStyle(
         trimBarBackground: widget.mediaEditConfig.primaryColor,
@@ -80,7 +86,6 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
             widget.mediaEditConfig.blackColor.withValues(alpha: 0.4),
         playIndicatorColor: widget.mediaEditConfig.whiteColor,
       ),
-      // maxTrimDuration: Duration(seconds: 15),
     );
     generateThumbnails();
     video = EditorVideo.file(File(widget.mediaPath));

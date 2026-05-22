@@ -1,8 +1,6 @@
-import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:get_thumbnail_video/video_thumbnail.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart'
     as mc;
@@ -11,7 +9,7 @@ import 'package:ism_video_reel_player/presentation/screens/media/media_edit/medi
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart'
     as ms;
 import 'package:ism_video_reel_player/res/res.dart';
-import 'package:ism_video_reel_player/utils/extensions.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
@@ -43,21 +41,32 @@ class _CreatePostMultimediaWrapperState
     mediaListType: ms.MediaListType.imageVideo,
   );
 
-  late final mediaEditConfig = me.MediaEditConfig(
-    primaryColor: IsrColors.appColor,
-    primaryTextColor: IsrColors.primaryTextColor,
-    backgroundColor: Colors.white,
-    appBarColor: Colors.white,
-    primaryFontFamily: AppConstants.primaryFontFamily,
-  );
+  late final mediaEditConfig = GalleryVideoTrimUtil.defaultMediaEditConfig();
 
   Future<bool> _onMediaSelectionComplete(
       List<ms.MediaAssetData> selectedMedia) async {
-    // Ensure all video thumbnails are generated before proceeding
     for (final media in selectedMedia) {
+      if (media.mediaType == ms.SelectedMediaType.video) {
+        final path = media.localPath;
+        if (path != null && path.isNotEmpty) {
+          final trimmedPath = await GalleryVideoTrimUtil.trimVideo(
+            context,
+            videoPath: path,
+          );
+          if (!mounted) return false;
+          if (trimmedPath == null) return false;
+          media.localPath = trimmedPath;
+          media.file = File(trimmedPath);
+          final trimmedDuration =
+              await GalleryVideoTrimUtil.durationSeconds(trimmedPath);
+          if (trimmedDuration != null) {
+            media.duration = trimmedDuration;
+          }
+        }
+      }
+
       if (media.mediaType == ms.SelectedMediaType.video &&
           (media.thumbnailPath == null || media.thumbnailPath!.isEmpty)) {
-        // Generate thumbnail if not already available
         final thumbnailPath = await _generateVideoThumbnail(media.localPath);
         if (thumbnailPath != null) {
           media.thumbnailPath = thumbnailPath;
@@ -65,11 +74,9 @@ class _CreatePostMultimediaWrapperState
       }
     }
 
-    // Convert to MediaEditItem and navigate to edit view
     final mediaEditItems = selectedMedia.map(mapSelectedToEditMedia).toList();
 
     if (mediaEditItems.isNotEmpty) {
-      // Navigate to media edit view with the result
       await Navigator.push<List<me.MediaEditItem>>(
         context,
         MaterialPageRoute(
@@ -79,7 +86,6 @@ class _CreatePostMultimediaWrapperState
             addMoreMedia: _onAddMoreMedia,
             mediaEditConfig: mediaEditConfig,
             pickCoverPic: _pickCoverPic,
-            // onSelectSound: _onSelectSound,
           ),
         ),
       );
@@ -155,11 +161,10 @@ class _CreatePostMultimediaWrapperState
     return res?.first.localPath;
   }
 
-  Future<bool> _onMediaEditComplete(List<me.MediaEditItem> editedMedia) async {
-    if (editedMedia.isNotEmpty) {
-      final _mediaDataList = editedMedia
-          .toList()
-          .map((editItem) => MediaData(
+  List<MediaData> _mediaDataFromEditItems(List<me.MediaEditItem> editedMedia) =>
+      editedMedia
+          .map(
+            (editItem) => MediaData(
               assetId: '',
               mediaType: editItem.mediaType.toJson(),
               url: editItem.editedPath ?? editItem.originalPath,
@@ -179,8 +184,14 @@ class _CreatePostMultimediaWrapperState
                   : PostType.photo,
               position: editedMedia.indexOf(editItem) + 1,
               fileExtension: _getFileExtension(
-                  editItem.editedPath ?? editItem.originalPath)))
+                editItem.editedPath ?? editItem.originalPath,
+              ),
+            ),
+          )
           .toList();
+
+  Future<bool> _onMediaEditComplete(List<me.MediaEditItem> editedMedia) async {
+    if (editedMedia.isEmpty) {
       var licenseAgreementAccepted = true;
       final licenseAgreementCallBack = IsrVideoReelConfig.createEditPostConfig.createEditPostCallBackConfig?.licenseAgreementAfterMediaEdit;
       if (licenseAgreementCallBack != null) {
@@ -191,15 +202,22 @@ class _CreatePostMultimediaWrapperState
       }
       return false;
     }
+    final mediaDataList = _mediaDataFromEditItems(editedMedia);
+    await IsrAppNavigator.goToCreatePostAttributionView(
+      context,
+      newMediaDataList: mediaDataList,
+    );
     return false;
   }
 
   @override
-  Widget build(BuildContext context) => ms.MediaSelectionView(
-        mediaSelectionConfig: mediaSelectionConfig,
-        onComplete: _onMediaSelectionComplete,
-        onCaptureMedia: _captureMedia,
-      );
+  Widget build(BuildContext context) {
+    return ms.MediaSelectionView(
+      mediaSelectionConfig: mediaSelectionConfig,
+      onComplete: _onMediaSelectionComplete,
+      onCaptureMedia: _captureMedia,
+    );
+  }
 
   Future<String?> _captureMedia(String? mediaType) async =>
       await Navigator.push<String?>(
@@ -211,6 +229,8 @@ class _CreatePostMultimediaWrapperState
               Navigator.pop(context);
               return null;
             },
+            onAddSoundTap: IsrVideoReelConfig.createEditPostConfig
+                .createEditPostCallBackConfig?.onAddSoundFromCamera,
           ),
         ),
       );
@@ -220,19 +240,12 @@ class _CreatePostMultimediaWrapperState
 
     try {
       final documentsDir = await getApplicationDocumentsDirectory();
-      final thumbDir = Directory(
-        path.join(documentsDir.path, 'media', 'import_thumbs'),
-      );
-      if (!await thumbDir.exists()) {
-        await thumbDir.create(recursive: true);
-      }
-      final thumbnailFile = await VideoThumbnail.thumbnailFile(
-        video: videoPath,
-        thumbnailPath: thumbDir.path,
+      final thumbDir = path.join(documentsDir.path, 'media', 'import_thumbs');
+      return MediaUtil.pickBestVideoThumbnailPath(
+        videoPath: videoPath,
+        thumbnailPath: thumbDir,
         quality: 75,
       );
-
-      return thumbnailFile.path;
     } catch (e) {
       debugPrint('Error generating thumbnail for $videoPath: $e');
       return null;

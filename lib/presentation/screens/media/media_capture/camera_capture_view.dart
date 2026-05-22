@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ism_video_reel_player/domain/models/sound_library_models.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -11,10 +12,20 @@ class CameraCaptureView extends StatefulWidget {
     super.key,
     this.mediaType = MediaType.both,
     this.onGalleryClick,
+    this.onAddSoundTap,
+    this.onDismissEntireFlow,
+    this.dubWithAudioMode = false,
+    this.initialCameraMusic,
+    this.dubSoundPickerTracks,
   });
 
   final MediaType mediaType;
   final Future<String?> Function()? onGalleryClick;
+  final void Function(BuildContext context)? onAddSoundTap;
+  final VoidCallback? onDismissEntireFlow;
+  final bool dubWithAudioMode;
+  final CameraSetMusicEvent? initialCameraMusic;
+  final List<SoundTrack>? dubSoundPickerTracks;
 
   @override
   State<CameraCaptureView> createState() => _CameraCaptureViewState();
@@ -30,33 +41,30 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
     super.initState();
     _cameraBloc = context.getOrCreateBloc();
     WidgetsBinding.instance.addObserver(this);
-    // Lock orientation to portrait mode
-    // SystemChrome.setPreferredOrientations([
-    //   DeviceOrientation.portraitUp,
-    // ]);
     _initializeCameraWithRetry();
   }
 
   Future<void> _initializeCameraWithRetry() async {
-    _cameraBloc.add(CameraInitializeEvent());
-    _cameraBloc.add(CameraSetMediaTypeEvent(
-        mediaType: widget.mediaType == MediaType.both
-            ? MediaType.photo
-            : widget.mediaType));
-    // Auto-select 15 seconds duration by default
-    _cameraBloc.add(CameraSetDurationEvent(duration: 15));
+    if (widget.dubWithAudioMode) {
+      _cameraBloc.add(CameraSetMediaTypeEvent(mediaType: MediaType.video));
+      _cameraBloc.add(CameraSetDurationEvent(duration: 15));
+      if (widget.initialCameraMusic != null) {
+        _cameraBloc.add(widget.initialCameraMusic!);
+      }
+      _cameraBloc.add(CameraInitializeEvent());
+    } else {
+      _cameraBloc.add(CameraInitializeEvent());
+      _cameraBloc.add(CameraSetMediaTypeEvent(
+          mediaType: widget.mediaType == MediaType.both
+              ? MediaType.photo
+              : widget.mediaType));
+      _cameraBloc.add(CameraSetDurationEvent(duration: 15));
+    }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    // // Unlock orientation when leaving camera screen
-    // SystemChrome.setPreferredOrientations([
-    //   DeviceOrientation.portraitUp,
-    //   DeviceOrientation.portraitDown,
-    //   DeviceOrientation.landscapeLeft,
-    //   DeviceOrientation.landscapeRight,
-    // ]);
     _cameraBloc.add(CameraDisposeEvent());
     super.dispose();
   }
@@ -72,7 +80,9 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
 
     if (state == AppLifecycleState.inactive ||
         state == AppLifecycleState.paused) {
+      _cameraBloc.add(CameraFramingMusicAppPausedEvent(true));
     } else if (state == AppLifecycleState.resumed) {
+      _cameraBloc.add(CameraFramingMusicAppPausedEvent(false));
       if (controller.value.hasError || !controller.value.isInitialized) {
         _cameraBloc.add(CameraInitializeEvent());
       }
@@ -90,39 +100,12 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
             } else if (state is CameraPhotoCapturedState &&
                 !_isNavigatingToEdit) {
               _isNavigatingToEdit = true;
-              _navigateToEditScreen(state.photoPath, MediaType.photo);
-            } else if (state is CameraRecordingConfirmedState) {
-              if (!_isNavigatingToEdit) {
-                _isNavigatingToEdit = true;
-                // Pass segments if available (for segment recordings)
-                final segments = state.segments != null
-                    ? List<VideoSegment>.from(state.segments!)
-                    : null;
-
-                debugPrint(
-                    'Navigating to edit with ${segments?.length ?? 0} segments');
-                if (segments != null) {
-                  debugPrint(
-                      'Segment paths: ${segments.map((s) => s.path).toList()}');
-                }
-
-                _navigateToEditScreenWithSegments(
-                  state.mediaPath,
-                  MediaType.video,
-                  segments,
-                );
-              }
-              // // Always navigate when recording is confirmed (either manual or auto-stop)
-              // debugPrint(
-              //     'CameraRecordingConfirmedState received, mediaPath: ${state.mediaPath}');
-              // if (!_isNavigatingToEdit) {
-              //   _isNavigatingToEdit = true;
-              //   debugPrint(
-              //       'Navigating to edit screen with video: ${state.mediaPath}');
-              //   _navigateToEditScreen(state.mediaPath, MediaType.video);
-              // }
-            } else if (state is CameraRecordingReadyState &&
-                !_isNavigatingToEdit) {}
+              _popWithCapturedMedia(state.photoPath);
+            } else if (state is CameraRecordingConfirmedState &&
+                !_isNavigatingToEdit) {
+              _isNavigatingToEdit = true;
+              _popWithCapturedMedia(state.mediaPath);
+            }
           },
           builder: (context, state) {
             if (state is CameraLoadingState) {
@@ -172,7 +155,8 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
                 state is CameraFilterAppliedState ||
                 state is CameraSpeedChangedState ||
                 state is CameraSegmentRecordingState ||
-                state is CameraBottomLoadingState) {
+                state is CameraBottomLoadingState ||
+                state is CameraMusicSelectedState) {
               if (mounted && context.mounted) {
                 return _buildCameraView(state);
               }
@@ -208,42 +192,36 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
         child: Scaffold(
           backgroundColor: IsrColors.black,
           body: Stack(
-            // fit: StackFit.expand,
             children: [
               CameraPreviewWidget(
                 cameraBloc: _cameraBloc,
                 state: state,
               ),
-              CameraTopControls(cameraBloc: _cameraBloc),
+              CameraTopControls(
+                cameraBloc: _cameraBloc,
+                onAddSoundTap: widget.onAddSoundTap,
+                onDismissEntireFlow: widget.onDismissEntireFlow,
+                dubSoundPickerTracks: widget.dubSoundPickerTracks,
+                dubWithAudioMode: widget.dubWithAudioMode,
+              ),
               CameraBottomControls(
                 cameraBloc: _cameraBloc,
+                dubWithAudioMode: widget.dubWithAudioMode,
                 onGalleryClick: widget.onGalleryClick,
                 state: state,
-                onMediaPicked: (path, type) {
+                onMediaPicked: (path, _) {
                   if (!_isNavigatingToEdit) {
                     _isNavigatingToEdit = true;
-                    _navigateToEditScreen(path, type);
+                    _popWithCapturedMedia(path);
                   }
                 },
               ),
-              // if (_cameraBloc.isSegmentRecording) const CameraRecordingSplash(),
             ],
           ),
         ),
       );
 
-  void _navigateToEditScreen(String mediaPath, MediaType mediaTypeOverride) {
-    final segments =
-        _cameraBloc.videoSegments.isNotEmpty ? _cameraBloc.videoSegments : null;
-
-    _navigateToEditScreenWithSegments(mediaPath, mediaTypeOverride, segments);
-  }
-
-  void _navigateToEditScreenWithSegments(
-    String mediaPath,
-    MediaType mediaTypeOverride,
-    List<VideoSegment>? segments,
-  ) {
+  void _popWithCapturedMedia(String mediaPath) {
     Navigator.pop(context, mediaPath);
     _isNavigatingToEdit = false;
 

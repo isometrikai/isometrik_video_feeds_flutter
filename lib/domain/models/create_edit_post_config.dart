@@ -9,6 +9,7 @@ class CreateEditPostConfig {
     this.createEditPostUIConfig,
     this.autoMoveToNextPost = true,
     this.enablePaidPost = false,
+    this.enableAddSoundOnCamera = false,
     this.paidPostCurrency = 'coin',
     this.paidPostAmountSuggestions = const [10, 50, 100, 150],
   });
@@ -17,6 +18,7 @@ class CreateEditPostConfig {
   final CreateEditPostUIConfig? createEditPostUIConfig;
   final bool autoMoveToNextPost;
   final bool enablePaidPost;
+  final bool enableAddSoundOnCamera;
   final String paidPostCurrency;
   final List<int> paidPostAmountSuggestions;
 
@@ -25,6 +27,7 @@ class CreateEditPostConfig {
     CreateEditPostUIConfig? createEditPostUIConfig,
     bool? autoMoveToNextPost,
     bool? enablePaidPost,
+    bool? enableAddSoundOnCamera,
     String? paidPostCurrency,
     List<int>? paidPostAmountSuggestions,
   }) =>
@@ -35,6 +38,8 @@ class CreateEditPostConfig {
             createEditPostUIConfig ?? this.createEditPostUIConfig,
         autoMoveToNextPost: autoMoveToNextPost ?? this.autoMoveToNextPost,
         enablePaidPost: enablePaidPost ?? this.enablePaidPost,
+        enableAddSoundOnCamera:
+            enableAddSoundOnCamera ?? this.enableAddSoundOnCamera,
         paidPostCurrency: paidPostCurrency ?? this.paidPostCurrency,
         paidPostAmountSuggestions:
             paidPostAmountSuggestions ?? this.paidPostAmountSuggestions,
@@ -1283,6 +1288,7 @@ class CreateEditPostCallBackConfig {
   const CreateEditPostCallBackConfig({
     this.onLinkProduct,
     this.onBackgroundPostOperation,
+    this.onAddSoundFromCamera,
     this.licenseAgreementAfterMediaEdit,
   });
 
@@ -1300,9 +1306,14 @@ class CreateEditPostCallBackConfig {
   final void Function(BackgroundPostOperationUpdate update)?
       onBackgroundPostOperation;
 
+  /// Host app: user tapped **Add a sound** on the reel camera when **15s** or **60s** mode is active.
+  final void Function(BuildContext context)? onAddSoundFromCamera;
+
   CreateEditPostCallBackConfig copyWith({
     Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
         onLinkProduct,
+    void Function(BackgroundPostOperationUpdate update)? onBackgroundPostOperation,
+    void Function(BuildContext context)? onAddSoundFromCamera,
     Future<bool> Function(List<MediaData> mediaList)?
         licenseAgreementAfterMediaEdit,
     void Function(BackgroundPostOperationUpdate update)?
@@ -1314,5 +1325,7 @@ class CreateEditPostCallBackConfig {
             this.licenseAgreementAfterMediaEdit,
         onBackgroundPostOperation:
             onBackgroundPostOperation ?? this.onBackgroundPostOperation,
+        onAddSoundFromCamera:
+            onAddSoundFromCamera ?? this.onAddSoundFromCamera,
       );
 }

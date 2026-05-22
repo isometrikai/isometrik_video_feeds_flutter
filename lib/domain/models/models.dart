@@ -1,4 +1,6 @@
 export 'comment_config.dart';
+export 'create_post_launch_config.dart';
+export 'dub_with_audio_config.dart';
 export 'create_edit_post_config.dart';
 export 'highlight_open_result.dart';
 export 'isr_reels_properties.dart';
@@ -13,6 +15,7 @@ export 'response/response.dart';
 export 'search_screen_config.dart';
 export 'social_config.dart';
 export 'social_follow_relationship.dart';
+export 'sound_library_models.dart';
 export 'story_config.dart';
 export 'tab_config.dart';
 export 'tab_data_model.dart';

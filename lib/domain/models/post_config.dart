@@ -9,6 +9,8 @@ class PostConfig {
     this.autoMoveToNextPost = true,
     this.isCaptionRequired = false,
     this.showViewCount = false,
+    this.enableDubWithAudio = false,
+    this.dubWithAudioConfig,
   });
 
   final PostUIConfig? postUIConfig;
@@ -18,6 +20,9 @@ class PostConfig {
   final bool isCaptionRequired;
   final bool showViewCount;
 
+  final bool enableDubWithAudio;
+  final DubWithAudioConfig? dubWithAudioConfig;
+
   PostConfig copyWith({
     PostUIConfig? postUIConfig,
     PostCallBackConfig? postCallBackConfig,
@@ -25,6 +30,8 @@ class PostConfig {
     bool? autoMoveToNextPost,
     bool? isCaptionRequired,
     bool? showViewCount,
+    bool? enableDubWithAudio,
+    DubWithAudioConfig? dubWithAudioConfig,
   }) =>
       PostConfig(
         postUIConfig: postUIConfig ?? this.postUIConfig,
@@ -33,6 +40,8 @@ class PostConfig {
         autoMoveToNextPost: autoMoveToNextPost ?? this.autoMoveToNextPost,
         isCaptionRequired: isCaptionRequired ?? this.isCaptionRequired,
         showViewCount: showViewCount ?? this.showViewCount,
+        enableDubWithAudio: enableDubWithAudio ?? this.enableDubWithAudio,
+        dubWithAudioConfig: dubWithAudioConfig ?? this.dubWithAudioConfig,
       );
 }
 
@@ -564,6 +573,7 @@ class PostCallBackConfig {
     this.onLikeCountClicked,
     this.onViewCountClicked,
     this.onPaidPostUnlock,
+    this.onDubWithAudio,
   });
 
   final Function(TimeLineData postData, bool isSaved)? onSaveChanged;
@@ -588,6 +598,8 @@ class PostCallBackConfig {
   /// Host app handles purchase / coin flow when the user taps unlock on a paid post.
   final Future<void> Function(TimeLineData postData)? onPaidPostUnlock;
 
+  final Future<void> Function(TimeLineData postData)? onDubWithAudio;
+
   PostCallBackConfig copyWith({
     Function(TimeLineData postData, bool isSaved)? onSaveChanged,
     Function(TimeLineData postData, bool isLiked)? onLikeChanged,
@@ -604,6 +616,7 @@ class PostCallBackConfig {
     Future<void> Function(TimeLineData postData)? onLikeCountClicked,
     Future<void> Function(TimeLineData postData)? onViewCountClicked,
     Future<void> Function(TimeLineData postData)? onPaidPostUnlock,
+    Future<void> Function(TimeLineData postData)? onDubWithAudio,
   }) =>
       PostCallBackConfig(
         onSaveChanged: onSaveChanged ?? this.onSaveChanged,
@@ -619,5 +632,6 @@ class PostCallBackConfig {
         onLikeCountClicked: onLikeCountClicked ?? this.onLikeCountClicked,
         onViewCountClicked: onViewCountClicked ?? this.onViewCountClicked,
         onPaidPostUnlock: onPaidPostUnlock ?? this.onPaidPostUnlock,
+        onDubWithAudio: onDubWithAudio ?? this.onDubWithAudio,
       );
 }

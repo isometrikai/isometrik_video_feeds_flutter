@@ -197,7 +197,7 @@ class MediaSelectionConstant {
 
   //constants
   static const int thumbnailQuality = 50;
-  static const Duration videoMaxDuration = Duration(seconds: 30);
+  static const Duration videoMaxDuration = Duration(seconds: 60);
   static const int pageSize = 20; // Reduced from 50 to prevent memory issues
   static const bool isMultiSelect = true;
   static const int videoMediaLimit = 10;

@@ -1277,8 +1277,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     final key = _getCurrentVideoPlayerKey();
     final videoPlayerState = VideoPlayerWidget.of(key);
     if (videoPlayerState != null && videoPlayerState.mounted) {
-      videoPlayerState.play();
+      videoPlayerState.forceResume();
     }
+    VisibilityDetectorController.instance.notifyNow();
 
     // Start image view timer only if current media is an image
     if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType ==
@@ -2592,18 +2593,24 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   void _setPlaybackBlocked(bool isPlaying) {
     final shouldBlock = !isPlaying;
-    if (_isPlaybackBlocked == shouldBlock) return;
+    final isCurrentReel = widget.currentIndex.value == widget.index;
+    if (_isPlaybackBlocked == shouldBlock) {
+      if (!shouldBlock && isCurrentReel) {
+        _resumePlayback();
+      }
+      return;
+    }
     _isPlaybackBlocked = shouldBlock;
     if (_isPlaybackBlocked) {
       _pauseImageProgress();
+      if (isCurrentReel) {
+        final key = _getCurrentVideoPlayerKey();
+        VideoPlayerWidget.of(key)?.pause();
+      }
       return;
     }
-    final mediaList = _reelData.mediaMetaDataList;
-    final page = _currentPageNotifier.value;
-    if (mediaList.isNotEmpty &&
-        page < mediaList.length &&
-        mediaList[page].mediaType == kPictureType) {
-      _startOrResumeImageProgress();
+    if (isCurrentReel) {
+      _resumePlayback();
     }
   }
 

@@ -409,8 +409,18 @@ class _PostItemWidgetState extends State<PostItemWidget>
                         if (widget.reelsConfig.onPressMoreButton == null) {
                           return;
                         }
+                        final savedIndex = _resolvedCurrentPageIndex;
                         await widget.reelsConfig.onPressMoreButton!
                             .call(reelsData);
+                        if (!mounted || !_pageController.hasClients) return;
+                        final target = savedIndex.clamp(
+                          0,
+                          _reelsDataList.length - 1,
+                        );
+                        if (target != _resolvedCurrentPageIndex) {
+                          _pageController.jumpToPage(target);
+                          _currentIndex.value = target;
+                        }
                       },
                       onCreatePost: () async {
                         if (widget.reelsConfig.onCreatePost != null) {
