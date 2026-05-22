@@ -493,16 +493,19 @@ class Settings {
     return Settings(
       commentsEnabled:
           _readBool(json['comments_enabled'], key: 'comments_enabled') ?? false,
-      duetEnabled: _readBool(json['duet_enabled'], key: 'duet_enabled') ?? false,
+      duetEnabled:
+          _readBool(json['duet_enabled'], key: 'duet_enabled') ?? false,
       stitchEnabled:
           _readBool(json['stitch_enabled'], key: 'stitch_enabled') ?? false,
-      saveEnabled: _readBool(json['save_enabled'], key: 'save_enabled') ?? false,
+      saveEnabled:
+          _readBool(json['save_enabled'], key: 'save_enabled') ?? false,
       isPaid: normalizedIsPaid,
       priceAmount: priceAmount,
       priceCurrency: json['price_currency'] as String?,
       ageRestriction:
           _readBool(json['age_restriction'], key: 'age_restriction') ?? false,
-      autoAdvance: _readBool(json['auto_advance'], key: 'auto_advance') ?? false,
+      autoAdvance:
+          _readBool(json['auto_advance'], key: 'auto_advance') ?? false,
       advanceInterval:
           _readNum(json['advance_interval'], key: 'advance_interval') ?? 0,
       audioSettings: json['audio_settings'],
@@ -688,15 +691,9 @@ class SocialUserData {
   String? profileType;
   UserMetadata? userMetadata;
   bool? isFollowing;
-
-  /// 1 / true from API (or num) => private account; host can pass via profile/search.
   num? isPrivate;
-
-  /// Numeric and/or derived from [`follow_relationship`] string (e.g. `pending_out`).
   num? followStatus;
   String? targetId;
-
-  /// Outgoing follow request pending (`is_requested` / `isRequested` from API).
   bool? isRequested;
 
   Map<String, dynamic> toMap() => {

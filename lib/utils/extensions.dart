@@ -273,7 +273,7 @@ extension ReasonsForExtension on ReasonsFor {
         ReasonsFor.socialUser => 'user',
         ReasonsFor.sound => 'sound',
         ReasonsFor.story => 'story',
-  };
+      };
 }
 
 extension ColorExtension on String {
@@ -393,9 +393,7 @@ extension MapSafeGetters on Map<String, dynamic> {
         if (decoded is List) {
           return decoded.whereType<T>().toList();
         }
-      } catch (_) {
-
-      }
+      } catch (_) {}
     }
     return null;
   }

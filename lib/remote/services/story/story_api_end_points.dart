@@ -1,6 +1,7 @@
 class StoryApiEndPoints {
   static const String postStory = '/api/v1/stories';
   static const String getStories = '/api/v1/stories';
+  static const String getMyStories = '/api/v1/stories/me';
   static const String getStoryFeed = '/api/v1/stories/feed';
   static String postStoryStartProcessing(String storyId) =>
       '/api/v1/stories/$storyId/start-processing';

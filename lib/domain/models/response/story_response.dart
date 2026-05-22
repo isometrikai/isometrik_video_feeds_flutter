@@ -133,6 +133,19 @@ class StoryGroup {
       stories.isEmpty ? isViewed : stories.every((s) => s.isViewed);
 }
 
+int _storyViewCountFromMap(
+  Map<String, dynamic>? engagementMap,
+  Map<String, dynamic> map,
+) {
+  final fromEngagement = engagementMap?['view_count'];
+  if (fromEngagement is num) return fromEngagement.toInt();
+  if (fromEngagement is String) return int.tryParse(fromEngagement) ?? 0;
+  final topLevel = map['view_count'];
+  if (topLevel is num) return topLevel.toInt();
+  if (topLevel is String) return int.tryParse(topLevel) ?? 0;
+  return 0;
+}
+
 class StoryData {
   StoryData({
     this.id = '',
@@ -146,6 +159,8 @@ class StoryData {
     this.createdAt = '',
     this.expiresAt = '',
     this.isViewed = false,
+    this.isReacted = false,
+    this.viewCount = 0,
   });
 
   factory StoryData.fromMap(Map<String, dynamic> map) {
@@ -153,6 +168,9 @@ class StoryData {
     final mediaMap = media is Map<String, dynamic> ? media : null;
     final user = map['user'];
     final userMap = user is Map<String, dynamic> ? user : null;
+    final engagement = map['engagement_metrics'];
+    final engagementMap =
+        engagement is Map<String, dynamic> ? engagement : null;
     return StoryData(
       id: map['id']?.toString() ?? '',
       userId: map['user_id']?.toString() ?? '',
@@ -173,8 +191,41 @@ class StoryData {
       createdAt: map['created_at']?.toString() ?? '',
       expiresAt: map['expires_at']?.toString() ?? '',
       isViewed: map['is_viewed'] as bool? ?? false,
+      isReacted: map['is_reacted'] as bool? ?? false,
+      viewCount: _storyViewCountFromMap(engagementMap, map),
     );
   }
+
+  StoryData copyWith({
+    String? id,
+    String? userId,
+    String? mediaUrl,
+    String? mediaType,
+    String? caption,
+    String? username,
+    String? fullName,
+    String? avatarUrl,
+    String? createdAt,
+    String? expiresAt,
+    bool? isViewed,
+    bool? isReacted,
+    int? viewCount,
+  }) =>
+      StoryData(
+        id: id ?? this.id,
+        userId: userId ?? this.userId,
+        mediaUrl: mediaUrl ?? this.mediaUrl,
+        mediaType: mediaType ?? this.mediaType,
+        caption: caption ?? this.caption,
+        username: username ?? this.username,
+        fullName: fullName ?? this.fullName,
+        avatarUrl: avatarUrl ?? this.avatarUrl,
+        createdAt: createdAt ?? this.createdAt,
+        expiresAt: expiresAt ?? this.expiresAt,
+        isViewed: isViewed ?? this.isViewed,
+        isReacted: isReacted ?? this.isReacted,
+        viewCount: viewCount ?? this.viewCount,
+      );
 
   final String id;
   final String userId;
@@ -187,6 +238,8 @@ class StoryData {
   final String createdAt;
   final String expiresAt;
   final bool isViewed;
+  final bool isReacted;
+  final int viewCount;
 }
 
 class StoryHighlightData {
@@ -197,6 +250,7 @@ class StoryHighlightData {
     this.coverUrl = '',
     this.sortOrder = 0,
     this.items = const [],
+    this.embeddedStories = const [],
   });
 
   factory StoryHighlightData.fromMap(Map<String, dynamic> map) =>
@@ -207,34 +261,56 @@ class StoryHighlightData {
         coverUrl: map['cover_url']?.toString() ?? '',
         sortOrder: (map['sort_order'] as num?)?.toInt() ?? 0,
         items: _highlightItemsFromMap(map),
+        embeddedStories: _embeddedStoriesFromHighlightMap(map),
       );
+
+  /// Full story rows from `GET .../highlights/:id` (`data.stories`). Used to open
+  /// the highlight viewer without calling `/stories` or per-story detail (which
+  /// may be empty or fail for archived / highlight-only stories).
+  static List<StoryData> _embeddedStoriesFromHighlightMap(
+    Map<String, dynamic> map,
+  ) {
+    final dynamic raw = map['stories'];
+    if (raw is! List<dynamic> || raw.isEmpty) return const [];
+    return raw
+        .map((e) => e is Map ? Map<String, dynamic>.from(e) : null)
+        .whereType<Map<String, dynamic>>()
+        .map(StoryData.fromMap)
+        .where(
+          (s) =>
+              s.id.trim().isNotEmpty && s.mediaUrl.trim().isNotEmpty,
+        )
+        .toList();
+  }
 
   static List<StoryHighlightItem> _highlightItemsFromMap(
     Map<String, dynamic> map,
   ) {
-    final dynamic rawItems = map['items'];
-    if (rawItems is List<dynamic> && rawItems.isNotEmpty) {
-      return rawItems
-          .whereType<Map>()
-          .map(
-            (e) => StoryHighlightItem.fromMap(Map<String, dynamic>.from(e)),
-          )
-          .toList();
-    }
-
+    // Prefer `stories` when the API sends it (detail + full payloads). A
+    // non-empty but partial `items` list must not hide additional stories.
     final dynamic rawStories = map['stories'];
     if (rawStories is List<dynamic> && rawStories.isNotEmpty) {
       return rawStories
-          .whereType<Map>()
-          .map((e) {
-            final storyMap = Map<String, dynamic>.from(e);
-            return StoryHighlightItem(
+          .map((e) => e is Map ? Map<String, dynamic>.from(e) : null)
+          .whereType<Map<String, dynamic>>()
+          .map(
+            (storyMap) => StoryHighlightItem(
               itemId: storyMap['item_id']?.toString() ?? '',
               storyId: storyMap['story_id']?.toString() ??
                   storyMap['id']?.toString() ??
                   '',
-            );
-          })
+            ),
+          )
+          .where((item) => item.storyId.trim().isNotEmpty)
+          .toList();
+    }
+
+    final dynamic rawItems = map['items'];
+    if (rawItems is List<dynamic> && rawItems.isNotEmpty) {
+      return rawItems
+          .map((e) => e is Map ? Map<String, dynamic>.from(e) : null)
+          .whereType<Map<String, dynamic>>()
+          .map(StoryHighlightItem.fromMap)
           .where((item) => item.storyId.trim().isNotEmpty)
           .toList();
     }
@@ -248,6 +324,7 @@ class StoryHighlightData {
   final String coverUrl;
   final int sortOrder;
   final List<StoryHighlightItem> items;
+  final List<StoryData> embeddedStories;
 }
 
 class StoryHighlightItem {
@@ -259,7 +336,7 @@ class StoryHighlightItem {
   factory StoryHighlightItem.fromMap(Map<String, dynamic> map) =>
       StoryHighlightItem(
         itemId: map['item_id']?.toString() ?? '',
-        storyId: map['story_id']?.toString() ?? '',
+        storyId: map['story_id']?.toString() ?? map['id']?.toString() ?? '',
       );
 
   final String itemId;

@@ -428,6 +428,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           GetPostCommentsEvent(
             postId: postId!,
             isLoading: false,
+            refreshPostDetailAfterComments:
+                IsrVideoReelConfig.feedCacheConfig != null,
             onComplete: (comments) {
               if (!mounted) return;
               final sortedComments = comments.toList()
@@ -859,12 +861,16 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         media: _reelData.mediaMetaDataList[_currentPageNotifier.value],
         key: _currentVideoPlayerKey,
         logIndex: '${widget.index}-0}',
+        isPreloaded: _isPreloaded,
       );
     }
   }
 
   Widget _buildVideoContent(
-          {required MediaMetaData media, Key? key, String? logIndex}) =>
+          {required MediaMetaData media,
+          Key? key,
+          String? logIndex,
+          bool isPreloaded = false}) =>
       VideoPlayerWidget(
         key: key,
         mediaUrl: media.mediaUrl,
@@ -885,8 +891,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           media.durationSeconds = totalDuration.inSeconds;
           _updatePostProgress();
         },
-        isPreloaded: _isPreloaded,
+        isPreloaded: isPreloaded,
         logIndex: logIndex,
+        isParentVisible: widget.reelsConfig.isTabVisible,
       );
 
   void _toggleMentions() {
@@ -973,7 +980,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         width: double.infinity,
         decoration: BoxDecoration(
           color: _mediaIndicatorConfig?.completedColor ??
-              IsrColors.appColor.applyOpacity(0.5), // Pure white for completed
+              IsrColors.appColor.applyOpacity(0.7), // Pure white for completed
           borderRadius: borderRadius,
         ),
       );
@@ -1030,7 +1037,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   decoration: BoxDecoration(
                     color: _mediaIndicatorConfig?.progressColor ??
                         IsrColors.appColor
-                            .applyOpacity(0.5), // Pure white for progressed
+                            .applyOpacity(0.7), // Pure white for progressed
                     borderRadius: borderRadius,
                   ),
                 ),
@@ -1062,7 +1069,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 decoration: BoxDecoration(
                   color: _mediaIndicatorConfig?.progressColor ??
                       IsrColors.appColor
-                          .applyOpacity(0.5), // Pure white for progressed
+                          .applyOpacity(0.7), // Pure white for progressed
                   borderRadius: borderRadius,
                 ),
               ),
@@ -1341,26 +1348,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                     ),
                   ),
 
-                // show progress indicator if there are multiple videos or single media is video or autoMoveNextMedia is true
-                if (!_shouldShowPaidLockOverlay &&
-                    (_reelData.mediaMetaDataList.isNotEmpty ||
-                        _reelData.mediaMetaDataList.firstOrNull?.mediaType ==
-                            kVideoType ||
-                        widget.onVideoCompleted != null))
-                  Positioned(
-                    bottom: widget.reelsConfig.overlayPadding
-                            ?.resolve(TextDirection.ltr)
-                            .bottom ??
-                        0 + 3,
-                    left: 0,
-                    right: 0,
-                    child: ValueListenableBuilder<int>(
-                      valueListenable: _currentPageNotifier,
-                      builder: (context, value, child) =>
-                          _buildMediaIndicators(value),
-                    ),
-                  ),
-
                 // Bottom gradient overlay for text readability
                 Positioned(
                   left: 0,
@@ -1388,6 +1375,26 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                     ),
                   ),
                 ),
+
+                // show progress indicator if there are multiple videos or single media is video or autoMoveNextMedia is true
+                if (!_shouldShowPaidLockOverlay &&
+                    (_reelData.mediaMetaDataList.isNotEmpty ||
+                        _reelData.mediaMetaDataList.firstOrNull?.mediaType ==
+                            kVideoType ||
+                        widget.onVideoCompleted != null))
+                  Positioned(
+                    bottom: widget.reelsConfig.overlayPadding
+                            ?.resolve(TextDirection.ltr)
+                            .bottom ??
+                        0 + 3,
+                    left: 0,
+                    right: 0,
+                    child: ValueListenableBuilder<int>(
+                      valueListenable: _currentPageNotifier,
+                      builder: (context, value, child) =>
+                          _buildMediaIndicators(value),
+                    ),
+                  ),
 
                 //right action
                 //kept separate so that it does not bloc touch/gesture to underlying widgets
@@ -1493,38 +1500,22 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                             AssetConstants.icLikeSelected)
                         : (_actionIconConfig?.likeIconUnselected ??
                             AssetConstants.icLikeUnSelected);
-                    return Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildActionButton(
-                          icon: likeIcon,
-                          onTap: () => onTap(
-                            reelData: _reelData,
-                            watchDuration: _postWatchDuration.inSeconds,
-                            postSectionType: widget.postSectionType,
-                            apiCallBack: widget.onPressLikeButton != null
-                                ? () => widget.onPressLikeButton!(
-                                      _reelData,
-                                      isLiked,
-                                    )
-                                : null,
-                          ),
-                          isLoading: false, //isLoading,
-                        ),
-                        IsrDimens.boxHeight(IsrDimens.four),
-                        GestureDetector(
-                          onTap: _handleLikeCountTap,
-                          child: Text(
-                            likeCount.toString(),
-                            style: _textStyleConfig?.actionLabelStyle ??
-                                IsrStyles.white12.copyWith(
-                                  fontWeight: FontWeight.w500,
-                                  decoration: TextDecoration.none,
-                                  shadows: _textShadows,
-                                ),
-                          ),
-                        ),
-                      ],
+                    return _buildActionButton(
+                      icon: likeIcon,
+                      onTap: () => onTap(
+                        reelData: _reelData,
+                        watchDuration: _postWatchDuration.inSeconds,
+                        postSectionType: widget.postSectionType,
+                        apiCallBack: widget.onPressLikeButton != null
+                            ? () => widget.onPressLikeButton!(
+                                  _reelData,
+                                  isLiked,
+                                )
+                            : null,
+                      ),
+                      onLabelTap: _handleLikeCountTap,
+                      label: likeCount.toString(),
+                      isLoading: false, //isLoading,
                     );
                   },
                 ),
@@ -1661,6 +1652,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     required String icon,
     String? label,
     required VoidCallback onTap,
+    VoidCallback? onIconTap,
+    VoidCallback? onLabelTap,
     bool isLoading = false,
   }) =>
       GestureDetector(
@@ -1668,47 +1661,52 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            isLoading
-                ? SizedBox(
-                    width: IsrDimens.twenty,
-                    height: IsrDimens.twenty,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                          Theme.of(context).primaryColor),
-                    ),
-                  )
-                : Container(
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: _actionIconConfig?.iconShadow ??
-                          [
-                            BoxShadow(
-                              color: Colors.black.changeOpacity(0.2),
-                              blurRadius: IsrDimens.three,
-                              spreadRadius: IsrDimens.three,
-                            ),
-                          ],
-                    ),
-                    child: AppImage.svg(
-                      icon,
-                      width:
-                          _actionIconConfig?.iconSize ?? IsrDimens.twentyFive,
-                      height:
-                          _actionIconConfig?.iconSize ?? IsrDimens.twentyFive,
-                    ),
+            if (isLoading)
+              SizedBox(
+                width: IsrDimens.twenty,
+                height: IsrDimens.twenty,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                      Theme.of(context).primaryColor),
+                ),
+              )
+            else
+              GestureDetector(
+                onTap: onIconTap ?? onTap,
+                child: Container(
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: _actionIconConfig?.iconShadow ??
+                        [
+                          BoxShadow(
+                            color: Colors.black.changeOpacity(0.2),
+                            blurRadius: IsrDimens.three,
+                            spreadRadius: IsrDimens.three,
+                          ),
+                        ],
                   ),
+                  child: AppImage.svg(
+                    icon,
+                    width: _actionIconConfig?.iconSize ?? IsrDimens.twentyFive,
+                    height: _actionIconConfig?.iconSize ?? IsrDimens.twentyFive,
+                  ),
+                ),
+              ),
             if (label.isStringEmptyOrNull == false) ...[
               IsrDimens.boxHeight(IsrDimens.four),
-              Text(
-                label ?? '',
-                style: _textStyleConfig?.actionLabelStyle ??
-                    IsrStyles.white12.copyWith(
-                      fontWeight: FontWeight.w500,
-                      decoration: TextDecoration.none,
-                      shadows: _textShadows,
-                    ),
+              GestureDetector(
+                onTap: onLabelTap ?? onTap,
+                child: Text(
+                  label ?? '',
+                  style: _textStyleConfig?.actionLabelStyle ??
+                      IsrStyles.white12.copyWith(
+                        fontWeight: FontWeight.w500,
+                        shadows: _textShadows,
+                        decoration: TextDecoration.none,
+                      ),
+                ),
               ),
             ],
           ],
@@ -1932,7 +1930,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                     _cachedDescriptionTextSpan == null) {
                                   _lastParsedDescription = displayText.trim();
                                   _cachedDescriptionTextSpan =
-                                      _buildDescriptionTextSpan(
+                                      Utility.buildPostDescriptionTextSpan(
                                     displayText.trim(),
                                     _mentionedDataList,
                                     _taggedDataList,
@@ -1944,6 +1942,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                         ),
                                     (mention) =>
                                         _callOnTapMentionData([mention]),
+                                    mentionStyle:
+                                        _textStyleConfig?.mentionStyle,
+                                    hashtagStyle:
+                                        _textStyleConfig?.hashtagStyle,
+                                    urlStyle: _textStyleConfig?.urlStyle,
                                   );
                                 }
 
@@ -2263,7 +2266,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 style: _textStyleConfig?.followingButtonTextStyle ??
                     IsrStyles.primaryText12.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: IsrColors.colorF4F4F4,
+                      color: Theme.of(context).primaryColor,
                     ),
               ),
             ),
@@ -2343,7 +2346,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 style: _textStyleConfig?.followingButtonTextStyle ??
                     IsrStyles.primaryText12.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: IsrColors.colorF4F4F4,
+                      color: Theme.of(context).primaryColor,
                       shadows: _textShadows,
                     ),
               ),
@@ -2410,131 +2413,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     });
   }
 
-  TextSpan _buildDescriptionTextSpan(
-    String description,
-    List<MentionMetaData> mentions,
-    List<MentionMetaData> hashtags,
-    TextStyle defaultStyle,
-    void Function(MentionMetaData) onMentionTap,
-  ) {
-    final spans = <InlineSpan>[];
-    final pattern = RegExp(r'(@[a-zA-Z0-9_]+)|(#[a-zA-Z0-9_]+)');
-    final matches = pattern.allMatches(description).toList();
-
-    var lastIndex = 0;
-
-    // Process each match
-    for (final match in matches) {
-      final start = match.start;
-      final end = match.end;
-      final matchedText = match.group(0)!;
-
-      // Add normal text before the match (only if not empty/whitespace)
-      if (lastIndex < start) {
-        final textBefore = description.substring(lastIndex, start);
-        if (textBefore.trim().isNotEmpty) {
-          spans.add(TextSpan(
-            text: textBefore,
-            style: defaultStyle,
-          ));
-        } else if (textBefore.isNotEmpty) {
-          // Add whitespace as-is for proper spacing
-          spans.add(TextSpan(
-            text: textBefore,
-            style: defaultStyle,
-          ));
-        }
-      }
-
-      if (matchedText.startsWith('@') && mentions.isNotEmpty) {
-        // Find the mention by username using where
-        final matchingMentions = mentions.where(
-          (m) => '@${m.username}' == matchedText,
-        );
-
-        if (matchingMentions.isNotEmpty && matchedText.isNotEmpty) {
-          final mention = matchingMentions.first;
-          final mentionStyle = _textStyleConfig?.mentionStyle ??
-              defaultStyle.copyWith(
-                fontWeight: FontWeight.w800,
-                decoration: TextDecoration.none,
-              );
-          spans.add(TextSpan(
-            text: matchedText,
-            style: mentionStyle,
-            recognizer: TapGestureRecognizer()
-              ..onTap = () {
-                onMentionTap(mention);
-              },
-          ));
-        } else {
-          if (matchedText.isNotEmpty) {
-            spans.add(TextSpan(
-              text: matchedText,
-              style: defaultStyle,
-            ));
-          }
-        }
-      } else if (matchedText.startsWith('#') && hashtags.isNotEmpty) {
-        // Find the hashtag by tag using where
-        final matchingHashtags = hashtags.where(
-          (m) => '#${m.tag}' == matchedText,
-        );
-
-        if (matchingHashtags.isNotEmpty && matchedText.isNotEmpty) {
-          final hashTag = matchingHashtags.first;
-          final hashtagStyle = _textStyleConfig?.hashtagStyle ??
-              defaultStyle.copyWith(
-                fontWeight: FontWeight.w800,
-                decoration: TextDecoration.none,
-              );
-          spans.add(TextSpan(
-            text: matchedText,
-            style: hashtagStyle,
-            recognizer: TapGestureRecognizer()
-              ..onTap = () {
-                onMentionTap(hashTag);
-              },
-          ));
-        } else {
-          if (matchedText.isNotEmpty) {
-            spans.add(TextSpan(
-              text: matchedText,
-              style: defaultStyle.copyWith(
-                fontWeight: FontWeight.w800,
-                decoration: TextDecoration.none,
-              ),
-            ));
-          }
-        }
-      } else {
-        if (matchedText.isNotEmpty) {
-          spans.add(TextSpan(
-            text: matchedText,
-            style: defaultStyle.copyWith(fontWeight: FontWeight.w400),
-          ));
-        }
-      }
-
-      lastIndex = end;
-    }
-
-    // Add remaining text after last match
-    if (lastIndex < description.length) {
-      final remainingText = description.substring(lastIndex);
-      if (remainingText.trim().isNotEmpty) {
-        spans.add(TextSpan(
-          text: remainingText,
-          style: defaultStyle,
-        ));
-      }
-    }
-
-    final textSpan = TextSpan(children: spans, style: defaultStyle);
-
-    return textSpan;
-  }
-
   void _handleCommentClick([StateSetter? setBuilderState]) async {
     if (widget.reelsConfig.onTapComment == null) return;
     final commentCount = await widget.reelsConfig.onTapComment!(
@@ -2564,10 +2442,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       return SizedBox(
         key: ValueKey('media_$index'), // Consistent key
         child: _buildVideoContent(
-          media: media,
-          key: _videoPlayerKeys[index],
-          logIndex: '${widget.index}-$index}',
-        ),
+            media: media,
+            key: _videoPlayerKeys[index],
+            logIndex: '${widget.index}-$index}',
+            isPreloaded: _isPreloaded || index != _currentPageNotifier.value),
       );
     }
   }

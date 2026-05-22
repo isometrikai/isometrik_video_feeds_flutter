@@ -47,6 +47,25 @@ void main() {
     expect(feed.nextCursor, 'c1');
   });
 
+  test('StoryData parses engagement_metrics.view_count', () {
+    final story = StoryData.fromMap({
+      'id': 'story_da9a6443f399',
+      'user_id': 'd196903f-33e1-4ef3-bc69-ad6483e8e516',
+      'caption': 'lo',
+      'media': {
+        'media_type': 'image',
+        'url':
+            'https://assets.dubly.xyz/stories/image_picker_08669E62.jpg',
+      },
+      'engagement_metrics': {
+        'view_count': 2,
+        'reaction_types': {'love': 1},
+      },
+    });
+    expect(story.viewCount, 2);
+    expect(story.caption, 'lo');
+  });
+
   test('StoryFeedResponse parses grouped stories rings', () {
     final feed = StoryFeedResponse.fromMap({
       'stories': [
@@ -62,5 +81,29 @@ void main() {
     expect(feed.unViewed.length, 1);
     expect(feed.unViewed.first.stories.length, 1);
     expect(feed.unViewed.first.stories.first.id, 'a');
+  });
+
+  test('StoryFeedResponse preserves view_count in grouped feed payload', () {
+    final feed = StoryFeedResponse.fromMap({
+      'stories': [
+        {
+          'user_id': 'd196903f-33e1-4ef3-bc69-ad6483e8e516',
+          'is_viewed': true,
+          'stories': [
+            {
+              'id': 'story_da9a6443f399',
+              'caption': 'lo',
+              'media': {
+                'media_type': 'image',
+                'url': 'https://assets.dubly.xyz/stories/a.jpg',
+              },
+              'engagement_metrics': {'view_count': 2},
+            },
+          ],
+        },
+      ],
+    });
+    expect(feed.unViewed.first.stories.first.viewCount, 2);
+    expect(feed.unViewed.first.stories.first.caption, 'lo');
   });
 }

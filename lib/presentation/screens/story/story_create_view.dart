@@ -1,10 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/cubits/story/story.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 
-/// SDK full-screen story composer (photo/video + caption), similar flow to create post media pick + upload.
 class StoryCreateView extends StatefulWidget {
   const StoryCreateView({super.key});
 
@@ -21,20 +23,29 @@ class _StoryCreateViewState extends State<StoryCreateView> {
     super.dispose();
   }
 
+  bool get _useBackgroundStoryUi =>
+      IsrVideoReelConfig.storyConfig?.storyCallbackConfig
+          .onBackgroundStoryOperation !=
+      null;
+
   Future<void> _submit(BuildContext context) async {
     final composerState = _composerCubit.state;
     if (!composerState.hasSelectedMedia || composerState.isSubmitting) return;
     _composerCubit.setSubmitting(true);
+    final payload = StoryUploadPayload(
+      file: composerState.file,
+      mediaType: composerState.mediaType,
+      mediaPosition: 1,
+      caption: composerState.caption.trim(),
+      videoDurationSeconds: composerState.videoDurationSeconds,
+    );
+    if (_useBackgroundStoryUi) {
+      unawaited(context.read<StoryCubit>().createStoryFromPayload(payload));
+      if (context.mounted) Navigator.of(context).pop();
+      return;
+    }
     try {
-      await context.read<StoryCubit>().createStoryFromPayload(
-            StoryUploadPayload(
-              file: composerState.file,
-              mediaType: composerState.mediaType,
-              mediaPosition: 1,
-              caption: composerState.caption.trim(),
-              videoDurationSeconds: composerState.videoDurationSeconds,
-            ),
-          );
+      await context.read<StoryCubit>().createStoryFromPayload(payload);
     } finally {
       if (mounted) _composerCubit.setSubmitting(false);
     }
@@ -48,29 +59,31 @@ class _StoryCreateViewState extends State<StoryCreateView> {
     required VoidCallback onTap,
   }) =>
       OutlinedButton.icon(
-      onPressed: composerState.isSubmitting ? null : onTap,
-      icon: Icon(icon),
-      label: Text(text, style: IsrStyles.primaryText14),
-      style: OutlinedButton.styleFrom(
-        padding: IsrDimens.edgeInsetsSymmetric(
-          vertical: IsrDimens.twelve,
-          horizontal: IsrDimens.twelve,
+        onPressed: composerState.isSubmitting ? null : onTap,
+        icon: Icon(icon),
+        label: Text(text, style: IsrStyles.primaryText14),
+        style: OutlinedButton.styleFrom(
+          padding: IsrDimens.edgeInsetsSymmetric(
+            vertical: IsrDimens.twelve,
+            horizontal: IsrDimens.twelve,
+          ),
+          side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(IsrDimens.fourteen),
+          ),
         ),
-        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(IsrDimens.fourteen),
-        ),
-      ),
-    );
+      );
 
   @override
   Widget build(BuildContext context) => BlocProvider.value(
         value: _composerCubit,
         child: BlocListener<StoryCubit, StoryState>(
           listenWhen: (prev, next) =>
-              next is StoryActionSuccess || next is StoryError,
+              !_useBackgroundStoryUi &&
+              (next is StoryActionSuccess || next is StoryError),
           listener: (context, state) {
-            if (state is StoryActionSuccess && state.actionName == 'create_story') {
+            if (state is StoryActionSuccess &&
+                state.actionName == 'create_story') {
               Navigator.of(context).pop();
               return;
             }
@@ -83,7 +96,7 @@ class _StoryCreateViewState extends State<StoryCreateView> {
           child: BlocBuilder<StoryComposerCubit, StoryComposerState>(
             builder: (context, composerState) => Scaffold(
               appBar: AppBar(
-                title: const Text('New story'),
+                title: const Text(IsrTranslationFile.newStory),
                 leading: IconButton(
                   icon: const Icon(Icons.arrow_back_ios_new_rounded),
                   onPressed: () => Navigator.of(context).pop(),
@@ -140,14 +153,15 @@ class _StoryCreateViewState extends State<StoryCreateView> {
                             if (composerState.file != null)
                               SizedBox(height: IsrDimens.twelve),
                             TextField(
-                              maxLines: 2,
+                              maxLines: 5,
                               minLines: 1,
                               enabled: !composerState.isSubmitting,
                               textInputAction: TextInputAction.done,
-                              onChanged:
-                                  context.read<StoryComposerCubit>().updateCaption,
+                              onChanged: context
+                                  .read<StoryComposerCubit>()
+                                  .updateCaption,
                               decoration: InputDecoration(
-                                hintText: 'Write to add to story',
+                                hintText: IsrTranslationFile.writeToAddToStory,
                                 prefixIcon:
                                     const Icon(Icons.mode_edit_outline_rounded),
                                 border: OutlineInputBorder(
@@ -168,9 +182,11 @@ class _StoryCreateViewState extends State<StoryCreateView> {
                                   child: _pickerButton(
                                     context: context,
                                     composerState: composerState,
-                                    text: 'Pick photo',
+                                    text: IsrTranslationFile.pickPhoto,
                                     icon: Icons.photo_library_outlined,
-                                    onTap: context.read<StoryComposerCubit>().pickPhoto,
+                                    onTap: context
+                                        .read<StoryComposerCubit>()
+                                        .pickPhoto,
                                   ),
                                 ),
                                 SizedBox(width: IsrDimens.ten),
@@ -178,13 +194,28 @@ class _StoryCreateViewState extends State<StoryCreateView> {
                                   child: _pickerButton(
                                     context: context,
                                     composerState: composerState,
-                                    text: 'Pick video',
+                                    text: IsrTranslationFile.pickVideo,
                                     icon: Icons.video_library_outlined,
-                                    onTap: context.read<StoryComposerCubit>().pickVideo,
+                                    onTap: context
+                                        .read<StoryComposerCubit>()
+                                        .pickVideo,
                                   ),
                                 ),
                               ],
                             ),
+                            if (composerState.file != null &&
+                                composerState.mediaType == 'image') ...[
+                              SizedBox(height: IsrDimens.ten),
+                              _pickerButton(
+                                context: context,
+                                composerState: composerState,
+                                text: 'Crop photo',
+                                icon: Icons.crop_rounded,
+                                onTap: context
+                                    .read<StoryComposerCubit>()
+                                    .recropPhoto,
+                              ),
+                            ],
                           ],
                         ),
                       ),

@@ -4,7 +4,8 @@ import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/models/models.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
-import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart' as ms;
+import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart'
+    as ms;
 import 'package:ism_video_reel_player/utils/navigator/highlight_open_coordinator.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
@@ -63,17 +64,18 @@ class IsrAppNavigator {
   /// ✅ Wraps the destination with necessary BLoC providers
   /// Uses rootNavigator to hide bottom navigation bar
   static void navigateToSearch(
-      BuildContext context, {
-        String? search,
-        List<SearchTabType>? tabList = SearchTabType.values,
-        SearchScreenConfig? config,
-        TransitionType? transitionType,
-      }) {
+    BuildContext context, {
+    String? search,
+    List<SearchTabType>? tabList = SearchTabType.values,
+    SearchScreenConfig? config,
+    TransitionType? transitionType,
+  }) {
     final page = BlocProvider<PostListingBloc>(
       create: (_) => IsmInjectionUtils.getBloc<PostListingBloc>(),
       child: PostListingView(
         searchQuery: search ?? '',
-        tabList: tabList?.takeIf((list) => list.isNotEmpty) ?? SearchTabType.values,
+        tabList:
+            tabList?.takeIf((list) => list.isNotEmpty) ?? SearchTabType.values,
         config: config,
       ),
     );
@@ -100,7 +102,6 @@ class IsrAppNavigator {
     );
   }
 
-  /// Navigate to follow requests (incoming / outgoing tabs).
   static void navigateToFollowRequests(
     BuildContext context, {
     TransitionType? transitionType,
@@ -118,8 +119,6 @@ class IsrAppNavigator {
     );
   }
 
-  /// Navigate to place details
-  /// ✅ Wraps the destination with necessary BLoC providers
   static void navigateToPlaceDetails(
     BuildContext context, {
     required String placeId,
@@ -261,31 +260,21 @@ class IsrAppNavigator {
     return result;
   }
 
-  /// Opens the SDK story composer (image/video + caption). Call this from your
-  /// settings / account UI, or set [StoryCallbackConfig.navigateToCreateStory] for a custom screen.
   static Future<void> goToCreateStoryView(
     BuildContext context, {
     TransitionType? transitionType,
   }) async {
-    final cubit = _storyCubitFrom(context);
-    final page = BlocProvider<StoryCubit>.value(
-      value: cubit,
-      child: const StoryCreateView(),
-    );
-    await Navigator.of(context, rootNavigator: true).push<void>(
-      _buildRoute(page: page, transitionType: transitionType),
-    );
+    await StoryCreateFlow.open(context);
   }
 
-  /// Instagram-style full-screen story viewer (image/video, tap zones, close).
-  static Future<void> presentStoryViewer(
+  static Future<List<StoryGroup>?> presentStoryViewer(
     BuildContext context, {
     required List<StoryGroup> groups,
     required int initialGroupIndex,
     String? highlightId,
     TransitionType transitionType = TransitionType.fade,
   }) async {
-    if (groups.isEmpty) return;
+    if (groups.isEmpty) return null;
     final cubit = _storyCubitFrom(context);
     final page = BlocProvider<StoryCubit>.value(
       value: cubit,
@@ -295,7 +284,7 @@ class IsrAppNavigator {
         highlightId: highlightId,
       ),
     );
-    await Navigator.of(context, rootNavigator: true).push<void>(
+    return Navigator.of(context, rootNavigator: true).push<List<StoryGroup>>(
       _buildRoute(page: page, transitionType: transitionType),
     );
   }
@@ -317,6 +306,23 @@ class IsrAppNavigator {
       debugPrint('IsrAppNavigator: StoryCubit missing in context, using DI');
       return IsmInjectionUtils.getBloc<StoryCubit>();
     }
+  }
+
+  /// Full highlight composer: pick stories (optional) → create new OR add to existing.
+  static Future<void> presentHighlightComposerFlow(
+    BuildContext context, {
+    StoryData? seedStory,
+    List<String>? preselectedStoryIds,
+    bool openViewerAfterAdd = false,
+  }) async {
+    final cubit = _storyCubitFrom(context);
+    await HighlightComposerCoordinator.run(
+      context: context,
+      cubit: cubit,
+      seedStory: seedStory,
+      preselectedStoryIds: preselectedStoryIds,
+      openViewerAfterAdd: openViewerAfterAdd,
+    );
   }
 
   static Future<HighlightOpenResult> presentHighlightViewer(
@@ -350,8 +356,8 @@ class IsrAppNavigator {
     String? userId,
     TransitionType transitionType = TransitionType.fade,
   }) async {
-    final context =
-        IsrVideoReelConfig.getBuildContext?.call() ?? IsrVideoReelConfig.buildContext;
+    final context = IsrVideoReelConfig.getBuildContext?.call() ??
+        IsrVideoReelConfig.buildContext;
     if (context == null) {
       const reason = 'BuildContext unavailable for highlight navigation.';
       IsrVideoReelConfig.storyConfig?.storyCallbackConfig.onStoryActionError
@@ -468,7 +474,8 @@ class IsrAppNavigator {
     String? postId,
     TransitionType? transitionType,
   }) async {
-    debugPrint('goToTagPeopleScreen:- MentionDataList: ${mentionDataList?.map((e) => e.toJson()).toList()}');
+    debugPrint(
+        'goToTagPeopleScreen:- MentionDataList: ${mentionDataList?.map((e) => e.toJson()).toList()}');
     final page = MultiBlocProvider(
       providers: [
         BlocProvider.value(value: context.getOrCreateBloc<CreatePostBloc>()),

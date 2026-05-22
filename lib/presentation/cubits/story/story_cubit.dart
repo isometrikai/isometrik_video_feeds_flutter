@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ism_video_reel_player/data/managers/story_viewed_local_store.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:video_compress/video_compress.dart';
 
@@ -17,6 +18,7 @@ class StoryCubit extends Cubit<StoryState> {
   final StoryUseCase _storyUseCase;
   final IsmLocalDataUseCase _localDataUseCase;
   final GoogleCloudStorageUploaderUseCase _googleCloudStorageUploaderUseCase;
+  final StoryViewedLocalStore _viewedLocalStore = StoryViewedLocalStore();
 
   String? _nextCursor;
   String _currentUserId = '';
@@ -25,6 +27,108 @@ class StoryCubit extends Cubit<StoryState> {
 
   List<StoryGroup> get cachedStoryGroups => [..._unViewed, ..._viewed];
   String get currentUserId => _currentUserId;
+
+  bool get _usesBackgroundStoryUi =>
+      IsrVideoReelConfig.storyConfig?.storyCallbackConfig
+          .onBackgroundStoryOperation !=
+      null;
+
+  StoryUploadPayload? _lastStoryPayloadForRetry;
+
+  void _retryBackgroundStory() {
+    final payload = _lastStoryPayloadForRetry;
+    if (payload != null) {
+      unawaited(createStoryFromPayload(payload));
+    }
+  }
+
+  void _notifyBackgroundStory(BackgroundStoryOperationUpdate update) {
+    IsrVideoReelConfig.storyConfig?.storyCallbackConfig
+        .onBackgroundStoryOperation
+        ?.call(update);
+  }
+
+  void _notifyBackgroundStoryUpload({
+    required double percent,
+    String? fileName,
+    bool isError = false,
+    String? errorMessage,
+  }) {
+    _notifyBackgroundStory(
+      BackgroundStoryOperationUpdate(
+        phase: isError
+            ? BackgroundStoryOperationPhase.failure
+            : BackgroundStoryOperationPhase.uploading,
+        overallProgressPercent: percent.clamp(0, 100),
+        title: isError ? null : 'Uploading story',
+        subtitle: fileName,
+        currentFileIndex: 1,
+        totalFiles: 1,
+        currentFileName: fileName,
+        isUploadError: isError,
+        failureKind:
+            isError ? BackgroundStoryFailureKind.upload : null,
+        failureMessage: errorMessage,
+        retry: isError ? _retryBackgroundStory : null,
+      ),
+    );
+  }
+
+  void _notifyBackgroundStoryCreating() {
+    _notifyBackgroundStory(
+      BackgroundStoryOperationUpdate(
+        phase: BackgroundStoryOperationPhase.creatingStory,
+        overallProgressPercent: 100,
+        title: 'Publishing story',
+        retry: _retryBackgroundStory,
+      ),
+    );
+  }
+
+  void _notifyBackgroundStoryProcessing() {
+    _notifyBackgroundStory(
+      BackgroundStoryOperationUpdate(
+        phase: BackgroundStoryOperationPhase.processingMedia,
+        overallProgressPercent: 0,
+        title: 'Processing story',
+        retry: _retryBackgroundStory,
+      ),
+    );
+  }
+
+  void _notifyBackgroundStorySuccess({String? storyId}) {
+    _notifyBackgroundStory(
+      BackgroundStoryOperationUpdate(
+        phase: BackgroundStoryOperationPhase.success,
+        overallProgressPercent: 100,
+        storyId: storyId,
+        successTitle: 'Story posted',
+        successMessage: 'Your story is live.',
+      ),
+    );
+  }
+
+  void _notifyBackgroundStoryFailure(
+    String message, {
+    BackgroundStoryFailureKind kind = BackgroundStoryFailureKind.upload,
+  }) {
+    _notifyBackgroundStory(
+      BackgroundStoryOperationUpdate(
+        phase: BackgroundStoryOperationPhase.failure,
+        failureKind: kind,
+        failureMessage: message,
+        retry: _retryBackgroundStory,
+      ),
+    );
+  }
+
+  void _emitStoryError(String message) {
+    if (_usesBackgroundStoryUi) {
+      _notifyBackgroundStoryFailure(message);
+    } else {
+      emit(StoryError(message));
+    }
+  }
 
   Future<void> loadStoryFeed({
     bool isLoading = false,
@@ -68,6 +172,7 @@ class StoryCubit extends Cubit<StoryState> {
             stories: mine.data!,
           );
         }
+        _applyPersistedViewedState(userId);
       }
 
       emit(
@@ -88,7 +193,11 @@ class StoryCubit extends Cubit<StoryState> {
   }
 
   Future<void> createStory(CreateStoryRequest request) async {
-    emit(const StoryLoading());
+    if (!_usesBackgroundStoryUi) {
+      emit(const StoryLoading());
+    } else {
+      _notifyBackgroundStoryCreating();
+    }
     final createResult = await _storyUseCase.executeCreateStory(
       isLoading: false,
       request: request,
@@ -96,21 +205,45 @@ class StoryCubit extends Cubit<StoryState> {
     final responseMap = createResult.data?.decode();
     final storyId = responseMap?['data']?['id']?.toString() ?? '';
     if (createResult.isSuccess && storyId.isNotEmpty) {
+      if (_usesBackgroundStoryUi) {
+        _notifyBackgroundStoryProcessing();
+      }
       final processResult = await _storyUseCase.executeStartStoryProcessing(
         isLoading: false,
         storyId: storyId,
       );
       if (processResult.isSuccess) {
+        if (_usesBackgroundStoryUi) {
+          _notifyBackgroundStorySuccess(storyId: storyId);
+          unawaited(loadStoryFeed(isLoading: false));
+          return;
+        }
         emit(const StoryActionSuccess('create_story'));
         unawaited(loadStoryFeed());
         return;
       }
       final message =
           processResult.error?.message ?? 'Story created but processing failed.';
-      emit(StoryError(message));
+      if (_usesBackgroundStoryUi) {
+        _notifyBackgroundStoryFailure(
+          message,
+          kind: BackgroundStoryFailureKind.mediaProcessing,
+        );
+      } else {
+        emit(StoryError(message));
+      }
       return;
     }
-    emit(StoryError(createResult.error?.message ?? 'Unable to create story.'));
+    final message =
+        createResult.error?.message ?? 'Unable to create story.';
+    if (_usesBackgroundStoryUi) {
+      _notifyBackgroundStoryFailure(
+        message,
+        kind: BackgroundStoryFailureKind.createApi,
+      );
+    } else {
+      emit(StoryError(message));
+    }
   }
 
   Future<void> handleCreateStoryTap() async {
@@ -137,6 +270,15 @@ class StoryCubit extends Cubit<StoryState> {
   }
 
   Future<void> createStoryFromPayload(StoryUploadPayload payload) async {
+    _lastStoryPayloadForRetry = payload;
+    if (_usesBackgroundStoryUi) {
+      unawaited(_runCreateStoryFromPayload(payload));
+      return;
+    }
+    await _runCreateStoryFromPayload(payload);
+  }
+
+  Future<void> _runCreateStoryFromPayload(StoryUploadPayload payload) async {
     final mediaUrl = payload.mediaUrl?.trim() ?? '';
     if (mediaUrl.isNotEmpty) {
       final request = await _createStoryRequest(mediaUrl, payload);
@@ -168,22 +310,26 @@ class StoryCubit extends Cubit<StoryState> {
       await _createStoryViaSdkUpload(payload);
       return;
     }
-    emit(const StoryError(
+    _emitStoryError(
       'Provide mediaUrl or configure upload callback/upload mode for story creation.',
-    ));
+    );
   }
 
   Future<void> _createStoryViaSdkUpload(StoryUploadPayload payload) async {
     final file = payload.file;
     if (file == null) {
-      emit(const StoryError(
-          'Host must provide file for sdkManagedGoogleCloud upload mode.'));
+      _emitStoryError(
+        'Host must provide file for sdkManagedGoogleCloud upload mode.',
+      );
       return;
     }
     final filePath = file.path;
     final fileName = filePath.split('/').last;
     final dotIndex = fileName.lastIndexOf('.');
     final extension = dotIndex > 0 ? fileName.substring(dotIndex + 1) : 'jpg';
+    if (_usesBackgroundStoryUi) {
+      _notifyBackgroundStoryUpload(percent: 0, fileName: fileName);
+    }
     final userId = await _localDataUseCase.getUserId();
     final uploadedUrl =
         await _googleCloudStorageUploaderUseCase.executeGoogleCloudStorageUploader(
@@ -194,8 +340,20 @@ class StoryCubit extends Cubit<StoryState> {
       cloudFolderName: 'stories',
     );
     if ((uploadedUrl ?? '').trim().isEmpty) {
-      emit(const StoryError('Failed to upload story media.'));
+      if (_usesBackgroundStoryUi) {
+        _notifyBackgroundStoryUpload(
+          percent: 0,
+          fileName: fileName,
+          isError: true,
+          errorMessage: 'Failed to upload story media.',
+        );
+      } else {
+        _emitStoryError('Failed to upload story media.');
+      }
       return;
+    }
+    if (_usesBackgroundStoryUi) {
+      _notifyBackgroundStoryUpload(percent: 100, fileName: fileName);
     }
     final request = await _createStoryRequest(uploadedUrl!.trim(), payload);
     await createStory(request);
@@ -204,14 +362,14 @@ class StoryCubit extends Cubit<StoryState> {
   Future<void> _createStoryViaHostUploadCallback(StoryUploadPayload payload) async {
     final file = payload.file;
     if (file == null) {
-      emit(const StoryError('File is required for host upload callback.'));
+      _emitStoryError('File is required for host upload callback.');
       return;
     }
     final callback = IsrVideoReelConfig.storyConfig?.uploadMediaToCloud ??
         IsrVideoReelConfig.storyConfig?.storyCallbackConfig.uploadMediaToCloud ??
         IsrVideoReelConfig.socialConfig.socialCallBackConfig?.uploadMediaToCloud;
     if (callback == null) {
-      emit(const StoryError('Story upload callback is not configured.'));
+      _emitStoryError('Story upload callback is not configured.');
       return;
     }
     final filePath = file.path;
@@ -221,20 +379,128 @@ class StoryCubit extends Cubit<StoryState> {
     final mediaType = payload.mediaType.toLowerCase().contains('video')
         ? MediaType.video
         : MediaType.photo;
-    final uploadedUrl = await callback(
-      File(filePath),
-      fileName,
-      mediaType,
-      (_) {},
-      'stories',
-      extension,
-    );
-    if (uploadedUrl.trim().isEmpty) {
-      emit(const StoryError('Host upload callback returned empty URL.'));
-      return;
+    if (_usesBackgroundStoryUi) {
+      _notifyBackgroundStoryUpload(percent: 0, fileName: fileName);
     }
-    final request = await _createStoryRequest(uploadedUrl.trim(), payload);
-    await createStory(request);
+    try {
+      final uploadedUrl = await callback(
+        File(filePath),
+        fileName,
+        mediaType,
+        (progress) {
+          if (_usesBackgroundStoryUi) {
+            _notifyBackgroundStoryUpload(
+              percent: progress.clamp(0, 100),
+              fileName: fileName,
+            );
+          }
+        },
+        'stories',
+        extension,
+      );
+      if (uploadedUrl.trim().isEmpty) {
+        if (_usesBackgroundStoryUi) {
+          _notifyBackgroundStoryUpload(
+            percent: 0,
+            fileName: fileName,
+            isError: true,
+            errorMessage: 'Host upload callback returned empty URL.',
+          );
+        } else {
+          _emitStoryError('Host upload callback returned empty URL.');
+        }
+        return;
+      }
+      if (_usesBackgroundStoryUi) {
+        _notifyBackgroundStoryUpload(percent: 100, fileName: fileName);
+      }
+      final request = await _createStoryRequest(uploadedUrl.trim(), payload);
+      await createStory(request);
+    } catch (e) {
+      if (_usesBackgroundStoryUi) {
+        _notifyBackgroundStoryUpload(
+          percent: 0,
+          fileName: fileName,
+          isError: true,
+          errorMessage: e.toString(),
+        );
+      } else {
+        _emitStoryError(e.toString());
+      }
+    }
+  }
+
+  /// Uploads a local image and returns a public URL for a highlight cover.
+  /// Uses the same upload configuration as story media (host callback or GCS).
+  /// Does not emit [StoryState] so callers can handle failures in UI.
+  Future<String?> uploadHighlightCoverFile(File file) async {
+    final filePath = file.path;
+    if (filePath.isEmpty) return null;
+
+    final storyConfig = IsrVideoReelConfig.storyConfig;
+    final callbackConfig = storyConfig?.storyCallbackConfig;
+    final socialUpload = IsrVideoReelConfig
+        .socialConfig.socialCallBackConfig?.uploadMediaToCloud;
+    final callback = storyConfig?.uploadMediaToCloud ??
+        callbackConfig?.uploadMediaToCloud ??
+        socialUpload;
+
+    final fileName = filePath.split('/').last;
+    final dotIndex = fileName.lastIndexOf('.');
+    final extension = dotIndex > 0 ? fileName.substring(dotIndex + 1) : 'jpg';
+
+    if (callback != null) {
+      try {
+        final uploadedUrl = await callback(
+          File(filePath),
+          fileName,
+          MediaType.photo,
+          (_) {},
+          'highlights',
+          extension,
+        );
+        final url = uploadedUrl.trim();
+        return url.isEmpty ? null : url;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    final uploadMode = storyConfig?.uploadMode ??
+        callbackConfig?.uploadMode ??
+        StoryUploadMode.hostProvidedUrl;
+    if (uploadMode == StoryUploadMode.sdkManagedGoogleCloud) {
+      final userId = await _localDataUseCase.getUserId();
+      final uploadedUrl =
+          await _googleCloudStorageUploaderUseCase.executeGoogleCloudStorageUploader(
+        file: File(filePath),
+        fileName: fileName,
+        userId: userId,
+        fileExtension: extension,
+        cloudFolderName: 'highlights',
+      );
+      final url = (uploadedUrl ?? '').trim();
+      return url.isEmpty ? null : url;
+    }
+
+    final gcs = IsrVideoReelConfig.socialConfig.googleCloudUpload;
+    if (gcs != null &&
+        gcs.bucketName.isNotEmpty &&
+        gcs.credentialsJsonPath.isNotEmpty) {
+      final userId = await _localDataUseCase.getUserId();
+      final uploadedUrl =
+          await _googleCloudStorageUploaderUseCase.executeGoogleCloudStorageUploader(
+        file: File(filePath),
+        fileName: fileName,
+        userId: userId,
+        fileExtension: extension,
+        cloudFolderName: 'highlights',
+      );
+      final url = (uploadedUrl ?? '').trim();
+      return url.isEmpty ? null : url;
+    }
+
+    return null;
   }
 
   Future<void> _mergeCurrentUserStoryRing({
@@ -246,22 +512,35 @@ class StoryCubit extends Cubit<StoryState> {
     _viewed.removeWhere((g) => g.userId == userId);
     final username = await _localDataUseCase.getUserName();
     final avatarUrl = await _localDataUseCase.getProfilePic();
-    final normalized = stories
-        .map(
-          (s) => s.userId.isEmpty
-              ? StoryData(
-                  id: s.id,
-                  userId: userId,
-                  mediaUrl: s.mediaUrl,
-                  mediaType: s.mediaType,
-                  caption: s.caption,
-                  createdAt: s.createdAt,
-                  expiresAt: s.expiresAt,
-                  isViewed: s.isViewed,
-                )
-              : s,
-        )
-        .toList();
+    final existingById = <String, StoryData>{};
+    for (final g in [..._unViewed, ..._viewed]) {
+      if (g.userId != userId) continue;
+      for (final s in g.stories) {
+        existingById[s.id] = s;
+      }
+    }
+
+    StoryData mergeWithFeed(StoryData s) {
+      final base =
+          s.userId.isEmpty ? s.copyWith(userId: userId) : s;
+      final existing = existingById[base.id];
+      if (existing == null) return base;
+      return base.copyWith(
+        viewCount: base.viewCount > 0 ? base.viewCount : existing.viewCount,
+        caption: base.caption.isNotEmpty ? base.caption : existing.caption,
+        username:
+            base.username.isNotEmpty ? base.username : existing.username,
+        fullName: base.fullName.isNotEmpty ? base.fullName : existing.fullName,
+        avatarUrl:
+            base.avatarUrl.isNotEmpty ? base.avatarUrl : existing.avatarUrl,
+        isReacted: base.isReacted || existing.isReacted,
+        isViewed: existing.isViewed || base.isViewed,
+      );
+    }
+
+    final normalized = stories.map(mergeWithFeed).toList();
+    final allViewed =
+        normalized.isNotEmpty && normalized.every((s) => s.isViewed);
     _unViewed.insert(
       0,
       StoryGroup(
@@ -269,6 +548,7 @@ class StoryCubit extends Cubit<StoryState> {
         username: username,
         avatarUrl: avatarUrl,
         stories: normalized,
+        isViewed: allViewed,
       ),
     );
   }
@@ -318,19 +598,46 @@ class StoryCubit extends Cubit<StoryState> {
     );
   }
 
-  void _markStoryViewedLocally(String storyId) {
-    StoryData viewedCopy(StoryData s) => s.id == storyId
-        ? StoryData(
-            id: s.id,
-            userId: s.userId,
-            mediaUrl: s.mediaUrl,
-            mediaType: s.mediaType,
-            caption: s.caption,
-            createdAt: s.createdAt,
-            expiresAt: s.expiresAt,
-            isViewed: true,
+  void _applyPersistedViewedState(String userId) {
+    if (userId.isEmpty) return;
+    final persisted = _viewedLocalStore.readStoryIds(userId);
+    if (persisted.isEmpty) return;
+
+    final activeIds = <String>{};
+    StoryGroup applyGroup(StoryGroup g) {
+      final nextStories = g.stories
+          .map(
+            (s) => persisted.contains(s.id) ? s.copyWith(isViewed: true) : s,
           )
-        : s;
+          .toList();
+      for (final s in nextStories) {
+        activeIds.add(s.id);
+      }
+      final allDone = nextStories.isNotEmpty &&
+          nextStories.every((s) => s.isViewed);
+      return StoryGroup(
+        userId: g.userId,
+        username: g.username,
+        avatarUrl: g.avatarUrl,
+        stories: nextStories,
+        isViewed: allDone,
+      );
+    }
+
+    final nu = _unViewed.map(applyGroup).toList();
+    final nv = _viewed.map(applyGroup).toList();
+    _unViewed
+      ..clear()
+      ..addAll(nu);
+    _viewed
+      ..clear()
+      ..addAll(nv);
+    _viewedLocalStore.pruneStoryIds(userId, activeIds);
+  }
+
+  void _markStoryViewedLocally(String storyId) {
+    StoryData viewedCopy(StoryData s) =>
+        s.id == storyId ? s.copyWith(isViewed: true) : s;
 
     StoryGroup mapGroup(StoryGroup g) {
       final nextStories = g.stories.map(viewedCopy).toList();
@@ -356,15 +663,23 @@ class StoryCubit extends Cubit<StoryState> {
   }
 
   Future<void> markStoryViewed(String storyId) async {
+    if (_currentUserId.isEmpty) {
+      _currentUserId = await _localDataUseCase.getUserId();
+    }
+    final hasCachedFeed = _unViewed.isNotEmpty || _viewed.isNotEmpty;
+    if (hasCachedFeed) {
+      _markStoryViewedLocally(storyId);
+      _emitFeedIfCached();
+    }
+    if (_currentUserId.isNotEmpty) {
+      unawaited(_viewedLocalStore.addStoryId(_currentUserId, storyId));
+    }
+
     final result = await _storyUseCase.executeMarkStoryViewed(
       isLoading: false,
       storyId: storyId,
     );
-    if (_unViewed.isNotEmpty || _viewed.isNotEmpty) {
-      if (result.isSuccess) {
-        _markStoryViewedLocally(storyId);
-      }
-      _emitFeedIfCached();
+    if (hasCachedFeed) {
       if (!result.isSuccess) {
         IsrVideoReelConfig.storyConfig?.storyCallbackConfig.onStoryActionError
             ?.call(
@@ -382,7 +697,7 @@ class StoryCubit extends Cubit<StoryState> {
     }
   }
 
-  Future<void> addReaction({
+  Future<bool> addReaction({
     required String storyId,
     required String reactionType,
   }) async {
@@ -400,14 +715,15 @@ class StoryCubit extends Cubit<StoryState> {
           result.error?.message ?? 'Unable to add reaction.',
         );
       }
-      return;
+      return result.isSuccess;
     }
     emit(result.isSuccess
         ? const StoryActionSuccess('add_story_reaction')
         : StoryError(result.error?.message ?? 'Unable to add reaction.'));
+    return result.isSuccess;
   }
 
-  Future<void> removeReaction(String storyId) async {
+  Future<bool> removeReaction(String storyId) async {
     final result = await _storyUseCase.executeRemoveStoryReaction(
       isLoading: false,
       storyId: storyId,
@@ -421,11 +737,12 @@ class StoryCubit extends Cubit<StoryState> {
           result.error?.message ?? 'Unable to remove reaction.',
         );
       }
-      return;
+      return result.isSuccess;
     }
     emit(result.isSuccess
         ? const StoryActionSuccess('remove_story_reaction')
         : StoryError(result.error?.message ?? 'Unable to remove reaction.'));
+    return result.isSuccess;
   }
 
   Future<void> loadHighlights({String? userId}) async {
@@ -447,6 +764,9 @@ class StoryCubit extends Cubit<StoryState> {
       isLoading: true,
       request: request,
     );
+    if (result.isSuccess) {
+      _notifyHostHighlightsChanged();
+    }
     emit(result.isSuccess
         ? const StoryActionSuccess('create_highlight')
         : StoryError(result.error?.message ?? 'Unable to create highlight.'));
@@ -471,6 +791,7 @@ class StoryCubit extends Cubit<StoryState> {
       emit(StoryError(result.error?.message ?? 'Unable to create highlight.'));
       return false;
     }
+    _notifyHostHighlightsChanged();
     emit(const StoryActionSuccess('create_highlight'));
     return true;
   }
@@ -484,22 +805,29 @@ class StoryCubit extends Cubit<StoryState> {
       highlightId: highlightId,
       request: request,
     );
+    if (result.isSuccess) {
+      _notifyHostHighlightsChanged();
+    }
     emit(result.isSuccess
         ? const StoryActionSuccess('update_highlight')
         : StoryError(result.error?.message ?? 'Unable to update highlight.'));
   }
 
-  Future<void> deleteHighlight(String highlightId) async {
+  Future<bool> deleteHighlight(String highlightId) async {
     final result = await _storyUseCase.executeDeleteStoryHighlight(
       isLoading: false,
       highlightId: highlightId,
     );
+    if (result.isSuccess) {
+      _notifyHostHighlightsChanged();
+    }
     emit(result.isSuccess
         ? const StoryActionSuccess('delete_highlight')
         : StoryError(result.error?.message ?? 'Unable to delete highlight.'));
+    return result.isSuccess;
   }
 
-  Future<void> addStoriesToHighlight({
+  Future<bool> addStoriesToHighlight({
     required String highlightId,
     required List<String> storyIds,
   }) async {
@@ -508,9 +836,23 @@ class StoryCubit extends Cubit<StoryState> {
       highlightId: highlightId,
       request: AddStoriesToHighlightRequest(storyIds: storyIds),
     );
-    emit(result.isSuccess
-        ? const StoryActionSuccess('add_stories_to_highlight')
-        : StoryError(result.error?.message ?? 'Unable to update highlight stories.'));
+    if (result.isSuccess) {
+      await getStoryHighlightById(highlightId);
+      _notifyHostHighlightsChanged();
+      emit(const StoryActionSuccess('add_stories_to_highlight'));
+      return true;
+    }
+    emit(StoryError(
+        result.error?.message ?? 'Unable to update highlight stories.'));
+    return false;
+  }
+
+  /// Current user's past stories for the highlight composer picker.
+  /// Returns `null` when the API call fails.
+  Future<List<StoryData>?> getMyStories() async {
+    final result = await _storyUseCase.executeGetMyStories(isLoading: false);
+    if (!result.isSuccess) return null;
+    return result.data ?? const [];
   }
 
   Future<List<StoryHighlightData>> getHighlightsForCurrentUser() async {
@@ -559,7 +901,7 @@ class StoryCubit extends Cubit<StoryState> {
     }
   }
 
-  Future<void> addStoryToHighlight({
+  Future<StoryHighlightData?> addStoryToHighlight({
     required String highlightId,
     required String storyId,
   }) async {
@@ -568,9 +910,15 @@ class StoryCubit extends Cubit<StoryState> {
       highlightId: highlightId,
       request: AddStoriesToHighlightRequest(storyIds: [storyId]),
     );
-    emit(result.isSuccess
-        ? const StoryActionSuccess('add_story_to_highlight')
-        : StoryError(result.error?.message ?? 'Unable to add story to highlight.'));
+    if (result.isSuccess) {
+      final fresh = await getStoryHighlightById(highlightId);
+      _notifyHostHighlightsChanged();
+      emit(const StoryActionSuccess('add_story_to_highlight'));
+      return fresh;
+    }
+    emit(StoryError(
+        result.error?.message ?? 'Unable to add story to highlight.'));
+    return null;
   }
 
   Future<void> deleteStory(String storyId) async {
@@ -596,9 +944,17 @@ class StoryCubit extends Cubit<StoryState> {
       highlightId: highlightId,
       storyId: storyId,
     );
+    if (result.isSuccess) {
+      _notifyHostHighlightsChanged();
+    }
     emit(result.isSuccess
         ? const StoryActionSuccess('remove_story_from_highlight')
         : StoryError(result.error?.message ?? 'Unable to remove story from highlight.'));
+  }
+
+  void _notifyHostHighlightsChanged() {
+    IsrVideoReelConfig.storyConfig?.storyCallbackConfig.onHighlightsChanged
+        ?.call();
   }
 
   void _removeStoryLocally(String storyId) {

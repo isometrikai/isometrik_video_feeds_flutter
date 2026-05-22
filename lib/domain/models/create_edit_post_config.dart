@@ -99,6 +99,8 @@ class PostAttributeUIConfig {
     this.switchTileConfig,
     this.postButtonConfig,
     this.schedulePostConfig,
+    this.scaffoldBackgroundColor,
+    this.bottomBarBackgroundColor,
   });
 
   /// App bar configuration
@@ -122,6 +124,16 @@ class PostAttributeUIConfig {
   /// Schedule post configuration
   final SchedulePostConfig? schedulePostConfig;
 
+  /// Main [Scaffold] background for the new/edit post screen (caption + options).
+  ///
+  /// When null, the SDK defaults to white.
+  final Color? scaffoldBackgroundColor;
+
+  /// Background behind the fixed primary action button at the bottom.
+  ///
+  /// When null, the SDK defaults to white.
+  final Color? bottomBarBackgroundColor;
+
   PostAttributeUIConfig copyWith({
     AppBarConfig? appBarConfig,
     MediaPreviewConfig? mediaPreviewConfig,
@@ -130,6 +142,8 @@ class PostAttributeUIConfig {
     SwitchTileConfig? switchTileConfig,
     PostButtonConfig? postButtonConfig,
     SchedulePostConfig? schedulePostConfig,
+    Color? scaffoldBackgroundColor,
+    Color? bottomBarBackgroundColor,
   }) =>
       PostAttributeUIConfig(
         appBarConfig: appBarConfig ?? this.appBarConfig,
@@ -139,6 +153,10 @@ class PostAttributeUIConfig {
         switchTileConfig: switchTileConfig ?? this.switchTileConfig,
         postButtonConfig: postButtonConfig ?? this.postButtonConfig,
         schedulePostConfig: schedulePostConfig ?? this.schedulePostConfig,
+        scaffoldBackgroundColor:
+            scaffoldBackgroundColor ?? this.scaffoldBackgroundColor,
+        bottomBarBackgroundColor:
+            bottomBarBackgroundColor ?? this.bottomBarBackgroundColor,
       );
 }
 
@@ -228,8 +246,10 @@ class CaptionInputConfig {
       CaptionInputConfig(
         hintStyle: hintStyle ?? this.hintStyle,
         textStyle: textStyle ?? this.textStyle,
-        inputUserTagTextStyle: inputUserTagTextStyle ?? this.inputUserTagTextStyle,
-        inputHashtagTextStyle: inputHashtagTextStyle ?? this.inputHashtagTextStyle,
+        inputUserTagTextStyle:
+            inputUserTagTextStyle ?? this.inputUserTagTextStyle,
+        inputHashtagTextStyle:
+            inputHashtagTextStyle ?? this.inputHashtagTextStyle,
         maxLength: maxLength ?? this.maxLength,
         hintText: hintText ?? this.hintText,
       );
@@ -1269,16 +1289,22 @@ class CreateEditPostCallBackConfig {
     this.onLinkProduct,
     this.onBackgroundPostOperation,
     this.onAddSoundFromCamera,
+    this.licenseAgreementAfterMediaEdit,
   });
 
   final Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
       onLinkProduct;
 
+  /// called when edit is completed and confirm License Agreement, true to proceed and false to halt
+  final Future<bool> Function(List<MediaData> mediaList)?
+      licenseAgreementAfterMediaEdit;
+
   /// When set, upload and create/edit post run without the SDK progress bottom sheet.
   /// Use [BackgroundPostOperationUpdate] to drive your own overlay, in-app banner, or notification.
   ///
   /// The SDK invokes this from the create-post bloc so updates continue even if the user leaves the create screen.
-  final void Function(BackgroundPostOperationUpdate update)? onBackgroundPostOperation;
+  final void Function(BackgroundPostOperationUpdate update)?
+      onBackgroundPostOperation;
 
   /// Host app: user tapped **Add a sound** on the reel camera when **15s** or **60s** mode is active.
   final void Function(BuildContext context)? onAddSoundFromCamera;
@@ -1288,9 +1314,15 @@ class CreateEditPostCallBackConfig {
         onLinkProduct,
     void Function(BackgroundPostOperationUpdate update)? onBackgroundPostOperation,
     void Function(BuildContext context)? onAddSoundFromCamera,
+    Future<bool> Function(List<MediaData> mediaList)?
+        licenseAgreementAfterMediaEdit,
+    void Function(BackgroundPostOperationUpdate update)?
+        onBackgroundPostOperation,
   }) =>
       CreateEditPostCallBackConfig(
         onLinkProduct: onLinkProduct ?? this.onLinkProduct,
+        licenseAgreementAfterMediaEdit: licenseAgreementAfterMediaEdit ??
+            this.licenseAgreementAfterMediaEdit,
         onBackgroundPostOperation:
             onBackgroundPostOperation ?? this.onBackgroundPostOperation,
         onAddSoundFromCamera:

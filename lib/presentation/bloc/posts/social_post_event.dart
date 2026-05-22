@@ -177,6 +177,9 @@ class GetPostCommentsEvent extends SocialPostEvent {
     this.createdComment,
     this.isPagination = false,
     this.onComplete,
+    /// When true (e.g. floating comments on reel focus), host-cache mode may
+    /// refresh post detail in the background after a successful comments fetch.
+    this.refreshPostDetailAfterComments = false,
   });
 
   final String postId;
@@ -184,6 +187,7 @@ class GetPostCommentsEvent extends SocialPostEvent {
   final bool isPagination;
   final CommentDataItem? createdComment;
   final Function(List<CommentDataItem>)? onComplete;
+  final bool refreshPostDetailAfterComments;
 }
 
 class CommentActionEvent extends SocialPostEvent {
@@ -267,11 +271,13 @@ class RemoveMentionEvent extends SocialPostEvent {
 class GetMentionedUserEvent extends SocialPostEvent {
   GetMentionedUserEvent({
     required this.postId,
+    required this.page,
     this.onComplete,
   });
 
   final String postId;
-  final Function(List<SocialUserData>)? onComplete;
+  final int page;
+  final Function(List<SocialUserData> users, bool hasMore)? onComplete;
 }
 
 class GetPostInsightDetailsEvent extends SocialPostEvent {

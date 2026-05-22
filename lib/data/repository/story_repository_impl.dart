@@ -53,7 +53,26 @@ class StoryRepositoryImpl implements StoryRepository {
       userId: userId,
     );
     final mapped = _mapper.mapResponseData(response);
-    final jsonData = jsonDecode(mapped.data?.data ?? '{}') as Map<String, dynamic>;
+    final jsonData =
+        jsonDecode(mapped.data?.data ?? '{}') as Map<String, dynamic>;
+    final storyList = _decodeStoryListPayload(jsonData);
+    return CustomResponse(
+      responseCode: mapped.responseCode,
+      data: storyList,
+    );
+  }
+
+  @override
+  Future<CustomResponse<List<StoryData>?>> getMyStories({
+    required bool isLoading,
+  }) async {
+    final response = await _apiService.getMyStories(
+      isLoading: isLoading,
+      header: await _dataSource.getHeader(),
+    );
+    final mapped = _mapper.mapResponseData(response);
+    final jsonData =
+        jsonDecode(mapped.data?.data ?? '{}') as Map<String, dynamic>;
     final storyList = _decodeStoryListPayload(jsonData);
     return CustomResponse(
       responseCode: mapped.responseCode,
@@ -87,10 +106,12 @@ class StoryRepositoryImpl implements StoryRepository {
       cursor: cursor,
     );
     final mapped = _mapper.mapResponseData(response);
-    final jsonData = jsonDecode(mapped.data?.data ?? '{}') as Map<String, dynamic>;
+    final jsonData =
+        jsonDecode(mapped.data?.data ?? '{}') as Map<String, dynamic>;
     return CustomResponse(
       responseCode: mapped.responseCode,
-      data: StoryFeedResponse.fromMap(jsonData['data'] as Map<String, dynamic>? ?? {}),
+      data: StoryFeedResponse.fromMap(
+          jsonData['data'] as Map<String, dynamic>? ?? {}),
     );
   }
 
@@ -139,10 +160,12 @@ class StoryRepositoryImpl implements StoryRepository {
       highlightId: highlightId,
     );
     final mapped = _mapper.mapResponseData(response);
-    final jsonData = jsonDecode(mapped.data?.data ?? '{}') as Map<String, dynamic>;
+    final jsonData =
+        jsonDecode(mapped.data?.data ?? '{}') as Map<String, dynamic>;
     return CustomResponse(
       responseCode: mapped.responseCode,
-      data: StoryHighlightData.fromMap(jsonData['data'] as Map<String, dynamic>? ?? {}),
+      data: StoryHighlightData.fromMap(
+          jsonData['data'] as Map<String, dynamic>? ?? {}),
     );
   }
 
@@ -215,7 +238,8 @@ class StoryRepositoryImpl implements StoryRepository {
       storyId: storyId,
     );
     final mapped = _mapper.mapResponseData(response);
-    final jsonData = jsonDecode(mapped.data?.data ?? '{}') as Map<String, dynamic>;
+    final jsonData =
+        jsonDecode(mapped.data?.data ?? '{}') as Map<String, dynamic>;
     return CustomResponse(
       responseCode: mapped.responseCode,
       data: StoryData.fromMap(jsonData['data'] as Map<String, dynamic>? ?? {}),

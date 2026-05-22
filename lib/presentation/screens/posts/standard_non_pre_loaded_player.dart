@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/media_kit_video_player.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/video_player_interface.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:video_player/video_player.dart';
@@ -106,48 +107,46 @@ class StandardVideoNonPreloadedController implements IVideoPlayerController {
 }
 
 class StandardVideoNonPreloadedManager implements IVideoCacheManager {
-  // ✅ Public factory
   factory StandardVideoNonPreloadedManager() => _instance;
 
-  // 🔒 Private constructor
   StandardVideoNonPreloadedManager._internal();
 
-  // ✅ Single instance
   static final StandardVideoNonPreloadedManager _instance =
       StandardVideoNonPreloadedManager._internal();
+
+  static const Duration _sizeWaitTimeout = Duration(milliseconds: 800);
 
   @override
   Future<void> precacheVideos(
     List<String> videoUrls, {
     bool highPriority = false,
   }) async {
-    // ❌ No-op (explicitly no preloading)
     for (final url in videoUrls) {
       if (url.endsWith('.m3u8')) {
-        // if the URL is an HLS stream, precache the first segment
         unawaited(VideoMediaUtil.precacheFirstSegment(url));
       }
     }
   }
 
-  // ❌ No cache → always return null
   @override
   IVideoPlayerController? getCachedController(String url) => null;
 
   @override
   Future<IVideoPlayerController?> precacheMediaAndReturnController(
-          String url) => // for smooth transition
-      Future<IVideoPlayerController?>.delayed(const Duration(milliseconds: 300),
-          () => _createAndInitializeController(url));
+          String url) =>
+      Future<IVideoPlayerController?>.delayed(
+        const Duration(milliseconds: 300),
+        () => _createAndInitializeController(url),
+      );
 
-  Future<StandardVideoNonPreloadedController?> _createAndInitializeController(String url) async {
+  Future<IVideoPlayerController?> _createAndInitializeController(
+      String url) async {
     debugPrint(
         'StandardVideoCacheManager: _createAndInitializeController: $url');
+    VideoPlayerController? controller;
     try {
-      final controller = _createVideoPlayerController(url);
+      controller = _createVideoPlayerController(url);
 
-      // OPTIMIZATION: Add timeout to prevent hanging on slow networks
-      // Increased timeout to 15 seconds for slow network connections
       await controller.initialize().timeout(
         const Duration(seconds: 15),
         onTimeout: () {
@@ -158,12 +157,11 @@ class StandardVideoNonPreloadedManager implements IVideoCacheManager {
         },
       );
 
-      // Validate video initialization - check for decoding errors
       if (!controller.value.isInitialized) {
         debugPrint(
             '❌ StandardNonCacheVideoPlayer not initialized properly for: $url');
         await controller.dispose();
-        return null;
+        return _fallbackToMediaKit(url, reason: 'not initialized');
       }
 
       if (controller.value.hasError) {
@@ -171,21 +169,22 @@ class StandardVideoNonPreloadedManager implements IVideoCacheManager {
             '❌ StandardNonCacheVideoPlayer has error after initialization: ${controller.value.errorDescription}');
         debugPrint('❌ URL: $url');
         await controller.dispose();
-        return null;
+        return _fallbackToMediaKit(url, reason: 'hasError');
       }
 
-      // Check for valid video dimensions (Size.zero indicates decoding failure)
-      if (controller.value.size == Size.zero) {
+      // Size can be 0x0 briefly then become valid — wait before treating as failure.
+      final size = await _waitForValidSize(controller);
+      if (size == Size.zero) {
         debugPrint(
-            '❌ StandardNonCacheVideoPlayer has invalid size (0x0) - possible decoding failure for: $url');
+            '⚠️ StandardNonCacheVideoPlayer size still 0x0 after wait for: $url');
         await controller.dispose();
-        return null;
+        controller = null;
+        return _fallbackToMediaKit(url, reason: 'zero size after wait');
       }
 
       debugPrint(
-          '✅ Video initialized successfully - Size: ${controller.value.size}, Duration: ${controller.value.duration}, URL: $url');
+          '✅ Video initialized successfully - Size: $size, Duration: ${controller.value.duration}, URL: $url');
 
-      // Set properties in parallel for faster setup
       await Future.wait([
         controller.setLooping(false),
         controller.setVolume(1.0),
@@ -197,10 +196,54 @@ class StandardVideoNonPreloadedManager implements IVideoCacheManager {
           label: 'StandardVideoCacheManager cached error $e',
           stackTrace: stackTrace);
       debugPrint('❌ Error creating video controller for URL: $url - Error: $e');
-      // Let native side breathe
+      if (controller != null) {
+        try {
+          await controller.dispose();
+        } catch (_) {}
+      }
       await Future.delayed(const Duration(milliseconds: 300));
-      return null;
+      return _fallbackToMediaKit(url, reason: 'exception');
     }
+  }
+
+  /// Waits for non-zero dimensions; many URLs report 0x0 right after [initialize].
+  Future<Size> _waitForValidSize(VideoPlayerController controller) async {
+    if (controller.value.size != Size.zero) {
+      return controller.value.size;
+    }
+
+    final completer = Completer<Size>();
+    Timer? timeoutTimer;
+
+    void listener() {
+      final size = controller.value.size;
+      if (size != Size.zero) {
+        controller.removeListener(listener);
+        timeoutTimer?.cancel();
+        if (!completer.isCompleted) {
+          completer.complete(size);
+        }
+      }
+    }
+
+    controller.addListener(listener);
+    timeoutTimer = Timer(_sizeWaitTimeout, () {
+      controller.removeListener(listener);
+      if (!completer.isCompleted) {
+        completer.complete(controller.value.size);
+      }
+    });
+
+    return completer.future;
+  }
+
+  Future<IVideoPlayerController?> _fallbackToMediaKit(
+    String url, {
+    required String reason,
+  }) async {
+    debugPrint('🔄 Standard player failed ($reason), trying MediaKit: $url');
+    await Future.delayed(const Duration(milliseconds: 150));
+    return MediaKitCacheManager().createEphemeralFallbackController(url);
   }
 
   VideoPlayerController _createVideoPlayerController(String mediaUrl) {
@@ -209,7 +252,7 @@ class StandardVideoNonPreloadedManager implements IVideoCacheManager {
         File(mediaUrl),
         videoPlayerOptions: VideoPlayerOptions(
           mixWithOthers: true,
-          allowBackgroundPlayback: false, // Better resource management
+          allowBackgroundPlayback: false,
         ),
       );
     }
@@ -219,31 +262,26 @@ class StandardVideoNonPreloadedManager implements IVideoCacheManager {
       url = url.replaceFirst('http:', 'https:');
     }
 
-    // For HLS streams, add specific headers and format hint
     final isHls = url.toLowerCase().endsWith('.m3u8');
-    final isMp4 = url.toLowerCase().endsWith('.mp4');
     final headers = {
       'Accept': '*/*',
       'Accept-Language': 'en-US,en;q=0.9',
+      'Accept-Encoding': 'gzip, deflate, br',
       'Connection': 'keep-alive',
+      'Cache-Control': 'no-cache',
       if (isHls)
         'X-Playback-Session-Id':
-            DateTime.now().millisecondsSinceEpoch.toString()
-      else if (isMp4)
-        ...{
-          'Cache-Control': 'no-cache',
-        },
+            DateTime.now().millisecondsSinceEpoch.toString(),
     };
 
     return VideoPlayerController.networkUrl(
       Uri.parse(url),
       videoPlayerOptions: VideoPlayerOptions(
         mixWithOthers: true,
-        allowBackgroundPlayback:
-            false, // Better resource management to prevent decoding issues
+        allowBackgroundPlayback: false,
       ),
       httpHeaders: headers,
-      formatHint: isHls ? VideoFormat.hls : isMp4 ? VideoFormat.other : null,
+      formatHint: isHls ? VideoFormat.hls : null,
     );
   }
 
@@ -254,18 +292,14 @@ class StandardVideoNonPreloadedManager implements IVideoCacheManager {
   bool isVideoInitializing(String url) => false;
 
   @override
-  void markAsVisible(String url) {
-    // ❌ No visibility tracking
-  }
+  void markAsVisible(String url) {}
 
   @override
-  void markAsNotVisible(String url) {
-    // ❌ No visibility tracking
-  }
+  void markAsNotVisible(String url) {}
 
   @override
   void detachedFromWidget(String url, IVideoPlayerController? controller) {
-    Future.delayed(const Duration(milliseconds: 300), () async { // for smooth transition
+    Future.delayed(const Duration(milliseconds: 300), () async {
       await controller?.pause();
       await controller?.seekTo(Duration.zero);
       await controller?.dispose();
@@ -273,19 +307,13 @@ class StandardVideoNonPreloadedManager implements IVideoCacheManager {
   }
 
   @override
-  void clearVideo(String url) {
-    // ❌ Nothing stored
-  }
+  void clearVideo(String url) {}
 
   @override
-  void clearControllers() {
-    // ❌ Nothing stored
-  }
+  void clearControllers() {}
 
   @override
-  void clearControllersOutsideRange(List<String> activeUrls) {
-    // ❌ Nothing stored
-  }
+  void clearControllersOutsideRange(List<String> activeUrls) {}
 
   @override
   Map<String, dynamic> getCacheStats() => const {

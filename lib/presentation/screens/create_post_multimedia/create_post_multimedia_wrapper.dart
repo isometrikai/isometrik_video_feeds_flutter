@@ -192,6 +192,14 @@ class _CreatePostMultimediaWrapperState
 
   Future<bool> _onMediaEditComplete(List<me.MediaEditItem> editedMedia) async {
     if (editedMedia.isEmpty) {
+      var licenseAgreementAccepted = true;
+      final licenseAgreementCallBack = IsrVideoReelConfig.createEditPostConfig.createEditPostCallBackConfig?.licenseAgreementAfterMediaEdit;
+      if (licenseAgreementCallBack != null) {
+        licenseAgreementAccepted = await licenseAgreementCallBack.call(_mediaDataList.toList());
+      }
+      if (licenseAgreementAccepted) {
+        await IsrAppNavigator.goToCreatePostAttributionView(context, newMediaDataList: _mediaDataList);
+      }
       return false;
     }
     final mediaDataList = _mediaDataFromEditItems(editedMedia);

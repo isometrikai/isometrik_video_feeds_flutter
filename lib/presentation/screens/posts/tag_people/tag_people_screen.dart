@@ -80,29 +80,54 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
   }
 
   var _isPostMentionedApiLoading = false;
+
+  bool get _hasMentionsMissingProfileData => _mentionDataList
+      .any((mention) => mention.name?.trim().isNotEmpty != true);
+
   /// if the mention list is from edit post they will not have all mention data
   /// so we call a separate api to update the mention list with the post mention list
-  updateMentionListWithPostMentionListFromAPI() {
-    if (widget.postId?.trim().isNotEmpty == true && _mentionDataList.any((mention) => mention.name?.trim().isNotEmpty != true)) {
-      final _socialPostBloc = context.getOrCreateBloc<SocialPostBloc>();
-      _isPostMentionedApiLoading = true;
-      _socialPostBloc.add(GetMentionedUserEvent(
-          postId: widget.postId ?? '',
-          onComplete: (userList) {
-            if (mounted) {
-              setState(() {
-                for (var user in userList) {
-                  final mention = _mentionDataList
-                      .where((element) => element.userId == user.id)
-                      .firstOrNull;
-                  mention?.name = user.fullName;
-                  mention?.avatarUrl = user.avatarUrl;
-                }
-              });
-            }
-            _isPostMentionedApiLoading = false;
-          }));
+  void updateMentionListWithPostMentionListFromAPI({int page = 1}) {
+    if (widget.postId?.trim().isNotEmpty != true) {
+      return;
     }
+    if (page == 1 && !_hasMentionsMissingProfileData) {
+      return;
+    }
+
+    final socialPostBloc = context.getOrCreateBloc<SocialPostBloc>();
+    if (page == 1) {
+      _isPostMentionedApiLoading = true;
+    }
+
+    socialPostBloc.add(GetMentionedUserEvent(
+      postId: widget.postId ?? '',
+      page: page,
+      onComplete: (userList, hasMore) {
+        if (mounted) {
+          setState(() {
+            for (final user in userList) {
+              final mention = _mentionDataList
+                  .where((element) => element.userId == user.id)
+                  .firstOrNull;
+              mention?.name = user.fullName;
+              mention?.avatarUrl = user.avatarUrl;
+            }
+          });
+        }
+
+        final shouldFetchNextPage =
+            hasMore && _hasMentionsMissingProfileData && mounted;
+        if (shouldFetchNextPage) {
+          updateMentionListWithPostMentionListFromAPI(page: page + 1);
+          return;
+        }
+
+        _isPostMentionedApiLoading = false;
+        if (mounted) {
+          setState(() {});
+        }
+      },
+    ));
   }
 
   /// Check if the mention data is loading

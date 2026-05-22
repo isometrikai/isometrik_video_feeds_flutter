@@ -14,6 +14,11 @@ abstract class StoryApiService extends BaseService {
     required String userId,
   });
 
+  Future<ResponseModel> getMyStories({
+    required bool isLoading,
+    required Header header,
+  });
+
   Future<ResponseModel> startStoryProcessing({
     required bool isLoading,
     required Header header,

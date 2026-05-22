@@ -80,7 +80,8 @@ class _PostAttributeViewState extends State<PostAttributeView>
       .createEditPostConfig.createEditPostUIConfig?.postAttributeUIConfig;
 
   bool get _useBackgroundPostUi =>
-      IsrVideoReelConfig.createEditPostConfig.createEditPostCallBackConfig?.onBackgroundPostOperation !=
+      IsrVideoReelConfig.createEditPostConfig.createEditPostCallBackConfig
+          ?.onBackgroundPostOperation !=
       null;
   bool get _isPaidPostEnabled =>
       IsrVideoReelConfig.createEditPostConfig.enablePaidPost;
@@ -138,7 +139,8 @@ class _PostAttributeViewState extends State<PostAttributeView>
         (caption.contains('@') || caption.contains('#'))) {
       _descriptionController.dispose();
       _descriptionController = FlutterTaggerController(text: caption);
-      CommentTaggingTextField.applyPlainTextTagHighlights(_descriptionController);
+      CommentTaggingTextField.applyPlainTextTagHighlights(
+          _descriptionController);
       _captionFieldGeneration++;
       _didApplyInitialCaptionTagHighlights = true;
     } else if (_descriptionController.text != caption) {
@@ -647,7 +649,8 @@ class _PostAttributeViewState extends State<PostAttributeView>
   }
 
   Widget _buildPage() => Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor:
+            _postAttributeConfig?.scaffoldBackgroundColor ?? Colors.white,
         appBar: IsmCustomAppBarWidget(
           backgroundColor:
               _postAttributeConfig?.appBarConfig?.backgroundColor ??
@@ -824,7 +827,9 @@ class _PostAttributeViewState extends State<PostAttributeView>
                                 ],
                                 Icon(
                                   Icons.chevron_right,
-                                  color: '333333'.toColor(),
+                                  color: _postAttributeConfig?.optionTileConfig
+                                          ?.trailingIconColor ??
+                                      IsrColors.primaryTextColor,
                                   size: 20.responsiveDimension,
                                 ),
                               ],
@@ -841,11 +846,10 @@ class _PostAttributeViewState extends State<PostAttributeView>
                                 _postAttributeClass?.mediaDataList ?? [];
                             final result =
                                 await IsrAppNavigator.goToTagPeopleScreen(
-                              context,
-                              mentionDataList: _mentionedUsers,
-                              mediaDataList: mediaDataList,
-                              postId: widget.postData?.id
-                            );
+                                    context,
+                                    mentionDataList: _mentionedUsers,
+                                    mediaDataList: mediaDataList,
+                                    postId: widget.postData?.id);
                             if (result.isEmptyOrNull == false) {
                               for (var mentionData
                                   in result as Iterable<MentionData>) {
@@ -870,7 +874,9 @@ class _PostAttributeViewState extends State<PostAttributeView>
                               ],
                               Icon(
                                 Icons.chevron_right,
-                                color: '333333'.toColor(),
+                                color: _postAttributeConfig
+                                        ?.optionTileConfig?.trailingIconColor ??
+                                    IsrColors.primaryTextColor,
                                 size: 20.responsiveDimension,
                               ),
                             ],
@@ -925,7 +931,8 @@ class _PostAttributeViewState extends State<PostAttributeView>
               padding: _postAttributeConfig?.postButtonConfig?.padding ??
                   IsrDimens.edgeInsetsAll(20.responsiveDimension),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: _postAttributeConfig?.bottomBarBackgroundColor ??
+                    Colors.white,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.grey.withValues(alpha: 0.1),
@@ -969,8 +976,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
             onRetry: () {
               _progressCubit.updateIsError(false);
               _progressCubit.updateProgress(0);
-              Future.delayed(
-                const Duration(milliseconds: 300), () {
+              Future.delayed(const Duration(milliseconds: 300), () {
                 if (mounted) {
                   _createPost();
                 }
@@ -1096,8 +1102,10 @@ class _PostAttributeViewState extends State<PostAttributeView>
               _postAttributeConfig?.captionInputConfig?.maxLength ?? _maxLength,
           textStyle: _postAttributeConfig?.captionInputConfig?.textStyle ??
               IsrStyles.primaryText14,
-          userTagTextStyle: _postAttributeConfig?.captionInputConfig?.inputUserTagTextStyle,
-          hashtagTextStyle: _postAttributeConfig?.captionInputConfig?.inputHashtagTextStyle,
+          userTagTextStyle:
+              _postAttributeConfig?.captionInputConfig?.inputUserTagTextStyle,
+          hashtagTextStyle:
+              _postAttributeConfig?.captionInputConfig?.inputHashtagTextStyle,
           hintStyle: _postAttributeConfig?.captionInputConfig?.hintStyle ??
               IsrStyles.secondaryText14.copyWith(color: IsrColors.colorBBBBBB),
           focusNode: _descriptionFocusNode,
@@ -1248,10 +1256,14 @@ class _PostAttributeViewState extends State<PostAttributeView>
             setState(() {
               final currentAmount =
                   num.tryParse(_paidAmountController.text.trim());
-              _postAttributeClass?.createPostRequest?.settings = PostSettingModel(
-                commentsEnabled:
-                    settings?.commentsEnabled ?? _postAttributeClass?.allowComment ?? true,
-                saveEnabled: settings?.saveEnabled ?? _postAttributeClass?.allowSave ?? true,
+              _postAttributeClass?.createPostRequest?.settings =
+                  PostSettingModel(
+                commentsEnabled: settings?.commentsEnabled ??
+                    _postAttributeClass?.allowComment ??
+                    true,
+                saveEnabled: settings?.saveEnabled ??
+                    _postAttributeClass?.allowSave ??
+                    true,
                 isPaid: value,
                 priceAmount: value ? currentAmount : null,
                 priceCurrency: value
@@ -1276,7 +1288,8 @@ class _PostAttributeViewState extends State<PostAttributeView>
               children: [
                 Text(
                   'Amount',
-                  style: IsrStyles.primaryText14.copyWith(fontWeight: FontWeight.w600),
+                  style: IsrStyles.primaryText14
+                      .copyWith(fontWeight: FontWeight.w600),
                 ),
                 8.verticalSpace,
                 TextFormField(
@@ -1287,16 +1300,18 @@ class _PostAttributeViewState extends State<PostAttributeView>
                     final oldSettings =
                         _postAttributeClass?.createPostRequest?.settings;
                     final parsedAmount = num.tryParse(value.trim());
-                    _postAttributeClass?.createPostRequest?.settings = PostSettingModel(
+                    _postAttributeClass?.createPostRequest?.settings =
+                        PostSettingModel(
                       commentsEnabled: oldSettings?.commentsEnabled ??
                           _postAttributeClass?.allowComment ??
                           true,
-                      saveEnabled:
-                          oldSettings?.saveEnabled ?? _postAttributeClass?.allowSave ?? true,
+                      saveEnabled: oldSettings?.saveEnabled ??
+                          _postAttributeClass?.allowSave ??
+                          true,
                       isPaid: true,
                       priceAmount: parsedAmount,
-                      priceCurrency:
-                          IsrVideoReelConfig.createEditPostConfig.paidPostCurrency,
+                      priceCurrency: IsrVideoReelConfig
+                          .createEditPostConfig.paidPostCurrency,
                     );
                     setState(() {});
                     _updatePostButtonState();
@@ -1316,7 +1331,8 @@ class _PostAttributeViewState extends State<PostAttributeView>
                 10.verticalSpace,
                 Text(
                   'Choose your coin',
-                  style: IsrStyles.primaryText14.copyWith(fontWeight: FontWeight.w600),
+                  style: IsrStyles.primaryText14
+                      .copyWith(fontWeight: FontWeight.w600),
                 ),
                 8.verticalSpace,
                 Wrap(
@@ -1351,13 +1367,14 @@ class _PostAttributeViewState extends State<PostAttributeView>
                             decoration: BoxDecoration(
                               color: IsrColors.appColor.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(8),
-                              border:
-                                  Border.all(color: IsrColors.appColor.withValues(alpha: 0.25)),
+                              border: Border.all(
+                                  color: IsrColors.appColor
+                                      .withValues(alpha: 0.25)),
                             ),
                             child: Text(
                               amount.toString(),
-                              style:
-                                  IsrStyles.primaryText14.copyWith(fontWeight: FontWeight.w600),
+                              style: IsrStyles.primaryText14
+                                  .copyWith(fontWeight: FontWeight.w600),
                             ),
                           ),
                         ),
@@ -1391,7 +1408,9 @@ class _PostAttributeViewState extends State<PostAttributeView>
               )
             : Icon(
                 Icons.chevron_right,
-                color: '333333'.toColor(),
+                color:
+                    _postAttributeConfig?.optionTileConfig?.trailingIconColor ??
+                        IsrColors.primaryTextColor,
                 size: 20.responsiveDimension,
               ),
       );
@@ -1838,10 +1857,10 @@ class _PostAttributeViewState extends State<PostAttributeView>
     }
     _setPostRequest();
     context.getOrCreateBloc<CreatePostBloc>().add(PostCreateEvent(
-      createPostRequest:
-          _postAttributeClass?.createPostRequest ?? CreatePostRequest(),
-      isForEdit: _isEditMode,
-    ));
+          createPostRequest:
+              _postAttributeClass?.createPostRequest ?? CreatePostRequest(),
+          isForEdit: _isEditMode,
+        ));
   }
 
   /// Pops the post-attribute route (and the rest of the create stack for new posts)
@@ -1858,15 +1877,18 @@ class _PostAttributeViewState extends State<PostAttributeView>
         saveEnabled: _postAttributeClass?.allowSave,
         commentsEnabled: _postAttributeClass?.allowComment,
         isPaid: _isPaidPostEnabled
-            ? (_postAttributeClass?.createPostRequest?.settings?.isPaid ?? false)
+            ? (_postAttributeClass?.createPostRequest?.settings?.isPaid ??
+                false)
             : null,
         priceAmount: _isPaidPostEnabled &&
-                (_postAttributeClass?.createPostRequest?.settings?.isPaid == true) &&
+                (_postAttributeClass?.createPostRequest?.settings?.isPaid ==
+                    true) &&
                 _paidAmountController.text.trim().isNotEmpty
             ? num.tryParse(_paidAmountController.text.trim())
             : null,
         priceCurrency: _isPaidPostEnabled &&
-                (_postAttributeClass?.createPostRequest?.settings?.isPaid == true)
+                (_postAttributeClass?.createPostRequest?.settings?.isPaid ==
+                    true)
             ? IsrVideoReelConfig.createEditPostConfig.paidPostCurrency
             : null,
       );

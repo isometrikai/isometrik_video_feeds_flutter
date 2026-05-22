@@ -27,26 +27,18 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
   // late List<MentionMetaData> _mentionList;
   final List<SocialUserData> _socialUserList = [];
   late SocialPostBloc _socialPostBloc;
+  final ScrollController _scrollController = ScrollController();
   bool _isLoading = true;
+  bool _hasMore = true;
+  bool _isLoadingMore = false;
+  int _currentPage = 1;
 
   @override
   void initState() {
     super.initState();
     _socialPostBloc = context.getOrCreateBloc();
-    // _mentionList = List.from(widget.initialMentionList);
-    _socialPostBloc.add(GetMentionedUserEvent(
-        postId: widget.postData.id ?? '',
-        onComplete: (mentionedList) {
-          if (mounted) {
-            setState(() {
-              _isLoading = false;
-              if (mentionedList.isNotEmpty) {
-                _socialUserList.clear();
-                _socialUserList.addAll(mentionedList);
-              }
-            });
-          }
-        }));
+    _scrollController.addListener(_onScroll);
+    _fetchMentionedUsers();
     // If no mentions initially, dismiss the bottom sheet immediately
     // if (_mentionList.isEmpty) {
     //   WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -55,6 +47,61 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
     //     }
     //   });
     // }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _fetchMentionedUsers({bool loadMore = false}) {
+    if (loadMore && (!_hasMore || _isLoadingMore)) {
+      return;
+    }
+
+    final pageToFetch = loadMore ? _currentPage + 1 : 1;
+
+    if (loadMore) {
+      _isLoadingMore = true;
+    }
+
+    _socialPostBloc.add(GetMentionedUserEvent(
+      postId: widget.postData.id ?? '',
+      page: pageToFetch,
+      onComplete: (mentionedList, hasMore) {
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _isLoading = false;
+          _isLoadingMore = false;
+          _hasMore = hasMore;
+          _currentPage = pageToFetch;
+          if (loadMore) {
+            _socialUserList.addAll(mentionedList);
+          } else {
+            _socialUserList
+              ..clear()
+              ..addAll(mentionedList);
+          }
+        });
+      },
+    ));
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients || _isLoadingMore || !_hasMore) {
+      return;
+    }
+
+    final scrollPosition = _scrollController.position;
+    final threshold = scrollPosition.maxScrollExtent * 0.6;
+
+    if (scrollPosition.pixels >= threshold) {
+      _fetchMentionedUsers(loadMore: true);
+    }
   }
 
   @override
@@ -146,9 +193,23 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
                                 ),
                               )
                             : ListView.builder(
+                                controller: _scrollController,
                                 shrinkWrap: true,
-                                itemCount: _socialUserList.length,
+                                itemCount: _socialUserList.length +
+                                    (_isLoadingMore ? 1 : 0),
                                 itemBuilder: (context, index) {
+                                  if (index >= _socialUserList.length) {
+                                    return Padding(
+                                      padding: IsrDimens.edgeInsetsSymmetric(
+                                        vertical: IsrDimens.sixteen,
+                                      ),
+                                      child: Center(
+                                        child: CircularProgressIndicator(
+                                          color: IsrColors.appColor,
+                                        ),
+                                      ),
+                                    );
+                                  }
                                   final socialUserData = _socialUserList[index];
                                   return _buildProfileItem(
                                       socialUserData, index);
