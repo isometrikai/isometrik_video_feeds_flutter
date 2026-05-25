@@ -21,6 +21,7 @@ class SoundTrack {
     required this.duration,
     this.lyricsSnippet,
     this.categoryIds = const [],
+    this.originalStatus,
   });
 
   final String id;
@@ -33,4 +34,6 @@ class SoundTrack {
   /// Optional text matched when user searches "lyrics".
   final String? lyricsSnippet;
   final List<String> categoryIds;
+  /// API `status` field (e.g. approved) for `sound_snapshot.original_status`.
+  final String? originalStatus;
 }

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/domain/models/sound_library_models.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
-import 'package:ism_video_reel_player/presentation/screens/media/sound_selection/sound_library_mock_data.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/sound_selection/sound_selection_api_body.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/sound_selection/sound_selection_theme.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/sound_selection/sound_track_detail_screen.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
 /// Sound picker: search, categories, recent / trending / recommended / saved.
-class SoundSelectionScreen extends StatefulWidget {
+class SoundSelectionScreen extends StatelessWidget {
   const SoundSelectionScreen({
     super.key,
     required this.cameraBloc,
@@ -18,206 +18,20 @@ class SoundSelectionScreen extends StatefulWidget {
   final List<SoundTrack>? restrictedTracks;
 
   @override
-  State<SoundSelectionScreen> createState() => _SoundSelectionScreenState();
-}
-
-class _SoundSelectionScreenState extends State<SoundSelectionScreen> {
-  final _searchController = TextEditingController();
-  String _query = '';
-  String? _categoryId;
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  bool _matchesQuery(SoundTrack t) {
-    if (_query.isEmpty) return true;
-    final q = _query.toLowerCase();
-    return t.title.toLowerCase().contains(q) ||
-        t.author.toLowerCase().contains(q) ||
-        (t.lyricsSnippet?.toLowerCase().contains(q) ?? false);
-  }
-
-  bool _matchesCategory(SoundTrack t) {
-    if (_categoryId == null) return true;
-    return t.categoryIds.contains(_categoryId);
-  }
-
-  List<SoundTrack> _filter(List<SoundTrack> list) =>
-      list.where((t) => _matchesQuery(t) && _matchesCategory(t)).toList();
-
-  Future<void> _openDetail(SoundTrack track) async {
-    final used = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (context) => SoundTrackDetailScreen(
-          track: track,
-          cameraBloc: widget.cameraBloc,
-        ),
-      ),
-    );
-    if (used == true && mounted) {
-      Navigator.of(context).pop();
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final restricted = widget.restrictedTracks;
+    final restricted = restrictedTracks;
     if (restricted != null && restricted.isNotEmpty) {
       return _RestrictedSoundPickerBody(
         tracks: restricted,
-        cameraBloc: widget.cameraBloc,
+        cameraBloc: cameraBloc,
       );
     }
-
-    final padTop = MediaQuery.paddingOf(context).top;
-    final st = SoundPickerTheme.of(context);
-    final recent = _filter(SoundLibraryMockData.recent);
-    final trending = _filter(SoundLibraryMockData.trending);
-    final recommended = _filter(SoundLibraryMockData.recommended);
-    final saved = _filter(SoundLibraryMockData.saved);
-
-    return Scaffold(
-      backgroundColor: st.scaffoldBackground,
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SizedBox(height: padTop + 8.responsiveDimension),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.responsiveDimension),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: Icon(Icons.close, color: st.onSurface),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                Expanded(
-                  child: Text(
-                    'Sounds',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: st.onSurface,
-                      fontSize: 18.responsiveDimension,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                SizedBox(width: 48.responsiveDimension),
-              ],
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              16.responsiveDimension,
-              12.responsiveDimension,
-              16.responsiveDimension,
-              8.responsiveDimension,
-            ),
-            child: TextField(
-              controller: _searchController,
-              onChanged: (v) => setState(() => _query = v.trim()),
-              style: TextStyle(
-                color: st.onSurface,
-                fontSize: 15.responsiveDimension,
-              ),
-              cursorColor: st.cursor,
-              decoration: InputDecoration(
-                isDense: true,
-                hintText: 'Search sounds, artists, lyrics',
-                hintStyle: TextStyle(
-                  color: st.onSurfaceHint,
-                  fontSize: 15.responsiveDimension,
-                ),
-                prefixIcon: Icon(
-                  Icons.search,
-                  color: st.onSurfaceSecondary,
-                  size: 22.responsiveDimension,
-                ),
-                filled: true,
-                fillColor: st.searchFieldFill,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14.responsiveDimension),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: EdgeInsets.symmetric(
-                  vertical: 12.responsiveDimension,
-                  horizontal: 4.responsiveDimension,
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: ListView(
-              padding: EdgeInsets.only(bottom: 24.responsiveDimension),
-              children: [
-                _SectionTitle(title: 'Categories'),
-                SizedBox(
-                  height: 100.responsiveDimension,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 16.responsiveDimension,
-                    ),
-                    itemCount: SoundLibraryMockData.categories.length + 1,
-                    separatorBuilder: (_, __) =>
-                        SizedBox(width: 12.responsiveDimension),
-                    itemBuilder: (context, index) {
-                      if (index == 0) {
-                        final selected = _categoryId == null;
-                        return _CategoryChip(
-                          title: 'All',
-                          thumbnailUrl: null,
-                          selected: selected,
-                          onTap: () => setState(() => _categoryId = null),
-                        );
-                      }
-                      final c =
-                          SoundLibraryMockData.categories[index - 1];
-                      final selected = _categoryId == c.id;
-                      return _CategoryChip(
-                        title: c.title,
-                        thumbnailUrl: c.thumbnailUrl,
-                        selected: selected,
-                        onTap: () =>
-                            setState(() => _categoryId = selected ? null : c.id),
-                      );
-                    },
-                  ),
-                ),
-                SizedBox(height: 8.responsiveDimension),
-                _SoundRowSection(
-                  title: 'Recent',
-                  tracks: recent,
-                  onTapTrack: _openDetail,
-                ),
-                _SoundRowSection(
-                  title: 'Trending',
-                  tracks: trending,
-                  onTapTrack: _openDetail,
-                ),
-                _SoundRowSection(
-                  title: 'Recommended',
-                  tracks: recommended,
-                  onTapTrack: _openDetail,
-                ),
-                _SoundRowSection(
-                  title: 'Saved',
-                  tracks: saved,
-                  onTapTrack: _openDetail,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+    return SoundSelectionApiBody(cameraBloc: cameraBloc);
   }
 }
 
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({required this.title});
+class SoundSectionTitle extends StatelessWidget {
+  const SoundSectionTitle({required this.title, super.key});
 
   final String title;
 
@@ -243,8 +57,9 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-class _CategoryChip extends StatelessWidget {
-  const _CategoryChip({
+class SoundCategoryChip extends StatelessWidget {
+  const SoundCategoryChip({
+    super.key,
     required this.title,
     required this.selected,
     required this.onTap,
@@ -312,8 +127,9 @@ class _CategoryChip extends StatelessWidget {
   }
 }
 
-class _SoundRowSection extends StatelessWidget {
-  const _SoundRowSection({
+class SoundRowSection extends StatelessWidget {
+  const SoundRowSection({
+    super.key,
     required this.title,
     required this.tracks,
     required this.onTapTrack,
@@ -337,7 +153,7 @@ class _SoundRowSection extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _SectionTitle(title: title),
+          SoundSectionTitle(title: title),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 20.responsiveDimension),
             child: Text(
@@ -355,7 +171,7 @@ class _SoundRowSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionTitle(title: title),
+        SoundSectionTitle(title: title),
         SizedBox(
           height: 198.responsiveDimension,
           child: ListView.separated(
@@ -446,6 +262,8 @@ class _RestrictedSoundPickerBody extends StatelessWidget {
         builder: (context) => SoundTrackDetailScreen(
           track: track,
           cameraBloc: cameraBloc,
+          useSoundsApi: SoundLibraryFeatureUtil.useSoundsApi,
+          pickerOnly: false,
         ),
       ),
     );

@@ -23,7 +23,7 @@ class MediaSelectionView extends StatefulWidget {
   final MediaSelectionConfig mediaSelectionConfig;
   final List<MediaAssetData>? selectedMedia;
   final Future<bool> Function(List<MediaAssetData> selectedMedia)? onComplete;
-  final Future<String?> Function(String? mediaType)? onCaptureMedia;
+  final Future<dynamic> Function(String? mediaType)? onCaptureMedia;
 
   @override
   State<MediaSelectionView> createState() => _MediaSelectionViewState();
@@ -690,10 +690,13 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
 
   void _captureMedia() async {
     if (widget.onCaptureMedia != null) {
-      final filePath = await widget
+      final captureResult = await widget
           .onCaptureMedia!(widget.mediaSelectionConfig.mediaListType.name);
-      if (filePath?.isNotEmpty == true) {
-        final file = File(filePath!);
+      final filePath = captureResult is String
+          ? captureResult
+          : (captureResult?.mediaPath as String?);
+      if (filePath != null && filePath.isNotEmpty) {
+        final file = File(filePath);
         final mediaType = await _getMediaType(file);
         final duration = await _getVideoDuration(file, mediaType);
         _bloc.add(ProcessCapturedMediaEvent(

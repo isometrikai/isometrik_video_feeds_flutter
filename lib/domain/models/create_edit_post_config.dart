@@ -1316,8 +1316,6 @@ class CreateEditPostCallBackConfig {
     void Function(BuildContext context)? onAddSoundFromCamera,
     Future<bool> Function(List<MediaData> mediaList)?
         licenseAgreementAfterMediaEdit,
-    void Function(BackgroundPostOperationUpdate update)?
-        onBackgroundPostOperation,
   }) =>
       CreateEditPostCallBackConfig(
         onLinkProduct: onLinkProduct ?? this.onLinkProduct,

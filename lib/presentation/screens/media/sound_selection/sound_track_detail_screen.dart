@@ -2,11 +2,13 @@ import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:ism_video_reel_player/di/di.dart';
+import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/domain/models/sound_library_models.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
-import 'package:ism_video_reel_player/presentation/screens/media/sound_selection/sound_library_mock_data.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/sound_selection/sound_selection_theme.dart';
 import 'package:ism_video_reel_player/utils/audio_source_util.dart';
+import 'package:ism_video_reel_player/utils/sound_library_feature_util.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
 /// Full-bleed preview for a single track with preview playback and **Use this sound**.
@@ -14,11 +16,15 @@ class SoundTrackDetailScreen extends StatefulWidget {
   const SoundTrackDetailScreen({
     super.key,
     required this.track,
-    required this.cameraBloc,
+    this.cameraBloc,
+    this.useSoundsApi = false,
+    this.pickerOnly = false,
   });
 
   final SoundTrack track;
-  final CameraBloc cameraBloc;
+  final CameraBloc? cameraBloc;
+  final bool useSoundsApi;
+  final bool pickerOnly;
 
   @override
   State<SoundTrackDetailScreen> createState() => _SoundTrackDetailScreenState();
@@ -27,10 +33,15 @@ class SoundTrackDetailScreen extends StatefulWidget {
 class _SoundTrackDetailScreenState extends State<SoundTrackDetailScreen> {
   late final AudioPlayer _player;
   StreamSubscription<PlayerState>? _stateSub;
+  SoundLibraryUseCase? _useCase;
+  bool _isSaved = false;
+  bool _saveLoading = false;
+  bool _savedChecked = false;
 
-  String get _previewUrl => widget.track.trackUrl.isNotEmpty
-      ? widget.track.trackUrl
-      : SoundLibraryMockData.defaultTrackPreviewUrl;
+  bool get _apiMode =>
+      widget.useSoundsApi && SoundLibraryFeatureUtil.useSoundsApi;
+
+  String get _previewUrl => widget.track.trackUrl;
 
   @override
   void initState() {
@@ -39,6 +50,46 @@ class _SoundTrackDetailScreenState extends State<SoundTrackDetailScreen> {
     _stateSub = _player.onPlayerStateChanged.listen((_) {
       if (mounted) setState(() {});
     });
+    if (_apiMode) {
+      _useCase = IsmInjectionUtils.getUseCase<SoundLibraryUseCase>();
+      unawaited(_loadSavedState());
+    }
+  }
+
+  Future<void> _loadSavedState() async {
+    final result = await _useCase!.checkIsSaved(
+      isLoading: false,
+      soundId: widget.track.id,
+    );
+    if (!mounted) return;
+    setState(() {
+      _isSaved = result.data == true;
+      _savedChecked = true;
+    });
+  }
+
+  Future<void> _toggleSaved() async {
+    if (_saveLoading || !_apiMode) return;
+    setState(() => _saveLoading = true);
+    final result = await _useCase!.toggleSaved(
+      isLoading: true,
+      soundId: widget.track.id,
+      currentlySaved: _isSaved,
+    );
+    if (!mounted) return;
+    setState(() {
+      _saveLoading = false;
+      if (result.data == true) {
+        _isSaved = !_isSaved;
+      }
+    });
+    if (result.error != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.error?.message ?? 'Could not update saved sound'),
+        ),
+      );
+    }
   }
 
   @override
@@ -102,6 +153,30 @@ class _SoundTrackDetailScreenState extends State<SoundTrackDetailScreen> {
           ),
         ),
         centerTitle: true,
+        actions: [
+          if (_apiMode)
+            _saveLoading
+                ? Padding(
+                    padding: EdgeInsets.all(12.responsiveDimension),
+                    child: SizedBox(
+                      width: 22.responsiveDimension,
+                      height: 22.responsiveDimension,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: st.onSurface,
+                      ),
+                    ),
+                  )
+                : IconButton(
+                    icon: Icon(
+                      _savedChecked && _isSaved
+                          ? Icons.bookmark
+                          : Icons.bookmark_border,
+                      color: st.onSurface,
+                    ),
+                    onPressed: _toggleSaved,
+                  ),
+        ],
       ),
       body: Column(
         children: [
@@ -229,16 +304,18 @@ class _SoundTrackDetailScreenState extends State<SoundTrackDetailScreen> {
                 ),
                 onPressed: () async {
                   await _player.pause();
-                  widget.cameraBloc.add(
+                  if (widget.pickerOnly) {
+                    if (context.mounted) Navigator.pop(context, true);
+                    return;
+                  }
+                  widget.cameraBloc?.add(
                     CameraSetMusicEvent(
                       musicId: widget.track.id,
                       musicName: widget.track.title,
                       musicArtist: widget.track.author,
                       musicThumbnailUrl: widget.track.thumbnailUrl,
                       musicDurationSeconds: widget.track.duration.inSeconds,
-                      musicPreviewUrl: widget.track.trackUrl.isEmpty
-                          ? SoundLibraryMockData.defaultTrackPreviewUrl
-                          : widget.track.trackUrl,
+                      musicPreviewUrl: widget.track.trackUrl,
                     ),
                   );
                   if (context.mounted) Navigator.pop(context, true);

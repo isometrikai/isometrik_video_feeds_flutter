@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fluttertagger/fluttertagger.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart'
     as mc;
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart'
@@ -23,11 +24,13 @@ class PostAttributeView extends StatefulWidget {
     required this.isEditMode,
     this.postData,
     this.newMediaDataList,
+    this.selectedSound,
     this.dismissEntireFlowOnClose = false,
   });
 
   final bool? isEditMode;
   final List<MediaData>? newMediaDataList;
+  final MediaEditSoundItem? selectedSound;
   final TimeLineData? postData;
   final bool dismissEntireFlowOnClose;
 
@@ -109,8 +112,10 @@ class _PostAttributeViewState extends State<PostAttributeView>
     if (_isEditMode && editData != null) {
       _createPostBloc.add(EditPostEvent(postData: editData));
     } else if (!_isEditMode && widget.newMediaDataList?.isNotEmpty == true) {
-      _createPostBloc.add(
-          CreatePostInitialEvent(newMediaDataList: widget.newMediaDataList));
+      _createPostBloc.add(CreatePostInitialEvent(
+        newMediaDataList: widget.newMediaDataList,
+        selectedSound: widget.selectedSound,
+      ));
     } else {
       Navigator.pop(context);
     }

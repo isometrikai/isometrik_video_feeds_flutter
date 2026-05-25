@@ -4,6 +4,7 @@ import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/models/models.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart'
     as ms;
 import 'package:ism_video_reel_player/utils/navigator/highlight_open_coordinator.dart';
@@ -233,6 +234,7 @@ class IsrAppNavigator {
   static Future<String?> goToCreatePostView(
     BuildContext context, {
     TransitionType? transitionType,
+    MediaEditSoundItem? initialSound,
   }) async {
     final page = MultiBlocProvider(
       providers: [
@@ -246,7 +248,7 @@ class IsrAppNavigator {
           value: IsmInjectionUtils.getBloc<UploadProgressCubit>(),
         ),
       ],
-      child: const CreatePostMultimediaWrapper(),
+      child: CreatePostMultimediaWrapper(initialSound: initialSound),
     );
 
     final result =
@@ -417,6 +419,7 @@ class IsrAppNavigator {
   static Future<String?> goToCreatePostAttributionView(
     BuildContext context, {
     List<MediaData>? newMediaDataList,
+    MediaEditSoundItem? selectedSound,
     bool dismissEntireFlowOnClose = false,
     TransitionType transitionType = TransitionType.bottomToTop,
   }) async {
@@ -429,6 +432,7 @@ class IsrAppNavigator {
       ],
       child: PostAttributeView(
         newMediaDataList: newMediaDataList,
+        selectedSound: selectedSound,
         isEditMode: false,
         dismissEntireFlowOnClose: dismissEntireFlowOnClose,
       ),
@@ -502,7 +506,7 @@ class IsrAppNavigator {
     ms.MediaSelectionConfig? mediaSelectionConfig,
     List<ms.MediaAssetData>? selectedMedia,
     Future<bool> Function(List<ms.MediaAssetData> selectedMedia)? onComplete,
-    Future<String?> Function(String? mediaType)? onCaptureMedia,
+    Future<dynamic> Function(String? mediaType)? onCaptureMedia,
     TransitionType? transitionType,
   }) async {
     final page = MultiBlocProvider(

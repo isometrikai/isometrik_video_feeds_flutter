@@ -574,6 +574,7 @@ class PostCallBackConfig {
     this.onViewCountClicked,
     this.onPaidPostUnlock,
     this.onDubWithAudio,
+    this.onUseThisSound,
   });
 
   final Function(TimeLineData postData, bool isSaved)? onSaveChanged;
@@ -600,6 +601,12 @@ class PostCallBackConfig {
 
   final Future<void> Function(TimeLineData postData)? onDubWithAudio;
 
+  /// Tapped the audio pill on a post; lets the host app open create-post with
+  /// the sound preselected. When null the SDK falls back to a built-in flow
+  /// (camera + media edit with the sound preselected).
+  final Future<void> Function(TimeLineData postData, PostSoundInfo sound)?
+      onUseThisSound;
+
   PostCallBackConfig copyWith({
     Function(TimeLineData postData, bool isSaved)? onSaveChanged,
     Function(TimeLineData postData, bool isLiked)? onLikeChanged,
@@ -617,6 +624,8 @@ class PostCallBackConfig {
     Future<void> Function(TimeLineData postData)? onViewCountClicked,
     Future<void> Function(TimeLineData postData)? onPaidPostUnlock,
     Future<void> Function(TimeLineData postData)? onDubWithAudio,
+    Future<void> Function(TimeLineData postData, PostSoundInfo sound)?
+        onUseThisSound,
   }) =>
       PostCallBackConfig(
         onSaveChanged: onSaveChanged ?? this.onSaveChanged,
@@ -633,5 +642,6 @@ class PostCallBackConfig {
         onViewCountClicked: onViewCountClicked ?? this.onViewCountClicked,
         onPaidPostUnlock: onPaidPostUnlock ?? this.onPaidPostUnlock,
         onDubWithAudio: onDubWithAudio ?? this.onDubWithAudio,
+        onUseThisSound: onUseThisSound ?? this.onUseThisSound,
       );
 }

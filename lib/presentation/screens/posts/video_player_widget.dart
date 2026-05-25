@@ -478,34 +478,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       play();
     }
 
-    // Control playback based on visibility (only if not manually paused)
-    // Safety check: ensure controller is valid and not disposed
-    if (!_isDisposed &&
-        _videoPlayerController != null &&
-        _videoPlayerController!.isInitialized &&
-        !_videoPlayerController!.isDisposed) {
-      try {
-        if (_isVisible &&
-            !_videoPlayerController!.isPlaying &&
-            !_isManuallyPaused) {
-          // Ensure volume is set correctly before playing
-          unawaited(_videoPlayerController!.setVolume(widget.isMuted ? 0.0 : 1.0));
-          // OPTIMIZATION: Don't await - fire and forget for instant response
-          unawaited(_videoPlayerController!.play());
-          widget.videoCacheManager.markAsVisible(widget.mediaUrl);
-          // Start stuck video detection for visible video
-          _startStuckVideoDetection();
-        } else if (!_isVisible && _videoPlayerController!.isPlaying) {
-          // Video is not visible - pause it
-          unawaited(_videoPlayerController!.pause());
-          widget.videoCacheManager.markAsNotVisible(widget.mediaUrl);
-          // Stop stuck video detection when not visible
-          _stopStuckVideoDetection();
-        }
-      } catch (e) {
-        debugPrint('⚠️ VideoPlayerWidget: Error in visibility change handler: $e');
-      }
-    } else if (_isVisible) {
     _syncPlaybackState();
 
     if (_isVisible) {

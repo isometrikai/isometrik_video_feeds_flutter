@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_models.dart';
+import 'package:ism_video_reel_player/utils/post_sound_util.dart';
 
 part 'media_edit_event.dart';
 part 'media_edit_state.dart';
@@ -247,13 +248,49 @@ class MediaEditBloc extends Bloc<MediaEditEvent, MediaEditState> {
     NavigateToAudioEditorEvent event,
     Emitter<MediaEditState> emit,
   ) async {
-    if (_currentIndex < _mediaEditItems.length) {
-      _mediaEditItems[_currentIndex].sound = event.sound;
-      emit(MediaEditLoadedState(
-        mediaEditItems: List.from(_mediaEditItems),
-        currentIndex: _currentIndex,
-      ));
+    if (_currentIndex >= _mediaEditItems.length) return;
+
+    final sound = event.sound;
+    var item = _mediaEditItems[_currentIndex];
+
+    if (sound != null &&
+        sound.soundUrl?.isNotEmpty == true &&
+        item.mediaType == EditMediaType.video) {
+      final videoPath = item.editedPath ?? item.originalPath;
+      final muxed = await PostSoundUtil.muxVideoWithSound(
+        videoPath: videoPath,
+        sound: sound,
+      );
+      item = MediaEditItem(
+        originalPath: item.originalPath,
+        editedPath: muxed,
+        mediaType: item.mediaType,
+        width: item.width,
+        height: item.height,
+        duration: item.duration,
+        thumbnailPath: item.thumbnailPath,
+        sound: sound,
+        metaData: item.metaData,
+      );
+    } else {
+      item = MediaEditItem(
+        originalPath: item.originalPath,
+        editedPath: item.editedPath,
+        mediaType: item.mediaType,
+        width: item.width,
+        height: item.height,
+        duration: item.duration,
+        thumbnailPath: item.thumbnailPath,
+        sound: sound,
+        metaData: item.metaData,
+      );
     }
+
+    _mediaEditItems[_currentIndex] = item;
+    emit(MediaEditLoadedState(
+      mediaEditItems: List.from(_mediaEditItems),
+      currentIndex: _currentIndex,
+    ));
   }
 
   Future<void> _onNavigateToVideoTrim(

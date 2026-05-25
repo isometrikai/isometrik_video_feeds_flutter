@@ -2,10 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:ui' show ImageFilter;
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/data/data.dart';
+import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
@@ -180,6 +182,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   Timer? _imageViewTimer;
   bool _isImagePaused = false;
   bool _isPlaybackBlocked = false;
+
+  // Audio playback for image posts that carry a sound (Instagram-style).
+  AudioPlayer? _imageSoundPlayer;
+  String? _imageSoundLoadedUrl;
+  String? _resolvedImageSoundUrl;
+  bool _resolvingImageSoundUrl = false;
 
   bool get _isPreloaded => widget.index != widget.currentIndex.value;
 
@@ -545,6 +553,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _muteAnimationTimer?.cancel();
     _audioDebounceTimer?.cancel();
     _imageViewTimer?.cancel();
+    unawaited(_disposeImageSound());
     _currentMediaProgress.dispose();
     _postProgress.dispose();
     debugPrint(
@@ -1231,6 +1240,104 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           Expanded(child: _buildSimpleLocationText(placeList)),
         ],
       ),
+    );
+  }
+
+  Widget _buildPostSoundPill() {
+    final sound = _reelData.sound;
+    if (sound == null || !sound.hasId) return const SizedBox.shrink();
+    final label = sound.displayLabel;
+
+    return TapHandler(
+      onTap: _onTapPostSound,
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: IsrDimens.ten,
+          vertical: IsrDimens.six,
+        ),
+        decoration: BoxDecoration(
+          color: IsrColors.black.changeOpacity(0.35),
+          borderRadius: BorderRadius.circular(IsrDimens.twenty),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.music_note,
+              size: IsrDimens.sixteen,
+              color: IsrColors.white,
+              shadows: _textShadows,
+            ),
+            IsrDimens.boxWidth(IsrDimens.six),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: IsrStyles.white14.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: IsrColors.white,
+                  shadows: _textShadows,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _onTapPostSound() async {
+    final postData = _reelData.postData is TimeLineData
+        ? _reelData.postData as TimeLineData
+        : null;
+    final sound = _reelData.sound;
+    if (sound == null || !sound.hasId) return;
+
+    final handler = _postConfig.postCallBackConfig?.onUseThisSound;
+    if (handler != null && postData != null) {
+      await handler(postData, sound);
+      return;
+    }
+
+    if (!SoundLibraryFeatureUtil.isDubOrAddSoundEnabled) return;
+
+    var enrichedSound = sound;
+    final needsAudio = (sound.previewUrl ?? '').trim().isEmpty;
+    if (needsAudio) {
+      try {
+        final useCase = IsmInjectionUtils.getUseCase<SoundLibraryUseCase>();
+        final result = await useCase.getSoundTrackById(
+          isLoading: true,
+          soundId: sound.id,
+        );
+        final track = result.data;
+        if (track != null && track.trackUrl.isNotEmpty) {
+          enrichedSound = PostSoundInfo(
+            id: sound.id,
+            title: sound.title ?? track.title,
+            artist: sound.artist ?? track.author,
+            album: sound.album,
+            type: sound.type,
+            usageCount: sound.usageCount,
+            previewUrl: track.trackUrl,
+            thumbnailUrl: sound.thumbnailUrl ?? track.thumbnailUrl,
+            durationSeconds:
+                sound.durationSeconds ?? track.duration.inSeconds.toDouble(),
+            snapshot: sound.snapshot,
+          );
+        }
+      } catch (e) {
+        debugPrint('Failed to fetch sound details for ${sound.id}: $e');
+      }
+    }
+
+    if (!mounted) return;
+    final soundItem = PostSoundUtil.soundItemFromPostSound(enrichedSound);
+    if (soundItem == null) return;
+    await IsrAppNavigator.goToCreatePostView(
+      context,
+      initialSound: soundItem,
     );
   }
 
@@ -2034,6 +2141,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                         ],
                       ),
                     ],
+                    if (_reelData.sound?.hasId == true) ...[
+                      IsrDimens.boxHeight(IsrDimens.eight),
+                      _buildPostSoundPill(),
+                    ],
                   ],
                 ),
               ),
@@ -2479,11 +2590,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
   }
 
-  /// Handles mute/unmute toggle for videos only, with animation.
+  /// Handles mute/unmute toggle for videos, and for image posts that carry a
+  /// sound (Instagram-style image-with-audio).
   void _toggleMuteAndUnMute() {
-    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType !=
-        kVideoType) {
-      // Only allow mute/unmute for videos
+    final isVideo = _reelData.mediaMetaDataList[_currentPageNotifier.value]
+            .mediaType ==
+        kVideoType;
+    final hasImageSound = _isCurrentMediaImage && (_reelData.sound?.hasId ?? false);
+    if (!isVideo && !hasImageSound) {
       return;
     }
 
@@ -2498,7 +2612,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       _isMuted = !_isMuted;
       _globalMuteState = _isMuted; // Update global mute state
     });
-    // Volume change is handled by VideoPlayerWidget via didUpdateWidget
+    // Volume change is handled by VideoPlayerWidget via didUpdateWidget.
+    // For image-with-sound, apply mute state directly to the audio player.
+    unawaited(
+      _imageSoundPlayer?.setVolume(_isMuted ? 0.0 : 1.0) ?? Future.value(),
+    );
     _triggerMuteAnimation();
   }
 
@@ -2510,8 +2628,108 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   void _resetMediaProgress() {
     _imageViewTimer?.cancel();
+    unawaited(_stopImageSound());
     _currentMediaWatchDuration = Duration.zero;
     _currentMediaProgress.value = 0.0;
+  }
+
+  bool get _isCurrentMediaImage {
+    final list = _reelData.mediaMetaDataList;
+    final i = _currentPageNotifier.value;
+    if (list.isEmpty || i < 0 || i >= list.length) return false;
+    return list[i].mediaType == kPictureType;
+  }
+
+  Future<void> _resolveImageSoundUrlIfNeeded() async {
+    if (_resolvedImageSoundUrl != null && _resolvedImageSoundUrl!.isNotEmpty) {
+      return;
+    }
+    final sound = _reelData.sound;
+    if (sound == null || !sound.hasId) return;
+    final direct = (sound.previewUrl ?? '').trim();
+    if (direct.isNotEmpty) {
+      _resolvedImageSoundUrl = direct;
+      return;
+    }
+    if (_resolvingImageSoundUrl) return;
+    _resolvingImageSoundUrl = true;
+    try {
+      final useCase = IsmInjectionUtils.getUseCase<SoundLibraryUseCase>();
+      final result = await useCase.getSoundTrackById(
+        isLoading: false,
+        soundId: sound.id,
+      );
+      final track = result.data;
+      if (track != null && track.trackUrl.isNotEmpty) {
+        _resolvedImageSoundUrl = track.trackUrl;
+      }
+    } catch (e) {
+      debugPrint('Failed to resolve image sound url for ${sound.id}: $e');
+    } finally {
+      _resolvingImageSoundUrl = false;
+    }
+  }
+
+  Future<void> _startImageSoundIfNeeded() async {
+    if (!mounted) return;
+    if (!_isCurrentMediaImage) return;
+    if (_isImagePaused || _isPlaybackBlocked) return;
+    if (widget.currentIndex.value != widget.index) return;
+    final sound = _reelData.sound;
+    if (sound == null || !sound.hasId) return;
+
+    if (_resolvedImageSoundUrl == null || _resolvedImageSoundUrl!.isEmpty) {
+      await _resolveImageSoundUrlIfNeeded();
+    }
+    final url = _resolvedImageSoundUrl;
+    if (url == null || url.isEmpty) return;
+    if (!mounted) return;
+
+    final player = _imageSoundPlayer ??= AudioPlayer();
+    try {
+      if (_imageSoundLoadedUrl != url) {
+        await player.setReleaseMode(ReleaseMode.loop);
+        await player.setSource(audioSourceFromUrlOrPath(url));
+        _imageSoundLoadedUrl = url;
+      }
+      await player.setVolume(_isMuted ? 0.0 : 1.0);
+      if (player.state != PlayerState.playing) {
+        await player.resume();
+      }
+    } catch (e) {
+      debugPrint('Image sound playback failed: $e');
+    }
+  }
+
+  Future<void> _pauseImageSound() async {
+    final player = _imageSoundPlayer;
+    if (player == null) return;
+    try {
+      if (player.state == PlayerState.playing) {
+        await player.pause();
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _stopImageSound() async {
+    final player = _imageSoundPlayer;
+    if (player == null) return;
+    try {
+      await player.stop();
+    } catch (_) {}
+    _imageSoundLoadedUrl = null;
+  }
+
+  Future<void> _disposeImageSound() async {
+    final player = _imageSoundPlayer;
+    _imageSoundPlayer = null;
+    _imageSoundLoadedUrl = null;
+    if (player == null) return;
+    try {
+      await player.stop();
+      await player.release();
+      await player.dispose();
+    } catch (_) {}
   }
 
   /// Updates post-level watch duration and progress (all media combined).
@@ -2558,6 +2776,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     _imageViewTimer?.cancel();
     _isImagePaused = false;
+    unawaited(_startImageSoundIfNeeded());
 
     const tick = Duration(milliseconds: 50);
 
@@ -2589,6 +2808,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   void _pauseImageProgress() {
     _isImagePaused = true;
+    unawaited(_pauseImageSound());
   }
 
   void _setPlaybackBlocked(bool isPlaying) {

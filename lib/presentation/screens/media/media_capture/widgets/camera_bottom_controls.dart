@@ -21,7 +21,11 @@ class CameraBottomControls extends StatefulWidget {
   });
 
   final CameraBloc cameraBloc;
-  final Function(String path, MediaType type) onMediaPicked;
+  final void Function(
+    String path,
+    MediaType type, {
+    bool soundAppliedToVideo,
+  }) onMediaPicked;
   final Future<String?> Function()? onGalleryClick;
   final CameraState state;
   final bool dubWithAudioMode;
@@ -535,8 +539,17 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
         final path = await widget.onGalleryClick!();
         if (path != null && Utility.isLocalUrl(path)) {
           final mediaType = await _getMediaType(File(path));
-          widget.cameraBloc.add(CameraSetExternalMediaEvent(
-              mediaPath: path, mediaType: mediaType));
+          if (mediaType == MediaType.video) {
+            final applied = await _finishGalleryVideoWithSound(path);
+            if (!mounted) return;
+            widget.onMediaPicked(
+              applied.videoPath,
+              mediaType,
+              soundAppliedToVideo: applied.soundApplied,
+            );
+            return;
+          }
+          if (!mounted) return;
           widget.onMediaPicked(path, mediaType);
         }
       } catch (e) {
@@ -733,6 +746,47 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
     }
   }
 
+  /// Trim to 15s/60s reel length, then mux selected sound (same as dub gallery).
+  Future<GallerySoundApplyResult> _finishGalleryVideoWithSound(
+    String videoPath,
+  ) async {
+    if (widget.cameraBloc.selectedMediaType != MediaType.video) {
+      widget.cameraBloc.add(CameraSetMediaTypeEvent(mediaType: MediaType.video));
+    }
+
+    // Camera recording muxes sound even when 15s/60s is not selected; gallery
+    // should behave the same — default to a 60s cap instead of blocking.
+    final selectedSec = widget.cameraBloc.selectedDuration;
+    final maxSec =
+        (selectedSec == 15 || selectedSec == 60) ? selectedSec : 60;
+
+    final trimmedPath = await GalleryVideoTrimUtil.trimVideo(
+      context,
+      videoPath: videoPath,
+      maxSeconds: maxSec,
+      outputFilename: 'gallery_sound_trim.mp4',
+      forceTrimUi: widget.cameraBloc.hasMusicSelected,
+    );
+    if (!mounted || trimmedPath == null || trimmedPath.isEmpty) {
+      return GallerySoundApplyResult(
+        videoPath: videoPath,
+        soundApplied: false,
+      );
+    }
+
+    if (!widget.cameraBloc.hasMusicSelected) {
+      return GallerySoundApplyResult(
+        videoPath: trimmedPath,
+        soundApplied: false,
+      );
+    }
+
+    return CameraGallerySoundUtil.applySelectedSoundToVideo(
+      cameraBloc: widget.cameraBloc,
+      videoPath: trimmedPath,
+    );
+  }
+
   Future<void> _pickDubVideoFromGallery() async {
     final maxSec = widget.cameraBloc.selectedDuration;
     if (maxSec != 15 && maxSec != 60) {
@@ -752,26 +806,17 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
       );
       if (!mounted || trimmedPath == null || trimmedPath.isEmpty) return;
 
-      var outputPath = trimmedPath;
-      final musicPath = widget.cameraBloc.selectedMusicPreviewUrl;
-      if (widget.cameraBloc.hasMusicSelected &&
-          (musicPath?.isNotEmpty ?? false)) {
-        final muxed = await MediaUtil.muxVideoWithMusicFromUrl(
-          videoPath: trimmedPath,
-          musicUrlOrPath: musicPath!,
-        );
-        if (muxed != null && await File(muxed).exists()) {
-          if (muxed != trimmedPath) {
-            try {
-              await File(trimmedPath).delete();
-            } catch (_) {}
-          }
-          outputPath = muxed;
-        }
-      }
+      final applied = await CameraGallerySoundUtil.applySelectedSoundToVideo(
+        cameraBloc: widget.cameraBloc,
+        videoPath: trimmedPath,
+      );
 
       if (!mounted) return;
-      widget.onMediaPicked(outputPath, MediaType.video);
+      widget.onMediaPicked(
+        applied.videoPath,
+        MediaType.video,
+        soundAppliedToVideo: applied.soundApplied,
+      );
     } catch (e) {
       Utility.showToastMessage('Error picking video: $e');
     }
@@ -779,22 +824,24 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
 
   Future<void> _pickVideoFromGallery() async {
     try {
+      widget.cameraBloc.add(CameraFramingMusicRouteObscuredEvent(true));
       final video = await _imagePicker.pickVideo(source: ImageSource.gallery);
       if (video == null || !mounted) return;
 
-      final trimmedPath = await GalleryVideoTrimUtil.trimVideo(
-        context,
-        videoPath: video.path,
-      );
-      if (!mounted || trimmedPath == null || trimmedPath.isEmpty) return;
+      final applied = await _finishGalleryVideoWithSound(video.path);
+      if (!mounted) return;
 
-      widget.cameraBloc.add(CameraSetExternalMediaEvent(
-        mediaPath: trimmedPath,
-        mediaType: MediaType.video,
-      ));
-      widget.onMediaPicked(trimmedPath, MediaType.video);
+      widget.onMediaPicked(
+        applied.videoPath,
+        MediaType.video,
+        soundAppliedToVideo: applied.soundApplied,
+      );
     } catch (e) {
       Utility.showToastMessage('Error picking video: $e');
+    } finally {
+      if (mounted) {
+        widget.cameraBloc.add(CameraFramingMusicRouteObscuredEvent(false));
+      }
     }
   }
 }

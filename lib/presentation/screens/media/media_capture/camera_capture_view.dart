@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ism_video_reel_player/domain/models/camera_capture_result.dart';
 import 'package:ism_video_reel_player/domain/models/sound_library_models.dart';
+import 'package:ism_video_reel_player/utils/post_sound_util.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -104,7 +106,10 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
             } else if (state is CameraRecordingConfirmedState &&
                 !_isNavigatingToEdit) {
               _isNavigatingToEdit = true;
-              _popWithCapturedMedia(state.mediaPath);
+              _popWithCapturedMedia(
+                state.mediaPath,
+                soundAppliedToVideo: _cameraBloc.hasMusicSelected,
+              );
             }
           },
           builder: (context, state) {
@@ -209,10 +214,13 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
                 dubWithAudioMode: widget.dubWithAudioMode,
                 onGalleryClick: widget.onGalleryClick,
                 state: state,
-                onMediaPicked: (path, _) {
+                onMediaPicked: (path, _, {soundAppliedToVideo = false}) {
                   if (!_isNavigatingToEdit) {
                     _isNavigatingToEdit = true;
-                    _popWithCapturedMedia(path);
+                    _popWithCapturedMedia(
+                      path,
+                      soundAppliedToVideo: soundAppliedToVideo,
+                    );
                   }
                 },
               ),
@@ -221,8 +229,19 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
         ),
       );
 
-  void _popWithCapturedMedia(String mediaPath) {
-    Navigator.pop(context, mediaPath);
+  void _popWithCapturedMedia(
+    String mediaPath, {
+    bool soundAppliedToVideo = false,
+  }) {
+    final sound = PostSoundUtil.soundItemFromCamera(_cameraBloc);
+    Navigator.pop(
+      context,
+      CameraCaptureResult(
+        mediaPath: mediaPath,
+        sound: sound,
+        soundAppliedToVideo: soundAppliedToVideo,
+      ),
+    );
     _isNavigatingToEdit = false;
 
     _cameraBloc.add(CameraDiscardRecordingEvent());

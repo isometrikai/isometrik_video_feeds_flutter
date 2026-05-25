@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:ism_video_reel_player/domain/models/camera_capture_result.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart'
     as mc;
@@ -95,8 +96,8 @@ class DubWithAudioCaptureCoordinator {
       musicPreviewUrl: audioPath,
     );
 
-    final videoPath = await Navigator.of(context, rootNavigator: true)
-        .push<String?>(
+    final captureResult = await Navigator.of(context, rootNavigator: true)
+        .push<CameraCaptureResult>(
       MaterialPageRoute(
         settings: const RouteSettings(name: IsrRouteNames.cameraView),
         builder: (_) => mc.CameraCaptureView(
@@ -112,6 +113,7 @@ class DubWithAudioCaptureCoordinator {
       ),
     );
 
+    final videoPath = captureResult?.mediaPath;
     if (videoPath == null || videoPath.isEmpty) return;
 
     final mediaEditConfig = GalleryVideoTrimUtil.defaultMediaEditConfig();

@@ -1,7 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:ism_video_reel_player/domain/models/camera_capture_result.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
+import 'package:ism_video_reel_player/presentation/screens/create_post_multimedia/create_post_sound_flow.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart'
     as mc;
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit.dart'
@@ -14,7 +17,11 @@ import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
 class CreatePostMultimediaWrapper extends StatefulWidget {
-  const CreatePostMultimediaWrapper({super.key});
+  const CreatePostMultimediaWrapper({super.key, this.initialSound});
+
+  /// Sound preselected when entering this flow (e.g. via the post sound pill).
+  final MediaEditSoundItem? initialSound;
+
   @override
   State<CreatePostMultimediaWrapper> createState() =>
       _CreatePostMultimediaWrapperState();
@@ -22,6 +29,11 @@ class CreatePostMultimediaWrapper extends StatefulWidget {
 
 class _CreatePostMultimediaWrapperState
     extends State<CreatePostMultimediaWrapper> {
+  @override
+  void initState() {
+    super.initState();
+    _selectedPostSound = widget.initialSound;
+  }
   final mediaSelectionConfig = ms.MediaSelectionConfig(
     isMultiSelect: true,
     imageMediaLimit: AppConstants.imageMediaLimit,
@@ -42,6 +54,8 @@ class _CreatePostMultimediaWrapperState
   );
 
   late final mediaEditConfig = GalleryVideoTrimUtil.defaultMediaEditConfig();
+
+  MediaEditSoundItem? _selectedPostSound;
 
   Future<bool> _onMediaSelectionComplete(
       List<ms.MediaAssetData> selectedMedia) async {
@@ -76,6 +90,37 @@ class _CreatePostMultimediaWrapperState
 
     final mediaEditItems = selectedMedia.map(mapSelectedToEditMedia).toList();
 
+    // If a sound was preselected (e.g. "Use this sound" from a post), mux it
+    // onto every gallery video so the final upload carries the audio AND the
+    // create-post request includes `sound_id` / `sound_snapshot`.
+    final preselectedSound = _selectedPostSound;
+    if (preselectedSound != null &&
+        preselectedSound.soundId?.isNotEmpty == true) {
+      for (var i = 0; i < mediaEditItems.length; i++) {
+        final item = mediaEditItems[i];
+        if (item.mediaType != me.EditMediaType.video) continue;
+        var path = item.editedPath ?? item.originalPath;
+        if (preselectedSound.soundUrl?.isNotEmpty == true) {
+          path = await PostSoundUtil.muxVideoWithSound(
+            videoPath: path,
+            sound: preselectedSound,
+          );
+        }
+        if (!mounted) return false;
+        mediaEditItems[i] = me.MediaEditItem(
+          originalPath: item.originalPath,
+          editedPath: path,
+          mediaType: item.mediaType,
+          width: item.width,
+          height: item.height,
+          duration: item.duration,
+          thumbnailPath: item.thumbnailPath,
+          sound: preselectedSound,
+          metaData: item.metaData,
+        );
+      }
+    }
+
     if (mediaEditItems.isNotEmpty) {
       await Navigator.push<List<me.MediaEditItem>>(
         context,
@@ -86,6 +131,9 @@ class _CreatePostMultimediaWrapperState
             addMoreMedia: _onAddMoreMedia,
             mediaEditConfig: mediaEditConfig,
             pickCoverPic: _pickCoverPic,
+            onSelectSound: CreatePostSoundFlow.isEnabled
+                ? (current) => _onSelectSoundInMediaEdit(context, current)
+                : null,
           ),
         ),
       );
@@ -190,22 +238,32 @@ class _CreatePostMultimediaWrapperState
           )
           .toList();
 
+  Future<MediaEditSoundItem?> _onSelectSoundInMediaEdit(
+    BuildContext context,
+    MediaEditSoundItem? current,
+  ) async =>
+      CreatePostSoundFlow.pickSound(context);
+
   Future<bool> _onMediaEditComplete(List<me.MediaEditItem> editedMedia) async {
     if (editedMedia.isEmpty) {
-      var licenseAgreementAccepted = true;
-      final licenseAgreementCallBack = IsrVideoReelConfig.createEditPostConfig.createEditPostCallBackConfig?.licenseAgreementAfterMediaEdit;
-      if (licenseAgreementCallBack != null) {
-        licenseAgreementAccepted = await licenseAgreementCallBack.call(_mediaDataList.toList());
-      }
-      if (licenseAgreementAccepted) {
-        await IsrAppNavigator.goToCreatePostAttributionView(context, newMediaDataList: _mediaDataList);
-      }
       return false;
     }
+    final soundFromEdits = editedMedia
+        .where(
+          (e) =>
+              e.mediaType == me.EditMediaType.video &&
+              e.sound?.soundId?.isNotEmpty == true,
+        )
+        .map((e) => e.sound)
+        .firstOrNull;
+    // Keep the preselected sound (e.g. from "Use this sound") if the user
+    // didn't change it inside the media editor.
+    _selectedPostSound = soundFromEdits ?? _selectedPostSound;
     final mediaDataList = _mediaDataFromEditItems(editedMedia);
     await IsrAppNavigator.goToCreatePostAttributionView(
       context,
       newMediaDataList: mediaDataList,
+      selectedSound: _selectedPostSound,
     );
     return false;
   }
@@ -219,21 +277,53 @@ class _CreatePostMultimediaWrapperState
     );
   }
 
-  Future<String?> _captureMedia(String? mediaType) async =>
-      await Navigator.push<String?>(
+  Future<CameraCaptureResult?> _captureMedia(String? mediaType) async {
+    final result = await Navigator.push<CameraCaptureResult>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => mc.CameraCaptureView(
+          mediaType: mediaType?.mediaType ?? MediaType.both,
+          initialCameraMusic: _initialCameraMusicEvent(),
+          onAddSoundTap: IsrVideoReelConfig.createEditPostConfig
+              .createEditPostCallBackConfig?.onAddSoundFromCamera,
+        ),
+      ),
+    );
+    if (result == null || result.mediaPath.isEmpty) return null;
+
+    if (result.mediaPath.isVideoFile) {
+      final thumb = await _generateVideoThumbnail(result.mediaPath);
+      final duration =
+          await GalleryVideoTrimUtil.durationSeconds(result.mediaPath);
+      final editItem = await CreatePostSoundFlow.buildEditItemFromCapture(
+        videoPath: result.mediaPath,
+        durationSeconds: duration,
+        thumbnailPath: thumb,
+        sound: result.sound,
+        soundAlreadyAppliedToVideo: result.soundAppliedToVideo,
+      );
+      if (!mounted) return null;
+      _selectedPostSound = editItem.sound ?? result.sound;
+      await Navigator.push<List<me.MediaEditItem>>(
         context,
         MaterialPageRoute(
-          builder: (context) => mc.CameraCaptureView(
-            mediaType: mediaType?.mediaType ?? MediaType.both,
-            onGalleryClick: () async {
-              Navigator.pop(context);
-              return null;
-            },
-            onAddSoundTap: IsrVideoReelConfig.createEditPostConfig
-                .createEditPostCallBackConfig?.onAddSoundFromCamera,
+          builder: (context) => me.MediaEditView(
+            mediaDataList: [editItem],
+            onComplete: _onMediaEditComplete,
+            addMoreMedia: (_) async => null,
+            mediaEditConfig: mediaEditConfig,
+            pickCoverPic: _pickCoverPic,
+            onSelectSound: CreatePostSoundFlow.isEnabled
+                ? (current) => _onSelectSoundInMediaEdit(context, current)
+                : null,
           ),
         ),
       );
+      return null;
+    }
+
+    return result;
+  }
 
   Future<String?> _generateVideoThumbnail(String? videoPath) async {
     if (videoPath == null || videoPath.isEmpty) return null;
@@ -253,4 +343,20 @@ class _CreatePostMultimediaWrapperState
   }
 
   String _getFileExtension(String filePath) => path.extension(filePath);
+
+  CameraSetMusicEvent? _initialCameraMusicEvent() {
+    final sound = _selectedPostSound;
+    if (sound == null || sound.soundId == null || sound.soundId!.isEmpty) {
+      return null;
+    }
+    final durationSeconds = int.tryParse(sound.soundDuration ?? '');
+    return CameraSetMusicEvent(
+      musicId: sound.soundId!,
+      musicName: sound.soundMetadata?['title'] as String?,
+      musicArtist: sound.soundArtist,
+      musicThumbnailUrl: sound.soundImage,
+      musicDurationSeconds: durationSeconds,
+      musicPreviewUrl: sound.soundUrl ?? '',
+    );
+  }
 }

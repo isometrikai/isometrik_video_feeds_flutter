@@ -92,6 +92,7 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
                 Divider(height: 1, color: _dividerColor),
                 _buildOption(
                   title: IsrTranslationFile.delete,
+                  textColor: _deleteTextColor,
                   onTap: () => Navigator.pop(
                     context,
                     MoreOptionsSheetResult.delete,

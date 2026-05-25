@@ -11,6 +11,8 @@ import 'package:ism_video_reel_player/core/errors/error_handler.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/res/res.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
+import 'package:ism_video_reel_player/utils/post_sound_util.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
@@ -227,6 +229,9 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   FutureOr<void> _initState(
       CreatePostInitialEvent event, Emitter<CreatePostState> emit) async {
     _resetData();
+    if (event.selectedSound != null) {
+      _postAttributeClass.selectedSound = event.selectedSound;
+    }
     final postAttribution =
         await preparePostAttribution(newMediaDataList: event.newMediaDataList);
     emit(PostAttributionUpdatedState(postAttributeClass: postAttribution));
@@ -1932,7 +1937,22 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     _postAttributeClass.mediaDataList = _mediaDataList;
     _postAttributeClass.linkedProducts = linkedProducts;
     _postAttributeClass.createPostRequest = _createPostRequest;
+    _applySelectedSoundToCreatePostRequest(_postAttributeClass.selectedSound);
     return _postAttributeClass;
+  }
+
+  void _applySelectedSoundToCreatePostRequest(MediaEditSoundItem? sound) {
+    if (sound?.soundId == null || sound!.soundId!.isEmpty) return;
+    final videoDuration = _mediaDataList
+        .where((m) => m.mediaType == 'video' || m.postType == PostType.video)
+        .map((m) => m.duration?.toInt())
+        .whereType<int>()
+        .firstOrNull;
+    _createPostRequest.soundId = sound.soundId;
+    _createPostRequest.soundSnapshot = PostSoundUtil.buildSoundSnapshot(
+      sound: sound,
+      videoDurationSeconds: videoDuration,
+    );
   }
 
   /// Creates a permanent copy of media file to prevent system cleanup
