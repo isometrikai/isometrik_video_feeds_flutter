@@ -32,7 +32,7 @@ abstract final class CameraGallerySoundUtil {
       return GallerySoundApplyResult(videoPath: videoPath, soundApplied: false);
     }
 
-    if (showLoader) Utility.showLoader();
+    if (showLoader) await Utility.showLoader();
     try {
       final muxed = await MediaUtil.muxVideoWithMusicFromUrl(
         videoPath: videoPath,

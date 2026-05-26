@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -402,7 +403,13 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
                   if (state is MediaSelectionErrorState) {
                     MediaSelectionUtility.showInSnackBar(state.message, context);
                   } else if (state is MediaSelectionCompletedState) {
-                    _handleMediaSelectionComplete(state.selectedMedia);
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) {
+                        unawaited(
+                          _handleMediaSelectionComplete(state.selectedMedia),
+                        );
+                      }
+                    });
                   }
                 },
                 builder: (context, state) {

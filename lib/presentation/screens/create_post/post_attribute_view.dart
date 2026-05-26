@@ -2077,9 +2077,8 @@ class _PostAttributeViewState extends State<PostAttributeView>
     mediaListType: ms.MediaListType.imageVideo,
   );
 
-  Future<String?> _captureMedia(String? mediaType) async =>
-      await Navigator.push<String?>(
-        context,
+  Future<dynamic> _captureMedia(String? mediaType) async =>
+      await Navigator.of(context, rootNavigator: true).push<dynamic>(
         MaterialPageRoute(
           builder: (context) => mc.CameraCaptureView(
             mediaType: mediaType?.mediaType ?? MediaType.photo,

@@ -234,8 +234,7 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
     bool soundAppliedToVideo = false,
   }) {
     final sound = PostSoundUtil.soundItemFromCamera(_cameraBloc);
-    Navigator.pop(
-      context,
+    Navigator.of(context, rootNavigator: true).pop(
       CameraCaptureResult(
         mediaPath: mediaPath,
         sound: sound,

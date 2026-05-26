@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:ism_video_reel_player/domain/models/camera_capture_result.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart'
     as mc;
@@ -57,26 +56,21 @@ class DubWithAudioCaptureCoordinator {
     if (!context.mounted) return;
 
     if (audioPath == null) {
-      IsrVideoReelConfig.resumeFeedPlayback();
       Utility.showToastMessage(IsrTranslationFile.dubExtractAudioFailedMessage);
       return;
     }
 
-    try {
-      await start(
-        context,
-        CreatePostLaunchConfig.dubWithExtractedAudio(
-          dubAudioFilePath: audioPath,
-          dubSoundTrack: ReelDubAudioUtil.dubSoundTrackForPost(
-            audioFilePath: audioPath,
-            post: post,
-            durationSeconds: ReelDubAudioUtil.reelVideoDurationSecondsForDub(post),
-          ),
+    await start(
+      context,
+      CreatePostLaunchConfig.dubWithExtractedAudio(
+        dubAudioFilePath: audioPath,
+        dubSoundTrack: ReelDubAudioUtil.dubSoundTrackForPost(
+          audioFilePath: audioPath,
+          post: post,
+          durationSeconds: ReelDubAudioUtil.reelVideoDurationSecondsForDub(post),
         ),
-      );
-    } finally {
-      IsrVideoReelConfig.resumeFeedPlayback();
-    }
+      ),
+    );
   }
 
   static Future<void> start(
@@ -96,7 +90,7 @@ class DubWithAudioCaptureCoordinator {
       musicPreviewUrl: audioPath,
     );
 
-    final captureResult = await Navigator.of(context, rootNavigator: true)
+    final capture = await Navigator.of(context, rootNavigator: true)
         .push<CameraCaptureResult>(
       MaterialPageRoute(
         settings: const RouteSettings(name: IsrRouteNames.cameraView),
@@ -113,8 +107,8 @@ class DubWithAudioCaptureCoordinator {
       ),
     );
 
-    final videoPath = captureResult?.mediaPath;
-    if (videoPath == null || videoPath.isEmpty) return;
+    if (capture == null || capture.mediaPath.isEmpty) return;
+    final videoPath = capture.mediaPath;
 
     final mediaEditConfig = GalleryVideoTrimUtil.defaultMediaEditConfig();
 

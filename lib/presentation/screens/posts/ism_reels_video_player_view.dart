@@ -65,7 +65,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
 }
 
 class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
-    with SingleTickerProviderStateMixin, WidgetsBindingObserver, RouteAware
+    with SingleTickerProviderStateMixin, RouteAware
     implements PostHelperCallBacks {
   // Use MediaCacheFactory instead of direct VideoCacheManager
   VideoCacheManager get _videoCacheManager =>
@@ -210,8 +210,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     final isVisible = widget.currentIndex.value == widget.index;
     if (_wasVisiblePost && !isVisible) {
       _logWatchPostEvent();
-    }
-    if (isVisible) {
+      _pauseImageProgress();
+      final key = _getCurrentVideoPlayerKey();
+      VideoPlayerWidget.of(key)?.pause();
+    } else if (!_wasVisiblePost && isVisible) {
       if (_isMuted != _globalMuteState) {
         setState(() {
           _isMuted = _globalMuteState;
@@ -219,6 +221,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       }
       if (!_hasFetchedFloatingComments) {
         _fetchFloatingCommentsIfNeeded();
+      }
+      if (!_isPlaybackBlocked && IsrVideoReelConfig.isHostFeedTabVisible) {
+        _resumePlayback();
+        if (_isCurrentMediaImage) {
+          unawaited(_startImageSoundIfNeeded());
+        }
       }
     }
     debugPrint(
@@ -234,7 +242,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     debugPrint(
         'IsmReelsVideoPlayerView: initState index: ${widget.index}, visibleIndex: ${widget.currentIndex.value}, tabType: ${widget.postSectionType}');
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
@@ -246,12 +253,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         'IsmReelsVideoPlayerView: didChangeDependencies index: ${widget.index}, visibleIndex: ${widget.currentIndex.value}, tabType: ${widget.postSectionType}');
   }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    debugPrint(
-        'IsmReelsVideoPlayerView: didChangeAppLifecycleState index: ${widget.index}, visibleIndex: ${widget.currentIndex.value}, tabType: ${widget.postSectionType}');
-    // Lifecycle is handled by individual VideoPlayerWidgets
-  }
 
   // RouteAware methods for navigation detection
   @override
@@ -546,7 +547,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       _logWatchPostEvent();
     }
     widget.currentIndex.removeListener(_onCurrentIndexChanged);
-    WidgetsBinding.instance.removeObserver(this);
     _tapGestureRecognizer?.dispose();
     _pageController?.dispose();
     _likeAnimationTimer?.cancel();
@@ -1300,45 +1300,23 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       return;
     }
 
-    if (!SoundLibraryFeatureUtil.isDubOrAddSoundEnabled) return;
-
-    var enrichedSound = sound;
-    final needsAudio = (sound.previewUrl ?? '').trim().isEmpty;
-    if (needsAudio) {
+    // Dub with audio: open dub camera directly.
+    if (_postConfig.enableDubWithAudio && postData != null) {
+      IsrVideoReelConfig.pauseFeedPlayback();
       try {
-        final useCase = IsmInjectionUtils.getUseCase<SoundLibraryUseCase>();
-        final result = await useCase.getSoundTrackById(
-          isLoading: true,
-          soundId: sound.id,
+        await DubWithAudioCaptureCoordinator.handleFromPost(
+          context,
+          postData,
+          config: _postConfig.dubWithAudioConfig,
+          customHandler: _postConfig.postCallBackConfig?.onDubWithAudio,
         );
-        final track = result.data;
-        if (track != null && track.trackUrl.isNotEmpty) {
-          enrichedSound = PostSoundInfo(
-            id: sound.id,
-            title: sound.title ?? track.title,
-            artist: sound.artist ?? track.author,
-            album: sound.album,
-            type: sound.type,
-            usageCount: sound.usageCount,
-            previewUrl: track.trackUrl,
-            thumbnailUrl: sound.thumbnailUrl ?? track.thumbnailUrl,
-            durationSeconds:
-                sound.durationSeconds ?? track.duration.inSeconds.toDouble(),
-            snapshot: sound.snapshot,
-          );
+      } finally {
+        if (mounted) {
+          IsrVideoReelConfig.resumeFeedPlayback();
         }
-      } catch (e) {
-        debugPrint('Failed to fetch sound details for ${sound.id}: $e');
       }
+      return;
     }
-
-    if (!mounted) return;
-    final soundItem = PostSoundUtil.soundItemFromPostSound(enrichedSound);
-    if (soundItem == null) return;
-    await IsrAppNavigator.goToCreatePostView(
-      context,
-      initialSound: soundItem,
-    );
   }
 
   Widget _buildSimpleLocationText(List<PlaceMetaData> placeList) {
@@ -1384,7 +1362,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     final key = _getCurrentVideoPlayerKey();
     final videoPlayerState = VideoPlayerWidget.of(key);
     if (videoPlayerState != null && videoPlayerState.mounted) {
-      videoPlayerState.forceResume();
+      videoPlayerState.forceResume(activeReel: true);
     }
     VisibilityDetectorController.instance.notifyNow();
 
@@ -2815,22 +2793,28 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     final shouldBlock = !isPlaying;
     final isCurrentReel = widget.currentIndex.value == widget.index;
     if (_isPlaybackBlocked == shouldBlock) {
-      if (!shouldBlock && isCurrentReel) {
+      if (!shouldBlock &&
+          isCurrentReel &&
+          IsrVideoReelConfig.isHostFeedTabVisible) {
         _resumePlayback();
+        if (_isCurrentMediaImage) {
+          unawaited(_startImageSoundIfNeeded());
+        }
       }
       return;
     }
     _isPlaybackBlocked = shouldBlock;
     if (_isPlaybackBlocked) {
       _pauseImageProgress();
-      if (isCurrentReel) {
-        final key = _getCurrentVideoPlayerKey();
-        VideoPlayerWidget.of(key)?.pause();
-      }
+      final key = _getCurrentVideoPlayerKey();
+      VideoPlayerWidget.of(key)?.pause();
       return;
     }
-    if (isCurrentReel) {
+    if (isCurrentReel && IsrVideoReelConfig.isHostFeedTabVisible) {
       _resumePlayback();
+      if (_isCurrentMediaImage) {
+        unawaited(_startImageSoundIfNeeded());
+      }
     }
   }
 

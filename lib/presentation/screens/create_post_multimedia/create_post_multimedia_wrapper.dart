@@ -122,24 +122,30 @@ class _CreatePostMultimediaWrapperState
     }
 
     if (mediaEditItems.isNotEmpty) {
-      await Navigator.push<List<me.MediaEditItem>>(
-        context,
-        MaterialPageRoute(
-          builder: (context) => me.MediaEditView(
-            mediaDataList: mediaEditItems,
-            onComplete: _onMediaEditComplete,
-            addMoreMedia: _onAddMoreMedia,
-            mediaEditConfig: mediaEditConfig,
-            pickCoverPic: _pickCoverPic,
-            onSelectSound: CreatePostSoundFlow.isEnabled
-                ? (current) => _onSelectSoundInMediaEdit(context, current)
-                : null,
-          ),
-        ),
-      );
+      await _pushMediaEditPreview(mediaEditItems);
     }
 
     return false;
+  }
+
+  Future<void> _pushMediaEditPreview(List<me.MediaEditItem> mediaEditItems) async {
+    if (!mounted) return;
+    await Future<void>.delayed(Duration.zero);
+    if (!mounted) return;
+    await Navigator.of(context, rootNavigator: true).push<List<me.MediaEditItem>>(
+      MaterialPageRoute(
+        builder: (context) => me.MediaEditView(
+          mediaDataList: mediaEditItems,
+          onComplete: _onMediaEditComplete,
+          addMoreMedia: _onAddMoreMedia,
+          mediaEditConfig: mediaEditConfig,
+          pickCoverPic: _pickCoverPic,
+          onSelectSound: CreatePostSoundFlow.isEnabled
+              ? (current) => _onSelectSoundInMediaEdit(context, current)
+              : null,
+        ),
+      ),
+    );
   }
 
   me.MediaEditItem mapSelectedToEditMedia(ms.MediaAssetData media) =>
@@ -278,8 +284,8 @@ class _CreatePostMultimediaWrapperState
   }
 
   Future<CameraCaptureResult?> _captureMedia(String? mediaType) async {
-    final result = await Navigator.push<CameraCaptureResult>(
-      context,
+    final result = await Navigator.of(context, rootNavigator: true)
+        .push<CameraCaptureResult>(
       MaterialPageRoute(
         builder: (context) => mc.CameraCaptureView(
           mediaType: mediaType?.mediaType ?? MediaType.both,
@@ -304,8 +310,8 @@ class _CreatePostMultimediaWrapperState
       );
       if (!mounted) return null;
       _selectedPostSound = editItem.sound ?? result.sound;
-      await Navigator.push<List<me.MediaEditItem>>(
-        context,
+      await Navigator.of(context, rootNavigator: true)
+          .push<List<me.MediaEditItem>>(
         MaterialPageRoute(
           builder: (context) => me.MediaEditView(
             mediaDataList: [editItem],

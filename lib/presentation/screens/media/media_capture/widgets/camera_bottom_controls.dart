@@ -643,7 +643,7 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
                 children: [
                   SizedBox(width: IsrDimens.twentyFour),
                   TapHandler(
-                    onTap: () => context.pop(),
+                    onTap: () => Navigator.pop(context),
                     child: AppImage.svg(
                       AssetConstants.icClose,
                       width: IsrDimens.twentyFour,
@@ -664,7 +664,7 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
                     icon: AssetConstants.icMediaPhotos,
                     title: 'Choose image from gallery',
                     onTap: () {
-                      context.pop();
+                      Navigator.pop(context);
                       _pickImageFromGallery();
                     },
                   ),
@@ -674,7 +674,7 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
                     icon: AssetConstants.icMediaVideos,
                     title: 'Choose video from gallery',
                     onTap: () {
-                      context.pop();
+                      Navigator.pop(context);
                       _pickVideoFromGallery();
                     },
                   ),
@@ -794,6 +794,7 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
       return;
     }
     try {
+      widget.cameraBloc.add(CameraFramingMusicRouteObscuredEvent(true));
       final video = await _imagePicker.pickVideo(source: ImageSource.gallery);
       if (video == null || !mounted) return;
 
@@ -803,12 +804,14 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
         maxSeconds: maxSec,
         outputFilename: 'dub_gallery_trim.mp4',
         forceTrimUi: true,
+        useRootNavigator: true,
       );
       if (!mounted || trimmedPath == null || trimmedPath.isEmpty) return;
 
       final applied = await CameraGallerySoundUtil.applySelectedSoundToVideo(
         cameraBloc: widget.cameraBloc,
         videoPath: trimmedPath,
+        showLoader: false,
       );
 
       if (!mounted) return;
@@ -819,6 +822,10 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
       );
     } catch (e) {
       Utility.showToastMessage('Error picking video: $e');
+    } finally {
+      if (mounted) {
+        widget.cameraBloc.add(CameraFramingMusicRouteObscuredEvent(false));
+      }
     }
   }
 

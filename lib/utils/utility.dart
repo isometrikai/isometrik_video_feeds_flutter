@@ -56,30 +56,44 @@ class Utility {
         ].contains(e));
   }
 
-  /// Show loader
-  static void showLoader({
+  /// Show loader overlay. Returns after the dialog is on screen (not when dismissed).
+  static Future<void> showLoader({
     String? message,
     LoaderType? loaderType = LoaderType.withoutBackground,
   }) async {
+    if (isLoading) return;
+    final ctx = context;
+    if (ctx == null || !ctx.mounted) return;
     isLoading = true;
-    await showDialog(
-      barrierColor:
-          loaderType == LoaderType.withBackGround ? null : Colors.transparent,
-      context: context!,
-      builder: (_) => AppLoader(
-        message: message,
-        loaderType: loaderType,
-      ),
-      barrierDismissible: false,
+    unawaited(
+      showDialog<void>(
+        barrierColor: loaderType == LoaderType.withBackGround
+            ? null
+            : Colors.transparent,
+        context: ctx,
+        useRootNavigator: true,
+        builder: (_) => AppLoader(
+          message: message,
+          loaderType: loaderType,
+        ),
+        barrierDismissible: false,
+      ).whenComplete(() {
+        isLoading = false;
+      }),
     );
+    await WidgetsBinding.instance.endOfFrame;
   }
 
   // closes dialog for progress bar
   static void closeProgressDialog() {
-    if (isLoading == true && context?.canPop() == true) {
-      isLoading = false;
-      context?.pop();
+    if (isLoading != true) return;
+    final ctx = context;
+    if (ctx == null || !ctx.mounted) return;
+    final navigator = Navigator.of(ctx, rootNavigator: true);
+    if (navigator.canPop()) {
+      navigator.pop();
     }
+    isLoading = false;
   }
 
   static void showInfoDialog(

@@ -144,7 +144,7 @@ abstract final class PostSoundUtil {
     final musicUrl = sound.soundUrl?.trim() ?? '';
     if (musicUrl.isEmpty) return videoPath;
 
-    if (showLoader) Utility.showLoader();
+    if (showLoader) await Utility.showLoader();
     try {
       final muxed = await MediaUtil.muxVideoWithMusicFromUrl(
         videoPath: videoPath,
