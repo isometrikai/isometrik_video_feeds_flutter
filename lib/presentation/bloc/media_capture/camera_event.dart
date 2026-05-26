@@ -3,10 +3,11 @@ part of 'camera_bloc.dart';
 abstract class CameraEvent {}
 
 class CameraInitializeEvent extends CameraEvent {
-  CameraInitializeEvent({this.preserveCapturePaths = false});
+  CameraInitializeEvent({this.preserveCapturePaths = false, this.completion});
 
-  /// Keeps in-flight capture paths when re-initializing the camera.
   final bool preserveCapturePaths;
+
+  final Completer<void>? completion;
 }
 
 class CameraStartRecordingEvent extends CameraEvent {}

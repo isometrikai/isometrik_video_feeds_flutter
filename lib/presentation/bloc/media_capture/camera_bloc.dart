@@ -77,6 +77,12 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
   int _currentSegmentDuration = 0;
   Timer? _segmentTimer;
 
+  bool _isClosed = false;
+
+  Future<void>? _cameraOpInFlight;
+
+  Future<void>? _pendingMicReinit;
+
   CameraController? get cameraController => _cameraController;
   VideoPlayerController? get videoPlayerController => _videoPlayerController;
   // Use segment recording flag for backward compatibility
@@ -109,8 +115,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
         CameraLensDirection.back;
   }
 
-  bool get _isVideoWithSelectedSound =>
-      _selectedMediaType == MediaType.video && hasMusicSelected;
+  bool get _wantsCameraMicEnabled => true;
 
   bool get _shouldPlayFramingMusic =>
       _selectedMediaType == MediaType.video &&
@@ -189,6 +194,34 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     CameraInitializeEvent event,
     Emitter<CameraState> emit,
   ) async {
+    final previous = _cameraOpInFlight;
+    if (previous != null) {
+      try {
+        await previous;
+      } catch (_) {}
+    }
+    if (_isClosed) {
+      event.completion?.complete();
+      return;
+    }
+
+    final completer = Completer<void>();
+    _cameraOpInFlight = completer.future;
+    try {
+      await _initializeCameraImpl(event, emit);
+    } finally {
+      completer.complete();
+      if (identical(_cameraOpInFlight, completer.future)) {
+        _cameraOpInFlight = null;
+      }
+      event.completion?.complete();
+    }
+  }
+
+  Future<void> _initializeCameraImpl(
+    CameraInitializeEvent event,
+    Emitter<CameraState> emit,
+  ) async {
     try {
       if (!event.preserveCapturePaths) {
         _recordedVideoPath = null;
@@ -203,6 +236,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
           _cameraBuiltWithEnableAudio == wantEnableAudio) {
         final hasFlash = _cameraController!.description.lensDirection ==
             CameraLensDirection.back;
+        if (_isClosed) return;
         emit(CameraInitializedState(
           cameraController: _cameraController!,
           isFlashAvailable: hasFlash,
@@ -215,57 +249,94 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
       emit(CameraLoadingState());
 
       _cameras = await availableCameras();
+      if (_isClosed) return;
       if (_cameras.isEmpty) {
         emit(CameraErrorState('No cameras available'));
         return;
       }
 
       await _releaseCamera();
+      if (_isClosed) return;
 
       _cameraBuiltWithEnableAudio = wantEnableAudio;
-      _cameraController = CameraController(
+      final controller = CameraController(
         _cameras[_selectedCameraIndex],
         ResolutionPreset.high,
         enableAudio: wantEnableAudio,
         imageFormatGroup: ImageFormatGroup.jpeg,
       );
+      _cameraController = controller;
 
-      await _cameraController!.initialize();
+      final initCompleted = Completer<bool>();
+      runZonedGuarded<void>(
+        () async {
+          try {
+            await controller.initialize();
+            if (!initCompleted.isCompleted) initCompleted.complete(true);
+          } catch (e) {
+            AppLog.error('CameraController.initialize: $e');
+            if (!initCompleted.isCompleted) initCompleted.complete(false);
+          }
+        },
+        (error, stack) {
+          AppLog.error(
+            'Suppressed camera zone error (post-dispose listener): $error',
+          );
+        },
+      );
+      final initOk = await initCompleted.future;
+      if (!initOk) {
+        if (_isClosed || !identical(controller, _cameraController)) return;
+        emit(CameraErrorState('Failed to initialize camera'));
+        return;
+      }
 
-      if (_cameraController == null ||
-          !_cameraController!.value.isInitialized ||
-          _cameraController!.value.hasError) {
+      if (_isClosed || !identical(controller, _cameraController)) return;
+      if (!controller.value.isInitialized || controller.value.hasError) {
         emit(CameraErrorState('Camera controller failed to initialize'));
         return;
       }
 
-      await _cameraController?.lockCaptureOrientation(DeviceOrientation.portraitUp);
+      try {
+        await controller.lockCaptureOrientation(DeviceOrientation.portraitUp);
+      } catch (e) {
+        AppLog.error('lockCaptureOrientation: $e');
+      }
+      if (!_canUseController(controller)) return;
 
       if (_selectedMediaType == MediaType.photo) {
         await prepareCameraForPhoto();
       } else {
         await prepareCameraForVideoRecording();
       }
+      if (!_canUseController(controller)) return;
 
-      final hasFlash = _cameraController!.description.lensDirection ==
-          CameraLensDirection.back;
-      if (!hasFlash){
+      final hasFlash =
+          controller.description.lensDirection == CameraLensDirection.back;
+      if (!hasFlash) {
         _isFlashOn = false;
       }
-      await _cameraController!.setFlashMode(
-        _isFlashOn ? FlashMode.always : FlashMode.off,
-      );
+      try {
+        await controller.setFlashMode(
+          _isFlashOn ? FlashMode.always : FlashMode.off,
+        );
+      } catch (e) {
+        AppLog.error('setFlashMode: $e');
+      }
+      if (!_canUseController(controller)) return;
+
       emit(CameraInitializedState(
-          cameraController: _cameraController!,
-          isFlashAvailable: hasFlash,
-          maxZoom: 4.0));
+        cameraController: controller,
+        isFlashAvailable: hasFlash,
+        maxZoom: 4.0,
+      ));
       if (hasMusicSelected && _selectedMediaType == MediaType.video) {
         unawaited(_preloadFramingMusic());
       }
       unawaited(_syncFramingMusicPlayback());
     } catch (e) {
       AppLog.error('Camera initialization error: $e');
-      emit(CameraErrorState('Failed to initialize camera: $e'));
+      if (!_isClosed) emit(CameraErrorState('Failed to initialize camera: $e'));
     }
   }
 
@@ -313,6 +384,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     CameraCapturePhotoEvent event,
     Emitter<CameraState> emit,
   ) async {
+    await _waitForPendingMicReinit();
     if (_cameraController == null ||
         !_cameraController!.value.isInitialized ||
         _cameraController!.value.hasError) {
@@ -389,7 +461,8 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
         return;
       }
 
-      await _cameraController?.lockCaptureOrientation(DeviceOrientation.portraitUp);
+      await _cameraController
+          ?.lockCaptureOrientation(DeviceOrientation.portraitUp);
 
       if (_selectedMediaType == MediaType.photo) {
         await prepareCameraForPhoto();
@@ -399,7 +472,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
 
       final hasFlash = _cameraController!.description.lensDirection ==
           CameraLensDirection.back;
-      if (!hasFlash){
+      if (!hasFlash) {
         _isFlashOn = false;
       }
       await _cameraController!.setFlashMode(
@@ -493,27 +566,47 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
       musicName: _selectedMusicName,
       musicArtist: _selectedMusicArtist,
     ));
-    await _reinitCameraIfMicPolicyMismatch(emit);
+    // Mic-policy re-init can rebuild the camera controller on Android, which
+    // takes ~300-700ms. Dispatch as a fresh event so the handler gets its
+    // own valid `emit`; any record / capture event must
+    // `await _waitForPendingMicReinit()` before touching the controller.
+    _scheduleMicReinit();
     unawaited(_syncFramingMusicPlayback());
   }
 
-  bool get _wantsCameraMicEnabled => !_isVideoWithSelectedSound;
-
-  Future<void> _reinitCameraIfMicPolicyMismatch(
-    Emitter<CameraState> emit,
-  ) async {
+  void _scheduleMicReinit() {
+    if (_isClosed) return;
     if (_selectedMediaType != MediaType.video) return;
-    if (_isSegmentRecording) return;
     if (_cameraController == null ||
         !_cameraController!.value.isInitialized ||
         _cameraController!.value.hasError) {
       return;
     }
     if (_cameraBuiltWithEnableAudio == _wantsCameraMicEnabled) return;
-    await _initializeCamera(
-      CameraInitializeEvent(preserveCapturePaths: true),
-      emit,
-    );
+    if (_pendingMicReinit != null) return;
+
+    final completer = Completer<void>();
+    _pendingMicReinit = completer.future;
+    completer.future.whenComplete(() {
+      if (identical(_pendingMicReinit, completer.future)) {
+        _pendingMicReinit = null;
+      }
+    });
+    add(CameraInitializeEvent(
+      preserveCapturePaths: true,
+      completion: completer,
+    ));
+  }
+
+  /// Awaits any pending mic-policy re-init. Recording / capture handlers
+  /// should call this before touching the camera controller so they don't
+  /// hit a controller that's about to be torn down.
+  Future<void> _waitForPendingMicReinit() async {
+    final pending = _pendingMicReinit;
+    if (pending == null) return;
+    try {
+      await pending;
+    } catch (_) {}
   }
 
   Future<void> _onFramingMusicRouteObscured(
@@ -543,13 +636,12 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     _selectedMusicDurationSeconds = null;
     _selectedMusicPreviewUrl = null;
     await _disposeFramingMusicPlayer();
-    if (_cameraController != null &&
-        _cameraController!.value.isInitialized &&
-        !_cameraController!.value.hasError) {
-      await _reinitCameraIfMicPolicyMismatch(emit);
-    } else {
-      emit(CameraInitialState());
-    }
+    if (_isClosed) return;
+    emit(CameraMusicSelectedState(
+      musicId: null,
+      musicName: null,
+      musicArtist: null,
+    ));
   }
 
   Future<void> _setMediaType(
@@ -557,11 +649,14 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     Emitter<CameraState> emit,
   ) async {
     _selectedMediaType = event.mediaType;
+    await _waitForPendingMicReinit();
+    if (_isClosed) return;
     if (_selectedMediaType == MediaType.photo) {
       await prepareCameraForPhoto();
     } else {
       await prepareCameraForVideoRecording();
     }
+    if (_isClosed) return;
     emit(CameraMediaTypeChangedState(mediaType: _selectedMediaType));
     unawaited(_syncFramingMusicPlayback());
   }
@@ -790,6 +885,21 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
 
   @override
   Future<void> close() async {
+    _isClosed = true;
+
+    final inFlight = _cameraOpInFlight;
+    if (inFlight != null) {
+      try {
+        await inFlight;
+      } catch (_) {}
+    }
+    final pendingMic = _pendingMicReinit;
+    if (pendingMic != null) {
+      try {
+        await pendingMic;
+      } catch (_) {}
+    }
+
     await _disposeFramingMusicPlayer();
     _recordingTimer?.cancel();
     _recordingTimer = null;
@@ -815,29 +925,49 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
   }
 
   Future<void> _releaseCamera() async {
-    if (_cameraController == null) return;
+    final controller = _cameraController;
+    if (controller == null) return;
+    _cameraController = null;
 
     try {
-      if (_cameraController!.value.isRecordingVideo) {
-        await _cameraController!.stopVideoRecording();
+      if (controller.value.isRecordingVideo) {
+        await controller.stopVideoRecording();
       }
-
-      if (_cameraController!.value.isStreamingImages) {
-        await _cameraController!.stopImageStream();
+      if (controller.value.isStreamingImages) {
+        await controller.stopImageStream();
       }
     } catch (_) {}
 
-    await _cameraController!.dispose();
-    _cameraController = null;
+    try {
+      await controller.dispose();
+    } catch (e) {
+      AppLog.error('CameraController.dispose: $e');
+    }
 
-    // 🔥 Critical on Android
-    await Future.delayed(const Duration(milliseconds: 300));
+    // Critical on Android — give the camera HAL time to release before
+    // the next controller is built.
+    if (!_isClosed) {
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+    }
   }
 
   Future<void> _disposeAll(
     CameraDisposeEvent event,
     Emitter<CameraState> emit,
   ) async {
+    final inFlight = _cameraOpInFlight;
+    if (inFlight != null) {
+      try {
+        await inFlight;
+      } catch (_) {}
+    }
+    final pendingMic = _pendingMicReinit;
+    if (pendingMic != null) {
+      try {
+        await pendingMic;
+      } catch (_) {}
+    }
+
     await _disposeFramingMusicPlayer();
     _framingMusicRouteObscured = false;
     _framingMusicAppPaused = false;
@@ -921,6 +1051,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     CameraStartSegmentRecordingEvent event,
     Emitter<CameraState> emit,
   ) async {
+    await _waitForPendingMicReinit();
     if (_cameraController == null || !_cameraController!.value.isInitialized) {
       return;
     }
@@ -928,13 +1059,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     if (_isSegmentRecording) return;
 
     try {
-      if (_cameraBuiltWithEnableAudio != _wantsCameraMicEnabled) {
-        await _reinitCameraIfMicPolicyMismatch(emit);
-        if (_cameraController == null ||
-            !_cameraController!.value.isInitialized) {
-          return;
-        }
-      }
+      // Mic is now always enabled - audio replacement happens at mux time.
       await _cameraController!.startVideoRecording();
       _isSegmentRecording = true;
       _currentSegmentDuration = 0;
@@ -974,26 +1099,42 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
   }
 
   Future<void> prepareCameraForVideoRecording() async {
-    if (_cameraController != null) {
-      // Auto focus & exposure
-      await _cameraController!.setFocusMode(FocusMode.auto);
-      await _cameraController!.setExposureMode(ExposureMode.auto);
-
-      await _cameraController!.setExposureOffset(0.0);
-
-      // Lock exposure so it doesn’t change during recording
-      await _cameraController!.setExposureMode(ExposureMode.locked);
+    final controller = _cameraController;
+    if (!_canUseController(controller)) return;
+    try {
+      await controller!.setFocusMode(FocusMode.auto);
+      if (!_canUseController(controller)) return;
+      await controller.setExposureMode(ExposureMode.auto);
+      if (!_canUseController(controller)) return;
+      await controller.setExposureOffset(0.0);
+      if (!_canUseController(controller)) return;
+      // Lock exposure so it doesn't drift during recording.
+      await controller.setExposureMode(ExposureMode.locked);
+    } catch (e) {
+      AppLog.error('prepareCameraForVideoRecording: $e');
     }
   }
 
   Future<void> prepareCameraForPhoto() async {
-    if (_cameraController != null) {
-      // Auto focus & exposure
-      await _cameraController!.setFocusMode(FocusMode.auto);
-      await _cameraController!.setExposureMode(ExposureMode.auto);
-
-      await _cameraController!.setExposureOffset(0.0);
+    final controller = _cameraController;
+    if (!_canUseController(controller)) return;
+    try {
+      await controller!.setFocusMode(FocusMode.auto);
+      if (!_canUseController(controller)) return;
+      await controller.setExposureMode(ExposureMode.auto);
+      if (!_canUseController(controller)) return;
+      await controller.setExposureOffset(0.0);
+    } catch (e) {
+      AppLog.error('prepareCameraForPhoto: $e');
     }
+  }
+
+  bool _canUseController(CameraController? controller) {
+    if (_isClosed) return false;
+    if (controller == null) return false;
+    if (!identical(controller, _cameraController)) return false;
+    final value = controller.value;
+    return value.isInitialized && !value.hasError;
   }
 
   Future<void> _stopSegmentRecording(
