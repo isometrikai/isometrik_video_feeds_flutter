@@ -205,7 +205,11 @@ class IsrVideoReelConfig {
     IsrFeedCacheConfig? feedCacheConfig,
   }) {
     IsrVideoReelConfig.socialConfig = socialConfig ?? IsrVideoReelConfig.socialConfig;
-    IsrVideoReelConfig.postConfig = postConfig ?? IsrVideoReelConfig.postConfig;
+    final resolvedPostConfig = postConfig ?? IsrVideoReelConfig.postConfig;
+    IsrVideoReelConfig.postConfig = resolvedPostConfig;
+    VideoMuteController.applyDefaultMuted(
+      resolvedPostConfig.postFeedUIConfig?.defaultVideoMuted ?? true,
+    );
     IsrVideoReelConfig.tabConfig = tabConfig ?? IsrVideoReelConfig.tabConfig;
     IsrVideoReelConfig.commentConfig = commentConfig ?? IsrVideoReelConfig.commentConfig;
     IsrVideoReelConfig.createEditPostConfig = createEditPostConfig ?? IsrVideoReelConfig.createEditPostConfig;

@@ -127,10 +127,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   })? _onLikeTap;
   bool _isLikeActionLoading = false;
 
-  // Audio state management
-  static bool _globalMuteState =
-      false; // Global mute state that persists across all videos
-  bool _isMuted = false;
   Timer? _audioDebounceTimer;
 
   // Description config values with fallbacks
@@ -198,17 +194,17 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   Duration _postWatchDuration = Duration.zero;
   final ValueNotifier<double> _postProgress = ValueNotifier<double>(0.0);
   bool _wasVisiblePost = false;
+  void _onGlobalMuteChanged() {
+    if (!mounted) return;
+    setState(() {});
+  }
+
   void _onCurrentIndexChanged() {
     final isVisible = widget.currentIndex.value == widget.index;
     if (_wasVisiblePost && !isVisible) {
       _logWatchPostEvent();
     }
     if (isVisible) {
-      if (_isMuted != _globalMuteState) {
-        setState(() {
-          _isMuted = _globalMuteState;
-        });
-      }
       if (!_hasFetchedFloatingComments) {
         _fetchFloatingCommentsIfNeeded();
       }
@@ -223,6 +219,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _onStartInit();
     _wasVisiblePost = widget.currentIndex.value == widget.index;
     widget.currentIndex.addListener(_onCurrentIndexChanged);
+    VideoMuteController.notifier.addListener(_onGlobalMuteChanged);
     debugPrint(
         'IsmReelsVideoPlayerView: initState index: ${widget.index}, visibleIndex: ${widget.currentIndex.value}, tabType: ${widget.postSectionType}');
     super.initState();
@@ -386,9 +383,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _postDescription = _reelData.description ?? '';
     _tapGestureRecognizer = TapGestureRecognizer();
 
-    // Initialize local mute state with global state
-    _isMuted = _globalMuteState;
-
     // Initialize PageController for carousel
     _pageController = PreloadPageController(initialPage: 0);
 
@@ -538,6 +532,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       _logWatchPostEvent();
     }
     widget.currentIndex.removeListener(_onCurrentIndexChanged);
+    VideoMuteController.notifier.removeListener(_onGlobalMuteChanged);
     WidgetsBinding.instance.removeObserver(this);
     _tapGestureRecognizer?.dispose();
     _pageController?.dispose();
@@ -873,7 +868,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         mediaUrl: media.mediaUrl,
         thumbnailUrl: media.thumbnailUrl,
         videoCacheManager: _videoCacheManager,
-        isMuted: _isMuted,
+        isMuted: VideoMuteController.isMuted,
         onVisibilityChanged: (isVisible) {
           // Visibility is handled internally by VideoPlayerWidget
         },
@@ -1334,7 +1329,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       child: Container(
                         padding: const EdgeInsets.all(24),
                         child: AppImage.svg(
-                          _isMuted
+                          VideoMuteController.isMuted
                               ? (_actionIconConfig?.muteIcon ??
                                   AssetConstants.icMuteIcon)
                               : (_actionIconConfig?.unmuteIcon ??
@@ -2488,10 +2483,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   void _performMuteToggle() {
-    setState(() {
-      _isMuted = !_isMuted;
-      _globalMuteState = _isMuted; // Update global mute state
-    });
+    VideoMuteController.toggle();
+    setState(() {});
     // Volume change is handled by VideoPlayerWidget via didUpdateWidget
     _triggerMuteAnimation();
   }

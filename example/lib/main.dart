@@ -17,6 +17,7 @@ void main() async {
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   configureInjection();
   await initializeReelsSdk();
+  _configureReelsSdk();
   runApp(MyApp());
 }
 
@@ -62,9 +63,7 @@ Future<void> initializeReelsSdk() async {
       'version': appVersion,
       'currencySymbol': '\$',
       'currencyCode': 'USD',
-      'platform': Utility
-          .platFormType()
-          .platformText,
+      'platform': Utility.platFormType().platformText,
       'latitude': DefaultValues.defaultLatitude,
       'longitude': DefaultValues.defaultLongitude,
       'x-tenant-id': AppConstants.tenantId,
@@ -76,8 +75,20 @@ Future<void> initializeReelsSdk() async {
 void _configureReelsSdk() {
   isr.IsrVideoReelConfig.setUpConfig(
     postConfig: const isr.PostConfig(
+      // Use FeedLayoutType.reels for full-screen tabs, or
+      // FeedLayoutType.postFeed for scrollable post cards.
+      feedLayoutType: isr.FeedLayoutType.reels,
       autoMoveToNextMedia: true,
       autoMoveToNextPost: true,
+      postFeedUIConfig: isr.PostFeedUIConfig(
+        title: 'Feed',
+        backgroundColor: Colors.white,
+        headerTextColor: Color(0xFF262626),
+        secondaryTextColor: Color(0xFF8E8E8E),
+        mediaFrameHeight: 375,
+        postSpacing: 16,
+        // actionWidget: (reelsData, actionContext) => YourCustomActionRow(...),
+      ),
     ),
     tabConfig: const isr.TabConfig(),
     storyConfig: const isr.StoryConfig(),
@@ -221,14 +232,13 @@ class MyApp extends StatelessWidget {
             builder: (context, constraints) => OrientationBuilder(
               builder: (context, orientation) {
                 SizeConfig().init(constraints, orientation);
-                _configureReelsSdk();
                 return GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: Utility.hideKeyboard,
                   child: MaterialApp.router(
-                    debugShowCheckedModeBanner: false,
-                    theme: appTheme,
-                    routerConfig: AppRouter.router,
+                      debugShowCheckedModeBanner: false,
+                      theme: appTheme,
+                      routerConfig: AppRouter.router,
                       builder: (context, child) {
                         final content = child ?? const SizedBox.shrink();
                         return Stack(
@@ -237,8 +247,7 @@ class MyApp extends StatelessWidget {
                             const BackgroundPostUploadBanner(),
                           ],
                         );
-                      }
-                  ),
+                      }),
                 );
               },
             ),

@@ -87,6 +87,14 @@ class _PostItemWidgetState extends State<PostItemWidget>
     }
   }
 
+  @override
+  void didUpdateWidget(PostItemWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.reelsDataList == widget.reelsDataList) return;
+    _reelsDataList = List<ReelsData>.from(widget.reelsDataList);
+    _updateState();
+  }
+
   void _initializeContent() async {
     if (_reelsDataList.isListEmptyOrNull == false) {
       // OPTIMIZATION: Separate critical (thumbnails) from non-critical (videos) loading
@@ -174,6 +182,9 @@ class _PostItemWidgetState extends State<PostItemWidget>
   @override
   bool get wantKeepAlive => true;
 
+  bool get _isPostFeedLayout =>
+      widget.reelsConfig.postConfig.feedLayoutType == FeedLayoutType.postFeed;
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -209,7 +220,9 @@ class _PostItemWidgetState extends State<PostItemWidget>
           },
           child: _reelsDataList.isListEmptyOrNull == true
               ? _buildPlaceHolder(context)
-              : _buildContent(context),
+              : _isPostFeedLayout
+                  ? _buildPostFeedContent(context)
+                  : _buildContent(context),
         ),
       ),
     );
@@ -334,6 +347,39 @@ class _PostItemWidgetState extends State<PostItemWidget>
             ),
           ),
         ],
+      );
+
+  Widget _buildPostFeedContent(BuildContext context) => PostFeedListWidget(
+        reelsDataList: _reelsDataList,
+        reelsConfig: widget.reelsConfig,
+        postSectionType: widget.postSectionType,
+        loggedInUserId: widget.loggedInUserId,
+        videoCacheManager: _videoCacheManager,
+        getEmptyScreen: widget.getEmptyScreen,
+        onTapPlaceHolder: widget.onTapPlaceHolder,
+        onReelsChange: widget.reelsConfig.onReelsChange,
+        onLoadMore: () async {
+          if (widget.onLoadMore == null) return [];
+          final value = await widget.onLoadMore!();
+          if (value.isListEmptyOrNull) return [];
+          final newReels = value.where((newReel) => !_reelsDataList
+              .any((existing) => existing.postId == newReel.postId));
+          if (newReels.isNotEmpty) {
+            _reelsDataList.addAll(newReels);
+            _updateState();
+          }
+          return value;
+        },
+        onRefresh: _refreshPostFeed,
+        onPressMoreButton: widget.reelsConfig.onPressMoreButton,
+        onCreatePost: widget.reelsConfig.onCreatePost,
+        onPressFollowButton: widget.reelsConfig.onPressFollow,
+        onPressLikeButton: widget.reelsConfig.onPressLike,
+        onPressSaveButton: widget.reelsConfig.onPressSave,
+        onTapMentionTag: widget.reelsConfig.onTapMentionTag,
+        onTapComment: widget.reelsConfig.onTapComment,
+        onTapShare: widget.reelsConfig.onTapShare,
+        onTapUserProfile: widget.reelsConfig.onTapUserProfile,
       );
 
   Widget _buildContent(BuildContext context) => Column(
@@ -675,6 +721,26 @@ class _PostItemWidgetState extends State<PostItemWidget>
           _updateState();
         });
       }
+    }
+  }
+
+  Future<bool> _refreshPostFeed() async {
+    try {
+      if (widget.onRefresh == null) return false;
+      final result = await widget.onRefresh!.call();
+      if (result == true && mounted) {
+        await WidgetsBinding.instance.endOfFrame;
+        if (!mounted) return result;
+        _reelsDataList = List<ReelsData>.from(widget.reelsDataList);
+        _updateState();
+        if (_reelsDataList.isNotEmpty) {
+          await _doMediaCaching(0);
+        }
+      }
+      return result;
+    } catch (e) {
+      debugPrint('❌ PostItemWidget: Error during post-feed refresh - $e');
+      return false;
     }
   }
 

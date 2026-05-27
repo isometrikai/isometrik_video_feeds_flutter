@@ -374,7 +374,7 @@ class MediaKitCacheManager implements IVideoCacheManager {
   final Set<String> _visibleVideos = <String>{};
 
   // OPTIMIZATION: Platform-specific cache size for memory management
-  // Increased Android cache for smoother scrolling (Instagram-like experience)
+  // Increased Android cache for smoother scrolling in card feeds.
   static int get _maxCacheSize => Platform.isAndroid ? 10 : 30;
 
   // Track memory errors to adaptively reduce cache

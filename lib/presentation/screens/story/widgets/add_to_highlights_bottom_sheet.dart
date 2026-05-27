@@ -4,7 +4,7 @@ import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/stories/story_theme_resolver.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 
-/// Instagram-style sheet: highlight list with thumbnails, radio selection, + to create.
+/// Bottom sheet: highlight list with thumbnails, radio selection, + to create.
 class AddToHighlightsBottomSheet extends StatefulWidget {
   const AddToHighlightsBottomSheet({
     super.key,

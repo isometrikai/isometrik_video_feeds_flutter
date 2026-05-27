@@ -24,6 +24,7 @@ class VideoPlayerWidget extends StatefulWidget {
     required this.isMuted,
     required this.onVisibilityChanged,
     this.aspectRatio,
+    this.videoFitOverride,
     this.onVideoCompleted,
     this.postHelperCallBacks,
     this.videoProgressCallBack,
@@ -38,6 +39,7 @@ class VideoPlayerWidget extends StatefulWidget {
   final bool isMuted;
   final Function(bool isVisible) onVisibilityChanged;
   final double? aspectRatio;
+  final BoxFit? videoFitOverride;
   final VoidCallback? onVideoCompleted;
   final PostHelperCallBacks? postHelperCallBacks;
   final bool isPreloaded;
@@ -463,7 +465,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     if (_isDisposed) return;
 
     final wasVisible = _isVisible;
-    // OPTIMIZATION: Lower threshold (0.5) for earlier video start like Instagram
+    // OPTIMIZATION: Lower threshold (0.5) for earlier video start in feeds.
     _isVisible = info.visibleFraction > 0.5;
     debugPrint('✅ VideoPlayerWidget: (${widget.logIndex}) _handleVisibilityChanged - _isVisible: $_isVisible, visibilityFraction: ${info.visibleFraction}');
 
@@ -570,6 +572,20 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       await _initializeVideoPlayer();
     }
   }
+
+  bool get isManuallyPaused => _isManuallyPaused;
+
+  bool get isPlaying {
+    if (_isDisposed ||
+        _videoPlayerController == null ||
+        !_videoPlayerController!.isInitialized ||
+        _videoPlayerController!.isDisposed) {
+      return false;
+    }
+    return _videoPlayerController!.isPlaying;
+  }
+
+  bool get isVideoReady => _isInitialized && isPlaying;
 
   // Public methods to control playback
   void pause() {
@@ -714,16 +730,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                         // Return thumbnail as fallback if controller becomes invalid
                         return Container(
                           color: Colors.black,
-                          child: Center(
-                            child: _getImageWidget(
-                              imageUrl: widget.thumbnailUrl,
-                              width: IsrDimens.getScreenWidth(context),
-                              height: IsrDimens.getScreenHeight(context),
-                              fit: BoxFit.contain,
-                              filterQuality: FilterQuality.low,
-                              showError: false,
-                            ),
-                          ),
+                          child: _buildThumbnailWidget(context),
                         );
                       }
 
@@ -735,8 +742,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                       if (hasValidSize) {
                         final aspect = _videoPlayerController!.aspectRatio;
                         final isPortrait = size.height > size.width;
-                        final videoFit =
-                            isPortrait ? BoxFit.cover : BoxFit.contain;
+                        final videoFit = widget.videoFitOverride ??
+                            (isPortrait ? BoxFit.cover : BoxFit.contain);
                         return RepaintBoundary(
                           child: FittedBox(
                             fit: videoFit,
@@ -784,16 +791,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        Center(
-                          child: _getImageWidget(
-                            imageUrl: widget.thumbnailUrl,
-                            width: IsrDimens.getScreenWidth(context),
-                            height: IsrDimens.getScreenHeight(context),
-                            fit: BoxFit.contain,
-                            filterQuality: FilterQuality.low,
-                            showError: false,
-                          ),
-                        ),
+                        _buildThumbnailWidget(context),
                         // Show loading indicator when initializing
                         if (_isInitializing || (_isVisible && !_isInitialized))
                           const Center(
@@ -811,6 +809,33 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           ),
         ),
       );
+
+  Widget _buildThumbnailWidget(BuildContext context) {
+    final fit = widget.videoFitOverride ?? BoxFit.contain;
+    if (fit == BoxFit.cover) {
+      return SizedBox.expand(
+        child: _getImageWidget(
+          imageUrl: widget.thumbnailUrl,
+          width: double.infinity,
+          height: double.infinity,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.low,
+          showError: false,
+        ),
+      );
+    }
+
+    return Center(
+      child: _getImageWidget(
+        imageUrl: widget.thumbnailUrl,
+        width: IsrDimens.getScreenWidth(context),
+        height: IsrDimens.getScreenHeight(context),
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.low,
+        showError: false,
+      ),
+    );
+  }
 
   Widget _getImageWidget({
     required String imageUrl,

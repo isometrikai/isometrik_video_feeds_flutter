@@ -44,7 +44,7 @@ class OnShareRequest {
 enum SharePlatform {
   twitter(['twitter']),
   facebook(['facebook']),
-  instagram(['instagram']),
+  metaPhotos(const ['instagram']),
   x(['x', 'twitter_x']),
   telegram(['telegram']),
   whatsapp(['whatsapp', 'wa']),

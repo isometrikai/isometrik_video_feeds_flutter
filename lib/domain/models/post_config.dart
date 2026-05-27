@@ -5,36 +5,128 @@ class PostConfig {
   const PostConfig({
     this.postUIConfig,
     this.postCallBackConfig,
+    this.postFeedUIConfig,
     this.autoMoveToNextMedia = true,
     this.autoMoveToNextPost = true,
     this.isCaptionRequired = false,
     this.showViewCount = false,
+    this.feedLayoutType = FeedLayoutType.reels,
   });
 
   final PostUIConfig? postUIConfig;
   final PostCallBackConfig? postCallBackConfig;
+
+  /// Optional styling when [feedLayoutType] is [FeedLayoutType.postFeed].
+  final PostFeedUIConfig? postFeedUIConfig;
+
   final bool autoMoveToNextMedia;
   final bool autoMoveToNextPost;
   final bool isCaptionRequired;
   final bool showViewCount;
 
+  /// Reels tabs (full-screen) or scrollable post-card feed.
+  final FeedLayoutType feedLayoutType;
+
   PostConfig copyWith({
     PostUIConfig? postUIConfig,
     PostCallBackConfig? postCallBackConfig,
+    PostFeedUIConfig? postFeedUIConfig,
     bool? autoMoveToNextMedia,
     bool? autoMoveToNextPost,
     bool? isCaptionRequired,
     bool? showViewCount,
+    FeedLayoutType? feedLayoutType,
   }) =>
       PostConfig(
         postUIConfig: postUIConfig ?? this.postUIConfig,
         postCallBackConfig: postCallBackConfig ?? this.postCallBackConfig,
+        postFeedUIConfig: postFeedUIConfig ?? this.postFeedUIConfig,
         autoMoveToNextMedia: autoMoveToNextMedia ?? this.autoMoveToNextMedia,
         autoMoveToNextPost: autoMoveToNextPost ?? this.autoMoveToNextPost,
         isCaptionRequired: isCaptionRequired ?? this.isCaptionRequired,
         showViewCount: showViewCount ?? this.showViewCount,
+        feedLayoutType: feedLayoutType ?? this.feedLayoutType,
       );
 }
+
+/// Builds the action row (like, comment, share, save) for [FeedLayoutType.postFeed].
+typedef PostFeedActionWidgetBuilder = Widget Function(
+  ReelsData reelsData,
+  PostFeedActionBuildContext actionContext,
+);
+
+/// Context passed to [PostFeedActionWidgetBuilder] for custom action UIs.
+class PostFeedActionBuildContext {
+  const PostFeedActionBuildContext({
+    required this.currentMediaIndex,
+    required this.mediaCount,
+    required this.postSectionType,
+  });
+
+  final int currentMediaIndex;
+  final int mediaCount;
+  final PostSectionType postSectionType;
+}
+
+/// UI tokens for the scrollable post-card feed layout.
+class PostFeedUIConfig {
+  const PostFeedUIConfig({
+    this.title,
+    this.titleTextStyle,
+    this.actionWidget,
+    this.backgroundColor = const Color(0xFFFFFFFF),
+    this.dividerColor = const Color(0xFFEFEFEF),
+    this.headerTextColor = const Color(0xFF262626),
+    this.secondaryTextColor = const Color(0xFF8E8E8E),
+    this.actionIconColor = const Color(0xFF262626),
+    this.mediaAspectRatio = 1.0,
+    this.mediaFrameHeight,
+    this.mediaFrameWidth,
+    this.showCarouselPageBadge = true,
+    this.showCarouselDots = true,
+    this.postSpacing = 12.0,
+    this.showHeader = true,
+    this.defaultVideoMuted = true,
+    this.enableVideoTapControls = true,
+  });
+
+  /// Header title for [FeedLayoutType.postFeed]. Falls back to the active tab title when null or empty.
+  final String? title;
+
+  /// Optional override for the header title text style.
+  final TextStyle? titleTextStyle;
+
+  /// Custom action row below media. When null, SDK default actions are shown.
+  final PostFeedActionWidgetBuilder? actionWidget;
+
+  final Color backgroundColor;
+  final Color dividerColor;
+  final Color headerTextColor;
+  final Color secondaryTextColor;
+  final Color actionIconColor;
+  final double mediaAspectRatio;
+
+  /// When set, all post media (image/video) uses a fixed-height frame.
+  /// This keeps every post visually consistent regardless of media dimensions.
+  final double? mediaFrameHeight;
+
+  /// Optional fixed width. When null, media spans the full available width (edge to edge).
+  final double? mediaFrameWidth;
+
+  final bool showCarouselPageBadge;
+  final bool showCarouselDots;
+  final double postSpacing;
+
+  /// When false, the post-feed header row is hidden.
+  final bool showHeader;
+
+  /// When true, videos start muted (sound off).
+  final bool defaultVideoMuted;
+
+  /// When true, tap toggles play/pause and a mute control is shown on video.
+  final bool enableVideoTapControls;
+}
+
 
 class PostUIConfig {
   const PostUIConfig({

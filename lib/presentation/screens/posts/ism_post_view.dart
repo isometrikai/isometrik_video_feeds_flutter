@@ -63,6 +63,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   var _currentPostSectionType = PostSectionType.forYou;
   PostConfig get _postConfig =>
       widget.postConfig ?? IsrVideoReelConfig.postConfig;
+  bool get _isPostFeedLayout =>
+      _postConfig.feedLayoutType == FeedLayoutType.postFeed;
   TabConfig get _tabConfig => widget.tabConfig ?? IsrVideoReelConfig.tabConfig;
   SocialConfig get _socialConfig => IsrVideoReelConfig.socialConfig;
 
@@ -138,7 +140,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     _refreshControllers =
         List.generate(_tabDataModelList.length, (index) => RefreshController());
 
-    _tabsVisibilityNotifier.value = _tabDataModelList.length > 1;
+    _tabsVisibilityNotifier.value =
+        !_isPostFeedLayout && _tabDataModelList.length > 1;
 
     if (_isFollowingPostsEmpty()) {
       // _tabsVisibilityNotifier.value = false;
@@ -328,12 +331,15 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   // ✅ Don't wrap with BlocProvider again - just use BlocConsumer
   Widget _buildContent() => AnnotatedRegion(
         value: SystemUiOverlayStyle(
-          statusBarColor:
-              _statusBarConfig?.statusBarColor ?? IsrColors.transparent,
-          statusBarBrightness:
-              _statusBarConfig?.statusBarBrightness ?? Brightness.dark,
-          statusBarIconBrightness:
-              _statusBarConfig?.statusBarIconBrightness ?? Brightness.light,
+          statusBarColor: _statusBarConfig?.statusBarColor ??
+              (_isPostFeedLayout
+                  ? (_postConfig.postFeedUIConfig?.backgroundColor ??
+                      Colors.white)
+                  : IsrColors.transparent),
+          statusBarBrightness: _statusBarConfig?.statusBarBrightness ??
+              (_isPostFeedLayout ? Brightness.light : Brightness.dark),
+          statusBarIconBrightness: _statusBarConfig?.statusBarIconBrightness ??
+              (_isPostFeedLayout ? Brightness.dark : Brightness.light),
         ),
         child: context.attachBlocIfNeeded<IsmSocialActionCubit>(
           bloc: _socialActionCubit,
@@ -357,6 +363,13 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
             },
             child: Stack(
               children: [
+                if (_isPostFeedLayout)
+                  Positioned.fill(
+                    child: ColoredBox(
+                      color: _postConfig.postFeedUIConfig?.backgroundColor ??
+                          Colors.white,
+                    ),
+                  ),
                 BlocListener<SocialPostBloc, SocialPostState>(
                   bloc: _socialPostBloc,
                   listenWhen: (previousState, currentState) =>
@@ -401,7 +414,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                     ),
                   ),
                 ),
-                if (_tabDataModelList.length > 1) ...[
+                if (_isPostFeedLayout)
+                  _buildPostFeedHeader()
+                else if (_tabDataModelList.length > 1) ...[
                   _buildTabBar()
                 ] else ...[
                   _buildSingleTabTopBar()
@@ -411,6 +426,66 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           ),
         ),
       );
+
+  Widget _buildPostFeedHeader() {
+    final feedUi =
+        _postConfig.postFeedUIConfig ?? const PostFeedUIConfig();
+    if (!feedUi.showHeader) {
+      return const SizedBox.shrink();
+    }
+
+    final configuredTitle = feedUi.title?.trim();
+    final title = configuredTitle?.isNotEmpty == true
+        ? configuredTitle!
+        : (_tabDataModelList.isNotEmpty
+            ? _tabDataModelList[_currentIndex].tabDataModel.title
+            : '');
+
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      child: ColoredBox(
+        color: feedUi.backgroundColor,
+        child: SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: IsrDimens.edgeInsetsSymmetric(
+              horizontal: IsrDimens.sixteen,
+              vertical: IsrDimens.twelve,
+            ),
+            child: Row(
+              children: [
+                if (Navigator.of(context).canPop())
+                  IconButton(
+                    icon: Icon(
+                      Icons.arrow_back,
+                      color: feedUi.headerTextColor,
+                    ),
+                    onPressed: () => context.pop(),
+                  ),
+                if (title.isNotEmpty)
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: feedUi.titleTextStyle ??
+                          IsrStyles.primaryText18.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: feedUi.headerTextColor,
+                          ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                if (_tabBarConfig?.rightWidget != null)
+                  _tabBarConfig!.rightWidget!,
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   Widget _buildSingleTabTopBar() {
     final rightWidget = _tabBarConfig?.rightWidget;

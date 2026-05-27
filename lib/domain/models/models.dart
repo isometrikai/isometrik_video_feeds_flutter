@@ -1,4 +1,5 @@
 export 'comment_config.dart';
+export 'feed_layout_type.dart';
 export 'create_edit_post_config.dart';
 export 'highlight_open_result.dart';
 export 'isr_reels_properties.dart';
