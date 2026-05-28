@@ -1,5 +1,6 @@
 import 'package:ism_video_reel_player/core/core.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
 
 class SoundLibraryUseCase extends BaseUseCase {
   SoundLibraryUseCase(this._repository, this._localDataUseCase);
@@ -64,6 +65,55 @@ class SoundLibraryUseCase extends BaseUseCase {
         return ApiResult(data: tracks);
       });
 
+  Future<ApiResult<List<SoundTrack>>> loadSectionPage({
+    required bool isLoading,
+    required String section,
+    required int page,
+    int pageSize = 20,
+    String fallbackPreviewUrl = '',
+  }) async =>
+      execute(() async {
+        List<SoundData> data;
+        switch (section) {
+          case 'trending':
+            final response = await _repository.listTrendingSounds(
+              isLoading: isLoading,
+              page: page,
+              pageSize: pageSize,
+            );
+            data = response.data ?? const [];
+            break;
+          case 'recommended':
+            final response = await _repository.listRecommendedSounds(
+              isLoading: isLoading,
+              page: page,
+              pageSize: pageSize,
+            );
+            data = response.data ?? const [];
+            break;
+          case 'recent':
+            final response = await _repository.listRecentSounds(
+              isLoading: isLoading,
+              limit: page * pageSize,
+            );
+            data = response.data ?? const [];
+            break;
+          case 'saved':
+            final response = await _repository.listSavedSounds(
+              isLoading: isLoading,
+              limit: page * pageSize,
+            );
+            data = response.data ?? const [];
+            break;
+          default:
+            return ApiResult(data: const <SoundTrack>[]);
+        }
+        final tracks = data
+            .map((s) => s.toSoundTrack(fallbackPreviewUrl: fallbackPreviewUrl))
+            .toList();
+        return ApiResult(data: tracks);
+      });
+
   Future<ApiResult<bool>> toggleSaved({
     required bool isLoading,
     required String soundId,
@@ -71,8 +121,8 @@ class SoundLibraryUseCase extends BaseUseCase {
   }) async =>
       execute(() async {
         if (currentlySaved) {
-          final response =
-              await _repository.unsaveSound(isLoading: isLoading, soundId: soundId);
+          final response = await _repository.unsaveSound(
+              isLoading: isLoading, soundId: soundId);
           return ApiResult(data: response.data == true);
         }
         final userId = await _localDataUseCase.getUserId();
@@ -106,8 +156,8 @@ class SoundLibraryUseCase extends BaseUseCase {
           isLoading: isLoading,
           soundId: soundId,
         );
-        final track = response.data
-            ?.toSoundTrack(fallbackPreviewUrl: fallbackPreviewUrl);
+        final track =
+            response.data?.toSoundTrack(fallbackPreviewUrl: fallbackPreviewUrl);
         return ApiResult(data: track);
       });
 }
@@ -127,9 +177,17 @@ class SoundLibrarySections {
 
   List<SoundCategory> deriveCategories() {
     final ids = <String>{};
+    final categoryThumbs = <String, String>{};
     for (final list in [recent, trending, recommended, saved]) {
       for (final t in list) {
-        ids.addAll(t.categoryIds);
+        for (final categoryId in t.categoryIds) {
+          ids.add(categoryId);
+          final thumb = t.thumbnailUrl.trim();
+          if (isLikelyImageUrl(thumb) &&
+              !categoryThumbs.containsKey(categoryId)) {
+            categoryThumbs[categoryId] = thumb;
+          }
+        }
       }
     }
     return ids
@@ -137,7 +195,7 @@ class SoundLibrarySections {
           (id) => SoundCategory(
             id: id,
             title: _humanizeCategoryId(id),
-            thumbnailUrl:
+            thumbnailUrl: categoryThumbs[id] ??
                 'https://picsum.photos/seed/cat$id/200/200',
           ),
         )

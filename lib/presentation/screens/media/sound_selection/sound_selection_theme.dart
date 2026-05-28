@@ -37,11 +37,19 @@ class SoundPickerTheme {
       ? Colors.white.withValues(alpha: 0.06)
       : _cs.surfaceContainerHighest.withValues(alpha: 0.65);
 
+  Color get filterChipBackground =>
+      _isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF6E6FF);
+
+  Color get filterChipOnSelected => Colors.white;
+
   Color get chipBorderUnselected => _isDark
       ? Colors.white.withValues(alpha: 0.15)
       : _cs.outline.withValues(alpha: 0.35);
 
   Color get selectionAccent => _cs.primary;
+
+  Color get divider =>
+      _cs.outlineVariant.withValues(alpha: _isDark ? 0.3 : 0.45);
 
   Color get cursor => _cs.primary;
 

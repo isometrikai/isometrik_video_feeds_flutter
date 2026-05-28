@@ -10,6 +10,7 @@ export 'extensions.dart';
 export 'gallery_video_trim_util.dart';
 export 'isr_size_config.dart';
 export 'media_compressor.dart';
+export 'media_url_util.dart';
 export 'media_util.dart';
 export 'reel_dub_audio_util.dart';
 export 'sound_library_feature_util.dart';

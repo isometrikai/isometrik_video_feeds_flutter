@@ -84,9 +84,7 @@ class SoundData {
     final seconds = durationSeconds ?? 0;
     return SoundTrack(
       id: id,
-      thumbnailUrl: thumb.isNotEmpty
-          ? thumb
-          : 'https://picsum.photos/seed/sound$id/300/300',
+      thumbnailUrl: thumb,
       trackUrl: trackUrl.isNotEmpty ? trackUrl : fallbackPreviewUrl,
       title: title?.trim().isNotEmpty == true ? title!.trim() : 'Untitled',
       author:
@@ -109,7 +107,8 @@ class SoundsPagination {
     this.totalPages,
   });
 
-  factory SoundsPagination.fromMap(Map<String, dynamic> map) => SoundsPagination(
+  factory SoundsPagination.fromMap(Map<String, dynamic> map) =>
+      SoundsPagination(
         total: _asInt(map['total']),
         page: _asInt(map['page']),
         pageSize: _asInt(map['page_size']),
