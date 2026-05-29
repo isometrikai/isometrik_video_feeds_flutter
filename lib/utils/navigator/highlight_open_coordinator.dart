@@ -7,7 +7,12 @@ import 'package:ism_video_reel_player/utils/navigator/highlight_viewer_resolver.
 class HighlightOpenCoordinator {
   const HighlightOpenCoordinator._();
 
-  static Future<({HighlightOpenResult result, StoryGroup? group})> resolve({
+  static Future<
+      ({
+        HighlightOpenResult result,
+        StoryGroup? group,
+        StoryHighlightData? highlight,
+      })> resolve({
     required StoryCubit cubit,
     required String highlightId,
     String? userId,
@@ -50,6 +55,7 @@ class HighlightOpenCoordinator {
           highlightId: normalizedHighlightId,
         ),
         group: null,
+        highlight: null,
       );
     }
 
@@ -76,8 +82,7 @@ class HighlightOpenCoordinator {
 
     if (targetIds.isEmpty) {
       steps.add('target_ids_empty');
-      const reason = 'No stories available for selected highlight.';
-      callback?.call('open_highlight_viewer', reason);
+      const reason = 'No stories in this highlight yet.';
       emitDiagnostics(reason: reason, opened: false);
       return (
         result: HighlightOpenResult(
@@ -87,6 +92,7 @@ class HighlightOpenCoordinator {
           highlightId: normalizedHighlightId,
         ),
         group: null,
+        highlight: highlightData,
       );
     }
 
@@ -142,8 +148,7 @@ class HighlightOpenCoordinator {
 
     if (resolvedStories.isEmpty) {
       steps.add('resolve_failed_no_active_story');
-      const reason = 'Highlight exists but has no active stories to show.';
-      callback?.call('open_highlight_viewer', reason);
+      const reason = 'Stories were removed or expired. Add stories to continue.';
       emitDiagnostics(
         reason: reason,
         opened: false,
@@ -159,6 +164,7 @@ class HighlightOpenCoordinator {
           stepsAttempted: steps,
         ),
         group: null,
+        highlight: highlightData,
       );
     }
 
@@ -193,6 +199,7 @@ class HighlightOpenCoordinator {
         stepsAttempted: steps,
       ),
       group: group,
+      highlight: highlightData,
     );
   }
 }

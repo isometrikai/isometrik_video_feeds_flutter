@@ -332,6 +332,7 @@ class IsrAppNavigator {
     required String highlightId,
     String? userId,
     List<String>? storyIds,
+    StoryHighlightData? highlightPreview,
     TransitionType transitionType = TransitionType.fade,
   }) async {
     final cubit = _storyCubitFrom(context);
@@ -342,15 +343,80 @@ class IsrAppNavigator {
       storyIds: storyIds,
     );
     final group = resolved.group;
-    if (group == null) return resolved.result;
-    await presentStoryViewer(
+    if (group != null) {
+      await presentStoryViewer(
+        context,
+        groups: [group],
+        initialGroupIndex: 0,
+        highlightId: resolved.result.highlightId,
+        transitionType: transitionType,
+      );
+      return resolved.result;
+    }
+    if (!context.mounted) return resolved.result;
+    await _presentEmptyHighlight(
       context,
-      groups: [group],
-      initialGroupIndex: 0,
+      cubit: cubit,
       highlightId: resolved.result.highlightId,
-      transitionType: transitionType,
+      userId: userId,
+      highlight: resolved.highlight ?? highlightPreview,
     );
     return resolved.result;
+  }
+
+  /// Opens a profile highlight (viewer or empty state with add-stories).
+  static Future<HighlightOpenResult> openHighlightFromProfile(
+    BuildContext context, {
+    required StoryHighlightData highlight,
+  }) {
+    final id = highlight.id.trim();
+    if (id.isEmpty) {
+      return Future.value(
+        const HighlightOpenResult(
+          opened: false,
+          reason: 'Highlight id is required.',
+          resolvedStoryCount: 0,
+          highlightId: '',
+        ),
+      );
+    }
+    final storyIds = <String>{
+      ...highlight.embeddedStories
+          .map((s) => s.id.trim())
+          .where((e) => e.isNotEmpty),
+      ...highlight.items
+          .map((e) => e.storyId.trim())
+          .where((e) => e.isNotEmpty),
+    }.toList();
+    final userId = highlight.userId.trim();
+    return presentHighlightViewer(
+      context,
+      highlightId: id,
+      userId: userId.isNotEmpty ? userId : null,
+      storyIds: storyIds,
+      highlightPreview: highlight,
+    );
+  }
+
+  static Future<void> _presentEmptyHighlight(
+    BuildContext context, {
+    required StoryCubit cubit,
+    required String highlightId,
+    String? userId,
+    StoryHighlightData? highlight,
+  }) async {
+    await Navigator.of(context, rootNavigator: true).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => BlocProvider<StoryCubit>.value(
+          value: cubit,
+          child: EmptyHighlightScreen(
+            highlightId: highlightId,
+            userId: userId,
+            initialHighlight: highlight,
+          ),
+        ),
+      ),
+    );
   }
 
   static Future<HighlightOpenResult> openHighlightById(

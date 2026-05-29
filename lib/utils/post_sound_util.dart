@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
@@ -150,7 +152,12 @@ abstract final class PostSoundUtil {
         videoPath: videoPath,
         musicUrlOrPath: musicUrl,
       );
-      if (muxed != null) return muxed;
+      if (muxed != null &&
+          muxed != videoPath &&
+          await File(muxed).exists() &&
+          await File(muxed).length() > 64) {
+        return muxed;
+      }
       return videoPath;
     } finally {
       if (showLoader) Utility.closeProgressDialog();

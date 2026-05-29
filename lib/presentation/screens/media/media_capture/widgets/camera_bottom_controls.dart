@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
+// import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart';
@@ -446,46 +446,46 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
       );
     }
     return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          Visibility(
-            visible: !widget.cameraBloc.isRecording ||
-                !widget.cameraBloc.isSegmentRecording ||
-                widget.cameraBloc.videoSegments.isEmpty,
-            maintainSize: true,
-            maintainAnimation: true,
-            maintainState: true,
-            child: _buildModeButton('Gallery', Icons.photo_library, null),
-          ),
-          Visibility(
-            visible: !widget.cameraBloc.isRecording ||
-                !widget.cameraBloc.isSegmentRecording ||
-                widget.cameraBloc.videoSegments.isEmpty,
-            maintainSize: true,
-            maintainAnimation: true,
-            maintainState: true,
-            child: _buildModeButton('Photo', Icons.camera_alt, MediaType.photo),
-          ),
-          Visibility(
-            visible: !widget.cameraBloc.isRecording ||
-                !widget.cameraBloc.isSegmentRecording ||
-                widget.cameraBloc.videoSegments.isEmpty,
-            maintainSize: true,
-            maintainAnimation: true,
-            maintainState: true,
-            child: _buildDurationButton('15', 'Sec', 15),
-          ),
-          Visibility(
-            visible: !widget.cameraBloc.isRecording ||
-                !widget.cameraBloc.isSegmentRecording ||
-                widget.cameraBloc.videoSegments.isEmpty,
-            maintainSize: true,
-            maintainAnimation: true,
-            maintainState: true,
-            child: _buildDurationButton('60', 'Sec', 60),
-          ),
-        ],
-      );
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        Visibility(
+          visible: !widget.cameraBloc.isRecording ||
+              !widget.cameraBloc.isSegmentRecording ||
+              widget.cameraBloc.videoSegments.isEmpty,
+          maintainSize: true,
+          maintainAnimation: true,
+          maintainState: true,
+          child: _buildModeButton('Gallery', Icons.photo_library, null),
+        ),
+        Visibility(
+          visible: !widget.cameraBloc.isRecording ||
+              !widget.cameraBloc.isSegmentRecording ||
+              widget.cameraBloc.videoSegments.isEmpty,
+          maintainSize: true,
+          maintainAnimation: true,
+          maintainState: true,
+          child: _buildModeButton('Photo', Icons.camera_alt, MediaType.photo),
+        ),
+        Visibility(
+          visible: !widget.cameraBloc.isRecording ||
+              !widget.cameraBloc.isSegmentRecording ||
+              widget.cameraBloc.videoSegments.isEmpty,
+          maintainSize: true,
+          maintainAnimation: true,
+          maintainState: true,
+          child: _buildDurationButton('15', 'Sec', 15),
+        ),
+        Visibility(
+          visible: !widget.cameraBloc.isRecording ||
+              !widget.cameraBloc.isSegmentRecording ||
+              widget.cameraBloc.videoSegments.isEmpty,
+          maintainSize: true,
+          maintainAnimation: true,
+          maintainState: true,
+          child: _buildDurationButton('60', 'Sec', 60),
+        ),
+      ],
+    );
   }
 
   Widget _buildModeButton(String label, IconData icon, MediaType? mediaType) {
@@ -751,14 +751,14 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
     String videoPath,
   ) async {
     if (widget.cameraBloc.selectedMediaType != MediaType.video) {
-      widget.cameraBloc.add(CameraSetMediaTypeEvent(mediaType: MediaType.video));
+      widget.cameraBloc
+          .add(CameraSetMediaTypeEvent(mediaType: MediaType.video));
     }
 
     // Camera recording muxes sound even when 15s/60s is not selected; gallery
     // should behave the same — default to a 60s cap instead of blocking.
     final selectedSec = widget.cameraBloc.selectedDuration;
-    final maxSec =
-        (selectedSec == 15 || selectedSec == 60) ? selectedSec : 60;
+    final maxSec = (selectedSec == 15 || selectedSec == 60) ? selectedSec : 60;
 
     final trimmedPath = await GalleryVideoTrimUtil.trimVideo(
       context,

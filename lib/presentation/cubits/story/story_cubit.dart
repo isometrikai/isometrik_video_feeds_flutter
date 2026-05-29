@@ -932,6 +932,7 @@ class StoryCubit extends Cubit<StoryState> {
     }
     _removeStoryLocally(storyId);
     _emitFeedIfCached();
+    _notifyHostHighlightsChanged();
     emit(const StoryActionSuccess('delete_story'));
   }
 

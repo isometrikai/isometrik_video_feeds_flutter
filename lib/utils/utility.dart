@@ -26,6 +26,9 @@ import 'package:url_launcher/url_launcher.dart';
 class Utility {
   Utility._();
 
+  /// Route name for [showLoader] so [closeProgressDialog] never pops a screen.
+  static const String loaderRouteName = '__ism_video_reel_loader__';
+
   static bool isLoading = false;
   static final Connectivity _connectivity = Connectivity();
 
@@ -67,32 +70,38 @@ class Utility {
     isLoading = true;
     unawaited(
       showDialog<void>(
+        routeSettings: const RouteSettings(name: loaderRouteName),
         barrierColor: loaderType == LoaderType.withBackGround
             ? null
             : Colors.transparent,
         context: ctx,
         useRootNavigator: true,
+        barrierDismissible: false,
         builder: (_) => AppLoader(
           message: message,
           loaderType: loaderType,
         ),
-        barrierDismissible: false,
       ).whenComplete(() {
         isLoading = false;
       }),
     );
+    // Let the loader route mount before callers run [closeProgressDialog].
+    await WidgetsBinding.instance.endOfFrame;
     await WidgetsBinding.instance.endOfFrame;
   }
 
-  // closes dialog for progress bar
+  /// Dismisses only the loader overlay from [showLoader], not the screen below.
   static void closeProgressDialog() {
     if (isLoading != true) return;
     final ctx = context;
-    if (ctx == null || !ctx.mounted) return;
-    final navigator = Navigator.of(ctx, rootNavigator: true);
-    if (navigator.canPop()) {
-      navigator.pop();
+    if (ctx == null || !ctx.mounted) {
+      isLoading = false;
+      return;
     }
+    final navigator = Navigator.of(ctx, rootNavigator: true);
+    navigator.popUntil(
+      (route) => route.settings.name != loaderRouteName,
+    );
     isLoading = false;
   }
 

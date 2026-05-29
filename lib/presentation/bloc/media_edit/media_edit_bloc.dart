@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_models.dart';
 import 'package:ism_video_reel_player/utils/post_sound_util.dart';
+import 'package:ism_video_reel_player/utils/utility.dart';
 
 part 'media_edit_event.dart';
 part 'media_edit_state.dart';
@@ -256,34 +257,29 @@ class MediaEditBloc extends Bloc<MediaEditEvent, MediaEditState> {
     if (sound != null &&
         sound.soundUrl?.isNotEmpty == true &&
         item.mediaType == EditMediaType.video) {
+      emit(MediaEditLoadedState(
+        mediaEditItems: List.from(_mediaEditItems),
+        currentIndex: _currentIndex,
+        isApplyingSound: true,
+      ));
+
       final videoPath = item.editedPath ?? item.originalPath;
       final muxed = await PostSoundUtil.muxVideoWithSound(
         videoPath: videoPath,
         sound: sound,
+        showLoader: false,
       );
-      item = MediaEditItem(
-        originalPath: item.originalPath,
+      if (muxed == videoPath) {
+        Utility.showToastMessage(
+          'Could not mix audio into this video. Try another sound or clip.',
+        );
+      }
+      item = item.copyWith(
         editedPath: muxed,
-        mediaType: item.mediaType,
-        width: item.width,
-        height: item.height,
-        duration: item.duration,
-        thumbnailPath: item.thumbnailPath,
         sound: sound,
-        metaData: item.metaData,
       );
     } else {
-      item = MediaEditItem(
-        originalPath: item.originalPath,
-        editedPath: item.editedPath,
-        mediaType: item.mediaType,
-        width: item.width,
-        height: item.height,
-        duration: item.duration,
-        thumbnailPath: item.thumbnailPath,
-        sound: sound,
-        metaData: item.metaData,
-      );
+      item = item.copyWith(sound: sound);
     }
 
     _mediaEditItems[_currentIndex] = item;

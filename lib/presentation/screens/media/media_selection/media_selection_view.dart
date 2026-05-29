@@ -4,7 +4,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:ism_video_reel_player/domain/models/camera_capture_result.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/widgets/media_selection_widgets.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -699,9 +701,16 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
     if (widget.onCaptureMedia != null) {
       final captureResult = await widget
           .onCaptureMedia!(widget.mediaSelectionConfig.mediaListType.name);
-      final filePath = captureResult is String
+      var filePath = captureResult is String
           ? captureResult
           : (captureResult?.mediaPath as String?);
+      MediaEditSoundItem? captureSound;
+      var soundAppliedToVideo = false;
+      if (captureResult is CameraCaptureResult) {
+        filePath = captureResult.mediaPath;
+        captureSound = captureResult.sound;
+        soundAppliedToVideo = captureResult.soundAppliedToVideo;
+      }
       if (filePath != null && filePath.isNotEmpty) {
         final file = File(filePath);
         final mediaType = await _getMediaType(file);
@@ -710,6 +719,8 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
           file: file,
           mediaType: mediaType,
           duration: duration,
+          sound: captureSound,
+          soundAppliedToVideo: soundAppliedToVideo,
         ));
       }
     } else {

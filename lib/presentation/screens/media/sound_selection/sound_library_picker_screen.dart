@@ -9,7 +9,7 @@ class SoundLibraryPickerScreen extends StatelessWidget {
   const SoundLibraryPickerScreen({super.key});
 
   static Future<MediaEditSoundItem?> show(BuildContext context) =>
-      Navigator.of(context).push<MediaEditSoundItem>(
+      Navigator.of(context, rootNavigator: true).push<MediaEditSoundItem>(
         MaterialPageRoute(
           builder: (_) => const SoundLibraryPickerScreen(),
         ),

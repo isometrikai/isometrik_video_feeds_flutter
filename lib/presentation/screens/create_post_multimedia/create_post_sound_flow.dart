@@ -57,9 +57,21 @@ abstract final class CreatePostSoundFlow {
     MediaEditSoundItem? current,
     me.MediaEditItem item,
   ) async {
-    if (!isEnabled || item.mediaType != me.EditMediaType.video) {
-      return current;
-    }
+    if (!isEnabled) return current;
     return pickSound(context);
   }
+
+  static me.MediaEditItem buildEditItemFromPhotoCapture({
+    required String imagePath,
+    MediaEditSoundItem? sound,
+  }) =>
+      me.MediaEditItem(
+        originalPath: imagePath,
+        editedPath: imagePath,
+        mediaType: me.EditMediaType.image,
+        width: 0,
+        height: 0,
+        thumbnailPath: imagePath,
+        sound: sound,
+      );
 }

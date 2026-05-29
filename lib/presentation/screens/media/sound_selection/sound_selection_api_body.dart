@@ -342,8 +342,8 @@ class _SoundSelectionApiBodyState extends State<SoundSelectionApiBody> {
     await _player.pause();
     if (!mounted) return;
     if (widget.onTrackSelected != null) {
+      // Caller owns navigation (e.g. [SoundLibraryPickerScreen] pops with result).
       widget.onTrackSelected!(track);
-      Navigator.of(context).pop();
       return;
     }
     widget.cameraBloc?.add(

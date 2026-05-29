@@ -117,14 +117,16 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
 
   bool get _wantsCameraMicEnabled => true;
 
-  bool get _shouldPlayFramingMusic =>
-      _selectedMediaType == MediaType.video &&
-      _videoPlayerController == null &&
-      hasMusicSelected &&
-      (_selectedMusicPreviewUrl?.isNotEmpty ?? false) &&
-      !_framingMusicRouteObscured &&
-      !_framingMusicAppPaused &&
-      _isSegmentRecording;
+  bool get _shouldPlayFramingMusic {
+    if (_videoPlayerController != null) return false;
+    if (!hasMusicSelected || (_selectedMusicPreviewUrl?.isEmpty ?? true)) {
+      return false;
+    }
+    if (_framingMusicRouteObscured || _framingMusicAppPaused) return false;
+    if (_selectedMediaType == MediaType.photo) return true;
+    if (_selectedMediaType == MediaType.video) return _isSegmentRecording;
+    return false;
+  }
 
   int get totalRecordingDuration {
     final segmentsDuration = _videoSegments.fold<int>(
@@ -159,9 +161,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
 
   Future<void> _syncFramingMusicPlayback() async {
     if (!_shouldPlayFramingMusic) {
-      if (!hasMusicSelected ||
-          _selectedMediaType != MediaType.video ||
-          (_selectedMusicPreviewUrl?.isEmpty ?? true)) {
+      if (!hasMusicSelected || (_selectedMusicPreviewUrl?.isEmpty ?? true)) {
         await _disposeFramingMusicPlayer();
       } else {
         await _pauseFramingMusicOnly();
@@ -330,7 +330,9 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
         isFlashAvailable: hasFlash,
         maxZoom: 4.0,
       ));
-      if (hasMusicSelected && _selectedMediaType == MediaType.video) {
+      if (hasMusicSelected &&
+          (_selectedMediaType == MediaType.video ||
+              _selectedMediaType == MediaType.photo)) {
         unawaited(_preloadFramingMusic());
       }
       unawaited(_syncFramingMusicPlayback());

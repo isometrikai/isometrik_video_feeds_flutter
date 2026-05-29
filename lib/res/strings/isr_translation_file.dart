@@ -298,6 +298,9 @@ class IsrTranslationFile {
   static const String addToHighlights = 'Add to highlights';
   static const String noHighlightsCreateFirst =
       'No highlights yet. Tap + to create one.';
+  static const String highlightEmptyTitle = 'No stories in this highlight';
+  static const String highlightEmptySubtitle =
+      'Add stories from your archive or post a new story.';
   static const String reportStory = 'Report';
   static const String pickPhoto = 'Pick photo';
   static const String pickVideo = 'Pick video';

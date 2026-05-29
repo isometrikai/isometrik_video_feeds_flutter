@@ -88,7 +88,23 @@ class _CreatePostMultimediaWrapperState
       }
     }
 
-    final mediaEditItems = selectedMedia.map(mapSelectedToEditMedia).toList();
+    final mediaEditItems = <me.MediaEditItem>[];
+    for (final media in selectedMedia) {
+      if (media.mediaType == ms.SelectedMediaType.video &&
+          media.sound?.soundUrl?.isNotEmpty == true &&
+          !media.soundAppliedToVideo &&
+          media.localPath?.isNotEmpty == true) {
+        final muxed = await PostSoundUtil.muxVideoWithSound(
+          videoPath: media.localPath!,
+          sound: media.sound!,
+        );
+        if (!mounted) return false;
+        media.localPath = muxed;
+        media.file = File(muxed);
+        media.soundAppliedToVideo = true;
+      }
+      mediaEditItems.add(mapSelectedToEditMedia(media));
+    }
 
     // If a sound was preselected (e.g. "Use this sound" from a post), mux it
     // onto every gallery video so the final upload carries the audio AND the
@@ -98,26 +114,23 @@ class _CreatePostMultimediaWrapperState
         preselectedSound.soundId?.isNotEmpty == true) {
       for (var i = 0; i < mediaEditItems.length; i++) {
         final item = mediaEditItems[i];
-        if (item.mediaType != me.EditMediaType.video) continue;
-        var path = item.editedPath ?? item.originalPath;
-        if (preselectedSound.soundUrl?.isNotEmpty == true) {
-          path = await PostSoundUtil.muxVideoWithSound(
-            videoPath: path,
-            sound: preselectedSound,
+        if (item.mediaType == me.EditMediaType.video) {
+          var path = item.editedPath ?? item.originalPath;
+          if (preselectedSound.soundUrl?.isNotEmpty == true) {
+            path = await PostSoundUtil.muxVideoWithSound(
+              videoPath: path,
+              sound: preselectedSound,
+            );
+          }
+          if (!mounted) return false;
+          mediaEditItems[i] = item.copyWith(
+            editedPath: path,
+            sound: item.sound ?? preselectedSound,
           );
+        } else if (item.mediaType == me.EditMediaType.image &&
+            item.sound?.soundId?.isNotEmpty != true) {
+          mediaEditItems[i] = item.copyWith(sound: preselectedSound);
         }
-        if (!mounted) return false;
-        mediaEditItems[i] = me.MediaEditItem(
-          originalPath: item.originalPath,
-          editedPath: path,
-          mediaType: item.mediaType,
-          width: item.width,
-          height: item.height,
-          duration: item.duration,
-          thumbnailPath: item.thumbnailPath,
-          sound: preselectedSound,
-          metaData: item.metaData,
-        );
       }
     }
 
@@ -160,6 +173,7 @@ class _CreatePostMultimediaWrapperState
         thumbnailPath: media.mediaType == ms.SelectedMediaType.video
             ? media.thumbnailPath
             : media.localPath,
+        sound: media.sound ?? _selectedPostSound,
         metaData: media.toJson(),
       );
 
@@ -255,11 +269,7 @@ class _CreatePostMultimediaWrapperState
       return false;
     }
     final soundFromEdits = editedMedia
-        .where(
-          (e) =>
-              e.mediaType == me.EditMediaType.video &&
-              e.sound?.soundId?.isNotEmpty == true,
-        )
+        .where((e) => e.sound?.soundId?.isNotEmpty == true)
         .map((e) => e.sound)
         .firstOrNull;
     // Keep the preselected sound (e.g. from "Use this sound") if the user
@@ -328,7 +338,29 @@ class _CreatePostMultimediaWrapperState
       return null;
     }
 
-    return result;
+    final photoSound = result.sound;
+    final editItem = CreatePostSoundFlow.buildEditItemFromPhotoCapture(
+      imagePath: result.mediaPath,
+      sound: photoSound,
+    );
+    if (!mounted) return null;
+    _selectedPostSound = editItem.sound ?? photoSound;
+    await Navigator.of(context, rootNavigator: true)
+        .push<List<me.MediaEditItem>>(
+      MaterialPageRoute(
+        builder: (context) => me.MediaEditView(
+          mediaDataList: [editItem],
+          onComplete: _onMediaEditComplete,
+          addMoreMedia: (_) async => null,
+          mediaEditConfig: mediaEditConfig,
+          pickCoverPic: _pickCoverPic,
+          onSelectSound: CreatePostSoundFlow.isEnabled
+              ? (current) => _onSelectSoundInMediaEdit(context, current)
+              : null,
+        ),
+      ),
+    );
+    return null;
   }
 
   Future<String?> _generateVideoThumbnail(String? videoPath) async {

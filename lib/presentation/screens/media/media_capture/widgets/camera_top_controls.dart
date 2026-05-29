@@ -25,9 +25,8 @@ class CameraTopControls extends StatelessWidget {
   bool get _showAddSound =>
       !dubWithAudioMode &&
       IsrVideoReelConfig.createEditPostConfig.enableAddSoundOnCamera &&
-      cameraBloc.selectedMediaType == MediaType.video &&
-      (cameraBloc.selectedDuration == 15 ||
-          cameraBloc.selectedDuration == 60);
+      (cameraBloc.selectedMediaType == MediaType.photo ||
+          cameraBloc.selectedMediaType == MediaType.video);
 
   @override
   Widget build(BuildContext context) {
