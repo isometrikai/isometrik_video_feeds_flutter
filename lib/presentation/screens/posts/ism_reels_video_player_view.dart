@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/isr_utils.dart';
@@ -55,6 +56,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
     this.isFirstPost,
     this.onTapTag,
     this.bottomOverlayPadding,
+    this.videoDurationSec,
   });
 
   final String? mediaUrl;
@@ -100,6 +102,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
   final bool? isFirstPost;
   final Function(String tag)? onTapTag;
   final double? bottomOverlayPadding;
+  final double? videoDurationSec;
 
   @override
   State<IsmReelsVideoPlayerView> createState() => _IsmReelsVideoPlayerViewState();
@@ -130,6 +133,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
   final _maxLengthToShow = 50;
 
   var _isVideoInitialized = false;
+
+  final _analyticsTracker = IsrSocialPostAnalyticsTracker.instance;
 
   @override
   void initState() {
@@ -174,6 +179,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
       // Always start with volume on
       await _videoPlayerController?.setVolume(1.0);
       await _videoPlayerController?.setLooping(true);
+      _videoPlayerController?.addListener(_onVideoPositionChanged);
 
       // ✅ ADD: Mark as initialized
       _isVideoInitialized = true;
@@ -201,10 +207,33 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
   @override
   void dispose() {
     _tapGestureRecognizer.dispose();
+    _videoPlayerController?.removeListener(_onVideoPositionChanged);
     _videoPlayerController?.pause();
     _videoPlayerController?.dispose();
     _videoPlayerController = null;
     super.dispose();
+  }
+
+  void _onVideoPositionChanged() {
+    final postId = widget.postId;
+    final controller = _videoPlayerController;
+    if (postId == null || controller == null || !controller.value.isInitialized) return;
+
+    final durationSec = widget.videoDurationSec ?? controller.value.duration.inMilliseconds / 1000.0;
+    if (durationSec <= 0) return;
+
+    _analyticsTracker.onVideoPositionUpdate(
+      postId: postId,
+      currentTimeSec: controller.value.position.inMilliseconds / 1000.0,
+      durationSec: durationSec,
+      isMuted: _isMuted,
+    );
+  }
+
+  double _currentVideoTimeSec() {
+    final controller = _videoPlayerController;
+    if (controller == null || !controller.value.isInitialized) return 0;
+    return controller.value.position.inMilliseconds / 1000.0;
   }
 
   Widget _buildMediaContent() {
@@ -247,6 +276,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
       return;
     }
     if (_isPlaying) {
+      if (widget.postId != null) {
+        _analyticsTracker.onManualPause(widget.postId!);
+      }
       _videoPlayerController?.pause();
     } else {
       _videoPlayerController?.play();
@@ -292,6 +324,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
             child: VisibilityDetector(
               key: Key('${widget.mediaUrl}'),
               onVisibilityChanged: (info) {
+                final postId = widget.postId;
+                if (postId != null) {
+                  _analyticsTracker.onPostVisibilityChanged(
+                    postId: postId,
+                    visibleFraction: info.visibleFraction,
+                  );
+                }
+
                 if (widget.showBlur == true || widget.mediaType == kPictureType) {
                   return;
                 }
@@ -551,6 +591,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
             if ((widget.productCount ?? 0) > 0) ...[
               TapHandler(
                 onTap: () {
+                  if (widget.postId != null) {
+                    _analyticsTracker.onShopOpen(
+                      postId: widget.postId!,
+                      videoCurrentTimeSec: _currentVideoTimeSec(),
+                    );
+                  }
                   if (widget.onTapCartIcon != null) {
                     widget.onTapCartIcon!();
                   }
@@ -851,10 +897,18 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView> {
   void _toggleSound() {
     if (widget.mediaType != kVideoType) return;
 
+    final wasMuted = _isMuted;
     setState(() {
       _isMuted = !_isMuted;
       _videoPlayerController?.setVolume(_isMuted ? 0.0 : 1.0);
     });
+    if (widget.postId != null) {
+      if (wasMuted && !_isMuted) {
+        _analyticsTracker.onUnmute(widget.postId!);
+      } else if (!wasMuted && _isMuted) {
+        _analyticsTracker.onMute(widget.postId!);
+      }
+    }
     widget.onTapVolume?.call();
   }
 }

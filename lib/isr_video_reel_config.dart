@@ -12,11 +12,23 @@ import 'package:ism_video_reel_player/utils/isr_utils.dart';
 class IsrVideoReelConfig {
   static BuildContext? buildContext;
   static var isSdkInitialize = false;
+  static IsrSocialAnalyticsDelegate? analyticsDelegate;
+
+  static void setUpConfig({
+    IsrSocialAnalyticsDelegate? analyticsDelegate,
+  }) {
+    IsrVideoReelConfig.analyticsDelegate = analyticsDelegate;
+    IsrSocialPostAnalyticsTracker.instance.setDelegate(analyticsDelegate);
+  }
 
   static Future<void> initializeSdk({
     required String baseUrl,
     PostInfoClass? postInfo,
+    IsrSocialAnalyticsDelegate? analyticsDelegate,
   }) async {
+    if (analyticsDelegate != null) {
+      setUpConfig(analyticsDelegate: analyticsDelegate);
+    }
     if (isSdkInitialize) {
       await _saveUserInformation(postInfo: postInfo);
       return;

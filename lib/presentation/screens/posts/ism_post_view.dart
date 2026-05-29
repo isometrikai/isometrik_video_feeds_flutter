@@ -31,16 +31,18 @@ class IsmPostView extends StatefulWidget {
   State<IsmPostView> createState() => _PostViewState();
 }
 
-class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
+class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin, WidgetsBindingObserver {
   TabController? _postTabController;
   late List<RefreshController> _refreshControllers;
   var _currentIndex = 1;
   var _loggedInUserId = '';
   final ValueNotifier<bool> _tabsVisibilityNotifier = ValueNotifier<bool>(true);
+  final _analyticsTracker = IsrSocialPostAnalyticsTracker.instance;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _onStartInit();
   }
 
@@ -193,15 +195,51 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       if (index == 0 && _isFollowingPostsEmpty()) {
         return;
       }
+      _analyticsTracker.onLeaveCurrentPost(
+        exitReason: PostExitReason.tapOtherTab,
+        swipeDirection: index > _currentIndex ? PostSwipeDirection.next : PostSwipeDirection.previous,
+      );
       _currentIndex = index;
       _postTabController?.animateTo(index);
+      _analyticsTracker.setNextImpressionTrigger(ImpressionTrigger.tabSwitch);
       final postBloc = IsmInjectionUtils.getBloc<PostBloc>();
       postBloc.add(PostsLoadedEvent(widget.tabDataModelList[_currentIndex].postList));
+      _activateCurrentTabPost();
+    }
+  }
+
+  void _activateCurrentTabPost() {
+    final tabData = widget.tabDataModelList[_currentIndex];
+    final postList = tabData.postList;
+    if (postList.isListEmptyOrNull) return;
+
+    final startingIndex = tabData.startingPostIndex ?? 0;
+    final safeIndex = startingIndex >= postList!.length ? 0 : startingIndex;
+    final post = postList[safeIndex];
+    final postId = post.postId;
+    if (postId == null) return;
+
+    final mediaType = post.mediaType1?.toInt() ?? 0;
+    _analyticsTracker.onPostActivated(
+      postId: postId,
+      isAutoplay: mediaType == 1,
+      startsMuted: false,
+      isVideo: mediaType == 1,
+      videoDurationSec: post.duration?.toDouble(),
+    );
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      _analyticsTracker.onLeaveCurrentPost(exitReason: PostExitReason.appBackground);
     }
   }
 
   @override
   void dispose() {
+    _analyticsTracker.onLeaveCurrentPost(exitReason: PostExitReason.navigatedAway);
+    WidgetsBinding.instance.removeObserver(this);
     _postTabController?.dispose();
     // Dispose each RefreshController
     for (var controller in _refreshControllers) {

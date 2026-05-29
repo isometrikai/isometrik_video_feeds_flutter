@@ -1,3 +1,4 @@
+export 'analytics/analytics.dart';
 export 'base_repository.dart';
 export 'models/models.dart';
 export 'repository/repository.dart';
