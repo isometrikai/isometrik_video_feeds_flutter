@@ -923,6 +923,16 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
 
     if (apiResult.isSuccess) {
       emit(CommentCountModified(postId: event.postId, modifiedValue: 1));
+      if (event.postDataModel != null) {
+        final reels = getReelData(event.postDataModel!);
+        SocialAnalyticsTracker.trackPostInteract(
+          reels: reels,
+          section: event.tabDataModel?.postSectionType ??
+              PostSectionType.following,
+          interactionType: SocialPostInteractionType.commentSubmit,
+          commentTextLength: event.commentMessage?.length,
+        );
+      }
       _sendAnalyticsEvent(
           EventType.commentCreated.value,
           event.commentId ?? '',

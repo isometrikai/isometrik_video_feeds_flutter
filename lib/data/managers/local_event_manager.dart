@@ -288,12 +288,19 @@ class LocalEventQueue with WidgetsBindingObserver {
       case EventType.hashTagClicked:
       case EventType.searchPerformed:
       case EventType.searchResultClicked:
+      case EventType.socialPostInteract:
+      case EventType.creatorFollow:
+      case EventType.creatorUnfollow:
         return EventCategory.userAction;
       case EventType.postViewed:
       case EventType.videoStarted:
       case EventType.videoProgress:
       case EventType.videoPaused:
       case EventType.videoSoundToggled:
+      case EventType.socialFeedTabSwitch:
+      case EventType.socialPostImpression:
+      case EventType.socialPostVideoProgress:
+      case EventType.socialPostSwipe:
         return EventCategory.system;
     }
   }
@@ -433,7 +440,14 @@ enum EventType {
   profileViewed('Profile Viewed'),
   hashTagClicked('Hashtag Clicked'),
   searchPerformed('Search Performed'),
-  searchResultClicked('Search Result Clicked');
+  searchResultClicked('Search Result Clicked'),
+  socialFeedTabSwitch('social_feed_tab_switch'),
+  socialPostImpression('social_post_impression'),
+  socialPostVideoProgress('social_post_video_progress'),
+  socialPostSwipe('social_post_swipe'),
+  socialPostInteract('social_post_interact'),
+  creatorFollow('creator_follow'),
+  creatorUnfollow('creator_unfollow');
 
   const EventType(this.value);
 

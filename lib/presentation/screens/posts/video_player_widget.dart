@@ -27,6 +27,9 @@ class VideoPlayerWidget extends StatefulWidget {
     this.onVideoCompleted,
     this.postHelperCallBacks,
     this.videoProgressCallBack,
+    this.onProgressMilestone,
+    this.onPlaybackPaused,
+    this.onVideoReplay,
     this.isPreloaded = false,
     this.logIndex,
     this.isParentVisible,
@@ -42,6 +45,13 @@ class VideoPlayerWidget extends StatefulWidget {
   final PostHelperCallBacks? postHelperCallBacks;
   final bool isPreloaded;
   final Function(Duration totalDuration, Duration curentDuration)? videoProgressCallBack;
+  final void Function(
+    int milestone,
+    Duration position,
+    Duration duration,
+  )? onProgressMilestone;
+  final VoidCallback? onPlaybackPaused;
+  final VoidCallback? onVideoReplay;
   final bool Function()? isParentVisible;
   final String? logIndex;
 
@@ -82,6 +92,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   // to see if the player has played at least once
   bool _hasPlayed = false;
+  bool _wasPlaying = false;
+  bool _wasNearEnd = false;
 
   bool _isVideoCompleted = false;
 
@@ -391,22 +403,39 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       _logVideoStartedEvent();
     }
 
-    // 2. Log "Video Progress" events at 25%, 50%, 75%, 100% milestones
-    if (duration.inMilliseconds > 0 && widget.postHelperCallBacks != null) {
-      final progressPercentage = (position.inMilliseconds / duration.inMilliseconds * 100).toInt();
-
-      // Check and log each milestone once
-      final milestones = [25, 50, 75, 100];
+    // 2. Milestone progress at 25%, 50%, 75%, 95%, 100%
+    if (duration.inMilliseconds > 0) {
+      final progressPercentage =
+          (position.inMilliseconds / duration.inMilliseconds * 100).toInt();
+      const milestones = [25, 50, 75, 95, 100];
       for (final milestone in milestones) {
-        if (progressPercentage >= milestone && !_loggedProgressMilestones.contains(milestone)) {
+        if (progressPercentage >= milestone &&
+            !_loggedProgressMilestones.contains(milestone)) {
           _loggedProgressMilestones.add(milestone);
-          // _logVideoProgressEvent(milestone, position, duration);
+          widget.onProgressMilestone?.call(milestone, position, duration);
         }
       }
     }
 
+    final isPlaying = _videoPlayerController?.isPlaying == true;
+    if (_wasPlaying && !isPlaying && position.inMilliseconds > 0) {
+      widget.onPlaybackPaused?.call();
+    }
+    _wasPlaying = isPlaying;
+
     // 👇 Check if near end (within 500ms)
-    final isAtEnd = position >= duration - const Duration(milliseconds: 500);
+    final isAtEnd = duration.inMilliseconds > 0 &&
+        position >= duration - const Duration(milliseconds: 500);
+
+    if (isAtEnd) {
+      _wasNearEnd = true;
+    } else if (_wasNearEnd &&
+        position.inMilliseconds <
+            duration.inMilliseconds -
+                const Duration(seconds: 2).inMilliseconds) {
+      _wasNearEnd = false;
+      widget.onVideoReplay?.call();
+    }
 
     if (isAtEnd && !_isVideoCompleted) {
       _isVideoCompleted = true;

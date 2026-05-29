@@ -1,3 +1,4 @@
+export '../analytics/analytics.dart';
 export 'device_info_manager.dart';
 export 'local_action_manager.dart';
 export 'local_event.dart';

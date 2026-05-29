@@ -228,6 +228,12 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
         ));
 
         if (following) {
+          unawaited(_logCreatorFollowEvent(
+            isFollow: true,
+            reelsData: reelData,
+            postSectionType: postSectionType,
+            userId: userId,
+          ));
           _logFollowEvent(
             FollowAction.follow,
             reelsData: reelData,
@@ -343,6 +349,12 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
         ));
 
         if (!fromPendingRequest) {
+          unawaited(_logCreatorFollowEvent(
+            isFollow: false,
+            reelsData: reelData,
+            postSectionType: postSectionType,
+            userId: userId,
+          ));
           _logFollowEvent(
             FollowAction.unfollow,
             reelsData: reelData,
@@ -677,6 +689,53 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     }
   }
 
+  Future<void> _logCreatorFollowEvent({
+    required bool isFollow,
+    required String userId,
+    ReelsData? reelsData,
+    PostSectionType? postSectionType,
+    SocialCreatorFollowSource followSource =
+        SocialCreatorFollowSource.socialPost,
+  }) async {
+    var creatorReels = reelsData;
+    if (creatorReels == null || creatorReels.userId != userId) {
+      final post = getPostList(filter: (p) => p.userId == userId).firstOrNull;
+      if (post != null) {
+        creatorReels = getReelData(post);
+      } else {
+        creatorReels = ReelsData(
+          userId: userId,
+          mediaMetaDataList: const [],
+        );
+      }
+    }
+    num? followersAfter;
+    final profile = await _getSocialUserDetails(userId);
+    if (profile != null) {
+      followersAfter = profile.followersCount;
+      creatorReels = ReelsData(
+        postData: creatorReels.postData,
+        postId: creatorReels.postId,
+        userName: profile.username ?? creatorReels.userName,
+        userId: creatorReels.userId,
+        firstName: profile.fullName ?? creatorReels.firstName,
+        lastName: creatorReels.lastName,
+        profilePhoto: profile.avatarUrl ?? creatorReels.profilePhoto,
+        mediaMetaDataList: creatorReels.mediaMetaDataList,
+        tags: creatorReels.tags,
+        interests: creatorReels.interests,
+        isFollow: creatorReels.isFollow,
+      );
+    }
+    SocialAnalyticsTracker.trackCreatorFollow(
+      reels: creatorReels,
+      isFollow: isFollow,
+      followSource: followSource,
+      sourcePostId: reelsData?.postId,
+      creatorFollowerCountAfter: followersAfter,
+    );
+  }
+
   void _logFollowEvent(
     FollowAction followAction, {
     ReelsData? reelsData,
@@ -702,6 +761,15 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     PostSectionType? postSectionType,
     int? watchDuration,
   }) {
+    if (reelsData != null && postSectionType != null) {
+      SocialAnalyticsTracker.trackPostInteract(
+        reels: reelsData,
+        section: postSectionType,
+        interactionType: likeAction == LikeAction.like
+            ? SocialPostInteractionType.like
+            : SocialPostInteractionType.unlike,
+      );
+    }
     final eventMap = <String, dynamic>{
       likeAction == LikeAction.like
           ? 'time_to_like_seconds'
@@ -723,6 +791,15 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     PostSectionType? postSectionType,
     int? watchDuration,
   }) {
+    if (reelsData != null && postSectionType != null) {
+      SocialAnalyticsTracker.trackPostInteract(
+        reels: reelsData,
+        section: postSectionType,
+        interactionType: saveAction == SaveAction.save
+            ? SocialPostInteractionType.save
+            : SocialPostInteractionType.unsave,
+      );
+    }
     sendAnalyticsEvent(
       saveAction == SaveAction.save
           ? EventType.postSaved.value

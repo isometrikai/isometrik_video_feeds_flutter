@@ -198,12 +198,26 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   Duration _postWatchDuration = Duration.zero;
   final ValueNotifier<double> _postProgress = ValueNotifier<double>(0.0);
   bool _wasVisiblePost = false;
+  Timer? _impressionTimer;
+  int _pauseCount = 0;
+  int _replayCount = 0;
+  bool _wasEverUnmuted = false;
+  bool _hasLoggedSwipe = false;
+
   void _onCurrentIndexChanged() {
     final isVisible = widget.currentIndex.value == widget.index;
     if (_wasVisiblePost && !isVisible) {
+      _logPostSwipeOnExit(
+        direction: widget.currentIndex.value > widget.index
+            ? SocialSwipeDirection.next
+            : SocialSwipeDirection.previous,
+        exitReason: SocialPostExitReason.swipe,
+      );
       _logWatchPostEvent();
+      _cancelImpressionTimer();
     }
     if (isVisible) {
+      _hasLoggedSwipe = false;
       if (_isMuted != _globalMuteState) {
         setState(() {
           _isMuted = _globalMuteState;
@@ -212,6 +226,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       if (!_hasFetchedFloatingComments) {
         _fetchFloatingCommentsIfNeeded();
       }
+    } else {
+      _cancelImpressionTimer();
     }
     debugPrint(
         'IsmReelsVideoPlayerView: _onCurrentIndexChanged {Post index: ${widget.index}, currentIndex: ${widget.currentIndex.value}}');
@@ -242,7 +258,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     debugPrint(
         'IsmReelsVideoPlayerView: didChangeAppLifecycleState index: ${widget.index}, visibleIndex: ${widget.currentIndex.value}, tabType: ${widget.postSectionType}');
-    // Lifecycle is handled by individual VideoPlayerWidgets
+    if (_wasVisiblePost &&
+        (state == AppLifecycleState.paused ||
+            state == AppLifecycleState.detached ||
+            state == AppLifecycleState.hidden)) {
+      _logPostSwipeOnExit(
+        direction: SocialSwipeDirection.next,
+        exitReason: SocialPostExitReason.appBackground,
+      );
+    }
   }
 
   // RouteAware methods for navigation detection
@@ -257,7 +281,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   void didPushNext() {
     debugPrint(
         'IsmReelsVideoPlayerView: didPushNext index: ${widget.index}, visibleIndex: ${widget.currentIndex.value}, tabType: ${widget.postSectionType}');
-    if (_wasVisiblePost) _logWatchPostEvent();
+    if (_wasVisiblePost) {
+      _logPostSwipeOnExit(
+        direction: SocialSwipeDirection.next,
+        exitReason: SocialPostExitReason.navigatedAway,
+      );
+      _logWatchPostEvent();
+    }
   }
 
   /// Returns true if the current post has multiple media items (carousel).
@@ -534,7 +564,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   /// Disposes the current video controller if not cached, and cleans up state.
   @override
   void dispose() {
+    _cancelImpressionTimer();
     if (_wasVisiblePost) {
+      _logPostSwipeOnExit(
+        direction: SocialSwipeDirection.next,
+        exitReason: SocialPostExitReason.navigatedAway,
+      );
       _logWatchPostEvent();
     }
     widget.currentIndex.removeListener(_onCurrentIndexChanged);
@@ -891,6 +926,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         isPreloaded: isPreloaded,
         logIndex: logIndex,
         isParentVisible: widget.reelsConfig.isTabVisible,
+        postHelperCallBacks: this,
+        onProgressMilestone: _handleVideoProgressMilestone,
+        onPlaybackPaused: () {
+          if (widget.currentIndex.value == widget.index) _pauseCount += 1;
+        },
+        onVideoReplay: () {
+          if (widget.currentIndex.value == widget.index) _replayCount += 1;
+        },
       );
 
   void _toggleMentions() {
@@ -1288,7 +1331,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   Widget build(BuildContext context) {
     debugPrint(
         'IsmReelsVideoPlayerView: build index: ${widget.index}, visibleIndex: ${widget.currentIndex.value}, tabType: ${widget.postSectionType}');
-    return BlocListener<SocialPostBloc, SocialPostState>(
+    return VisibilityDetector(
+      key: ValueKey('social_impression_${_reelData.postId}_${widget.index}'),
+      onVisibilityChanged: _onPostVisibilityForImpression,
+      child: BlocListener<SocialPostBloc, SocialPostState>(
       listenWhen: (previous, current) => current is PlayPauseVideoState,
       listener: (context, state) {
         if (state is PlayPauseVideoState) {
@@ -1442,6 +1488,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           ),
         ],
       ),
+    ),
     );
   }
 
@@ -1534,6 +1581,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   label: IsrTranslationFile.share,
                   onTap: () async {
                     if (widget.reelsConfig.onTapShare == null) return;
+                    SocialAnalyticsTracker.trackPostInteract(
+                      reels: _reelData,
+                      section: widget.postSectionType,
+                      interactionType: SocialPostInteractionType.shareOpen,
+                    );
                     await widget.reelsConfig.onTapShare!(_reelData);
                   },
                 ),
@@ -2408,6 +2460,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   void _handleCommentClick([StateSetter? setBuilderState]) async {
     if (widget.reelsConfig.onTapComment == null) return;
+    SocialAnalyticsTracker.trackPostInteract(
+      reels: _reelData,
+      section: widget.postSectionType,
+      interactionType: SocialPostInteractionType.commentOpen,
+    );
     final commentCount = await widget.reelsConfig.onTapComment!(
       _reelData,
       _reelData.commentCount ?? 0,
@@ -2491,6 +2548,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     setState(() {
       _isMuted = !_isMuted;
       _globalMuteState = _isMuted; // Update global mute state
+      if (!_isMuted) _wasEverUnmuted = true;
     });
     // Volume change is handled by VideoPlayerWidget via didUpdateWidget
     _triggerMuteAnimation();
@@ -2604,6 +2662,81 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   double _finalWatchProgress = 0.0;
   int _finalWatchDurationSeconds = 0;
+
+  void _cancelImpressionTimer() {
+    _impressionTimer?.cancel();
+    _impressionTimer = null;
+  }
+
+  void _onPostVisibilityForImpression(VisibilityInfo info) {
+    if (widget.currentIndex.value != widget.index) {
+      _cancelImpressionTimer();
+      return;
+    }
+    if (info.visibleFraction >= 0.5) {
+      if (_impressionTimer != null) return;
+      _impressionTimer = Timer(const Duration(milliseconds: 500), () {
+        if (!mounted || widget.currentIndex.value != widget.index) return;
+        final previousId = SocialAnalyticsSession.instance.lastViewedPostId;
+        SocialAnalyticsTracker.trackPostImpression(
+          reels: _reelData,
+          section: widget.postSectionType,
+          isAutoplay: SocialAnalyticsContext.postHasVideo(_reelData),
+          startsMuted: _isMuted,
+          previousPostId:
+              previousId != null && previousId != _reelData.postId
+                  ? previousId
+                  : null,
+        );
+        _impressionTimer = null;
+      });
+    } else {
+      _cancelImpressionTimer();
+    }
+  }
+
+  void _handleVideoProgressMilestone(
+    int milestone,
+    Duration position,
+    Duration duration,
+  ) {
+    if (widget.currentIndex.value != widget.index) return;
+    SocialAnalyticsTracker.trackPostVideoProgress(
+      reels: _reelData,
+      section: widget.postSectionType,
+      progressMilestone: milestone,
+      watchDurationSec: position.inMilliseconds / 1000.0,
+      videoCurrentTimeSec: position.inMilliseconds / 1000.0,
+      isMuted: _isMuted,
+      pauseCount: _pauseCount,
+      replayCount: _replayCount,
+      hasUnmuted: _wasEverUnmuted,
+    );
+  }
+
+  void _logPostSwipeOnExit({
+    required SocialSwipeDirection direction,
+    required SocialPostExitReason exitReason,
+  }) {
+    if (_hasLoggedSwipe) return;
+    _hasLoggedSwipe = true;
+    final pct = (_finalWatchProgress * 100).round().clamp(0, 100);
+    SocialAnalyticsTracker.trackPostSwipe(
+      reels: _reelData,
+      section: widget.postSectionType,
+      swipeDirection: direction,
+      watchDurationSec: _finalWatchDurationSeconds.toDouble(),
+      videoPctWatched: pct,
+      videoCompleted: pct >= 95,
+      isMuted: _isMuted,
+      exitReason: exitReason,
+    );
+    _finalWatchDurationSeconds = 0;
+    _finalWatchProgress = 0.0;
+    _pauseCount = 0;
+    _replayCount = 0;
+    _wasEverUnmuted = false;
+  }
 
   /// Logs view watch data when the user leaves (next/previous post or navigates away).
   /// Only sends once per view and if watch was meaningful (≥25% or ≥3s).

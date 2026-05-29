@@ -121,6 +121,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         : 0;
     _currentPostSectionType =
         _tabDataModelList[_currentIndex].tabDataModel.postSectionType;
+    SocialAnalyticsSession.instance
+        .onFeedTabEntered(_currentPostSectionType);
     if (_currentIndex >= _tabDataModelList.length) {
       _currentIndex = 0;
     }
@@ -180,7 +182,22 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
             return;
           }
         }
-        _currentPostSectionType = tabData.tabDataModel.postSectionType;
+        final fromSection =
+            _tabDataModelList[lastIndex].tabDataModel.postSectionType;
+        final toSection = tabData.tabDataModel.postSectionType;
+        final tabMetrics =
+            SocialAnalyticsSession.instance.consumeTabSessionMetrics();
+        if (fromSection != toSection) {
+          SocialAnalyticsTracker.trackFeedTabSwitch(
+            fromTab: fromSection,
+            toTab: toSection,
+            postsSeenOnPreviousTab: tabMetrics.postsSeen,
+            timeOnPreviousTabSec: tabMetrics.secondsOnTab,
+          );
+        } else {
+          SocialAnalyticsSession.instance.onFeedTabEntered(toSection);
+        }
+        _currentPostSectionType = toSection;
         _tabConfig.tabCallBackConfig?.onChangeOfTab?.call(tabData.tabDataModel);
         // Handle tab change if we have a user
         if (_loggedInUserId.isNotEmpty) {

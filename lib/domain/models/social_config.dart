@@ -213,9 +213,14 @@ class SocialCallBackConfig {
   /// Callback invoked with a unified SDK event model.
   ///
   /// Use this callback if you prefer one structured payload with:
-  /// - `event` (event name)
+  /// - `event` (event name, e.g. `social_post_impression`, `creator_follow`)
   /// - `category` (`user_action`, `system`, `api`, `error`)
-  /// - `properties` (event attributes)
+  /// - `properties` (event attributes including common post/creator context)
+  /// - `isSdkEvent` (`true` for standardized SDK events)
+  ///
+  /// Standard social events: `social_feed_tab_switch`, `social_post_impression`,
+  /// `social_post_video_progress`, `social_post_swipe`, `social_post_interact`,
+  /// `creator_follow`, `creator_unfollow`.
   final Function(SocialEventModel eventModel)? onSocialEventTriggered;
 
   /// Callback invoked when login is required.
