@@ -77,15 +77,15 @@ abstract final class FeedMediaOrientation {
     return portraitAspectRatio;
   }
 
+  /// Only the first image per post — carousel frame uses that orientation for all pages.
   static Iterable<String> _imageUrlsFromPosts(Iterable<TimeLineData> posts) sync* {
     for (final post in posts) {
       final mediaList = post.media;
-      if (mediaList == null) continue;
-      for (final media in mediaList) {
-        if ((media.mediaType ?? '').toLowerCase() != 'image') continue;
-        final url = media.url?.trim();
-        if (url != null && url.isNotEmpty) yield url;
-      }
+      if (mediaList == null || mediaList.isEmpty) continue;
+      final first = mediaList.first;
+      if ((first.mediaType ?? '').toLowerCase() != 'image') continue;
+      final url = first.url?.trim();
+      if (url != null && url.isNotEmpty) yield url;
     }
   }
 

@@ -291,78 +291,14 @@ class _Network extends StatelessWidget {
           ),
         ),
       ),
-      placeholder: (context, url) => showError
-          ? ImagePlaceHolder(
-              width: width,
-              height: height,
-              borderRadius: borderRadius,
-              placeHolderName: placeHolderName,
-              boxShape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
-              child: placeHolderWidget?.call(height, width) ?? (name.isStringEmptyOrNull == false && isProfileImage
-                  ? Center(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            initials,
-                            style: IsrStyles.secondaryText14.copyWith(
-                                fontWeight: FontWeight.w500, color: textColor),
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                          ),
-                        ),
-                      ),
-                    )
-                  : null
-              ),
-            )
-          : Container(
-              width: width,
-              height: height,
-              decoration: BoxDecoration(
-                color: Colors.black.changeOpacity(0.3),
-                borderRadius: borderRadius,
-                shape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
-              ),
-            ),
-      errorWidget: (context, url, error) => showError
-          ? ImagePlaceHolder(
-              width: width,
-              height: height,
-              borderRadius: borderRadius,
-              boxFit: fit ?? BoxFit.contain,
-              padding: 4,
-              placeHolderName: placeHolderName,
-              boxShape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
-              child: placeHolderWidget?.call(height, width) ?? (name.isStringEmptyOrNull == false && isProfileImage
-                  ? Center(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            initials,
-                            style: IsrStyles.secondaryText14.copyWith(
-                                fontWeight: FontWeight.w500, color: textColor),
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                          ),
-                        ),
-                      ),
-                    )
-                  : null
-              ),
-            )
-          : Container(
-              width: width,
-              height: height,
-              decoration: BoxDecoration(
-                color: Colors.black.changeOpacity(0.3),
-                borderRadius: borderRadius,
-                shape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
-              ),
-            ),
+      placeholder: (context, url) => _buildNetworkPlaceholder(
+        initials: initials,
+        customPlaceholder: placeHolderWidget?.call(height, width),
+      ),
+      errorWidget: (context, url, error) => _buildNetworkPlaceholder(
+        initials: initials,
+        customPlaceholder: placeHolderWidget?.call(height, width),
+      ),
     );
   }
 
@@ -414,6 +350,56 @@ class _Network extends StatelessWidget {
                 ),
         ),
       );
+
+  Widget _buildNetworkPlaceholder({
+    required String initials,
+    Widget? customPlaceholder,
+  }) {
+    if (customPlaceholder != null) {
+      return SizedBox(
+        width: width,
+        height: height,
+        child: customPlaceholder,
+      );
+    }
+    if (showError) {
+      return ImagePlaceHolder(
+        width: width,
+        height: height,
+        borderRadius: borderRadius,
+        placeHolderName: placeHolderName,
+        boxShape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
+        child: name.isStringEmptyOrNull == false && isProfileImage
+            ? Center(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(
+                      initials,
+                      style: IsrStyles.secondaryText14.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: textColor,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                    ),
+                  ),
+                ),
+              )
+            : null,
+      );
+    }
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: Colors.black.changeOpacity(0.3),
+        borderRadius: borderRadius,
+        shape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
+      ),
+    );
+  }
 }
 
 class _Svg extends StatelessWidget {

@@ -125,17 +125,17 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     return _isVideoMedia(mediaList[index]);
   }
 
-  double _mediaAspectRatioForIndex(int mediaIndex) {
+  /// Carousel frame size is locked to the first media item (Instagram-style).
+  double get _fixedCardMediaAspectRatio {
     if (!_isInstagramStyle) return _feedUi.mediaAspectRatio;
     final mediaList = _reel.mediaMetaDataList;
     if (mediaList.isEmpty) return _feedUi.mediaAspectRatio;
-    final index = mediaIndex.clamp(0, mediaList.length - 1);
-    final media = mediaList[index];
-    if (_isVideoMedia(media)) {
+    final first = mediaList.first;
+    if (_isVideoMedia(first)) {
       return _feedUi.videoMediaAspectRatio;
     }
     return FeedMediaOrientation.aspectRatioForImageUrl(
-      media.mediaUrl,
+      first.mediaUrl,
       portraitAspectRatio: _feedUi.imageMediaAspectRatio,
       landscapeAspectRatio: _feedUi.landscapeMediaAspectRatio,
     );
@@ -304,7 +304,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   }) {
     final hasFixedWidth = fixedWidth != null && fixedWidth > 0;
     final hasFixedHeight = fixedHeight != null && fixedHeight > 0;
-    final aspectRatio = _mediaAspectRatioForIndex(mediaIndex);
+    final aspectRatio = _fixedCardMediaAspectRatio;
 
     if (!hasFixedWidth && !hasFixedHeight) {
       return ClipRect(
@@ -328,6 +328,11 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,
+        fadeAnimationEnable: true,
+        placeHolderWidget: (_, __) => PostFeedMediaPlaceholder(
+          baseColor: _feedUi.dividerColor,
+          highlightColor: _feedUi.backgroundColor,
+        ),
       );
     }
 
@@ -341,7 +346,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         thumbnailUrl: media.thumbnailUrl,
         videoCacheManager: _videoCacheManager,
         isMuted: VideoMuteController.isMuted,
-        aspectRatio: _mediaAspectRatioForIndex(index),
+        aspectRatio: _fixedCardMediaAspectRatio,
         videoFitOverride: BoxFit.cover,
         logIndex: '${widget.logIndex}-$index',
         isParentVisible: () => widget.isPostVisible,
