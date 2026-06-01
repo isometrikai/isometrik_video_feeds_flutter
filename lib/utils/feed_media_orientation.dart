@@ -17,14 +17,17 @@ abstract final class FeedMediaOrientation {
   static const int _extendedProbeBytes = 262144;
   static const Duration _requestTimeout = Duration(seconds: 8);
   static const Duration _prefetchBatchTimeout = Duration(seconds: 12);
-  static const int _maxConcurrent = 4;
+  static const int _maxConcurrent = 2;
 
-  static final Map<String, ({PostFeedMediaOrientation orientation, int width, int height})> _cache = {};
-  static final _ListenableNotifier _notifier = _ListenableNotifier();
-  static Timer? _notifyDebounce;
+  static final Map<String, ({PostFeedMediaOrientation orientation, int width, int height})> _cache =
+      {};
+  static final Map<String, ValueNotifier<int>> _revisionByUrl = {};
 
-  /// Rebuild post-feed cards when background probes finish.
-  static Listenable get listenable => _notifier;
+  /// Rebuild only the post card tied to [url] when its probe finishes (not the whole feed).
+  static Listenable listenableForUrl(String url) {
+    final key = url.trim();
+    return _revisionByUrl.putIfAbsent(key, () => ValueNotifier(0));
+  }
 
   static bool get shouldProbeForCurrentConfig {
     final postConfig = IsrVideoReelConfig.postConfig;
@@ -116,13 +119,11 @@ abstract final class FeedMediaOrientation {
         width: size.$1,
         height: size.$2,
       );
-      _scheduleNotify();
+      final revision = _revisionByUrl[key];
+      if (revision != null) {
+        revision.value++;
+      }
     } catch (_) {}
-  }
-
-  static void _scheduleNotify() {
-    _notifyDebounce?.cancel();
-    _notifyDebounce = Timer(const Duration(milliseconds: 120), _notifier.notify);
   }
 
   static PostFeedMediaOrientation _orientationFromSize(int width, int height) {
@@ -294,11 +295,5 @@ abstract final class FeedMediaOrientation {
       if (w != null && h != null && w > 0 && h > 0) return (w, h);
     }
     return null;
-  }
-}
-
-final class _ListenableNotifier extends ChangeNotifier {
-  void notify() {
-    if (hasListeners) notifyListeners();
   }
 }

@@ -90,9 +90,18 @@ class _PostItemWidgetState extends State<PostItemWidget>
   @override
   void didUpdateWidget(PostItemWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.reelsDataList == widget.reelsDataList) return;
+    if (_sameReelsList(oldWidget.reelsDataList, widget.reelsDataList)) return;
     _reelsDataList = List<ReelsData>.from(widget.reelsDataList);
     _updateState();
+  }
+
+  bool _sameReelsList(List<ReelsData> previous, List<ReelsData> next) {
+    if (identical(previous, next)) return true;
+    if (previous.length != next.length) return false;
+    for (var i = 0; i < previous.length; i++) {
+      if (previous[i].postId != next[i].postId) return false;
+    }
+    return true;
   }
 
   void _initializeContent() async {

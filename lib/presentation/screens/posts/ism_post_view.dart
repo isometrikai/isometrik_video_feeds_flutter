@@ -78,6 +78,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   //caches
   static final Map<String, List<TabStateModel>> _centralTadData = {};
+  final Map<PostSectionType, List<ReelsData>> _mappedReelsByTab = {};
+  final Map<PostSectionType, int> _mappedReelsVersionByTab = {};
   late String centralKey;
   static Map<PostSectionType, List<TimeLineData>>? getLoadedTabReels(String centralKey) => _centralTadData[centralKey]?.asMap().map((key, value) => MapEntry(value.tabDataModel.postSectionType, value.tabDataModel.reelsDataList.toList()));
 
@@ -387,6 +389,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                           .firstOrNull;
                       tabStateData?.tabDataModel.reelsDataList =
                           state.postList.toList();
+                      _mappedReelsByTab.remove(state.postType);
+                      _mappedReelsVersionByTab.remove(state.postType);
                       tabStateData?.isLoading = false;
                     } else if (state is PostLoadingState &&
                         state.postType != null) {
@@ -547,6 +551,36 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                 )),
       );
 
+  int _timelineListVersion(List<TimeLineData> timeline) {
+    if (timeline.isEmpty) return 0;
+    return Object.hash(
+      timeline.length,
+      timeline.first.id,
+      timeline.last.id,
+    );
+  }
+
+  List<ReelsData> _mappedReelsForTab(TabStateModel tabState) {
+    final section = tabState.tabDataModel.postSectionType;
+    final timeline = tabState.tabDataModel.reelsDataList;
+    final version = _timelineListVersion(timeline);
+    final cachedVersion = _mappedReelsVersionByTab[section];
+    if (cachedVersion == version && _mappedReelsByTab.containsKey(section)) {
+      return _mappedReelsByTab[section]!;
+    }
+    final mapped = timeline
+        .map((post) => getReelData(post, loggedInUserId: _loggedInUserId))
+        .toList();
+    _mappedReelsByTab[section] = mapped;
+    _mappedReelsVersionByTab[section] = version;
+    return mapped;
+  }
+
+  void _invalidateMappedReelsCache() {
+    _mappedReelsByTab.clear();
+    _mappedReelsVersionByTab.clear();
+  }
+
   Widget _buildTabBarView(TabStateModel tabState, int index) {
     Widget buildPostItem() => PostItemWidget(
         key: ValueKey(_getUniqueKey(tabState.tabDataModel, index)),
@@ -567,9 +601,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         },
         loggedInUserId: _loggedInUserId,
         allowImplicitScrolling: widget.allowImplicitScrolling,
-        reelsDataList: tabState.tabDataModel.reelsDataList
-            .map((_) => getReelData(_, loggedInUserId: _loggedInUserId))
-            .toList(),
+        reelsDataList: _mappedReelsForTab(tabState),
         reelsConfig: _getReelsConfig(tabState),
         onLoadMore: () async => await _handleLoadMore(tabState),
         onRefresh: () async {
@@ -586,14 +618,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         postSectionType: tabState.tabDataModel.postSectionType,
       );
 
-    if (!_isPostFeedLayout ||
-        !FeedMediaOrientation.shouldProbeForCurrentConfig) {
-      return buildPostItem();
-    }
-    return ListenableBuilder(
-      listenable: FeedMediaOrientation.listenable,
-      builder: (context, _) => buildPostItem(),
-    );
+    return buildPostItem();
   }
 
   ReelsConfig _getReelsConfig(TabStateModel tabState) => ReelsConfig(
@@ -1165,6 +1190,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     var updateState = false;
     debugPrint('ism_post_view: user changed: $userId');
     //data update
+    _invalidateMappedReelsCache();
     if (userId.isNotEmpty && _loggedInUserId != userId) {
       _videoCacheManager = VideoCacheManager();
     } else if (userId.isEmpty && _loggedInUserId.isNotEmpty) {

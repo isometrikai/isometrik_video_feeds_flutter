@@ -29,7 +29,8 @@ class AppImage extends StatelessWidget {
     this.placeHolderWidget,
   })  : _imageType = ImageType.asset,
         showError = false,
-        color = null;
+        color = null,
+        cacheKey = null;
 
   const AppImage.svg(
     this.path, {
@@ -52,7 +53,8 @@ class AppImage extends StatelessWidget {
     this.blendMode,
     this.placeHolderWidget,
   })  : _imageType = ImageType.svg,
-        showError = false;
+        showError = false,
+        cacheKey = null;
 
   const AppImage.network(
     this.path, {
@@ -74,6 +76,7 @@ class AppImage extends StatelessWidget {
     this.textColor,
     this.blendMode,
     this.placeHolderWidget,
+    this.cacheKey,
   })  : _imageType = ImageType.network,
         color = null;
 
@@ -98,7 +101,8 @@ class AppImage extends StatelessWidget {
     this.placeHolderWidget,
   })  : _imageType = ImageType.file,
         showError = false,
-        color = null;
+        color = null,
+        cacheKey = null;
 
   final String path;
   final String name;
@@ -115,6 +119,8 @@ class AppImage extends StatelessWidget {
   final EdgeInsets? padding;
   final String? placeHolderName;
   final Widget? Function(double? height, double? width)? placeHolderWidget;
+  /// Stable disk/memory cache id (e.g. original URL). When null, [path] is used.
+  final String? cacheKey;
   final BoxFit? fit;
   final bool? fadeAnimationEnable;
   final BlendMode? blendMode;
@@ -159,6 +165,7 @@ class AppImage extends StatelessWidget {
               fadeAnimationEnable: fadeAnimationEnable,
               filterQuality: filterQuality,
               textColor: textColor,
+              cacheKey: cacheKey,
             ),
         },
       );
@@ -223,9 +230,11 @@ class _Network extends StatelessWidget {
     this.fadeAnimationEnable = false,
     this.filterQuality,
     this.textColor,
+    this.cacheKey,
   });
 
   final String imageUrl;
+  final String? cacheKey;
   final String name;
   final String? placeHolderName;
   final Widget? Function(double? height, double? width)? placeHolderWidget;
@@ -265,13 +274,16 @@ class _Network extends StatelessWidget {
       return _buildNetworkSvg(optimizedImageUrl, initials);
     }
 
+    final diskCacheKey = cacheKey ?? cleanedUrl;
+
     return CachedNetworkImage(
       width: width,
       imageUrl: optimizedImageUrl,
       filterQuality: filterQuality ?? FilterQuality.high,
       fit: fit ?? BoxFit.cover,
       alignment: Alignment.center,
-      cacheKey: optimizedImageUrl,
+      cacheKey: diskCacheKey,
+      useOldImageOnUrlChange: true,
       fadeInDuration: fadeAnimationEnable ?? false
           ? const Duration(milliseconds: 300)
           : Duration.zero,
