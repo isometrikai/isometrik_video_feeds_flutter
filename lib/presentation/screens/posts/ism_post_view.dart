@@ -63,8 +63,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   var _currentPostSectionType = PostSectionType.forYou;
   PostConfig get _postConfig =>
       widget.postConfig ?? IsrVideoReelConfig.postConfig;
-  bool get _isPostFeedLayout =>
-      _postConfig.feedLayoutType == FeedLayoutType.postFeed;
+  TabDataModel get _currentTabDataModel =>
+      _tabDataModelList[_currentIndex].tabDataModel;
+
+  bool get _isCurrentTabPostFeed =>
+      _currentTabDataModel.feedLayoutType == FeedLayoutType.postFeed;
 
   TabConfig get _tabConfig => widget.tabConfig ?? IsrVideoReelConfig.tabConfig;
   SocialConfig get _socialConfig => IsrVideoReelConfig.socialConfig;
@@ -143,8 +146,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     _refreshControllers =
         List.generate(_tabDataModelList.length, (index) => RefreshController());
 
-    _tabsVisibilityNotifier.value =
-        !_isPostFeedLayout && _tabDataModelList.length > 1;
+    _tabsVisibilityNotifier.value = _tabDataModelList.length > 1;
 
     if (_isFollowingPostsEmpty()) {
       // _tabsVisibilityNotifier.value = false;
@@ -335,14 +337,13 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   Widget _buildContent() => AnnotatedRegion(
         value: SystemUiOverlayStyle(
           statusBarColor: _statusBarConfig?.statusBarColor ??
-              (_isPostFeedLayout
-                  ? (_postConfig.postFeedUIConfig?.backgroundColor ??
-                      Colors.white)
+              (_isCurrentTabPostFeed
+                  ? _postConfig.resolvedPostFeedUIConfig.backgroundColor
                   : IsrColors.transparent),
           statusBarBrightness: _statusBarConfig?.statusBarBrightness ??
-              (_isPostFeedLayout ? Brightness.light : Brightness.dark),
+              (_isCurrentTabPostFeed ? Brightness.light : Brightness.dark),
           statusBarIconBrightness: _statusBarConfig?.statusBarIconBrightness ??
-              (_isPostFeedLayout ? Brightness.dark : Brightness.light),
+              (_isCurrentTabPostFeed ? Brightness.dark : Brightness.light),
         ),
         child: context.attachBlocIfNeeded<IsmSocialActionCubit>(
           bloc: _socialActionCubit,
@@ -366,11 +367,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
             },
             child: Stack(
               children: [
-                if (_isPostFeedLayout)
+                if (_isCurrentTabPostFeed)
                   Positioned.fill(
                     child: ColoredBox(
-                      color: _postConfig.postFeedUIConfig?.backgroundColor ??
-                          Colors.white,
+                      color: _postConfig.resolvedPostFeedUIConfig.backgroundColor,
                     ),
                   ),
                 BlocListener<SocialPostBloc, SocialPostState>(
@@ -419,11 +419,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                     ),
                   ),
                 ),
-                if (_isPostFeedLayout)
-                  _buildPostFeedHeader()
-                else if (_tabDataModelList.length > 1) ...[
+                if (_tabDataModelList.length > 1) ...[
                   _buildTabBar()
-                ] else ...[
+                ] else if (_isCurrentTabPostFeed)
+                  _buildPostFeedHeader()
+                else ...[
                   _buildSingleTabTopBar()
                 ],
               ],
@@ -433,8 +433,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       );
 
   Widget _buildPostFeedHeader() {
-    final feedUi =
-        _postConfig.postFeedUIConfig ?? const PostFeedUIConfig();
+    final feedUi = _postConfig.resolvedPostFeedUIConfig;
     if (!feedUi.showHeader) {
       return const SizedBox.shrink();
     }
@@ -616,6 +615,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         },
         startingPostIndex: tabState.tabDataModel.startingPostIndex,
         postSectionType: tabState.tabDataModel.postSectionType,
+        feedLayoutType: tabState.tabDataModel.feedLayoutType,
+        postFeedListTopInset: tabState.tabDataModel.feedLayoutType ==
+                FeedLayoutType.postFeed
+            ? _overlayTabBarContentInset(context)
+            : null,
       );
 
     return buildPostItem();
@@ -864,23 +868,36 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     return completer.future;
   }
 
-  Widget _buildTabBar() => ValueListenableBuilder<bool>(
+  /// Top padding for post-card lists when the reels tab bar overlays the feed.
+  double _overlayTabBarContentInset(BuildContext context) =>
+      MediaQuery.paddingOf(context).top +
+      IsrDimens.twenty +
+      kTextTabBarHeight +
+      IsrDimens.sixteen;
+
+  Widget _buildTabBar() {
+    final feedUi = _postConfig.resolvedPostFeedUIConfig;
+    final usePostFeedChrome = _isCurrentTabPostFeed;
+
+    return ValueListenableBuilder<bool>(
       valueListenable: _tabsVisibilityNotifier,
       builder: (context, value, child) => value == true
           ? Container(
               decoration: BoxDecoration(
-                // Gradient overlay for better tab visibility on any background
-                gradient: _tabBarConfig?.containerGradient ??
-                    LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.black.changeOpacity(0.6),
-                        Colors.black.changeOpacity(0.3),
-                        Colors.transparent,
-                      ],
-                      stops: const [0.0, 0.7, 1.0],
-                    ),
+                color: usePostFeedChrome ? feedUi.backgroundColor : null,
+                gradient: usePostFeedChrome
+                    ? null
+                    : (_tabBarConfig?.containerGradient ??
+                        LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.changeOpacity(0.6),
+                            Colors.black.changeOpacity(0.3),
+                            Colors.transparent,
+                          ],
+                          stops: const [0.0, 0.7, 1.0],
+                        )),
               ),
               padding: _tabBarConfig?.containerPadding ??
                   EdgeInsets.only(
@@ -907,13 +924,19 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                         isScrollable: _tabBarConfig?.isScrollable ?? true,
                         tabAlignment:
                             _tabBarConfig?.tabAlignment ?? TabAlignment.start,
-                        labelColor:
-                            _tabBarConfig?.labelColor ?? IsrColors.white,
+                        labelColor: _tabBarConfig?.labelColor ??
+                            (usePostFeedChrome
+                                ? feedUi.headerTextColor
+                                : IsrColors.white),
                         unselectedLabelColor:
                             _tabBarConfig?.unselectedLabelColor ??
-                                IsrColors.white.changeOpacity(0.7),
-                        indicatorColor:
-                            _tabBarConfig?.indicatorColor ?? IsrColors.white,
+                                (usePostFeedChrome
+                                    ? feedUi.secondaryTextColor
+                                    : IsrColors.white.changeOpacity(0.7)),
+                        indicatorColor: _tabBarConfig?.indicatorColor ??
+                            (usePostFeedChrome
+                                ? feedUi.headerTextColor
+                                : IsrColors.white),
                         indicatorWeight: _tabBarConfig?.indicatorWeight ?? 3,
                         dividerColor:
                             _tabBarConfig?.dividerColor ?? Colors.transparent,
@@ -926,40 +949,54 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                             IsrDimens.edgeInsetsSymmetric(
                                 horizontal: IsrDimens.eight),
                         labelStyle: _tabBarConfig?.labelStyle ??
-                            IsrStyles.white16.copyWith(
-                              fontWeight: FontWeight.w700,
-                              height: 1.5,
-                              shadows: [
-                                Shadow(
-                                  color: Colors.black.changeOpacity(0.8),
-                                  offset: const Offset(0, 1),
-                                  blurRadius: 4,
-                                ),
-                                Shadow(
-                                  color: Colors.black.changeOpacity(0.5),
-                                  offset: const Offset(0, 2),
-                                  blurRadius: 8,
-                                ),
-                              ],
-                            ),
+                            (usePostFeedChrome
+                                ? IsrStyles.primaryText16.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: feedUi.headerTextColor,
+                                  )
+                                : IsrStyles.white16.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    height: 1.5,
+                                    shadows: [
+                                      Shadow(
+                                        color:
+                                            Colors.black.changeOpacity(0.8),
+                                        offset: const Offset(0, 1),
+                                        blurRadius: 4,
+                                      ),
+                                      Shadow(
+                                        color:
+                                            Colors.black.changeOpacity(0.5),
+                                        offset: const Offset(0, 2),
+                                        blurRadius: 8,
+                                      ),
+                                    ],
+                                  )),
                         unselectedLabelStyle:
                             _tabBarConfig?.unselectedLabelStyle ??
-                                IsrStyles.white16.copyWith(
-                                  fontWeight: FontWeight.w400,
-                                  height: 1.5,
-                                  shadows: [
-                                    Shadow(
-                                      color: Colors.black.changeOpacity(0.8),
-                                      offset: const Offset(0, 1),
-                                      blurRadius: 4,
-                                    ),
-                                    Shadow(
-                                      color: Colors.black.changeOpacity(0.5),
-                                      offset: const Offset(0, 2),
-                                      blurRadius: 8,
-                                    ),
-                                  ],
-                                ),
+                                (usePostFeedChrome
+                                    ? IsrStyles.primaryText16.copyWith(
+                                        fontWeight: FontWeight.w400,
+                                        color: feedUi.secondaryTextColor,
+                                      )
+                                    : IsrStyles.white16.copyWith(
+                                        fontWeight: FontWeight.w400,
+                                        height: 1.5,
+                                        shadows: [
+                                          Shadow(
+                                            color: Colors.black
+                                                .changeOpacity(0.8),
+                                            offset: const Offset(0, 1),
+                                            blurRadius: 4,
+                                          ),
+                                          Shadow(
+                                            color: Colors.black
+                                                .changeOpacity(0.5),
+                                            offset: const Offset(0, 2),
+                                            blurRadius: 8,
+                                          ),
+                                        ],
+                                      )),
                         tabs: _tabDataModelList
                             .map(
                               (tab) => Tab(
@@ -980,6 +1017,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
               ),
             )
           : const SizedBox.shrink());
+  }
 
   @override
   void dispose() {

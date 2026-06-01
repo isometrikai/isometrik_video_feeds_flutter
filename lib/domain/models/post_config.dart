@@ -10,13 +10,12 @@ class PostConfig {
     this.autoMoveToNextPost = true,
     this.isCaptionRequired = false,
     this.showViewCount = false,
-    this.feedLayoutType = FeedLayoutType.reels,
   });
 
   final PostUIConfig? postUIConfig;
   final PostCallBackConfig? postCallBackConfig;
 
-  /// Optional styling when [feedLayoutType] is [FeedLayoutType.postFeed].
+  /// Styling for scrollable post-card tabs ([FeedLayoutType.postFeed] on [TabDataModel]).
   final PostFeedUIConfig? postFeedUIConfig;
 
   final bool autoMoveToNextMedia;
@@ -24,8 +23,9 @@ class PostConfig {
   final bool isCaptionRequired;
   final bool showViewCount;
 
-  /// Reels tabs (full-screen) or scrollable post-card feed.
-  final FeedLayoutType feedLayoutType;
+  /// UI config for post-card tabs. Defaults to [PostFeedUIConfig.instagram] when null.
+  PostFeedUIConfig get resolvedPostFeedUIConfig =>
+      postFeedUIConfig ?? PostFeedUIConfig.instagram;
 
   PostConfig copyWith({
     PostUIConfig? postUIConfig,
@@ -35,7 +35,6 @@ class PostConfig {
     bool? autoMoveToNextPost,
     bool? isCaptionRequired,
     bool? showViewCount,
-    FeedLayoutType? feedLayoutType,
   }) =>
       PostConfig(
         postUIConfig: postUIConfig ?? this.postUIConfig,
@@ -45,11 +44,10 @@ class PostConfig {
         autoMoveToNextPost: autoMoveToNextPost ?? this.autoMoveToNextPost,
         isCaptionRequired: isCaptionRequired ?? this.isCaptionRequired,
         showViewCount: showViewCount ?? this.showViewCount,
-        feedLayoutType: feedLayoutType ?? this.feedLayoutType,
       );
 }
 
-/// Builds the action row (like, comment, share, save) for [FeedLayoutType.postFeed].
+/// Builds the action row for scrollable post-card feed tabs.
 typedef PostFeedActionWidgetBuilder = Widget Function(
   ReelsData reelsData,
   PostFeedActionBuildContext actionContext,
@@ -68,7 +66,7 @@ class PostFeedActionBuildContext {
   final PostSectionType postSectionType;
 }
 
-/// Post card layout for [FeedLayoutType.postFeed].
+/// Post card layout for scrollable post-card feed tabs.
 enum PostFeedCardStyle {
   /// Profile row and follow button overlaid on media with a top gradient.
   overlayHeader,
@@ -109,7 +107,19 @@ class PostFeedUIConfig {
     this.actionIconGapWithCount = 16,
   });
 
-  /// Header title for [FeedLayoutType.postFeed]. Falls back to the active tab title when null or empty.
+  /// Instagram-style post feed: header above media, counts, timestamps, dividers.
+  ///
+  /// Default styling for post-card feed tabs when [PostConfig.postFeedUIConfig] is null.
+  static const instagram = PostFeedUIConfig(
+    cardStyle: PostFeedCardStyle.instagram,
+    showHeader: false,
+    showActionCounts: true,
+    showPostTimestamp: true,
+    showPostDividers: true,
+    postSpacing: 0,
+  );
+
+  /// Header title for post-card feed tabs. Falls back to the active tab title when null or empty.
   final String? title;
 
   /// Optional override for the header title text style.

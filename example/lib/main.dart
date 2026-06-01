@@ -75,33 +75,8 @@ Future<void> initializeReelsSdk() async {
 void _configureReelsSdk() {
   isr.IsrVideoReelConfig.setUpConfig(
     postConfig: const isr.PostConfig(
-      // Use FeedLayoutType.reels for full-screen tabs, or
-      // FeedLayoutType.postFeed for scrollable post cards.
-      feedLayoutType: isr.FeedLayoutType.postFeed,
       autoMoveToNextMedia: true,
       autoMoveToNextPost: true,
-      postFeedUIConfig: const isr.PostFeedUIConfig(
-        cardStyle: isr.PostFeedCardStyle.instagram,
-        showHeader: false,
-        showActionCounts: true,
-        showPostTimestamp: true,
-        showPostDividers: true,
-        backgroundColor: Colors.white,
-        headerTextColor: Color(0xFF262626),
-        secondaryTextColor: Color(0xFF8E8E8E),
-        actionIconColor: Color(0xFF262626),
-        // 3:4 portrait frame — slightly taller than 4:5 for less cropping on portrait photos.
-        imageMediaAspectRatio: 3 / 4,
-        landscapeMediaAspectRatio: 1.91,
-        videoMediaAspectRatio: 3 / 4,
-        postSpacing: 0,
-        showCarouselPageBadge: true,
-        showCarouselDots: true,
-        // Icon-only row (like Instagram): tighter gaps. Counts widen gaps automatically.
-        actionIconGapCompact: 10,
-        actionIconGapWithCount: 16,
-        // actionWidget: (reelsData, actionContext) => YourCustomActionRow(...),
-      ),
     ),
     tabConfig: const isr.TabConfig(),
     storyConfig: const isr.StoryConfig(),
@@ -139,7 +114,8 @@ void _configureReelsSdk() {
       dialogConfig: const isr.DialogConfig(
         backgroundColor: Colors.white, // Dialog background
         borderRadius: 12.0, // Rounded corners
-        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 28), // Internal padding
+        padding: EdgeInsets.symmetric(
+            horizontal: 24, vertical: 28), // Internal padding
         titleTextStyle: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w700,

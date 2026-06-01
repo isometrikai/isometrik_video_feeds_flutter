@@ -16,6 +16,8 @@ class PostItemWidget extends StatefulWidget {
     this.onLoadMore,
     this.onRefresh,
     this.postSectionType,
+    this.feedLayoutType = FeedLayoutType.reels,
+    this.postFeedListTopInset,
     this.onTapPlaceHolder,
     this.startingPostIndex = 0,
     this.loggedInUserId,
@@ -30,6 +32,11 @@ class PostItemWidget extends StatefulWidget {
   final Widget? Function()? getEmptyScreen;
   final Future<bool> Function()? onRefresh;
   final PostSectionType? postSectionType;
+  final FeedLayoutType feedLayoutType;
+
+  /// When the reels tab bar overlays a post-card tab, inset scroll content below it.
+  final double? postFeedListTopInset;
+
   final VoidCallback? onTapPlaceHolder;
   final int? startingPostIndex;
   final String? loggedInUserId;
@@ -192,7 +199,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
   bool get wantKeepAlive => true;
 
   bool get _isPostFeedLayout =>
-      widget.reelsConfig.postConfig.feedLayoutType == FeedLayoutType.postFeed;
+      widget.feedLayoutType == FeedLayoutType.postFeed;
 
   @override
   Widget build(BuildContext context) {
@@ -202,14 +209,16 @@ class _PostItemWidgetState extends State<PostItemWidget>
       child: BlocListener<IsmSocialActionCubit, IsmSocialActionState>(
         listenWhen: (previous, current) =>
             (current is IsmFollowActionListenerState &&
-                widget.postSectionType == PostSectionType.following) ||
+                (widget.postSectionType == PostSectionType.following ||
+                    widget.postSectionType == PostSectionType.feeds)) ||
             (current is IsmSaveActionListenerState &&
                 widget.postSectionType == PostSectionType.savedPost) ||
             (current is IsmDeletedPostActionListenerState) ||
             (current is IsmEditPostActionListenerState),
         listener: (context, state) {
           if (state is IsmFollowActionListenerState &&
-              widget.postSectionType == PostSectionType.following) {
+              (widget.postSectionType == PostSectionType.following ||
+                  widget.postSectionType == PostSectionType.feeds)) {
             _updateWithFollowAction(state);
           } else if (state is IsmSaveActionListenerState &&
               widget.postSectionType == PostSectionType.savedPost) {
@@ -344,6 +353,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
                       child: Center(
                         child: PostPlaceHolderView(
                               postSectionType: widget.postSectionType,
+                              feedLayoutType: widget.feedLayoutType,
                               onTap: () {
                                 if (widget.onTapPlaceHolder != null) {
                                   widget.onTapPlaceHolder!();
@@ -362,6 +372,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
         reelsDataList: _reelsDataList,
         reelsConfig: widget.reelsConfig,
         postSectionType: widget.postSectionType,
+        listTopInset: widget.postFeedListTopInset,
         loggedInUserId: widget.loggedInUserId,
         videoCacheManager: _videoCacheManager,
         getEmptyScreen: widget.getEmptyScreen,

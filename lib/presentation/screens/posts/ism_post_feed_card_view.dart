@@ -6,7 +6,7 @@ import 'package:ism_video_reel_player/presentation/screens/posts/widgets/like_ac
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
-/// Single post card for [FeedLayoutType.postFeed].
+/// Single post card for scrollable post-card feed tabs.
 class IsmPostFeedCardView extends StatefulWidget {
   const IsmPostFeedCardView({
     super.key,
@@ -59,7 +59,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   UserProfileConfig? get _userProfileConfig => _uiConfig?.userProfileConfig;
   FollowButtonConfig? get _followButtonConfig => _uiConfig?.followButtonConfig;
 
-  PostFeedUIConfig get _feedUi => _postConfig.postFeedUIConfig ?? const PostFeedUIConfig();
+  PostFeedUIConfig get _feedUi => _postConfig.resolvedPostFeedUIConfig;
 
   bool get _isInstagramStyle => _feedUi.cardStyle == PostFeedCardStyle.instagram;
 

@@ -208,7 +208,7 @@ class IsrVideoReelConfig {
     final resolvedPostConfig = postConfig ?? IsrVideoReelConfig.postConfig;
     IsrVideoReelConfig.postConfig = resolvedPostConfig;
     VideoMuteController.applyDefaultMuted(
-      resolvedPostConfig.postFeedUIConfig?.defaultVideoMuted ?? true,
+      resolvedPostConfig.resolvedPostFeedUIConfig.defaultVideoMuted,
     );
     IsrVideoReelConfig.tabConfig = tabConfig ?? IsrVideoReelConfig.tabConfig;
     IsrVideoReelConfig.commentConfig = commentConfig ?? IsrVideoReelConfig.commentConfig;

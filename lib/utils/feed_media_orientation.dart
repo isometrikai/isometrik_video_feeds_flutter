@@ -29,11 +29,9 @@ abstract final class FeedMediaOrientation {
     return _revisionByUrl.putIfAbsent(key, () => ValueNotifier(0));
   }
 
-  static bool get shouldProbeForCurrentConfig {
-    final postConfig = IsrVideoReelConfig.postConfig;
-    if (postConfig.feedLayoutType != FeedLayoutType.postFeed) return false;
-    return postConfig.postFeedUIConfig?.cardStyle == PostFeedCardStyle.instagram;
-  }
+  static bool get shouldProbeForCurrentConfig =>
+      IsrVideoReelConfig.postConfig.resolvedPostFeedUIConfig.cardStyle ==
+      PostFeedCardStyle.instagram;
 
   static Future<void> prefetchForPosts(Iterable<TimeLineData> posts) async {
     if (!shouldProbeForCurrentConfig) return;

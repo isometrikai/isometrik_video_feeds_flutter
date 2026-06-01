@@ -14,6 +14,7 @@ class PostFeedListWidget extends StatefulWidget {
     required this.reelsDataList,
     required this.reelsConfig,
     this.postSectionType,
+    this.listTopInset,
     this.loggedInUserId,
     this.videoCacheManager,
     this.onLoadMore,
@@ -35,6 +36,10 @@ class PostFeedListWidget extends StatefulWidget {
   final List<ReelsData> reelsDataList;
   final ReelsConfig reelsConfig;
   final PostSectionType? postSectionType;
+
+  /// Extra top padding when a tab bar overlays this list (multi-tab post-card feed).
+  final double? listTopInset;
+
   final String? loggedInUserId;
   final VideoCacheManager? videoCacheManager;
   final Future<List<ReelsData>> Function()? onLoadMore;
@@ -136,15 +141,16 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final feedUi = widget.reelsConfig.postConfig.postFeedUIConfig;
-    final showHeader = feedUi?.showHeader ?? true;
-    final usePostDividers = feedUi?.showPostDividers ?? false;
+    final feedUi = widget.reelsConfig.postConfig.resolvedPostFeedUIConfig;
+    final showHeader = feedUi.showHeader;
+    final usePostDividers = feedUi.showPostDividers;
     final itemGap = usePostDividers
         ? 0.0
-        : (feedUi?.postSpacing ?? 0).clamp(0.0, double.infinity);
-    final topInset = showHeader
-        ? MediaQuery.paddingOf(context).top + IsrDimens.fiftySix
-        : MediaQuery.paddingOf(context).top;
+        : feedUi.postSpacing.clamp(0.0, double.infinity);
+    final topInset = widget.listTopInset ??
+        (showHeader
+            ? MediaQuery.paddingOf(context).top + IsrDimens.fiftySix
+            : MediaQuery.paddingOf(context).top);
 
     final refreshDisplacement = topInset + IsrDimens.forty;
 
@@ -164,6 +170,7 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
                   height: MediaQuery.sizeOf(context).height * 0.7,
                   child: PostPlaceHolderView(
                     postSectionType: widget.postSectionType,
+                    feedLayoutType: FeedLayoutType.postFeed,
                     onTap: widget.onTapPlaceHolder,
                   ),
                 ),
@@ -192,7 +199,7 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
               return Divider(
                 height: IsrDimens.one,
                 thickness: IsrDimens.one,
-                color: feedUi?.dividerColor ?? const Color(0xFFEFEFEF),
+                color: feedUi.dividerColor,
               );
             }
             return itemGap > 0 ? SizedBox(height: itemGap) : const SizedBox.shrink();

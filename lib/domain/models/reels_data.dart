@@ -295,6 +295,8 @@ class PlaceMetaData {
 enum PostSectionType {
   forYou(isUserDependent: true),
   following(isUserDependent: true),
+  /// Scrollable post-card feed tab (use with [FeedLayoutType.postFeed] on the tab).
+  feeds(isUserDependent: true),
   trending(isUserDependent: false),
   myPost(isUserDependent: true),
   otherUserPost(isUserDependent: false),
@@ -315,6 +317,8 @@ extension PostSectionTypeExtension on PostSectionType {
         return 'for_you';
       case PostSectionType.following:
         return 'following';
+      case PostSectionType.feeds:
+        return 'feeds';
       case PostSectionType.trending:
         return 'trending';
       case PostSectionType.myPost:

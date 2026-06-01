@@ -347,6 +347,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         });
         break;
       case PostSectionType.following:
+      case PostSectionType.feeds:
         apiPostResult = await _getTimelinePostUseCase
             .executeTimeLinePost(
           isLoading: isLoading,
@@ -435,7 +436,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     if (postIdPostData != null) {
       postDataList.add(postIdPostData);
     }
-    if (tabAssistData.postSectionType == PostSectionType.following) {
+    if (tabAssistData.postSectionType == PostSectionType.following ||
+        tabAssistData.postSectionType == PostSectionType.feeds) {
       apiPostResult?.forEach((_) => _.isFollowing = true);
     }
     postDataList.addAll(apiPostResult ?? []);
@@ -626,9 +628,10 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         .any((_) => _.postSectionType == PostSectionType.following)) {
       await _callGetTabPost(_getTabAssistData(PostSectionType.following), true,
           false, false, null);
-      // add(LoadPostsEvent(
-      //     postsByTab: _postsByTab.asMap().map((key, value) =>
-      //         MapEntry(value.postSectionType, value.postList))));
+    }
+    if (_postsByTab.any((_) => _.postSectionType == PostSectionType.feeds)) {
+      await _callGetTabPost(
+          _getTabAssistData(PostSectionType.feeds), true, false, false, null);
     }
   }
 

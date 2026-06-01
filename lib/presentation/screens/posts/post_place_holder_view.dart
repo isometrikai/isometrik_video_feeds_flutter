@@ -7,18 +7,18 @@ class PostPlaceHolderView extends StatelessWidget {
   const PostPlaceHolderView({
     super.key,
     required this.postSectionType,
+    this.feedLayoutType = FeedLayoutType.reels,
     this.onTap,
   });
 
   final PostSectionType? postSectionType;
+  final FeedLayoutType feedLayoutType;
   final VoidCallback? onTap;
 
-  bool get _isPostFeedLayout =>
-      IsrVideoReelConfig.postConfig.feedLayoutType == FeedLayoutType.postFeed;
+  bool get _isPostFeedLayout => feedLayoutType == FeedLayoutType.postFeed;
 
   PostFeedUIConfig get _postFeedUi =>
-      IsrVideoReelConfig.postConfig.postFeedUIConfig ??
-      const PostFeedUIConfig();
+      IsrVideoReelConfig.postConfig.resolvedPostFeedUIConfig;
 
   @override
   Widget build(BuildContext context) {
@@ -56,12 +56,14 @@ class PostPlaceHolderView extends StatelessWidget {
             ),
             IsrDimens.boxHeight(IsrDimens.ten),
             Text(
-              postSectionType == PostSectionType.following
+              postSectionType == PostSectionType.following ||
+                      postSectionType == PostSectionType.feeds
                   ? IsrTranslationFile.notFollowingAnyone
                   : IsrTranslationFile.noPostAvailable,
               style: titleStyle,
             ),
-            if (postSectionType == PostSectionType.following) ...[
+            if (postSectionType == PostSectionType.following ||
+                postSectionType == PostSectionType.feeds) ...[
               IsrDimens.boxHeight(IsrDimens.five),
               Text(
                 IsrTranslationFile.startFollowing,
