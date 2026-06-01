@@ -1122,6 +1122,23 @@ class Utility {
     return '${difference.inDays ~/ 365}y';
   }
 
+  /// Compact engagement count (e.g. 5354 → "5,354", 172500 → "172.5K").
+  static String formatEngagementCount(int count) {
+    if (count < 10000) {
+      return NumberFormat('#,###').format(count);
+    }
+    if (count < 1000000) {
+      final value = count / 1000;
+      final formatted =
+          value >= 100 ? value.toStringAsFixed(0) : value.toStringAsFixed(1);
+      return '${formatted.replaceAll(RegExp(r'\.0$'), '')}K';
+    }
+    final value = count / 1000000;
+    final formatted =
+        value >= 100 ? value.toStringAsFixed(0) : value.toStringAsFixed(1);
+    return '${formatted.replaceAll(RegExp(r'\.0$'), '')}M';
+  }
+
   static String formatPublishedTimeAgo(DateTime dateTime) {
     final now = DateTime.now();
     if (dateTime.isAfter(now)) return 'just now';

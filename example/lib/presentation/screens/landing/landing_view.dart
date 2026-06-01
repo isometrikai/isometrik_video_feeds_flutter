@@ -134,22 +134,17 @@ class _LandingViewState extends State<LandingView> {
                     Visibility(
                       visible: true,
                       child: BottomNavigationBar(
-                        backgroundColor: state == NavbarType.home
-                            ? AppColors.grey
-                            : AppColors.white,
+                        backgroundColor: AppColors.white,
+                        elevation: 0,
+                        type: BottomNavigationBarType.fixed,
+                        iconSize: Dimens.twentyTwo,
+                        selectedFontSize: Dimens.ten,
+                        unselectedFontSize: Dimens.ten,
                         currentIndex: NavbarType.visibleItems.indexOf(state),
-                        selectedItemColor: state == NavbarType.home
-                            ? AppColors.white
-                            : AppColors.black,
-                        unselectedItemColor: state == NavbarType.home
-                            ? AppColors.primaryTextColor
-                            : AppColors.black,
-                        selectedLabelStyle: state == NavbarType.home
-                            ? Styles.white12
-                            : Styles.primaryText12,
-                        unselectedLabelStyle: state == NavbarType.home
-                            ? Styles.white12
-                            : Styles.primaryText12,
+                        selectedItemColor: AppColors.black,
+                        unselectedItemColor: AppColors.primaryTextColor,
+                        selectedLabelStyle: Styles.primaryText12,
+                        unselectedLabelStyle: Styles.primaryText12,
                         onTap: (index) async {
                           InjectionUtils.getBloc<LandingBloc>().add(
                               LandingNavigationEvent(
@@ -158,13 +153,9 @@ class _LandingViewState extends State<LandingView> {
                         items: NavbarType.visibleItems
                             .map(
                               (e) => BottomNavigationBarItem(
-                                icon: AppImage.svg(
-                                  state == e ? e.outlineIcon : e.filledIcon,
-                                  height: Dimens.twentyFour,
-                                  width: Dimens.twentyFour,
-                                  color: state == NavbarType.home
-                                      ? AppColors.white
-                                      : null,
+                                icon: _NavBarIcon(
+                                  asset: state == e ? e.filledIcon : e.outlineIcon,
+                                  isSelected: state == e,
                                 ),
                                 label: e.label,
                               ),
@@ -178,5 +169,31 @@ class _LandingViewState extends State<LandingView> {
             ),
           );
         },
+      );
+}
+
+/// Bottom-nav SVGs are drawn edge-to-edge; scale them down so they are not clipped.
+class _NavBarIcon extends StatelessWidget {
+  const _NavBarIcon({
+    required this.asset,
+    required this.isSelected,
+  });
+
+  final String asset;
+  final bool isSelected;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        width: Dimens.twentySix,
+        height: Dimens.twentySix,
+        child: Center(
+          child: AppImage.svg(
+            asset,
+            height: Dimens.twenty,
+            width: Dimens.twenty,
+            fit: BoxFit.scaleDown,
+            color: isSelected ? AppColors.black : AppColors.primaryTextColor,
+          ),
+        ),
       );
 }

@@ -438,7 +438,7 @@ class _Svg extends StatelessWidget {
         path,
         height: height,
         width: width,
-        fit: fit ?? BoxFit.cover,
+        fit: fit ?? BoxFit.contain,
         colorFilter: color != null
             ? ColorFilter.mode(
                 color!,

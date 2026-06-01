@@ -115,7 +115,10 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
   Widget build(BuildContext context) {
     final feedUi = widget.reelsConfig.postConfig.postFeedUIConfig;
     final showHeader = feedUi?.showHeader ?? true;
-    final itemGap = (feedUi?.postSpacing ?? 0).clamp(0.0, double.infinity);
+    final usePostDividers = feedUi?.showPostDividers ?? false;
+    final itemGap = usePostDividers
+        ? 0.0
+        : (feedUi?.postSpacing ?? 0).clamp(0.0, double.infinity);
     final topInset = showHeader
         ? MediaQuery.paddingOf(context).top + IsrDimens.fiftySix
         : MediaQuery.paddingOf(context).top;
@@ -161,8 +164,16 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
             parent: ClampingScrollPhysics(),
           ),
           itemCount: widget.reelsDataList.length,
-          separatorBuilder: (context, index) =>
-              itemGap > 0 ? SizedBox(height: itemGap) : const SizedBox.shrink(),
+          separatorBuilder: (context, index) {
+            if (usePostDividers) {
+              return Divider(
+                height: IsrDimens.one,
+                thickness: IsrDimens.one,
+                color: feedUi?.dividerColor ?? const Color(0xFFEFEFEF),
+              );
+            }
+            return itemGap > 0 ? SizedBox(height: itemGap) : const SizedBox.shrink();
+          },
           itemBuilder: (context, index) {
             final reelsData = widget.reelsDataList[index];
             return ClipRect(

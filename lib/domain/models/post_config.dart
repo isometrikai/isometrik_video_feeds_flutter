@@ -68,6 +68,15 @@ class PostFeedActionBuildContext {
   final PostSectionType postSectionType;
 }
 
+/// Post card layout for [FeedLayoutType.postFeed].
+enum PostFeedCardStyle {
+  /// Profile row and follow button overlaid on media with a top gradient.
+  overlayHeader,
+
+  /// Classic feed: header above media, carousel dots under media, compact follow chip.
+  instagram,
+}
+
 /// UI tokens for the scrollable post-card feed layout.
 class PostFeedUIConfig {
   const PostFeedUIConfig({
@@ -88,6 +97,15 @@ class PostFeedUIConfig {
     this.showHeader = true,
     this.defaultVideoMuted = true,
     this.enableVideoTapControls = true,
+    this.cardStyle = PostFeedCardStyle.overlayHeader,
+    this.showActionCounts = false,
+    this.showPostTimestamp = false,
+    this.showPostDividers = false,
+    this.headerSubtitle,
+    this.videoMediaAspectRatio = 3 / 4,
+    this.imageMediaAspectRatio = 3 / 4,
+    this.actionIconGapCompact = 10,
+    this.actionIconGapWithCount = 16,
   });
 
   /// Header title for [FeedLayoutType.postFeed]. Falls back to the active tab title when null or empty.
@@ -125,6 +143,34 @@ class PostFeedUIConfig {
 
   /// When true, tap toggles play/pause and a mute control is shown on video.
   final bool enableVideoTapControls;
+
+  /// [PostFeedCardStyle.instagram] places the user row above media (Instagram-style).
+  final PostFeedCardStyle cardStyle;
+
+  /// Shows like/comment counts beside action icons (common with [PostFeedCardStyle.instagram]).
+  final bool showActionCounts;
+
+  /// Shows relative publish time under the caption (e.g. "2 days ago").
+  final bool showPostTimestamp;
+
+  /// Thin dividers between posts instead of only [postSpacing] gaps.
+  final bool showPostDividers;
+
+  /// Optional subtitle under the username in the post header (e.g. "Suggested for you").
+  final String? headerSubtitle;
+
+  /// Aspect ratio (width / height) for video media in [PostFeedCardStyle.instagram] (default 3:4).
+  final double videoMediaAspectRatio;
+
+  /// Aspect ratio (width / height) for image media in [PostFeedCardStyle.instagram] (default 3:4).
+  /// Taller than 1:1 so portrait photos are not heavily cropped like a square frame.
+  final double imageMediaAspectRatio;
+
+  /// Horizontal gap between action icons when neither adjacent action shows a count.
+  final double actionIconGapCompact;
+
+  /// Horizontal gap between action icons when at least one adjacent action shows a count.
+  final double actionIconGapWithCount;
 }
 
 

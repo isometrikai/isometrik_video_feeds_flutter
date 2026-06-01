@@ -77,16 +77,28 @@ void _configureReelsSdk() {
     postConfig: const isr.PostConfig(
       // Use FeedLayoutType.reels for full-screen tabs, or
       // FeedLayoutType.postFeed for scrollable post cards.
-      feedLayoutType: isr.FeedLayoutType.reels,
+      feedLayoutType: isr.FeedLayoutType.postFeed,
       autoMoveToNextMedia: true,
       autoMoveToNextPost: true,
-      postFeedUIConfig: isr.PostFeedUIConfig(
-        title: 'Feed',
+      postFeedUIConfig: const isr.PostFeedUIConfig(
+        cardStyle: isr.PostFeedCardStyle.instagram,
+        showHeader: false,
+        showActionCounts: true,
+        showPostTimestamp: true,
+        showPostDividers: true,
         backgroundColor: Colors.white,
         headerTextColor: Color(0xFF262626),
         secondaryTextColor: Color(0xFF8E8E8E),
-        mediaFrameHeight: 375,
-        postSpacing: 16,
+        actionIconColor: Color(0xFF262626),
+        // 3:4 portrait frame — slightly taller than 4:5 for less cropping on portrait photos.
+        imageMediaAspectRatio: 3 / 4,
+        videoMediaAspectRatio: 3 / 4,
+        postSpacing: 0,
+        showCarouselPageBadge: true,
+        showCarouselDots: true,
+        // Icon-only row (like Instagram): tighter gaps. Counts widen gaps automatically.
+        actionIconGapCompact: 10,
+        actionIconGapWithCount: 16,
         // actionWidget: (reelsData, actionContext) => YourCustomActionRow(...),
       ),
     ),
@@ -110,7 +122,8 @@ void _configureReelsSdk() {
         scaffoldBackgroundColor: Colors.white, // Background color
         appBarColor: Colors.white, // App bar background
         brightness: Brightness.light, // Light or dark theme
-        splashColor: const Color(0xFF006CD8).withValues(alpha: 0.5), // Splash effect color
+        splashColor: const Color(0xFF006CD8)
+            .withValues(alpha: 0.5), // Splash effect color
       ),
 
       // Toast Configuration
@@ -212,14 +225,22 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => MultiBlocProvider(
         providers: [
-          BlocProvider(create: (context) => InjectionUtils.getBloc<SplashBloc>()),
-          BlocProvider(create: (context) => InjectionUtils.getBloc<LandingBloc>()),
+          BlocProvider(
+              create: (context) => InjectionUtils.getBloc<SplashBloc>()),
+          BlocProvider(
+              create: (context) => InjectionUtils.getBloc<LandingBloc>()),
           BlocProvider(create: (context) => InjectionUtils.getBloc<AuthBloc>()),
           BlocProvider(create: (context) => InjectionUtils.getBloc<HomeBloc>()),
-          BlocProvider(create: (context) => InjectionUtils.getBloc<NavItemCubit>()),
-          BlocProvider(create: (context) => InjectionUtils.getBloc<ProfileBloc>()),
-          BlocProvider(create: (context) => InjectionUtils.getBloc<UploadProgressCubit>()),
-          BlocProvider(create: (context) => InjectionUtils.getBloc<CommentActionCubit>()),
+          BlocProvider(
+              create: (context) => InjectionUtils.getBloc<NavItemCubit>()),
+          BlocProvider(
+              create: (context) => InjectionUtils.getBloc<ProfileBloc>()),
+          BlocProvider(
+              create: (context) =>
+                  InjectionUtils.getBloc<UploadProgressCubit>()),
+          BlocProvider(
+              create: (context) =>
+                  InjectionUtils.getBloc<CommentActionCubit>()),
           ...isr.IsrVideoReelConfig.getIsmSingletonBlocProviders(),
         ],
         child: ScreenUtilInit(

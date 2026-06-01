@@ -61,7 +61,80 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
 
   PostFeedUIConfig get _feedUi => _postConfig.postFeedUIConfig ?? const PostFeedUIConfig();
 
-  double get _postFeedActionIconSize => _actionIconConfig?.iconSize ?? IsrDimens.twenty;
+  bool get _isInstagramStyle => _feedUi.cardStyle == PostFeedCardStyle.instagram;
+
+  bool get _showActionCounts => _feedUi.showActionCounts || _isInstagramStyle;
+
+  static const Color _instagramLikeColor = Color(0xFFED4956);
+
+  double get _postFeedActionIconSize =>
+      _actionIconConfig?.iconSize ?? (_isInstagramStyle ? IsrDimens.twentyFour : IsrDimens.twenty);
+
+  bool _isVideoMedia(MediaMetaData media) => media.mediaType != _kPictureType;
+
+  /// Gap between two action groups; widens when either side shows a count label.
+  double _gapBetweenActions({
+    required bool previousShowsCount,
+    required bool nextShowsCount,
+  }) {
+    if (!_showActionCounts || (!previousShowsCount && !nextShowsCount)) {
+      return _feedUi.actionIconGapCompact;
+    }
+    if (previousShowsCount && nextShowsCount) {
+      return _feedUi.actionIconGapWithCount;
+    }
+    return (_feedUi.actionIconGapCompact + _feedUi.actionIconGapWithCount) / 2;
+  }
+
+  Widget _buildActionIconRow(List<({Widget widget, bool showsCount})> segments) {
+    if (segments.isEmpty) return const SizedBox.shrink();
+
+    final children = <Widget>[segments.first.widget];
+    for (var i = 1; i < segments.length; i++) {
+      children.add(
+        SizedBox(
+          width: _gapBetweenActions(
+            previousShowsCount: segments[i - 1].showsCount,
+            nextShowsCount: segments[i].showsCount,
+          ),
+        ),
+      );
+      children.add(segments[i].widget);
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: children,
+    );
+  }
+
+  bool _showHeaderAboveMedia(int mediaIndex) {
+    if (!_isInstagramStyle) return false;
+    final mediaList = _reel.mediaMetaDataList;
+    if (mediaList.isEmpty) return false;
+    final index = mediaIndex.clamp(0, mediaList.length - 1);
+    return !_isVideoMedia(mediaList[index]);
+  }
+
+  bool _showMediaOverlayHeader(int mediaIndex) {
+    if (!_isInstagramStyle) return true;
+    final mediaList = _reel.mediaMetaDataList;
+    if (mediaList.isEmpty) return false;
+    final index = mediaIndex.clamp(0, mediaList.length - 1);
+    return _isVideoMedia(mediaList[index]);
+  }
+
+  double _mediaAspectRatioForIndex(int mediaIndex) {
+    if (!_isInstagramStyle) return _feedUi.mediaAspectRatio;
+    final mediaList = _reel.mediaMetaDataList;
+    if (mediaList.isEmpty) return _feedUi.mediaAspectRatio;
+    final index = mediaIndex.clamp(0, mediaList.length - 1);
+    if (_isVideoMedia(mediaList[index])) {
+      return _feedUi.videoMediaAspectRatio;
+    }
+    return _feedUi.imageMediaAspectRatio;
+  }
 
   ReelsData get _reel => widget.reelsData;
 
@@ -104,26 +177,65 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   TextStyle get _mediaOverlayNameStyle =>
       _textStyleConfig?.userNameStyle ?? IsrStyles.white14.copyWith(fontWeight: FontWeight.w600);
 
-  @override
-  Widget build(BuildContext context) => ColoredBox(
-        color: _feedUi.backgroundColor,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildMediaSection(context),
-            _buildActionsSection(context),
-            _buildEngagementSection(context),
-          ],
-        ),
+  TextStyle get _headerUserNameStyle =>
+      _textStyleConfig?.userNameStyle ??
+      IsrStyles.primaryText14.copyWith(
+        fontWeight: FontWeight.w600,
+        color: _feedUi.headerTextColor,
       );
 
-  Widget _buildMediaSection(BuildContext context) {
+  String? get _postTimestampLabel {
+    final raw = _reel.createOn?.trim();
+    if (raw.isStringEmptyOrNull == true) return null;
+    try {
+      final relative = Utility.formatPublishedTimeAgo(DateTime.parse(raw!).toLocal());
+      return relative.isEmpty ? null : relative;
+    } catch (_) {
+      return raw;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isInstagramStyle) {
+      return ValueListenableBuilder<int>(
+        valueListenable: _mediaPageIndex,
+        builder: (context, pageIndex, _) => _buildCardBody(context, pageIndex),
+      );
+    }
+    return _buildCardBody(context, 0);
+  }
+
+  Widget _buildCardBody(BuildContext context, int mediaIndex) {
+    final mediaCount = _reel.mediaMetaDataList.length;
+    final showDotsBelowMedia = _isInstagramStyle &&
+        _feedUi.showCarouselDots &&
+        mediaCount > 1 &&
+        _showHeaderAboveMedia(mediaIndex);
+
+    return ColoredBox(
+      color: _feedUi.backgroundColor,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (_showHeaderAboveMedia(mediaIndex)) _buildPostHeaderAboveMedia(context),
+          _buildMediaSection(context, mediaIndex),
+          if (showDotsBelowMedia) _buildCarouselDotsBelowMedia(context, mediaCount),
+          _buildActionsSection(context),
+          _buildEngagementSection(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMediaSection(BuildContext context, int mediaIndex) {
     final mediaList = _reel.mediaMetaDataList;
     final fixedHeight = _feedUi.mediaFrameHeight;
     final fixedWidth = _feedUi.mediaFrameWidth;
     if (mediaList.isEmpty) {
       return _wrapMediaFrame(
+        mediaIndex: mediaIndex,
         fixedWidth: fixedWidth,
         fixedHeight: fixedHeight,
         child: ColoredBox(color: _feedUi.dividerColor),
@@ -145,7 +257,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
           )
         else
           _buildMediaItem(mediaList.first, 0),
-        _buildMediaTopOverlay(context),
+        if (_showMediaOverlayHeader(mediaIndex)) _buildMediaTopOverlay(context),
         if (_feedUi.showCarouselPageBadge && mediaList.length > 1)
           Positioned(
             top: IsrDimens.twelve,
@@ -172,6 +284,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     );
 
     return _wrapMediaFrame(
+      mediaIndex: mediaIndex,
       fixedWidth: fixedWidth,
       fixedHeight: fixedHeight,
       child: stack,
@@ -180,15 +293,17 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
 
   Widget _wrapMediaFrame({
     required Widget child,
+    required int mediaIndex,
     double? fixedWidth,
     double? fixedHeight,
   }) {
     final hasFixedWidth = fixedWidth != null && fixedWidth > 0;
     final hasFixedHeight = fixedHeight != null && fixedHeight > 0;
+    final aspectRatio = _mediaAspectRatioForIndex(mediaIndex);
 
     if (!hasFixedWidth && !hasFixedHeight) {
       return ClipRect(
-        child: AspectRatio(aspectRatio: _feedUi.mediaAspectRatio, child: child),
+        child: AspectRatio(aspectRatio: aspectRatio, child: child),
       );
     }
 
@@ -221,7 +336,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         thumbnailUrl: media.thumbnailUrl,
         videoCacheManager: _videoCacheManager,
         isMuted: VideoMuteController.isMuted,
-        aspectRatio: _feedUi.mediaAspectRatio,
+        aspectRatio: _mediaAspectRatioForIndex(index),
         videoFitOverride: BoxFit.cover,
         logIndex: '${widget.logIndex}-$index',
         isParentVisible: () => widget.isPostVisible,
@@ -300,6 +415,118 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     );
   }
 
+  Widget _buildPostHeaderAboveMedia(BuildContext context) => Padding(
+        padding: IsrDimens.edgeInsetsSymmetric(
+          horizontal: IsrDimens.twelve,
+          vertical: IsrDimens.ten,
+        ),
+        child: Row(
+          children: [
+            if (_reel.postSetting?.isProfilePicVisible == true) ...[
+              _buildHeaderProfileAvatar(),
+              IsrDimens.boxWidth(IsrDimens.ten),
+            ],
+            Expanded(child: _buildHeaderUserColumn()),
+            if (!_isViewerPostAuthor) ...[
+              IsrDimens.boxWidth(IsrDimens.eight),
+              _buildFollowButton(instagramChipStyle: true),
+            ],
+            if (_reel.postSetting?.isMoreButtonVisible == true) ...[
+              IsrDimens.boxWidth(IsrDimens.four),
+              _buildHeaderMoreButton(),
+            ],
+          ],
+        ),
+      );
+
+  Widget _buildHeaderProfileAvatar() {
+    final size = _userProfileConfig?.profileImageSize ?? IsrDimens.thirtyTwo;
+    return TapHandler(
+      borderRadius: size / 2,
+      onTap: () => widget.onTapUserProfile?.call(),
+      child: ClipOval(
+        child: AppImage.network(
+          _reel.profilePhoto ?? '',
+          width: size,
+          height: size,
+          isProfileImage: true,
+          textColor:
+              _userProfileConfig?.profileImagePlaceholderColor ?? _feedUi.secondaryTextColor,
+          name: '${_reel.firstName ?? ''} ${_reel.lastName ?? ''}',
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeaderUserColumn() => TapHandler(
+        onTap: () => widget.onTapUserProfile?.call(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    _reel.userName ?? '',
+                    style: _headerUserNameStyle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (_reel.isVerifiedUser == true) ...[
+                  IsrDimens.boxWidth(IsrDimens.four),
+                  AppImage.svg(
+                    AssetConstants.icVerifiedIcon,
+                    width: IsrDimens.fourteen,
+                    height: IsrDimens.fourteen,
+                  ),
+                ],
+              ],
+            ),
+            if (_feedUi.headerSubtitle?.isNotEmpty == true) ...[
+              IsrDimens.boxHeight(IsrDimens.two),
+              Text(
+                _feedUi.headerSubtitle!,
+                style: IsrStyles.primaryText12.copyWith(
+                  color: _feedUi.secondaryTextColor,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ] else if (_locationLabel != null) ...[
+              IsrDimens.boxHeight(IsrDimens.two),
+              Text(
+                _locationLabel!,
+                style: IsrStyles.primaryText12.copyWith(
+                  color: _feedUi.secondaryTextColor,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ],
+        ),
+      );
+
+  Widget _buildHeaderMoreButton() => GestureDetector(
+        onTap: widget.onPressMoreButton,
+        child: AppImage.svg(
+          _actionIconConfig?.moreIcon ?? AssetConstants.icMoreIcon,
+          width: _postFeedActionIconSize,
+          height: _postFeedActionIconSize,
+          color: _feedUi.actionIconColor,
+        ),
+      );
+
+  Widget _buildCarouselDotsBelowMedia(BuildContext context, int mediaCount) => Padding(
+        padding: IsrDimens.edgeInsets(
+          top: IsrDimens.eight,
+          bottom: IsrDimens.four,
+        ),
+        child: _buildCarouselDots(context, mediaCount),
+      );
+
   Widget _buildMediaTopOverlay(BuildContext context) => Positioned(
         top: 0,
         left: 0,
@@ -331,7 +558,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
                 Expanded(child: _buildMediaUserTitle()),
                 if (!_isViewerPostAuthor) ...[
                   IsrDimens.boxWidth(IsrDimens.eight),
-                  _buildFollowButton(),
+                  _buildFollowButton(instagramChipStyle: false),
                 ],
                 if (_reel.postSetting?.isMoreButtonVisible == true) ...[
                   IsrDimens.boxWidth(IsrDimens.eight),
@@ -402,7 +629,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         ),
       );
 
-  Widget _buildFollowButton() {
+  Widget _buildFollowButton({required bool instagramChipStyle}) {
     final timelineUser =
         _reel.postData is TimeLineData ? (_reel.postData as TimeLineData).user : null;
     return FollowActionWidget(
@@ -437,6 +664,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
           return _buildFollowChip(
             label: IsrTranslationFile.requested,
             filled: false,
+            instagramChipStyle: instagramChipStyle,
             onTap: () => onTap(
               reelData: _reel,
               postSectionType: widget.postSectionType,
@@ -460,6 +688,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
           return _buildFollowChip(
             label: showRequest ? IsrTranslationFile.request : IsrTranslationFile.follow,
             filled: true,
+            instagramChipStyle: instagramChipStyle,
             onTap: () => onTap(
               reelData: _reel,
               postSectionType: widget.postSectionType,
@@ -474,6 +703,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
           return _buildFollowChip(
             label: IsrTranslationFile.following,
             filled: false,
+            instagramChipStyle: instagramChipStyle,
             onTap: () => onTap(reelData: _reel),
           );
         }
@@ -487,21 +717,36 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     required String label,
     required bool filled,
     required VoidCallback onTap,
+    required bool instagramChipStyle,
   }) {
     final height = _followButtonConfig?.followButtonHeight ?? IsrDimens.twentyEight;
+    final instagramFilledDecoration = BoxDecoration(
+      color: const Color(0xFFEFEFEF),
+      borderRadius: BorderRadius.circular(IsrDimens.eight),
+    );
+    final instagramOutlinedDecoration = BoxDecoration(
+      color: const Color(0xFFEFEFEF),
+      borderRadius: BorderRadius.circular(IsrDimens.eight),
+      border: Border.all(color: const Color(0xFFDBDBDB)),
+    );
+
     return Container(
       height: height,
       decoration: filled
-          ? (_followButtonConfig?.followButtonDecoration ??
-              BoxDecoration(
-                color: Theme.of(context).primaryColor,
-                borderRadius: BorderRadius.circular(IsrDimens.eight),
-              ))
-          : (_followButtonConfig?.followingButtonDecoration ??
-              BoxDecoration(
-                borderRadius: BorderRadius.circular(IsrDimens.eight),
-                border: Border.all(color: IsrColors.white, width: IsrDimens.one),
-              )),
+          ? (instagramChipStyle
+              ? instagramFilledDecoration
+              : (_followButtonConfig?.followButtonDecoration ??
+                  BoxDecoration(
+                    color: Theme.of(context).primaryColor,
+                    borderRadius: BorderRadius.circular(IsrDimens.eight),
+                  )))
+          : (instagramChipStyle
+              ? instagramOutlinedDecoration
+              : (_followButtonConfig?.followingButtonDecoration ??
+                  BoxDecoration(
+                    borderRadius: BorderRadius.circular(IsrDimens.eight),
+                    border: Border.all(color: IsrColors.white, width: IsrDimens.one),
+                  ))),
       child: MaterialButton(
         onPressed: onTap,
         elevation: 0,
@@ -517,10 +762,20 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         child: Text(
           label,
           style: filled
-              ? (_textStyleConfig?.followButtonTextStyle ??
-                  IsrStyles.white12.copyWith(fontWeight: FontWeight.w600))
-              : (_textStyleConfig?.followingButtonTextStyle ??
-                  IsrStyles.white12.copyWith(fontWeight: FontWeight.w600)),
+              ? (instagramChipStyle
+                  ? IsrStyles.primaryText12.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: _feedUi.headerTextColor,
+                    )
+                  : (_textStyleConfig?.followButtonTextStyle ??
+                      IsrStyles.white12.copyWith(fontWeight: FontWeight.w600)))
+              : (instagramChipStyle
+                  ? IsrStyles.primaryText12.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: _feedUi.headerTextColor,
+                    )
+                  : (_textStyleConfig?.followingButtonTextStyle ??
+                      IsrStyles.white12.copyWith(fontWeight: FontWeight.w600))),
         ),
       ),
     );
@@ -613,12 +868,13 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
 
   Widget _buildDefaultActionBar(BuildContext context) {
     final mediaCount = _reel.mediaMetaDataList.length;
-    final showDots = _feedUi.showCarouselDots && mediaCount > 1;
+    final showDotsInBar =
+        !_isInstagramStyle && _feedUi.showCarouselDots && mediaCount > 1;
 
     return Padding(
       padding: IsrDimens.edgeInsetsSymmetric(
         horizontal: IsrDimens.twelve,
-        vertical: IsrDimens.eight,
+        vertical: _isInstagramStyle ? IsrDimens.six : IsrDimens.eight,
       ),
       child: Stack(
         alignment: Alignment.center,
@@ -633,8 +889,11 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
                   postId: _reel.postId ?? '',
                   builder: (isLoading, isSaved, onTap) => _iconAction(
                     icon: isSaved
-                        ? (_actionIconConfig?.saveIconSelected ?? AssetConstants.icPostSaveIcon)
-                        : (_actionIconConfig?.saveIconUnselected ?? AssetConstants.icPostSaveIcon),
+                        ? (_actionIconConfig?.saveIconSelected ??
+                            AssetConstants.icPostSaveIconSelected)
+                        : (_actionIconConfig?.saveIconUnselected ??
+                            AssetConstants.icPostSaveIcon),
+                    applyThemeColor: !isSaved,
                     onTap: () => onTap(
                       reelData: _reel,
                       postSectionType: widget.postSectionType,
@@ -648,7 +907,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
                 SizedBox(width: _postFeedActionIconSize),
             ],
           ),
-          if (showDots)
+          if (showDotsInBar)
             IgnorePointer(
               child: _buildCarouselDots(context, mediaCount),
             ),
@@ -658,18 +917,28 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   }
 
   Widget _buildLeftActionIcons() {
-    final icons = <Widget>[];
+    if (_reel.postSetting?.isLikeButtonVisible != true) {
+      return _buildLeftActionIconsWithoutLike();
+    }
 
-    if (_reel.postSetting?.isLikeButtonVisible == true) {
-      icons.add(
-        LikeActionWidget(
-          postId: _reel.postId ?? '',
-          builder: (isLoading, isLiked, likeCount, onTap) {
-            final liked = isLiked == true;
-            return _iconAction(
+    return LikeActionWidget(
+      postId: _reel.postId ?? '',
+      builder: (isLoading, isLiked, likeCount, onTap) {
+        final liked = isLiked == true;
+        final count = likeCount > 0 ? likeCount : (_reel.likesCount ?? 0);
+        final likeCountLabel =
+            _showActionCounts && count > 0 ? Utility.formatEngagementCount(count) : null;
+
+        final segments = <({Widget widget, bool showsCount})>[
+          (
+            widget: _iconAction(
               icon: liked
-                  ? (_actionIconConfig?.likeIconSelected ?? AssetConstants.icPostLikeIcon)
+                  ? (_actionIconConfig?.likeIconSelected ??
+                      AssetConstants.icPostLikeIconSelected)
                   : (_actionIconConfig?.likeIconUnselected ?? AssetConstants.icPostLikeIcon),
+              applyThemeColor: !liked,
+              iconColor: liked ? _instagramLikeColor : _feedUi.actionIconColor,
+              countLabel: likeCountLabel,
               onTap: () => onTap(
                 reelData: _reel,
                 postSectionType: widget.postSectionType,
@@ -677,34 +946,50 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
                     ? () => widget.onPressLikeButton!(_reel, liked)
                     : null,
               ),
-            );
-          },
-        ),
-      );
-    }
+            ),
+            showsCount: likeCountLabel != null,
+          ),
+          ..._commentAndShareSegments(),
+        ];
+
+        return _buildActionIconRow(segments);
+      },
+    );
+  }
+
+  List<({Widget widget, bool showsCount})> _commentAndShareSegments() {
+    final segments = <({Widget widget, bool showsCount})>[];
 
     if (_reel.postSetting?.isCommentButtonVisible == true) {
-      if (icons.isNotEmpty) icons.add(IsrDimens.boxWidth(IsrDimens.twelve));
-      icons.add(
-        _iconAction(
+      final commentCount = _reel.commentCount ?? 0;
+      final commentCountLabel = _showActionCounts && commentCount > 0
+          ? Utility.formatEngagementCount(commentCount)
+          : null;
+      segments.add((
+        widget: _iconAction(
           icon: _actionIconConfig?.commentIcon ?? AssetConstants.icPostCommentIcon,
+          countLabel: commentCountLabel,
           onTap: () => widget.onTapComment?.call(),
         ),
-      );
+        showsCount: commentCountLabel != null,
+      ));
     }
 
     if (_reel.postSetting?.isShareButtonVisible == true) {
-      if (icons.isNotEmpty) icons.add(IsrDimens.boxWidth(IsrDimens.twelve));
-      icons.add(
-        _iconAction(
+      segments.add((
+        widget: _iconAction(
           icon: _actionIconConfig?.shareIcon ?? AssetConstants.icPostShareIcon,
           onTap: () => widget.onTapShare?.call(),
         ),
-      );
+        showsCount: false,
+      ));
     }
 
-    return Row(mainAxisSize: MainAxisSize.min, children: icons);
+    return segments;
   }
+
+  Widget _buildLeftActionIconsWithoutLike() =>
+      _buildActionIconRow(_commentAndShareSegments());
 
   Widget _buildCarouselDots(BuildContext context, int mediaCount) => ValueListenableBuilder<int>(
         valueListenable: _mediaPageIndex,
@@ -714,42 +999,83 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
           children: List.generate(
             mediaCount,
             (i) => Container(
-              width: IsrDimens.six,
-              height: IsrDimens.six,
+              width: _isInstagramStyle ? IsrDimens.five : IsrDimens.six,
+              height: _isInstagramStyle ? IsrDimens.five : IsrDimens.six,
               margin: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.two),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: i == page
-                    ? Theme.of(context).primaryColor
-                    : _feedUi.secondaryTextColor.withValues(alpha: 0.4),
+                    ? (_isInstagramStyle
+                        ? const Color(0xFF0095F6)
+                        : Theme.of(context).primaryColor)
+                    : _feedUi.secondaryTextColor.withValues(alpha: 0.35),
               ),
             ),
           ),
         ),
       );
 
-  Widget _iconAction({required String icon, required VoidCallback onTap}) => GestureDetector(
+  Widget _iconAction({
+    required String icon,
+    required VoidCallback onTap,
+    String? countLabel,
+    Color? iconColor,
+    bool applyThemeColor = true,
+  }) =>
+      GestureDetector(
         onTap: onTap,
-        child: AppImage.svg(
-          icon,
-          width: _postFeedActionIconSize,
-          height: _postFeedActionIconSize,
-          color: _feedUi.actionIconColor,
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: IsrDimens.edgeInsetsSymmetric(vertical: IsrDimens.two),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: _postFeedActionIconSize,
+                height: _postFeedActionIconSize,
+                child: AppImage.svg(
+                  icon,
+                  width: _postFeedActionIconSize,
+                  height: _postFeedActionIconSize,
+                  fit: BoxFit.contain,
+                  color: applyThemeColor ? (iconColor ?? _feedUi.actionIconColor) : null,
+                ),
+              ),
+              if (countLabel != null) ...[
+                IsrDimens.boxWidth(IsrDimens.six),
+                Text(
+                  countLabel,
+                  style: _textStyleConfig?.actionLabelStyle ??
+                      IsrStyles.primaryText14.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: _feedUi.headerTextColor,
+                        height: 1.1,
+                      ),
+                ),
+              ],
+            ],
+          ),
         ),
       );
 
   Widget _buildEngagementSection(BuildContext context) {
     final likes = _reel.likesCount ?? 0;
     final description = _reel.description?.trim() ?? '';
+    final showLikesLine = likes > 0 && !_showActionCounts;
+    final showTimestamp =
+        (_feedUi.showPostTimestamp || _isInstagramStyle) && _postTimestampLabel != null;
+    final showLocation = _locationLabel != null && !_isInstagramStyle;
+
     return Padding(
       padding: IsrDimens.edgeInsetsSymmetric(
         horizontal: IsrDimens.twelve,
-        vertical: IsrDimens.eight,
+        vertical: _isInstagramStyle ? IsrDimens.six : IsrDimens.eight,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (likes > 0)
+          if (showLikesLine)
             Text(
               likes == 1 ? '1 like' : '$likes likes',
               style: IsrStyles.primaryText14.copyWith(
@@ -757,8 +1083,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
                 color: _feedUi.headerTextColor,
               ),
             ),
-          if (_locationLabel != null) ...[
-            if (likes > 0) IsrDimens.boxHeight(IsrDimens.four),
+          if (showLocation) ...[
+            if (showLikesLine) IsrDimens.boxHeight(IsrDimens.four),
             Text(
               _locationLabel!,
               style: _textStyleConfig?.locationStyle ??
@@ -770,9 +1096,9 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
             ),
           ],
           if (description.isNotEmpty) ...[
-            if (likes > 0 || _locationLabel != null) IsrDimens.boxHeight(IsrDimens.six),
+            if (showLikesLine || showLocation) IsrDimens.boxHeight(IsrDimens.six),
             RichText(
-              maxLines: 3,
+              maxLines: _isInstagramStyle ? 2 : 3,
               overflow: TextOverflow.ellipsis,
               text: TextSpan(
                 children: [
@@ -794,6 +1120,17 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
               ),
             ),
           ],
+          if (showTimestamp) ...[
+            if (showLikesLine || showLocation || description.isNotEmpty)
+              IsrDimens.boxHeight(IsrDimens.four),
+            Text(
+              _postTimestampLabel!,
+              style: IsrStyles.primaryText12.copyWith(
+                color: _feedUi.secondaryTextColor,
+              ),
+            ),
+          ],
+          if (_isInstagramStyle) IsrDimens.boxHeight(IsrDimens.four),
         ],
       ),
     );
