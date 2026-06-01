@@ -5,6 +5,7 @@ export 'date_time_util.dart';
 export 'debouncer.dart';
 export 'enums.dart';
 export 'extensions.dart';
+export 'http_header_string.dart';
 export 'isr_size_config.dart';
 export 'media_compressor.dart';
 export 'media_util.dart';
