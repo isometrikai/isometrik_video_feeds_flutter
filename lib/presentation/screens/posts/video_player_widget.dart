@@ -31,6 +31,7 @@ class VideoPlayerWidget extends StatefulWidget {
     this.isPreloaded = false,
     this.logIndex,
     this.isParentVisible,
+    this.visibilityManagedByParent = false,
   });
 
   final String mediaUrl;
@@ -45,6 +46,9 @@ class VideoPlayerWidget extends StatefulWidget {
   final bool isPreloaded;
   final Function(Duration totalDuration, Duration curentDuration)? videoProgressCallBack;
   final bool Function()? isParentVisible;
+
+  /// When true, defers to [isParentVisible] only (no nested [VisibilityDetector]).
+  final bool visibilityManagedByParent;
   final String? logIndex;
 
   @override
@@ -87,13 +91,23 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   bool _isVideoCompleted = false;
 
+  bool get _parentWantsVisible => widget.isParentVisible?.call() ?? true;
+
+  bool get _effectiveVisible =>
+      widget.visibilityManagedByParent ? _parentWantsVisible : _isVisible;
+
   @override
   void initState() {
     super.initState();
-    _isVisible = !widget.isPreloaded;
-    debugPrint('⚠️ state VideoPlayerWidget: (${widget.logIndex}) initState - isPreloaded: ${widget.isPreloaded}');
-    // OPTIMIZATION: Configure VisibilityDetector for faster updates
-    if (!_isVisibilityConfigured) {
+    _isVisible = widget.visibilityManagedByParent
+        ? _parentWantsVisible
+        : !widget.isPreloaded;
+    if (kDebugMode) {
+      debugPrint(
+        '⚠️ state VideoPlayerWidget: (${widget.logIndex}) initState - isPreloaded: ${widget.isPreloaded}',
+      );
+    }
+    if (!widget.visibilityManagedByParent && !_isVisibilityConfigured) {
       _configureVisibilityDetector();
       _isVisibilityConfigured = true;
     }
@@ -126,7 +140,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       return;
     }
 
-    final shouldPlay = _isVisible && !_isManuallyPaused && (widget.isParentVisible?.call() ?? true);
+    final shouldPlay = _effectiveVisible && !_isManuallyPaused;
 
     try {
       if (shouldPlay) {
@@ -162,19 +176,43 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         setState(() {
           _isInitialized = true;
         });
-      } else {
-        // Video is playing, trigger rebuild to update layout if size changed
+      } else if (!_hasValidVideoSize) {
         setState(() {});
       }
+    }
+  }
+
+  void _syncVisibilityFromParent() {
+    if (!widget.visibilityManagedByParent || _isDisposed) return;
+
+    final visible = _parentWantsVisible;
+    if (_isVisible == visible) {
+      _syncPlaybackState();
+      return;
+    }
+
+    _isVisible = visible;
+    widget.onVisibilityChanged(_isVisible);
+    _syncPlaybackState();
+
+    if (_isVisible && !_isInitializing && !_isInitialized) {
+      _initializeVideoPlayer();
     }
   }
 
   /// Periodically check if the controller has become ready (initialized async in cache)
   void _startControllerReadyCheck() {
     _controllerReadyCheckTimer?.cancel();
-    _controllerReadyCheckTimer = Timer.periodic(const Duration(milliseconds: 200), (_) {
+    final interval = widget.visibilityManagedByParent
+        ? const Duration(milliseconds: 400)
+        : const Duration(milliseconds: 200);
+    _controllerReadyCheckTimer = Timer.periodic(interval, (_) {
       if (_isDisposed) {
         _controllerReadyCheckTimer?.cancel();
+        return;
+      }
+
+      if (!_effectiveVisible) {
         return;
       }
 
@@ -462,12 +500,15 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   }
 
   void _handleVisibilityChanged(VisibilityInfo info) {
-    if (_isDisposed) return;
+    if (_isDisposed || widget.visibilityManagedByParent) return;
 
     final wasVisible = _isVisible;
-    // OPTIMIZATION: Lower threshold (0.5) for earlier video start in feeds.
-    _isVisible = info.visibleFraction > 0.5;
-    debugPrint('✅ VideoPlayerWidget: (${widget.logIndex}) _handleVisibilityChanged - _isVisible: $_isVisible, visibilityFraction: ${info.visibleFraction}');
+    _isVisible = info.visibleFraction > 0.55;
+    if (kDebugMode) {
+      debugPrint(
+        '✅ VideoPlayerWidget: (${widget.logIndex}) visibility=${info.visibleFraction}',
+      );
+    }
 
     // Only notify if visibility state actually changed
     if (wasVisible != _isVisible) {
@@ -642,12 +683,13 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     return null;
   }
 
-  // Check initial visibility after first frame
   void _checkInitialVisibility() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-
-      // 🔥 Force visibility recalculation immediately
+      if (widget.visibilityManagedByParent) {
+        _syncVisibilityFromParent();
+        return;
+      }
       VisibilityDetectorController.instance.notifyNow();
     });
   }
@@ -655,7 +697,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   @override
   void didUpdateWidget(VideoPlayerWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    debugPrint('⚠️ state VideoPlayerWidget: (${widget.logIndex}) didUpdateWidget - isPreloaded: ${widget.isPreloaded}');
+
+    if (widget.visibilityManagedByParent) {
+      _syncVisibilityFromParent();
+    }
 
     // Handle mute state changes
     // Note: Don't check _isDisposed here - didUpdateWidget is only called when widget is active
@@ -680,7 +725,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   @override
   void dispose() {
-    debugPrint('⚠️ state VideoPlayerWidget: (${widget.logIndex}) dispose');
+    if (kDebugMode) {
+      debugPrint('⚠️ state VideoPlayerWidget: (${widget.logIndex}) dispose');
+    }
     _isDisposed = true;
     _stopStuckVideoDetection();
     _controllerReadyCheckTimer?.cancel();
@@ -688,18 +735,14 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) => VisibilityDetector(
-        key: Key('video_player_${widget.mediaUrl}'),
-        onVisibilityChanged: _handleVisibilityChanged,
-        child: BlocListener<SocialPostBloc, SocialPostState>(
+  Widget _buildPlayerBody(BuildContext context) => BlocListener<SocialPostBloc, SocialPostState>(
           listenWhen: (previous, current) => current is PlayPauseVideoState,
           listener: (context, state) {
             if (_isDisposed) return; // Safety check: Widget is disposed
 
             if (state is PlayPauseVideoState) {
               if (state.play) {
-                if (_isVisible && mounted && _isManuallyPaused) {
+                if (_effectiveVisible && mounted && _isManuallyPaused) {
                   play();
                 }
               } else {
@@ -793,7 +836,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                       children: [
                         _buildThumbnailWidget(context),
                         // Show loading indicator when initializing
-                        if (_isInitializing || (_isVisible && !_isInitialized))
+                        if (_isInitializing ||
+                            (_effectiveVisible && !_isInitialized))
                           const Center(
                             child: CircularProgressIndicator(
                               color: Colors.white,
@@ -807,8 +851,20 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
               ],
             ),
           ),
-        ),
-      );
+        );
+
+  @override
+  Widget build(BuildContext context) {
+    final body = _buildPlayerBody(context);
+    if (widget.visibilityManagedByParent) {
+      return body;
+    }
+    return VisibilityDetector(
+      key: Key('video_player_${widget.mediaUrl}'),
+      onVisibilityChanged: _handleVisibilityChanged,
+      child: body,
+    );
+  }
 
   Widget _buildThumbnailWidget(BuildContext context) {
     final fit = widget.videoFitOverride ?? BoxFit.contain;

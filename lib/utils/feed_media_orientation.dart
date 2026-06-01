@@ -112,11 +112,21 @@ abstract final class FeedMediaOrientation {
       final size = await _fetchImageDimensions(key);
       if (size == null) return;
 
+      final orientation = _orientationFromSize(size.$1, size.$2);
+      final previous = _cache[key];
       _cache[key] = (
-        orientation: _orientationFromSize(size.$1, size.$2),
+        orientation: orientation,
         width: size.$1,
         height: size.$2,
       );
+
+      if (previous != null &&
+          previous.orientation == orientation &&
+          previous.width == size.$1 &&
+          previous.height == size.$2) {
+        return;
+      }
+
       final revision = _revisionByUrl[key];
       if (revision != null) {
         revision.value++;

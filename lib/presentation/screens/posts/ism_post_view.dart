@@ -95,6 +95,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   VoidCallback? _routeEnterValueListener;
   var _initialPostLoadDispatched = false;
   var _tabChangeRequestId = 0;
+  final Set<int> _materializedTabIndices = <int>{};
 
   @override
   void initState() {
@@ -132,6 +133,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     if (_currentIndex >= _tabDataModelList.length) {
       _currentIndex = 0;
     }
+    _materializedTabIndices.add(_currentIndex);
     if (!IsrVideoReelConfig.isSdkInitialize) {
       Utility.showToastMessage('sdk not initialized');
       return;
@@ -170,6 +172,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       if (_currentIndex != newIndex) {
         final requestId = ++_tabChangeRequestId;
         _currentIndex = newIndex;
+        _materializedTabIndices.add(newIndex);
         final tabData = _tabDataModelList[newIndex];
         if (tabData.tabDataModel.postSectionType.isUserDependent) {
           var isUserLoggedIn = await _socialPostBloc.isUserLoggedIn;
@@ -406,17 +409,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                         ? 0
                         : _tabDataModelList.length,
                     initialIndex: _currentIndex,
-                    child: TabBarView(
-                      controller: _postTabController,
-                      physics: const NeverScrollableScrollPhysics(),
-                      children: _tabDataModelList
-                          .map(
-                            (tab) => _reelsBodyReady
-                                ? _buildTabView(tab)
-                                : _buildTransitionPlaceholder(),
-                          )
-                          .toList(),
-                    ),
+                    child: _buildLazyTabStack(),
                   ),
                 ),
                 if (_tabDataModelList.length > 1) ...[
@@ -527,13 +520,31 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     );
   }
 
+  Widget _buildLazyTabStack() {
+    _materializedTabIndices.add(_currentIndex);
+    final indices = _materializedTabIndices.toList()..sort();
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        for (final index in indices)
+          Offstage(
+            offstage: index != _currentIndex,
+            child: TickerMode(
+              enabled: index == _currentIndex,
+              child: _reelsBodyReady
+                  ? _buildTabView(_tabDataModelList[index])
+                  : _buildTransitionPlaceholder(),
+            ),
+          ),
+      ],
+    );
+  }
+
   Widget _buildTabView(TabStateModel tab) => VisibilityDetector(
         key: Key(
             'reels_tab_${tab.tabDataModel.title}_${tab.tabDataModel.postSectionType.name}_${tab.tabDataModel.tagValue}_${tab.tabDataModel.userId}_${tab.tabDataModel.postId}_'),
         onVisibilityChanged: (VisibilityInfo info) {
-          final isVisible = info.visibleFraction >= 1.0; // Fully visible
-          tab.isVisible = isVisible;
-          debugPrint('reels_tab: isVisible: ${tab.isVisible}');
+          tab.isVisible = info.visibleFraction >= 0.85;
         },
         child: BlocBuilder<SocialPostBloc, SocialPostState>(
             buildWhen: (previousState, currentState) =>

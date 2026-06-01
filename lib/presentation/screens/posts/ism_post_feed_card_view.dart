@@ -3,6 +3,7 @@ import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/video_player_widget.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/like_action_widget.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_media_carousel.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
@@ -259,7 +260,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       fit: StackFit.expand,
       children: [
         if (mediaList.length > 1)
-          PageView.builder(
+          PostFeedMediaCarousel(
             key: ValueKey('post_feed_media_${_reel.postId}'),
             controller: _mediaPageController,
             onPageChanged: (index) => _mediaPageIndex.value = index,
@@ -379,10 +380,9 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         aspectRatio: _fixedCardMediaAspectRatioForUrl(_firstImageMediaUrl),
         videoFitOverride: BoxFit.cover,
         logIndex: '${widget.logIndex}-$index',
+        visibilityManagedByParent: true,
         isParentVisible: () => widget.isPostVisible,
-        onVisibilityChanged: (_) {
-          if (mounted) setState(() {});
-        },
+        onVisibilityChanged: (_) {},
       ),
     );
 
