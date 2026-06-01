@@ -130,10 +130,15 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     final mediaList = _reel.mediaMetaDataList;
     if (mediaList.isEmpty) return _feedUi.mediaAspectRatio;
     final index = mediaIndex.clamp(0, mediaList.length - 1);
-    if (_isVideoMedia(mediaList[index])) {
+    final media = mediaList[index];
+    if (_isVideoMedia(media)) {
       return _feedUi.videoMediaAspectRatio;
     }
-    return _feedUi.imageMediaAspectRatio;
+    return FeedMediaOrientation.aspectRatioForImageUrl(
+      media.mediaUrl,
+      portraitAspectRatio: _feedUi.imageMediaAspectRatio,
+      landscapeAspectRatio: _feedUi.landscapeMediaAspectRatio,
+    );
   }
 
   ReelsData get _reel => widget.reelsData;

@@ -104,6 +104,7 @@ class PostFeedUIConfig {
     this.headerSubtitle,
     this.videoMediaAspectRatio = 3 / 4,
     this.imageMediaAspectRatio = 3 / 4,
+    this.landscapeMediaAspectRatio = 1.91,
     this.actionIconGapCompact = 10,
     this.actionIconGapWithCount = 16,
   });
@@ -165,6 +166,9 @@ class PostFeedUIConfig {
   /// Aspect ratio (width / height) for image media in [PostFeedCardStyle.instagram] (default 3:4).
   /// Taller than 1:1 so portrait photos are not heavily cropped like a square frame.
   final double imageMediaAspectRatio;
+
+  /// Aspect ratio (width / height) for landscape images (Instagram-style wide frame).
+  final double landscapeMediaAspectRatio;
 
   /// Horizontal gap between action icons when neither adjacent action shows a count.
   final double actionIconGapCompact;

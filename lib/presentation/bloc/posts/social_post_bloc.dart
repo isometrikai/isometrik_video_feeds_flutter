@@ -184,6 +184,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         for (final postTab in tabList) {
           final hasSeededList = postTab.postList.isNotEmpty;
           if (hasSeededList) {
+            unawaited(
+              FeedMediaOrientation.prefetchForPosts(postTab.postList),
+            );
             add(LoadPostsEvent(
               postType: postTab.postSectionType,
               postList: postTab.postList,
@@ -481,6 +484,10 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       ErrorHandler.showAppError(
           appError: apiError, errorViewType: ErrorViewType.snackBar);
     }
+    if (postDataList.isNotEmpty) {
+      unawaited(FeedMediaOrientation.prefetchForPosts(postDataList));
+    }
+
     if (onComplete != null) {
       // When merging (host-cache enabled refresh or seeded mount), hand the
       // caller the FULL merged list so refresh UIs that do

@@ -1024,9 +1024,7 @@ List<MediaMetaData> reelMediaMetaDataFromTimeline(TimeLineData postData) {
         mediaUrl: url,
         thumbnailUrl: url,
         mediaType: isImage ? 0 : 1,
-        durationSeconds: isImage
-            ? AppConstants.defaultImagePostDurationSeconds
-            : AppConstants.defaultImagePostDurationSeconds,
+        durationSeconds: AppConstants.defaultImagePostDurationSeconds,
       );
     }).toList();
   }
@@ -1099,17 +1097,17 @@ MediaMetaData _getMediaMetaData(MediaData mediaData) {
       thumbnailUrl: mediaData.previewUrl ?? '',
       durationSeconds: AppConstants.defaultImagePostDurationSeconds,
     );
-  } else {
-    return MediaMetaData(
-      mediaType: mediaData.mediaType == 'image' ? 0 : 1,
-      mediaUrl: mediaData.url ?? '',
-      thumbnailUrl: mediaData.previewUrl ?? '',
-      durationSeconds: (mediaData.mediaType == 'image'
-              ? AppConstants.defaultImagePostDurationSeconds
-              : mediaData.duration?.toInt()) ??
-          AppConstants.defaultImagePostDurationSeconds,
-    );
   }
+
+  return MediaMetaData(
+    mediaType: mediaData.mediaType == 'image' ? 0 : 1,
+    mediaUrl: mediaData.url ?? '',
+    thumbnailUrl: mediaData.previewUrl ?? '',
+    durationSeconds: (mediaData.mediaType == 'image'
+            ? AppConstants.defaultImagePostDurationSeconds
+            : mediaData.duration?.toInt()) ??
+        AppConstants.defaultImagePostDurationSeconds,
+  );
 }
 
 MentionMetaData _getMentionMetaData(MentionData mentionData) => MentionMetaData(

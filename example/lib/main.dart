@@ -92,6 +92,7 @@ void _configureReelsSdk() {
         actionIconColor: Color(0xFF262626),
         // 3:4 portrait frame — slightly taller than 4:5 for less cropping on portrait photos.
         imageMediaAspectRatio: 3 / 4,
+        landscapeMediaAspectRatio: 1.91,
         videoMediaAspectRatio: 3 / 4,
         postSpacing: 0,
         showCarouselPageBadge: true,

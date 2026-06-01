@@ -65,6 +65,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       widget.postConfig ?? IsrVideoReelConfig.postConfig;
   bool get _isPostFeedLayout =>
       _postConfig.feedLayoutType == FeedLayoutType.postFeed;
+
   TabConfig get _tabConfig => widget.tabConfig ?? IsrVideoReelConfig.tabConfig;
   SocialConfig get _socialConfig => IsrVideoReelConfig.socialConfig;
 
@@ -546,7 +547,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                 )),
       );
 
-  Widget _buildTabBarView(TabStateModel tabState, int index) => PostItemWidget(
+  Widget _buildTabBarView(TabStateModel tabState, int index) {
+    Widget buildPostItem() => PostItemWidget(
         key: ValueKey(_getUniqueKey(tabState.tabDataModel, index)),
         videoCacheManager:
             _loggedInUserId.isNotEmpty ? _videoCacheManager : null,
@@ -583,6 +585,16 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         startingPostIndex: tabState.tabDataModel.startingPostIndex,
         postSectionType: tabState.tabDataModel.postSectionType,
       );
+
+    if (!_isPostFeedLayout ||
+        !FeedMediaOrientation.shouldProbeForCurrentConfig) {
+      return buildPostItem();
+    }
+    return ListenableBuilder(
+      listenable: FeedMediaOrientation.listenable,
+      builder: (context, _) => buildPostItem(),
+    );
+  }
 
   ReelsConfig _getReelsConfig(TabStateModel tabState) => ReelsConfig(
       postConfig: _postConfig,
