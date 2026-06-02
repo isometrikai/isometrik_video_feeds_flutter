@@ -471,8 +471,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Text(
               label ?? '',
               style: Styles.white12.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
+                  fontWeight: FontWeight.w500, decoration: TextDecoration.none),
             ),
           ],
         ],

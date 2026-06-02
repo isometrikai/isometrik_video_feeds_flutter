@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
+// import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart';
@@ -17,12 +17,18 @@ class CameraBottomControls extends StatefulWidget {
     required this.onMediaPicked,
     this.onGalleryClick,
     required this.state,
+    this.dubWithAudioMode = false,
   });
 
   final CameraBloc cameraBloc;
-  final Function(String path, MediaType type) onMediaPicked;
+  final void Function(
+    String path,
+    MediaType type, {
+    bool soundAppliedToVideo,
+  }) onMediaPicked;
   final Future<String?> Function()? onGalleryClick;
   final CameraState state;
+  final bool dubWithAudioMode;
 
   @override
   State<CameraBottomControls> createState() => _CameraBottomControlsState();
@@ -63,7 +69,6 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
           bottom: false,
           child: BlocBuilder<CameraBloc, CameraState>(
             builder: (BuildContext context, CameraState state) {
-              // Show loading state with progress indicator in place of record button
               if (state is CameraBottomLoadingState) {
                 return Container(
                   height: 180.responsiveDimension,
@@ -88,7 +93,6 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
                 );
               }
 
-              // Normal UI
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -235,57 +239,49 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
 
     return Listener(
       onPointerDown: (details) {
-        // Only handle hold gesture for video mode
         if (!isVideoMode || !isControllerReady) return;
-
         if (isSegmentRecording && !_isHoldRecording) return;
 
         _isHolding = true;
         _holdTimer = Timer(const Duration(milliseconds: 300), () {
           if (_isHolding) {
-            setState(() {
-              _isHoldRecording = true;
-            });
+            _isHoldRecording = true;
             widget.cameraBloc.add(CameraStartSegmentRecordingEvent());
+            if (mounted) setState(() {});
           }
         });
       },
       onPointerUp: (details) {
-        // Prevent multiple simultaneous taps
         if (_isProcessingTap) return;
 
-        // Check camera readiness
         if (!isControllerReady) {
           Utility.showToastMessage('Camera not ready');
           return;
         }
 
-        // Handle video mode with hold/tap logic
         if (isVideoMode) {
           _isHolding = false;
           _holdTimer?.cancel();
 
-          if (_isHoldRecording) {
-            setState(() {
-              _isHoldRecording = false;
-            });
+          if (_isHoldRecording || isSegmentRecording) {
+            _isHoldRecording = false;
             widget.cameraBloc.add(CameraStopSegmentRecordingEvent());
-          } else {
-            _handleTap(isRecording, isSegmentRecording, hasRecordedVideo);
+            setState(() {});
+            return;
           }
+
+          _handleTap(isRecording, isSegmentRecording, hasRecordedVideo);
         } else {
-          // Photo mode - just handle tap
           _handleTap(isRecording, isSegmentRecording, hasRecordedVideo);
         }
       },
       onPointerCancel: (details) {
         _isHolding = false;
         _holdTimer?.cancel();
-        if (_isHoldRecording) {
-          setState(() {
-            _isHoldRecording = false;
-          });
+        if (_isHoldRecording || widget.cameraBloc.isSegmentRecording) {
+          _isHoldRecording = false;
           widget.cameraBloc.add(CameraStopSegmentRecordingEvent());
+          if (mounted) setState(() {});
         }
       },
       child: AnimatedBuilder(
@@ -312,11 +308,7 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
                   shape: BoxShape.circle,
                   color: isRecording || isSegmentRecording
                       ? Colors.red
-                      :
-                      // : hasRecordedVideo
-                      //     ? Colors.green
-                      //     :
-                      IsrColors.white,
+                      : IsrColors.white,
                 ),
                 child: hasRecordedVideo && !isRecording && !isSegmentRecording
                     ? Icon(
@@ -335,7 +327,6 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
 
   void _handleTap(
       bool isRecording, bool isSegmentRecording, bool hasRecordedVideo) {
-    // Prevent rapid multiple taps
     if (_isProcessingTap) return;
 
     _isProcessingTap = true;
@@ -360,7 +351,6 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
         }
       }
     } finally {
-      // Reset flag after a short delay to prevent rapid taps
       Future.delayed(const Duration(milliseconds: 500), () {
         if (mounted) {
           _isProcessingTap = false;
@@ -421,73 +411,32 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
         ),
       );
 
-  // Widget _buildDiscardButton() => GestureDetector(
-  //       onTap: () => widget.cameraBloc.add(CameraDiscardRecordingEvent()),
-  //       child: Container(
-  //         padding: IsrDimens.edgeInsetsAll(IsrDimens.twelve),
-  //         decoration: const BoxDecoration(
-  //           color: Colors.black54,
-  //           shape: BoxShape.circle,
-  //         ),
-  //         child: Icon(
-  //           Icons.close,
-  //           color: Colors.red,
-  //           size: IsrDimens.twentyFour,
-  //         ),
-  //       ),
-  //     );
+  bool get _showDurationPicker =>
+      !widget.cameraBloc.isRecording &&
+      !widget.cameraBloc.isSegmentRecording &&
+      widget.cameraBloc.videoSegments.isEmpty;
 
-  // Widget _buildRetakeButton() => GestureDetector(
-  //       onTap: () => widget.cameraBloc.add(CameraDiscardRecordingEvent()),
-  //       child: Container(
-  //         padding: IsrDimens.edgeInsetsAll(IsrDimens.twelve),
-  //         decoration: const BoxDecoration(
-  //           color: Colors.black54,
-  //           shape: BoxShape.circle,
-  //         ),
-  //         child: Icon(
-  //           Icons.refresh,
-  //           color: Colors.white,
-  //           size: IsrDimens.twentyFour,
-  //         ),
-  //       ),
-  //     );
-
-  Widget _buildModeSelection() => Row(
+  Widget _buildModeSelection() {
+    if (widget.dubWithAudioMode) {
+      return Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           Visibility(
-            visible: !widget.cameraBloc.isRecording ||
-                !widget.cameraBloc.isSegmentRecording ||
-                widget.cameraBloc.videoSegments.isEmpty,
+            visible: _showDurationPicker,
             maintainSize: true,
             maintainAnimation: true,
             maintainState: true,
             child: _buildModeButton('Gallery', Icons.photo_library, null),
           ),
           Visibility(
-            visible: !widget.cameraBloc.isRecording ||
-                !widget.cameraBloc.isSegmentRecording ||
-                widget.cameraBloc.videoSegments.isEmpty,
-            maintainSize: true,
-            maintainAnimation: true,
-            maintainState: true,
-            child: _buildModeButton('Photo', Icons.camera_alt, MediaType.photo),
-          ),
-          // _buildModeButton('Video', Icons.videocam, MediaType.video),
-          Visibility(
-            visible: !widget.cameraBloc.isRecording ||
-                !widget.cameraBloc.isSegmentRecording ||
-                widget.cameraBloc.videoSegments.isEmpty,
+            visible: _showDurationPicker,
             maintainSize: true,
             maintainAnimation: true,
             maintainState: true,
             child: _buildDurationButton('15', 'Sec', 15),
           ),
           Visibility(
-            visible: !widget.cameraBloc.isRecording ||
-                !widget.cameraBloc.isSegmentRecording ||
-                widget.cameraBloc.videoSegments.isEmpty,
+            visible: _showDurationPicker,
             maintainSize: true,
             maintainAnimation: true,
             maintainState: true,
@@ -495,6 +444,49 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
           ),
         ],
       );
+    }
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        Visibility(
+          visible: !widget.cameraBloc.isRecording ||
+              !widget.cameraBloc.isSegmentRecording ||
+              widget.cameraBloc.videoSegments.isEmpty,
+          maintainSize: true,
+          maintainAnimation: true,
+          maintainState: true,
+          child: _buildModeButton('Gallery', Icons.photo_library, null),
+        ),
+        Visibility(
+          visible: !widget.cameraBloc.isRecording ||
+              !widget.cameraBloc.isSegmentRecording ||
+              widget.cameraBloc.videoSegments.isEmpty,
+          maintainSize: true,
+          maintainAnimation: true,
+          maintainState: true,
+          child: _buildModeButton('Photo', Icons.camera_alt, MediaType.photo),
+        ),
+        Visibility(
+          visible: !widget.cameraBloc.isRecording ||
+              !widget.cameraBloc.isSegmentRecording ||
+              widget.cameraBloc.videoSegments.isEmpty,
+          maintainSize: true,
+          maintainAnimation: true,
+          maintainState: true,
+          child: _buildDurationButton('15', 'Sec', 15),
+        ),
+        Visibility(
+          visible: !widget.cameraBloc.isRecording ||
+              !widget.cameraBloc.isSegmentRecording ||
+              widget.cameraBloc.videoSegments.isEmpty,
+          maintainSize: true,
+          maintainAnimation: true,
+          maintainState: true,
+          child: _buildDurationButton('60', 'Sec', 60),
+        ),
+      ],
+    );
+  }
 
   Widget _buildModeButton(String label, IconData icon, MediaType? mediaType) {
     final isSelected = mediaType == null
@@ -538,13 +530,26 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
   }
 
   void _galleryClick() async {
+    if (widget.dubWithAudioMode) {
+      await _pickDubVideoFromGallery();
+      return;
+    }
     if (widget.onGalleryClick != null) {
       try {
         final path = await widget.onGalleryClick!();
         if (path != null && Utility.isLocalUrl(path)) {
           final mediaType = await _getMediaType(File(path));
-          widget.cameraBloc.add(CameraSetExternalMediaEvent(
-              mediaPath: path, mediaType: mediaType));
+          if (mediaType == MediaType.video) {
+            final applied = await _finishGalleryVideoWithSound(path);
+            if (!mounted) return;
+            widget.onMediaPicked(
+              applied.videoPath,
+              mediaType,
+              soundAppliedToVideo: applied.soundApplied,
+            );
+            return;
+          }
+          if (!mounted) return;
           widget.onMediaPicked(path, mediaType);
         }
       } catch (e) {
@@ -555,7 +560,6 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
     }
   }
 
-  /// Determines if the file is a video or image based on file extension
   Future<MediaType> _getMediaType(File file) async {
     final filePath = file.path;
     if (filePath.isVideoFile) {
@@ -563,7 +567,6 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
     } else if (filePath.isImageFile) {
       return MediaType.photo;
     } else {
-      // Default to image if extension is not recognized
       return MediaType.photo;
     }
   }
@@ -573,7 +576,6 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
         widget.cameraBloc.selectedMediaType == MediaType.video;
     return GestureDetector(
       onTap: () {
-        // Auto-switch to video mode when duration is selected
         if (widget.cameraBloc.selectedMediaType != MediaType.video) {
           widget.cameraBloc
               .add(CameraSetMediaTypeEvent(mediaType: MediaType.video));
@@ -641,7 +643,7 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
                 children: [
                   SizedBox(width: IsrDimens.twentyFour),
                   TapHandler(
-                    onTap: () => context.pop(),
+                    onTap: () => Navigator.pop(context),
                     child: AppImage.svg(
                       AssetConstants.icClose,
                       width: IsrDimens.twentyFour,
@@ -662,7 +664,7 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
                     icon: AssetConstants.icMediaPhotos,
                     title: 'Choose image from gallery',
                     onTap: () {
-                      context.pop();
+                      Navigator.pop(context);
                       _pickImageFromGallery();
                     },
                   ),
@@ -672,7 +674,7 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
                     icon: AssetConstants.icMediaVideos,
                     title: 'Choose video from gallery',
                     onTap: () {
-                      context.pop();
+                      Navigator.pop(context);
                       _pickVideoFromGallery();
                     },
                   ),
@@ -744,20 +746,109 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
     }
   }
 
-  Future<void> _pickVideoFromGallery() async {
+  /// Trim to 15s/60s reel length, then mux selected sound (same as dub gallery).
+  Future<GallerySoundApplyResult> _finishGalleryVideoWithSound(
+    String videoPath,
+  ) async {
+    if (widget.cameraBloc.selectedMediaType != MediaType.video) {
+      widget.cameraBloc
+          .add(CameraSetMediaTypeEvent(mediaType: MediaType.video));
+    }
+
+    // Camera recording muxes sound even when 15s/60s is not selected; gallery
+    // should behave the same — default to a 60s cap instead of blocking.
+    final selectedSec = widget.cameraBloc.selectedDuration;
+    final maxSec = (selectedSec == 15 || selectedSec == 60) ? selectedSec : 60;
+
+    final trimmedPath = await GalleryVideoTrimUtil.trimVideo(
+      context,
+      videoPath: videoPath,
+      maxSeconds: maxSec,
+      outputFilename: 'gallery_sound_trim.mp4',
+      forceTrimUi: widget.cameraBloc.hasMusicSelected,
+    );
+    if (!mounted || trimmedPath == null || trimmedPath.isEmpty) {
+      return GallerySoundApplyResult(
+        videoPath: videoPath,
+        soundApplied: false,
+      );
+    }
+
+    if (!widget.cameraBloc.hasMusicSelected) {
+      return GallerySoundApplyResult(
+        videoPath: trimmedPath,
+        soundApplied: false,
+      );
+    }
+
+    return CameraGallerySoundUtil.applySelectedSoundToVideo(
+      cameraBloc: widget.cameraBloc,
+      videoPath: trimmedPath,
+    );
+  }
+
+  Future<void> _pickDubVideoFromGallery() async {
+    final maxSec = widget.cameraBloc.selectedDuration;
+    if (maxSec != 15 && maxSec != 60) {
+      Utility.showToastMessage('Choose 15 or 60 sec for your dub');
+      return;
+    }
     try {
-      final video = await _imagePicker.pickVideo(
-        source: ImageSource.gallery,
-        maxDuration: const Duration(seconds: 60),
+      widget.cameraBloc.add(CameraFramingMusicRouteObscuredEvent(true));
+      final video = await _imagePicker.pickVideo(source: ImageSource.gallery);
+      if (video == null || !mounted) return;
+
+      final trimmedPath = await GalleryVideoTrimUtil.trimVideo(
+        context,
+        videoPath: video.path,
+        maxSeconds: maxSec,
+        outputFilename: 'dub_gallery_trim.mp4',
+        forceTrimUi: true,
+        useRootNavigator: true,
+      );
+      if (!mounted || trimmedPath == null || trimmedPath.isEmpty) return;
+
+      final applied = await CameraGallerySoundUtil.applySelectedSoundToVideo(
+        cameraBloc: widget.cameraBloc,
+        videoPath: trimmedPath,
+        showLoader: false,
       );
 
-      if (video != null) {
-        widget.cameraBloc.add(CameraSetExternalMediaEvent(
-            mediaPath: video.path, mediaType: MediaType.video));
-        widget.onMediaPicked(video.path, MediaType.video);
-      }
+      if (!mounted) return;
+      widget.onMediaPicked(
+        applied.videoPath,
+        MediaType.video,
+        soundAppliedToVideo: applied.soundApplied,
+      );
     } catch (e) {
       Utility.showToastMessage('Error picking video: $e');
+    } finally {
+      if (mounted) {
+        widget.cameraBloc.add(CameraFramingMusicRouteObscuredEvent(false));
+      }
+    }
+  }
+
+  Future<void> _pickVideoFromGallery() async {
+    try {
+      widget.cameraBloc.add(CameraFramingMusicRouteObscuredEvent(true));
+      final video = await _imagePicker.pickVideo(source: ImageSource.gallery);
+      if (video == null || !mounted) return;
+
+      final applied = await _finishGalleryVideoWithSound(video.path);
+      if (!mounted) return;
+
+      widget.onMediaPicked(
+        applied.videoPath,
+        MediaType.video,
+        soundAppliedToVideo: applied.soundApplied,
+      );
+    } catch (e) {
+      Utility.showToastMessage('Error picking video: $e');
+    } finally {
+      if (mounted) {
+        widget.cameraBloc.add(CameraFramingMusicRouteObscuredEvent(false));
+      }
     }
   }
 }

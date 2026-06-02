@@ -34,4 +34,5 @@ class LocalStorageKeys {
   static String get platform => _k('platform');
   static String get xTenantId => _k('xTenantId');
   static String get xProjectId => _k('xProjectId');
+  static String get viewedStoryIds => _k('viewedStoryIds');
 }

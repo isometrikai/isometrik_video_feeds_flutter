@@ -47,12 +47,13 @@ class CreateCollectionRequestModel {
     String? name,
     bool? isPrivate,
     String? description,
-  }) => CreateCollectionRequestModel(
-    imageUrl: imageUrl ?? this.imageUrl,
-    name: name ?? this.name,
-    isPrivate: isPrivate ?? this.isPrivate,
-    description: description ?? this.description,
-  );
+  }) =>
+      CreateCollectionRequestModel(
+        imageUrl: imageUrl ?? this.imageUrl,
+        name: name ?? this.name,
+        isPrivate: isPrivate ?? this.isPrivate,
+        description: description ?? this.description,
+      );
 }
 
 class EditCollectionRequestModel {
@@ -73,7 +74,7 @@ class EditCollectionRequestModel {
   // Convert object to JSON
   Map<String, dynamic> toJson() => {
         'id': id,
-        'image': image!.isEmpty ? null : image,
+        'image_url': image!.isEmpty ? null : image,
         'name': name,
         'isPrivate': isPrivate,
         'description': description,

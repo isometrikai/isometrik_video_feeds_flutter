@@ -4,6 +4,7 @@ import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/models/models.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart'
     as ms;
 import 'package:ism_video_reel_player/utils/navigator/highlight_open_coordinator.dart';
@@ -16,6 +17,27 @@ final GlobalKey<NavigatorState> ismNavigatorKey = GlobalKey<NavigatorState>();
 /// Simple navigator helper for SDK internal navigation
 class IsrAppNavigator {
   IsrAppNavigator._();
+
+  static const Set<String> _createPostFlowRouteNames = {
+    IsrRouteNames.createPostView,
+    IsrRouteNames.cameraView,
+    IsrRouteNames.mediaEditView,
+    IsrRouteNames.postAttributeView,
+    IsrRouteNames.videoTrimView,
+  };
+
+  static void dismissCreatePostFlow(BuildContext context) {
+    final nav = Navigator.of(context, rootNavigator: true);
+    if (!nav.canPop()) {
+      IsrVideoReelConfig.resumeFeedPlayback();
+      return;
+    }
+    nav.popUntil((route) {
+      final name = route.settings.name;
+      return name == null || !_createPostFlowRouteNames.contains(name);
+    });
+    IsrVideoReelConfig.resumeFeedPlayback();
+  }
 
   /// Navigate to post listing screen
   /// ✅ Wraps the destination with necessary BLoC providers
@@ -204,9 +226,17 @@ class IsrAppNavigator {
     }
   }
 
+  static Future<void> goToDubWithAudioCapture(
+    BuildContext context, {
+    required CreatePostLaunchConfig launchConfig,
+  }) async {
+    await DubWithAudioCaptureCoordinator.start(context, launchConfig);
+  }
+
   static Future<String?> goToCreatePostView(
     BuildContext context, {
     TransitionType? transitionType,
+    MediaEditSoundItem? initialSound,
   }) async {
     final page = MultiBlocProvider(
       providers: [
@@ -220,12 +250,16 @@ class IsrAppNavigator {
           value: IsmInjectionUtils.getBloc<UploadProgressCubit>(),
         ),
       ],
-      child: const CreatePostMultimediaWrapper(),
+      child: CreatePostMultimediaWrapper(initialSound: initialSound),
     );
 
     final result =
         await Navigator.of(context, rootNavigator: true).push<String>(
-      _buildRoute(page: page, transitionType: transitionType),
+      _buildRoute(
+        page: page,
+        transitionType: transitionType,
+        routeName: IsrRouteNames.createPostView,
+      ),
     );
     return result;
   }
@@ -237,14 +271,14 @@ class IsrAppNavigator {
     await StoryCreateFlow.open(context);
   }
 
-  static Future<void> presentStoryViewer(
+  static Future<List<StoryGroup>?> presentStoryViewer(
     BuildContext context, {
     required List<StoryGroup> groups,
     required int initialGroupIndex,
     String? highlightId,
     TransitionType transitionType = TransitionType.fade,
   }) async {
-    if (groups.isEmpty) return;
+    if (groups.isEmpty) return null;
     final cubit = _storyCubitFrom(context);
     final page = BlocProvider<StoryCubit>.value(
       value: cubit,
@@ -254,7 +288,7 @@ class IsrAppNavigator {
         highlightId: highlightId,
       ),
     );
-    await Navigator.of(context, rootNavigator: true).push<void>(
+    return Navigator.of(context, rootNavigator: true).push<List<StoryGroup>>(
       _buildRoute(page: page, transitionType: transitionType),
     );
   }
@@ -300,6 +334,7 @@ class IsrAppNavigator {
     required String highlightId,
     String? userId,
     List<String>? storyIds,
+    StoryHighlightData? highlightPreview,
     TransitionType transitionType = TransitionType.fade,
   }) async {
     final cubit = _storyCubitFrom(context);
@@ -310,15 +345,80 @@ class IsrAppNavigator {
       storyIds: storyIds,
     );
     final group = resolved.group;
-    if (group == null) return resolved.result;
-    await presentStoryViewer(
+    if (group != null) {
+      await presentStoryViewer(
+        context,
+        groups: [group],
+        initialGroupIndex: 0,
+        highlightId: resolved.result.highlightId,
+        transitionType: transitionType,
+      );
+      return resolved.result;
+    }
+    if (!context.mounted) return resolved.result;
+    await _presentEmptyHighlight(
       context,
-      groups: [group],
-      initialGroupIndex: 0,
+      cubit: cubit,
       highlightId: resolved.result.highlightId,
-      transitionType: transitionType,
+      userId: userId,
+      highlight: resolved.highlight ?? highlightPreview,
     );
     return resolved.result;
+  }
+
+  /// Opens a profile highlight (viewer or empty state with add-stories).
+  static Future<HighlightOpenResult> openHighlightFromProfile(
+    BuildContext context, {
+    required StoryHighlightData highlight,
+  }) {
+    final id = highlight.id.trim();
+    if (id.isEmpty) {
+      return Future.value(
+        const HighlightOpenResult(
+          opened: false,
+          reason: 'Highlight id is required.',
+          resolvedStoryCount: 0,
+          highlightId: '',
+        ),
+      );
+    }
+    final storyIds = <String>{
+      ...highlight.embeddedStories
+          .map((s) => s.id.trim())
+          .where((e) => e.isNotEmpty),
+      ...highlight.items
+          .map((e) => e.storyId.trim())
+          .where((e) => e.isNotEmpty),
+    }.toList();
+    final userId = highlight.userId.trim();
+    return presentHighlightViewer(
+      context,
+      highlightId: id,
+      userId: userId.isNotEmpty ? userId : null,
+      storyIds: storyIds,
+      highlightPreview: highlight,
+    );
+  }
+
+  static Future<void> _presentEmptyHighlight(
+    BuildContext context, {
+    required StoryCubit cubit,
+    required String highlightId,
+    String? userId,
+    StoryHighlightData? highlight,
+  }) async {
+    await Navigator.of(context, rootNavigator: true).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => BlocProvider<StoryCubit>.value(
+          value: cubit,
+          child: EmptyHighlightScreen(
+            highlightId: highlightId,
+            userId: userId,
+            initialHighlight: highlight,
+          ),
+        ),
+      ),
+    );
   }
 
   static Future<HighlightOpenResult> openHighlightById(
@@ -387,6 +487,8 @@ class IsrAppNavigator {
   static Future<String?> goToCreatePostAttributionView(
     BuildContext context, {
     List<MediaData>? newMediaDataList,
+    MediaEditSoundItem? selectedSound,
+    bool dismissEntireFlowOnClose = false,
     TransitionType transitionType = TransitionType.bottomToTop,
   }) async {
     final page = MultiBlocProvider(
@@ -398,13 +500,19 @@ class IsrAppNavigator {
       ],
       child: PostAttributeView(
         newMediaDataList: newMediaDataList,
+        selectedSound: selectedSound,
         isEditMode: false,
+        dismissEntireFlowOnClose: dismissEntireFlowOnClose,
       ),
     );
 
     final result =
         await Navigator.of(context, rootNavigator: true).push<String>(
-      _buildRoute(page: page, transitionType: transitionType),
+      _buildRoute(
+        page: page,
+        transitionType: transitionType,
+        routeName: IsrRouteNames.postAttributeView,
+      ),
     );
     return result;
   }
@@ -466,7 +574,7 @@ class IsrAppNavigator {
     ms.MediaSelectionConfig? mediaSelectionConfig,
     List<ms.MediaAssetData>? selectedMedia,
     Future<bool> Function(List<ms.MediaAssetData> selectedMedia)? onComplete,
-    Future<String?> Function(String? mediaType)? onCaptureMedia,
+    Future<dynamic> Function(String? mediaType)? onCaptureMedia,
     TransitionType? transitionType,
   }) async {
     final page = MultiBlocProvider(
@@ -540,14 +648,19 @@ class IsrAppNavigator {
   static Route<T> _buildRoute<T>({
     required Widget page,
     TransitionType? transitionType,
+    String? routeName,
   }) {
+    final settings =
+        routeName != null ? RouteSettings(name: routeName) : null;
     if (transitionType == null) {
       return MaterialPageRoute<T>(
         builder: (context) => page,
+        settings: settings,
       );
     }
 
     return PageRouteBuilder<T>(
+      settings: settings,
       pageBuilder: (context, animation, secondaryAnimation) => page,
       transitionsBuilder: (context, animation, secondaryAnimation, child) =>
           _buildTransition(

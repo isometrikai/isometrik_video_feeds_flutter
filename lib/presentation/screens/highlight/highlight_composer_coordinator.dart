@@ -100,28 +100,22 @@ class HighlightComposerCoordinator {
     final detail = await cubit.getStoryHighlightById(chosen.id);
     if (!context.mounted) return;
 
-    final mergedFallback = <String>{
-      ...chosen.items
-          .map((e) => e.storyId.trim())
-          .where((e) => e.isNotEmpty),
-      ...storyIds,
-    }.toList();
-
-    final storyIdsForViewer = (detail?.embeddedStories.isNotEmpty ?? false)
-        ? detail!.embeddedStories.map((s) => s.id.trim()).where((e) => e.isNotEmpty).toList()
-        : (detail?.items.isNotEmpty ?? false)
-            ? detail!.items.map((e) => e.storyId.trim()).where((e) => e.isNotEmpty).toList()
-            : mergedFallback;
+    final storyIdsForViewer = _storyIdsForViewer(
+      detail: detail,
+      highlight: chosen,
+      addedIds: storyIds,
+    );
 
     final viewerUserId = (detail?.userId.trim().isNotEmpty ?? false)
         ? detail!.userId.trim()
-        : '';
+        : chosen.userId.trim();
 
     await IsrAppNavigator.presentHighlightViewer(
       context,
       highlightId: chosen.id,
       userId: viewerUserId.isNotEmpty ? viewerUserId : null,
       storyIds: storyIdsForViewer,
+      highlightPreview: detail ?? chosen,
     );
   }
 
@@ -168,6 +162,93 @@ class HighlightComposerCoordinator {
       context,
       stories: allItems,
     );
+  }
+
+  /// Adds archived stories to an existing highlight (profile empty state / +).
+  static Future<bool> addStoriesToHighlight({
+    required BuildContext context,
+    required StoryCubit cubit,
+    required StoryHighlightData highlight,
+    bool openViewerAfterAdd = false,
+  }) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final highlightId = highlight.id.trim();
+    if (highlightId.isEmpty) return false;
+
+    final selected = await _resolveSelectedStories(
+      context: context,
+      cubit: cubit,
+      messenger: messenger,
+    );
+    if (!context.mounted || selected == null || selected.isEmpty) return false;
+
+    final storyIds = selected
+        .map((s) => s.id.trim())
+        .where((id) => id.isNotEmpty)
+        .toList();
+    if (storyIds.isEmpty) return false;
+
+    final ok = await cubit.addStoriesToHighlight(
+      highlightId: highlightId,
+      storyIds: storyIds,
+    );
+    if (!context.mounted) return false;
+    if (!ok) {
+      messenger?.showSnackBar(
+        const SnackBar(content: Text('Could not add stories to highlight')),
+      );
+      return false;
+    }
+
+    messenger?.showSnackBar(
+      const SnackBar(content: Text('Added to highlight.')),
+    );
+
+    if (!openViewerAfterAdd) return true;
+
+    final detail = await cubit.getStoryHighlightById(highlightId);
+    if (!context.mounted) return true;
+
+    final storyIdsForViewer = _storyIdsForViewer(
+      detail: detail,
+      highlight: highlight,
+      addedIds: storyIds,
+    );
+
+    final viewerUserId = (detail?.userId.trim().isNotEmpty ?? false)
+        ? detail!.userId.trim()
+        : highlight.userId.trim();
+
+    await IsrAppNavigator.presentHighlightViewer(
+      context,
+      highlightId: highlightId,
+      userId: viewerUserId.isNotEmpty ? viewerUserId : null,
+      storyIds: storyIdsForViewer,
+    );
+    return true;
+  }
+
+  static List<String> _storyIdsForViewer({
+    required StoryHighlightData? detail,
+    required StoryHighlightData highlight,
+    required List<String> addedIds,
+  }) {
+    if (detail?.embeddedStories.isNotEmpty ?? false) {
+      return detail!.embeddedStories
+          .map((s) => s.id.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+    }
+    if (detail?.items.isNotEmpty ?? false) {
+      return detail!.items
+          .map((e) => e.storyId.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+    }
+    return <String>{
+      ...highlight.items.map((e) => e.storyId.trim()).where((e) => e.isNotEmpty),
+      ...addedIds,
+    }.toList();
   }
 
   static Future<T?> _pushWithCubit<T>(

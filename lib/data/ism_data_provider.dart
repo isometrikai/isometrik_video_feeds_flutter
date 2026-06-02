@@ -680,9 +680,19 @@ class IsmDataProvider {
   Future<void> onStoryHighlightTap({
     required Map<String, dynamic> highlightMap,
   }) async {
+    final highlight = StoryHighlightData.fromMap(highlightMap);
     final callback =
         IsrVideoReelConfig.storyConfig?.storyCallbackConfig.onHighlightTap;
-    if (callback == null) return;
-    await callback(StoryHighlightData.fromMap(highlightMap));
+    if (callback != null) {
+      await callback(highlight);
+      return;
+    }
+    final context = IsrVideoReelConfig.getBuildContext?.call() ??
+        IsrVideoReelConfig.buildContext;
+    if (context == null) return;
+    await IsrAppNavigator.openHighlightFromProfile(
+      context,
+      highlight: highlight,
+    );
   }
 }

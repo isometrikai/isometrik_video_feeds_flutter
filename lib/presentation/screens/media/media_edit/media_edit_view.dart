@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:io';
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
@@ -19,6 +21,7 @@ class MediaEditView extends StatefulWidget {
     required this.mediaDataList,
     required this.mediaEditConfig,
     this.onComplete,
+    this.onDismissEntireFlow,
     this.onSelectSound,
     this.addMoreMedia,
     this.pickCoverPic,
@@ -27,6 +30,7 @@ class MediaEditView extends StatefulWidget {
   final List<MediaEditItem> mediaDataList;
   final MediaEditConfig mediaEditConfig;
   final Future<bool> Function(List<MediaEditItem> editededMedia)? onComplete;
+  final VoidCallback? onDismissEntireFlow;
   final Future<MediaEditSoundItem?> Function(MediaEditSoundItem? sound)?
       onSelectSound;
   final Future<List<MediaEditItem>?> Function(
@@ -39,6 +43,8 @@ class MediaEditView extends StatefulWidget {
 
 class _MediaEditViewState extends State<MediaEditView> {
   late final MediaEditBloc _bloc;
+  AudioPlayer? _imageSoundPlayer;
+  String? _imageSoundPreviewUrl;
 
   @override
   void initState() {
@@ -49,8 +55,44 @@ class _MediaEditViewState extends State<MediaEditView> {
 
   @override
   void dispose() {
+    unawaited(_stopImageSoundPreview());
     _bloc.close();
     super.dispose();
+  }
+
+  Future<void> _stopImageSoundPreview() async {
+    _imageSoundPreviewUrl = null;
+    final player = _imageSoundPlayer;
+    _imageSoundPlayer = null;
+    if (player != null) {
+      try {
+        await player.stop();
+        await player.dispose();
+      } catch (_) {}
+    }
+  }
+
+  Future<void> _syncImageSoundPreview(MediaEditItem item) async {
+    if (item.mediaType != EditMediaType.image) {
+      await _stopImageSoundPreview();
+      return;
+    }
+    final url = item.sound?.soundUrl?.trim() ?? '';
+    if (url.isEmpty) {
+      await _stopImageSoundPreview();
+      return;
+    }
+    if (_imageSoundPreviewUrl == url) return;
+    await _stopImageSoundPreview();
+    _imageSoundPreviewUrl = url;
+    try {
+      final player = AudioPlayer();
+      _imageSoundPlayer = player;
+      await player.setReleaseMode(ReleaseMode.loop);
+      await player.play(UrlSource(url));
+    } catch (_) {
+      await _stopImageSoundPreview();
+    }
   }
 
   void _removeCurrentMedia(MediaEditLoadedState state) {
@@ -242,7 +284,11 @@ class _MediaEditViewState extends State<MediaEditView> {
             if (state is MediaEditCompletedState) {
               _handleMediaEditComplete(state.mediaEditItems);
             } else if (state is MediaEditEmptyState) {
-              Navigator.pop(context);
+              if (widget.onDismissEntireFlow != null) {
+                widget.onDismissEntireFlow!();
+              } else {
+                Navigator.pop(context);
+              }
             }
           },
           child: Scaffold(
@@ -262,15 +308,32 @@ class _MediaEditViewState extends State<MediaEditView> {
                   } else if (state is MediaEditEmptyState) {
                     return const Center(child: Text('No media selected'));
                   } else if (state is MediaEditLoadedState) {
-                    return Column(
+                    final previewItem =
+                        state.mediaEditItems[state.currentIndex];
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) unawaited(_syncImageSoundPreview(previewItem));
+                    });
+                    return Stack(
                       children: [
-                        // Media Preview Section with integrated controls
-                        Expanded(
-                          child: _buildMediaPreviewWithControls(state),
+                        Column(
+                          children: [
+                            Expanded(
+                              child: _buildMediaPreviewWithControls(state),
+                            ),
+                            _buildBottomSection(state),
+                          ],
                         ),
-
-                        // Bottom section with media list and Next button
-                        _buildBottomSection(state),
+                        if (state.isApplyingSound)
+                          Positioned.fill(
+                            child: ColoredBox(
+                              color: Colors.black.withValues(alpha: 0.45),
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  color: widget.mediaEditConfig.primaryColor,
+                                ),
+                              ),
+                            ),
+                          ),
                       ],
                     );
                   }
@@ -348,7 +411,13 @@ class _MediaEditViewState extends State<MediaEditView> {
               children: [
                 _buildAppBarIcon(
                   icon: Icons.close,
-                  onTap: () => Navigator.pop(context),
+                  onTap: () {
+                    if (widget.onDismissEntireFlow != null) {
+                      widget.onDismissEntireFlow!();
+                    } else {
+                      Navigator.pop(context);
+                    }
+                  },
                 ),
               ],
             ),
@@ -447,8 +516,14 @@ class _MediaEditViewState extends State<MediaEditView> {
         // ),
       ];
     } else {
-      // Image buttons: Text, Filter, Edit
+      // Image buttons: Audio (when enabled), Text, Filter, Edit
       buttons = [
+        if (widget.onSelectSound != null)
+          _buildSectionButton(
+            icon: Icons.audiotrack,
+            label: 'Audio',
+            onTap: () => _navigateToAudioEditor(state),
+          ),
         _buildSectionButton(
           icon: Icons.text_fields,
           label: 'Text',

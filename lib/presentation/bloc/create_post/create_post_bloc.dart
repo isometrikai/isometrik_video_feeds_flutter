@@ -4,7 +4,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:get_thumbnail_video/video_thumbnail.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ism_video_reel_player/core/api_result.dart';
 import 'package:ism_video_reel_player/core/errors/app_error.dart';
@@ -12,6 +11,8 @@ import 'package:ism_video_reel_player/core/errors/error_handler.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/res/res.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
+import 'package:ism_video_reel_player/utils/post_sound_util.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
@@ -228,6 +229,9 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   FutureOr<void> _initState(
       CreatePostInitialEvent event, Emitter<CreatePostState> emit) async {
     _resetData();
+    if (event.selectedSound != null) {
+      _postAttributeClass.selectedSound = event.selectedSound;
+    }
     final postAttribution =
         await preparePostAttribution(newMediaDataList: event.newMediaDataList);
     emit(PostAttributionUpdatedState(postAttributeClass: postAttribution));
@@ -473,15 +477,12 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       if (mediaType == MediaType.photo) {
         result = await ImagePicker().pickMultiImage(limit: 4);
       } else if (mediaType == MediaType.video) {
-        result = await ImagePicker().pickMultiVideo(
-          limit: 2,
-          maxDuration: const Duration(seconds: 30),
-        );
+        result = await ImagePicker().pickMultiVideo(limit: 2);
       }
 
       if (result.isNotEmpty) {
         for (final file in result) {
-          final path = file.path;
+          var path = file.path;
 
           final isVideo = path.isVideoFile;
           var duration = 0;
@@ -492,6 +493,15 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
           }
           if (isMinResolution) {
             if (isVideo) {
+              if (context.mounted) {
+                final trimmed = await GalleryVideoTrimUtil.trimVideo(
+                  context,
+                  videoPath: path,
+                );
+                if (!context.mounted) continue;
+                if (trimmed == null) continue;
+                path = trimmed;
+              }
               final mediaInfo = await VideoCompress.getMediaInfo(path);
               duration = (mediaInfo.duration ?? 0).toInt();
             }
@@ -521,7 +531,6 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     return pickedMedia;
   }
 
-  // Add this method in _CameraViewState
   Future<MediaInfoClass?> _pickFromFromCamera(
     BuildContext context,
     MediaType mediaType,
@@ -562,7 +571,6 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     return null;
   }
 
-  // Add this method in _CameraViewState
   Future<MediaInfoClass?> _pickFromGallery(BuildContext context,
       MediaType mediaType, MediaSource mediaSource) async {
     final picker = ImagePicker();
@@ -571,10 +579,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       var duration = 0;
 
       if (mediaType == MediaType.video) {
-        file = await picker.pickVideo(
-          source: ImageSource.gallery,
-          maxDuration: const Duration(seconds: 30),
-        );
+        file = await picker.pickVideo(source: ImageSource.gallery);
         final isMinResolution = await file?.path.hasMinResolution();
         if (isMinResolution == false) {
           ErrorHandler.showAppError(
@@ -585,6 +590,15 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
           return null;
         }
         if (file != null) {
+          if (context.mounted) {
+            final trimmed = await GalleryVideoTrimUtil.trimVideo(
+              context,
+              videoPath: file.path,
+            );
+            if (!context.mounted) return null;
+            if (trimmed == null) return null;
+            file = XFile(trimmed);
+          }
           final mediaInfo = await VideoCompress.getMediaInfo(file.path);
           duration = (mediaInfo.duration ?? 0).toInt();
         }
@@ -1835,13 +1849,21 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       );
       newMediaData.fileExtension = _getFileExtension(permanentMediaFile.path);
       if (mediaType == MediaType.video) {
-        final videoThumbnailFile =
-            await _safeCreateVideoThumbnail(permanentMediaFile.path);
-        newMediaData.previewUrl =
-            videoThumbnailFile?.path.isEmptyOrNull == false
-                ? videoThumbnailFile!.path
-                : '';
-        newMediaData.coverFileLocalPath = newMediaData.previewUrl;
+        final persistedCover = await _persistLocalCoverImage(
+          mediaData.coverFileLocalPath ?? mediaData.previewUrl,
+        );
+        if (persistedCover != null) {
+          newMediaData.previewUrl = persistedCover;
+          newMediaData.coverFileLocalPath = persistedCover;
+        } else {
+          final videoThumbnailFile =
+              await _safeCreateVideoThumbnail(permanentMediaFile.path);
+          newMediaData.previewUrl =
+              videoThumbnailFile?.path.isEmptyOrNull == false
+                  ? videoThumbnailFile!.path
+                  : '';
+          newMediaData.coverFileLocalPath = newMediaData.previewUrl;
+        }
         newMediaData.coverFileName =
             _getFileName(newMediaData.previewUrl, 'thumbnail');
         newMediaData.coverFileExtension =
@@ -1915,7 +1937,22 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     _postAttributeClass.mediaDataList = _mediaDataList;
     _postAttributeClass.linkedProducts = linkedProducts;
     _postAttributeClass.createPostRequest = _createPostRequest;
+    _applySelectedSoundToCreatePostRequest(_postAttributeClass.selectedSound);
     return _postAttributeClass;
+  }
+
+  void _applySelectedSoundToCreatePostRequest(MediaEditSoundItem? sound) {
+    if (sound?.soundId == null || sound!.soundId!.isEmpty) return;
+    final videoDuration = _mediaDataList
+        .where((m) => m.mediaType == 'video' || m.postType == PostType.video)
+        .map((m) => m.duration?.toInt())
+        .whereType<int>()
+        .firstOrNull;
+    _createPostRequest.soundId = sound.soundId;
+    _createPostRequest.soundSnapshot = PostSoundUtil.buildSoundSnapshot(
+      sound: sound,
+      videoDurationSeconds: videoDuration,
+    );
   }
 
   /// Creates a permanent copy of media file to prevent system cleanup
@@ -2100,6 +2137,16 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     }
   }
 
+  Future<String?> _persistLocalCoverImage(String? coverPath) async {
+    if (coverPath.isEmptyOrNull || !Utility.isLocalUrl(coverPath!)) {
+      return null;
+    }
+    final file = File(coverPath);
+    if (!await file.exists()) return null;
+    final permanent = await _createPermanentMediaCopy(file, MediaType.photo);
+    return permanent?.path;
+  }
+
   /// Safely creates video thumbnail, handling long filename issues by copying to temp file first
   Future<XFile?> _safeCreateVideoThumbnail(String videoPath) async {
     // First check if the video file exists
@@ -2109,20 +2156,16 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     }
 
     try {
-      // Try creating thumbnail directly first
-      final thumbnailFile = await VideoThumbnail.thumbnailFile(
-        video: videoPath,
-        quality: 50,
+      final thumbPath = await MediaUtil.pickBestVideoThumbnailPath(
+        videoPath: videoPath,
         thumbnailPath: (await getTemporaryDirectory()).path,
+        quality: 50,
       );
-
-      // Check if thumbnail was created successfully
-      if (thumbnailFile.path.isEmpty) {
+      if (thumbPath == null || thumbPath.isEmpty) {
         return null;
       }
 
-      // Always ensure the thumbnail has a safe path for Image.file()
-      final safe = await _ensureSafeThumbnailPath(thumbnailFile);
+      final safe = await _ensureSafeThumbnailPath(XFile(thumbPath));
       return await _finalizeThumbnailForStorage(safe);
     } catch (e) {
       if (e is FileSystemException && e.osError?.errorCode == 63) {
@@ -2142,11 +2185,10 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
           // Copy the original video to temp location
           final tempFile = await videoFile.copy(tempVideoPath);
 
-          // Create thumbnail from temporary video file
-          final thumbnailFile = await VideoThumbnail.thumbnailFile(
-            video: tempFile.path,
-            quality: 50,
+          final thumbPath = await MediaUtil.pickBestVideoThumbnailPath(
+            videoPath: tempFile.path,
             thumbnailPath: tempDir.path,
+            quality: 50,
           );
 
           // Clean up temp video file
@@ -2156,13 +2198,11 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
             debugPrint('Failed to cleanup temp video file: $tempVideoPath');
           }
 
-          // Check if thumbnail was created successfully
-          if (thumbnailFile.path.isEmpty) {
+          if (thumbPath == null || thumbPath.isEmpty) {
             return null;
           }
 
-          // Ensure safe path for the thumbnail
-          final safe = await _ensureSafeThumbnailPath(thumbnailFile);
+          final safe = await _ensureSafeThumbnailPath(XFile(thumbPath));
           return await _finalizeThumbnailForStorage(safe);
         } catch (copyError) {
           debugPrint('Error copying video to temp location: $copyError');
