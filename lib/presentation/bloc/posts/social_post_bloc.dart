@@ -717,9 +717,12 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       emit(LoadingPostComment(postId: event.postId));
     }
     _commentPage = event.isPagination ? _commentPage + 1 : 1;
+    // Do not pass [event.isLoading] to the network layer: Utility.showLoader /
+    // closeProgressDialog use the root navigator and will pop the comments
+    // bottom sheet when the fetch completes (same pattern as comment replies).
     final apiResult = await _getPostCommentUseCase.executeGetPostComment(
       postId: event.postId,
-      isLoading: event.isLoading == true,
+      isLoading: false,
       page: _commentPage,
       pageLimit: 20,
     );
@@ -854,7 +857,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         .also((_) => debugPrint('comment: comment req tag: ${_.toJson()}'));
 
     final apiResult = await _commentUseCase.executeCommentAction(
-      isLoading: event.isLoading ?? true,
+      isLoading: event.isLoading == true,
       commentRequest: commentRequest.toJson(),
     );
 
@@ -971,7 +974,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
 
     // Call API to create comment
     final apiResult = await _commentUseCase.executeCommentAction(
-      isLoading: event.isLoading ?? true,
+      isLoading: event.isLoading == true,
       commentRequest: commentRequest.toJson(),
     );
 
