@@ -729,7 +729,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
                             horizontal: 5.responsiveDimension),
                         child: Center(
                           child: GestureDetector(
-                            onTap: _changeCover,
+                            onTap: widget.isEditMode == true ? null : _changeCover,
                             child: Container(
                               margin: IsrDimens.edgeInsetsAll(
                                   7.responsiveDimension),
@@ -766,34 +766,36 @@ class _PostAttributeViewState extends State<PostAttributeView>
                                                 ?.firstOrNull
                                                 ?.url ??
                                             ''),
-                                        Positioned(
-                                          left: 0,
-                                          right: 0,
-                                          bottom: 0,
-                                          child: Container(
-                                            width: double.infinity,
-                                            height: 28.responsiveDimension,
-                                            color: (_postAttributeConfig
-                                                        ?.mediaPreviewConfig
-                                                        ?.changeCoverOverlayColor ??
-                                                    IsrColors.black)
-                                                .withValues(alpha: 0.3),
-                                            child: Center(
-                                              child: Text(
-                                                IsrTranslationFile.changeCover,
-                                                style: _postAttributeConfig
-                                                        ?.mediaPreviewConfig
-                                                        ?.changeCoverTextStyle ??
-                                                    IsrStyles.primaryText12
-                                                        .copyWith(
-                                                      color: IsrColors.white,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                    ),
+                                        if (widget.isEditMode != true)
+                                          Positioned(
+                                            left: 0,
+                                            right: 0,
+                                            bottom: 0,
+                                            child: Container(
+                                              width: double.infinity,
+                                              height: 28.responsiveDimension,
+                                              color: (_postAttributeConfig
+                                                          ?.mediaPreviewConfig
+                                                          ?.changeCoverOverlayColor ??
+                                                      IsrColors.black)
+                                                  .withValues(alpha: 0.3),
+                                              child: Center(
+                                                child: Text(
+                                                  IsrTranslationFile
+                                                      .changeCover,
+                                                  style: _postAttributeConfig
+                                                          ?.mediaPreviewConfig
+                                                          ?.changeCoverTextStyle ??
+                                                      IsrStyles.primaryText12
+                                                          .copyWith(
+                                                        color: IsrColors.white,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
+                                                ),
                                               ),
                                             ),
                                           ),
-                                        )
                                       ],
                                     ),
                                   ),
