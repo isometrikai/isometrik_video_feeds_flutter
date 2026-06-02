@@ -759,12 +759,28 @@ class _PostAttributeViewState extends State<PostAttributeView>
                                                 ?.createPostRequest
                                                 ?.previews
                                                 ?.firstOrNull
-                                                ?.localFilePath ??
+                                                ?.localFilePath
+                                                ?.takeIfNotEmpty() ??
                                             _postAttributeClass
                                                 ?.createPostRequest
                                                 ?.previews
                                                 ?.firstOrNull
-                                                ?.url ??
+                                                ?.url
+                                                ?.takeIfNotEmpty() ??
+                                            _postAttributeClass
+                                                ?.createPostRequest
+                                                ?.media
+                                                ?.firstOrNull
+                                                ?.previewUrl
+                                                ?.takeIfNotEmpty() ??
+                                            _postAttributeClass
+                                                ?.createPostRequest?.media
+                                                ?.where((m) =>
+                                                    m.mediaType?.mediaType ==
+                                                    MediaType.photo)
+                                                .firstOrNull
+                                                ?.url
+                                                ?.takeIfNotEmpty() ??
                                             ''),
                                         if (widget.isEditMode != true)
                                           Positioned(
