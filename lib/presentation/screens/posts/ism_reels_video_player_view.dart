@@ -1435,7 +1435,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 //bottom section
                 //kept separate so that it does not bloc touch/gesture to underlying widgets
                 Positioned(
-                  right: 40,
+                  right: 60.responsiveDimension,
                   bottom: widget.reelsConfig.overlayPadding?.resolve(TextDirection.ltr).bottom ?? 0,
                   left: widget.reelsConfig.overlayPadding?.resolve(TextDirection.ltr).left ?? 0,
                   child: widget.reelsConfig.footerWidget?.call(_reelData).child ??
