@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:ism_video_reel_player/data/managers/local_storage_keys.dart';
 import 'package:ism_video_reel_player/data/managers/local_storage_manager.dart';
 import 'package:ism_video_reel_player/di/di.dart';
@@ -35,17 +33,15 @@ class StoryViewedLocalStore {
     );
   }
 
-  void pruneStoryIds(String userId, Set<String> activeStoryIds) {
+  Future<void> pruneStoryIds(String userId, Set<String> activeStoryIds) async {
     if (userId.isEmpty) return;
     final ids = readStoryIds(userId);
     final pruned = ids.where(activeStoryIds.contains).toSet();
     if (pruned.length == ids.length) return;
-    unawaited(
-      _storage.saveValue(
-        _key(userId),
-        pruned.toList(),
-        SavedValueDataType.stringList,
-      ),
+    await _storage.saveValue(
+      _key(userId),
+      pruned.toList(),
+      SavedValueDataType.stringList,
     );
   }
 }

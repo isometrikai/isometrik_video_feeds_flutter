@@ -172,7 +172,7 @@ class StoryCubit extends Cubit<StoryState> {
             stories: mine.data!,
           );
         }
-        _applyPersistedViewedState(userId);
+        await _applyPersistedViewedState(userId);
       }
 
       emit(
@@ -598,7 +598,7 @@ class StoryCubit extends Cubit<StoryState> {
     );
   }
 
-  void _applyPersistedViewedState(String userId) {
+  Future<void> _applyPersistedViewedState(String userId) async {
     if (userId.isEmpty) return;
     final persisted = _viewedLocalStore.readStoryIds(userId);
     if (persisted.isEmpty) return;
@@ -632,7 +632,7 @@ class StoryCubit extends Cubit<StoryState> {
     _viewed
       ..clear()
       ..addAll(nv);
-    _viewedLocalStore.pruneStoryIds(userId, activeIds);
+    await _viewedLocalStore.pruneStoryIds(userId, activeIds);
   }
 
   void _markStoryViewedLocally(String storyId) {
