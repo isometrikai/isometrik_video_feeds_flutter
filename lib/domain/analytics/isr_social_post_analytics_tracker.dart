@@ -46,8 +46,15 @@ class IsrSocialPostAnalyticsTracker {
       ..startsMuted = startsMuted
       ..isMuted = startsMuted
       ..isVideo = isVideo
-      ..videoDurationSec = videoDurationSec
       ..activeSince ??= DateTime.now();
+    // Only adopt the incoming duration when it is usable. The host may pass
+    // null/0 (the API duration is unreliable, so it is intentionally nulled to
+    // let the video controller measure the real duration). Overwriting an
+    // already-measured value here would make `_videoPctWatched` fall back to 0
+    // on swipe even though the post was watched.
+    if (videoDurationSec != null && videoDurationSec > 0) {
+      session.videoDurationSec = videoDurationSec;
+    }
   }
 
   void onPostVisibilityChanged({
@@ -65,7 +72,7 @@ class IsrSocialPostAnalyticsTracker {
       session.impressionTimer?.cancel();
       session.impressionTimer = Timer(
         const Duration(milliseconds: _impressionDebounceMs),
-        () {
+            () {
           if (session.impressionLogged || _currentPostId != postId) return;
           session.impressionLogged = true;
           _delegate?.onPostImpression(
@@ -157,7 +164,22 @@ class IsrSocialPostAnalyticsTracker {
     session.isMuted = isMuted;
     session.videoDurationSec = durationSec;
 
-    if (session.lastPositionSec > 1 && currentTimeSec < 1) {
+    final justLooped = session.lastPositionSec > 1 && currentTimeSec < 1;
+    if (justLooped) {
+      // The video wrapped back to the start, i.e. it played through to the end.
+      // Emit the 100% milestone here: with looping enabled the reported
+      // position jumps from near-the-end straight to ~0, so `maxWatchPositionSec`
+      // rarely reaches the full duration and the percentage check below tops out
+      // around 98-99% (firing 95 but never 100). Guard against false positives
+      // (e.g. a manual seek to the start) by requiring most of the video watched.
+      if ((session.maxWatchPositionSec / durationSec) >= 0.9) {
+        _emitMilestone(
+          session: session,
+          milestone: 100,
+          postId: postId,
+          currentTimeSec: session.lastPositionSec,
+        );
+      }
       session.replayCount++;
       session.loggedMilestones.clear();
     }
@@ -169,21 +191,38 @@ class IsrSocialPostAnalyticsTracker {
 
     final pctWatched = (session.maxWatchPositionSec / durationSec) * 100;
     for (final milestone in _progressMilestones) {
-      if (pctWatched >= milestone && session.loggedMilestones.add(milestone)) {
-        _delegate?.onVideoProgress(
-          VideoProgressData(
-            postId: postId,
-            progressMilestone: milestone,
-            watchDurationSec: _watchDurationSec(session),
-            videoCurrentTimeSec: currentTimeSec,
-            isMuted: session.isMuted,
-            pauseCount: session.pauseCount,
-            replayCount: session.replayCount,
-            hasUnmuted: session.hasUnmuted,
-          ),
+      if (pctWatched >= milestone) {
+        _emitMilestone(
+          session: session,
+          milestone: milestone,
+          postId: postId,
+          currentTimeSec: currentTimeSec,
         );
       }
     }
+  }
+
+  /// Emits a single progress milestone exactly once per play-through, deduped
+  /// via [session.loggedMilestones].
+  void _emitMilestone({
+    required _PostAnalyticsSession session,
+    required int milestone,
+    required String postId,
+    required double currentTimeSec,
+  }) {
+    if (!session.loggedMilestones.add(milestone)) return;
+    _delegate?.onVideoProgress(
+      VideoProgressData(
+        postId: postId,
+        progressMilestone: milestone,
+        watchDurationSec: _watchDurationSec(session),
+        videoCurrentTimeSec: currentTimeSec,
+        isMuted: session.isMuted,
+        pauseCount: session.pauseCount,
+        replayCount: session.replayCount,
+        hasUnmuted: session.hasUnmuted,
+      ),
+    );
   }
 
   void onShopOpen({
@@ -221,9 +260,16 @@ class IsrSocialPostAnalyticsTracker {
   }
 
   double _videoPctWatched(_PostAnalyticsSession session) {
-    final duration = session.videoDurationSec;
-    if (!session.isVideo || duration == null || duration <= 0) return 0;
-    return (session.maxWatchPositionSec / duration) * 100;
+    if (!session.isVideo) return 0;
+    // Prefer the measured duration, but fall back to the furthest watched
+    // position so a missing/last-minute-null duration still yields a sane value
+    // instead of 0.
+    final duration = (session.videoDurationSec != null && session.videoDurationSec! > 0)
+        ? session.videoDurationSec!
+        : session.maxWatchPositionSec;
+    if (duration <= 0) return 0;
+    final pct = (session.maxWatchPositionSec / duration) * 100;
+    return pct.clamp(0, 100).toDouble();
   }
 }
 
