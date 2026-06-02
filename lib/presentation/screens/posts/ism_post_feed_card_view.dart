@@ -760,14 +760,23 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     required bool instagramChipStyle,
   }) {
     final height = _followButtonConfig?.followButtonHeight ?? IsrDimens.twentyEight;
+    final isDarkBackground = _feedUi.backgroundColor.computeLuminance() < 0.5;
     final instagramFilledDecoration = BoxDecoration(
-      color: const Color(0xFFEFEFEF),
+      color: isDarkBackground
+          ? Colors.white.withValues(alpha: 0.18)
+          : const Color(0xFFEFEFEF),
       borderRadius: BorderRadius.circular(IsrDimens.eight),
     );
     final instagramOutlinedDecoration = BoxDecoration(
-      color: const Color(0xFFEFEFEF),
+      color: isDarkBackground
+          ? Colors.white.withValues(alpha: 0.14)
+          : const Color(0xFFEFEFEF),
       borderRadius: BorderRadius.circular(IsrDimens.eight),
-      border: Border.all(color: const Color(0xFFDBDBDB)),
+      border: Border.all(
+        color: isDarkBackground
+            ? Colors.white.withValues(alpha: 0.28)
+            : const Color(0xFFDBDBDB),
+      ),
     );
 
     return Container(

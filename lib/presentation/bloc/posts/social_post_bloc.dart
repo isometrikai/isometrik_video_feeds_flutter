@@ -293,6 +293,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   }) async {
     final postSectionType = postTabAssistData.postSectionType;
     final tabAssistData = _getTabAssistData(postSectionType);
+    final requestedPage = tabAssistData.currentPage;
     final feedHostCacheOn = IsrVideoReelConfig.feedCacheConfig != null;
     // Treat host-cache refresh as a merge so the visible list is never wiped
     // when the user pulls to refresh; new items still land on top via
@@ -518,7 +519,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
           pageItems: postDataList,
           total: timelineResponse?.total,
           totalPages: timelineResponse?.totalPages,
-          apiPage: timelineResponse?.page,
+          apiPage: timelineResponse?.page ?? requestedPage,
         );
       }
     } else {
