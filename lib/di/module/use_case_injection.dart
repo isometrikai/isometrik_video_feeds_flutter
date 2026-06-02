@@ -98,6 +98,11 @@ class UseCaseInjection {
         PostImpressionUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<StoryUseCase>(
         () => StoryUseCase(IsmInjectionUtils.getRepo<StoryRepository>()));
+    IsmInjectionUtils.registerUseCase<SoundLibraryUseCase>(() =>
+        SoundLibraryUseCase(
+          IsmInjectionUtils.getRepo<SoundsRepository>(),
+          IsmInjectionUtils.getUseCase<IsmLocalDataUseCase>(),
+        ));
 
     // Google Repository use cases
     IsmInjectionUtils.registerUseCase<GetAddressFromPinCodeUseCase>(() =>

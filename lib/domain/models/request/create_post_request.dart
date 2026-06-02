@@ -21,6 +21,8 @@ class CreatePostRequest {
     this.postId,
     this.settings,
     this.mentions,
+    this.soundId,
+    this.soundSnapshot,
   });
 
   factory CreatePostRequest.fromJson(Map<String, dynamic> json) =>
@@ -50,6 +52,12 @@ class CreatePostRequest {
             ? []
             : List<MentionData>.from((json['mentions'] as List)
                 .map((x) => MentionData.fromJson(x as Map<String, dynamic>))),
+        soundId: json['sound_id'] as String?,
+        soundSnapshot: json['sound_snapshot'] == null
+            ? null
+            : Map<String, dynamic>.from(
+                json['sound_snapshot'] as Map<String, dynamic>,
+              ),
       );
   String? postId;
   String? caption;
@@ -62,6 +70,8 @@ class CreatePostRequest {
   String? scheduleTime;
   PostSettingModel? settings;
   List<MentionData>? mentions;
+  String? soundId;
+  Map<String, dynamic>? soundSnapshot;
 
   Map<String, dynamic> toJson() => {
         'id': postId,
@@ -81,6 +91,9 @@ class CreatePostRequest {
         'mentions': mentions == null
             ? []
             : List<dynamic>.from(mentions!.map((x) => x.toJson())),
+        if (soundId != null && soundId!.isNotEmpty) 'sound_id': soundId,
+        if (soundSnapshot != null && soundSnapshot!.isNotEmpty)
+          'sound_snapshot': soundSnapshot,
       };
 }
 

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ism_video_reel_player/presentation/cubits/story/story_composer_state.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/stories/story_image_cropper.dart';
 import 'package:video_compress/video_compress.dart';
 
 class StoryComposerCubit extends Cubit<StoryComposerState> {
@@ -17,13 +18,25 @@ class StoryComposerCubit extends Cubit<StoryComposerState> {
     if (state.isSubmitting) return;
     final picked = await _picker.pickImage(source: ImageSource.gallery);
     if (picked == null) return;
+    final cropped = await StoryImageCropper.crop(picked.path);
+    if (cropped == null) return;
     emit(
       state.copyWith(
-        file: File(picked.path),
+        file: cropped,
         mediaType: 'image',
         clearVideoDuration: true,
       ),
     );
+  }
+
+  Future<void> recropPhoto() async {
+    final current = state.file;
+    if (state.isSubmitting || current == null || state.mediaType != 'image') {
+      return;
+    }
+    final cropped = await StoryImageCropper.crop(current.path);
+    if (cropped == null) return;
+    emit(state.copyWith(file: cropped));
   }
 
   Future<void> pickVideo() async {

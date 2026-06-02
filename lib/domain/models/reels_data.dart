@@ -39,6 +39,7 @@ class ReelsData {
     this.isPaid,
     this.priceAmount,
     this.priceCurrency,
+    this.sound,
   });
 
   final dynamic postData;
@@ -82,6 +83,9 @@ class ReelsData {
   final bool? isPaid;
   final Object? priceAmount;
   final String? priceCurrency;
+
+  /// Audio attribution returned by the post APIs (`sound` + `sound_snapshot`).
+  final PostSoundInfo? sound;
 
   ReelsData copyWith({
     bool? isFollow,
@@ -131,6 +135,7 @@ class ReelsData {
         isPaid: isPaid ?? this.isPaid,
         priceAmount: priceAmount ?? this.priceAmount,
         priceCurrency: priceCurrency ?? this.priceCurrency,
+        sound: sound,
       );
 }
 

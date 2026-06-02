@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ism_video_reel_player/data/managers/story_viewed_local_store.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:video_compress/video_compress.dart';
 
@@ -17,6 +18,7 @@ class StoryCubit extends Cubit<StoryState> {
   final StoryUseCase _storyUseCase;
   final IsmLocalDataUseCase _localDataUseCase;
   final GoogleCloudStorageUploaderUseCase _googleCloudStorageUploaderUseCase;
+  final StoryViewedLocalStore _viewedLocalStore = StoryViewedLocalStore();
 
   String? _nextCursor;
   String _currentUserId = '';
@@ -170,6 +172,7 @@ class StoryCubit extends Cubit<StoryState> {
             stories: mine.data!,
           );
         }
+        await _applyPersistedViewedState(userId);
       }
 
       emit(
@@ -531,10 +534,13 @@ class StoryCubit extends Cubit<StoryState> {
         avatarUrl:
             base.avatarUrl.isNotEmpty ? base.avatarUrl : existing.avatarUrl,
         isReacted: base.isReacted || existing.isReacted,
+        isViewed: existing.isViewed || base.isViewed,
       );
     }
 
     final normalized = stories.map(mergeWithFeed).toList();
+    final allViewed =
+        normalized.isNotEmpty && normalized.every((s) => s.isViewed);
     _unViewed.insert(
       0,
       StoryGroup(
@@ -542,6 +548,7 @@ class StoryCubit extends Cubit<StoryState> {
         username: username,
         avatarUrl: avatarUrl,
         stories: normalized,
+        isViewed: allViewed,
       ),
     );
   }
@@ -591,6 +598,43 @@ class StoryCubit extends Cubit<StoryState> {
     );
   }
 
+  Future<void> _applyPersistedViewedState(String userId) async {
+    if (userId.isEmpty) return;
+    final persisted = _viewedLocalStore.readStoryIds(userId);
+    if (persisted.isEmpty) return;
+
+    final activeIds = <String>{};
+    StoryGroup applyGroup(StoryGroup g) {
+      final nextStories = g.stories
+          .map(
+            (s) => persisted.contains(s.id) ? s.copyWith(isViewed: true) : s,
+          )
+          .toList();
+      for (final s in nextStories) {
+        activeIds.add(s.id);
+      }
+      final allDone = nextStories.isNotEmpty &&
+          nextStories.every((s) => s.isViewed);
+      return StoryGroup(
+        userId: g.userId,
+        username: g.username,
+        avatarUrl: g.avatarUrl,
+        stories: nextStories,
+        isViewed: allDone,
+      );
+    }
+
+    final nu = _unViewed.map(applyGroup).toList();
+    final nv = _viewed.map(applyGroup).toList();
+    _unViewed
+      ..clear()
+      ..addAll(nu);
+    _viewed
+      ..clear()
+      ..addAll(nv);
+    await _viewedLocalStore.pruneStoryIds(userId, activeIds);
+  }
+
   void _markStoryViewedLocally(String storyId) {
     StoryData viewedCopy(StoryData s) =>
         s.id == storyId ? s.copyWith(isViewed: true) : s;
@@ -619,15 +663,23 @@ class StoryCubit extends Cubit<StoryState> {
   }
 
   Future<void> markStoryViewed(String storyId) async {
+    if (_currentUserId.isEmpty) {
+      _currentUserId = await _localDataUseCase.getUserId();
+    }
+    final hasCachedFeed = _unViewed.isNotEmpty || _viewed.isNotEmpty;
+    if (hasCachedFeed) {
+      _markStoryViewedLocally(storyId);
+      _emitFeedIfCached();
+    }
+    if (_currentUserId.isNotEmpty) {
+      unawaited(_viewedLocalStore.addStoryId(_currentUserId, storyId));
+    }
+
     final result = await _storyUseCase.executeMarkStoryViewed(
       isLoading: false,
       storyId: storyId,
     );
-    if (_unViewed.isNotEmpty || _viewed.isNotEmpty) {
-      if (result.isSuccess) {
-        _markStoryViewedLocally(storyId);
-      }
-      _emitFeedIfCached();
+    if (hasCachedFeed) {
       if (!result.isSuccess) {
         IsrVideoReelConfig.storyConfig?.storyCallbackConfig.onStoryActionError
             ?.call(
@@ -880,6 +932,7 @@ class StoryCubit extends Cubit<StoryState> {
     }
     _removeStoryLocally(storyId);
     _emitFeedIfCached();
+    _notifyHostHighlightsChanged();
     emit(const StoryActionSuccess('delete_story'));
   }
 

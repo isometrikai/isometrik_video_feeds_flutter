@@ -26,6 +26,9 @@ import 'package:url_launcher/url_launcher.dart';
 class Utility {
   Utility._();
 
+  /// Route name for [showLoader] so [closeProgressDialog] never pops a screen.
+  static const String loaderRouteName = '__ism_video_reel_loader__';
+
   static bool isLoading = false;
   static final Connectivity _connectivity = Connectivity();
 
@@ -56,30 +59,50 @@ class Utility {
         ].contains(e));
   }
 
-  /// Show loader
-  static void showLoader({
+  /// Show loader overlay. Returns after the dialog is on screen (not when dismissed).
+  static Future<void> showLoader({
     String? message,
     LoaderType? loaderType = LoaderType.withoutBackground,
   }) async {
+    if (isLoading) return;
+    final ctx = context;
+    if (ctx == null || !ctx.mounted) return;
     isLoading = true;
-    await showDialog(
-      barrierColor:
-          loaderType == LoaderType.withBackGround ? null : Colors.transparent,
-      context: context!,
-      builder: (_) => AppLoader(
-        message: message,
-        loaderType: loaderType,
-      ),
-      barrierDismissible: false,
+    unawaited(
+      showDialog<void>(
+        routeSettings: const RouteSettings(name: loaderRouteName),
+        barrierColor: loaderType == LoaderType.withBackGround
+            ? null
+            : Colors.transparent,
+        context: ctx,
+        useRootNavigator: true,
+        barrierDismissible: false,
+        builder: (_) => AppLoader(
+          message: message,
+          loaderType: loaderType,
+        ),
+      ).whenComplete(() {
+        isLoading = false;
+      }),
     );
+    // Let the loader route mount before callers run [closeProgressDialog].
+    await WidgetsBinding.instance.endOfFrame;
+    await WidgetsBinding.instance.endOfFrame;
   }
 
-  // closes dialog for progress bar
+  /// Dismisses only the loader overlay from [showLoader], not the screen below.
   static void closeProgressDialog() {
-    if (isLoading == true && context?.canPop() == true) {
+    if (isLoading != true) return;
+    final ctx = context;
+    if (ctx == null || !ctx.mounted) {
       isLoading = false;
-      context?.pop();
+      return;
     }
+    final navigator = Navigator.of(ctx, rootNavigator: true);
+    navigator.popUntil(
+      (route) => route.settings.name != loaderRouteName,
+    );
+    isLoading = false;
   }
 
   static void showInfoDialog(

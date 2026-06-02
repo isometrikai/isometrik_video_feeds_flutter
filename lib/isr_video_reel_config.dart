@@ -6,13 +6,14 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:ism_video_reel_player/core/core.dart';
+import 'package:ism_video_reel_player/isr_feed_cache_config.dart';
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
-import 'package:ism_video_reel_player/isr_feed_cache_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:talker/talker.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 /// SDK configuration and initialization entrypoint.
 ///
@@ -74,9 +75,50 @@ class IsrVideoReelConfig {
   /// Story configuration used by SDK modules; when null, stories stay hidden.
   static StoryConfig? storyConfig;
 
-  /// When null, reels/post tabs use legacy route gating and load semantics.
-  /// When non-null, the SDK enables host-cache-friendly timing and merging.
+  /// When non-null, the host app may persist feed slices (e.g. Hive) alongside the SDK.
   static IsrFeedCacheConfig? feedCacheConfig;
+
+  /// Set by [pauseFeedPlayback] / [resumeFeedPlayback] when the host hides the reels tab.
+  static bool isHostFeedTabVisible = true;
+
+  /// Optional hook for [IsmPostView] to refresh tab visibility when the host returns to reels.
+  static VoidCallback? onHostFeedTabResumed;
+
+  /// Pauses reels media when leaving the feed, switching tabs, or backgrounding.
+  static void pauseFeedPlayback() {
+    isHostFeedTabVisible = false;
+    try {
+      final bloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
+      bloc.add(PlayPauseVideoEvent(play: false));
+    } catch (e) {
+      debugPrint('IsrVideoReelConfig.pauseFeedPlayback: $e');
+    }
+  }
+
+  static void resumeFeedPlayback() {
+    isHostFeedTabVisible = true;
+
+    void emitResume() {
+      try {
+        final bloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
+        bloc.add(PlayPauseVideoEvent(play: true));
+      } catch (e) {
+        debugPrint('IsrVideoReelConfig.resumeFeedPlayback: $e');
+      }
+      VisibilityDetectorController.instance.notifyNow();
+    }
+
+    emitResume();
+    onHostFeedTabResumed?.call();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      emitResume();
+      onHostFeedTabResumed?.call();
+    });
+    Future.delayed(const Duration(milliseconds: 300), () {
+      emitResume();
+      onHostFeedTabResumed?.call();
+    });
+  }
 
   /// Convenience accessor for the SDK's singleton [IsmSocialActionCubit].
   static IsmSocialActionCubit get socialActionCubit =>
@@ -191,8 +233,6 @@ class IsrVideoReelConfig {
   /// - [createEditPostConfig]: Create and edit post flows and validation.
   /// - [tagDetailsConfig]: Tagging people and tag UI.
   /// - [searchScreenConfig]: In-SDK search screen layout and options.
-  /// - [feedCacheConfig]: When non-null, enables cache-friendly reels load and
-  ///   merge behavior; when null, legacy SDK behavior (same as omitting).
   static void setUpConfig({
     SocialConfig? socialConfig,
     PostConfig? postConfig,

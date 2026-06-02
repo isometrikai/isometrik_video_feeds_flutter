@@ -163,6 +163,7 @@ class TimeLineData {
     this.visibility,
     this.id,
     this.soundSnapshot,
+    this.sound,
     this.tags,
     this.settings,
     this.engagementMetrics,
@@ -194,6 +195,7 @@ class TimeLineData {
         visibility: json['visibility'] as String? ?? '',
         id: json['id'] as String? ?? '',
         soundSnapshot: json['sound_snapshot'],
+        sound: _parseSoundInfo(json),
         tags: json['tags'] == null
             ? null
             : json['tags'] is String &&
@@ -235,6 +237,7 @@ class TimeLineData {
   String? visibility;
   String? id;
   dynamic soundSnapshot;
+  PostSoundInfo? sound;
   Tags? tags;
   Settings? settings;
   EngagementMetrics? engagementMetrics;
@@ -263,6 +266,7 @@ class TimeLineData {
         'visibility': visibility,
         'id': id,
         'sound_snapshot': soundSnapshot,
+        'sound': sound?.toMap(),
         'tags': tags?.toMap(),
         'settings': settings?.toMap(),
         'engagement_metrics': engagementMetrics?.toMap(),
@@ -1009,6 +1013,20 @@ class PlaceData {
       };
 }
 
+PostSoundInfo? _parseSoundInfo(Map<String, dynamic> json) {
+  final snapshotRaw = json['sound_snapshot'];
+  final snapshot = snapshotRaw is Map<String, dynamic>
+      ? Map<String, dynamic>.from(snapshotRaw)
+      : null;
+  final soundObj = json['sound'];
+  if (soundObj is Map<String, dynamic> && (soundObj['id'] ?? '') != '') {
+    return PostSoundInfo.fromMap(soundObj, snapshot: snapshot);
+  }
+  final soundId = (json['sound_id'] as String?)?.trim() ?? '';
+  if (soundId.isEmpty) return null;
+  return PostSoundInfo(id: soundId, snapshot: snapshot);
+}
+
 List<MediaMetaData> reelMediaMetaDataFromTimeline(TimeLineData postData) {
   if (postData.media.isListEmptyOrNull == false) {
     return postData.media!.map(_getMediaMetaData).toList();
@@ -1087,6 +1105,7 @@ ReelsData getReelData(TimeLineData postData, {String? loggedInUserId}) =>
       productCount: postData.tags?.products?.length ?? 0,
       description: postData.caption ?? '',
       interests: postData.interests,
+      sound: postData.sound,
     );
 
 MediaMetaData _getMediaMetaData(MediaData mediaData) {

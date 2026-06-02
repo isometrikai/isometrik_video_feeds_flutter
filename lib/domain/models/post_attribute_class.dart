@@ -1,4 +1,5 @@
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
 
 class PostAttributeClass {
   PostAttributeClass({
@@ -13,6 +14,7 @@ class PostAttributeClass {
     this.hashTagDataList,
     this.taggedPlaces,
     this.linkedProducts,
+    this.selectedSound,
   });
 
   double? price;
@@ -26,4 +28,5 @@ class PostAttributeClass {
   List<MentionData>? hashTagDataList;
   List<TaggedPlace>? taggedPlaces;
   List<ProductDataModel>? linkedProducts;
+  MediaEditSoundItem? selectedSound;
 }

@@ -142,6 +142,18 @@ class CameraSpeedChangedState extends CameraState {
   final double speed;
 }
 
+class CameraMusicSelectedState extends CameraState {
+  CameraMusicSelectedState({
+    this.musicId,
+    this.musicName,
+    this.musicArtist,
+  });
+
+  final String? musicId;
+  final String? musicName;
+  final String? musicArtist;
+}
+
 class CameraSegmentRecordingState extends CameraState {
   CameraSegmentRecordingState({
     required this.isRecording,

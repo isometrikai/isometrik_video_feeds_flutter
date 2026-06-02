@@ -110,8 +110,6 @@ class _StoryStripWidgetState extends State<StoryStripWidget> {
                       groups: feedGroups,
                       initialGroupIndex: groupIndex,
                     );
-                    await cubit.markStoryViewed(group.stories.first.id);
-                    await cubit.loadStoryFeed(isLoading: false);
                   },
                 );
               },

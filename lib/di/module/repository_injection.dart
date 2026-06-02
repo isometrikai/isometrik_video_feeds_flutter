@@ -23,6 +23,8 @@ class RepositoryInjection {
         IsmInjectionUtils.getApiService<SocialApiService>(), dataSource, IsmInjectionUtils.getUseCase<IsmLocalDataUseCase>()));
     IsmInjectionUtils.registerRepo<StoryRepository>(() => StoryRepositoryImpl(
         IsmInjectionUtils.getApiService<StoryApiService>(), dataSource));
+    IsmInjectionUtils.registerRepo<SoundsRepository>(() => SoundsRepositoryImpl(
+        IsmInjectionUtils.getApiService<SoundsApiService>(), dataSource));
     IsmInjectionUtils.registerRepo<GoogleRepository>(() => GoogleRepositoryImpl(
         IsmInjectionUtils.getApiService<GoogleApiService>()));
   }

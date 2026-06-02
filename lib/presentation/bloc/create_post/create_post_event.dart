@@ -3,9 +3,10 @@ part of 'create_post_bloc.dart';
 abstract class CreatePostEvent {}
 
 class CreatePostInitialEvent extends CreatePostEvent {
-  CreatePostInitialEvent({this.newMediaDataList});
+  CreatePostInitialEvent({this.newMediaDataList, this.selectedSound});
 
   final List<MediaData>? newMediaDataList;
+  final MediaEditSoundItem? selectedSound;
 }
 
 class PostCreateEvent extends CreatePostEvent {
