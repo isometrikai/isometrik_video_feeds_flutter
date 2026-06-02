@@ -28,7 +28,7 @@ class PostFeedMediaCarousel extends StatelessWidget {
       physics: listScrolling
           ? const NeverScrollableScrollPhysics()
           : const PageScrollPhysics(),
-      allowImplicitScrolling: false,
+      allowImplicitScrolling: true,
       itemBuilder: itemBuilder,
     );
   }

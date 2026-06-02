@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/video_player_widget.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/like_action_widget.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_carousel_keep_alive_page.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_media_carousel.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -48,10 +51,13 @@ class IsmPostFeedCardView extends StatefulWidget {
 
 class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   static const int _kPictureType = 0;
+  static const Duration _kPageBadgeAutoHideDuration = Duration(seconds: 2);
   final ValueNotifier<int> _mediaPageIndex = ValueNotifier(0);
   late final PageController _mediaPageController;
   final Map<int, GlobalKey> _videoPlayerKeys = {};
   var _showMuteIconBriefly = false;
+  var _showPageBadge = true;
+  Timer? _pageBadgeTimer;
 
   PostConfig get _postConfig => widget.reelsConfig.postConfig;
   PostUIConfig? get _uiConfig => _postConfig.postUIConfig;
@@ -159,6 +165,15 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     super.initState();
     VideoMuteController.notifier.addListener(_onGlobalMuteChanged);
     _mediaPageController = PageController();
+    _schedulePageBadgeAutoHide();
+  }
+
+  @override
+  void didUpdateWidget(covariant IsmPostFeedCardView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isPostVisible != widget.isPostVisible) {
+      _syncCarouselVideoPlayback();
+    }
   }
 
   @override
@@ -166,8 +181,36 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     VideoMuteController.notifier.removeListener(_onGlobalMuteChanged);
     _mediaPageIndex.dispose();
     _mediaPageController.dispose();
+    _pageBadgeTimer?.cancel();
     super.dispose();
   }
+  void _onMediaPageChanged(int index) {
+    if (_mediaPageIndex.value == index) return;
+    _mediaPageIndex.value = index;
+    _syncCarouselVideoPlayback();
+    if (!_showPageBadge) {
+      setState(() => _showPageBadge = true);
+    }
+    _schedulePageBadgeAutoHide();
+  }
+
+  void _syncCarouselVideoPlayback() {
+    for (final entry in _videoPlayerKeys.entries) {
+      VideoPlayerWidget.of(entry.value)?.syncParentVisibility();
+    }
+  }
+
+  bool _isCarouselVideoPageActive(int index) =>
+      widget.isPostVisible && _mediaPageIndex.value == index;
+
+  void _schedulePageBadgeAutoHide() {
+    _pageBadgeTimer?.cancel();
+    _pageBadgeTimer = Timer(_kPageBadgeAutoHideDuration, () {
+      if (!mounted || !_showPageBadge) return;
+      setState(() => _showPageBadge = false);
+    });
+  }
+
 
   void _onGlobalMuteChanged() {
     if (!mounted) return;
@@ -210,22 +253,13 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    if (_isInstagramStyle) {
-      return ValueListenableBuilder<int>(
-        valueListenable: _mediaPageIndex,
-        builder: (context, pageIndex, _) => _buildCardBody(context, pageIndex),
-      );
-    }
-    return _buildCardBody(context, 0);
-  }
+  Widget build(BuildContext context) => _buildCardBody(context);
 
-  Widget _buildCardBody(BuildContext context, int mediaIndex) {
+  Widget _buildCardBody(BuildContext context) {
     final mediaCount = _reel.mediaMetaDataList.length;
-    final showDotsBelowMedia = _isInstagramStyle &&
-        _feedUi.showCarouselDots &&
-        mediaCount > 1 &&
-        _showHeaderAboveMedia(mediaIndex);
+    final showCarouselDots = _feedUi.showCarouselDots && mediaCount > 1;
+    // Instagram: dots sit in the strip between media and the action row.
+    final showDotsBelowMedia = showCarouselDots && _isInstagramStyle;
 
     return ColoredBox(
       color: _feedUi.backgroundColor,
@@ -233,8 +267,17 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (_showHeaderAboveMedia(mediaIndex)) _buildPostHeaderAboveMedia(context),
-          _buildMediaSection(context, mediaIndex),
+          if (_isInstagramStyle)
+            ValueListenableBuilder<int>(
+              valueListenable: _mediaPageIndex,
+              builder: (context, pageIndex, _) {
+                if (!_showHeaderAboveMedia(pageIndex)) {
+                  return const SizedBox.shrink();
+                }
+                return _buildPostHeaderAboveMedia(context);
+              },
+            ),
+          _buildMediaSection(context),
           if (showDotsBelowMedia) _buildCarouselDotsBelowMedia(context, mediaCount),
           _buildActionsSection(context),
           _buildEngagementSection(context),
@@ -243,13 +286,12 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     );
   }
 
-  Widget _buildMediaSection(BuildContext context, int mediaIndex) {
+  Widget _buildMediaSection(BuildContext context) {
     final mediaList = _reel.mediaMetaDataList;
     final fixedHeight = _feedUi.mediaFrameHeight;
     final fixedWidth = _feedUi.mediaFrameWidth;
     if (mediaList.isEmpty) {
       return _wrapMediaFrame(
-        mediaIndex: mediaIndex,
         fixedWidth: fixedWidth,
         fixedHeight: fixedHeight,
         child: ColoredBox(color: _feedUi.dividerColor),
@@ -263,34 +305,55 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
           PostFeedMediaCarousel(
             key: ValueKey('post_feed_media_${_reel.postId}'),
             controller: _mediaPageController,
-            onPageChanged: (index) => _mediaPageIndex.value = index,
+            onPageChanged: _onMediaPageChanged,
             itemCount: mediaList.length,
-            itemBuilder: (context, index) => _buildMediaItem(
-              mediaList[index],
-              index,
+            itemBuilder: (context, index) => PostFeedCarouselKeepAlivePage(
+              child: _buildMediaItem(
+                mediaList[index],
+                index,
+              ),
             ),
           )
         else
           _buildMediaItem(mediaList.first, 0),
-        if (_showMediaOverlayHeader(mediaIndex)) _buildMediaTopOverlay(context),
+        if (_isInstagramStyle)
+          ValueListenableBuilder<int>(
+            valueListenable: _mediaPageIndex,
+            builder: (context, pageIndex, _) {
+              if (!_showMediaOverlayHeader(pageIndex)) {
+                return const SizedBox.shrink();
+              }
+              return _buildMediaTopOverlay(context);
+            },
+          )
+        else if (_showMediaOverlayHeader(0))
+          _buildMediaTopOverlay(context),
         if (_feedUi.showCarouselPageBadge && mediaList.length > 1)
-          Positioned(
-            top: IsrDimens.twelve,
-            right: IsrDimens.twelve,
-            child: ValueListenableBuilder<int>(
-              valueListenable: _mediaPageIndex,
-              builder: (context, page, _) => Container(
-                padding: IsrDimens.edgeInsetsSymmetric(
-                  horizontal: IsrDimens.ten,
-                  vertical: IsrDimens.four,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.55),
-                  borderRadius: BorderRadius.circular(IsrDimens.twelve),
-                ),
-                child: Text(
-                  '${page + 1}/${mediaList.length}',
-                  style: _textStyleConfig?.mediaCounterStyle ?? IsrStyles.white12,
+          ValueListenableBuilder<int>(
+            valueListenable: _mediaPageIndex,
+            builder: (context, page, _) => Positioned(
+              top: _showMediaOverlayHeader(page)
+                  ? IsrDimens.twelve + _postFeedActionIconSize + IsrDimens.eight
+                  : IsrDimens.twelve,
+              right: IsrDimens.twelve,
+              child: IgnorePointer(
+                child: AnimatedOpacity(
+                  opacity: _showPageBadge ? 1 : 0,
+                  duration: const Duration(milliseconds: 220),
+                  child: Container(
+                    padding: IsrDimens.edgeInsetsSymmetric(
+                      horizontal: IsrDimens.ten,
+                      vertical: IsrDimens.four,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.55),
+                      borderRadius: BorderRadius.circular(IsrDimens.twelve),
+                    ),
+                    child: Text(
+                      '${page + 1}/${mediaList.length}',
+                      style: _textStyleConfig?.mediaCounterStyle ?? IsrStyles.white12,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -299,7 +362,6 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     );
 
     return _wrapMediaFrame(
-      mediaIndex: mediaIndex,
       fixedWidth: fixedWidth,
       fixedHeight: fixedHeight,
       child: stack,
@@ -308,7 +370,6 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
 
   Widget _wrapMediaFrame({
     required Widget child,
-    required int mediaIndex,
     double? fixedWidth,
     double? fixedHeight,
   }) {
@@ -381,7 +442,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         videoFitOverride: BoxFit.cover,
         logIndex: '${widget.logIndex}-$index',
         visibilityManagedByParent: true,
-        isParentVisible: () => widget.isPostVisible,
+        isParentVisible: () => _isCarouselVideoPageActive(index),
         onVisibilityChanged: (_) {},
       ),
     );
@@ -560,11 +621,12 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       );
 
   Widget _buildCarouselDotsBelowMedia(BuildContext context, int mediaCount) => Padding(
-        padding: IsrDimens.edgeInsets(
-          top: IsrDimens.eight,
-          bottom: IsrDimens.four,
+        padding: IsrDimens.edgeInsetsSymmetric(
+          vertical: _isInstagramStyle ? IsrDimens.six : IsrDimens.eight,
         ),
-        child: _buildCarouselDots(context, mediaCount),
+        child: Center(
+          child: _buildCarouselDots(context, mediaCount),
+        ),
       );
 
   Widget _buildMediaTopOverlay(BuildContext context) => Positioned(
@@ -918,50 +980,51 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   Widget _buildDefaultActionBar(BuildContext context) {
     final mediaCount = _reel.mediaMetaDataList.length;
     final showDotsInBar =
-        !_isInstagramStyle && _feedUi.showCarouselDots && mediaCount > 1;
+        _feedUi.showCarouselDots && mediaCount > 1 && !_isInstagramStyle;
+
+    final actionRow = Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        _buildLeftActionIcons(),
+        if (_reel.postSetting?.isSaveButtonVisible == true)
+          SaveActionWidget(
+            postId: _reel.postId ?? '',
+            builder: (isLoading, isSaved, onTap) => _iconAction(
+              icon: isSaved
+                  ? (_actionIconConfig?.saveIconSelected ??
+                      AssetConstants.icPostSaveIconSelected)
+                  : (_actionIconConfig?.saveIconUnselected ??
+                      AssetConstants.icPostSaveIcon),
+              applyThemeColor: !isSaved,
+              onTap: () => onTap(
+                reelData: _reel,
+                postSectionType: widget.postSectionType,
+                apiCallBack: widget.onPressSaveButton != null
+                    ? () => widget.onPressSaveButton!(_reel, isSaved)
+                    : null,
+              ),
+            ),
+          )
+        else
+          SizedBox(width: _postFeedActionIconSize),
+      ],
+    );
 
     return Padding(
       padding: IsrDimens.edgeInsetsSymmetric(
         horizontal: IsrDimens.twelve,
         vertical: _isInstagramStyle ? IsrDimens.six : IsrDimens.eight,
       ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              _buildLeftActionIcons(),
-              if (_reel.postSetting?.isSaveButtonVisible == true)
-                SaveActionWidget(
-                  postId: _reel.postId ?? '',
-                  builder: (isLoading, isSaved, onTap) => _iconAction(
-                    icon: isSaved
-                        ? (_actionIconConfig?.saveIconSelected ??
-                            AssetConstants.icPostSaveIconSelected)
-                        : (_actionIconConfig?.saveIconUnselected ??
-                            AssetConstants.icPostSaveIcon),
-                    applyThemeColor: !isSaved,
-                    onTap: () => onTap(
-                      reelData: _reel,
-                      postSectionType: widget.postSectionType,
-                      apiCallBack: widget.onPressSaveButton != null
-                          ? () => widget.onPressSaveButton!(_reel, isSaved)
-                          : null,
-                    ),
-                  ),
-                )
-              else
-                SizedBox(width: _postFeedActionIconSize),
-            ],
-          ),
-          if (showDotsInBar)
-            IgnorePointer(
-              child: _buildCarouselDots(context, mediaCount),
-            ),
-        ],
-      ),
+      child: showDotsInBar
+          ? Stack(
+              alignment: Alignment.center,
+              children: [
+                actionRow,
+                _buildCarouselDots(context, mediaCount),
+              ],
+            )
+          : actionRow,
     );
   }
 
@@ -1047,17 +1110,30 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(
             mediaCount,
-            (i) => Container(
-              width: _isInstagramStyle ? IsrDimens.five : IsrDimens.six,
-              height: _isInstagramStyle ? IsrDimens.five : IsrDimens.six,
-              margin: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.two),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: i == page
-                    ? (_isInstagramStyle
-                        ? const Color(0xFF0095F6)
-                        : Theme.of(context).primaryColor)
-                    : _feedUi.secondaryTextColor.withValues(alpha: 0.35),
+            (i) => GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                if (!_mediaPageController.hasClients || _mediaPageIndex.value == i) {
+                  return;
+                }
+                _mediaPageController.animateToPage(
+                  i,
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutCubic,
+                );
+              },
+              child: Container(
+                width: _isInstagramStyle ? IsrDimens.five : IsrDimens.six,
+                height: _isInstagramStyle ? IsrDimens.five : IsrDimens.six,
+                margin: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.two),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: i == page
+                      ? (_isInstagramStyle
+                          ? const Color(0xFF0095F6)
+                          : Theme.of(context).primaryColor)
+                      : _feedUi.secondaryTextColor.withValues(alpha: 0.35),
+                ),
               ),
             ),
           ),

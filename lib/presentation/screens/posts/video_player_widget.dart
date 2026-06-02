@@ -643,6 +643,12 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     }
   }
 
+  /// Re-evaluates [isParentVisible] after carousel page or feed visibility changes.
+  void syncParentVisibility() {
+    if (!widget.visibilityManagedByParent || _isDisposed) return;
+    _syncVisibilityFromParent();
+  }
+
   void play() {
     if (_isDisposed) return; // Safety check: Don't operate on disposed widget
 
@@ -653,7 +659,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         !_videoPlayerController!.isPlaying) {
       _isManuallyPaused = false;
       // Only play if visible
-      if (_isVisible) {
+      if (_effectiveVisible) {
         _videoPlayerController!.play();
       }
       _logVideoStartedEvent();

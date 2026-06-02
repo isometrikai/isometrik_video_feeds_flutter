@@ -183,6 +183,12 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
   }
 
   bool _handleScrollNotification(ScrollNotification notification) {
+    // Ignore horizontal child scrollables (media carousels). Treating them as
+    // feed scrolling disables PageView swipe physics mid-gesture.
+    if (notification.metrics.axis == Axis.horizontal) {
+      return false;
+    }
+
     if (notification is ScrollStartNotification ||
         (notification is ScrollUpdateNotification &&
             notification.dragDetails != null)) {
