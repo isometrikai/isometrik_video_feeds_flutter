@@ -1372,11 +1372,16 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   Widget _buildRightSideActions() => RepaintBoundary(
         child: Padding(
           padding: IsrDimens.edgeInsets(bottom: IsrDimens.forty, right: IsrDimens.sixteen),
-          child: Column(
-            spacing: IsrDimens.twenty,
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
+          child: DefaultTextStyle.merge(
+            style: const TextStyle(
+              decoration: TextDecoration.none,
+              decorationColor: Colors.transparent,
+            ),
+            child: Column(
+              spacing: IsrDimens.twenty,
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
               if (_reelData.postSetting?.isCreatePostButtonVisible == true) ...[
                 Column(
                   children: [
@@ -1489,7 +1494,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                     widget.onPressMoreButton!();
                   },
                 ),
-            ],
+              ],
+            ),
           ),
         ),
       );
@@ -1609,10 +1615,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 onTap: onLabelTap ?? onTap,
                 child: Text(
                   label ?? '',
-                  style: _textStyleConfig?.actionLabelStyle ??
-                      IsrStyles.white12.copyWith(
-                        fontWeight: FontWeight.w500,
-                        shadows: _textShadows,
+                  style: (_textStyleConfig?.actionLabelStyle ??
+                          IsrStyles.white12.copyWith(
+                            fontWeight: FontWeight.w500,
+                            shadows: _textShadows,
+                          ))
+                      .copyWith(
+                        decoration: TextDecoration.none,
+                        decorationColor: Colors.transparent,
                       ),
                 ),
               ),
