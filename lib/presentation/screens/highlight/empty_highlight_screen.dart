@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
-import 'package:ism_video_reel_player/presentation/cubits/story/story.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/stories/story_theme_resolver.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 
-/// Shown when a highlight exists on profile but has no playable stories.
 class EmptyHighlightScreen extends StatefulWidget {
   const EmptyHighlightScreen({
     super.key,
@@ -147,24 +145,18 @@ class _EmptyHighlightScreenState extends State<EmptyHighlightScreen> {
     final cover = _coverUrl;
 
     return Scaffold(
-      backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        backgroundColor: theme.scaffoldBackground,
+        foregroundColor: theme.textPrimary,
         elevation: 0,
-        leading: IconButton(
-          tooltip: 'Add stories',
-          icon: const Icon(Icons.add),
-          onPressed: _loading ? null : _onAddStories,
-        ),
         title: Text(
           _title,
-          style: IsrStyles.white14.copyWith(fontWeight: FontWeight.w600),
+          style: IsrStyles.primaryText14.copyWith(fontWeight: FontWeight.w600),
         ),
         actions: [
           IconButton(
             tooltip: 'More',
-            icon: const Icon(Icons.more_horiz),
+            icon: Icon(Icons.more_horiz, color: theme.textPrimary),
             onPressed: _loading ? null : _onMorePressed,
           ),
         ],
@@ -194,13 +186,13 @@ class _EmptyHighlightScreenState extends State<EmptyHighlightScreen> {
                         width: 120,
                         height: 160,
                         decoration: BoxDecoration(
-                          color: Colors.white12,
+                          color: theme.scaffoldBackground,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white24),
+                          border: Border.all(color: theme.scaffoldBackground),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.collections_bookmark_outlined,
-                          color: Colors.white54,
+                          color: theme.textPrimary,
                           size: 40,
                         ),
                       ),
@@ -208,7 +200,7 @@ class _EmptyHighlightScreenState extends State<EmptyHighlightScreen> {
                     Text(
                       IsrTranslationFile.highlightEmptyTitle,
                       textAlign: TextAlign.center,
-                      style: IsrStyles.white16.copyWith(
+                      style: IsrStyles.primaryText16.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -217,14 +209,16 @@ class _EmptyHighlightScreenState extends State<EmptyHighlightScreen> {
                       IsrTranslationFile.highlightEmptySubtitle,
                       textAlign: TextAlign.center,
                       style: IsrStyles.white14.copyWith(
-                        color: Colors.white70,
+                        color: theme.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 28),
                     FilledButton.icon(
                       onPressed: _onAddStories,
-                      icon: const Icon(Icons.add),
-                      label: const Text('Add stories'),
+                      icon: Icon(Icons.add, color: theme.onPrimary),
+                      label: Text('Add stories',
+                          style: IsrStyles.primaryText14
+                              .copyWith(color: theme.onPrimary)),
                       style: FilledButton.styleFrom(
                         backgroundColor: theme.primary,
                         foregroundColor: theme.onPrimary,
