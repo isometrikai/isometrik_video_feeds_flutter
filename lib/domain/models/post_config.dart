@@ -93,7 +93,7 @@ class PostFeedUIConfig {
     this.showCarouselDots = true,
     this.postSpacing = 12.0,
     this.showHeader = true,
-    this.defaultVideoMuted = true,
+    this.defaultVideoMuted = false,
     this.enableVideoTapControls = true,
     this.cardStyle = PostFeedCardStyle.overlayHeader,
     this.showActionCounts = false,
@@ -149,7 +149,7 @@ class PostFeedUIConfig {
   /// When false, the post-feed header row is hidden.
   final bool showHeader;
 
-  /// When true, videos start muted (sound off).
+  /// When true, videos start muted (sound off). Defaults to false (sound on).
   final bool defaultVideoMuted;
 
   /// When true, tap toggles play/pause and a mute control is shown on video.

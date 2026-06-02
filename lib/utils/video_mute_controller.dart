@@ -4,8 +4,8 @@ import 'package:flutter/foundation.dart';
 class VideoMuteController {
   VideoMuteController._();
 
-  static bool _isMuted = true;
-  static final ValueNotifier<bool> notifier = ValueNotifier<bool>(true);
+  static bool _isMuted = false;
+  static final ValueNotifier<bool> notifier = ValueNotifier<bool>(false);
 
   static bool get isMuted => _isMuted;
 
