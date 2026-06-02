@@ -390,8 +390,35 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                           .where((_) =>
                               _.tabDataModel.postSectionType == state.postType)
                           .firstOrNull;
-                      tabStateData?.tabDataModel.reelsDataList =
-                          state.postList.toList();
+                      final tabData = tabStateData?.tabDataModel;
+                      if (tabData != null) {
+                        final existing = tabData.reelsDataList;
+                        final incoming = state.postList;
+                        if (existing.isEmpty) {
+                          tabData.reelsDataList = incoming.toList();
+                        } else if (incoming.length >= existing.length) {
+                          tabData.reelsDataList = incoming.toList();
+                        } else {
+                          // Keep paginated items if a late initial load arrives
+                          // with only the first API page.
+                          final existingIds = existing
+                              .map((p) => p.id)
+                              .whereType<String>()
+                              .toSet();
+                          final newOnly = incoming
+                              .where((p) =>
+                                  p.id != null &&
+                                  p.id!.isNotEmpty &&
+                                  !existingIds.contains(p.id))
+                              .toList();
+                          if (newOnly.isNotEmpty) {
+                            tabData.reelsDataList = [
+                              ...newOnly,
+                              ...existing,
+                            ];
+                          }
+                        }
+                      }
                       _mappedReelsByTab.remove(state.postType);
                       _mappedReelsVersionByTab.remove(state.postType);
                       tabStateData?.isLoading = false;
@@ -614,6 +641,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         reelsDataList: _mappedReelsForTab(tabState),
         reelsConfig: _getReelsConfig(tabState),
         onLoadMore: () async => await _handleLoadMore(tabState),
+        onPostFeedLoadMore: () async => await _handlePostFeedLoadMore(tabState),
         onRefresh: () async {
           var result = await _handlePostRefresh(tabState);
           // Increment refresh count to force rebuild
@@ -631,6 +659,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                 FeedLayoutType.postFeed
             ? _overlayTabBarContentInset(context)
             : null,
+        postFeedListBottomInset:
+            tabState.tabDataModel.feedLayoutType == FeedLayoutType.postFeed
+                ? _postFeedListBottomInset(context)
+                : null,
       );
 
     return buildPostItem();
@@ -837,30 +869,46 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   /// Handles loading more posts for infinite scrolling
   Future<List<ReelsData>> _handleLoadMore(TabStateModel tabState) async {
+    final result = await _handlePostFeedLoadMore(tabState);
+    return result.items;
+  }
+
+  Future<PostFeedLoadMoreResult> _handlePostFeedLoadMore(
+    TabStateModel tabState,
+  ) async {
     try {
+      final section = tabState.tabDataModel.postSectionType;
       final completer = Completer<List<TimeLineData>>();
       _socialPostBloc.add(GetMorePostEvent(
           isLoading: false,
           isPagination: true,
           isRefresh: false,
-          postSectionType: tabState.tabDataModel.postSectionType,
+          postSectionType: section,
           memberUserId: '',
           onComplete: (value) async {
             final newReels = value.where((newReel) => !tabState
                 .tabDataModel.reelsDataList
                 .any((existingReel) => existingReel.id == newReel.id));
             tabState.tabDataModel.reelsDataList.addAll(newReels);
-            completer.complete(value);
+            _mappedReelsByTab.remove(section);
+            _mappedReelsVersionByTab.remove(section);
+            completer.complete(newReels.toList());
           }));
       final timeLinePostList = await completer.future;
-      if (timeLinePostList.isEmpty) return [];
+      final hasMore = _socialPostBloc.hasMorePagesForTab(section);
+      if (timeLinePostList.isEmpty) {
+        return PostFeedLoadMoreResult(items: const [], hasMore: hasMore);
+      }
       final timeLineReelDataList = timeLinePostList
           .map((post) => getReelData(post, loggedInUserId: _loggedInUserId))
           .toList();
-      return timeLineReelDataList;
+      return PostFeedLoadMoreResult(
+        items: timeLineReelDataList,
+        hasMore: hasMore,
+      );
     } catch (e) {
       debugPrint('Error handling load more: $e');
-      return [];
+      return const PostFeedLoadMoreResult(items: [], hasMore: false);
     }
   }
 
@@ -885,6 +933,21 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       IsrDimens.twenty +
       kTextTabBarHeight +
       IsrDimens.sixteen;
+
+  /// Bottom padding so the last post clears a host bottom navigation bar.
+  double _postFeedListBottomInset(BuildContext context) {
+    final hostNavClearance = MediaQuery.paddingOf(context).bottom + 70;
+    final overlay = _postConfig.postUIConfig?.overlayPadding;
+    if (overlay != null) {
+      final resolved = overlay.resolve(Directionality.of(context));
+      if (resolved.bottom > 0) {
+        return resolved.bottom >= hostNavClearance
+            ? resolved.bottom
+            : hostNavClearance;
+      }
+    }
+    return hostNavClearance;
+  }
 
   Widget _buildTabBar() {
     final feedUi = _postConfig.resolvedPostFeedUIConfig;
@@ -1045,7 +1108,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   String _getUniqueKey(TabDataModel tabData, int index) {
     _refreshCounts[index] ??= 0;
-    return '${tabData.reelsDataList.length}_${_refreshCounts[index]}';
+    // Do not key on list length — pagination appends rows and remounting
+    // [PostItemWidget] resets scroll / page index back to the first post.
+    return '${tabData.postSectionType.name}_${_refreshCounts[index]}';
   }
 
   bool _isFollowingPostsEmpty() {

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
@@ -7,6 +8,17 @@ import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_fe
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:visibility_detector/visibility_detector.dart';
+
+/// Result of a post-feed pagination request.
+class PostFeedLoadMoreResult {
+  const PostFeedLoadMoreResult({
+    required this.items,
+    required this.hasMore,
+  });
+
+  final List<ReelsData> items;
+  final bool hasMore;
+}
 
 /// Vertical scrollable list of [IsmPostFeedCardView] cards.
 class PostFeedListWidget extends StatefulWidget {
@@ -16,6 +28,7 @@ class PostFeedListWidget extends StatefulWidget {
     required this.reelsConfig,
     this.postSectionType,
     this.listTopInset,
+    this.listBottomInset,
     this.loggedInUserId,
     this.videoCacheManager,
     this.onLoadMore,
@@ -41,9 +54,12 @@ class PostFeedListWidget extends StatefulWidget {
   /// Extra top padding when a tab bar overlays this list (multi-tab post-card feed).
   final double? listTopInset;
 
+  /// Extra bottom padding so the last post clears a host bottom nav bar.
+  final double? listBottomInset;
+
   final String? loggedInUserId;
   final VideoCacheManager? videoCacheManager;
-  final Future<List<ReelsData>> Function()? onLoadMore;
+  final Future<PostFeedLoadMoreResult> Function()? onLoadMore;
   final Future<bool> Function()? onRefresh;
   final Widget? Function()? getEmptyScreen;
   final VoidCallback? onTapPlaceHolder;
@@ -72,13 +88,15 @@ class PostFeedListWidget extends StatefulWidget {
 class _PostFeedListWidgetState extends State<PostFeedListWidget> {
   static const double _visibleEnterThreshold = 0.72;
   static const double _visibleExitThreshold = 0.28;
+  static const double _loadMoreExtent = 360;
 
   final Map<int, int> _refreshCounts = {};
   final ScrollController _scrollController = ScrollController();
   var _isRefreshing = false;
   var _loadMoreInFlight = false;
+  var _showPaginationLoader = false;
+  var _hasMorePages = true;
   var _isUserScrolling = false;
-  Timer? _loadMoreDebounce;
   Timer? _scrollIdleDebounce;
 
   @override
@@ -90,7 +108,6 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
 
   @override
   void dispose() {
-    _loadMoreDebounce?.cancel();
     _scrollIdleDebounce?.cancel();
     _scrollController.dispose();
     super.dispose();
@@ -114,11 +131,15 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
       });
     }
 
-    if (notification is ScrollUpdateNotification) {
+    if (notification is ScrollUpdateNotification ||
+        notification is ScrollEndNotification) {
       final metrics = notification.metrics;
-      if (metrics.hasPixels && metrics.maxScrollExtent > 0) {
-        final threshold = metrics.maxScrollExtent * 0.65;
-        if (metrics.pixels >= threshold) {
+      if (metrics.hasPixels) {
+        final threshold = metrics.maxScrollExtent > 0
+            ? metrics.maxScrollExtent * 0.65
+            : 0;
+        final nearEnd = metrics.extentAfter <= _loadMoreExtent;
+        if (nearEnd || metrics.pixels >= threshold) {
           _scheduleLoadMore();
         }
       }
@@ -134,6 +155,7 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
       if (!mounted || refreshed != true) return;
 
       setState(() {
+        _hasMorePages = true;
         final visibleCap = widget.reelsDataList.length < 6
             ? widget.reelsDataList.length
             : 6;
@@ -154,18 +176,89 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
     }
   }
 
+  void _loadMoreIfNearEnd() {
+    if (!mounted ||
+        widget.onLoadMore == null ||
+        _loadMoreInFlight ||
+        !_hasMorePages ||
+        !_scrollController.hasClients) {
+      return;
+    }
+    final metrics = _scrollController.position;
+    if (metrics.extentAfter <= _loadMoreExtent) {
+      _scheduleLoadMore();
+    }
+  }
+
   void _scheduleLoadMore() {
-    if (widget.onLoadMore == null || _loadMoreInFlight) return;
-    _loadMoreDebounce?.cancel();
-    _loadMoreDebounce = Timer(const Duration(milliseconds: 350), () async {
-      if (!mounted || _loadMoreInFlight) return;
-      _loadMoreInFlight = true;
-      try {
-        await widget.onLoadMore!();
-      } finally {
-        if (mounted) _loadMoreInFlight = false;
+    if (widget.onLoadMore == null || !_hasMorePages) return;
+
+    // Show the Instagram-style footer spinner immediately — do not wait for
+    // the API. A debounce that resets on every scroll frame was delaying both
+    // the spinner and the request.
+    if (!_showPaginationLoader) {
+      setState(() => _showPaginationLoader = true);
+    }
+    if (_loadMoreInFlight) return;
+
+    unawaited(_executeLoadMore());
+  }
+
+  Future<void> _executeLoadMore() async {
+    if (!mounted ||
+        _loadMoreInFlight ||
+        !_hasMorePages ||
+        widget.onLoadMore == null) {
+      return;
+    }
+
+    setState(() => _loadMoreInFlight = true);
+    try {
+      final result = await widget.onLoadMore!();
+      if (!mounted) return;
+      setState(() {
+        _loadMoreInFlight = false;
+        _showPaginationLoader = false;
+        _hasMorePages = result.hasMore;
+      });
+      if (result.hasMore) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _loadMoreIfNearEnd();
+        });
       }
-    });
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _loadMoreInFlight = false;
+          _showPaginationLoader = false;
+        });
+      }
+    }
+  }
+
+  Widget _buildPaginationLoader(PostFeedUIConfig feedUi) {
+    final loaderColor = feedUi.secondaryTextColor.withValues(alpha: 0.55);
+    final useCupertino = Theme.of(context).platform == TargetPlatform.iOS ||
+        Theme.of(context).platform == TargetPlatform.macOS;
+
+    return ColoredBox(
+      color: feedUi.backgroundColor,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 28),
+        child: Center(
+          child: useCupertino
+              ? CupertinoActivityIndicator(radius: 10, color: loaderColor)
+              : SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: loaderColor,
+                  ),
+                ),
+        ),
+      ),
+    );
   }
 
   ScrollPhysics _listPhysics(BuildContext context) {
@@ -188,6 +281,8 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
         (showHeader
             ? MediaQuery.paddingOf(context).top + IsrDimens.fiftySix
             : MediaQuery.paddingOf(context).top);
+    final bottomInset = widget.listBottomInset ?? 0.0;
+    final listPadding = EdgeInsets.only(top: topInset, bottom: bottomInset);
 
     final refreshDisplacement = topInset + IsrDimens.forty;
     final cacheExtent = MediaQuery.sizeOf(context).height * 1.25;
@@ -209,7 +304,7 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
         ListView(
           controller: _scrollController,
           physics: _listPhysics(context),
-          padding: EdgeInsets.only(top: topInset),
+          padding: listPadding,
           children: [
             SizedBox(
               height: MediaQuery.sizeOf(context).height * 0.7,
@@ -227,12 +322,16 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
     return buildList(
       ListView.separated(
         controller: _scrollController,
-        padding: EdgeInsets.only(top: topInset),
+        padding: listPadding,
         physics: _listPhysics(context),
         cacheExtent: cacheExtent,
         addRepaintBoundaries: true,
-        itemCount: widget.reelsDataList.length,
+        itemCount:
+            widget.reelsDataList.length + (_showPaginationLoader ? 1 : 0),
         separatorBuilder: (context, index) {
+          if (index >= widget.reelsDataList.length - 1) {
+            return const SizedBox.shrink();
+          }
           if (usePostDividers) {
             return Divider(
               height: IsrDimens.one,
@@ -242,24 +341,29 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
           }
           return itemGap > 0 ? SizedBox(height: itemGap) : const SizedBox.shrink();
         },
-        itemBuilder: (context, index) => _PostFeedListItem(
-          key: ValueKey(widget.reelsDataList[index].postId),
-          index: index,
-          reelsData: widget.reelsDataList[index],
-          refreshToken: _refreshCounts[index] ?? 0,
-          reelsConfig: widget.reelsConfig,
-          postSectionType: widget.postSectionType,
-          loggedInUserId: widget.loggedInUserId,
-          videoCacheManager: widget.videoCacheManager,
-          onBecamePrimaryVisible: widget.onReelsChange,
-          onPressFollowButton: widget.onPressFollowButton,
-          onPressMoreButton: widget.onPressMoreButton,
-          onPressLikeButton: widget.onPressLikeButton,
-          onPressSaveButton: widget.onPressSaveButton,
-          onTapUserProfile: widget.onTapUserProfile,
-          onTapShare: widget.onTapShare,
-          onTapComment: widget.onTapComment,
-        ),
+        itemBuilder: (context, index) {
+          if (index >= widget.reelsDataList.length) {
+            return _buildPaginationLoader(feedUi);
+          }
+          return _PostFeedListItem(
+            key: ValueKey(widget.reelsDataList[index].postId),
+            index: index,
+            reelsData: widget.reelsDataList[index],
+            refreshToken: _refreshCounts[index] ?? 0,
+            reelsConfig: widget.reelsConfig,
+            postSectionType: widget.postSectionType,
+            loggedInUserId: widget.loggedInUserId,
+            videoCacheManager: widget.videoCacheManager,
+            onBecamePrimaryVisible: widget.onReelsChange,
+            onPressFollowButton: widget.onPressFollowButton,
+            onPressMoreButton: widget.onPressMoreButton,
+            onPressLikeButton: widget.onPressLikeButton,
+            onPressSaveButton: widget.onPressSaveButton,
+            onTapUserProfile: widget.onTapUserProfile,
+            onTapShare: widget.onTapShare,
+            onTapComment: widget.onTapComment,
+          );
+        },
       ),
     );
   }

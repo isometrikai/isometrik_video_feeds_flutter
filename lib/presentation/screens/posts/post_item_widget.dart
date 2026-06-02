@@ -14,10 +14,12 @@ class PostItemWidget extends StatefulWidget {
   const PostItemWidget({
     super.key,
     this.onLoadMore,
+    this.onPostFeedLoadMore,
     this.onRefresh,
     this.postSectionType,
     this.feedLayoutType = FeedLayoutType.reels,
     this.postFeedListTopInset,
+    this.postFeedListBottomInset,
     this.onTapPlaceHolder,
     this.startingPostIndex = 0,
     this.loggedInUserId,
@@ -29,6 +31,7 @@ class PostItemWidget extends StatefulWidget {
   });
 
   final Future<List<ReelsData>> Function()? onLoadMore;
+  final Future<PostFeedLoadMoreResult> Function()? onPostFeedLoadMore;
   final Widget? Function()? getEmptyScreen;
   final Future<bool> Function()? onRefresh;
   final PostSectionType? postSectionType;
@@ -36,6 +39,9 @@ class PostItemWidget extends StatefulWidget {
 
   /// When the reels tab bar overlays a post-card tab, inset scroll content below it.
   final double? postFeedListTopInset;
+
+  /// When a host bottom nav overlays the feed, inset scroll content above it.
+  final double? postFeedListBottomInset;
 
   final VoidCallback? onTapPlaceHolder;
   final int? startingPostIndex;
@@ -98,6 +104,21 @@ class _PostItemWidgetState extends State<PostItemWidget>
   void didUpdateWidget(PostItemWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (_sameReelsList(oldWidget.reelsDataList, widget.reelsDataList)) return;
+
+    if (_isPostFeedLayout &&
+        widget.reelsDataList.length > _reelsDataList.length &&
+        _hasSameReelsPrefix(_reelsDataList, widget.reelsDataList)) {
+      final existingIds = _reelsDataList.map((e) => e.postId).toSet();
+      final appended = widget.reelsDataList
+          .where((reel) => !existingIds.contains(reel.postId))
+          .toList();
+      if (appended.isNotEmpty) {
+        _reelsDataList.addAll(appended);
+        _updateState();
+        return;
+      }
+    }
+
     _reelsDataList = List<ReelsData>.from(widget.reelsDataList);
     _updateState();
   }
@@ -107,6 +128,14 @@ class _PostItemWidgetState extends State<PostItemWidget>
     if (previous.length != next.length) return false;
     for (var i = 0; i < previous.length; i++) {
       if (previous[i].postId != next[i].postId) return false;
+    }
+    return true;
+  }
+
+  bool _hasSameReelsPrefix(List<ReelsData> prefix, List<ReelsData> full) {
+    if (prefix.length > full.length) return false;
+    for (var i = 0; i < prefix.length; i++) {
+      if (prefix[i].postId != full[i].postId) return false;
     }
     return true;
   }
@@ -373,22 +402,45 @@ class _PostItemWidgetState extends State<PostItemWidget>
         reelsConfig: widget.reelsConfig,
         postSectionType: widget.postSectionType,
         listTopInset: widget.postFeedListTopInset,
+        listBottomInset: widget.postFeedListBottomInset,
         loggedInUserId: widget.loggedInUserId,
         videoCacheManager: _videoCacheManager,
         getEmptyScreen: widget.getEmptyScreen,
         onTapPlaceHolder: widget.onTapPlaceHolder,
         onReelsChange: widget.reelsConfig.onReelsChange,
         onLoadMore: () async {
-          if (widget.onLoadMore == null) return [];
+          if (widget.onPostFeedLoadMore != null) {
+            final result = await widget.onPostFeedLoadMore!();
+            if (result.items.isNotEmpty) {
+              final existingIds =
+                  _reelsDataList.map((reel) => reel.postId).toSet();
+              final appended = result.items
+                  .where((reel) => !existingIds.contains(reel.postId))
+                  .toList();
+              if (appended.isNotEmpty) {
+                _reelsDataList.addAll(appended);
+                _updateState();
+              }
+            }
+            return result;
+          }
+          if (widget.onLoadMore == null) {
+            return const PostFeedLoadMoreResult(items: [], hasMore: false);
+          }
           final value = await widget.onLoadMore!();
-          if (value.isListEmptyOrNull) return [];
+          if (value.isListEmptyOrNull) {
+            return const PostFeedLoadMoreResult(items: [], hasMore: false);
+          }
           final newReels = value.where((newReel) => !_reelsDataList
               .any((existing) => existing.postId == newReel.postId));
           if (newReels.isNotEmpty) {
             _reelsDataList.addAll(newReels);
             _updateState();
           }
-          return value;
+          return PostFeedLoadMoreResult(
+            items: newReels.toList(),
+            hasMore: value.length >= 20,
+          );
         },
         onRefresh: _refreshPostFeed,
         onPressMoreButton: widget.reelsConfig.onPressMoreButton,

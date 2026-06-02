@@ -111,6 +111,36 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         return tabAssist;
       });
 
+  bool hasMorePagesForTab(PostSectionType tab) =>
+      _getTabAssistData(tab).hasMorePages;
+
+  void _syncPageBasedHasMore({
+    required PostTabAssistData tabAssistData,
+    required List<TimeLineData> pageItems,
+    num? total,
+    num? totalPages,
+    num? apiPage,
+  }) {
+    if (pageItems.isEmpty) {
+      tabAssistData.hasMorePages = false;
+      return;
+    }
+
+    final totalPagesInt = totalPages?.toInt() ?? 0;
+    final totalInt = total?.toInt() ?? 0;
+    final apiPageInt = apiPage?.toInt() ?? tabAssistData.currentPage;
+
+    if (totalPagesInt > 0) {
+      tabAssistData.hasMorePages = apiPageInt < totalPagesInt;
+      return;
+    }
+    if (totalInt > 0) {
+      tabAssistData.hasMorePages = tabAssistData.postList.length < totalInt;
+      return;
+    }
+    tabAssistData.hasMorePages = pageItems.length >= tabAssistData.pageSize;
+  }
+
   int currentPage = 0;
   final followingPageSize = 20;
 
@@ -278,6 +308,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         tabAssistData.postList.clear();
       }
       tabAssistData.currentPage = 1;
+      tabAssistData.hasMorePages = true;
       tabAssistData.isLoadingMore = false;
       tabAssistData.cursor = null;
     } else if (!isFromPagination && tabAssistData.postList.isNotEmpty) {
@@ -317,6 +348,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     // Route to the correct use case based on PostSectionType
     List<TimeLineData>? apiPostResult;
     AppError? apiError;
+    TimelineResponse? timelineResponse;
     switch (postSectionType) {
       case PostSectionType.trending:
         apiPostResult = await _getTrendingPostUseCase
@@ -348,16 +380,14 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         break;
       case PostSectionType.following:
       case PostSectionType.feeds:
-        apiPostResult = await _getTimelinePostUseCase
-            .executeTimeLinePost(
+        final timelineResult = await _getTimelinePostUseCase.executeTimeLinePost(
           isLoading: isLoading,
           page: tabAssistData.currentPage,
           pageLimit: tabAssistData.pageSize,
-        )
-            .then((result) {
-          apiError = result.error;
-          return result.data?.data;
-        });
+        );
+        apiError = timelineResult.error;
+        timelineResponse = timelineResult.data;
+        apiPostResult = timelineResponse?.data;
         break;
       case PostSectionType.savedPost:
         apiPostResult = await _savePostUseCase
@@ -481,10 +511,23 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
           ..addAll(postDataList);
       }
       tabAssistData.currentPage++;
-    } else if (!mergeEnabled) {
-      tabAssistData.cursor = null;
-      ErrorHandler.showAppError(
-          appError: apiError, errorViewType: ErrorViewType.snackBar);
+      if (postSectionType == PostSectionType.following ||
+          postSectionType == PostSectionType.feeds) {
+        _syncPageBasedHasMore(
+          tabAssistData: tabAssistData,
+          pageItems: postDataList,
+          total: timelineResponse?.total,
+          totalPages: timelineResponse?.totalPages,
+          apiPage: timelineResponse?.page,
+        );
+      }
+    } else {
+      tabAssistData.hasMorePages = false;
+      if (!mergeEnabled) {
+        tabAssistData.cursor = null;
+        ErrorHandler.showAppError(
+            appError: apiError, errorViewType: ErrorViewType.snackBar);
+      }
     }
     if (postDataList.isNotEmpty) {
       unawaited(FeedMediaOrientation.prefetchForPosts(postDataList));
