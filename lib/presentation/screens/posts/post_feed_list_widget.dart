@@ -86,24 +86,88 @@ class PostFeedListWidget extends StatefulWidget {
 }
 
 class _PostFeedListWidgetState extends State<PostFeedListWidget> {
-  static const double _visibleEnterThreshold = 0.72;
-  static const double _visibleExitThreshold = 0.28;
+  /// Minimum visible fraction before a post can take playback (Instagram-like handoff).
+  static const double _minPlayFraction = 0.32;
+
+  /// Keep the current post playing until it drops below this while another competes.
+  static const double _stickyPlayFraction = 0.22;
+
+  /// Do not switch unless the challenger leads by at least this much (reduces flicker).
+  static const double _switchLeadFraction = 0.06;
+
   static const double _loadMoreExtent = 360;
 
   final Map<int, int> _refreshCounts = {};
+  final Map<int, double> _visibilityFractions = {};
   final ScrollController _scrollController = ScrollController();
   var _isRefreshing = false;
   var _loadMoreInFlight = false;
   var _showPaginationLoader = false;
   var _hasMorePages = true;
   var _isUserScrolling = false;
+  int? _activePlayIndex;
   Timer? _scrollIdleDebounce;
 
   @override
   void initState() {
     super.initState();
     VisibilityDetectorController.instance.updateInterval =
-        const Duration(milliseconds: 400);
+        const Duration(milliseconds: 100);
+  }
+
+  void _onItemVisibilityFractionChanged(int index, double fraction) {
+    if (!mounted) return;
+    _visibilityFractions[index] = fraction;
+    _recomputeActivePlayIndex();
+  }
+
+  void _recomputeActivePlayIndex() {
+    int? candidate;
+    var maxFraction = 0.0;
+    for (final entry in _visibilityFractions.entries) {
+      if (entry.value > maxFraction) {
+        maxFraction = entry.value;
+        candidate = entry.key;
+      }
+    }
+
+    final current = _activePlayIndex;
+    final currentFraction = current == null ? 0.0 : (_visibilityFractions[current] ?? 0.0);
+
+    int? newActive = current;
+
+    // If the challenger is clearly leading, switch to it.
+    if (candidate != null && maxFraction >= _minPlayFraction) {
+      newActive = candidate;
+
+      if (current != null && current != candidate) {
+        if (currentFraction >= _stickyPlayFraction &&
+            maxFraction - currentFraction < _switchLeadFraction) {
+          newActive = current;
+        }
+      }
+    } else {
+      // Otherwise keep playing the current post if it still has enough
+      // visible area. This avoids the "pause-on-scroll" feeling.
+      if (current == null || currentFraction < _stickyPlayFraction) {
+        if (candidate != null && maxFraction >= _stickyPlayFraction) {
+          newActive = candidate;
+        } else {
+          newActive = null;
+        }
+      }
+    }
+
+    if (newActive == _activePlayIndex) return;
+
+    final previous = _activePlayIndex;
+    setState(() => _activePlayIndex = newActive);
+
+    if (newActive != null &&
+        newActive != previous &&
+        newActive < widget.reelsDataList.length) {
+      widget.onReelsChange?.call(widget.reelsDataList[newActive], newActive);
+    }
   }
 
   @override
@@ -285,7 +349,9 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
     final listPadding = EdgeInsets.only(top: topInset, bottom: bottomInset);
 
     final refreshDisplacement = topInset + IsrDimens.forty;
-    final cacheExtent = MediaQuery.sizeOf(context).height * 1.25;
+    // Increase how far ahead the list pre-builds items so the next video is
+    // ready to play when it reaches the center of the screen.
+    final cacheExtent = MediaQuery.sizeOf(context).height * 1.9;
 
     Widget buildList(Widget list) => PostFeedScrollScope(
           isScrolling: _isUserScrolling,
@@ -345,6 +411,10 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
           if (index >= widget.reelsDataList.length) {
             return _buildPaginationLoader(feedUi);
           }
+          // On first frame, visibility callbacks may not have fired yet.
+          // Default to playing the first item so the feed "starts instantly".
+          final bool isFirstItemByDefault =
+              _activePlayIndex == null && index == 0;
           return _PostFeedListItem(
             key: ValueKey(widget.reelsDataList[index].postId),
             index: index,
@@ -354,7 +424,8 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
             postSectionType: widget.postSectionType,
             loggedInUserId: widget.loggedInUserId,
             videoCacheManager: widget.videoCacheManager,
-            onBecamePrimaryVisible: widget.onReelsChange,
+            isPostVisible: isFirstItemByDefault || _activePlayIndex == index,
+            onVisibilityFractionChanged: _onItemVisibilityFractionChanged,
             onPressFollowButton: widget.onPressFollowButton,
             onPressMoreButton: widget.onPressMoreButton,
             onPressLikeButton: widget.onPressLikeButton,
@@ -377,10 +448,11 @@ class _PostFeedListItem extends StatefulWidget {
     required this.reelsData,
     required this.refreshToken,
     required this.reelsConfig,
+    required this.isPostVisible,
+    required this.onVisibilityFractionChanged,
     this.postSectionType,
     this.loggedInUserId,
     this.videoCacheManager,
-    this.onBecamePrimaryVisible,
     this.onPressMoreButton,
     this.onPressFollowButton,
     this.onPressLikeButton,
@@ -397,7 +469,9 @@ class _PostFeedListItem extends StatefulWidget {
   final PostSectionType? postSectionType;
   final String? loggedInUserId;
   final VideoCacheManager? videoCacheManager;
-  final void Function(ReelsData reelsData, int index)? onBecamePrimaryVisible;
+  final bool isPostVisible;
+  final void Function(int index, double visibleFraction)
+      onVisibilityFractionChanged;
   final Future<void> Function(ReelsData reelsData)? onPressMoreButton;
   final Future<bool> Function(ReelsData reelsData, bool currentFollow)?
       onPressFollowButton;
@@ -416,15 +490,12 @@ class _PostFeedListItem extends StatefulWidget {
 
 class _PostFeedListItemState extends State<_PostFeedListItem> {
   late Key _visibilityKey;
-  late final ValueNotifier<bool> _isVisible;
   var _disposed = false;
-  var _wasPrimaryVisible = false;
 
   @override
   void initState() {
     super.initState();
     _visibilityKey = Key('post_feed_${widget.reelsData.postId}');
-    _isVisible = ValueNotifier(false);
   }
 
   @override
@@ -433,8 +504,7 @@ class _PostFeedListItemState extends State<_PostFeedListItem> {
     if (oldWidget.reelsData.postId != widget.reelsData.postId) {
       VisibilityDetectorController.instance.forget(_visibilityKey);
       _visibilityKey = Key('post_feed_${widget.reelsData.postId}');
-      _wasPrimaryVisible = false;
-      _isVisible.value = false;
+      widget.onVisibilityFractionChanged(widget.index, 0);
     }
   }
 
@@ -442,83 +512,53 @@ class _PostFeedListItemState extends State<_PostFeedListItem> {
   void dispose() {
     _disposed = true;
     VisibilityDetectorController.instance.forget(_visibilityKey);
-    _isVisible.dispose();
+    widget.onVisibilityFractionChanged(widget.index, 0);
     super.dispose();
   }
 
   void _onVisibilityChanged(VisibilityInfo info) {
     if (_disposed || !mounted) return;
-
-    final fraction = info.visibleFraction;
-    final currentlyVisible = _isVisible.value;
-
-    final bool visible;
-    if (currentlyVisible) {
-      visible = fraction >= _PostFeedListWidgetState._visibleExitThreshold;
-    } else {
-      visible = fraction >= _PostFeedListWidgetState._visibleEnterThreshold;
-    }
-
-    if (currentlyVisible == visible) return;
-    _isVisible.value = visible;
-
-    if (visible && !_wasPrimaryVisible) {
-      _wasPrimaryVisible = true;
-      widget.onBecamePrimaryVisible?.call(widget.reelsData, widget.index);
-    } else if (!visible) {
-      _wasPrimaryVisible = false;
-    }
+    widget.onVisibilityFractionChanged(widget.index, info.visibleFraction);
   }
 
   @override
-  Widget build(BuildContext context) {
-    final scrollScope = PostFeedScrollScope.maybeOf(context);
-    final allowHeavyMedia = scrollScope?.allowHeavyMedia ?? true;
-
-    return RepaintBoundary(
-      child: ClipRect(
-        child: VisibilityDetector(
-          key: _visibilityKey,
-          onVisibilityChanged: _onVisibilityChanged,
-          child: ValueListenableBuilder<bool>(
-            valueListenable: _isVisible,
-            builder: (context, isVisible, _) {
-              final allowVideo = isVisible && allowHeavyMedia;
-              return IsmPostFeedCardView(
-                key: ValueKey(
-                  '${widget.reelsData.postId}_${widget.refreshToken}',
-                ),
-                reelsData: widget.reelsData,
-                reelsConfig: widget.reelsConfig,
-                postSectionType:
-                    widget.postSectionType ?? PostSectionType.forYou,
-                isPostVisible: allowVideo,
-                videoCacheManager: widget.videoCacheManager,
-                loggedInUserId: widget.loggedInUserId,
-                logIndex: '${widget.index}',
-                onPressFollowButton: widget.onPressFollowButton,
-                onPressMoreButton: widget.onPressMoreButton != null
-                    ? () => widget.onPressMoreButton!(widget.reelsData)
-                    : null,
-                onPressLikeButton: widget.onPressLikeButton,
-                onPressSaveButton: widget.onPressSaveButton,
-                onTapUserProfile: widget.onTapUserProfile != null
-                    ? () => widget.onTapUserProfile!(widget.reelsData)
-                    : null,
-                onTapShare: widget.onTapShare != null
-                    ? () => widget.onTapShare!(widget.reelsData)
-                    : null,
-                onTapComment: widget.onTapComment != null
-                    ? () => widget.onTapComment!(
-                          widget.reelsData,
-                          widget.reelsData.commentCount ?? 0,
-                        )
-                    : null,
-              );
-            },
+  Widget build(BuildContext context) => RepaintBoundary(
+        child: ClipRect(
+          child: VisibilityDetector(
+            key: _visibilityKey,
+            onVisibilityChanged: _onVisibilityChanged,
+            child: IsmPostFeedCardView(
+              key: ValueKey(
+                '${widget.reelsData.postId}_${widget.refreshToken}',
+              ),
+              reelsData: widget.reelsData,
+              reelsConfig: widget.reelsConfig,
+              postSectionType:
+                  widget.postSectionType ?? PostSectionType.forYou,
+              isPostVisible: widget.isPostVisible,
+              videoCacheManager: widget.videoCacheManager,
+              loggedInUserId: widget.loggedInUserId,
+              logIndex: '${widget.index}',
+              onPressFollowButton: widget.onPressFollowButton,
+              onPressMoreButton: widget.onPressMoreButton != null
+                  ? () => widget.onPressMoreButton!(widget.reelsData)
+                  : null,
+              onPressLikeButton: widget.onPressLikeButton,
+              onPressSaveButton: widget.onPressSaveButton,
+              onTapUserProfile: widget.onTapUserProfile != null
+                  ? () => widget.onTapUserProfile!(widget.reelsData)
+                  : null,
+              onTapShare: widget.onTapShare != null
+                  ? () => widget.onTapShare!(widget.reelsData)
+                  : null,
+              onTapComment: widget.onTapComment != null
+                  ? () => widget.onTapComment!(
+                        widget.reelsData,
+                        widget.reelsData.commentCount ?? 0,
+                      )
+                  : null,
+            ),
           ),
         ),
-      ),
-    );
-  }
+      );
 }
