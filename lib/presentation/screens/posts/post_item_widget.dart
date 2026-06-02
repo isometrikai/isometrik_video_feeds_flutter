@@ -68,6 +68,9 @@ class _PostItemWidgetState extends State<PostItemWidget> {
   List<PostDataModel> _postList = [];
   StreamSubscription<dynamic>? _subscription;
   late PageController _pageController;
+  var _currentPageIndex = 0;
+  var _hasActivatedInitialPost = false;
+  final _analyticsTracker = IsrSocialPostAnalyticsTracker.instance;
 
   @override
   void initState() {
@@ -76,7 +79,8 @@ class _PostItemWidgetState extends State<PostItemWidget> {
   }
 
   void _onStartInit() {
-    _pageController = PageController(initialPage: widget.startingPostIndex ?? 0);
+    _currentPageIndex = widget.startingPostIndex ?? 0;
+    _pageController = PageController(initialPage: _currentPageIndex);
 
     // Check current state
     final currentState = _postBloc.state;
@@ -92,6 +96,11 @@ class _PostItemWidgetState extends State<PostItemWidget> {
           setState(() {
             _postList = state.postsList ?? [];
           });
+          if (!_hasActivatedInitialPost && _postList.isNotEmpty) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _activatePostAtIndex(_currentPageIndex, isInitial: true);
+            });
+          }
         }
       }
     });
@@ -106,7 +115,47 @@ class _PostItemWidgetState extends State<PostItemWidget> {
           curve: Curves.easeIn,
         );
       }
+      _activatePostAtIndex(_currentPageIndex, isInitial: true);
     });
+  }
+
+  void _activatePostAtIndex(int index, {bool isInitial = false}) {
+    if (_postList.isEmpty || index < 0 || index >= _postList.length) return;
+    if (isInitial && _hasActivatedInitialPost) return;
+
+    if (isInitial) {
+      final startingIndex = widget.startingPostIndex ?? 0;
+      _analyticsTracker.setNextImpressionTrigger(
+        startingIndex > 0 ? ImpressionTrigger.deeplink : ImpressionTrigger.sessionStart,
+      );
+      _hasActivatedInitialPost = true;
+    }
+
+    final post = _postList[index];
+    final postId = post.postId;
+    if (postId == null) return;
+
+    final mediaType = post.mediaType1?.toInt() ?? 0;
+    final isVideo = mediaType == 1;
+
+    _analyticsTracker.onPostActivated(
+      postId: postId,
+      isAutoplay: isVideo && (widget.startingPostIndex == index || index == _currentPageIndex),
+      startsMuted: false,
+      isVideo: isVideo,
+      videoDurationSec: post.duration?.toDouble(),
+    );
+  }
+
+  void _handlePageSwipe(int fromIndex, int toIndex) {
+    if (_postList.isEmpty || fromIndex < 0 || fromIndex >= _postList.length) return;
+
+    _analyticsTracker.onLeaveCurrentPost(
+      exitReason: PostExitReason.swipe,
+      swipeDirection: toIndex > fromIndex ? PostSwipeDirection.next : PostSwipeDirection.previous,
+    );
+    _analyticsTracker.setNextImpressionTrigger(ImpressionTrigger.scroll);
+    _activatePostAtIndex(toIndex);
   }
 
   @override
@@ -162,6 +211,10 @@ class _PostItemWidgetState extends State<PostItemWidget> {
           debugPrint('FollowingPostWidget ...index $index');
           debugPrint(
               'FollowingPostWidget ...Post by ...${_postList[index].userName}\n Post url ${_postList[index].imageUrl1}');
+          if (index != _currentPageIndex) {
+            _handlePageSwipe(_currentPageIndex, index);
+            _currentPageIndex = index;
+          }
           // Check if we're at 65% of the list
           final threshold = (_postList.length * 0.65).floor();
           if (index >= threshold) {
@@ -219,6 +272,7 @@ class _PostItemWidgetState extends State<PostItemWidget> {
           onLongPressStart: () {},
           mediaUrl: _postList[index].imageUrl1 ?? '',
           mediaType: _postList[index].mediaType1?.toInt() ?? 0,
+          videoDurationSec: _postList[index].duration?.toDouble(),
           onTapUserProfilePic: () {
             if (widget.onTapUserProfilePic != null) {
               widget.onTapUserProfilePic!(
