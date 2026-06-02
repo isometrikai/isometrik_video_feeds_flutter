@@ -249,6 +249,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     FocusManager.instance.primaryFocus?.unfocus();
     _cancelCompression();
     _createPostRequest = CreatePostRequest();
+    _postData = null;
     mentionedUserData.clear();
     mediaMentionUserData.clear();
     hashTagDataList.clear();
@@ -257,8 +258,11 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     _selectedMediaIndex = 0;
     _isForEdit = false;
     descriptionText = '';
-    // linkedProducts.clear();
+    linkedProducts.clear();
     _linkedSocialProducts.clear();
+    _coverImage = '';
+    _coverImageExtension = '';
+    _coverFileName = '';
     _tags = _createPostRequest.tags ?? Tags();
     _tags.products = [];
     resetApiCall();
@@ -981,16 +985,19 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       // Update the original list element
       _mediaDataList[i] = element;
     }
-    if (_postData?.tags?.products.isListEmptyOrNull == false) {
-      final socialProductList = _postData?.tags?.products;
-      linkedProducts = _getProductDataModel(socialProductList ?? []);
-      emit(
-        LoadLinkedProductsState(
-          productList: linkedProducts,
-          totalProductsCount: linkedProducts.length,
-        ),
-      );
-    }
+    final socialProductList = _postData?.tags?.products;
+    linkedProducts = socialProductList.isListEmptyOrNull
+        ? []
+        : _getProductDataModel(socialProductList!);
+    _linkedSocialProducts
+      ..clear()
+      ..addAll(linkedProducts);
+    emit(
+      LoadLinkedProductsState(
+        productList: linkedProducts,
+        totalProductsCount: linkedProducts.length,
+      ),
+    );
     _isForEdit = true;
     _makePostRequest();
     // emit(MediaSelectedState(

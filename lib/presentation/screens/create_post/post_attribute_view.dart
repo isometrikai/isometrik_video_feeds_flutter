@@ -101,12 +101,27 @@ class _PostAttributeViewState extends State<PostAttributeView>
     }
   }
 
+  void _resetLocalEditState() {
+    _linkedProducts.clear();
+    _mentionedUsers.clear();
+    _hashTags.clear();
+    _mediaDataList.clear();
+    _postAttributeClass = null;
+    _originalPostAttributeClass = null;
+    _didApplyInitialCaptionTagHighlights = false;
+    _descriptionController.text = '';
+    _paidAmountController.clear();
+    _selectedDate = null;
+  }
+
   @override
   void initState() {
     _createPostBloc = context.getOrCreateBloc();
     _progressCubit = context.getOrCreateBloc();
     _socialActionCubit = context.getOrCreateBloc();
     WidgetsBinding.instance.addObserver(this);
+    _descriptionController = FlutterTaggerController();
+    _resetLocalEditState();
     _isEditMode = widget.isEditMode ?? false;
     final editData = widget.postData;
     if (_isEditMode && editData != null) {
@@ -124,7 +139,6 @@ class _PostAttributeViewState extends State<PostAttributeView>
         _performScrollToCaptionInput();
       }
     });
-    _descriptionController = FlutterTaggerController();
     super.initState();
   }
 
@@ -571,7 +585,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
           return;
         }
         if (state is PostAttributionUpdatedState &&
-            state.postAttributeClass != _postAttributeClass) {
+            state.postAttributeClass != null) {
           setState(() {
             _prepareData(postAttributeClass: state.postAttributeClass);
           });
