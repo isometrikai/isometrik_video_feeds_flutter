@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:ism_video_reel_player/domain/models/camera_capture_result.dart';
@@ -365,13 +366,20 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
     );
   }
 
+  SystemUiOverlayStyle get _systemUiOverlay => IsrSystemUi.lightBarsOverlay(
+        background: widget.mediaSelectionConfig.appBarColor,
+      );
+
   @override
   Widget build(BuildContext context) => BlocProvider<MediaSelectionBloc>.value(
         value: _bloc,
-        child: Scaffold(
+        child: AnnotatedRegion<SystemUiOverlayStyle>(
+          value: _systemUiOverlay,
+          child: Scaffold(
           backgroundColor: widget.mediaSelectionConfig.backgroundColor,
           appBar: AppBar(
-            backgroundColor: IsrColors.white,
+            backgroundColor: widget.mediaSelectionConfig.appBarColor,
+            systemOverlayStyle: _systemUiOverlay,
             elevation: 0,
             leading: IconButton(
               icon: widget.mediaSelectionConfig.closeIcon,
@@ -441,6 +449,7 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
               ),
             ),
           ),
+        ),
         ),
       );
 

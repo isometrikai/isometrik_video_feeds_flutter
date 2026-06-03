@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit_config.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/pro_media_editor/pro_media_util.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/pro_media_editor/pro_video_assist/mixins/video_editor_mixin.dart';
@@ -46,6 +47,7 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
   @override
   void initState() {
     super.initState();
+    _applySystemUiOverlay();
     _initializePlayer();
   }
 
@@ -53,6 +55,12 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
   void dispose() {
     _videoController.dispose();
     super.dispose();
+  }
+
+  void _applySystemUiOverlay() {
+    SystemChrome.setSystemUIOverlayStyle(
+      mediaEditorUiOverlay(widget.mediaEditConfig),
+    );
   }
 
   void _initializePlayer() async {
@@ -115,6 +123,9 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
     _videoController.addListener(_onDurationChange);
 
     setState(() {});
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _applySystemUiOverlay();
+    });
   }
 
   void _onDurationChange() {
@@ -158,11 +169,17 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
   }
 
   @override
-  Widget build(BuildContext context) => AnimatedSwitcher(
-        duration: const Duration(milliseconds: 220),
-        child: proVideoController == null
-            ? const VideoInitializingWidget()
-            : _buildEditor(),
+  Widget build(BuildContext context) => AnnotatedRegion<SystemUiOverlayStyle>(
+        value: mediaEditorUiOverlay(widget.mediaEditConfig),
+        child: Scaffold(
+          backgroundColor: widget.mediaEditConfig.whiteColor,
+          body: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            child: proVideoController == null
+                ? const VideoInitializingWidget()
+                : _buildEditor(),
+          ),
+        ),
       );
 
   Widget _buildEditor() => ProImageEditor.video(

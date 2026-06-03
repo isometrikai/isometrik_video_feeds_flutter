@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit_config.dart';
@@ -276,6 +277,10 @@ class _MediaEditViewState extends State<MediaEditView> {
     }
   }
 
+  SystemUiOverlayStyle get _systemUiOverlay => IsrSystemUi.lightBarsOverlay(
+        background: widget.mediaEditConfig.whiteColor,
+      );
+
   @override
   Widget build(BuildContext context) => BlocProvider<MediaEditBloc>.value(
         value: _bloc,
@@ -291,8 +296,10 @@ class _MediaEditViewState extends State<MediaEditView> {
               }
             }
           },
-          child: Scaffold(
-            backgroundColor: Colors.white,
+          child: AnnotatedRegion<SystemUiOverlayStyle>(
+            value: _systemUiOverlay,
+            child: Scaffold(
+            backgroundColor: widget.mediaEditConfig.whiteColor,
             body: SafeArea(
               child: BlocBuilder<MediaEditBloc, MediaEditState>(
                 buildWhen: (previous, current) =>
@@ -341,6 +348,7 @@ class _MediaEditViewState extends State<MediaEditView> {
                 },
               ),
             ),
+          ),
           ),
         ),
       );

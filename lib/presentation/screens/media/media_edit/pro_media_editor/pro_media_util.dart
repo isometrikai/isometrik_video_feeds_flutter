@@ -10,7 +10,7 @@ import 'package:pro_image_editor/pro_image_editor.dart';
 PaintEditorConfigs paintEditorConfigs(MediaEditConfig mediaEditConfig) =>
     PaintEditorConfigs(
       style: PaintEditorStyle(
-          uiOverlayStyle: uiOverLay,
+          uiOverlayStyle: mediaEditorUiOverlay(mediaEditConfig),
           appBarColor: mediaEditConfig.blackColor,
           appBarBackground: mediaEditConfig.whiteColor,
           bottomBarBackground: mediaEditConfig.whiteColor,
@@ -26,6 +26,7 @@ PaintEditorConfigs paintEditorConfigs(MediaEditConfig mediaEditConfig) =>
 
 TextEditorConfigs textEditorConfigs(MediaEditConfig mediaEditConfig) =>
     TextEditorConfigs(
+      safeArea: const EditorSafeArea(bottom: false),
       style: TextEditorStyle(
         background: Colors.black.applyOpacity(.1),
         appBarColor: mediaEditConfig.blackColor,
@@ -39,7 +40,7 @@ CropRotateEditorConfigs cropRotateEditorConfigs(
         MediaEditConfig mediaEditConfig) =>
     CropRotateEditorConfigs(
         style: CropRotateEditorStyle(
-      uiOverlayStyle: uiOverLay,
+      uiOverlayStyle: mediaEditorUiOverlay(mediaEditConfig),
       appBarColor: mediaEditConfig.blackColor,
       appBarBackground: mediaEditConfig.whiteColor,
       bottomBarBackground: mediaEditConfig.whiteColor,
@@ -49,7 +50,7 @@ CropRotateEditorConfigs cropRotateEditorConfigs(
 FilterEditorConfigs filterEditorConfigs(MediaEditConfig mediaEditConfig) =>
     FilterEditorConfigs(
         style: FilterEditorStyle(
-      uiOverlayStyle: uiOverLay,
+      uiOverlayStyle: mediaEditorUiOverlay(mediaEditConfig),
       background: mediaEditConfig.backgroundColor,
       appBarColor: mediaEditConfig.blackColor,
       appBarBackground: mediaEditConfig.whiteColor,
@@ -60,7 +61,7 @@ FilterEditorConfigs filterEditorConfigs(MediaEditConfig mediaEditConfig) =>
 BlurEditorConfigs blurEditorConfigs(MediaEditConfig mediaEditConfig) =>
     BlurEditorConfigs(
         style: BlurEditorStyle(
-      uiOverlayStyle: uiOverLay,
+      uiOverlayStyle: mediaEditorUiOverlay(mediaEditConfig),
       appBarForegroundColor: mediaEditConfig.blackColor,
       appBarBackgroundColor: mediaEditConfig.whiteColor,
       background: mediaEditConfig.whiteColor,
@@ -69,7 +70,7 @@ BlurEditorConfigs blurEditorConfigs(MediaEditConfig mediaEditConfig) =>
 TuneEditorConfigs tuneEditorConfigs(MediaEditConfig mediaEditConfig) =>
     TuneEditorConfigs(
         style: TuneEditorStyle(
-      uiOverlayStyle: uiOverLay,
+      uiOverlayStyle: mediaEditorUiOverlay(mediaEditConfig),
       appBarColor: mediaEditConfig.blackColor,
       appBarBackground: mediaEditConfig.whiteColor,
       bottomBarBackground: mediaEditConfig.whiteColor,
@@ -86,13 +87,9 @@ StickerEditorConfigs stickerEditorConfigs(MediaEditConfig mediaEditConfig) =>
       builder: _buildStickerPicker,
     );
 
-final uiOverLay = SystemUiOverlayStyle(
-  statusBarColor: IsrColors.appBarColor,
-  statusBarIconBrightness: Brightness.dark,
-  statusBarBrightness: Brightness.light,
-  systemNavigationBarColor: IsrColors.navigationBar,
-  systemNavigationBarIconBrightness: Brightness.dark,
-);
+/// White system bars with dark status/nav icons (light-content overlay).
+SystemUiOverlayStyle mediaEditorUiOverlay(MediaEditConfig mediaEditConfig) =>
+    IsrSystemUi.lightBarsOverlay(background: mediaEditConfig.whiteColor);
 
 MainEditorConfigs mainEditorConfig(MediaEditConfig mediaEditConfig) =>
     MainEditorConfigs(
@@ -100,7 +97,7 @@ MainEditorConfigs mainEditorConfig(MediaEditConfig mediaEditConfig) =>
         enableDoubleTapZoom: false,
         mobilePanInteraction: MobilePanInteraction.dragSelect,
         style: MainEditorStyle(
-          uiOverlayStyle: uiOverLay,
+          uiOverlayStyle: mediaEditorUiOverlay(mediaEditConfig),
           appBarColor: mediaEditConfig.blackColor,
           appBarBackground: mediaEditConfig.whiteColor,
           bottomBarBackground: mediaEditConfig.whiteColor,
@@ -154,9 +151,17 @@ MainEditorConfigs mainEditorConfig(MediaEditConfig mediaEditConfig) =>
               ),
             ));
 
-ProImageEditorConfigs proImageEditorConfigs(MediaEditConfig mediaEditConfig) =>
-    ProImageEditorConfigs(
-      theme: ThemeData.light(),
+ProImageEditorConfigs proImageEditorConfigs(MediaEditConfig mediaEditConfig) {
+  final overlay = mediaEditorUiOverlay(mediaEditConfig);
+  return ProImageEditorConfigs(
+      theme: ThemeData.light().copyWith(
+        appBarTheme: AppBarTheme(
+          backgroundColor: mediaEditConfig.whiteColor,
+          foregroundColor: mediaEditConfig.blackColor,
+          iconTheme: IconThemeData(color: mediaEditConfig.blackColor),
+          systemOverlayStyle: overlay,
+        ),
+      ),
       dialogConfigs: DialogConfigs(
           style: DialogStyle(
               loadingDialog:
@@ -178,6 +183,7 @@ ProImageEditorConfigs proImageEditorConfigs(MediaEditConfig mediaEditConfig) =>
           ? ImageEditorDesignMode.material
           : ImageEditorDesignMode.cupertino,
     );
+}
 
 /// Builds the sticker picker interface
 Widget _buildStickerPicker(
