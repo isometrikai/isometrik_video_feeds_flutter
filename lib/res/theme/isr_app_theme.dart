@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -10,9 +9,13 @@ ThemeData get isrTheme {
   final scaffoldColor = themeConfig?.scaffoldBackgroundColor ??
       IsrColors.scaffoldColor;
   final appBarColor = themeConfig?.appBarColor ?? IsrColors.appBarColor;
+  final appBarIconTextColor =
+      themeConfig?.appBarIconTextColor ?? IsrColors.appBarIconTextColor;
   final brightness = themeConfig?.brightness ?? Brightness.light;
   final splashColor = themeConfig?.splashColor ??
       primaryColor.changeOpacity(0.5);
+  final systemUiOverlay =
+      IsrSystemUi.overlay(themeConfig: themeConfig);
 
   return ThemeData(
     pageTransitionsTheme: const PageTransitionsTheme(
@@ -95,16 +98,10 @@ ThemeData get isrTheme {
     ),
   ),
     appBarTheme: AppBarTheme(
-      systemOverlayStyle: SystemUiOverlayStyle(
-        statusBarColor: appBarColor,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
-        systemNavigationBarColor: IsrColors.navigationBar,
-        systemNavigationBarIconBrightness: Brightness.dark,
-      ),
+      systemOverlayStyle: systemUiOverlay,
       backgroundColor: appBarColor,
-      iconTheme: IconThemeData(color: IsrColors.black),
-      actionsIconTheme: IconThemeData(color: IsrColors.black),
+      iconTheme: IconThemeData(color: appBarIconTextColor),
+      actionsIconTheme: IconThemeData(color: appBarIconTextColor),
       titleTextStyle:
           IsrStyles.secondaryText16.copyWith(fontWeight: FontWeight.w500),
       toolbarTextStyle: IsrStyles.secondaryText12,
@@ -121,7 +118,7 @@ ThemeData get isrTheme {
       color: IsrColors.dividerColor,
     ),
     bottomNavigationBarTheme: BottomNavigationBarThemeData(
-      backgroundColor: IsrColors.white,
+      backgroundColor: IsrColors.navigationBarColor,
       elevation: 4,
       type: BottomNavigationBarType.fixed,
     ),

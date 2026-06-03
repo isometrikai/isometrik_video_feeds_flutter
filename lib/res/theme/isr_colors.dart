@@ -31,11 +31,45 @@ class IsrColors {
       IsrVideoReelConfig.socialConfig.colorsConfig?.buttonTextColor ??
       const Color(0xFFFFFFFF);
 
-  /// colors for status bar and navigation bar background
+  /// Background color for app bars.
   static Color get appBarColor =>
       IsrVideoReelConfig.socialConfig.themeConfig?.appBarColor ??
       const Color(0xFFFFFFFF);
+
+  /// Icon and title color for app bars.
+  static Color get appBarIconTextColor =>
+      IsrVideoReelConfig.socialConfig.themeConfig?.appBarIconTextColor ??
+      Colors.black;
+
+  /// Status bar background color.
+  static Color get statusBarColor =>
+      IsrVideoReelConfig.socialConfig.themeConfig?.statusBarColor ??
+      appBarColor;
+
+  /// System navigation bar background color.
+  static Color get navigationBarColor =>
+      IsrVideoReelConfig.socialConfig.themeConfig?.navigationBarColor ??
+      IsrVideoReelConfig.socialConfig.themeConfig?.statusBarColor ??
+      const Color(0xFFFFFFFF);
+
   static const Color navigationBar = Color(0xFFFFFFFF);
+
+  /// Default status bar icon brightness from theme.
+  static Brightness get statusBarIconBrightness {
+    final config = IsrVideoReelConfig.socialConfig.themeConfig;
+    if (config?.statusBarIconBrightness != null) {
+      return config!.statusBarIconBrightness!;
+    }
+    return (config?.brightness ?? Brightness.light) == Brightness.dark
+        ? Brightness.light
+        : Brightness.dark;
+  }
+
+  /// Default navigation bar icon brightness from theme.
+  static Brightness get navigationBarIconBrightness =>
+      IsrVideoReelConfig.socialConfig.themeConfig
+          ?.navigationBarIconBrightness ??
+      statusBarIconBrightness;
 
   static const Color paymentBackgroundColor = Color(0xFFFFEAE8);
 

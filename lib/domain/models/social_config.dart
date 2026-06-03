@@ -303,13 +303,19 @@ class GoogleCloudUpload {
 ///   secondaryColor: Color(0xFF851E91),    // Secondary brand color
 ///   scaffoldBackgroundColor: Colors.white, // Background color
 ///   appBarColor: Colors.white,             // App bar background
+///   appBarIconTextColor: Colors.black,     // App bar icons and title
+///   statusBarColor: Colors.white,          // Status bar background
+///   statusBarIconBrightness: Brightness.dark, // Status bar icons (Android)
+///   navigationBarColor: Colors.white,      // Navigation bar background
+///   navigationBarIconBrightness: Brightness.dark,
 ///   brightness: Brightness.light,          // Light or dark theme
 ///   splashColor: Color(0xFF006CD8).withOpacity(0.5), // Splash effect color
 /// )
 /// ```
 ///
 /// These values are used throughout the SDK in:
-/// - AppBar themes
+/// - AppBar themes and icon colors
+/// - Status bar and navigation bar styling (`IsrSystemUi.overlay`)
 /// - Button default colors
 /// - Scaffold backgrounds
 /// - Theme data generation
@@ -319,6 +325,12 @@ class ThemeConfig {
     this.secondaryColor,
     this.scaffoldBackgroundColor,
     this.appBarColor,
+    this.appBarIconTextColor,
+    this.statusBarColor,
+    this.statusBarIconBrightness,
+    this.statusBarBrightness,
+    this.navigationBarColor,
+    this.navigationBarIconBrightness,
     this.brightness,
     this.splashColor,
   });
@@ -339,6 +351,30 @@ class ThemeConfig {
   /// Falls back to `IsrColors.appBarColor` if not provided.
   final Color? appBarColor;
 
+  /// Icon and title color for app bars.
+  /// Falls back to `IsrColors.appBarIconTextColor` if not provided.
+  final Color? appBarIconTextColor;
+
+  /// Status bar background color.
+  /// Falls back to [appBarColor], then `IsrColors.appBarColor`.
+  final Color? statusBarColor;
+
+  /// Status bar icon brightness on Android (`Brightness.dark` = dark icons).
+  /// Falls back from [brightness]: light theme → dark icons, dark theme → light icons.
+  final Brightness? statusBarIconBrightness;
+
+  /// Status bar style on iOS (content brightness behind the status bar).
+  /// Falls back opposite of [statusBarIconBrightness] when not set.
+  final Brightness? statusBarBrightness;
+
+  /// System navigation bar background color.
+  /// Falls back to [statusBarColor], then [appBarColor].
+  final Color? navigationBarColor;
+
+  /// Navigation bar icon brightness on Android.
+  /// Falls back to [statusBarIconBrightness].
+  final Brightness? navigationBarIconBrightness;
+
   /// Theme brightness (light or dark mode).
   /// Falls back to `Brightness.light` if not provided.
   final Brightness? brightness;
@@ -352,6 +388,12 @@ class ThemeConfig {
     Color? secondaryColor,
     Color? scaffoldBackgroundColor,
     Color? appBarColor,
+    Color? appBarIconTextColor,
+    Color? statusBarColor,
+    Brightness? statusBarIconBrightness,
+    Brightness? statusBarBrightness,
+    Color? navigationBarColor,
+    Brightness? navigationBarIconBrightness,
     Brightness? brightness,
     Color? splashColor,
   }) =>
@@ -361,6 +403,14 @@ class ThemeConfig {
         scaffoldBackgroundColor:
             scaffoldBackgroundColor ?? this.scaffoldBackgroundColor,
         appBarColor: appBarColor ?? this.appBarColor,
+        appBarIconTextColor: appBarIconTextColor ?? this.appBarIconTextColor,
+        statusBarColor: statusBarColor ?? this.statusBarColor,
+        statusBarIconBrightness:
+            statusBarIconBrightness ?? this.statusBarIconBrightness,
+        statusBarBrightness: statusBarBrightness ?? this.statusBarBrightness,
+        navigationBarColor: navigationBarColor ?? this.navigationBarColor,
+        navigationBarIconBrightness: navigationBarIconBrightness ??
+            this.navigationBarIconBrightness,
         brightness: brightness ?? this.brightness,
         splashColor: splashColor ?? this.splashColor,
       );
