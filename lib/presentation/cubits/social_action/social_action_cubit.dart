@@ -650,12 +650,18 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
   void onPostCreated({String? postId, TimeLineData? postData}) {
     debugPrint(
         'IsmSocialActionCubit onPostCreated -> postId: $postId, postData: ${postData?.toMap()}');
+    if (postData != null) {
+      updatePostList([postData]);
+    }
     emit(IsmCreatePostActionListenerState(postData: postData, postId: postId));
   }
 
   void onPostEdited({String? postId, TimeLineData? postData}) {
     debugPrint(
         'IsmSocialActionCubit onPostEdited -> postId: $postId, postData: ${postData?.toMap()}');
+    if (postData != null) {
+      updatePostList([postData]);
+    }
     emit(IsmEditPostActionListenerState(postData: postData, postId: postId));
   }
 

@@ -814,7 +814,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   void _updatePostData() {
     _postData?.tags = _createPostRequest.tags;
     _postData?.caption = _createPostRequest.caption;
-    _postData?.media = _createPostRequest.media;
+    _postData?.media = _createPostRequest.media?.toList();
     final settings = _postData?.settings;
     if (settings != null) {
       if (_postAttributeClass.allowComment != settings.commentsEnabled) {

@@ -560,22 +560,35 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       },
       onPressMoreButton: (reelsData) async {
         if (reelsData.postData is TimeLineData) {
-          _socialPostBloc.add(PlayPauseVideoEvent(play: false));
-          final sheetResult = await _handleMoreOptions(
-            reelsData.postData as TimeLineData,
-            tabData,
-          );
-          if (sheetResult == MoreOptionsSheetResult.dubWithAudio) {
-            await DubWithAudioCaptureCoordinator.handleFromPost(
-              context,
-              reelsData.postData as TimeLineData,
-              config: _postConfig.dubWithAudioConfig,
-              customHandler: _postConfig.postCallBackConfig?.onDubWithAudio,
-            );
-            _socialPostBloc.add(PlayPauseVideoEvent(play: true));
-            IsrVideoReelConfig.resumeFeedPlayback();
-          } else {
-            _socialPostBloc.add(PlayPauseVideoEvent(play: true));
+          final postId = reelsData.postId;
+          if (postId != null && postId.isNotEmpty) {
+            _socialPostBloc.add(PlayPauseVideoEvent(play: false));
+            final postData =
+                await _socialActionCubit.getAsyncPostById(postId) ??
+                    ((reelsData.postData is TimeLineData &&
+                            (reelsData.postData as TimeLineData).id == postId)
+                        ? reelsData.postData as TimeLineData
+                        : null);
+            if (postData != null) {
+              final sheetResult = await _handleMoreOptions(
+                reelsData.postData as TimeLineData,
+                tabData,
+              );
+              if (sheetResult == MoreOptionsSheetResult.dubWithAudio) {
+                await DubWithAudioCaptureCoordinator.handleFromPost(
+                  context,
+                  reelsData.postData as TimeLineData,
+                  config: _postConfig.dubWithAudioConfig,
+                  customHandler: _postConfig.postCallBackConfig?.onDubWithAudio,
+                );
+                _socialPostBloc.add(PlayPauseVideoEvent(play: true));
+                IsrVideoReelConfig.resumeFeedPlayback();
+              } else {
+                _socialPostBloc.add(PlayPauseVideoEvent(play: true));
+              }
+            } else {
+              _socialPostBloc.add(PlayPauseVideoEvent(play: true));
+            }
           }
         }
       },
