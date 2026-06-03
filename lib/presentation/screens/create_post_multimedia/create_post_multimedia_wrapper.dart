@@ -109,27 +109,28 @@ class _CreatePostMultimediaWrapperState
     // If a sound was preselected (e.g. "Use this sound" from a post), mux it
     // onto every gallery video so the final upload carries the audio AND the
     // create-post request includes `sound_id` / `sound_snapshot`.
-    final preselectedSound = _selectedPostSound;
-    if (preselectedSound != null &&
-        preselectedSound.soundId?.isNotEmpty == true) {
+    final librarySound = PostSoundUtil.isLibrarySoundId(_selectedPostSound?.soundId)
+        ? _selectedPostSound
+        : null;
+    if (librarySound != null) {
       for (var i = 0; i < mediaEditItems.length; i++) {
         final item = mediaEditItems[i];
         if (item.mediaType == me.EditMediaType.video) {
           var path = item.editedPath ?? item.originalPath;
-          if (preselectedSound.soundUrl?.isNotEmpty == true) {
+          if (librarySound.soundUrl?.isNotEmpty == true) {
             path = await PostSoundUtil.muxVideoWithSound(
               videoPath: path,
-              sound: preselectedSound,
+              sound: librarySound,
             );
           }
           if (!mounted) return false;
           mediaEditItems[i] = item.copyWith(
             editedPath: path,
-            sound: item.sound ?? preselectedSound,
+            sound: item.sound ?? librarySound,
           );
         } else if (item.mediaType == me.EditMediaType.image &&
             item.sound?.soundId?.isNotEmpty != true) {
-          mediaEditItems[i] = item.copyWith(sound: preselectedSound);
+          mediaEditItems[i] = item.copyWith(sound: librarySound);
         }
       }
     }
@@ -269,12 +270,14 @@ class _CreatePostMultimediaWrapperState
       return false;
     }
     final soundFromEdits = editedMedia
-        .where((e) => e.sound?.soundId?.isNotEmpty == true)
         .map((e) => e.sound)
+        .where((s) => PostSoundUtil.isLibrarySoundId(s?.soundId))
+        .map((s) => s!)
         .firstOrNull;
     // Keep the preselected sound (e.g. from "Use this sound") if the user
     // didn't change it inside the media editor.
-    _selectedPostSound = soundFromEdits ?? _selectedPostSound;
+    _selectedPostSound =
+        soundFromEdits ?? _selectedPostSound ?? widget.initialSound;
     final mediaDataList = _mediaDataFromEditItems(editedMedia);
     await IsrAppNavigator.goToCreatePostAttributionView(
       context,

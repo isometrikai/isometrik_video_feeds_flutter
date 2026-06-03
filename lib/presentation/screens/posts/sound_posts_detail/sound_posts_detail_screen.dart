@@ -45,8 +45,7 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
 
   PostSoundInfo get _sound => _displaySound.value ?? widget.sound;
 
-  bool get _apiSoundsMode =>
-      SoundLibraryFeatureUtil.useSoundsApi;
+  bool get _apiSoundsMode => SoundLibraryFeatureUtil.useSoundsApi;
 
   @override
   void initState() {
@@ -76,9 +75,8 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
       id: widget.sound.id,
       title: track.title,
       artist: track.author,
-      previewUrl: track.trackUrl.isNotEmpty
-          ? track.trackUrl
-          : widget.sound.previewUrl,
+      previewUrl:
+          track.trackUrl.isNotEmpty ? track.trackUrl : widget.sound.previewUrl,
       thumbnailUrl: track.thumbnailUrl.isNotEmpty
           ? track.thumbnailUrl
           : widget.sound.thumbnailUrl,
@@ -138,8 +136,7 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
       if (!mounted || !_scrollController.hasClients) return;
       final max = _scrollController.position.maxScrollExtent;
       if (max <= 0) return;
-      final scrollPercentage =
-          _scrollController.position.pixels / max;
+      final scrollPercentage = _scrollController.position.pixels / max;
       if (scrollPercentage >= 0.65 && !_isLoadingMore && _hasMoreData) {
         _loadMorePosts();
       }
@@ -181,7 +178,8 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(IsrTranslationFile.soundPreviewPlayFailed)),
+          const SnackBar(
+              content: Text(IsrTranslationFile.soundPreviewPlayFailed)),
         );
       }
     }
@@ -294,12 +292,12 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
                     ),
                     onPressed: _toggleSaved,
                   ),
-          IconButton(
-            icon: const Icon(Icons.ios_share_outlined),
-            onPressed: () {
-              Utility.showToastMessage(IsrTranslationFile.soundDetailShareSoon);
-            },
-          ),
+          // IconButton(
+          //   icon: const Icon(Icons.ios_share_outlined),
+          //   onPressed: () {
+          //     Utility.showToastMessage(IsrTranslationFile.soundDetailShareSoon);
+          //   },
+          // ),
         ],
       ),
       body: BlocConsumer<SoundPostsDetailBloc, SoundPostsDetailState>(
@@ -506,7 +504,7 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
                 SizedBox(height: 12.responsiveDimension),
                 TextButton(
                   onPressed: _loadPosts,
-                  child: Text(IsrTranslationFile.tryAgain),
+                  child: const Text(IsrTranslationFile.tryAgain),
                 ),
               ],
             ),
@@ -531,7 +529,7 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
   }
 
   Widget _buildPostsSliverGrid(List<TimeLineData> postList) => SliverGrid(
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3,
           crossAxisSpacing: 1,
           mainAxisSpacing: 1,
@@ -588,7 +586,7 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
         if (coverUrl.isNotEmpty)
           AppImage.network(coverUrl, fit: BoxFit.cover)
         else
-          ColoredBox(
+          const ColoredBox(
             color: IsrColors.colorF5F5F5,
             child: Icon(Icons.image, color: IsrColors.color9B9B9B),
           ),

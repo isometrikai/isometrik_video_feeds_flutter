@@ -66,6 +66,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
 
   // Original values for comparison in edit mode
   PostAttributeClass? _originalPostAttributeClass;
+  MediaEditSoundItem? _pendingSelectedSound;
   var _isEditMode = false;
   DateTime? _selectedDate;
 
@@ -110,6 +111,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
     _socialActionCubit = context.getOrCreateBloc();
     WidgetsBinding.instance.addObserver(this);
     _isEditMode = widget.isEditMode ?? false;
+    _pendingSelectedSound = widget.selectedSound;
     final editData = widget.postData;
     if (_isEditMode && editData != null) {
       _createPostBloc.add(EditPostEvent(postData: editData));
@@ -132,6 +134,8 @@ class _PostAttributeViewState extends State<PostAttributeView>
 
   void _prepareData({PostAttributeClass? postAttributeClass}) {
     _postAttributeClass = postAttributeClass;
+    _pendingSelectedSound ??=
+        widget.selectedSound ?? postAttributeClass?.selectedSound;
     _mediaDataList = _postAttributeClass?.mediaDataList ?? [];
 
     // Load existing linked products
@@ -321,8 +325,13 @@ class _PostAttributeViewState extends State<PostAttributeView>
           priceCurrency: originalSettings.priceCurrency,
         );
       }
+      copyRequest.soundId = originalRequest.soundId;
+      copyRequest.soundSnapshot = originalRequest.soundSnapshot == null
+          ? null
+          : Map<String, dynamic>.from(originalRequest.soundSnapshot!);
       copy.createPostRequest = copyRequest;
     }
+    copy.selectedSound = original.selectedSound;
 
     return copy;
   }
@@ -1905,11 +1914,44 @@ class _PostAttributeViewState extends State<PostAttributeView>
       return;
     }
     _setPostRequest();
+    final selectedSound = _pendingSelectedSound ??
+        widget.selectedSound ??
+        _postAttributeClass?.selectedSound;
     context.getOrCreateBloc<CreatePostBloc>().add(PostCreateEvent(
           createPostRequest:
               _postAttributeClass?.createPostRequest ?? CreatePostRequest(),
+          selectedSound: selectedSound,
           isForEdit: _isEditMode,
         ));
+  }
+
+  void _applySoundToCreatePostRequest() {
+    final sound = _pendingSelectedSound ??
+        widget.selectedSound ??
+        _postAttributeClass?.selectedSound;
+    final req = _postAttributeClass?.createPostRequest;
+    final media = _postAttributeClass?.mediaDataList ?? _mediaDataList;
+    if (req == null || sound == null) return;
+    if (!PostSoundUtil.isLibrarySoundId(sound.soundId)) return;
+
+    final hasVideo = media.any(
+      (m) => m.mediaType == 'video' || m.postType == PostType.video,
+    );
+    final isImageOnly = media.isNotEmpty && !hasVideo;
+    final videoDuration = media
+        .where((m) => m.mediaType == 'video' || m.postType == PostType.video)
+        .map((m) => m.duration?.toInt())
+        .whereType<int>()
+        .firstOrNull;
+
+    req.soundId = sound.soundId!.trim();
+    req.soundSnapshot = PostSoundUtil.buildSoundSnapshot(
+      sound: sound,
+      videoDurationSeconds: isImageOnly
+          ? PostSoundUtil.photoSoundClipMaxSeconds
+          : videoDuration,
+      maxClipSec: isImageOnly ? PostSoundUtil.photoSoundClipMaxSeconds : 60,
+    );
   }
 
   /// Pops the post-attribute route (and the rest of the create stack for new posts)
@@ -1981,6 +2023,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
       }
 
       createPostRequest.tags = tags;
+      _applySoundToCreatePostRequest();
 
       debugPrint(
           'createPostRequest.....${jsonEncode(createPostRequest.toJson())}');
