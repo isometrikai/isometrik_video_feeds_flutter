@@ -56,15 +56,6 @@ class _CreatePostMultimediaWrapperState
   late final mediaEditConfig = GalleryVideoTrimUtil.defaultMediaEditConfig();
 
   MediaEditSoundItem? _selectedPostSound;
-  late final mediaEditConfig = me.MediaEditConfig(
-    primaryColor: IsrColors.appColor,
-    primaryTextColor: IsrColors.primaryTextColor,
-    backgroundColor: Colors.white,
-    appBarColor: Colors.white,
-    primaryFontFamily: AppConstants.primaryFontFamily,
-    mediaEditorStickersConfig:
-        IsrVideoReelConfig.createEditPostConfig.mediaEditorStickersConfig,
-  );
 
   Future<bool> _onMediaSelectionComplete(
       List<ms.MediaAssetData> selectedMedia) async {
