@@ -276,7 +276,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       ];
 
   // ✅ Don't wrap with BlocProvider again - just use BlocConsumer
-  Widget _buildContent() => AnnotatedRegion(
+  Widget _buildContent() => Material(
+        type: MaterialType.transparency,
+        child: AnnotatedRegion(
         value: SystemUiOverlayStyle(
           statusBarColor:
               _statusBarConfig?.statusBarColor ?? IsrColors.transparent,
@@ -359,6 +361,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
               ],
             ),
           ),
+        ),
         ),
       );
 

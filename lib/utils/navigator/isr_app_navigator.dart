@@ -659,7 +659,10 @@ class IsrAppNavigator {
 
     return PageRouteBuilder<T>(
       settings: settings,
-      pageBuilder: (context, animation, secondaryAnimation) => page,
+      pageBuilder: (context, animation, secondaryAnimation) => Material(
+        type: MaterialType.transparency,
+        child: page,
+      ),
       transitionsBuilder: (context, animation, secondaryAnimation, child) =>
           _buildTransition(
         animation: animation,
