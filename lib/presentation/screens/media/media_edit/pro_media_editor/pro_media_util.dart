@@ -2,7 +2,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:ism_video_reel_player/domain/models/create_edit_post_config.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit_config.dart';
+import 'package:ism_video_reel_player/presentation/screens/widgets/app_image.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
@@ -83,8 +85,12 @@ EmojiEditorConfigs emojiEditorConfigs(MediaEditConfig mediaEditConfig) =>
     const EmojiEditorConfigs();
 
 StickerEditorConfigs stickerEditorConfigs(MediaEditConfig mediaEditConfig) =>
-    const StickerEditorConfigs(
-      builder: _buildStickerPicker,
+    StickerEditorConfigs(
+      builder: (setLayer, scrollController) => _buildStickerPicker(
+        setLayer,
+        scrollController,
+        mediaEditConfig.mediaEditorStickersConfig,
+      ),
     );
 
 /// White system bars with dark status/nav icons (light-content overlay).
@@ -189,71 +195,83 @@ ProImageEditorConfigs proImageEditorConfigs(MediaEditConfig mediaEditConfig) {
 Widget _buildStickerPicker(
   Function(WidgetLayer) setLayer,
   ScrollController scrollController,
-) =>
-    Container(
-      height: 300,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Stickers',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+  MediaEditorStickersConfig stickersConfig,
+) {
+  final stickerAssets = stickersConfig.stickerAssetPaths;
+  return Container(
+    height: 300,
+    padding: const EdgeInsets.all(16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          stickersConfig.pickerTitle,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
           ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: GridView.builder(
-              controller: scrollController,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4,
-                crossAxisSpacing: 8,
-                mainAxisSpacing: 8,
-              ),
-              itemCount: _getStickerCount(),
-              itemBuilder: (context, index) =>
-                  _buildStickerItem(index, setLayer),
-            ),
-          ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 16),
+        Expanded(
+          child: stickerAssets.isEmpty
+              ? const Center(child: Text('No stickers available'))
+              : GridView.builder(
+                  controller: scrollController,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: stickersConfig.gridCrossAxisCount,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                  ),
+                  itemCount: stickerAssets.length,
+                  itemBuilder: (context, index) => _buildStickerItem(
+                    stickerAssets[index],
+                    stickersConfig.layerSize,
+                    setLayer,
+                  ),
+                ),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _buildStickerLayerWidget(String assetPath, double size) => SizedBox(
+      width: size,
+      height: size,
+      child: _buildStickerAsset(assetPath, size * 0.85),
     );
 
-/// Returns the number of available stickers
-int _getStickerCount() => 20;
+Widget _buildStickerAsset(String assetPath, double size) {
+  if (assetPath.toLowerCase().endsWith('.png')) {
+    return AppImage.asset(
+      assetPath,
+      width: size,
+      height: size,
+      fit: BoxFit.contain,
+    );
+  }
+  return AppImage.svg(
+    assetPath,
+    width: size,
+    height: size,
+    fit: BoxFit.contain,
+  );
+}
 
 /// Builds individual sticker items
-Widget _buildStickerItem(int index, Function(WidgetLayer) setLayer) =>
+Widget _buildStickerItem(
+  String assetPath,
+  double layerSize,
+  Function(WidgetLayer) setLayer,
+) =>
     GestureDetector(
       onTap: () {
-        // Create a simple text-based sticker for demonstration
-        // In a real implementation, you would use actual sticker images
-        final stickerWidget = Container(
-          width: 100,
-          height: 100,
-          decoration: BoxDecoration(
-            color: Colors.blue.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.blue, width: 2),
-          ),
-          child: const Center(
-            child: Text(
-              '😊', // Simple emoji as placeholder
-              style: TextStyle(fontSize: 40),
-            ),
+        setLayer(
+          WidgetLayer(
+            widget: _buildStickerLayerWidget(assetPath, layerSize),
+            exportConfigs: const WidgetLayerExportConfigs(),
           ),
         );
-
-        // Create a WidgetLayer with the sticker
-        final widgetLayer = WidgetLayer(
-          widget: stickerWidget,
-          exportConfigs: const WidgetLayerExportConfigs(),
-        );
-
-        // Set the layer and close the picker
-        setLayer(widgetLayer);
       },
       child: Container(
         decoration: BoxDecoration(
@@ -261,11 +279,8 @@ Widget _buildStickerItem(int index, Function(WidgetLayer) setLayer) =>
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
         ),
-        child: const Center(
-          child: Text(
-            '😊', // Placeholder emoji
-            style: TextStyle(fontSize: 30),
-          ),
+        child: Center(
+          child: _buildStickerAsset(assetPath, 36),
         ),
       ),
     );
