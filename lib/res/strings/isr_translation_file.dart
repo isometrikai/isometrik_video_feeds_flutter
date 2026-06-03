@@ -128,6 +128,17 @@ class IsrTranslationFile {
   static const dubNoVideoMessage = 'This post has no video to dub.';
   static const dubExtractAudioFailedMessage =
       'Could not extract audio from this reel.';
+  static const useAudio = 'Use audio';
+  static const soundPreviewUnavailable =
+      'Preview is not available for this sound.';
+  static const soundPreviewPlayFailed = 'Could not play preview';
+  static const soundDetailReelSingular = 'Reel';
+  static const soundDetailReelsPlural = 'Reels';
+  static const soundDetailUntitled = 'Untitled';
+  static const soundDetailUnknownArtist = 'Unknown artist';
+  static const soundDetailShareSoon = 'Sharing will be available soon';
+  static const soundDetailNoPosts = 'No posts use this sound yet';
+  static const tryAgain = 'Try again';
   static const reports = 'Reports';
   static const confirm = 'Confirm';
   static const failedToLoadReportReasons = 'Failed to load report reasons';
@@ -294,6 +305,11 @@ class IsrTranslationFile {
   static const String modifySchedule = 'Modify Schedule';
   static const String newStory = 'New Story';
   static const String createNewHighlight = 'Create new highlight';
+  static const String editHighlight = 'Edit highlight';
+  static const String editHighlightCover = 'Edit cover';
+  static const String highlightNameHint = 'Highlight name';
+  static const String highlightStoriesSection = 'STORIES';
+  static const String addStoriesToHighlight = 'Add stories';
   static const String addToExistingHighlight = 'Add to existing highlight';
   static const String addToHighlights = 'Add to highlights';
   static const String noHighlightsCreateFirst =

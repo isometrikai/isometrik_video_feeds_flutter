@@ -1200,46 +1200,91 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     );
   }
 
-  Widget _buildPostSoundPill() {
+  String _soundThumbnailUrl(PostSoundInfo sound) {
+    final thumb = (sound.thumbnailUrl ?? '').trim();
+    if (thumb.isNotEmpty) return thumb;
+    final media = _reelData.mediaMetaDataList;
+    if (media.isNotEmpty) {
+      final preview = media.first.thumbnailUrl.trim();
+      if (preview.isNotEmpty) return preview;
+    }
+    return '';
+  }
+
+  Widget _buildSoundDisc(String imageUrl) {
+    final size = 28.responsiveDimension;
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: IsrColors.white,
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.changeOpacity(0.35),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: ClipOval(
+        child: imageUrl.isNotEmpty
+            ? AppImage.network(
+                imageUrl,
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+              )
+            : ColoredBox(
+                color: IsrColors.black.changeOpacity(0.45),
+                child: Icon(
+                  Icons.music_note,
+                  size: 14.responsiveDimension,
+                  color: IsrColors.white,
+                ),
+              ),
+      ),
+    );
+  }
+
+  /// Song row below caption: note + title (left), circular artwork (right).
+  Widget _buildPostSoundRow() {
     final sound = _reelData.sound;
     if (sound == null || !sound.hasId) return const SizedBox.shrink();
-    final label = sound.displayLabel;
+    final title = (sound.title ?? '').trim();
+    final label = title.isNotEmpty ? title : sound.displayLabel;
+    final thumbUrl = _soundThumbnailUrl(sound);
 
     return TapHandler(
       onTap: _onTapPostSound,
-      child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: IsrDimens.ten,
-          vertical: IsrDimens.six,
-        ),
-        decoration: BoxDecoration(
-          color: IsrColors.black.changeOpacity(0.35),
-          borderRadius: BorderRadius.circular(IsrDimens.twenty),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.music_note,
-              size: IsrDimens.sixteen,
-              color: IsrColors.white,
-              shadows: _textShadows,
-            ),
-            IsrDimens.boxWidth(IsrDimens.six),
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: IsrStyles.white14.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: IsrColors.white,
-                  shadows: _textShadows,
-                ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.music_note,
+            size: IsrDimens.fourteen,
+            color: IsrColors.white,
+            shadows: _textShadows,
+          ),
+          IsrDimens.boxWidth(IsrDimens.six),
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: IsrStyles.white14.copyWith(
+                fontWeight: FontWeight.w500,
+                color: IsrColors.white,
+                shadows: _textShadows,
               ),
             ),
-          ],
-        ),
+          ),
+          IsrDimens.boxWidth(IsrDimens.ten),
+          _buildSoundDisc(thumbUrl),
+        ],
       ),
     );
   }
@@ -1257,22 +1302,17 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       return;
     }
 
-    // Dub with audio: open dub camera directly.
-    if (_postConfig.enableDubWithAudio && postData != null) {
-      IsrVideoReelConfig.pauseFeedPlayback();
-      try {
-        await DubWithAudioCaptureCoordinator.handleFromPost(
-          context,
-          postData,
-          config: _postConfig.dubWithAudioConfig,
-          customHandler: _postConfig.postCallBackConfig?.onDubWithAudio,
-        );
-      } finally {
-        if (mounted) {
-          IsrVideoReelConfig.resumeFeedPlayback();
-        }
+    IsrVideoReelConfig.pauseFeedPlayback();
+    try {
+      await IsrAppNavigator.navigateToSoundPostsDetail(
+        context,
+        sound: sound,
+        sourcePost: postData,
+      );
+    } finally {
+      if (mounted) {
+        IsrVideoReelConfig.resumeFeedPlayback();
       }
-      return;
     }
   }
 
@@ -2014,10 +2054,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                         ],
                       ),
                     ],
-                    if (_reelData.sound?.hasId == true) ...[
-                      IsrDimens.boxHeight(IsrDimens.eight),
-                      _buildPostSoundPill(),
-                    ],
                   ],
                 ),
               ),
@@ -2041,6 +2077,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           if ((_reelData.productCount ?? 0) > 0) ...[
             IsrDimens.boxHeight(IsrDimens.eight),
             _buildCommissionTag(),
+          ],
+          if (_reelData.sound?.hasId == true) ...[
+            IsrDimens.boxHeight(IsrDimens.eight),
+            _buildPostSoundRow(),
           ],
         ],
       ),

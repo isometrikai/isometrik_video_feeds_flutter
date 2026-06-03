@@ -92,6 +92,8 @@ class UseCaseInjection {
             IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<GetTaggedPostsUseCase>(() =>
         GetTaggedPostsUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<GetPostsBySoundUseCase>(() =>
+        GetPostsBySoundUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<CollectionUseCase>(
         () => CollectionUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<PostImpressionUseCase>(() =>

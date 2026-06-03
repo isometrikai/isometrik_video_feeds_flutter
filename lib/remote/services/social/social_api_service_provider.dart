@@ -812,6 +812,29 @@ class SocialApiServiceProvider extends SocialApiService {
       );
 
   @override
+  Future<ResponseModel> getPostsBySound({
+    required bool isLoading,
+    required Header header,
+    required String soundId,
+    required int page,
+    required int pageSize,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.getPostsBySound,
+          NetworkRequestType.get,
+          null,
+          {
+            'sound_id': soundId,
+            'page': page.toString(),
+            'page_size': pageSize.toString(),
+          },
+          headers,
+          isLoading,
+        ),
+      );
+
+  @override
   Future<ResponseModel> getForYouPosts({
     required bool isLoading,
     required Header header,

@@ -11,6 +11,7 @@ export 'guest_sign_in_response.dart';
 export 'hash_tag_response.dart';
 export 'near_by_place_response.dart';
 export 'post_insight_response.dart';
+export 'posts_by_sound_response.dart';
 export 'post_location.dart';
 export 'post_response.dart';
 export 'post_tab_assist.dart';

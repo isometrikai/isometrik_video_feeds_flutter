@@ -143,6 +143,29 @@ class IsrAppNavigator {
     );
   }
 
+  static Future<void> navigateToSoundPostsDetail(
+    BuildContext context, {
+    required PostSoundInfo sound,
+    TimeLineData? sourcePost,
+    TransitionType? transitionType,
+  }) async {
+    final page = BlocProvider<SoundPostsDetailBloc>(
+      create: (_) => IsmInjectionUtils.getBloc<SoundPostsDetailBloc>(),
+      child: SoundPostsDetailScreen(
+        sound: sound,
+        sourcePost: sourcePost,
+      ),
+    );
+
+    await Navigator.of(context, rootNavigator: true).push(
+      _buildRoute(
+        page: page,
+        transitionType: transitionType,
+        routeName: IsrRouteNames.soundPostsDetailView,
+      ),
+    );
+  }
+
   static void navigateTagDetails(
     BuildContext context, {
     required String tagValue,
@@ -310,6 +333,19 @@ class IsrAppNavigator {
       debugPrint('IsrAppNavigator: StoryCubit missing in context, using DI');
       return IsmInjectionUtils.getBloc<StoryCubit>();
     }
+  }
+
+  /// Edit highlight title, cover, and add past stories (profile / viewer).
+  static Future<bool> presentEditHighlight(
+    BuildContext context, {
+    required StoryHighlightData highlight,
+  }) async {
+    final cubit = _storyCubitFrom(context);
+    return HighlightComposerCoordinator.editHighlight(
+      context: context,
+      cubit: cubit,
+      highlight: highlight,
+    );
   }
 
   /// Full highlight composer: pick stories (optional) → create new OR add to existing.

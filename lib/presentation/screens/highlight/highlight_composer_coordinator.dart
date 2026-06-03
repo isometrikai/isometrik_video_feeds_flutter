@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/cubits/story/story.dart';
 import 'package:ism_video_reel_player/presentation/screens/highlight/create_highlight_screen.dart';
+import 'package:ism_video_reel_player/presentation/screens/highlight/edit_highlight_screen.dart';
 import 'package:ism_video_reel_player/presentation/screens/highlight/highlight_choice_screen.dart';
 import 'package:ism_video_reel_player/presentation/screens/highlight/highlight_story_item.dart';
 import 'package:ism_video_reel_player/presentation/screens/highlight/pick_existing_highlight_screen.dart';
@@ -31,10 +32,8 @@ class HighlightComposerCoordinator {
     );
     if (!context.mounted || selected == null || selected.isEmpty) return;
 
-    final storyIds = selected
-        .map((s) => s.id.trim())
-        .where((id) => id.isNotEmpty)
-        .toList();
+    final storyIds =
+        selected.map((s) => s.id.trim()).where((id) => id.isNotEmpty).toList();
     if (storyIds.isEmpty) return;
 
     final coverUrl = selected.first.thumbUrl;
@@ -164,6 +163,56 @@ class HighlightComposerCoordinator {
     );
   }
 
+  /// Opens the edit highlight screen (name, cover, add past stories).
+  static Future<bool> editHighlight({
+    required BuildContext context,
+    required StoryCubit cubit,
+    required StoryHighlightData highlight,
+  }) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final highlightId = highlight.id.trim();
+    if (highlightId.isEmpty) return false;
+
+    final detail = await cubit.getStoryHighlightById(highlightId);
+    if (!context.mounted) return false;
+
+    final source = detail ?? highlight;
+    final existingStoryIds = _existingStoryIds(source);
+
+    final saved = await _pushWithCubit<bool>(
+      context,
+      cubit,
+      EditHighlightScreen(
+        highlightId: highlightId,
+        initialTitle: source.title,
+        initialCoverUrl: source.coverUrl,
+        existingStoryIds: existingStoryIds,
+        sortOrder: source.sortOrder,
+      ),
+    );
+    if (!context.mounted) return false;
+    if (saved == true) {
+      messenger?.showSnackBar(
+        const SnackBar(content: Text('Highlight updated.')),
+      );
+      return true;
+    }
+    return false;
+  }
+
+  static List<String> _existingStoryIds(StoryHighlightData highlight) {
+    if (highlight.embeddedStories.isNotEmpty) {
+      return highlight.embeddedStories
+          .map((s) => s.id.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+    }
+    return highlight.items
+        .map((e) => e.storyId.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+  }
+
   /// Adds archived stories to an existing highlight (profile empty state / +).
   static Future<bool> addStoriesToHighlight({
     required BuildContext context,
@@ -182,10 +231,8 @@ class HighlightComposerCoordinator {
     );
     if (!context.mounted || selected == null || selected.isEmpty) return false;
 
-    final storyIds = selected
-        .map((s) => s.id.trim())
-        .where((id) => id.isNotEmpty)
-        .toList();
+    final storyIds =
+        selected.map((s) => s.id.trim()).where((id) => id.isNotEmpty).toList();
     if (storyIds.isEmpty) return false;
 
     final ok = await cubit.addStoriesToHighlight(
@@ -246,7 +293,9 @@ class HighlightComposerCoordinator {
           .toList();
     }
     return <String>{
-      ...highlight.items.map((e) => e.storyId.trim()).where((e) => e.isNotEmpty),
+      ...highlight.items
+          .map((e) => e.storyId.trim())
+          .where((e) => e.isNotEmpty),
       ...addedIds,
     }.toList();
   }

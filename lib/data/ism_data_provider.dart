@@ -695,4 +695,24 @@ class IsmDataProvider {
       highlight: highlight,
     );
   }
+
+  /// Opens the edit highlight flow from the host profile (long-press / menu).
+  Future<void> onEditStoryHighlight({
+    required Map<String, dynamic> highlightMap,
+  }) async {
+    final highlight = StoryHighlightData.fromMap(highlightMap);
+    final callback =
+        IsrVideoReelConfig.storyConfig?.storyCallbackConfig.onHighlightEdit;
+    if (callback != null) {
+      await callback(highlight);
+      return;
+    }
+    final context = IsrVideoReelConfig.getBuildContext?.call() ??
+        IsrVideoReelConfig.buildContext;
+    if (context == null) return;
+    await IsrAppNavigator.presentEditHighlight(
+      context,
+      highlight: highlight,
+    );
+  }
 }

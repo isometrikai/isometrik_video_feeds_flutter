@@ -17,6 +17,8 @@ class IsrAppRoutes {
   static const String postListingScreen = '/${IsrRouteNames.postListingScreen}';
   static const String placeDetailsView = '/${IsrRouteNames.placeDetailsView}';
   static const String tagDetailsView = '/${IsrRouteNames.tagDetailsView}';
+  static const String soundPostsDetailView =
+      '/${IsrRouteNames.soundPostsDetailView}';
 }
 
 class IsrRouteNames {
@@ -35,4 +37,5 @@ class IsrRouteNames {
   static const String postListingScreen = 'postListingScreen';
   static const String placeDetailsView = 'placeDetailsView';
   static const String tagDetailsView = 'tagDetailsView';
+  static const String soundPostsDetailView = 'soundPostsDetailView';
 }

@@ -33,7 +33,7 @@ class TimelineResponse {
       TimelineResponse(
         status: json['status'] as String? ?? '',
         message: json['message'] as String? ?? '',
-        statusCode: json['statusCode'] as num? ?? 0,
+        statusCode: (json['status_code'] ?? json['statusCode']) as num? ?? 0,
         code: json['code'] as String? ?? '',
         data: json['data'] == null
             ? []
@@ -91,7 +91,7 @@ class TimelineDataResponse {
       TimelineDataResponse(
         status: json['status'] as String? ?? '',
         message: json['message'] as String? ?? '',
-        statusCode: json['statusCode'] as num? ?? 0,
+        statusCode: (json['status_code'] ?? json['statusCode']) as num? ?? 0,
         code: json['code'] as String? ?? '',
         data: json['data'] == null
             ? null

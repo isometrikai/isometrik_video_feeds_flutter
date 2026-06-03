@@ -612,9 +612,7 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                                       trailing: TapHandler(
                                         onTap: () {
                                           setState(() {
-                                            _mediaMentionedMap[
-                                                    _currentIndex + 1]
-                                                ?.remove(person);
+                                            _removeMentionFromAllMedia(person);
                                           });
                                         },
                                         child: Icon(
@@ -947,6 +945,13 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
     debugPrint(
         'media mentions....${jsonEncode(_mediaMentionedMap.values.map((list) => list.map((mention) => mention.toJson()).toList()).toList())}');
     setState(() {});
+  }
+
+  void _removeMentionFromAllMedia(MentionData person) {
+    for (final list in _mediaMentionedMap.values) {
+      list.removeWhere((m) => m.userId == person.userId);
+    }
+    _mediaMentionedMap.removeWhere((_, list) => list.isEmpty);
   }
 
   void _setData() {

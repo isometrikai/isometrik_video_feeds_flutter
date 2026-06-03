@@ -61,6 +61,8 @@ class _PostAttributeViewState extends State<PostAttributeView>
   final int _maxLength = 200;
   final List<MentionData> _mentionedUsers = [];
   final List<MentionData> _hashTags = [];
+  /// User ids passed into [TagPeopleScreen]; cleared after applying its result.
+  Set<String> _tagPeopleManagedUserIds = {};
 
   // Original values for comparison in edit mode
   PostAttributeClass? _originalPostAttributeClass;
@@ -849,21 +851,20 @@ class _PostAttributeViewState extends State<PostAttributeView>
                             _descriptionFocusNode.unfocus();
                             final mediaDataList =
                                 _postAttributeClass?.mediaDataList ?? [];
+                            _tagPeopleManagedUserIds = _mentionedUsers
+                                .map((m) => m.userId ?? '')
+                                .where((id) => id.isNotEmpty)
+                                .toSet();
                             final result =
                                 await IsrAppNavigator.goToTagPeopleScreen(
                                     context,
                                     mentionDataList: _mentionedUsers,
                                     mediaDataList: mediaDataList,
                                     postId: widget.postData?.id);
-                            if (result.isEmptyOrNull == false) {
-                              for (var mentionData
-                                  in result as Iterable<MentionData>) {
-                                if (!_mentionedUsers.any((element) =>
-                                    element.userId == mentionData.userId)) {
-                                  _mentionedUsers.add(mentionData);
-                                }
-                              }
-                              setState(() {});
+                            if (result != null) {
+                              _applyTagPeopleScreenResult(
+                                List<MentionData>.from(result),
+                              );
                               _updatePostButtonState();
                             }
                           },
@@ -1158,8 +1159,51 @@ class _PostAttributeViewState extends State<PostAttributeView>
         ),
       );
 
-  /// Get count of tagged users
-  int _getTaggedUsersCount() => _mentionedUsers.length;
+  /// Count of people tagged on media (excludes caption-only @mentions).
+  int _getTaggedUsersCount() => _mentionedUsers
+      .where((m) => !_isCaptionOnlyMention(m))
+      .map((m) => m.userId)
+      .whereType<String>()
+      .toSet()
+      .length;
+
+  bool _isCaptionOnlyMention(MentionData mention) {
+    if (mention.textPosition != null) return true;
+    final username = (mention.username ?? '').replaceFirst('@', '');
+    if (username.isEmpty) return false;
+    return _descriptionController.text.contains('@$username');
+  }
+
+  /// Replaces media tags from [TagPeopleScreen] while keeping caption @mentions.
+  void _applyTagPeopleScreenResult(List<MentionData> mediaTags) {
+    final captionMentionsToKeep = _mentionedUsers
+        .where(_isCaptionOnlyMention)
+        .toList(growable: false);
+
+    _mentionedUsers.removeWhere(
+      (m) => _tagPeopleManagedUserIds.contains(m.userId ?? ''),
+    );
+    _mentionedUsers.addAll(mediaTags);
+    _tagPeopleManagedUserIds = {};
+
+    for (final mention in captionMentionsToKeep) {
+      if (!_mentionedUsers.any((m) => m.userId == mention.userId)) {
+        _mentionedUsers.add(mention);
+      }
+    }
+
+    final createPostBloc = context.getOrCreateBloc<CreatePostBloc>();
+    createPostBloc.mediaMentionUserData
+      ..clear()
+      ..addAll(_mentionedUsers.where((m) => !_isCaptionOnlyMention(m)));
+    createPostBloc.mentionedUserData
+      ..clear()
+      ..addAll(_mentionedUsers.where(_isCaptionOnlyMention));
+
+    _postAttributeClass?.mentionedUserList =
+        List<MentionData>.from(_mentionedUsers);
+    setState(() {});
+  }
 
   @override
   void didChangeMetrics() {
@@ -1920,10 +1964,9 @@ class _PostAttributeViewState extends State<PostAttributeView>
       }
 
       final tags = createPostRequest.tags ?? Tags();
-      if (_mentionedUsers.isEmptyOrNull == false) {
-        _postAttributeClass?.mentionedUserList = _mentionedUsers;
-        tags.mentions = _mentionedUsers;
-      }
+      _postAttributeClass?.mentionedUserList =
+          List<MentionData>.from(_mentionedUsers);
+      tags.mentions = List<MentionData>.from(_mentionedUsers);
       if (_hashTags.isNotEmpty) {
         tags.hashtags = _hashTags;
       } else if (_postAttributeClass?.hashTagDataList?.isEmptyOrNull == false) {

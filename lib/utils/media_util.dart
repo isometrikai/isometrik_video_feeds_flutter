@@ -2,10 +2,10 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:easy_video_editor/easy_video_editor.dart' as eve;
-import 'package:get_thumbnail_video/video_thumbnail.dart';
 import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter_new/return_code.dart';
 import 'package:flutter/services.dart';
+import 'package:get_thumbnail_video/video_thumbnail.dart';
 import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -128,8 +128,7 @@ class MediaUtil {
         final uri = Uri.tryParse(musicUrlOrPath);
         if (uri == null) return null;
         final ext = path.extension(uri.path);
-        final suffix =
-            (ext.isNotEmpty && ext.length <= 6) ? ext : '.audio';
+        final suffix = (ext.isNotEmpty && ext.length <= 6) ? ext : '.audio';
         downloaded = File(
           path.join(tempDir.path, 'mux_audio_${const Uuid().v4()}$suffix'),
         );
@@ -255,7 +254,8 @@ class MediaUtil {
           return result;
         }
       }
-      AppLog.error('mergeVideoSegments: easy_video_editor returned no usable file');
+      AppLog.error(
+          'mergeVideoSegments: easy_video_editor returned no usable file');
     } on PlatformException catch (e) {
       AppLog.error(
         'mergeVideoSegments: easy_video_editor PlatformException ${e.code} ${e.message}',
@@ -267,7 +267,8 @@ class MediaUtil {
     await _deleteIfExists(File(easyOut));
 
     final concatCopyOut = path.join(tempDir.path, 'merged_concat_copy_$ts.mp4');
-    final copy = await _mergeSegmentsFfmpegConcatCopy(videoPaths, concatCopyOut);
+    final copy =
+        await _mergeSegmentsFfmpegConcatCopy(videoPaths, concatCopyOut);
     if (copy != null) return copy;
 
     final filterOut = path.join(tempDir.path, 'merged_concat_filter_$ts.mp4');
@@ -478,7 +479,8 @@ class MediaUtil {
           return null;
         }
         return outPath;
-      }().timeout(_extractAudioTimeout, onTimeout: () {
+      }()
+          .timeout(_extractAudioTimeout, onTimeout: () {
         AppLog.error('extractAudioFromVideoToM4a: ffmpeg timed out');
         return null;
       });
@@ -496,9 +498,8 @@ class MediaUtil {
     );
     try {
       final request = http.Request('GET', uri);
-      final response = await http.Client()
-          .send(request)
-          .timeout(_extractAudioTimeout);
+      final response =
+          await http.Client().send(request).timeout(_extractAudioTimeout);
       if (response.statusCode < 200 || response.statusCode >= 300) {
         AppLog.error(
           'extractAudioFromVideoToM4a: download ${response.statusCode}',
@@ -536,7 +537,8 @@ class MediaUtil {
   ///
   /// Remote URLs are processed via FFmpeg first (no full download). Falls back to
   /// a capped streaming download when direct read fails.
-  static Future<String?> extractAudioFromVideoToM4a(String videoPathOrUrl) async {
+  static Future<String?> extractAudioFromVideoToM4a(
+      String videoPathOrUrl) async {
     File? downloaded;
     try {
       final tempDir = await getTemporaryDirectory();
@@ -549,8 +551,7 @@ class MediaUtil {
           videoPathOrUrl.startsWith('https://');
 
       if (isRemote) {
-        final fromUrl =
-            await _extractAudioFromInput(videoPathOrUrl, outPath);
+        final fromUrl = await _extractAudioFromInput(videoPathOrUrl, outPath);
         if (fromUrl != null) return fromUrl;
         await _deleteIfExists(File(outPath));
 
@@ -559,8 +560,7 @@ class MediaUtil {
         downloaded = await _downloadReelVideoForAudioExtract(uri);
         if (downloaded == null) return null;
 
-        final fromFile =
-            await _extractAudioFromInput(downloaded.path, outPath);
+        final fromFile = await _extractAudioFromInput(downloaded.path, outPath);
         await _deleteIfExists(downloaded);
         downloaded = null;
         return fromFile;

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:ism_video_reel_player/data/managers/story_viewed_local_store.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:video_compress/video_compress.dart';
 
@@ -811,6 +810,30 @@ class StoryCubit extends Cubit<StoryState> {
     emit(result.isSuccess
         ? const StoryActionSuccess('update_highlight')
         : StoryError(result.error?.message ?? 'Unable to update highlight.'));
+  }
+
+  Future<bool> updateHighlightMetadata({
+    required String highlightId,
+    required String title,
+    String? coverUrl,
+    int? sortOrder,
+  }) async {
+    final result = await _storyUseCase.executeUpdateStoryHighlight(
+      isLoading: false,
+      highlightId: highlightId,
+      request: UpdateStoryHighlightRequest(
+        title: title,
+        coverUrl: coverUrl,
+        sortOrder: sortOrder,
+      ),
+    );
+    if (result.isSuccess) {
+      _notifyHostHighlightsChanged();
+      emit(const StoryActionSuccess('update_highlight'));
+      return true;
+    }
+    emit(StoryError(result.error?.message ?? 'Unable to update highlight.'));
+    return false;
   }
 
   Future<bool> deleteHighlight(String highlightId) async {

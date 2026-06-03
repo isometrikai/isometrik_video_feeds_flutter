@@ -109,6 +109,19 @@ class _EmptyHighlightScreenState extends State<EmptyHighlightScreen> {
     if (ok) Navigator.of(context).pop(true);
   }
 
+  Future<void> _onEditHighlight() async {
+    final highlight = _highlight;
+    if (highlight == null || highlight.id.isEmpty) return;
+    final cubit = context.read<StoryCubit>();
+    final updated = await HighlightComposerCoordinator.editHighlight(
+      context: context,
+      cubit: cubit,
+      highlight: highlight,
+    );
+    if (!mounted) return;
+    if (updated) await _load();
+  }
+
   Future<void> _onMorePressed() async {
     final theme = StoryThemeResolver.of(context);
     final action = await showModalBottomSheet<String>(
@@ -121,6 +134,16 @@ class _EmptyHighlightScreenState extends State<EmptyHighlightScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            ListTile(
+              leading: Icon(Icons.edit_outlined, color: theme.textPrimary),
+              title: Text(
+                IsrTranslationFile.editHighlight,
+                style: IsrStyles.primaryText14.copyWith(
+                  color: theme.textPrimary,
+                ),
+              ),
+              onTap: () => Navigator.of(ctx).pop('edit'),
+            ),
             ListTile(
               leading: Icon(Icons.delete_outline, color: theme.destructive),
               title: Text(
@@ -135,8 +158,12 @@ class _EmptyHighlightScreenState extends State<EmptyHighlightScreen> {
         ),
       ),
     );
-    if (!mounted || action != 'delete') return;
-    await _onDeleteHighlight();
+    if (!mounted || action == null) return;
+    if (action == 'edit') {
+      await _onEditHighlight();
+      return;
+    }
+    if (action == 'delete') await _onDeleteHighlight();
   }
 
   @override
@@ -222,6 +249,26 @@ class _EmptyHighlightScreenState extends State<EmptyHighlightScreen> {
                       style: FilledButton.styleFrom(
                         backgroundColor: theme.primary,
                         foregroundColor: theme.onPrimary,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: _loading ? null : _onEditHighlight,
+                      icon: Icon(Icons.edit_outlined, color: theme.primary),
+                      label: Text(
+                        IsrTranslationFile.editHighlight,
+                        style: IsrStyles.primaryText14.copyWith(
+                          color: theme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: theme.primary,
+                        side: BorderSide(color: theme.primary),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 24,
                           vertical: 12,

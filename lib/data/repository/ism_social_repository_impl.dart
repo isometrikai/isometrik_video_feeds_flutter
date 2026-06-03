@@ -645,6 +645,31 @@ class SocialRepositoryImpl implements SocialRepository {
   }
 
   @override
+  Future<CustomResponse<PostsBySoundResponse?>> getPostsBySound({
+    required bool isLoading,
+    required String soundId,
+    required int page,
+    required int pageSize,
+  }) async {
+    try {
+      final header = await _dataSource.getHeader();
+      final response = await _apiService.getPostsBySound(
+        isLoading: isLoading,
+        header: header,
+        soundId: soundId,
+        page: page,
+        pageSize: pageSize,
+      );
+      final viewerId = await _getViewerId();
+      final mapped = _socialMapper.mapPostsBySoundResponse(response);
+      _applyLocalActionsToPosts(mapped.data?.data, viewerId: viewerId);
+      return mapped;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
   Future<CustomResponse<TimelineResponse?>> getProfileSavedPostData({
     required bool isLoading,
     required int page,
