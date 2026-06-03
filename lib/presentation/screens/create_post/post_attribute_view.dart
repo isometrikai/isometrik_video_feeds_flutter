@@ -672,8 +672,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
             _postAttributeConfig?.scaffoldBackgroundColor ?? Colors.white,
         appBar: IsmCustomAppBarWidget(
           backgroundColor:
-              _postAttributeConfig?.appBarConfig?.backgroundColor ??
-                  Colors.white,
+              _postAttributeConfig?.appBarConfig?.backgroundColor,
           titleText: widget.isEditMode == true
               ? IsrTranslationFile.editPost
               : IsrTranslationFile.newPost,
