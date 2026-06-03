@@ -244,6 +244,7 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
                 hideBottomToolbar: true, hideToolbarOnInteraction: true));
         _videoConfig = _videoConfig.copyWith(
           showTrimBar: true,
+          showHeaderCropOption: false,
         );
         break;
 
