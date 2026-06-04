@@ -87,7 +87,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
   bool get _isPaidPostEnabled =>
       IsrVideoReelConfig.createEditPostConfig.enablePaidPost;
 
-  void _leaveCreateFlow({Object? result}) {
+  void _leaveCreateFlow({TimeLineData? result}) {
     if (widget.isEditMode != true) {
       Navigator.pop(context, null);
       Navigator.pop(context, result);
@@ -589,9 +589,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
           if (_useBackgroundPostUi) {
             if (!mounted) return;
             _doMediaCaching(state.mediaDataList);
-            final postData = state.postDataModel != null
-                ? jsonEncode(state.postDataModel!.toMap())
-                : null;
+            final postData = state.postDataModel;
             _popNavigatorStackForBackgroundPost(result: postData);
             return;
           }
@@ -601,9 +599,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
           } else {
             _socialActionCubit.onPostCreated(postId: state.postDataModel?.id);
           }
-          final postData = state.postDataModel != null
-              ? jsonEncode(state.postDataModel!.toMap())
-              : null;
+          final postData = state.postDataModel;
           Utility.showBottomSheet(
             child: _buildSuccessBottomSheet(
               onTapBack: () => _leaveCreateFlow(result: postData),
@@ -1881,7 +1877,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
 
   /// Pops the post-attribute route (and the rest of the create stack for new posts)
   /// so the user can use the app while upload/create continues in the bloc.
-  void _popNavigatorStackForBackgroundPost({String? result}) {
+  void _popNavigatorStackForBackgroundPost({TimeLineData? result}) {
     if (!mounted) return;
     _leaveCreateFlow(result: result);
   }

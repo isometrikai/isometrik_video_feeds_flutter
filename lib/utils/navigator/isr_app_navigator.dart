@@ -269,7 +269,7 @@ class IsrAppNavigator {
   /// Each step is an independent route that pops with a result. See also
   /// [presentCreatePostMediaSelector], [presentCreatePostMediaEditor], and
   /// [presentCreatePostFromMedia] for composing custom flows.
-  static Future<String?> goToCreatePostView(
+  static Future<dynamic> goToCreatePostView(
     BuildContext context, {
     TransitionType? transitionType,
     MediaEditSoundItem? initialSound,
@@ -280,7 +280,7 @@ class IsrAppNavigator {
         transitionType: transitionType,
       );
 
-  static MultiBlocProvider _createPostFlowBlocs({required Widget child}) =>
+  static MultiBlocProvider wrapCreatePostFlowBlocs({required Widget child}) =>
       MultiBlocProvider(
         providers: [
           BlocProvider<CreatePostBloc>.value(
@@ -294,6 +294,23 @@ class IsrAppNavigator {
           ),
         ],
         child: child,
+      );
+
+  static MultiBlocProvider _createPostFlowBlocs({required Widget child}) =>
+      wrapCreatePostFlowBlocs(child: child);
+
+  static Future<T?> pushCreatePostFlowRoute<T>(
+    BuildContext context, {
+    required Widget page,
+    String? routeName,
+    TransitionType? transitionType,
+  }) =>
+      Navigator.of(context, rootNavigator: true).push<T>(
+        _buildRoute(
+          page: page,
+          transitionType: transitionType,
+          routeName: routeName,
+        ),
       );
 
   /// Step 1 — pick media from gallery or camera. Pops with selected assets.
@@ -395,7 +412,7 @@ class IsrAppNavigator {
   }
 
   /// Step 3 — caption, tags, and publish. Pops with encoded post JSON.
-  static Future<String?> presentCreatePostFromMedia(
+  static Future<dynamic> presentCreatePostFromMedia(
     BuildContext context, {
     required List<MediaData> mediaDataList,
     MediaEditSoundItem? selectedSound,
@@ -411,7 +428,7 @@ class IsrAppNavigator {
       ),
     );
 
-    return Navigator.of(context, rootNavigator: true).push<String>(
+    return Navigator.of(context, rootNavigator: true).push<dynamic>(
       _buildRoute(
         page: page,
         transitionType: transitionType,
@@ -632,7 +649,7 @@ class IsrAppNavigator {
     );
   }
 
-  static Future<String?> goToEditPostView(
+  static Future<dynamic> goToEditPostView(
     BuildContext context, {
     required TimeLineData postData,
     TransitionType? transitionType,
@@ -651,14 +668,14 @@ class IsrAppNavigator {
     );
 
     final result =
-        await Navigator.of(context, rootNavigator: true).push<String>(
+        await Navigator.of(context, rootNavigator: true).push<dynamic>(
       _buildRoute(page: page, transitionType: transitionType),
     );
     return result;
   }
 
   @Deprecated('Use presentCreatePostFromMedia instead.')
-  static Future<String?> goToCreatePostAttributionView(
+  static Future<dynamic> goToCreatePostAttributionView(
     BuildContext context, {
     List<MediaData>? newMediaDataList,
     MediaEditSoundItem? selectedSound,

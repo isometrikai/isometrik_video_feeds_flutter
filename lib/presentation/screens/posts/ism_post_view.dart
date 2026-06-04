@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -702,11 +701,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   // Interaction handlers
   Future<ReelsData?> _handleCreatePost(TabDataModel tabData) async {
     final completer = Completer<ReelsData>();
-    final postDataModelString =
+    final result =
         await IsrAppNavigator.goToCreatePostView(context);
-    if (postDataModelString.isStringEmptyOrNull == false) {
-      final postDataModel = TimeLineData.fromMap(
-          jsonDecode(postDataModelString!) as Map<String, dynamic>);
+    if (result is TimeLineData) {
+      final postDataModel = result;
       final reelsData =
           getReelData(postDataModel, loggedInUserId: _loggedInUserId);
       completer.complete(reelsData);
@@ -1276,10 +1274,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         borderRadius: buttonConfig?.borderRadius,
       );
 
-  Future<String?> _handleEditPost(TimeLineData postDataModel) async {
-    final postDataString = await IsrAppNavigator.goToEditPostView(context,
+  Future<TimeLineData?> _handleEditPost(TimeLineData postDataModel) async {
+    final postData = await IsrAppNavigator.goToEditPostView(context,
         postData: postDataModel);
-    return postDataString;
+    return postData is TimeLineData ? postData : null;
   }
 
   void _logReportEvent(TimeLineData postDataModel, String reportReason,

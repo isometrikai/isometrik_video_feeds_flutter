@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:ism_video_reel_player/domain/models/camera_capture_result.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/presentation/screens/create_post_multimedia/create_post_sound_flow.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit.dart'
@@ -14,56 +13,207 @@ import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
-/// Orchestrates the default create-post flow as independent steps.
+/// Orchestrates the default create-post flow with a stacked navigation model.
 ///
-/// Each step is opened via [IsrAppNavigator], pops with a result, and the
-/// coordinator chains them:
-/// select media → edit media → publish post.
+/// Media Selector → Media Editor → Post Attribute stay on the stack until
+/// post creation succeeds, then unwind with a result.
 abstract final class CreatePostFlowCoordinator {
   CreatePostFlowCoordinator._();
 
   /// Default create-post entry: gallery/camera → edit → publish.
   ///
   /// Returns encoded post JSON on success, or `null` if the user cancels.
-  static Future<String?> run(
+  static Future<dynamic> run(
     BuildContext context, {
     MediaEditSoundItem? initialSound,
     TransitionType? transitionType,
+  }) =>
+      IsrAppNavigator.pushCreatePostFlowRoute<dynamic>(
+        context,
+        page: IsrAppNavigator.wrapCreatePostFlowBlocs(
+          child: _StackedCreatePostFlowHost(
+            initialSound: initialSound,
+            transitionType: transitionType,
+          ),
+        ),
+        routeName: IsrRouteNames.createPostView,
+        transitionType: transitionType,
+      );
+
+  /// Media selector Done — keep selector on stack, push editor on top.
+  static Future<bool> onMediaSelectorComplete(
+    BuildContext context, {
+    required List<ms.MediaAssetData> selectedMedia,
+    MediaEditSoundItem? initialSound,
+    TransitionType? transitionType,
   }) async {
-    final selected = await IsrAppNavigator.presentCreatePostMediaSelector(
-      context,
-      initialSound: initialSound,
-      transitionType: transitionType,
-    );
-    if (!context.mounted) return null;
-    if (selected == null || selected.isEmpty) return null;
+    if (selectedMedia.isEmpty) return false;
 
     final editItems = await prepareEditItemsFromSelection(
       context,
-      selectedMedia: selected,
+      selectedMedia: selectedMedia,
       initialSound: initialSound,
     );
-    if (!context.mounted) return null;
-    if (editItems.isEmpty) return null;
+    if (!context.mounted || editItems.isEmpty) return false;
 
-    final edited = await IsrAppNavigator.presentCreatePostMediaEditor(
+    final editorResult = await _pushMediaEditorStacked(
+      context,
+      mediaItems: editItems,
+      initialSound: initialSound,
+      transitionType: transitionType,
+    );
+    if (!context.mounted) return false;
+
+    if (editorResult.succeeded) {
+      Navigator.of(context, rootNavigator: true).pop(editorResult.result);
+      return false;
+    }
+    return false;
+  }
+
+  /// Media editor Done — keep editor on stack, push post attribute on top.
+  static Future<bool> onMediaEditorComplete(
+    BuildContext context, {
+    required List<me.MediaEditItem> editedMedia,
+    MediaEditSoundItem? initialSound,
+    TransitionType? transitionType,
+  }) async {
+    if (editedMedia.isEmpty) return false;
+
+    final selectedSound = _soundFromEditItems(editedMedia) ?? initialSound;
+    final mediaDataList = mediaDataFromEditItems(editedMedia);
+
+    final postResult = await _pushPostAttributeStacked(
+      context,
+      mediaDataList: mediaDataList,
+      selectedSound: selectedSound,
+      transitionType: transitionType,
+    );
+    if (!context.mounted) return false;
+
+    if (postResult.succeeded) {
+      Navigator.of(context, rootNavigator: true).pop(postResult);
+      return false;
+    }
+    return false;
+  }
+
+  static Future<CreatePostFlowResult> _pushMediaEditorStacked(
+    BuildContext context, {
+    required List<me.MediaEditItem> mediaItems,
+    MediaEditSoundItem? initialSound,
+    TransitionType? transitionType,
+  }) async {
+    final mediaEditConfig = GalleryVideoTrimUtil.defaultMediaEditConfig();
+    final result =
+        await IsrAppNavigator.pushCreatePostFlowRoute<CreatePostFlowResult>(
+      context,
+      page: Builder(
+        builder: (editorContext) => me.MediaEditView(
+          mediaDataList: mediaItems,
+          mediaEditConfig: mediaEditConfig,
+          onComplete: (edited) => onMediaEditorComplete(
+            editorContext,
+            editedMedia: edited,
+            initialSound: initialSound,
+            transitionType: transitionType,
+          ),
+          addMoreMedia: (editMedia) => addMoreMedia(
+            context,
+            editMedia: editMedia,
+            selectedSound: initialSound,
+          ),
+          pickCoverPic: () => pickCoverPic(context),
+          onSelectSound: CreatePostSoundFlow.isEnabled
+              ? (_) => CreatePostSoundFlow.pickSound(context)
+              : null,
+        ),
+      ),
+      routeName: IsrRouteNames.mediaEditView,
+      transitionType: transitionType,
+    );
+    return result ?? CreatePostFlowResult.cancelled;
+  }
+
+  static Future<CreatePostFlowResult> _pushPostAttributeStacked(
+    BuildContext context, {
+    required List<MediaData> mediaDataList,
+    MediaEditSoundItem? selectedSound,
+    TransitionType? transitionType,
+  }) async {
+    final result =
+        await IsrAppNavigator.pushCreatePostFlowRoute<dynamic>(
+      context,
+      page: IsrAppNavigator.wrapCreatePostFlowBlocs(
+        child: PostAttributeView(
+          newMediaDataList: mediaDataList,
+          selectedSound: selectedSound,
+          isEditMode: false,
+        ),
+      ),
+      routeName: IsrRouteNames.postAttributeView,
+      transitionType: transitionType,
+    );
+    return result is TimeLineData? CreatePostFlowResult.success(result) : CreatePostFlowResult.cancelled;
+  }
+
+  /// Camera from selector — push editor on top without popping selector.
+  static Future<dynamic> handleCaptureInStackedFlow(
+    BuildContext context, {
+    required String? mediaType,
+    MediaEditSoundItem? initialSound,
+    TransitionType? transitionType,
+  }) async {
+    final capture = await IsrAppNavigator.presentCameraCapture(
+      context,
+      mediaType: mediaType,
+      initialSound: initialSound,
+    );
+    if (capture == null || capture.mediaPath.isEmpty) return null;
+
+    final editItems = await prepareEditItemsFromCapture(
+      context,
+      capture: capture,
+      initialSound: initialSound,
+    );
+    if (!context.mounted || editItems.isEmpty) return null;
+
+    final editorResult = await _pushMediaEditorStacked(
       context,
       mediaItems: editItems,
       initialSound: initialSound,
       transitionType: transitionType,
     );
     if (!context.mounted) return null;
-    if (edited == null || edited.isEmpty) return null;
 
-    final selectedSound = _soundFromEditItems(edited) ?? initialSound;
-    final mediaDataList = mediaDataFromEditItems(edited);
+    if (editorResult.succeeded) {
+      Navigator.of(context, rootNavigator: true).pop(editorResult.result);
+    }
+    return null;
+  }
 
-    return IsrAppNavigator.presentCreatePostFromMedia(
+  /// Standalone selector capture — pops selector with captured assets.
+  static Future<dynamic> handleCaptureFromSelector(
+    BuildContext context, {
+    required String? mediaType,
+    MediaEditSoundItem? initialSound,
+  }) async {
+    final capture = await IsrAppNavigator.presentCameraCapture(
       context,
-      mediaDataList: mediaDataList,
-      selectedSound: selectedSound,
-      transitionType: transitionType,
+      mediaType: mediaType,
+      initialSound: initialSound,
     );
+    if (capture == null || capture.mediaPath.isEmpty) return null;
+
+    final assets = await captureToMediaAssets(
+      context,
+      capture: capture,
+      initialSound: initialSound,
+    );
+    if (!context.mounted) return null;
+
+    Navigator.of(context, rootNavigator: true).pop<List<ms.MediaAssetData>>(assets);
+    return null;
   }
 
   static ms.MediaSelectionConfig defaultMediaSelectionConfig({
@@ -93,31 +243,6 @@ abstract final class CreatePostFlowCoordinator {
         primaryFontFamily: AppConstants.primaryFontFamily,
         mediaListType: mediaListType ?? ms.MediaListType.imageVideo,
       );
-
-  /// Camera shortcut from the media selector: capture, then pop selector with
-  /// the captured asset so the default flow can continue in the editor.
-  static Future<dynamic> handleCaptureFromSelector(
-    BuildContext context, {
-    required String? mediaType,
-    MediaEditSoundItem? initialSound,
-  }) async {
-    final capture = await IsrAppNavigator.presentCameraCapture(
-      context,
-      mediaType: mediaType,
-      initialSound: initialSound,
-    );
-    if (capture == null || capture.mediaPath.isEmpty) return null;
-
-    final assets = await captureToMediaAssets(
-      context,
-      capture: capture,
-      initialSound: initialSound,
-    );
-    if (!context.mounted) return null;
-
-    Navigator.of(context, rootNavigator: true).pop<List<ms.MediaAssetData>>(assets);
-    return null;
-  }
 
   static Future<List<ms.MediaAssetData>> captureToMediaAssets(
     BuildContext context, {
@@ -150,7 +275,6 @@ abstract final class CreatePostFlowCoordinator {
     ];
   }
 
-  /// Trims gallery videos, generates thumbnails, and maps to edit items.
   static Future<List<me.MediaEditItem>> prepareEditItemsFromSelection(
     BuildContext context, {
     required List<ms.MediaAssetData> selectedMedia,
@@ -391,4 +515,34 @@ abstract final class CreatePostFlowCoordinator {
       return null;
     }
   }
+}
+
+/// Root screen for the stacked default create-post flow.
+class _StackedCreatePostFlowHost extends StatelessWidget {
+  const _StackedCreatePostFlowHost({
+    this.initialSound,
+    this.transitionType,
+  });
+
+  final MediaEditSoundItem? initialSound;
+  final TransitionType? transitionType;
+
+  @override
+  Widget build(BuildContext context) => ms.MediaSelectionView(
+        mediaSelectionConfig:
+            CreatePostFlowCoordinator.defaultMediaSelectionConfig(),
+        onComplete: (selectedMedia) => CreatePostFlowCoordinator.onMediaSelectorComplete(
+          context,
+          selectedMedia: selectedMedia,
+          initialSound: initialSound,
+          transitionType: transitionType,
+        ),
+        onCaptureMedia: (mediaType) =>
+            CreatePostFlowCoordinator.handleCaptureInStackedFlow(
+          context,
+          mediaType: mediaType,
+          initialSound: initialSound,
+          transitionType: transitionType,
+        ),
+      );
 }
