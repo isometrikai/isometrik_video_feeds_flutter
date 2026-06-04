@@ -770,7 +770,11 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     apiResult = await _createPostUseCase.executeEditPost(
       isLoading: !_usesBackgroundPostUi,
       postId: _postData?.id ?? '',
-      editPostRequest: _createPostRequest.toJson(),
+      editPostRequest: _createPostRequest.toJson().run((body) {
+        body.remove('media'); // non editable
+        body.remove('previews'); // non editable
+        return body;
+      }),
     );
     if (apiResult.isSuccess) {
       if (_postData != null) {
