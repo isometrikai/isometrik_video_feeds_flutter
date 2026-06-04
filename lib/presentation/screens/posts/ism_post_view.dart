@@ -558,8 +558,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           _socialPostBloc.add(PlayPauseVideoEvent(play: true));
         }
       },
-      onPressMoreButton: (reelsData) async {
-        if (reelsData.postData is TimeLineData) {
+        onPressMoreButton: (reelsData) async {
           final postId = reelsData.postId;
           if (postId != null && postId.isNotEmpty) {
             _socialPostBloc.add(PlayPauseVideoEvent(play: false));
@@ -590,9 +589,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
               _socialPostBloc.add(PlayPauseVideoEvent(play: true));
             }
           }
-        }
-      },
-      onPressLike: _postConfig.postCallBackConfig?.onLikeClick == null
+        },
+        onPressLike: _postConfig.postCallBackConfig?.onLikeClick == null
           ? null
           : (reelsData, isLiked) async {
               _socialPostBloc.add(PlayPauseVideoEvent(play: false));
@@ -1000,6 +998,13 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         tabData: tabData,
         showDubWithAudio: _shouldOfferDubWithAudio(postDataModel),
         onReportPost: () async {
+          var isUserLoggedIn = await _socialActionCubit.isUserLoggedIn;
+          if (!isUserLoggedIn) {
+            await IsrVideoReelConfig.socialConfig.socialCallBackConfig?.onLoginInvoked
+                ?.call();
+          }
+          isUserLoggedIn = await _socialActionCubit.isUserLoggedIn;
+          if (!isUserLoggedIn) return false;
           final completer = Completer<dynamic>();
           final result = await showDialog<dynamic>(
             context: context,

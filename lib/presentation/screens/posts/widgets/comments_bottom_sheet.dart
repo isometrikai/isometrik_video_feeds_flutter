@@ -34,6 +34,7 @@ class CommentsBottomSheet extends StatefulWidget {
 
 class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   SocialPostBloc get _socialBloc => context.getOrCreateBloc();
+  IsmSocialActionCubit get _socialActionCubit => context.getOrCreateBloc();
   final _postCommentList = <CommentDataItem>[];
   var _myUserId = '';
   var _isCommentsLoaded = false;
@@ -801,6 +802,13 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                     TapHandler(
                       onTap: () async {
                         context.pop();
+                        var isUserLoggedIn = await _socialActionCubit.isUserLoggedIn;
+                        if (!isUserLoggedIn) {
+                          await IsrVideoReelConfig.socialConfig.socialCallBackConfig?.onLoginInvoked
+                              ?.call();
+                        }
+                        isUserLoggedIn = await _socialActionCubit.isUserLoggedIn;
+                        if (!isUserLoggedIn) return;
                         await showDialog<dynamic>(
                           context: context,
                           barrierDismissible: true,
