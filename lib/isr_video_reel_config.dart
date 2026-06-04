@@ -368,18 +368,20 @@ class IsrVideoReelConfig {
         LocalStorageKeys.accessToken, accessToken);
     await localStorageManager.saveValue(
         LocalStorageKeys.language, language, SavedValueDataType.string);
-    await localStorageManager.saveValue(
-        LocalStorageKeys.city, city, SavedValueDataType.string);
-    await localStorageManager.saveValue(
-        LocalStorageKeys.state, state, SavedValueDataType.string);
-    await localStorageManager.saveValue(
-        LocalStorageKeys.country, country, SavedValueDataType.string);
+    await localStorageManager.saveValue(LocalStorageKeys.city,
+        city.toHttpHeaderValue(), SavedValueDataType.string);
+    await localStorageManager.saveValue(LocalStorageKeys.state,
+        state.toHttpHeaderValue(), SavedValueDataType.string);
+    await localStorageManager.saveValue(LocalStorageKeys.country,
+        country.toHttpHeaderValue(), SavedValueDataType.string);
     await localStorageManager.saveValue(
         LocalStorageKeys.ipAddress, ipAddress, SavedValueDataType.string);
     await localStorageManager.saveValue(
         LocalStorageKeys.version, version, SavedValueDataType.string);
-    await localStorageManager.saveValue(LocalStorageKeys.currencySymbol,
-        currencySymbol, SavedValueDataType.string);
+    await localStorageManager.saveValue(
+        LocalStorageKeys.currencySymbol,
+        currencySymbol.toHttpHeaderValue(),
+        SavedValueDataType.string);
     await localStorageManager.saveValue(
         LocalStorageKeys.currencyCode, currencyCode, SavedValueDataType.string);
     await localStorageManager.saveValue(

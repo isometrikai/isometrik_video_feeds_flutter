@@ -9,6 +9,7 @@ export 'enums.dart';
 export 'extensions.dart';
 export 'feed_media_orientation.dart';
 export 'gallery_video_trim_util.dart';
+export 'http_header_string.dart';
 export 'isr_size_config.dart';
 export 'media_compressor.dart';
 export 'media_url_util.dart';
