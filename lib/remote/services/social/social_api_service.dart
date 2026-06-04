@@ -285,6 +285,7 @@ abstract class SocialApiService extends BaseService {
     required Header header,
     required String postId,
     required List<String> collectionIds,
+    required List<String> removeCollectionIds,
   });
 
   Future<ResponseModel> updateCollection({

@@ -421,12 +421,15 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
 
   FutureOr<void> moveToCollection(
       MoveToCollectionEvent event, Emitter<CollectionState> emit) async {
-    if (event.collectionIds.isEmpty) return;
+    if (event.collectionIds.isEmpty && event.removeCollectionIds.isEmpty) {
+      return;
+    }
 
     final apiResult = await _userCollectionsUseCase.executeMoveToCollection(
       isLoading: true,
       postId: event.postId,
       collectionIds: event.collectionIds,
+      removeCollectionIds: event.removeCollectionIds,
     );
     if (apiResult.isSuccess) {
       event.onMoveToCollection?.call();

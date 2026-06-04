@@ -808,6 +808,7 @@ class SocialRepositoryImpl implements SocialRepository {
     required bool isLoading,
     required String postId,
     required List<String> collectionIds,
+    required List<String> removeCollectionIds,
   }) async {
     try {
       final header = await _dataSource.getHeader();
@@ -816,6 +817,7 @@ class SocialRepositoryImpl implements SocialRepository {
         header: header,
         postId: postId,
         collectionIds: collectionIds,
+        removeCollectionIds: removeCollectionIds,
       );
       return _mapper.mapResponseData(response);
     } catch (e) {

@@ -249,6 +249,7 @@ abstract class SocialRepository extends BaseRepository {
     required bool isLoading,
     required String postId,
     required List<String> collectionIds,
+    required List<String> removeCollectionIds,
   });
 
   Future<CustomResponse<ResponseClass?>> updateCollection({

@@ -46,12 +46,14 @@ class CollectionUseCase extends BaseUseCase {
     required bool isLoading,
     required String postId,
     required List<String> collectionIds,
+    List<String> removeCollectionIds = const [],
   }) async =>
       await super.execute(() async {
         final response = await _repository.movePostToCollection(
           isLoading: isLoading,
           postId: postId,
           collectionIds: collectionIds,
+          removeCollectionIds: removeCollectionIds,
         );
         return ApiResult(
             data: response.responseCode == 200 || response.responseCode == 201

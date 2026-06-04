@@ -937,6 +937,7 @@ class SocialApiServiceProvider extends SocialApiService {
     required Header header,
     required String postId,
     required List<String> collectionIds,
+    required List<String> removeCollectionIds,
   }) =>
       _getHeaders(header).then(
         (headers) => networkClient.makeRequest(
@@ -944,7 +945,9 @@ class SocialApiServiceProvider extends SocialApiService {
           NetworkRequestType.post,
           {
             'post_id': postId,
-            'collection_ids': collectionIds,
+            if (collectionIds.isNotEmpty) 'collection_ids': collectionIds,
+            if (removeCollectionIds.isNotEmpty)
+              'removeCollectionIds': removeCollectionIds,
           },
           null,
           headers,

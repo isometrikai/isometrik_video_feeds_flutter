@@ -93,10 +93,10 @@ class _CollectionBottomSheetWidgetState
   }
 
   void _updateDoneButtonState() {
-    final currentSelection = selectedCollectionNotifier.value;
-    btnEnableNotifier.value =
-        !setEquals(currentSelection, _initialSelectedCollectionIds) &&
-            currentSelection.isNotEmpty;
+    btnEnableNotifier.value = !setEquals(
+      selectedCollectionNotifier.value,
+      _initialSelectedCollectionIds,
+    );
   }
 
   @override
@@ -112,12 +112,20 @@ class _CollectionBottomSheetWidgetState
   }
 
   void _handleDonePress() {
-    final selectedCollectionIds = selectedCollectionNotifier.value.toList();
-    if (selectedCollectionIds.isEmpty) return;
+    final currentSelection = selectedCollectionNotifier.value;
+    final collectionIdsToAdd = currentSelection
+        .difference(_initialSelectedCollectionIds)
+        .toList();
+    final removeCollectionIds = _initialSelectedCollectionIds
+        .difference(currentSelection)
+        .toList();
+
+    if (collectionIdsToAdd.isEmpty && removeCollectionIds.isEmpty) return;
 
     _collectionBloc.add(MoveToCollectionEvent(
       postId: widget.postId,
-      collectionIds: selectedCollectionIds,
+      collectionIds: collectionIdsToAdd,
+      removeCollectionIds: removeCollectionIds,
       onMoveToCollection: () {
         _initialSelectedCollectionIds =
             Set<String>.from(selectedCollectionNotifier.value);

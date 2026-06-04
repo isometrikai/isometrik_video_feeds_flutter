@@ -190,6 +190,7 @@ class IsmDataProvider {
   Future<void> movePostToCollection({
     required String postId,
     required List<String> collectionIds,
+    List<String> removeCollectionIds = const [],
     bool isLoading = false,
     Function(String, int)? onSuccess,
     Function(String, int)? onError,
@@ -199,6 +200,7 @@ class IsmDataProvider {
         isLoading: isLoading,
         postId: postId,
         collectionIds: collectionIds,
+        removeCollectionIds: removeCollectionIds,
       ),
       toJson: (data) => data?.toMap() ?? {},
       onSuccess: onSuccess,
