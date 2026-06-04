@@ -25,14 +25,12 @@ class PostAttributeView extends StatefulWidget {
     this.postData,
     this.newMediaDataList,
     this.selectedSound,
-    this.dismissEntireFlowOnClose = false,
   });
 
   final bool? isEditMode;
   final List<MediaData>? newMediaDataList;
   final MediaEditSoundItem? selectedSound;
   final TimeLineData? postData;
-  final bool dismissEntireFlowOnClose;
 
   @override
   State<PostAttributeView> createState() => _PostAttributeViewState();
@@ -90,10 +88,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
       IsrVideoReelConfig.createEditPostConfig.enablePaidPost;
 
   void _leaveCreateFlow({Object? result}) {
-    if (widget.dismissEntireFlowOnClose) {
-      IsrAppNavigator.dismissCreatePostFlow(context);
-    } else if (widget.isEditMode != true) {
-      Navigator.pop(context, null);
+    if (widget.isEditMode != true) {
       Navigator.pop(context, null);
       Navigator.pop(context, result);
     } else {
@@ -653,18 +648,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
       child: _buildPage(),
     );
 
-    if (!widget.dismissEntireFlowOnClose) {
-      return page;
-    }
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) {
-          IsrAppNavigator.dismissCreatePostFlow(context);
-        }
-      },
-      child: page,
-    );
+    return page;
   }
 
   Widget _buildPage() => Scaffold(
@@ -678,10 +662,6 @@ class _PostAttributeViewState extends State<PostAttributeView>
               : IsrTranslationFile.newPost,
           centerTitle: true,
           titleStyle: _postAttributeConfig?.appBarConfig?.titleStyle,
-          isCrossIcon: widget.dismissEntireFlowOnClose,
-          onTap: widget.dismissEntireFlowOnClose
-              ? () => IsrAppNavigator.dismissCreatePostFlow(context)
-              : null,
         ),
         body: Column(
           children: [
