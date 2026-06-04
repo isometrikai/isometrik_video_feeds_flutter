@@ -158,20 +158,6 @@ class IsrVideoReelConfig {
     required Map<String, dynamic> defaultHeaders,
     required String appName,
     Map<String, String>? additionalHeader,
-    @Deprecated('Use setUpConfig(socialConfig: ...) instead.')
-    SocialConfig? socialConfig,
-    @Deprecated('Use setUpConfig(postConfig: ...) instead.')
-    PostConfig? postConfig,
-    @Deprecated('Use setUpConfig(tabConfig: ...) instead.')
-    TabConfig? tabConfig,
-    @Deprecated('Use setUpConfig(commentConfig: ...) instead.')
-    CommentConfig? commentConfig,
-    @Deprecated('Use setUpConfig(createEditPostConfig: ...) instead.')
-    CreateEditPostConfig? createEditPostConfig,
-    @Deprecated('Use setUpConfig(tagDetailsConfig: ...) instead.')
-    TagDetailsConfig? tagDetailsConfig,
-    @Deprecated('Use setUpConfig(searchScreenConfig: ...) instead.')
-    SearchScreenConfig? searchScreenConfig,
     required BuildContext? Function()? getCurrentBuildContext,
   }) async {
     IsrVideoReelConfig.baseUrl = baseUrl;
@@ -194,13 +180,6 @@ class IsrVideoReelConfig {
     IsrVideoReelConfig.additionalHeader = additionalHeader;
     await _storeHeaderValues(defaultHeaders);
     await _saveUserInformation(userInfoClass: userInfoClass);
-    IsrVideoReelConfig.socialConfig = socialConfig ?? IsrVideoReelConfig.socialConfig;
-    IsrVideoReelConfig.postConfig = postConfig ?? IsrVideoReelConfig.postConfig;
-    IsrVideoReelConfig.tabConfig = tabConfig ?? IsrVideoReelConfig.tabConfig;
-    IsrVideoReelConfig.commentConfig = commentConfig ?? IsrVideoReelConfig.commentConfig;
-    IsrVideoReelConfig.createEditPostConfig = createEditPostConfig ?? IsrVideoReelConfig.createEditPostConfig;
-    IsrVideoReelConfig.tagDetailsConfig = tagDetailsConfig ?? IsrVideoReelConfig.tagDetailsConfig;
-    IsrVideoReelConfig.searchScreenConfig = searchScreenConfig ?? IsrVideoReelConfig.searchScreenConfig;
     buildContext = getCurrentBuildContext?.call();
     debugPrint('IsrVideoReelConfig: initializeSdk: ${userInfoClass?.userId}');
     socialActionCubit.onSdkReinitializeChanged(

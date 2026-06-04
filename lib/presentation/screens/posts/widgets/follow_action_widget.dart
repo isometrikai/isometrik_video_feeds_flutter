@@ -196,11 +196,16 @@ class _FollowActionWidgetState extends State<FollowActionWidget> {
           listenWhen: (previous, current) =>
               current is IsmUserChangedActionListenerState,
           listener: (context, state) {
-            if (state is IsmUserChangedActionListenerState) {
+            if (state is IsmUserChangedActionListenerState && loggedInUserId != state.userId) {
               loggedInUserId = state.userId;
               debugPrint(
                 'FollowActionWidget IsmUserChangedActionListenerState -> ${state.userId}',
               );
+              isFollowing = false;
+              followRequestPending = false;
+              if (loggedInUserId.isNotEmpty) { // not guest get follow state
+                cubit.getUserFollowState(userId, isFollowing: isFollowing);
+              }
             }
           },
           builder: (context, state) {

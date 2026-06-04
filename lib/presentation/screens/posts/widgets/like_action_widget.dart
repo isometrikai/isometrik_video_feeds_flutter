@@ -102,7 +102,7 @@ class _LikeActionWidgetState extends State<LikeActionWidget> {
   @override
   Widget build(BuildContext context) =>
       context.attachBlocIfNeeded<IsmSocialActionCubit>(
-        child: BlocBuilder<IsmSocialActionCubit, IsmSocialActionState>(
+        child: BlocConsumer<IsmSocialActionCubit, IsmSocialActionState>(
           buildWhen: (previous, current) {
             // Listen to both IsmLikePostState and IsmLikeActionListenerState
             // This ensures updates from outside the package are reflected
@@ -113,7 +113,20 @@ class _LikeActionWidgetState extends State<LikeActionWidget> {
                 current.postId == postId) {
               return true;
             }
+            if (current is IsmUserChangedActionListenerState) {
+              return true;
+            }
             return false;
+          },
+          listenWhen: (previous, current) =>
+          current is IsmUserChangedActionListenerState,
+          listener: (context, state) {
+            if (state is IsmUserChangedActionListenerState) {
+              isLiked = false;
+              if (state.userId.isNotEmpty) { // not guest get like state
+                cubit.loadPostLikeState(widget.postId);
+              }
+            }
           },
           builder: (context, state) {
             if (state is IsmLikePostState && state.postId == postId) {
