@@ -913,6 +913,7 @@ class SocialApiServiceProvider extends SocialApiService {
     required int page,
     required int pageSize,
     required bool isPublicOnly,
+    String? postId,
   }) =>
       _getHeaders(header).then(
         (headers) => networkClient.makeRequest(
@@ -923,6 +924,7 @@ class SocialApiServiceProvider extends SocialApiService {
             'page': page.toString(),
             'page_size': pageSize.toString(),
             'public_only': isPublicOnly.toString(),
+            if (postId != null && postId.isNotEmpty) 'post_id': postId,
           },
           headers,
           isLoading,
@@ -934,17 +936,17 @@ class SocialApiServiceProvider extends SocialApiService {
     required bool isLoading,
     required Header header,
     required String postId,
-    required String collectionId,
+    required List<String> collectionIds,
   }) =>
       _getHeaders(header).then(
         (headers) => networkClient.makeRequest(
           SocialApiEndPoints.postMoveToCollection,
           NetworkRequestType.post,
-          null,
           {
             'post_id': postId,
-            'collection_id': collectionId,
+            'collection_ids': collectionIds,
           },
+          null,
           headers,
           isLoading,
         ),

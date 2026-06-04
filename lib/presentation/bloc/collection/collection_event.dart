@@ -8,9 +8,11 @@ class GetUserCollectionEvent extends CollectionEvent {
   GetUserCollectionEvent({
     required this.skip,
     required this.limit,
+    this.postId,
   });
   final int skip;
   final int limit;
+  final String? postId;
 }
 
 class CreateUserCollectionEvent extends CollectionEvent {
@@ -33,11 +35,11 @@ class ModifyUserCollectionEvent extends CollectionEvent {
 
 class MoveToCollectionEvent extends CollectionEvent {
   MoveToCollectionEvent({
-    this.collectionId = '',
+    this.collectionIds = const [],
     this.postId = '',
     this.onMoveToCollection,
   });
-  final String collectionId;
+  final List<String> collectionIds;
   final String postId;
   final VoidCallback? onMoveToCollection;
 }

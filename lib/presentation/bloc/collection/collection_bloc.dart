@@ -62,6 +62,7 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
       page: event.skip,
       pageSize: event.limit,
       isPublicOnly: false,
+      postId: event.postId,
     );
     if (apiResult.isSuccess) {
       emit(
@@ -420,14 +421,20 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
 
   FutureOr<void> moveToCollection(
       MoveToCollectionEvent event, Emitter<CollectionState> emit) async {
+    if (event.collectionIds.isEmpty) return;
+
     final apiResult = await _userCollectionsUseCase.executeMoveToCollection(
       isLoading: true,
       postId: event.postId,
-      collectionId: event.collectionId,
+      collectionIds: event.collectionIds,
     );
     if (apiResult.isSuccess) {
       event.onMoveToCollection?.call();
-      add(GetUserCollectionEvent(skip: 1, limit: 10));
+      add(GetUserCollectionEvent(
+        skip: 1,
+        limit: 10,
+        postId: event.postId,
+      ));
     }
   }
 

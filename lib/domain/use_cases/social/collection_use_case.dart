@@ -27,6 +27,7 @@ class CollectionUseCase extends BaseUseCase {
     required int page,
     required int pageSize,
     required bool isPublicOnly,
+    String? postId,
   }) async =>
       await super.execute(() async {
         final response = await _repository.getCollectionList(
@@ -34,22 +35,23 @@ class CollectionUseCase extends BaseUseCase {
           page: page,
           pageSize: pageSize,
           isPublicOnly: isPublicOnly,
+          postId: postId,
         );
         return ApiResult(
             data: response.responseCode == 200 ? response.data : null);
       });
 
-  /// Move post to collection
+  /// Move post to one or more collections
   Future<ApiResult<ResponseClass?>> executeMoveToCollection({
     required bool isLoading,
     required String postId,
-    required String collectionId,
+    required List<String> collectionIds,
   }) async =>
       await super.execute(() async {
         final response = await _repository.movePostToCollection(
           isLoading: isLoading,
           postId: postId,
-          collectionId: collectionId,
+          collectionIds: collectionIds,
         );
         return ApiResult(
             data: response.responseCode == 200 || response.responseCode == 201
