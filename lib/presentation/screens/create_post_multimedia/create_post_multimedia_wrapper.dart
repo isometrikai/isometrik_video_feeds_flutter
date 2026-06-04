@@ -145,7 +145,7 @@ class _CreatePostMultimediaWrapperState
     if (!mounted) return;
     await Future<void>.delayed(Duration.zero);
     if (!mounted) return;
-    await Navigator.of(context, rootNavigator: true).push<List<me.MediaEditItem>>(
+    await Navigator.of(context, rootNavigator: true).push<dynamic>(
       MaterialPageRoute(
         builder: (context) => me.MediaEditView(
           mediaDataList: mediaEditItems,
@@ -295,7 +295,7 @@ class _CreatePostMultimediaWrapperState
 
   Future<CameraCaptureResult?> _captureMedia(String? mediaType) async {
     final result = await Navigator.of(context, rootNavigator: true)
-        .push<CameraCaptureResult>(
+        .push<dynamic>(
       MaterialPageRoute(
         builder: (context) => mc.CameraCaptureView(
           mediaType: mediaType?.mediaType ?? MediaType.both,
@@ -305,23 +305,24 @@ class _CreatePostMultimediaWrapperState
         ),
       ),
     );
-    if (result == null || result.mediaPath.isEmpty) return null;
+    final captureData = result is CameraCaptureResult? result : null;
+    if (captureData == null || captureData.mediaPath.isEmpty) return null;
 
-    if (result.mediaPath.isVideoFile) {
-      final thumb = await _generateVideoThumbnail(result.mediaPath);
+    if (captureData.mediaPath.isVideoFile) {
+      final thumb = await _generateVideoThumbnail(captureData.mediaPath);
       final duration =
-          await GalleryVideoTrimUtil.durationSeconds(result.mediaPath);
+          await GalleryVideoTrimUtil.durationSeconds(captureData.mediaPath);
       final editItem = await CreatePostSoundFlow.buildEditItemFromCapture(
-        videoPath: result.mediaPath,
+        videoPath: captureData.mediaPath,
         durationSeconds: duration,
         thumbnailPath: thumb,
-        sound: result.sound,
-        soundAlreadyAppliedToVideo: result.soundAppliedToVideo,
+        sound: captureData.sound,
+        soundAlreadyAppliedToVideo: captureData.soundAppliedToVideo,
       );
       if (!mounted) return null;
-      _selectedPostSound = editItem.sound ?? result.sound;
+      _selectedPostSound = editItem.sound ?? captureData.sound;
       await Navigator.of(context, rootNavigator: true)
-          .push<List<me.MediaEditItem>>(
+          .push<dynamic>(
         MaterialPageRoute(
           builder: (context) => me.MediaEditView(
             mediaDataList: [editItem],
@@ -338,15 +339,15 @@ class _CreatePostMultimediaWrapperState
       return null;
     }
 
-    final photoSound = result.sound;
+    final photoSound = captureData.sound;
     final editItem = CreatePostSoundFlow.buildEditItemFromPhotoCapture(
-      imagePath: result.mediaPath,
+      imagePath: captureData.mediaPath,
       sound: photoSound,
     );
     if (!mounted) return null;
     _selectedPostSound = editItem.sound ?? photoSound;
     await Navigator.of(context, rootNavigator: true)
-        .push<List<me.MediaEditItem>>(
+        .push<dynamic>(
       MaterialPageRoute(
         builder: (context) => me.MediaEditView(
           mediaDataList: [editItem],

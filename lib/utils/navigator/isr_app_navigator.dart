@@ -482,7 +482,7 @@ class IsrAppNavigator {
     return result;
   }
 
-  static Future<String?> goToCreatePostAttributionView(
+  static Future<dynamic> goToCreatePostAttributionView(
     BuildContext context, {
     List<MediaData>? newMediaDataList,
     MediaEditSoundItem? selectedSound,
@@ -505,7 +505,7 @@ class IsrAppNavigator {
     );
 
     final result =
-        await Navigator.of(context, rootNavigator: true).push<String>(
+        await Navigator.of(context, rootNavigator: true).push<dynamic>(
       _buildRoute(
         page: page,
         transitionType: transitionType,
