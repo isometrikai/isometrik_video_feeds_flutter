@@ -12,10 +12,12 @@ class MediaEditLoadedState extends MediaEditState {
   MediaEditLoadedState({
     required this.mediaEditItems,
     required this.currentIndex,
+    this.isApplyingSound = false,
   });
 
   final List<MediaEditItem> mediaEditItems;
   final int currentIndex;
+  final bool isApplyingSound;
 }
 
 class MediaEditErrorState extends MediaEditState {

@@ -187,7 +187,6 @@ class _VideoCoverSelectorViewState extends State<VideoCoverSelectorView> {
         _updateFrameState(timestamp, FrameGenerationState.failed);
       }
     } catch (e) {
-      debugPrint('Error extracting frame at ${timestamp}s: $e');
       _updateFrameState(timestamp, FrameGenerationState.failed);
     }
   }
@@ -219,8 +218,12 @@ class _VideoCoverSelectorViewState extends State<VideoCoverSelectorView> {
 
   Future<void> _initializeVideo() async {
     try {
-      _videoController = VideoPlayerController.file(widget.file);
+      _videoController = VideoPlayerController.file(
+        widget.file,
+        videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+      );
       await _videoController!.initialize();
+      await _videoController!.setVolume(1.0);
       _videoController!.addListener(_videoListener);
 
       // Get video duration
@@ -233,7 +236,6 @@ class _VideoCoverSelectorViewState extends State<VideoCoverSelectorView> {
       // Start generating frames progressively
       unawaited(_generateFramesProgressively());
     } catch (e) {
-      debugPrint('Error initializing video: $e');
       setState(() {
         _isLoading = false;
       });
@@ -262,29 +264,19 @@ class _VideoCoverSelectorViewState extends State<VideoCoverSelectorView> {
 
     // Verify video file exists
     if (!await File(videoPath).exists()) {
-      debugPrint('Video file does not exist: $videoPath');
       setState(() {
         _isGeneratingFrames = false;
       });
       return;
     }
 
-    debugPrint(
-        'Extracting frames using get_thumbnail_video (parallel) for video: $videoPath');
-    debugPrint('Video duration: $_totalVideoDuration seconds');
-
     try {
-      // Use parallel thumbnail extraction with progressive loading
       await _extractThumbnails(videoPath);
 
       setState(() {
         _isGeneratingFrames = false;
       });
-
-      debugPrint(
-          'Successfully extracted ${_videoFrames.length} frames using parallel get_thumbnail_video');
     } catch (e) {
-      debugPrint('Error extracting frames with get_thumbnail_video: $e');
       setState(() {
         _isGeneratingFrames = false;
       });
@@ -379,7 +371,6 @@ class _VideoCoverSelectorViewState extends State<VideoCoverSelectorView> {
         }
       }
     } catch (e) {
-      debugPrint('Error selecting from gallery: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

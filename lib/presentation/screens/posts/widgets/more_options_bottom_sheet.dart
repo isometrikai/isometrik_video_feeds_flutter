@@ -2,10 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 
+abstract final class MoreOptionsSheetResult {
+  static const String dubWithAudio = 'dub_with_audio';
+  static const String report = 'report';
+  static const String edit = 'edit';
+  static const String delete = 'delete';
+  static const String insight = 'insight';
+}
+
 class MoreOptionsBottomSheet extends StatefulWidget {
   const MoreOptionsBottomSheet({
     super.key,
     this.onReportPost,
+    this.showDubWithAudio = false,
     this.onDeletePost,
     this.onEditPost,
     this.onShowPostInsight,
@@ -13,6 +22,7 @@ class MoreOptionsBottomSheet extends StatefulWidget {
   });
 
   final Future<void> Function()? onReportPost;
+  final bool showDubWithAudio;
   final Future<void> Function()? onDeletePost;
   final Future<void> Function()? onEditPost;
   final Future<void> Function()? onShowPostInsight;
@@ -46,38 +56,48 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (!widget.isSelfProfile) ...[
+                if (widget.showDubWithAudio) ...[
+                  _buildOption(
+                    title: IsrTranslationFile.dubWithAudio,
+                    onTap: () => Navigator.pop(
+                      context,
+                      MoreOptionsSheetResult.dubWithAudio,
+                    ),
+                  ),
+                  const Divider(height: 1),
+                ],
                 _buildOption(
                   title: IsrTranslationFile.report,
-                  onTap: () async {
-                    Navigator.pop(context, true);
-                    await widget.onReportPost?.call();
-                  },
+                  onTap: () => Navigator.pop(
+                    context,
+                    MoreOptionsSheetResult.report,
+                  ),
                 ),
               ] else ...[
                 _buildOption(
                   title: IsrTranslationFile.edit,
-                  onTap: () async {
-                    Navigator.pop(context, true);
-                    await widget.onEditPost?.call();
-                  },
+                  onTap: () => Navigator.pop(
+                    context,
+                    MoreOptionsSheetResult.edit,
+                  ),
                 ),
                 Divider(height: 1, color: _dividerColor),
                 _buildOption(
                   title: IsrTranslationFile.postInsight,
-                  onTap: () async {
-                    Navigator.pop(context, true);
-                    await widget.onShowPostInsight?.call();
-                  },
+                  onTap: () => Navigator.pop(
+                    context,
+                    MoreOptionsSheetResult.insight,
+                  ),
                 ),
                 Divider(height: 1, color: _dividerColor),
                 _buildOption(
                   title: IsrTranslationFile.delete,
                   textColor: _deleteTextColor,
-                  onTap: () async {
-                    Navigator.pop(context, true);
-                    await widget.onDeletePost?.call();
-                  },
-                ),
+                  onTap: () => Navigator.pop(
+                    context,
+                    MoreOptionsSheetResult.delete,
+                  ),
+                )
               ],
               Divider(height: 1, color: _dividerColor),
               _buildOption(

@@ -38,7 +38,6 @@ class StoryFeedResponse {
       );
     }
 
-    // TrulyFree-style feed: data.stories (flat or grouped rings)
     final storiesKey = map['stories'] as List<dynamic>? ??
         map['items'] as List<dynamic>? ??
         [];
@@ -277,8 +276,7 @@ class StoryHighlightData {
         .whereType<Map<String, dynamic>>()
         .map(StoryData.fromMap)
         .where(
-          (s) =>
-              s.id.trim().isNotEmpty && s.mediaUrl.trim().isNotEmpty,
+          (s) => s.id.trim().isNotEmpty && s.mediaUrl.trim().isNotEmpty,
         )
         .toList();
   }

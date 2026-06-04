@@ -60,11 +60,15 @@ class ProcessCapturedMediaEvent extends MediaSelectionEvent {
     required this.file,
     required this.mediaType,
     required this.duration,
+    this.sound,
+    this.soundAppliedToVideo = false,
   });
 
   final File file;
   final SelectedMediaType mediaType;
   final int duration;
+  final MediaEditSoundItem? sound;
+  final bool soundAppliedToVideo;
 }
 
 class ProceedToEditFilterEvent extends MediaSelectionEvent {

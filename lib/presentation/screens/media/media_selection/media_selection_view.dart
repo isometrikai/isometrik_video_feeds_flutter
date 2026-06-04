@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:ism_video_reel_player/domain/models/camera_capture_result.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/widgets/media_selection_widgets.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -23,7 +26,7 @@ class MediaSelectionView extends StatefulWidget {
   final MediaSelectionConfig mediaSelectionConfig;
   final List<MediaAssetData>? selectedMedia;
   final Future<bool> Function(List<MediaAssetData> selectedMedia)? onComplete;
-  final Future<String?> Function(String? mediaType)? onCaptureMedia;
+  final Future<dynamic> Function(String? mediaType)? onCaptureMedia;
 
   @override
   State<MediaSelectionView> createState() => _MediaSelectionViewState();
@@ -402,7 +405,13 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
                   if (state is MediaSelectionErrorState) {
                     MediaSelectionUtility.showInSnackBar(state.message, context);
                   } else if (state is MediaSelectionCompletedState) {
-                    _handleMediaSelectionComplete(state.selectedMedia);
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) {
+                        unawaited(
+                          _handleMediaSelectionComplete(state.selectedMedia),
+                        );
+                      }
+                    });
                   }
                 },
                 builder: (context, state) {
@@ -690,16 +699,28 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
 
   void _captureMedia() async {
     if (widget.onCaptureMedia != null) {
-      final filePath = await widget
+      final captureResult = await widget
           .onCaptureMedia!(widget.mediaSelectionConfig.mediaListType.name);
-      if (filePath?.isNotEmpty == true) {
-        final file = File(filePath!);
+      var filePath = captureResult is String
+          ? captureResult
+          : (captureResult?.mediaPath as String?);
+      MediaEditSoundItem? captureSound;
+      var soundAppliedToVideo = false;
+      if (captureResult is CameraCaptureResult) {
+        filePath = captureResult.mediaPath;
+        captureSound = captureResult.sound;
+        soundAppliedToVideo = captureResult.soundAppliedToVideo;
+      }
+      if (filePath != null && filePath.isNotEmpty) {
+        final file = File(filePath);
         final mediaType = await _getMediaType(file);
         final duration = await _getVideoDuration(file, mediaType);
         _bloc.add(ProcessCapturedMediaEvent(
           file: file,
           mediaType: mediaType,
           duration: duration,
+          sound: captureSound,
+          soundAppliedToVideo: soundAppliedToVideo,
         ));
       }
     } else {

@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fluttertagger/fluttertagger.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart'
     as mc;
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart'
@@ -23,11 +24,15 @@ class PostAttributeView extends StatefulWidget {
     required this.isEditMode,
     this.postData,
     this.newMediaDataList,
+    this.selectedSound,
+    this.dismissEntireFlowOnClose = false,
   });
 
   final bool? isEditMode;
   final List<MediaData>? newMediaDataList;
+  final MediaEditSoundItem? selectedSound;
   final TimeLineData? postData;
+  final bool dismissEntireFlowOnClose;
 
   @override
   State<PostAttributeView> createState() => _PostAttributeViewState();
@@ -84,6 +89,18 @@ class _PostAttributeViewState extends State<PostAttributeView>
   bool get _isPaidPostEnabled =>
       IsrVideoReelConfig.createEditPostConfig.enablePaidPost;
 
+  void _leaveCreateFlow({Object? result}) {
+    if (widget.dismissEntireFlowOnClose) {
+      IsrAppNavigator.dismissCreatePostFlow(context);
+    } else if (widget.isEditMode != true) {
+      Navigator.pop(context, null);
+      Navigator.pop(context, null);
+      Navigator.pop(context, result);
+    } else {
+      Navigator.pop(context, result);
+    }
+  }
+
   @override
   void initState() {
     _createPostBloc = context.getOrCreateBloc();
@@ -95,8 +112,10 @@ class _PostAttributeViewState extends State<PostAttributeView>
     if (_isEditMode && editData != null) {
       _createPostBloc.add(EditPostEvent(postData: editData));
     } else if (!_isEditMode && widget.newMediaDataList?.isNotEmpty == true) {
-      _createPostBloc.add(
-          CreatePostInitialEvent(newMediaDataList: widget.newMediaDataList));
+      _createPostBloc.add(CreatePostInitialEvent(
+        newMediaDataList: widget.newMediaDataList,
+        selectedSound: widget.selectedSound,
+      ));
     } else {
       Navigator.pop(context);
     }
@@ -536,7 +555,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
       }
     });
 
-    return BlocListener<CreatePostBloc, CreatePostState>(
+    final page = BlocListener<CreatePostBloc, CreatePostState>(
       listenWhen: (previousState, currentState) =>
           currentState is PostCreatedState ||
           currentState is ShowProgressDialogState ||
@@ -578,13 +597,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
               : null;
           Utility.showBottomSheet(
             child: _buildSuccessBottomSheet(
-              onTapBack: () {
-                if (widget.isEditMode != true) {
-                  Navigator.pop(context, null);
-                  Navigator.pop(context, null);
-                }
-                Navigator.pop(context, postData);
-              },
+              onTapBack: () => _leaveCreateFlow(result: postData),
               title: state.postSuccessTitle ?? '',
               message: state.postSuccessMessage ?? '',
             ),
@@ -592,12 +605,10 @@ class _PostAttributeViewState extends State<PostAttributeView>
           );
           _doMediaCaching(state.mediaDataList);
           Future.delayed(const Duration(seconds: 2), () async {
+            if (!mounted) return;
             Navigator.pop(context);
-            if (widget.isEditMode != true) {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            }
-            Navigator.pop(context, postData);
+            if (!mounted) return;
+            _leaveCreateFlow(result: postData);
           });
         }
         if (state is ShowProgressDialogState && !_useBackgroundPostUi) {
@@ -627,6 +638,19 @@ class _PostAttributeViewState extends State<PostAttributeView>
       },
       child: _buildPage(),
     );
+
+    if (!widget.dismissEntireFlowOnClose) {
+      return page;
+    }
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          IsrAppNavigator.dismissCreatePostFlow(context);
+        }
+      },
+      child: page,
+    );
   }
 
   Widget _buildPage() => Scaffold(
@@ -641,6 +665,10 @@ class _PostAttributeViewState extends State<PostAttributeView>
               : IsrTranslationFile.newPost,
           centerTitle: true,
           titleStyle: _postAttributeConfig?.appBarConfig?.titleStyle,
+          isCrossIcon: widget.dismissEntireFlowOnClose,
+          onTap: widget.dismissEntireFlowOnClose
+              ? () => IsrAppNavigator.dismissCreatePostFlow(context)
+              : null,
         ),
         body: Column(
           children: [
@@ -1844,11 +1872,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
   /// so the user can use the app while upload/create continues in the bloc.
   void _popNavigatorStackForBackgroundPost({String? result}) {
     if (!mounted) return;
-    if (widget.isEditMode != true) {
-      Navigator.pop(context, null);
-      Navigator.pop(context, null);
-    }
-    Navigator.pop(context, result);
+    _leaveCreateFlow(result: result);
   }
 
   void _setPostRequest() {
@@ -2053,9 +2077,8 @@ class _PostAttributeViewState extends State<PostAttributeView>
     mediaListType: ms.MediaListType.imageVideo,
   );
 
-  Future<String?> _captureMedia(String? mediaType) async =>
-      await Navigator.push<String?>(
-        context,
+  Future<dynamic> _captureMedia(String? mediaType) async =>
+      await Navigator.of(context, rootNavigator: true).push<dynamic>(
         MaterialPageRoute(
           builder: (context) => mc.CameraCaptureView(
             mediaType: mediaType?.mediaType ?? MediaType.photo,
@@ -2063,6 +2086,8 @@ class _PostAttributeViewState extends State<PostAttributeView>
               Navigator.pop(context);
               return null;
             },
+            onAddSoundTap: IsrVideoReelConfig.createEditPostConfig
+                .createEditPostCallBackConfig?.onAddSoundFromCamera,
           ),
         ),
       );

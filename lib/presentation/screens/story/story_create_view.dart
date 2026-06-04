@@ -203,6 +203,19 @@ class _StoryCreateViewState extends State<StoryCreateView> {
                                 ),
                               ],
                             ),
+                            if (composerState.file != null &&
+                                composerState.mediaType == 'image') ...[
+                              SizedBox(height: IsrDimens.ten),
+                              _pickerButton(
+                                context: context,
+                                composerState: composerState,
+                                text: 'Crop photo',
+                                icon: Icons.crop_rounded,
+                                onTap: context
+                                    .read<StoryComposerCubit>()
+                                    .recropPhoto,
+                              ),
+                            ],
                           ],
                         ),
                       ),

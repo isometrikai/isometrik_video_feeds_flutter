@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_thumbnail_video/video_thumbnail.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection_config.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/model/media_asset_data.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -482,6 +483,8 @@ class MediaSelectionBloc
         extension: filePath.split('.').last,
         isTemp: 'true',
         isCaptured: true,
+        sound: event.sound,
+        soundAppliedToVideo: event.soundAppliedToVideo,
       );
 
       add(ProceedToEditFilterEvent(media: [mediaData]));

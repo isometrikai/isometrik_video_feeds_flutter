@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
+
 enum SelectedMediaType {
   image,
   video;
@@ -50,6 +52,8 @@ class MediaAssetData {
     this.orientation,
     this.thumbnailPath,
     this.isCaptured,
+    this.sound,
+    this.soundAppliedToVideo = false,
   });
 
   factory MediaAssetData.fromJson(Map<String, dynamic> json) => MediaAssetData(
@@ -69,6 +73,12 @@ class MediaAssetData {
             : null,
         thumbnailPath: json['thumbnailPath'] as String?,
         isCaptured: json['isCaptured'] as bool?,
+        sound: json['sound'] != null
+            ? MediaEditSoundItem.fromJson(
+                json['sound'] as Map<String, dynamic>,
+              )
+            : null,
+        soundAppliedToVideo: json['soundAppliedToVideo'] as bool? ?? false,
       );
   String? assetId;
   String? localPath;
@@ -82,6 +92,8 @@ class MediaAssetData {
   Orientation? orientation;
   String? thumbnailPath;
   bool? isCaptured;
+  MediaEditSoundItem? sound;
+  bool soundAppliedToVideo;
 
   // Calculate orientation from height and width when not given
   Orientation? get calculatedOrientation {
@@ -106,6 +118,8 @@ class MediaAssetData {
         'orientation': orientation?.toJson(),
         'thumbnailPath': thumbnailPath,
         'isCaptured': isCaptured,
+        'sound': sound?.toJson(),
+        'soundAppliedToVideo': soundAppliedToVideo,
       };
 
   // ===== Override equality and hashCode =====

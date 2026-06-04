@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/cubits/story/story.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/stories/story_compose_view.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/stories/story_image_cropper.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/stories/widgets/add_to_story_bottom_sheet.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/utils/navigator/isr_app_navigator.dart';
@@ -26,6 +27,13 @@ class StoryCreateFlow {
     if (file == null || !context.mounted) return;
 
     final mediaType = pick == StoryMediaPick.video ? 'video' : 'image';
+    var mediaFile = File(file.path);
+    if (mediaType == 'image') {
+      final cropped = await StoryImageCropper.crop(file.path);
+      if (!context.mounted) return;
+      if (cropped == null) return;
+      mediaFile = cropped;
+    }
     final cubit = IsrAppNavigator.hasStoryCubitInContext(context)
         ? context.read<StoryCubit>()
         : IsmInjectionUtils.getBloc<StoryCubit>();
@@ -35,7 +43,7 @@ class StoryCreateFlow {
         builder: (_) => BlocProvider<StoryCubit>.value(
           value: cubit,
           child: StoryComposeView(
-            file: File(file.path),
+            file: mediaFile,
             mediaType: mediaType,
           ),
         ),
