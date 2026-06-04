@@ -261,7 +261,7 @@ class NetworkClient with AppMixin {
         }
       }
       request.fields.addAll(data);
-      request.headers.addAll(headers);
+      request.headers.addAll(_sanitizeHeaders(headers));
 
       final streamedResponse = await request.send();
       var response = await http.Response.fromStream(streamedResponse);
@@ -288,12 +288,14 @@ class NetworkClient with AppMixin {
       Map<String, String>? headers,
       data,
       NetworkRequestType requestType) async {
+    final safeHeaders = headers != null ? _sanitizeHeaders(headers) : null;
+
     switch (requestType) {
       case NetworkRequestType.get:
         return await _client
             .get(
               finalUrl,
-              headers: headers,
+              headers: safeHeaders,
             )
             .timeout(AppConstants.timeOutDuration);
       case NetworkRequestType.post:
@@ -301,7 +303,7 @@ class NetworkClient with AppMixin {
             .post(
               finalUrl,
               body: jsonEncode(data),
-              headers: headers,
+              headers: safeHeaders,
             )
             .timeout(AppConstants.timeOutDuration);
       case NetworkRequestType.put:
@@ -309,7 +311,7 @@ class NetworkClient with AppMixin {
             .put(
               finalUrl,
               body: jsonEncode(data),
-              headers: headers,
+              headers: safeHeaders,
             )
             .timeout(AppConstants.timeOutDuration);
       case NetworkRequestType.patch:
@@ -317,7 +319,7 @@ class NetworkClient with AppMixin {
             .patch(
               finalUrl,
               body: jsonEncode(data),
-              headers: headers,
+              headers: safeHeaders,
             )
             .timeout(AppConstants.timeOutDuration);
       case NetworkRequestType.delete:
@@ -325,11 +327,26 @@ class NetworkClient with AppMixin {
             .delete(
               finalUrl,
               body: jsonEncode(data),
-              headers: headers,
+              headers: safeHeaders,
             )
             .timeout(AppConstants.timeOutDuration);
     }
   }
+
+  /// Percent-encodes any non-ASCII characters in a header value so it
+  /// satisfies RFC 7230 (header field values must be visible US-ASCII).
+  /// Values that are already ASCII are returned unchanged.
+  String _sanitizeHeaderValue(String value) {
+    for (final unit in value.codeUnits) {
+      if (unit > 0x7F) {
+        return Uri.encodeComponent(value);
+      }
+    }
+    return value;
+  }
+
+  Map<String, String> _sanitizeHeaders(Map<String, String> headers) =>
+      headers.map((k, v) => MapEntry(k, _sanitizeHeaderValue(v)));
 
   void dispose() {
     _client.close();
