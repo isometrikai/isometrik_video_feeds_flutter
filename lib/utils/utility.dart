@@ -1014,7 +1014,8 @@ class Utility {
         case Tag.mention:
           taggedStyle = userNameStyle ??
               baseStyle.copyWith(
-                fontWeight: FontWeight.w600,
+                color: IsrColors.appColor,
+                fontWeight: baseStyle.fontWeight,
               );
           recognizer = TapGestureRecognizer()
             ..onTap = () {
@@ -1029,7 +1030,8 @@ class Utility {
         case Tag.hashtag:
           taggedStyle = hashTagStyle ??
               baseStyle.copyWith(
-                fontWeight: FontWeight.w600,
+                color: IsrColors.appColor,
+                fontWeight: baseStyle.fontWeight,
               );
           recognizer = TapGestureRecognizer()
             ..onTap = () {

@@ -1022,12 +1022,12 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
         '@': widget.userTagTextStyle ??
             baseStyle.copyWith(
               color: IsrColors.appColor,
-              fontWeight: FontWeight.w600,
+              fontWeight: baseStyle.fontWeight ?? FontWeight.w400,
             ),
         '#': widget.hashtagTextStyle ??
             baseStyle.copyWith(
               color: IsrColors.appColor,
-              fontWeight: FontWeight.w600,
+              fontWeight: baseStyle.fontWeight ?? FontWeight.w400,
             ),
       },
       overlay: _useInlineSuggestions

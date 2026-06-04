@@ -164,13 +164,14 @@ class IsrTranslationFile {
   static const String editPostConfirmation =
       'Are you sure you want to edit the post?';
   static const postDeletedSuccessfully = 'Post deleted successfully';
-  static const String allComments = 'All Comments';
+  static const String allComments = 'Comments';
   static const String reply = 'Reply';
   static const String viewReplies = 'View Replies';
   static const String hideReplies = 'Hide Replies';
   static const String like = 'like';
   static const String likes = 'likes';
-  static const String addAComment = 'Add a comment';
+  static const String addAComment = 'Join the conversation...';
+  static const String addAReply = 'Add a reply...';
   static const String replyingTo = 'Replying to';
   static const String noCommentsYet = 'No Comments Yet';
   static const String beTheFirstOneToPostAComment =

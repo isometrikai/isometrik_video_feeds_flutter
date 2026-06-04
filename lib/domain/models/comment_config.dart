@@ -97,13 +97,22 @@ class BottomSheetConfig {
 class CommentHeaderConfig {
   const CommentHeaderConfig({
     this.titleStyle,
+    this.title,
     this.closeIcon,
     this.closeIconSize,
     this.closeIconColor,
     this.headerPadding,
+    this.showDragHandle = true,
+    this.showCloseButton = false,
+    this.dragHandleColor,
+    this.dragHandleWidth,
+    this.dragHandleHeight,
   });
 
-  /// Style for the "All Comments" title
+  /// Override for header title (defaults to "Comments").
+  final String? title;
+
+  /// Style for the comments sheet title
   final TextStyle? titleStyle;
 
   /// Icon path for the close button
@@ -118,19 +127,43 @@ class CommentHeaderConfig {
   /// Padding for the header section
   final EdgeInsetsGeometry? headerPadding;
 
+  /// Instagram-style pull handle at the top of the sheet.
+  final bool showDragHandle;
+
+  /// When true, shows a close icon in the header (legacy layout).
+  final bool showCloseButton;
+
+  final Color? dragHandleColor;
+
+  final double? dragHandleWidth;
+
+  final double? dragHandleHeight;
+
   CommentHeaderConfig copyWith({
     TextStyle? titleStyle,
+    String? title,
     String? closeIcon,
     double? closeIconSize,
     Color? closeIconColor,
     EdgeInsetsGeometry? headerPadding,
+    bool? showDragHandle,
+    bool? showCloseButton,
+    Color? dragHandleColor,
+    double? dragHandleWidth,
+    double? dragHandleHeight,
   }) =>
       CommentHeaderConfig(
+        title: title ?? this.title,
         titleStyle: titleStyle ?? this.titleStyle,
         closeIcon: closeIcon ?? this.closeIcon,
         closeIconSize: closeIconSize ?? this.closeIconSize,
         closeIconColor: closeIconColor ?? this.closeIconColor,
         headerPadding: headerPadding ?? this.headerPadding,
+        showDragHandle: showDragHandle ?? this.showDragHandle,
+        showCloseButton: showCloseButton ?? this.showCloseButton,
+        dragHandleColor: dragHandleColor ?? this.dragHandleColor,
+        dragHandleWidth: dragHandleWidth ?? this.dragHandleWidth,
+        dragHandleHeight: dragHandleHeight ?? this.dragHandleHeight,
       );
 }
 
@@ -149,6 +182,8 @@ class CommentItemConfig {
     this.moreIcon,
     this.moreIconSize,
     this.moreIconColor,
+    this.avatarSize,
+    this.showMoreMenu = true,
     this.commentPadding,
     this.commentSpacing,
     this.childCommentPadding,
@@ -191,6 +226,12 @@ class CommentItemConfig {
   /// Color for more options icon
   final Color? moreIconColor;
 
+  /// Diameter for comment author avatar.
+  final double? avatarSize;
+
+  /// When false, hides the overflow menu on each comment row.
+  final bool showMoreMenu;
+
   /// Padding for each comment item
   final EdgeInsetsGeometry? commentPadding;
 
@@ -216,6 +257,8 @@ class CommentItemConfig {
     String? moreIcon,
     double? moreIconSize,
     Color? moreIconColor,
+    double? avatarSize,
+    bool? showMoreMenu,
     EdgeInsetsGeometry? commentPadding,
     double? commentSpacing,
     EdgeInsetsGeometry? childCommentPadding,
@@ -234,6 +277,8 @@ class CommentItemConfig {
         moreIcon: moreIcon ?? this.moreIcon,
         moreIconSize: moreIconSize ?? this.moreIconSize,
         moreIconColor: moreIconColor ?? this.moreIconColor,
+        avatarSize: avatarSize ?? this.avatarSize,
+        showMoreMenu: showMoreMenu ?? this.showMoreMenu,
         commentPadding: commentPadding ?? this.commentPadding,
         commentSpacing: commentSpacing ?? this.commentSpacing,
         childCommentPadding: childCommentPadding ?? this.childCommentPadding,
@@ -336,6 +381,14 @@ class ReplyFieldConfig {
     this.postButtonStyle,
     this.replyFieldPadding,
     this.showoverlaySuggestions,
+    this.quickReactionEmojis,
+    this.inputBorderRadius,
+    this.inputBorderColor,
+    this.sendButtonColor,
+    this.sendButtonIconColor,
+    this.showEmojiBar = true,
+    this.hintText,
+    this.replyHintText,
   });
 
   /// Background color for the "Replying to" section
@@ -379,6 +432,25 @@ class ReplyFieldConfig {
 
   final bool? showoverlaySuggestions;
 
+  /// Emoji shortcuts shown above the composer (Instagram-style).
+  final List<String>? quickReactionEmojis;
+
+  /// Corner radius for the pill-shaped comment input.
+  final double? inputBorderRadius;
+
+  final Color? inputBorderColor;
+
+  final Color? sendButtonColor;
+
+  final Color? sendButtonIconColor;
+
+  final bool showEmojiBar;
+
+  final String? hintText;
+
+  /// Placeholder when replying to a comment (defaults to "Add a reply...").
+  final String? replyHintText;
+
   ReplyFieldConfig copyWith({
     Color? replyingToBackgroundColor,
     TextStyle? replyingToTextStyle,
@@ -394,6 +466,14 @@ class ReplyFieldConfig {
     TextStyle? postButtonStyle,
     EdgeInsetsGeometry? replyFieldPadding,
     bool? showoverlaySuggestions,
+    List<String>? quickReactionEmojis,
+    double? inputBorderRadius,
+    Color? inputBorderColor,
+    Color? sendButtonColor,
+    Color? sendButtonIconColor,
+    bool? showEmojiBar,
+    String? hintText,
+    String? replyHintText,
   }) =>
       ReplyFieldConfig(
         replyingToBackgroundColor:
@@ -414,6 +494,15 @@ class ReplyFieldConfig {
         replyFieldPadding: replyFieldPadding ?? this.replyFieldPadding,
         showoverlaySuggestions:
             showoverlaySuggestions ?? this.showoverlaySuggestions,
+        quickReactionEmojis:
+            quickReactionEmojis ?? this.quickReactionEmojis,
+        inputBorderRadius: inputBorderRadius ?? this.inputBorderRadius,
+        inputBorderColor: inputBorderColor ?? this.inputBorderColor,
+        sendButtonColor: sendButtonColor ?? this.sendButtonColor,
+        sendButtonIconColor: sendButtonIconColor ?? this.sendButtonIconColor,
+        showEmojiBar: showEmojiBar ?? this.showEmojiBar,
+        hintText: hintText ?? this.hintText,
+        replyHintText: replyHintText ?? this.replyHintText,
       );
 }
 
