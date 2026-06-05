@@ -98,6 +98,11 @@ void _configureReelsSdk() {
         secondaryColor: const Color(0xFF851E91), // Secondary brand color
         scaffoldBackgroundColor: Colors.white, // Background color
         appBarColor: Colors.white, // App bar background
+        appBarIconTextColor: Colors.black,
+        statusBarColor: Colors.white,
+        statusBarIconBrightness: Brightness.dark,
+        navigationBarColor: Colors.white,
+        navigationBarIconBrightness: Brightness.dark,
         brightness: Brightness.light, // Light or dark theme
         splashColor: const Color(0xFF006CD8).withValues(alpha: 0.5), // Splash effect color
       ),

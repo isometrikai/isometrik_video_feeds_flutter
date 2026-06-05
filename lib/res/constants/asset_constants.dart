@@ -133,4 +133,27 @@ class AssetConstants {
   static const String icEditIcon = '${packageName}assets/icons/ic_edit.svg';
   static const String icNoScheduledPost =
       '${packageName}assets/icons/ic_timer_icon.svg';
+
+  /// Default SVG assets shown in the media editor sticker picker.
+  static const List<String> defaultMediaEditorStickerAssets = [
+    icHeartIconSelected,
+    icVerifiedIcon,
+    icHashTagIcon,
+    icTagIcon,
+    icTagUser,
+    icSharePostIcon,
+    icCommentIcon,
+    icSaveSelected,
+    icCartIcon,
+    icCameraIcon,
+    icGalleryIcon,
+    icTimerIcon,
+    icPostLocation,
+    icPlacesIcon,
+    icSearchIcon,
+    greenTickIcon,
+    icAllowComment,
+    icAllowSave,
+    icCloudUploadIcon,
+  ];
 }

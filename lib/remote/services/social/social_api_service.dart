@@ -277,13 +277,15 @@ abstract class SocialApiService extends BaseService {
     required int page,
     required int pageSize,
     required bool isPublicOnly,
+    String? postId,
   });
 
   Future<ResponseModel> movePostToCollection({
     required bool isLoading,
     required Header header,
     required String postId,
-    required String collectionId,
+    required List<String> collectionIds,
+    required List<String> removeCollectionIds,
   });
 
   Future<ResponseModel> updateCollection({

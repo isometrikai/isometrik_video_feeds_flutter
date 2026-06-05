@@ -785,6 +785,7 @@ class SocialRepositoryImpl implements SocialRepository {
     required int page,
     required int pageSize,
     required bool isPublicOnly,
+    String? postId,
   }) async {
     try {
       final header = await _dataSource.getHeader();
@@ -794,6 +795,7 @@ class SocialRepositoryImpl implements SocialRepository {
         page: page,
         pageSize: pageSize,
         isPublicOnly: isPublicOnly,
+        postId: postId,
       );
       return _socialMapper.mapCollectionListResponse(response);
     } catch (e) {
@@ -805,7 +807,8 @@ class SocialRepositoryImpl implements SocialRepository {
   Future<CustomResponse<ResponseClass?>> movePostToCollection({
     required bool isLoading,
     required String postId,
-    required String collectionId,
+    required List<String> collectionIds,
+    required List<String> removeCollectionIds,
   }) async {
     try {
       final header = await _dataSource.getHeader();
@@ -813,7 +816,8 @@ class SocialRepositoryImpl implements SocialRepository {
         isLoading: isLoading,
         header: header,
         postId: postId,
-        collectionId: collectionId,
+        collectionIds: collectionIds,
+        removeCollectionIds: removeCollectionIds,
       );
       return _mapper.mapResponseData(response);
     } catch (e) {

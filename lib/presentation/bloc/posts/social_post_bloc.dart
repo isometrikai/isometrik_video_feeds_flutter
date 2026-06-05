@@ -1029,12 +1029,14 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
 
   FutureOr<void> _onShareSuccess(
       OnShareSuccessEvent event, Emitter<SocialPostState> emit) async {
-    debugPrint(
-        'SocialPostBloc: _onShareSuccess:- invoked, request:- ${event.shareSuccessData.toJson()}');
-    final res = await _onShareSuccessLogUseCase.executeOnShareSuccessLog(
-        isLoading: false, request: event.shareSuccessData);
-    debugPrint(
-        'SocialPostBloc: _onShareSuccess:- API result, request:- ${res.data?.data}');
+    if (await isUserLoggedIn) {
+      debugPrint(
+          'SocialPostBloc: _onShareSuccess:- invoked, request:- ${event.shareSuccessData.toJson()}');
+      final res = await _onShareSuccessLogUseCase.executeOnShareSuccessLog(
+          isLoading: false, request: event.shareSuccessData);
+      debugPrint(
+          'SocialPostBloc: _onShareSuccess:- API result, request:- ${res.data?.data}');
+    }
   }
 
   FutureOr<void> _removeMention(

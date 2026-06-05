@@ -242,12 +242,14 @@ abstract class SocialRepository extends BaseRepository {
     required int page,
     required int pageSize,
     required bool isPublicOnly,
+    String? postId,
   });
 
   Future<CustomResponse<ResponseClass?>> movePostToCollection({
     required bool isLoading,
     required String postId,
-    required String collectionId,
+    required List<String> collectionIds,
+    required List<String> removeCollectionIds,
   });
 
   Future<CustomResponse<ResponseClass?>> updateCollection({

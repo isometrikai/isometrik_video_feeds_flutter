@@ -107,6 +107,7 @@ class IsmDataProvider {
     required int pageSize,
     bool isLoading = false,
     bool isPublicOnly = false,
+    String? postId,
     Function(String, int)? onSuccess,
     Function(String, int)? onError,
   }) async {
@@ -116,6 +117,7 @@ class IsmDataProvider {
         page: page,
         pageSize: pageSize,
         isPublicOnly: isPublicOnly,
+        postId: postId,
       ),
       toJson: (data) => data?.toMap() ?? {},
       onSuccess: onSuccess,
@@ -187,7 +189,8 @@ class IsmDataProvider {
   /// Move post to collection
   Future<void> movePostToCollection({
     required String postId,
-    required String collectionId,
+    required List<String> collectionIds,
+    List<String> removeCollectionIds = const [],
     bool isLoading = false,
     Function(String, int)? onSuccess,
     Function(String, int)? onError,
@@ -196,7 +199,8 @@ class IsmDataProvider {
       apiCall: () => _collectionUseCase.executeMoveToCollection(
         isLoading: isLoading,
         postId: postId,
-        collectionId: collectionId,
+        collectionIds: collectionIds,
+        removeCollectionIds: removeCollectionIds,
       ),
       toJson: (data) => data?.toMap() ?? {},
       onSuccess: onSuccess,

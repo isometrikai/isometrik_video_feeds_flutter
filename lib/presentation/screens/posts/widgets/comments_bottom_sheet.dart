@@ -34,6 +34,7 @@ class CommentsBottomSheet extends StatefulWidget {
 
 class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   SocialPostBloc get _socialBloc => context.getOrCreateBloc();
+  IsmSocialActionCubit get _socialActionCubit => context.getOrCreateBloc();
   final _postCommentList = <CommentDataItem>[];
   var _myUserId = '';
   var _isCommentsLoaded = false;
@@ -49,6 +50,30 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   static const int _commentMaxLength = 100;
   CommentConfig get _commentConfig =>
       widget.commentConfig ?? IsrVideoReelConfig.commentConfig;
+
+  String _commentUniqueKey(CommentDataItem comment) =>
+      '${comment.parentCommentId ?? ''}_${comment.commentedOn?.millisecondsSinceEpoch ?? 0}_${comment.postId ?? ''}_${comment.comment ?? ''}';
+
+  List<CommentDataItem> _dedupeComments(Iterable<CommentDataItem> comments) {
+    final seen = <String>{};
+    final unique = <CommentDataItem>[];
+    for (final comment in comments) {
+      if (seen.add(_commentUniqueKey(comment))) {
+        if (comment.childComments?.isNotEmpty == true) {
+          comment.childComments = _dedupeComments(comment.childComments!);
+        }
+        unique.add(comment);
+      }
+    }
+    return unique;
+  }
+
+  void _dedupeCommentListInPlace(List<CommentDataItem> comments) {
+    final unique = _dedupeComments(comments);
+    comments
+      ..clear()
+      ..addAll(unique);
+  }
 
   // Config helper getters
   CommentUIConfig? get _uiConfig => _commentConfig.commentUIConfig;
@@ -92,6 +117,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
               setState(() {
                 if (comments.isNotEmpty) {
                   _postCommentList.addAll(comments);
+                  _dedupeCommentListInPlace(_postCommentList);
                   _hasMoreComments = true;
                 } else {
                   _hasMoreComments = false;
@@ -106,8 +132,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   }
 
   void _scrollToComment(CommentDataItem comment) {
-    final key = _commentItemKeys[
-        '${comment.id}_${comment.comment}_${comment.commentedOn?.millisecondsSinceEpoch}'];
+    final key = _commentItemKeys[_commentUniqueKey(comment)];
     if (key?.currentContext != null) {
       Scrollable.ensureVisible(
         key!.currentContext!,
@@ -160,8 +185,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                 setState(() {
                   _postCommentList
                     ..clear()
-                    ..addAll(
-                        state.postCommentsList as Iterable<CommentDataItem>);
+                    ..addAll(_dedupeComments(
+                        state.postCommentsList as Iterable<CommentDataItem>));
                 });
               }
             } else if (state is CommentCountModified &&
@@ -253,11 +278,9 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
       );
 
   GlobalKey? _getOrCreateCommentKey(CommentDataItem comment) {
-    _commentItemKeys[
-            '${comment.id}_${comment.comment}_${comment.commentedOn?.millisecondsSinceEpoch}'] =
-        GlobalKey();
-    return _commentItemKeys[
-        '${comment.id}_${comment.comment}_${comment.commentedOn?.millisecondsSinceEpoch}'];
+    final uniqueKey = _commentUniqueKey(comment);
+    _commentItemKeys[uniqueKey] = GlobalKey();
+    return _commentItemKeys[uniqueKey];
   }
 
   Widget _buildCommentItem(CommentDataItem commentDataItem) {
@@ -479,7 +502,10 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                   listener: (context, state) {
                     switch (state) {
                       case LoadPostCommentRepliesState():
-                        comment.childComments = state.postCommentRepliesList;
+                        comment.childComments = _dedupeComments(
+                          state.postCommentRepliesList ??
+                              const <CommentDataItem>[],
+                        );
                         if (state.postCommentRepliesList?.isNotEmpty != true) {
                           setState(() {
                             comment.showReply = false;
@@ -776,6 +802,13 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                     TapHandler(
                       onTap: () async {
                         context.pop();
+                        var isUserLoggedIn = await _socialActionCubit.isUserLoggedIn;
+                        if (!isUserLoggedIn) {
+                          await IsrVideoReelConfig.socialConfig.socialCallBackConfig?.onLoginInvoked
+                              ?.call();
+                        }
+                        isUserLoggedIn = await _socialActionCubit.isUserLoggedIn;
+                        if (!isUserLoggedIn) return;
                         await showDialog<dynamic>(
                           context: context,
                           barrierDismissible: true,

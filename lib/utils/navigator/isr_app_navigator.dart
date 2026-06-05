@@ -4,6 +4,13 @@ import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/models/models.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
+import 'package:ism_video_reel_player/domain/models/camera_capture_result.dart';
+import 'package:ism_video_reel_player/presentation/screens/create_post_multimedia/create_post_flow_coordinator.dart';
+import 'package:ism_video_reel_player/presentation/screens/create_post_multimedia/create_post_sound_flow.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart'
+    as mc;
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit.dart'
+    as me;
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart'
     as ms;
@@ -37,6 +44,32 @@ class IsrAppNavigator {
       return name == null || !_createPostFlowRouteNames.contains(name);
     });
     IsrVideoReelConfig.resumeFeedPlayback();
+  }
+
+  /// Dismisses overlays above [routeName], then pops that route with [result].
+  ///
+  /// [hostContext] must be the same context used to push the route (see
+  /// [PostAttributeView.flowHostContext]).
+  static bool popNamedRoute(
+    BuildContext hostContext, {
+    required String routeName,
+    Object? result,
+  }) {
+    final nav = Navigator.of(hostContext, rootNavigator: true);
+    var found = false;
+    nav.popUntil((route) {
+      if (route.settings.name == routeName) {
+        found = true;
+        return true;
+      }
+      return route.isFirst;
+    });
+    if (found && nav.canPop()) {
+      nav.pop(result);
+      IsrVideoReelConfig.resumeFeedPlayback();
+      return true;
+    }
+    return false;
   }
 
   /// Navigate to post listing screen
@@ -231,35 +264,194 @@ class IsrAppNavigator {
     await DubWithAudioCaptureCoordinator.start(context, launchConfig);
   }
 
-  static Future<String?> goToCreatePostView(
+  /// Default create-post flow: select media → edit → publish.
+  ///
+  /// Each step is an independent route that pops with a result. See also
+  /// [presentCreatePostMediaSelector], [presentCreatePostMediaEditor], and
+  /// [presentCreatePostFromMedia] for composing custom flows.
+  static Future<dynamic> goToCreatePostView(
     BuildContext context, {
     TransitionType? transitionType,
     MediaEditSoundItem? initialSound,
+  }) =>
+      CreatePostFlowCoordinator.run(
+        context,
+        initialSound: initialSound,
+        transitionType: transitionType,
+      );
+
+  static MultiBlocProvider wrapCreatePostFlowBlocs({required Widget child}) =>
+      MultiBlocProvider(
+        providers: [
+          BlocProvider<CreatePostBloc>.value(
+            value: IsmInjectionUtils.getBloc<CreatePostBloc>(),
+          ),
+          BlocProvider<SearchUserBloc>.value(
+            value: IsmInjectionUtils.getBloc<SearchUserBloc>(),
+          ),
+          BlocProvider<UploadProgressCubit>.value(
+            value: IsmInjectionUtils.getBloc<UploadProgressCubit>(),
+          ),
+        ],
+        child: child,
+      );
+
+  static MultiBlocProvider _createPostFlowBlocs({required Widget child}) =>
+      wrapCreatePostFlowBlocs(child: child);
+
+  static Future<T?> pushCreatePostFlowRoute<T>(
+    BuildContext context, {
+    required Widget page,
+    String? routeName,
+    TransitionType? transitionType,
+  }) =>
+      Navigator.of(context, rootNavigator: true).push<T>(
+        _buildRoute(
+          page: page,
+          transitionType: transitionType,
+          routeName: routeName,
+        ),
+      );
+
+  /// Step 1 — pick media from gallery or camera. Pops with selected assets.
+  static Future<List<ms.MediaAssetData>?> presentCreatePostMediaSelector(
+    BuildContext context, {
+    MediaEditSoundItem? initialSound,
+    ms.MediaSelectionConfig? config,
+    TransitionType? transitionType,
   }) async {
-    final page = MultiBlocProvider(
-      providers: [
-        BlocProvider<CreatePostBloc>.value(
-          value: IsmInjectionUtils.getBloc<CreatePostBloc>(),
+    final page = _createPostFlowBlocs(
+      child: ms.MediaSelectionView(
+        mediaSelectionConfig:
+            config ?? CreatePostFlowCoordinator.defaultMediaSelectionConfig(),
+        onComplete: (_) async => true,
+        onCaptureMedia: (mediaType) =>
+            CreatePostFlowCoordinator.handleCaptureFromSelector(
+          context,
+          mediaType: mediaType,
+          initialSound: initialSound,
         ),
-        BlocProvider<SearchUserBloc>.value(
-          value: IsmInjectionUtils.getBloc<SearchUserBloc>(),
-        ),
-        BlocProvider<UploadProgressCubit>.value(
-          value: IsmInjectionUtils.getBloc<UploadProgressCubit>(),
-        ),
-      ],
-      child: CreatePostMultimediaWrapper(initialSound: initialSound),
+      ),
     );
 
-    final result =
-        await Navigator.of(context, rootNavigator: true).push<String>(
+    return Navigator.of(context, rootNavigator: true).push<List<ms.MediaAssetData>>(
       _buildRoute(
         page: page,
         transitionType: transitionType,
         routeName: IsrRouteNames.createPostView,
       ),
     );
-    return result;
+  }
+
+  /// Opens the camera for photo/video capture during create-post flows.
+  static Future<CameraCaptureResult?> presentCameraCapture(
+    BuildContext context, {
+    String? mediaType,
+    MediaEditSoundItem? initialSound,
+    bool dubWithAudioMode = false,
+    CameraSetMusicEvent? initialCameraMusic,
+    List<SoundTrack>? dubSoundPickerTracks,
+    VoidCallback? onDismissEntireFlow,
+  }) async {
+    final musicEvent = initialCameraMusic ??
+        _cameraMusicEventFromSound(initialSound);
+
+    return Navigator.of(context, rootNavigator: true).push<CameraCaptureResult>(
+      _buildRoute(
+        page: mc.CameraCaptureView(
+          mediaType: mediaType?.mediaType ?? MediaType.both,
+          dubWithAudioMode: dubWithAudioMode,
+          initialCameraMusic: musicEvent,
+          dubSoundPickerTracks: dubSoundPickerTracks,
+          onDismissEntireFlow: onDismissEntireFlow,
+          onAddSoundTap: IsrVideoReelConfig.createEditPostConfig
+              .createEditPostCallBackConfig?.onAddSoundFromCamera,
+        ),
+        routeName: IsrRouteNames.cameraView,
+      ),
+    );
+  }
+
+  /// Step 2 — edit prepared media. Pops with edited items.
+  static Future<List<me.MediaEditItem>?> presentCreatePostMediaEditor(
+    BuildContext context, {
+    required List<me.MediaEditItem> mediaItems,
+    MediaEditSoundItem? initialSound,
+    TransitionType? transitionType,
+    bool allowAddMoreMedia = true,
+    VoidCallback? onDismissEntireFlow,
+  }) async {
+    if (mediaItems.isEmpty) return null;
+
+    final mediaEditConfig = GalleryVideoTrimUtil.defaultMediaEditConfig();
+    final page = me.MediaEditView(
+      mediaDataList: mediaItems,
+      mediaEditConfig: mediaEditConfig,
+      onComplete: (edited) async => edited.isNotEmpty,
+      onDismissEntireFlow: onDismissEntireFlow,
+      addMoreMedia: allowAddMoreMedia
+          ? (editMedia) => CreatePostFlowCoordinator.addMoreMedia(
+                context,
+                editMedia: editMedia,
+                selectedSound: initialSound,
+              )
+          : (_) async => null,
+      pickCoverPic: () => CreatePostFlowCoordinator.pickCoverPic(context),
+      onSelectSound: CreatePostSoundFlow.isEnabled
+          ? (_) => CreatePostSoundFlow.pickSound(context)
+          : null,
+    );
+
+    return Navigator.of(context, rootNavigator: true).push<List<me.MediaEditItem>>(
+      _buildRoute(
+        page: page,
+        transitionType: transitionType,
+        routeName: IsrRouteNames.mediaEditView,
+      ),
+    );
+  }
+
+  /// Step 3 — caption, tags, and publish. Pops with encoded post JSON.
+  static Future<dynamic> presentCreatePostFromMedia(
+    BuildContext context, {
+    required List<MediaData> mediaDataList,
+    MediaEditSoundItem? selectedSound,
+    TransitionType? transitionType,
+  }) async {
+    if (mediaDataList.isEmpty) return null;
+
+    final page = _createPostFlowBlocs(
+      child: PostAttributeView(
+        newMediaDataList: mediaDataList,
+        selectedSound: selectedSound,
+        isEditMode: false,
+      ),
+    );
+
+    return Navigator.of(context, rootNavigator: true).push<dynamic>(
+      _buildRoute(
+        page: page,
+        transitionType: transitionType,
+        routeName: IsrRouteNames.postAttributeView,
+      ),
+    );
+  }
+
+  static CameraSetMusicEvent? _cameraMusicEventFromSound(
+    MediaEditSoundItem? sound,
+  ) {
+    if (sound == null || sound.soundId == null || sound.soundId!.isEmpty) {
+      return null;
+    }
+    final durationSeconds = int.tryParse(sound.soundDuration ?? '');
+    return CameraSetMusicEvent(
+      musicId: sound.soundId!,
+      musicName: sound.soundMetadata?['title'] as String?,
+      musicArtist: sound.soundArtist,
+      musicThumbnailUrl: sound.soundImage,
+      musicDurationSeconds: durationSeconds,
+      musicPreviewUrl: sound.soundUrl ?? '',
+    );
   }
 
   static Future<void> goToCreateStoryView(
@@ -457,7 +649,7 @@ class IsrAppNavigator {
     );
   }
 
-  static Future<String?> goToEditPostView(
+  static Future<dynamic> goToEditPostView(
     BuildContext context, {
     required TimeLineData postData,
     TransitionType? transitionType,
@@ -476,44 +668,25 @@ class IsrAppNavigator {
     );
 
     final result =
-        await Navigator.of(context, rootNavigator: true).push<String>(
+        await Navigator.of(context, rootNavigator: true).push<dynamic>(
       _buildRoute(page: page, transitionType: transitionType),
     );
     return result;
   }
 
-  static Future<String?> goToCreatePostAttributionView(
+  @Deprecated('Use presentCreatePostFromMedia instead.')
+  static Future<dynamic> goToCreatePostAttributionView(
     BuildContext context, {
     List<MediaData>? newMediaDataList,
     MediaEditSoundItem? selectedSound,
-    bool dismissEntireFlowOnClose = false,
-    TransitionType transitionType = TransitionType.bottomToTop,
-  }) async {
-    final page = MultiBlocProvider(
-      providers: [
-        BlocProvider.value(value: context.getOrCreateBloc<CreatePostBloc>()),
-        BlocProvider.value(value: context.getOrCreateBloc<SearchUserBloc>()),
-        BlocProvider.value(
-            value: context.getOrCreateBloc<UploadProgressCubit>()),
-      ],
-      child: PostAttributeView(
-        newMediaDataList: newMediaDataList,
+    TransitionType? transitionType,
+  }) =>
+      presentCreatePostFromMedia(
+        context,
+        mediaDataList: newMediaDataList ?? const [],
         selectedSound: selectedSound,
-        isEditMode: false,
-        dismissEntireFlowOnClose: dismissEntireFlowOnClose,
-      ),
-    );
-
-    final result =
-        await Navigator.of(context, rootNavigator: true).push<String>(
-      _buildRoute(
-        page: page,
         transitionType: transitionType,
-        routeName: IsrRouteNames.postAttributeView,
-      ),
-    );
-    return result;
-  }
+      );
 
   static Future<List<TaggedPlace>?> goToSearchLocation(
     BuildContext context, {
@@ -659,7 +832,10 @@ class IsrAppNavigator {
 
     return PageRouteBuilder<T>(
       settings: settings,
-      pageBuilder: (context, animation, secondaryAnimation) => page,
+      pageBuilder: (context, animation, secondaryAnimation) => Material(
+        type: MaterialType.transparency,
+        child: page,
+      ),
       transitionsBuilder: (context, animation, secondaryAnimation, child) =>
           _buildTransition(
         animation: animation,

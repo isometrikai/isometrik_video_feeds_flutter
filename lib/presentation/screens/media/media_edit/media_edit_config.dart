@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ism_video_reel_player/domain/models/create_edit_post_config.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
 class MediaEditConfig {
@@ -41,6 +42,9 @@ class MediaEditConfig {
     //text styles
     TextStyle? primaryText14,
     TextStyle? primaryText18,
+
+    // media editor stickers
+    this.mediaEditorStickersConfig = const MediaEditorStickersConfig(),
   })  : primaryColor = primaryColor ?? MediaEditConstant.primaryColor,
         closeIcon =
             closeIcon ?? MediaEditConstant.closeIcon(color: Colors.black),
@@ -107,6 +111,9 @@ class MediaEditConfig {
   //text styles
   final TextStyle primaryText14;
   final TextStyle primaryText18;
+
+  /// Stickers shown in the pro image/video editor sticker picker.
+  final MediaEditorStickersConfig mediaEditorStickersConfig;
 }
 
 class MediaEditConstant {

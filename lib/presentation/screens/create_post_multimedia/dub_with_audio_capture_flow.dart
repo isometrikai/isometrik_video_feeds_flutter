@@ -4,12 +4,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
-import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart'
-    as mc;
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit.dart'
     as me;
-import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart'
-    as ms;
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:path/path.dart' as path;
@@ -90,34 +86,24 @@ class DubWithAudioCaptureCoordinator {
       musicPreviewUrl: audioPath,
     );
 
-    final capture = await Navigator.of(context, rootNavigator: true)
-        .push<CameraCaptureResult>(
-      MaterialPageRoute(
-        settings: const RouteSettings(name: IsrRouteNames.cameraView),
-        builder: (_) => mc.CameraCaptureView(
-          mediaType: MediaType.video,
-          dubWithAudioMode: true,
-          initialCameraMusic: musicEvent,
-          dubSoundPickerTracks: [track],
-          onDismissEntireFlow: () =>
-              IsrAppNavigator.dismissCreatePostFlow(context),
-          onAddSoundTap: IsrVideoReelConfig.createEditPostConfig
-              .createEditPostCallBackConfig?.onAddSoundFromCamera,
-        ),
-      ),
+    final capture = await IsrAppNavigator.presentCameraCapture(
+      context,
+      mediaType: MediaType.video.name,
+      dubWithAudioMode: true,
+      initialCameraMusic: musicEvent,
+      dubSoundPickerTracks: [track],
+      onDismissEntireFlow: () => IsrAppNavigator.pop(context),
     );
 
+    if (!context.mounted) return;
     if (capture == null || capture.mediaPath.isEmpty) return;
-    final videoPath = capture.mediaPath;
-
-    final mediaEditConfig = GalleryVideoTrimUtil.defaultMediaEditConfig();
 
     final thumb = await _resolvePreviewThumbnail(
-      videoPath: videoPath,
+      videoPath: capture.mediaPath,
       reelThumbnailUrl: track.thumbnailUrl,
     );
     final editItem = me.MediaEditItem(
-      originalPath: videoPath,
+      originalPath: capture.mediaPath,
       mediaType: me.EditMediaType.video,
       width: 0,
       height: 0,
@@ -125,95 +111,20 @@ class DubWithAudioCaptureCoordinator {
       thumbnailPath: thumb,
     );
 
-    await Navigator.of(context, rootNavigator: true).push<List<me.MediaEditItem>>(
-      MaterialPageRoute(
-        settings: const RouteSettings(name: IsrRouteNames.mediaEditView),
-        builder: (ctx) => me.MediaEditView(
-          mediaDataList: [editItem],
-          onComplete: (edited) => _onMediaEditComplete(context, edited),
-          onDismissEntireFlow: () =>
-              IsrAppNavigator.dismissCreatePostFlow(context),
-          addMoreMedia: (_) async => null,
-          mediaEditConfig: mediaEditConfig,
-          pickCoverPic: () => _pickCoverPic(context),
-        ),
-      ),
-    );
-  }
-
-  static Future<bool> _onMediaEditComplete(
-    BuildContext context,
-    List<me.MediaEditItem> editedMedia,
-  ) async {
-    if (editedMedia.isEmpty) return false;
-    final mediaDataList = editedMedia
-        .map(
-          (editItem) => MediaData(
-            assetId: '',
-            mediaType: editItem.mediaType.toJson(),
-            url: editItem.editedPath ?? editItem.originalPath,
-            localPath: editItem.editedPath ?? editItem.originalPath,
-            previewUrl: editItem.thumbnailPath ??
-                editItem.editedPath ??
-                editItem.originalPath,
-            coverFileLocalPath: editItem.thumbnailPath ??
-                editItem.editedPath ??
-                editItem.originalPath,
-            width: editItem.width,
-            height: editItem.height,
-            duration: editItem.duration,
-            fileName: '',
-            postType: editItem.mediaType == me.EditMediaType.video
-                ? PostType.video
-                : PostType.photo,
-            position: editedMedia.indexOf(editItem) + 1,
-            fileExtension: path.extension(
-              editItem.editedPath ?? editItem.originalPath,
-            ),
-          ),
-        )
-        .toList();
-
-    await IsrAppNavigator.goToCreatePostAttributionView(
+    final edited = await IsrAppNavigator.presentCreatePostMediaEditor(
       context,
-      newMediaDataList: mediaDataList,
-      dismissEntireFlowOnClose: true,
+      mediaItems: [editItem],
+      allowAddMoreMedia: false,
+      onDismissEntireFlow: () => IsrAppNavigator.pop(context),
     );
-    IsrAppNavigator.dismissCreatePostFlow(context);
-    return false;
-  }
+    if (!context.mounted) return;
+    if (edited == null || edited.isEmpty) return;
 
-  static Future<String?> _pickCoverPic(BuildContext context) async {
-    final coverPickerConfig = ms.MediaSelectionConfig(
-      isMultiSelect: true,
-      imageMediaLimit: AppConstants.imageMediaLimit,
-      videoMediaLimit: AppConstants.videoMediaLimit,
-      mediaLimit: AppConstants.totalMediaLimit,
-      singleSelectModeIcon:
-          const AppImage.svg(AssetConstants.icMediaSelectSingle),
-      multiSelectModeIcon:
-          const AppImage.svg(AssetConstants.icMediaSelectMultiple),
-      doneButtonText: IsrTranslationFile.next,
-      selectMediaTitle: IsrTranslationFile.addCover,
-      primaryColor: IsrColors.appColor,
-      primaryTextColor: IsrColors.primaryTextColor,
-      backgroundColor: Colors.white,
-      appBarColor: Colors.white,
-      primaryFontFamily: AppConstants.primaryFontFamily,
-      mediaListType: ms.MediaListType.image,
-    );
-
-    final res = await Navigator.push<List<ms.MediaAssetData>>(
+    final mediaDataList = CreatePostFlowCoordinator.mediaDataFromEditItems(edited);
+    await IsrAppNavigator.presentCreatePostFromMedia(
       context,
-      MaterialPageRoute(
-        builder: (context) => ms.MediaSelectionView(
-          mediaSelectionConfig: coverPickerConfig,
-          onCaptureMedia: (_) async => null,
-        ),
-      ),
+      mediaDataList: mediaDataList,
     );
-    if (res == null || res.isEmpty) return null;
-    return res.first.localPath;
   }
 
   static Future<String> _resolvePreviewThumbnail({
