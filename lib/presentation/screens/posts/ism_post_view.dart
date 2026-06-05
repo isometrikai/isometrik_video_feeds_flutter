@@ -1009,7 +1009,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
             builder: (_) => ReportReasonDialog(
               reasonFor: ReasonsFor.socialPost,
               contentId: postDataModel.id ?? '',
-              showToastOnSuccess: false,
               onReportInvoked: (reason) {
                 completer.complete(true);
               },
@@ -1017,9 +1016,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                 completer.complete(false);
               },
               onReportSuccess: (reason) {
-                Utility.showInSnackBar(
-                    IsrTranslationFile.postReportedSuccessfully, context,
-                    isSuccessIcon: true);
                 _logReportEvent(postDataModel, reason.name ?? '', tabData);
               },
             ),
