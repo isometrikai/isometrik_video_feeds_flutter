@@ -892,6 +892,19 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     );
   }
 
+  Widget _buildPostFeedMuteIcon({required double size}) => Icon(
+        VideoMuteController.isMuted
+            ? Icons.volume_off_rounded
+            : Icons.volume_up_rounded,
+        size: size,
+        color: Colors.white,
+      );
+
+  BoxDecoration get _postFeedMuteButtonDecoration => BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.45),
+        shape: BoxShape.circle,
+      );
+
   Widget _buildVideoMuteControl() => Positioned(
         bottom: IsrDimens.twelve,
         right: IsrDimens.twelve,
@@ -899,18 +912,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
           onTap: _toggleVideoMute,
           child: Container(
             padding: IsrDimens.edgeInsetsAll(IsrDimens.six),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.45),
-              shape: BoxShape.circle,
-            ),
-            child: AppImage.svg(
-              VideoMuteController.isMuted
-                  ? (_actionIconConfig?.muteIcon ?? AssetConstants.icMuteIcon)
-                  : (_actionIconConfig?.unmuteIcon ?? AssetConstants.icUnMuteIcon),
-              width: IsrDimens.sixteen,
-              height: IsrDimens.sixteen,
-              color: IsrColors.white,
-            ),
+            decoration: _postFeedMuteButtonDecoration,
+            child: _buildPostFeedMuteIcon(size: IsrDimens.sixteen),
           ),
         ),
       );
@@ -919,18 +922,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         child: Center(
           child: Container(
             padding: IsrDimens.edgeInsetsAll(IsrDimens.sixteen),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.45),
-              shape: BoxShape.circle,
-            ),
-            child: AppImage.svg(
-              VideoMuteController.isMuted
-                  ? (_actionIconConfig?.muteIcon ?? AssetConstants.icMuteIcon)
-                  : (_actionIconConfig?.unmuteIcon ?? AssetConstants.icUnMuteIcon),
-              width: IsrDimens.thirtyTwo,
-              height: IsrDimens.thirtyTwo,
-              color: IsrColors.white,
-            ),
+            decoration: _postFeedMuteButtonDecoration,
+            child: _buildPostFeedMuteIcon(size: IsrDimens.thirtyTwo),
           ),
         ),
       );
