@@ -58,7 +58,10 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   final Map<int, GlobalKey> _videoPlayerKeys = {};
   var _showMuteIconBriefly = false;
   var _showPageBadge = true;
+  var _isInstagramCaptionExpanded = false;
   Timer? _pageBadgeTimer;
+
+  static const String _kInstagramCaptionMoreSuffix = '... more';
 
   PostConfig get _postConfig => widget.reelsConfig.postConfig;
   PostUIConfig? get _uiConfig => _postConfig.postUIConfig;
@@ -66,6 +69,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   TextStyleConfig? get _textStyleConfig => _uiConfig?.textStyleConfig;
   UserProfileConfig? get _userProfileConfig => _uiConfig?.userProfileConfig;
   FollowButtonConfig? get _followButtonConfig => _uiConfig?.followButtonConfig;
+  LocationConfig? get _locationConfig => _uiConfig?.locationConfig;
+  MentionConfig? get _mentionConfig => _uiConfig?.mentionConfig;
 
   PostFeedUIConfig get _feedUi => _postConfig.resolvedPostFeedUIConfig;
 
@@ -423,6 +428,9 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     }
     if (oldWidget.isPostVisible != widget.isPostVisible || lockStateChanged || timelineLockChanged) {
       _syncCarouselVideoPlayback();
+    }
+    if (oldWidget.reelsData.postId != widget.reelsData.postId) {
+      _isInstagramCaptionExpanded = false;
     }
   }
 
@@ -853,7 +861,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-            ] else if (_locationLabel != null) ...[
+            ] else if (_locationLabel != null && !_isInstagramStyle) ...[
               IsrDimens.boxHeight(IsrDimens.two),
               Text(
                 _locationLabel!,
@@ -1265,7 +1273,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     return Padding(
       padding: IsrDimens.edgeInsetsSymmetric(
         horizontal: IsrDimens.twelve,
-        vertical: _isInstagramStyle ? IsrDimens.six : IsrDimens.eight,
+        vertical: _isInstagramStyle ? IsrDimens.four : IsrDimens.eight,
       ),
       child: showDotsInBar
           ? Stack(
@@ -1435,18 +1443,469 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         ),
       );
 
+  void _onTapMentionData(List<MentionMetaData> mentionDataList) {
+    if (mentionDataList.isListEmptyOrNull) return;
+    widget.reelsConfig.onTapMentionTag?.call(_reel, mentionDataList);
+  }
+
+  TextStyle get _feedCaptionBodyStyle =>
+      _textStyleConfig?.descriptionStyle ??
+      IsrStyles.primaryText14.copyWith(color: _feedUi.headerTextColor);
+
+  /// Shared feed link/hashtag blue (#006CD8).
+  TextStyle get _feedLinkTextStyle => _feedCaptionBodyStyle.copyWith(
+        color: const Color(0xFF006CD8),
+        fontWeight: FontWeight.w400,
+      );
+
+  TextStyle get _feedUrlTextStyle =>
+      _feedLinkTextStyle.copyWith(decoration: TextDecoration.underline);
+
+  TextStyle get _feedHashtagTextStyle => _feedLinkTextStyle;
+
+  TextStyle get _feedCaptionMoreStyle => _feedCaptionBodyStyle.copyWith(
+        color: _feedUi.secondaryTextColor,
+        fontWeight: FontWeight.w400,
+      );
+
+  TextStyle get _feedMetaTextStyle =>
+      _textStyleConfig?.locationStyle ??
+      IsrStyles.primaryText12.copyWith(
+        fontWeight: FontWeight.w500,
+        height: 1.2,
+        color: _feedUi.headerTextColor,
+      );
+
+  double get _feedMetaTextSize => _feedMetaTextStyle.fontSize ?? 12;
+
+  double get _feedMetaIconSize => _feedMetaTextSize * 0.9;
+
+  TextStyle get _feedTimestampTextStyle => IsrStyles.primaryText12.copyWith(
+        color: _feedUi.secondaryTextColor,
+      );
+
+  TextStyle get _feedUsernameStyle => IsrStyles.primaryText14.copyWith(
+        fontWeight: FontWeight.w600,
+        color: _feedUi.headerTextColor,
+      );
+
+  ({String caption, String hashtags}) _splitCaptionAndHashtags(String description) {
+    final index = description.indexOf('#');
+    if (index < 0) {
+      return (caption: description, hashtags: '');
+    }
+    return (
+      caption: description.substring(0, index).trimRight(),
+      hashtags: description.substring(index).trim(),
+    );
+  }
+
+  TextSpan _buildDescriptionTextSpan(String text) => Utility.buildPostDescriptionTextSpan(
+        text,
+        _reel.mentions,
+        _reel.tagDataList ?? [],
+        _feedCaptionBodyStyle,
+        (mention) => _onTapMentionData([mention]),
+        mentionStyle: _textStyleConfig?.mentionStyle ??
+            _feedCaptionBodyStyle.copyWith(fontWeight: FontWeight.w600),
+        hashtagStyle: _textStyleConfig?.hashtagStyle ?? _feedHashtagTextStyle,
+        urlStyle: _textStyleConfig?.urlStyle ?? _feedUrlTextStyle,
+      );
+
+  Color get _feedMetaIconColor =>
+      _locationConfig?.locationIconColor ??
+      _mentionConfig?.mentionIconColor ??
+      _feedUi.headerTextColor;
+
+  Widget _buildMetaDotSeparator() => Padding(
+        padding: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.six),
+        child: Text(
+          '·',
+          style: _feedMetaTextStyle.copyWith(
+            fontSize: (_feedMetaTextStyle.fontSize ?? 12) + 4,
+            fontWeight: FontWeight.w700,
+            height: 1,
+          ),
+        ),
+      );
+
+  /// Material icons include invisible side padding; shift so the glyph lines up
+  /// with caption / timestamp text on the left edge.
+  Widget _buildOpticallyAlignedMetaIcon(
+    Widget icon, {
+    required double size,
+    double leftInset = 0,
+  }) =>
+      SizedBox(
+        width: size - leftInset,
+        height: size,
+        child: OverflowBox(
+          maxWidth: size,
+          alignment: Alignment.centerLeft,
+          child: Transform.translate(
+            offset: Offset(-leftInset, 0),
+            child: icon,
+          ),
+        ),
+      );
+
+  Widget _buildCompactMetaItem({
+    required Widget icon,
+    required String label,
+    required double iconSpacing,
+    VoidCallback? onTap,
+  }) {
+    final content = Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        icon,
+        IsrDimens.boxWidth(iconSpacing),
+        Text(
+          label,
+          style: _feedMetaTextStyle,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    );
+    if (onTap == null) return content;
+    return TapHandler(onTap: onTap, child: content);
+  }
+
+  Widget _buildFeedLocationIcon() {
+    final size = _locationConfig?.locationIconSize ?? _feedMetaIconSize;
+    final Widget icon;
+    if (_locationConfig?.locationIcon != null) {
+      icon = AppImage.svg(
+        _locationConfig!.locationIcon!,
+        width: size,
+        height: size,
+        color: _feedMetaIconColor,
+      );
+    } else {
+      icon = Icon(
+        Icons.location_on,
+        size: size,
+        color: _feedMetaIconColor,
+      );
+    }
+    return _buildOpticallyAlignedMetaIcon(icon, size: size, leftInset: 2.5);
+  }
+
+  Widget _buildFeedMentionIcon() {
+    final size = _mentionConfig?.mentionIconSize ?? _feedMetaIconSize;
+    final Widget icon;
+    if (_mentionConfig?.mentionIcon != null) {
+      icon = AppImage.svg(
+        _mentionConfig!.mentionIcon!,
+        width: size,
+        height: size,
+        color: _feedMetaIconColor,
+      );
+    } else {
+      icon = Icon(
+        Icons.people,
+        size: size,
+        color: _feedMetaIconColor,
+      );
+    }
+    return _buildOpticallyAlignedMetaIcon(icon, size: size, leftInset: 1.5);
+  }
+
+  /// Compact meta row with icons for location and tagged people.
+  Widget _buildCompactInstagramMetaLine({
+    required bool hasLocation,
+    required bool hasMentions,
+  }) {
+    final mentionList = _reel.mentions;
+    final placeList = _reel.placeDataList ?? [];
+    final mentionLabel = hasMentions
+        ? (mentionList.length == 1
+            ? mentionList.first.username ?? ''
+            : '${mentionList.length} people')
+        : null;
+    final locationLabel =
+        hasLocation ? (_locationLabel ?? placeList.firstOrNull?.placeName) : null;
+
+    final segments = <Widget>[];
+    void addSegment(Widget segment) {
+      if (segments.isNotEmpty) {
+        segments.add(_buildMetaDotSeparator());
+      }
+      segments.add(segment);
+    }
+
+    if (locationLabel.isStringEmptyOrNull == false) {
+      addSegment(
+        _buildCompactMetaItem(
+          icon: _buildFeedLocationIcon(),
+          label: locationLabel!,
+          iconSpacing: _locationConfig?.locationIconSpacing ?? IsrDimens.four,
+          onTap: () async {
+            await widget.reelsConfig.onTapPlace?.call(_reel, placeList);
+          },
+        ),
+      );
+    }
+    if (mentionLabel.isStringEmptyOrNull == false) {
+      addSegment(
+        _buildCompactMetaItem(
+          icon: _buildFeedMentionIcon(),
+          label: mentionLabel!,
+          iconSpacing: _mentionConfig?.mentionIconSpacing ?? IsrDimens.four,
+          onTap: () => _onTapMentionData(mentionList),
+        ),
+      );
+    }
+    if (segments.isEmpty) return const SizedBox.shrink();
+
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: Wrap(
+        spacing: 0,
+        runSpacing: IsrDimens.four,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: segments,
+      ),
+    );
+  }
+
+  bool _captionSpanFitsOneLine({
+    required BuildContext context,
+    required double maxWidth,
+    required TextSpan span,
+  }) {
+    final painter = TextPainter(
+      text: span,
+      maxLines: 1,
+      textDirection: Directionality.of(context),
+    )..layout(maxWidth: maxWidth);
+    return !painter.didExceedMaxLines;
+  }
+
+  bool _instagramCaptionNeedsExpansion({
+    required BuildContext context,
+    required double maxWidth,
+    required TextSpan usernameSpan,
+    required String caption,
+    required bool hasHashtags,
+    required bool hasLocation,
+    required bool hasMentions,
+  }) {
+    if (hasHashtags || hasLocation || hasMentions) return true;
+    if (caption.isEmpty) return false;
+    return !_captionSpanFitsOneLine(
+      context: context,
+      maxWidth: maxWidth,
+      span: TextSpan(
+        children: [
+          usernameSpan,
+          _buildDescriptionTextSpan(caption),
+        ],
+      ),
+    );
+  }
+
+  void _toggleInstagramCaptionExpansion() {
+    setState(() => _isInstagramCaptionExpanded = !_isInstagramCaptionExpanded);
+  }
+
+  TextSpan _buildCollapsedInstagramCaptionSpan({
+    required BuildContext context,
+    required double maxWidth,
+    required TextSpan usernameSpan,
+    required String caption,
+    required bool showMore,
+  }) {
+    final moreSpan = TextSpan(
+      text: _kInstagramCaptionMoreSuffix,
+      style: _feedCaptionMoreStyle,
+    );
+
+    if (!showMore) {
+      return TextSpan(
+        children: [
+          usernameSpan,
+          if (caption.isNotEmpty) _buildDescriptionTextSpan(caption),
+        ],
+      );
+    }
+
+    if (caption.isEmpty) {
+      return TextSpan(children: [usernameSpan, moreSpan]);
+    }
+
+    var low = 0;
+    var high = caption.length;
+    var best = 0;
+
+    while (low <= high) {
+      final mid = (low + high) ~/ 2;
+      final candidate = caption.substring(0, mid).trimRight();
+      final span = TextSpan(
+        children: [
+          usernameSpan,
+          if (candidate.isNotEmpty) _buildDescriptionTextSpan(candidate),
+          moreSpan,
+        ],
+      );
+      if (_captionSpanFitsOneLine(
+        context: context,
+        maxWidth: maxWidth,
+        span: span,
+      )) {
+        best = mid;
+        low = mid + 1;
+      } else {
+        high = mid - 1;
+      }
+    }
+
+    final truncated = caption.substring(0, best).trimRight();
+    return TextSpan(
+      children: [
+        usernameSpan,
+        if (truncated.isNotEmpty) _buildDescriptionTextSpan(truncated),
+        moreSpan,
+      ],
+    );
+  }
+
+  Widget _buildExpandedInstagramCaption(
+    TextSpan usernameSpan,
+    ({String caption, String hashtags}) parts,
+  ) =>
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          RichText(
+            text: TextSpan(
+              children: [
+                usernameSpan,
+                if (parts.caption.isNotEmpty) _buildDescriptionTextSpan(parts.caption),
+              ],
+            ),
+          ),
+          if (parts.hashtags.isNotEmpty) ...[
+            IsrDimens.boxHeight(IsrDimens.two),
+            RichText(text: _buildDescriptionTextSpan(parts.hashtags)),
+          ],
+        ],
+      );
+
+  Widget _buildCollapsedInstagramCaption({
+    required BuildContext context,
+    required double maxWidth,
+    required TextSpan usernameSpan,
+    required ({String caption, String hashtags}) parts,
+    required bool showMore,
+  }) =>
+      RichText(
+        maxLines: 1,
+        overflow: TextOverflow.clip,
+        text: _buildCollapsedInstagramCaptionSpan(
+          context: context,
+          maxWidth: maxWidth,
+          usernameSpan: usernameSpan,
+          caption: parts.caption,
+          showMore: showMore,
+        ),
+      );
+
+  Widget _buildInstagramEngagementContent(
+    BuildContext context, {
+    required String description,
+    required bool hasMentions,
+    required bool hasLocation,
+    required bool showTimestamp,
+    required String? timestampLabel,
+  }) {
+    final hasMeta = hasMentions || hasLocation;
+    final parts = description.isNotEmpty ? _splitCaptionAndHashtags(description) : null;
+    final usernameSpan = TextSpan(
+      text: '${_reel.userName ?? ''} ',
+      style: _feedUsernameStyle,
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth;
+        final needsExpansion = _instagramCaptionNeedsExpansion(
+          context: context,
+          maxWidth: maxWidth,
+          usernameSpan: usernameSpan,
+          caption: parts?.caption ?? '',
+          hasHashtags: parts?.hashtags.isNotEmpty ?? false,
+          hasLocation: hasLocation,
+          hasMentions: hasMentions,
+        );
+        final showCaption = description.isNotEmpty;
+        final showMeta = _isInstagramCaptionExpanded && hasMeta;
+
+        return GestureDetector(
+          onTap: needsExpansion ? _toggleInstagramCaptionExpansion : null,
+          behavior: HitTestBehavior.translucent,
+          child: Container(
+            width: double.infinity,
+            alignment: AlignmentDirectional.centerStart,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (showCaption)
+                  _isInstagramCaptionExpanded
+                      ? _buildExpandedInstagramCaption(usernameSpan, parts!)
+                      : _buildCollapsedInstagramCaption(
+                          context: context,
+                          maxWidth: maxWidth,
+                          usernameSpan: usernameSpan,
+                          parts: parts!,
+                          showMore: needsExpansion,
+                        ),
+                if (showMeta) ...[
+                  if (showCaption) IsrDimens.boxHeight(IsrDimens.eight),
+                  _buildCompactInstagramMetaLine(
+                    hasLocation: hasLocation,
+                    hasMentions: hasMentions,
+                  ),
+                ],
+                if (showTimestamp && timestampLabel != null) ...[
+                  if (showCaption || showMeta)
+                    SizedBox(
+                      width: double.infinity,
+                      height: showMeta ? IsrDimens.two : IsrDimens.four,
+                    ),
+                  Text(
+                    timestampLabel,
+                    style: _feedTimestampTextStyle,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildEngagementSection(BuildContext context) {
     final likes = _reel.likesCount ?? 0;
     final description = _reel.description?.trim() ?? '';
     final showLikesLine = likes > 0 && !_showActionCounts;
     final showTimestamp =
         (_feedUi.showPostTimestamp || _isInstagramStyle) && _postTimestampLabel != null;
-    final showLocation = _locationLabel != null && !_isInstagramStyle;
+    final showLegacyLocation = _locationLabel != null && !_isInstagramStyle;
+    final hasMentions = _reel.mentions.isListEmptyOrNull == false;
+    final hasLocation = _reel.placeDataList?.isListEmptyOrNull == false;
+    final showInstagramTimestamp =
+        _isInstagramStyle && showTimestamp && _postTimestampLabel != null;
+    final showInstagramEngagement = _isInstagramStyle &&
+        (description.isNotEmpty || hasMentions || hasLocation || showInstagramTimestamp);
 
     return Padding(
       padding: IsrDimens.edgeInsetsSymmetric(
         horizontal: IsrDimens.twelve,
-        vertical: _isInstagramStyle ? IsrDimens.six : IsrDimens.eight,
+        vertical: _isInstagramStyle ? IsrDimens.four : IsrDimens.eight,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1459,7 +1918,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
                 color: _feedUi.headerTextColor,
               ),
             ),
-          if (showLocation) ...[
+          if (showLegacyLocation) ...[
             if (showLikesLine) IsrDimens.boxHeight(IsrDimens.four),
             Text(
               _locationLabel!,
@@ -1471,10 +1930,20 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
               overflow: TextOverflow.ellipsis,
             ),
           ],
-          if (description.isNotEmpty) ...[
-            if (showLikesLine || showLocation) IsrDimens.boxHeight(IsrDimens.six),
+          if (showInstagramEngagement) ...[
+            if (showLikesLine || showLegacyLocation) IsrDimens.boxHeight(IsrDimens.six),
+            _buildInstagramEngagementContent(
+              context,
+              description: description,
+              hasMentions: hasMentions,
+              hasLocation: hasLocation,
+              showTimestamp: showInstagramTimestamp,
+              timestampLabel: _postTimestampLabel,
+            ),
+          ] else if (description.isNotEmpty) ...[
+            if (showLikesLine || showLegacyLocation) IsrDimens.boxHeight(IsrDimens.six),
             RichText(
-              maxLines: _isInstagramStyle ? 2 : 3,
+              maxLines: 3,
               overflow: TextOverflow.ellipsis,
               text: TextSpan(
                 children: [
@@ -1487,17 +1956,13 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
                   ),
                   TextSpan(
                     text: description,
-                    style: _textStyleConfig?.descriptionStyle ??
-                        IsrStyles.primaryText14.copyWith(
-                          color: _feedUi.headerTextColor,
-                        ),
+                    style: _feedCaptionBodyStyle,
                   ),
                 ],
               ),
             ),
-          ],
-          if (showTimestamp) ...[
-            if (showLikesLine || showLocation || description.isNotEmpty)
+          ] else if (showTimestamp) ...[
+            if (showLikesLine || showLegacyLocation || description.isNotEmpty)
               IsrDimens.boxHeight(IsrDimens.four),
             Text(
               _postTimestampLabel!,
@@ -1506,7 +1971,6 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
               ),
             ),
           ],
-          if (_isInstagramStyle) IsrDimens.boxHeight(IsrDimens.four),
         ],
       ),
     );

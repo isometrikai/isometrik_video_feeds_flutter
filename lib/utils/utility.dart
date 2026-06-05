@@ -837,31 +837,22 @@ class Utility {
         } else if (matchedText.isNotEmpty) {
           spans.add(TextSpan(text: matchedText, style: defaultStyle));
         }
-      } else if (matchedText.startsWith('#') && hashtags.isNotEmpty) {
+      } else if (matchedText.startsWith('#')) {
         final matchingHashtags =
             hashtags.where((m) => '#${m.tag}' == matchedText);
-
-        if (matchingHashtags.isNotEmpty) {
-          final hashTag = matchingHashtags.first;
-          spans.add(TextSpan(
-            text: matchedText,
-            style: hashtagStyle ??
-                defaultStyle.copyWith(
-                  fontWeight: FontWeight.w800,
-                  decoration: TextDecoration.none,
-                ),
-            recognizer: TapGestureRecognizer()
-              ..onTap = () => onMentionTap(hashTag),
-          ));
-        } else if (matchedText.isNotEmpty) {
-          spans.add(TextSpan(
-            text: matchedText,
-            style: defaultStyle.copyWith(
-              fontWeight: FontWeight.w800,
-              decoration: TextDecoration.none,
-            ),
-          ));
-        }
+        final hashTag =
+            matchingHashtags.isNotEmpty ? matchingHashtags.first : null;
+        spans.add(TextSpan(
+          text: matchedText,
+          style: hashtagStyle ??
+              defaultStyle.copyWith(
+                fontWeight: FontWeight.w800,
+                decoration: TextDecoration.none,
+              ),
+          recognizer: hashTag != null
+              ? (TapGestureRecognizer()..onTap = () => onMentionTap(hashTag))
+              : null,
+        ));
       } else if (_isUrlText(matchedText)) {
         final urlToLaunch = _urlToLaunch(matchedText);
         spans.add(TextSpan(
