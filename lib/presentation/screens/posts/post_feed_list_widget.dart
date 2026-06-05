@@ -25,6 +25,7 @@ class PostFeedListWidget extends StatefulWidget {
   const PostFeedListWidget({
     super.key,
     required this.reelsDataList,
+    this.refreshCounts,
     required this.reelsConfig,
     this.postSectionType,
     this.listTopInset,
@@ -48,6 +49,10 @@ class PostFeedListWidget extends StatefulWidget {
   });
 
   final List<ReelsData> reelsDataList;
+
+  /// Optional per-index refresh tokens from [PostItemWidget] (e.g. after unlock).
+  final Map<int, int>? refreshCounts;
+
   final ReelsConfig reelsConfig;
   final PostSectionType? postSectionType;
 
@@ -425,7 +430,7 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
             key: ValueKey(widget.reelsDataList[index].postId),
             index: index,
             reelsData: widget.reelsDataList[index],
-            refreshToken: _refreshCounts[index] ?? 0,
+            refreshToken: widget.refreshCounts?[index] ?? _refreshCounts[index] ?? 0,
             reelsConfig: widget.reelsConfig,
             postSectionType: widget.postSectionType,
             loggedInUserId: widget.loggedInUserId,

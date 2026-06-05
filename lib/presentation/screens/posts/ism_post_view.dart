@@ -544,6 +544,16 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       timeline.length,
       timeline.first.id,
       timeline.last.id,
+      Object.hashAll(
+        timeline.map(
+          (post) => Object.hash(
+            post.id,
+            post.isLocked,
+            post.lockReason,
+            post.media?.length ?? 0,
+          ),
+        ),
+      ),
     );
   }
 
@@ -1357,6 +1367,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         tabData.tabDataModel.reelsDataList[index] = postData; // replace
       }
     }
+    _invalidateMappedReelsCache();
   }
 
   // Additional handlers for likes, follows, etc.

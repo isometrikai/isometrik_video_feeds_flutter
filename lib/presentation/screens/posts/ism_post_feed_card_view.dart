@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
@@ -158,6 +159,241 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
 
   ReelsData get _reel => widget.reelsData;
 
+  /// Locked paid post: blur + lock overlay for viewers who do not own the post.
+  /// Prefer [TimeLineData] lock flags when present — they are refreshed on unlock.
+  bool get _shouldShowPaidLockOverlay {
+    if (_isViewerPostAuthor) return false;
+    final timeline = _timelinePost;
+    final locked = timeline?.isLocked ?? _reel.isLocked;
+    if (locked != true) return false;
+    final reason = (timeline?.lockReason ?? _reel.lockReason ?? '').toLowerCase();
+    return reason == 'paid' || (_reel.isPaid == true);
+  }
+
+  TimeLineData? get _timelinePost =>
+      _reel.postData is TimeLineData ? _reel.postData as TimeLineData : null;
+
+  static bool _looksLikeStreamingOrVideoUrl(String url) {
+    final u = url.trim().toLowerCase();
+    if (u.isEmpty) return false;
+    return u.endsWith('.mp4') ||
+        u.endsWith('.mov') ||
+        u.endsWith('.m3u8') ||
+        u.endsWith('.webm') ||
+        u.endsWith('.m4v') ||
+        u.contains('.m3u8');
+  }
+
+  /// Paid-locked posts show a blurred still frame only — never decode video URLs in an image widget.
+  String? _paidLockStillImageUrl() {
+    String? usableStill(String? candidate) {
+      final s = candidate?.trim() ?? '';
+      if (s.isEmpty || _looksLikeStreamingOrVideoUrl(s)) return null;
+      return s;
+    }
+
+    Iterable<PreviewMedia> sortedPreviews() sync* {
+      final previews = _timelinePost?.previews;
+      if (previews.isListEmptyOrNull == true) return;
+      final list = List<PreviewMedia>.from(previews!)
+        ..sort((a, b) => (a.position ?? 0).compareTo(b.position ?? 0));
+      for (final p in list) {
+        yield p;
+      }
+    }
+
+    if (_reel.mediaMetaDataList.isNotEmpty) {
+      final meta = _reel.mediaMetaDataList.first;
+      if (_isVideoMedia(meta)) {
+        final thumb = usableStill(meta.thumbnailUrl);
+        if (thumb != null) return thumb;
+        for (final p in sortedPreviews()) {
+          final hit = usableStill(p.url);
+          if (hit != null) return hit;
+        }
+        return null;
+      }
+      final fromMedia = usableStill(meta.mediaUrl);
+      if (fromMedia != null) return fromMedia;
+      final fromThumb = usableStill(meta.thumbnailUrl);
+      if (fromThumb != null) return fromThumb;
+    }
+
+    for (final p in sortedPreviews()) {
+      final hit = usableStill(p.url);
+      if (hit != null) return hit;
+    }
+    return null;
+  }
+
+  String _paidUnlockPriceLabel() {
+    final raw = _reel.priceAmount;
+    if (raw == null) return '';
+    final amount = raw is num ? raw.toString() : raw.toString().trim();
+    if (amount.isEmpty) return '';
+    final c = (_reel.priceCurrency ?? '').trim().toLowerCase();
+    if (c.isEmpty || c == '-') return amount;
+    if (c == 'coin' || c == 'coins') return amount;
+    if (c == 'usd') return '\$$amount';
+    return '$amount $c'.trim();
+  }
+
+  bool get _isCoinCurrency {
+    final c = (_reel.priceCurrency ?? '').trim().toLowerCase();
+    return c == 'coin' || c == 'coins';
+  }
+
+  Future<void> _onPaidUnlockPressed() async {
+    final cb = _postConfig.postCallBackConfig?.onPaidPostUnlock;
+    final post = _timelinePost;
+    if (cb != null && post != null) {
+      await cb(post);
+      return;
+    }
+    Utility.showAppDialog(
+      message: _paidUnlockPriceLabel().isEmpty
+          ? IsrTranslationFile.paidPostLockedSubtitle
+          : '${IsrTranslationFile.unlockFor} ${_paidUnlockPriceLabel()}',
+    );
+  }
+
+  Widget _buildPaidLockedLayer() {
+    const blurSigma = 28.0;
+
+    Widget chrome({Widget? blurredChild}) => Stack(
+          fit: StackFit.expand,
+          children: [
+            if (blurredChild != null)
+              ImageFiltered(
+                imageFilter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+                child: blurredChild,
+              )
+            else
+              ColoredBox(color: Colors.grey.shade900),
+            Container(color: Colors.black.withValues(alpha: 0.42)),
+            Center(
+              child: Padding(
+                padding: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twentyEight),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: IsrDimens.edgeInsetsAll(IsrDimens.eighteen),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.lock_rounded,
+                        color: Colors.white,
+                        size: IsrDimens.forty,
+                      ),
+                    ),
+                    IsrDimens.boxHeight(IsrDimens.sixteen),
+                    Text(
+                      IsrTranslationFile.paidPostLockedTitle,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: IsrDimens.eighteen,
+                        fontWeight: FontWeight.w600,
+                        decoration: TextDecoration.none,
+                      ),
+                    ),
+                    IsrDimens.boxHeight(IsrDimens.eight),
+                    Text(
+                      IsrTranslationFile.paidPostLockedSubtitle,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.88),
+                        fontSize: IsrDimens.fourteen,
+                        height: 1.35,
+                        decoration: TextDecoration.none,
+                      ),
+                    ),
+                    IsrDimens.boxHeight(IsrDimens.twentyTwo),
+                    OutlinedButton(
+                      onPressed: _onPaidUnlockPressed,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.92),
+                        ),
+                        backgroundColor: Colors.white.withValues(alpha: 0.08),
+                        padding: IsrDimens.edgeInsetsSymmetric(
+                          horizontal: IsrDimens.twentyTwo,
+                          vertical: IsrDimens.twelve,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(IsrDimens.twentyFive),
+                        ),
+                      ),
+                      child: _paidUnlockPriceLabel().isEmpty
+                          ? Text(
+                              IsrTranslationFile.unlockFor,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: IsrDimens.fifteen,
+                                decoration: TextDecoration.none,
+                              ),
+                            )
+                          : Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  IsrTranslationFile.unlockFor,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: IsrDimens.fifteen,
+                                    decoration: TextDecoration.none,
+                                  ),
+                                ),
+                                IsrDimens.boxWidth(IsrDimens.six),
+                                if (_isCoinCurrency) ...[
+                                  const Icon(
+                                    Icons.monetization_on_rounded,
+                                    size: 16,
+                                    color: Colors.white,
+                                  ),
+                                  IsrDimens.boxWidth(IsrDimens.four),
+                                ],
+                                Text(
+                                  _paidUnlockPriceLabel(),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: IsrDimens.fifteen,
+                                    decoration: TextDecoration.none,
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+
+    final imageUrl = _paidLockStillImageUrl();
+    if (imageUrl == null || imageUrl.isStringEmptyOrNull == true) {
+      return chrome(blurredChild: null);
+    }
+
+    return chrome(
+      blurredChild: SizedBox.expand(
+        child: AppImage.network(
+          imageUrl,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
+          cacheKey: imageUrl,
+          fadeAnimationEnable: false,
+        ),
+      ),
+    );
+  }
+
   VideoCacheManager get _videoCacheManager => widget.videoCacheManager ?? VideoCacheManager();
 
   @override
@@ -171,7 +407,21 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   @override
   void didUpdateWidget(covariant IsmPostFeedCardView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.isPostVisible != widget.isPostVisible) {
+    final lockStateChanged = oldWidget.reelsData.isLocked != widget.reelsData.isLocked ||
+        oldWidget.reelsData.lockReason != widget.reelsData.lockReason;
+    final timeline = _timelinePost;
+    final oldTimeline = oldWidget.reelsData.postData is TimeLineData
+        ? oldWidget.reelsData.postData as TimeLineData
+        : null;
+    final timelineLockChanged = timeline?.isLocked != oldTimeline?.isLocked ||
+        timeline?.lockReason != oldTimeline?.lockReason;
+    if (lockStateChanged || timelineLockChanged) {
+      _mediaPageIndex.value = 0;
+      if (_mediaPageController.hasClients) {
+        _mediaPageController.jumpToPage(0);
+      }
+    }
+    if (oldWidget.isPostVisible != widget.isPostVisible || lockStateChanged || timelineLockChanged) {
       _syncCarouselVideoPlayback();
     }
   }
@@ -295,6 +545,14 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         fixedWidth: fixedWidth,
         fixedHeight: fixedHeight,
         child: ColoredBox(color: _feedUi.dividerColor),
+      );
+    }
+
+    if (_shouldShowPaidLockOverlay) {
+      return _wrapMediaFrame(
+        fixedWidth: fixedWidth,
+        fixedHeight: fixedHeight,
+        child: _buildPaidLockedLayer(),
       );
     }
 

@@ -128,6 +128,12 @@ class _PostItemWidgetState extends State<PostItemWidget>
     if (previous.length != next.length) return false;
     for (var i = 0; i < previous.length; i++) {
       if (previous[i].postId != next[i].postId) return false;
+      if (previous[i].isLocked != next[i].isLocked) return false;
+      if (previous[i].lockReason != next[i].lockReason) return false;
+      if (previous[i].mediaMetaDataList.length !=
+          next[i].mediaMetaDataList.length) {
+        return false;
+      }
     }
     return true;
   }
@@ -289,7 +295,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
         final postData =
             getReelData(state.postData!, loggedInUserId: widget.loggedInUserId);
         _reelsDataList[index] = postData; // replace
-        await updateStateByKey();
+        await updateStateByKey(editedIndex: index);
       }
     }
   }
@@ -312,16 +318,15 @@ class _PostItemWidgetState extends State<PostItemWidget>
     }
   }
 
-  Future<void> updateStateByKey() async {
-    // Get current index before refresh
-    final currentIndex = _resolvedCurrentPageIndex;
-    debugPrint('🔄 MainWidget: Starting update at index $currentIndex');
+  Future<void> updateStateByKey({int? editedIndex}) async {
+    final refreshIndex = editedIndex ?? _resolvedCurrentPageIndex;
+    debugPrint('🔄 MainWidget: Starting update at index $refreshIndex');
 
     // Increment refresh count to force rebuild
-    _refreshCounts[currentIndex] = (_refreshCounts[currentIndex] ?? 0) + 1;
+    _refreshCounts[refreshIndex] = (_refreshCounts[refreshIndex] ?? 0) + 1;
     _updateState();
     // Re-initialize caching for current index after successful refresh
-    await _doMediaCaching(currentIndex);
+    await _doMediaCaching(refreshIndex);
   }
 
   Future<void> _updateWithFollowAction(
@@ -399,6 +404,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
 
   Widget _buildPostFeedContent(BuildContext context) => PostFeedListWidget(
         reelsDataList: _reelsDataList,
+        refreshCounts: _refreshCounts,
         reelsConfig: widget.reelsConfig,
         postSectionType: widget.postSectionType,
         listTopInset: widget.postFeedListTopInset,
