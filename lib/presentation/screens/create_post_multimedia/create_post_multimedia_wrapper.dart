@@ -1,14 +1,13 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:ism_video_reel_player/domain/models/camera_capture_result.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
-import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
 import 'package:ism_video_reel_player/presentation/screens/create_post_multimedia/create_post_sound_flow.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart'
     as mc;
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit.dart'
     as me;
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart'
     as ms;
 import 'package:ism_video_reel_player/res/res.dart';
@@ -34,6 +33,7 @@ class _CreatePostMultimediaWrapperState
     super.initState();
     _selectedPostSound = widget.initialSound;
   }
+
   final mediaSelectionConfig = ms.MediaSelectionConfig(
     isMultiSelect: true,
     imageMediaLimit: AppConstants.imageMediaLimit,
@@ -109,9 +109,10 @@ class _CreatePostMultimediaWrapperState
     // If a sound was preselected (e.g. "Use this sound" from a post), mux it
     // onto every gallery video so the final upload carries the audio AND the
     // create-post request includes `sound_id` / `sound_snapshot`.
-    final librarySound = PostSoundUtil.isLibrarySoundId(_selectedPostSound?.soundId)
-        ? _selectedPostSound
-        : null;
+    final librarySound =
+        PostSoundUtil.isLibrarySoundId(_selectedPostSound?.soundId)
+            ? _selectedPostSound
+            : null;
     if (librarySound != null) {
       for (var i = 0; i < mediaEditItems.length; i++) {
         final item = mediaEditItems[i];
@@ -142,11 +143,13 @@ class _CreatePostMultimediaWrapperState
     return false;
   }
 
-  Future<void> _pushMediaEditPreview(List<me.MediaEditItem> mediaEditItems) async {
+  Future<void> _pushMediaEditPreview(
+      List<me.MediaEditItem> mediaEditItems) async {
     if (!mounted) return;
     await Future<void>.delayed(Duration.zero);
     if (!mounted) return;
-    await Navigator.of(context, rootNavigator: true).push<List<me.MediaEditItem>>(
+    await Navigator.of(context, rootNavigator: true)
+        .push<List<me.MediaEditItem>>(
       MaterialPageRoute(
         builder: (context) => me.MediaEditView(
           mediaDataList: mediaEditItems,

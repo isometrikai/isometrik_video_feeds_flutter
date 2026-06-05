@@ -335,16 +335,24 @@ class IsrAppNavigator {
     }
   }
 
-  /// Edit highlight title, cover, and add past stories (profile / viewer).
+  /// Edit highlight (own highlights only).
   static Future<bool> presentEditHighlight(
     BuildContext context, {
     required StoryHighlightData highlight,
+    String? fallbackOwnerUserId,
   }) async {
     final cubit = _storyCubitFrom(context);
+    if (!await cubit.isHighlightOwnedByCurrentUser(
+      highlight,
+      fallbackOwnerUserId: fallbackOwnerUserId,
+    )) {
+      return false;
+    }
     return HighlightComposerCoordinator.editHighlight(
       context: context,
       cubit: cubit,
       highlight: highlight,
+      fallbackOwnerUserId: fallbackOwnerUserId,
     );
   }
 

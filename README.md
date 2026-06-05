@@ -250,7 +250,7 @@ Config and callbacks are set via **`IsrVideoReelConfig`** (or passed into `initi
 | **`postConfig`**          | Post UI (overlay, actions, media indicator, profile, description, location, shop, follow button); **PostCallBackConfig**: save/like/follow/share/comment/profile/tag-product/post-changed. |
 | **`tabConfig`**           | Tab bar, back button, loading, status bar; **TabCallBackConfig**: `onChangeOfTab`, `onReelsLoaded`, `getEmptyScreen`. |
 | **`commentConfig`**       | Comment bottom sheet, header, item, reply field, placeholder, more options. |
-| **`createEditPostConfig`**| Create/edit post UI (media selection, edit, attributes, tag people, search location, schedule); **CreateEditPostCallBackConfig**: `onLinkProduct`. |
+| **`createEditPostConfig`**| Create/edit post UI; set `enableBusinessLink` for `tags.links`; **CreateEditPostCallBackConfig**: `onLinkProduct`, `onAddPostLink`. |
 | **`tagDetailsConfig`**     | Tag/hashtag/place details screen (scaffold, back button, profile, grid, cards, empty/error/loading). |
 | **`searchScreenConfig`**   | Search screen (scaffold, app bar, search bar, tabs, grids, tags/places/accounts lists, empty/loading). |
 
@@ -259,7 +259,8 @@ Config and callbacks are set via **`IsrVideoReelConfig`** (or passed into `initi
 - **SocialCallBackConfig**: `onLoginInvoked` → `Future<bool>` (login success/failure); optional `uploadMediaToCloud` (host upload); optional `convertToGumletUrl` (raw URL → Gumlet URL).
 - **PostCallBackConfig**: `onSaveChanged`, `onLikeChanged`, `onSaveClicked`, `onLikeClick`, `onFollowClick`, `onShareClicked`, `onCommentClick`, `onProfileClick`, `onTagProductClick`, `onPostChanged`.
 - **TabCallBackConfig**: `onChangeOfTab`, `onReelsLoaded`, `getEmptyScreen`.
-- **CreateEditPostCallBackConfig**: `onLinkProduct`.
+- **CreateEditPostCallBackConfig**: `onLinkProduct`, `onAddPostLink` (optional custom link picker).
+- **Business links**: `enableBusinessLink: true` shows **Add Link** when posting and the link CTA on reels. Payload: `tags.links[]` with `url` (https) and `title` (max 200 chars).
 
 ### Google Cloud upload (`GoogleCloudUpload`)
 

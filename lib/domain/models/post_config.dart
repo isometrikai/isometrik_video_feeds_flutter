@@ -12,6 +12,7 @@ class PostConfig {
     this.showViewCount = false,
     this.enableDubWithAudio = false,
     this.dubWithAudioConfig,
+    this.canDownload = false,
   });
 
   final PostUIConfig? postUIConfig;
@@ -28,6 +29,10 @@ class PostConfig {
   final bool enableDubWithAudio;
   final DubWithAudioConfig? dubWithAudioConfig;
 
+  /// When true, viewers can download reels from the more-options sheet (except
+  /// locked posts). Per-post download flags from the API default to allowed.
+  final bool canDownload;
+
   /// UI config for post-card tabs. Defaults to [PostFeedUIConfig.instagram] when null.
   PostFeedUIConfig get resolvedPostFeedUIConfig =>
       postFeedUIConfig ?? PostFeedUIConfig.instagram;
@@ -42,6 +47,7 @@ class PostConfig {
     bool? showViewCount,
     bool? enableDubWithAudio,
     DubWithAudioConfig? dubWithAudioConfig,
+    bool? canDownload,
   }) =>
       PostConfig(
         postUIConfig: postUIConfig ?? this.postUIConfig,
@@ -53,6 +59,7 @@ class PostConfig {
         showViewCount: showViewCount ?? this.showViewCount,
         enableDubWithAudio: enableDubWithAudio ?? this.enableDubWithAudio,
         dubWithAudioConfig: dubWithAudioConfig ?? this.dubWithAudioConfig,
+        canDownload: canDownload ?? this.canDownload,
       );
 }
 
@@ -203,6 +210,7 @@ class PostUIConfig {
     this.actionIconConfig,
     this.textStyleConfig,
     this.shopUIConfig,
+    this.postLinkUIConfig,
     this.followButtonConfig,
     this.mediaIndicatorConfig,
     this.userProfileConfig,
@@ -215,6 +223,7 @@ class PostUIConfig {
   final ActionIconConfig? actionIconConfig;
   final TextStyleConfig? textStyleConfig;
   final ShopUIConfig? shopUIConfig;
+  final PostLinkUIConfig? postLinkUIConfig;
   final FollowButtonConfig? followButtonConfig;
   final MediaIndicatorConfig? mediaIndicatorConfig;
   final UserProfileConfig? userProfileConfig;
@@ -227,6 +236,7 @@ class PostUIConfig {
     ActionIconConfig? actionIconConfig,
     TextStyleConfig? textStyleConfig,
     ShopUIConfig? shopUIConfig,
+    PostLinkUIConfig? postLinkUIConfig,
     FollowButtonConfig? followButtonConfig,
     MediaIndicatorConfig? mediaIndicatorConfig,
     UserProfileConfig? userProfileConfig,
@@ -239,6 +249,7 @@ class PostUIConfig {
         actionIconConfig: actionIconConfig ?? this.actionIconConfig,
         textStyleConfig: textStyleConfig ?? this.textStyleConfig,
         shopUIConfig: shopUIConfig ?? this.shopUIConfig,
+        postLinkUIConfig: postLinkUIConfig ?? this.postLinkUIConfig,
         followButtonConfig: followButtonConfig ?? this.followButtonConfig,
         mediaIndicatorConfig: mediaIndicatorConfig ?? this.mediaIndicatorConfig,
         userProfileConfig: userProfileConfig ?? this.userProfileConfig,
@@ -452,6 +463,43 @@ class ShopUIConfig {
         shopContainerPadding: shopContainerPadding ?? this.shopContainerPadding,
         shopIconSize: shopIconSize ?? this.shopIconSize,
         shopIconColor: shopIconColor ?? this.shopIconColor,
+      );
+}
+
+/// CTA chip for `tags.links` on reels (Instagram-style).
+class PostLinkUIConfig {
+  const PostLinkUIConfig({
+    this.containerDecoration,
+    this.containerPadding,
+    this.icon,
+    this.iconSize,
+    this.iconColor,
+    this.textStyle,
+  });
+
+  final BoxDecoration? containerDecoration;
+  final EdgeInsetsGeometry? containerPadding;
+  final IconData? icon;
+  final double? iconSize;
+  final Color? iconColor;
+  final TextStyle? textStyle;
+
+  PostLinkUIConfig copyWith({
+    BoxDecoration? containerDecoration,
+    EdgeInsetsGeometry? containerPadding,
+    IconData? icon,
+    double? iconSize,
+    Color? iconColor,
+    TextStyle? textStyle,
+  }) =>
+      PostLinkUIConfig(
+        containerDecoration:
+            containerDecoration ?? this.containerDecoration,
+        containerPadding: containerPadding ?? this.containerPadding,
+        icon: icon ?? this.icon,
+        iconSize: iconSize ?? this.iconSize,
+        iconColor: iconColor ?? this.iconColor,
+        textStyle: textStyle ?? this.textStyle,
       );
 }
 
@@ -725,6 +773,7 @@ class PostCallBackConfig {
     this.onCommentClick,
     this.onProfileClick,
     this.onTagProductClick,
+    this.onPostLinkClick,
     this.onPostChanged,
     this.onLikeCountClicked,
     this.onViewCountClicked,
@@ -744,6 +793,8 @@ class PostCallBackConfig {
   final Function(TimeLineData postData)? onCommentClick;
   final Function(TimeLineData? postData, String userId, bool? isFollowing)? onProfileClick;
   final Future<void> Function(TimeLineData postData)? onTagProductClick;
+  final Future<void> Function(TimeLineData postData, PostLinkData link)?
+      onPostLinkClick;
   final Function(TimeLineData postData, int index)? onPostChanged;
   final Future<void> Function(TimeLineData postData)? onLikeCountClicked;
   final Future<void> Function(TimeLineData postData)? onViewCountClicked;
@@ -769,6 +820,8 @@ class PostCallBackConfig {
     Function(TimeLineData postData)? onCommentClick,
     Function(TimeLineData? postData, String userId, bool? isFollowing)? onProfileClick,
     Future<void> Function(TimeLineData postData)? onTagProductClick,
+    Future<void> Function(TimeLineData postData, PostLinkData link)?
+        onPostLinkClick,
     Function(TimeLineData postData, int index)? onPostChanged,
     Future<void> Function(TimeLineData postData)? onLikeCountClicked,
     Future<void> Function(TimeLineData postData)? onViewCountClicked,
@@ -787,6 +840,7 @@ class PostCallBackConfig {
         onCommentClick: onCommentClick ?? this.onCommentClick,
         onProfileClick: onProfileClick ?? this.onProfileClick,
         onTagProductClick: onTagProductClick ?? this.onTagProductClick,
+        onPostLinkClick: onPostLinkClick ?? this.onPostLinkClick,
         onPostChanged: onPostChanged ?? this.onPostChanged,
         onLikeCountClicked: onLikeCountClicked ?? this.onLikeCountClicked,
         onViewCountClicked: onViewCountClicked ?? this.onViewCountClicked,

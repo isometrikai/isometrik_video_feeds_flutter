@@ -313,6 +313,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           child: BlocListener<IsmSocialActionCubit, IsmSocialActionState>(
             listenWhen: (previousState, currentState) =>
                 currentState is IsmDeletedPostActionListenerState ||
+                currentState is IsmMentionRemovedActionListenerState ||
                 currentState is IsmEditPostActionListenerState ||
                 currentState is IsmUserChangedActionListenerState,
             listener: (context, state) {
@@ -321,6 +322,16 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
               if (state is IsmDeletedPostActionListenerState &&
                   state.postId?.isNotEmpty == true) {
                 _removePostFromList(state.postId!);
+              } else if (state is IsmMentionRemovedActionListenerState) {
+                _stripSelfMentionFromTimelinePost(state.postId);
+                if (state.postId.isNotEmpty &&
+                    _tabDataModelList.any(
+                      (tab) =>
+                          tab.tabDataModel.postSectionType ==
+                          PostSectionType.myTaggedPost,
+                    )) {
+                  _removePostFromList(state.postId);
+                }
               } else if (state is IsmEditPostActionListenerState &&
                   state.postData != null) {
                 _replacePostFromList(state.postData!);
@@ -697,8 +708,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           }
         } else if (reelData.postData is TimeLineData) {
           _socialPostBloc.add(PlayPauseVideoEvent(play: false));
-          final res = await _showMentionList(mentionList,
-              tabData.postSectionType, reelData.postData as TimeLineData);
+          final res = await _showMentionList(
+            mentionList,
+            reelData.postData as TimeLineData,
+          );
           _socialPostBloc.add(PlayPauseVideoEvent(play: true));
           return res;
         }
@@ -752,6 +765,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
             );
             _socialPostBloc.add(PlayPauseVideoEvent(play: true));
             IsrVideoReelConfig.resumeFeedPlayback();
+          } else if (sheetResult == MoreOptionsSheetResult.download) {
+            await _downloadPost(reelsData.postData as TimeLineData);
+            _socialPostBloc.add(PlayPauseVideoEvent(play: true));
           } else {
             _socialPostBloc.add(PlayPauseVideoEvent(play: true));
           }
@@ -1156,7 +1172,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   Future<List<MentionMetaData>> _showMentionList(
     List<MentionMetaData> mentionList,
-    PostSectionType postSectionType,
     TimeLineData postData,
   ) async {
     final userid = await _socialPostBloc.userId;
@@ -1164,9 +1179,12 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         await Utility.showBottomSheet<List<MentionMetaData>>(
       isScrollControlled: true,
       child: MentionListBottomSheet(
-        initialMentionList: [],
+        initialMentionList: mentionList,
         postData: postData,
         myUserId: userid,
+        onMentionRemoved: () {
+          _stripSelfMentionFromTimelinePost(postData.id ?? '');
+        },
         onTapUserProfile: (userId, isFollowing) {
           context.pop();
           _postConfig.postCallBackConfig?.onProfileClick
@@ -1215,6 +1233,33 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     return await completer.future;
   }
 
+  bool _shouldOfferDownload(TimeLineData post) =>
+      ReelDownloadUtil.isPostDownloadAllowed(
+        postConfig: _postConfig,
+        post: post,
+      );
+
+  Future<void> _downloadPost(TimeLineData post) async {
+    if (!ReelDownloadUtil.isPostDownloadAllowed(
+      postConfig: _postConfig,
+      post: post,
+    )) {
+      Utility.showToastMessage(IsrTranslationFile.downloadNotAllowed);
+      return;
+    }
+    Utility.showToastMessage(IsrTranslationFile.downloading);
+    final outcome = await ReelDownloadUtil.downloadPostMedia(post);
+    if (!mounted) return;
+    switch (outcome) {
+      case ReelDownloadOutcome.saved:
+        Utility.showToastMessage(IsrTranslationFile.downloadSavedToGallery);
+      case ReelDownloadOutcome.permissionDenied:
+        Utility.showToastMessage(IsrTranslationFile.downloadPermissionDenied);
+      case ReelDownloadOutcome.failed:
+        Utility.showToastMessage(IsrTranslationFile.downloadFailed);
+    }
+  }
+
   bool _shouldOfferDubWithAudio(TimeLineData post) {
     if (!_postConfig.enableDubWithAudio) return false;
     if (post.user?.id == _loggedInUserId) return false;
@@ -1227,13 +1272,64 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     );
   }
 
+  bool _isCurrentUserMentioned(TimeLineData post) {
+    if (_loggedInUserId.isEmpty) return false;
+    final mentions = post.tags?.mentions;
+    if (mentions == null || mentions.isEmpty) return false;
+    return mentions.any((m) => m.userId == _loggedInUserId);
+  }
+
+  void _stripSelfMentionFromTimelinePost(String postId) {
+    for (final tabData in _tabDataModelList) {
+      for (final post in tabData.tabDataModel.reelsDataList) {
+        if (post.id != postId) continue;
+        post.tags?.mentions?.removeWhere((m) => m.userId == _loggedInUserId);
+        return;
+      }
+    }
+  }
+
+  Future<bool> _executeRemoveMentionFromPost({
+    required String postId,
+  }) async {
+    final confirmed = await Utility.showRemoveMeFromPostConfirmDialog(context);
+    if (confirmed != true) return false;
+
+    final completer = Completer<bool>();
+    _socialPostBloc.add(
+      RemoveMentionEvent(
+        postId: postId,
+        onComplete: (success) {
+          if (success) {
+            Utility.showToastMessage(
+              IsrTranslationFile.mentionRemovedSuccessfully,
+            );
+          }
+          if (!completer.isCompleted) {
+            completer.complete(success);
+          }
+        },
+      ),
+    );
+    return completer.future;
+  }
+
   /// Handles the more options menu for a post
   Future<dynamic> _handleMoreOptions(
       TimeLineData postDataModel, TabDataModel tabData) async {
     try {
+      final isOwner = postDataModel.user?.id == _loggedInUserId;
       return await _showMoreOptionsDialog(
         tabData: tabData,
         showDubWithAudio: _shouldOfferDubWithAudio(postDataModel),
+        showDownload: _shouldOfferDownload(postDataModel),
+        showRemoveMeFromPost:
+            !isOwner && _isCurrentUserMentioned(postDataModel),
+        onRemoveMeFromPost: () async {
+          await _executeRemoveMentionFromPost(
+            postId: postDataModel.id ?? '',
+          );
+        },
         onReportPost: () async {
           final completer = Completer<dynamic>();
           final result = await showDialog<dynamic>(
@@ -1277,13 +1373,16 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
             );
           }
         },
-        isSelfProfile: postDataModel.user?.id == _loggedInUserId,
+        isSelfProfile: isOwner,
         onEditPost: () async {
           unawaited(_handleEditPost(postDataModel));
         },
         onShowPostInsight: () async {
           IsrAppNavigator.goToPostInsight(context,
               postId: postDataModel.id ?? '', postData: postDataModel);
+        },
+        onDownloadPost: () async {
+          await _downloadPost(postDataModel);
         },
       );
     } catch (e) {
@@ -1380,9 +1479,13 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   Future<String?> _showMoreOptionsDialog({
     Future<dynamic> Function()? onReportPost,
     bool showDubWithAudio = false,
+    bool showDownload = false,
+    bool showRemoveMeFromPost = false,
+    Future<void> Function()? onRemoveMeFromPost,
     Future<dynamic> Function()? onDeletePost,
     Future<dynamic> Function()? onEditPost,
     Future<dynamic> Function()? onShowPostInsight,
+    Future<void> Function()? onDownloadPost,
     bool? isSelfProfile,
     required TabDataModel tabData,
   }) async {
@@ -1390,6 +1493,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       isDismissible: true,
       child: MoreOptionsBottomSheet(
         showDubWithAudio: showDubWithAudio,
+        showDownload: showDownload,
+        showRemoveMeFromPost: showRemoveMeFromPost,
         isSelfProfile: isSelfProfile == true,
       ),
     );
@@ -1397,6 +1502,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     switch (sheetResult) {
       case MoreOptionsSheetResult.dubWithAudio:
         return sheetResult;
+      case MoreOptionsSheetResult.removeMeFromPost:
+        if (onRemoveMeFromPost != null) {
+          await onRemoveMeFromPost();
+        }
+        return null;
       case MoreOptionsSheetResult.report:
         if (onReportPost != null) {
           await onReportPost();
@@ -1415,6 +1525,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       case MoreOptionsSheetResult.insight:
         if (onShowPostInsight != null) {
           await onShowPostInsight();
+        }
+        return null;
+      case MoreOptionsSheetResult.download:
+        if (onDownloadPost != null) {
+          await onDownloadPost();
         }
         return null;
       default:

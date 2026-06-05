@@ -176,6 +176,15 @@ class StoryViewerActions {
         );
         return;
       }
+      if (!await storyCubit.isHighlightOwnedByCurrentUser(detail)) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You can only edit your own highlights.'),
+          ),
+        );
+        return;
+      }
       await IsrAppNavigator.presentEditHighlight(
         context,
         highlight: detail,

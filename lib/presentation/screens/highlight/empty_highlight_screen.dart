@@ -40,6 +40,7 @@ class EmptyHighlightScreen extends StatefulWidget {
 class _EmptyHighlightScreenState extends State<EmptyHighlightScreen> {
   StoryHighlightData? _highlight;
   var _loading = true;
+  var _isOwnHighlight = false;
 
   @override
   void initState() {
@@ -52,9 +53,18 @@ class _EmptyHighlightScreenState extends State<EmptyHighlightScreen> {
     final cubit = context.read<StoryCubit>();
     final fresh = await cubit.getStoryHighlightById(widget.highlightId);
     if (!mounted) return;
+    final highlight = fresh ?? _highlight;
+    final isOwn = highlight != null
+        ? await cubit.isHighlightOwnedByCurrentUser(
+            highlight,
+            fallbackOwnerUserId: widget.userId,
+          )
+        : false;
+    if (!mounted) return;
     setState(() {
-      _highlight = fresh ?? _highlight;
+      _highlight = highlight;
       _loading = false;
+      _isOwnHighlight = isOwn;
     });
   }
 
@@ -74,6 +84,7 @@ class _EmptyHighlightScreenState extends State<EmptyHighlightScreen> {
       cubit: cubit,
       highlight: highlight,
       openViewerAfterAdd: true,
+      fallbackOwnerUserId: widget.userId,
     );
     if (!mounted) return;
     if (added) {
@@ -117,12 +128,14 @@ class _EmptyHighlightScreenState extends State<EmptyHighlightScreen> {
       context: context,
       cubit: cubit,
       highlight: highlight,
+      fallbackOwnerUserId: widget.userId,
     );
     if (!mounted) return;
     if (updated) await _load();
   }
 
   Future<void> _onMorePressed() async {
+    if (!_isOwnHighlight) return;
     final theme = StoryThemeResolver.of(context);
     final action = await showModalBottomSheet<String>(
       context: context,
@@ -181,11 +194,12 @@ class _EmptyHighlightScreenState extends State<EmptyHighlightScreen> {
           style: IsrStyles.primaryText14.copyWith(fontWeight: FontWeight.w600),
         ),
         actions: [
-          IconButton(
-            tooltip: 'More',
-            icon: Icon(Icons.more_horiz, color: theme.textPrimary),
-            onPressed: _loading ? null : _onMorePressed,
-          ),
+          if (_isOwnHighlight)
+            IconButton(
+              tooltip: 'More',
+              icon: Icon(Icons.more_horiz, color: theme.textPrimary),
+              onPressed: _loading ? null : _onMorePressed,
+            ),
         ],
       ),
       body: _loading
@@ -232,49 +246,51 @@ class _EmptyHighlightScreenState extends State<EmptyHighlightScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      IsrTranslationFile.highlightEmptySubtitle,
-                      textAlign: TextAlign.center,
-                      style: IsrStyles.white14.copyWith(
-                        color: theme.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-                    FilledButton.icon(
-                      onPressed: _onAddStories,
-                      icon: Icon(Icons.add, color: theme.onPrimary),
-                      label: Text('Add stories',
-                          style: IsrStyles.primaryText14
-                              .copyWith(color: theme.onPrimary)),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: theme.primary,
-                        foregroundColor: theme.onPrimary,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
+                    if (_isOwnHighlight) ...[
+                      Text(
+                        IsrTranslationFile.highlightEmptySubtitle,
+                        textAlign: TextAlign.center,
+                        style: IsrStyles.white14.copyWith(
+                          color: theme.textSecondary,
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      onPressed: _loading ? null : _onEditHighlight,
-                      icon: Icon(Icons.edit_outlined, color: theme.primary),
-                      label: Text(
-                        IsrTranslationFile.editHighlight,
-                        style: IsrStyles.primaryText14.copyWith(
-                          color: theme.primary,
-                          fontWeight: FontWeight.w600,
+                      const SizedBox(height: 28),
+                      OutlinedButton.icon(
+                        onPressed: _onAddStories,
+                        icon: Icon(Icons.add, color: theme.onPrimary),
+                        label: Text('Add stories',
+                            style: IsrStyles.primaryText14
+                                .copyWith(color: theme.onPrimary)),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: theme.primary,
+                          foregroundColor: theme.onPrimary,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 30,
+                            vertical: 12,
+                          ),
                         ),
                       ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: theme.primary,
-                        side: BorderSide(color: theme.primary),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: _loading ? null : _onEditHighlight,
+                        icon: Icon(Icons.edit_outlined, color: theme.primary),
+                        label: Text(
+                          IsrTranslationFile.editHighlight,
+                          style: IsrStyles.primaryText14.copyWith(
+                            color: theme.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: theme.primary,
+                          side: BorderSide(color: theme.primary),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),

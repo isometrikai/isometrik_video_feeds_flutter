@@ -665,6 +665,15 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     _uniquePostList.remove(postId);
   }
 
+  void onMentionRemoved({
+    required String postId,
+    required String userId,
+  }) {
+    debugPrint(
+        'IsmSocialActionCubit onMentionRemoved -> postId: $postId, userId: $userId');
+    emit(IsmMentionRemovedActionListenerState(postId: postId, userId: userId));
+  }
+
   void onSdkReinitializeChanged(
       {String? userId, UserInfoClass? userInfoClass}) {
     debugPrint(

@@ -83,7 +83,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   ActionIconConfig? get _actionIconConfig => _uiConfig?.actionIconConfig;
   TextStyleConfig? get _textStyleConfig => _uiConfig?.textStyleConfig;
   ShopUIConfig? get _shopUIConfig => _uiConfig?.shopUIConfig;
+  PostLinkUIConfig? get _postLinkUIConfig => _uiConfig?.postLinkUIConfig;
   FollowButtonConfig? get _followButtonConfig => _uiConfig?.followButtonConfig;
+
+  bool get _shouldShowPostLinkChip =>
+      IsrVideoReelConfig.createEditPostConfig.enableBusinessLink &&
+      _reelData.postLink?.isValid == true;
   MediaIndicatorConfig? get _mediaIndicatorConfig =>
       _uiConfig?.mediaIndicatorConfig;
   UserProfileConfig? get _userProfileConfig => _uiConfig?.userProfileConfig;
@@ -1851,6 +1856,67 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         ),
       );
 
+  Future<void> _onPostLinkTap() async {
+    final link = _reelData.postLink;
+    if (link == null || !link.isValid) return;
+    final hostHandler = _postConfig.postCallBackConfig?.onPostLinkClick;
+    if (hostHandler != null && _reelData.postData is TimeLineData) {
+      await hostHandler(_reelData.postData as TimeLineData, link);
+      return;
+    }
+    Utility.launchExternalUrl(link.url.contains('://') ? link.url : 'https://${link.url}');
+  }
+
+  Widget _buildPostLinkChip() {
+    final link = _reelData.postLink!;
+    final linkConfig = _postLinkUIConfig;
+    return TapHandler(
+      onTap: _onPostLinkTap,
+      child: Container(
+        constraints: BoxConstraints(maxWidth: 220.responsiveDimension),
+        padding: linkConfig?.containerPadding ??
+            IsrDimens.edgeInsetsSymmetric(
+              horizontal: IsrDimens.sixteen,
+              vertical: IsrDimens.ten,
+            ),
+        decoration: linkConfig?.containerDecoration ??
+            BoxDecoration(
+              color: Colors.white.changeOpacity(0.92),
+              borderRadius: BorderRadius.circular(IsrDimens.twentyFour),
+            ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              linkConfig?.icon ?? Icons.link_rounded,
+              size: linkConfig?.iconSize ?? 18.responsiveDimension,
+              color: linkConfig?.iconColor ?? IsrColors.color0F1E91,
+            ),
+            IsrDimens.boxWidth(IsrDimens.eight),
+            Flexible(
+              child: Text(
+                link.displayTitle,
+                style: linkConfig?.textStyle ??
+                    IsrStyles.primaryText12.copyWith(
+                      color: IsrColors.color0F1E91,
+                      fontWeight: FontWeight.w700,
+                    ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            IsrDimens.boxWidth(IsrDimens.four),
+            Icon(
+              Icons.chevron_right,
+              size: 16.responsiveDimension,
+              color: linkConfig?.iconColor ?? IsrColors.color0F1E91,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildBottomSectionWithoutOverlay() {
     final publishedTimeLabel = _postPublishedTimeLabel();
     return Padding(
@@ -1922,6 +1988,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               ),
             ),
             IsrDimens.boxHeight(IsrDimens.sixteen),
+          ],
+          if (_shouldShowPostLinkChip) ...[
+            _buildPostLinkChip(),
+            IsrDimens.boxHeight(IsrDimens.twelve),
           ],
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,

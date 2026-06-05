@@ -224,6 +224,8 @@ class StoryUploadPayload {
     this.tags,
     this.textFormatting,
     this.videoDurationSeconds,
+    this.previewUrl,
+    this.previewLocalPath,
   });
 
   final File? file;
@@ -241,6 +243,12 @@ class StoryUploadPayload {
   final Map<String, dynamic>? tags;
   final Map<String, dynamic>? textFormatting;
   final int? videoDurationSeconds;
+
+  /// Public thumbnail URL for video stories (host may set when media is pre-uploaded).
+  final String? previewUrl;
+
+  /// Local JPEG path from an early thumbnail pass (before video upload).
+  final String? previewLocalPath;
 }
 
 class StoryCallbackConfig {

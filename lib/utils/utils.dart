@@ -16,6 +16,7 @@ export 'media_util.dart';
 export 'navigator/navigator.dart';
 export 'post_sound_util.dart';
 export 'rectangular_progress_bar.dart';
+export 'reel_download_util.dart';
 export 'reel_dub_audio_util.dart';
 export 'sound_library_feature_util.dart';
 export 'triangle_painter.dart';

@@ -4,6 +4,7 @@ import 'package:ism_video_reel_player/core/core.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
+import 'package:ism_video_reel_player/presentation/cubits/story/story.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
 class IsmDataProvider {
@@ -696,23 +697,34 @@ class IsmDataProvider {
     );
   }
 
-  /// Opens the edit highlight flow from the host profile (long-press / menu).
+  /// Opens the edit highlight flow (own highlights only).
   Future<void> onEditStoryHighlight({
     required Map<String, dynamic> highlightMap,
   }) async {
     final highlight = StoryHighlightData.fromMap(highlightMap);
+    final context = IsrVideoReelConfig.getBuildContext?.call() ??
+        IsrVideoReelConfig.buildContext;
+    if (context == null) return;
+
+    final cubit = IsmInjectionUtils.getBloc<StoryCubit>();
+    final fallbackOwner = highlightMap['user_id']?.toString();
+    if (!await cubit.isHighlightOwnedByCurrentUser(
+      highlight,
+      fallbackOwnerUserId: fallbackOwner,
+    )) {
+      return;
+    }
+
     final callback =
         IsrVideoReelConfig.storyConfig?.storyCallbackConfig.onHighlightEdit;
     if (callback != null) {
       await callback(highlight);
       return;
     }
-    final context = IsrVideoReelConfig.getBuildContext?.call() ??
-        IsrVideoReelConfig.buildContext;
-    if (context == null) return;
     await IsrAppNavigator.presentEditHighlight(
       context,
       highlight: highlight,
+      fallbackOwnerUserId: fallbackOwner,
     );
   }
 }

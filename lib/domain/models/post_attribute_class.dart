@@ -14,6 +14,7 @@ class PostAttributeClass {
     this.hashTagDataList,
     this.taggedPlaces,
     this.linkedProducts,
+    this.postLink,
     this.selectedSound,
   });
 
@@ -28,5 +29,6 @@ class PostAttributeClass {
   List<MentionData>? hashTagDataList;
   List<TaggedPlace>? taggedPlaces;
   List<ProductDataModel>? linkedProducts;
+  PostLinkData? postLink;
   MediaEditSoundItem? selectedSound;
 }

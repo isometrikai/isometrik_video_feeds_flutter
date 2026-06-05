@@ -617,6 +617,131 @@ class MediaUtil {
     return bestPath;
   }
 
+  /// Decodes URL-escaped segments (e.g. `%20`) in iOS local media paths.
+  static String normalizeLocalMediaPath(String raw) {
+    var p = raw.trim();
+    if (p.isEmpty) return p;
+    if (!p.contains('%')) return p;
+    try {
+      return Uri.decodeFull(p);
+    } catch (_) {
+      return p;
+    }
+  }
+
+  /// Resolves a readable on-disk file when the path may be URL-encoded.
+  static Future<File?> openReadableMediaFile(String raw) async {
+    final candidates = <String>{
+      raw.trim(),
+      normalizeLocalMediaPath(raw),
+    };
+    for (final candidate in candidates) {
+      if (candidate.isEmpty) continue;
+      final file = File(candidate);
+      if (await file.exists() && await file.length() > 0) {
+        return file;
+      }
+    }
+    return null;
+  }
+
+  /// Copies a generated thumbnail into app documents with a stable `.jpg` path.
+  static Future<String?> persistVideoThumbnailForUpload(String thumbPath) async {
+    final src = await openReadableMediaFile(thumbPath);
+    if (src == null) return null;
+
+    final docs = await getApplicationDocumentsDirectory();
+    final dir = Directory(path.join(docs.path, 'media', 'story_previews'));
+    await dir.create(recursive: true);
+    final dest = File(
+      path.join(
+        dir.path,
+        'story_preview_${DateTime.now().millisecondsSinceEpoch}.jpg',
+      ),
+    );
+
+    try {
+      await src.copy(dest.path);
+    } catch (_) {
+      try {
+        await dest.writeAsBytes(await src.readAsBytes(), flush: true);
+      } catch (e, st) {
+        AppLog.error('persistVideoThumbnailForUpload: $e\n$st');
+        return null;
+      }
+    }
+
+    if (await dest.exists() && await dest.length() > 0) {
+      return dest.path;
+    }
+    return null;
+  }
+
+  /// Like [pickBestVideoThumbnailPath] but copies long iOS picker paths to a short
+  /// temp file when generation fails (common for story videos).
+  static Future<String?> safePickBestVideoThumbnailPath({
+    required String videoPath,
+    int quality = 75,
+  }) async {
+    final normalizedVideoPath = normalizeLocalMediaPath(videoPath);
+    final videoFile = await openReadableMediaFile(normalizedVideoPath);
+    if (videoFile == null) return null;
+    final resolvedVideoPath = videoFile.path;
+
+    Future<String?> generateFrom(String path) async {
+      final tempDir = await getTemporaryDirectory();
+      return pickBestVideoThumbnailPath(
+        videoPath: path,
+        thumbnailPath: tempDir.path,
+        quality: quality,
+      );
+    }
+
+    try {
+      final direct = await generateFrom(resolvedVideoPath);
+      if (direct != null && direct.trim().isNotEmpty) {
+        return persistVideoThumbnailForUpload(direct);
+      }
+    } catch (e, st) {
+      AppLog.error('safePickBestVideoThumbnailPath direct: $e\n$st');
+    }
+
+    File? tempVideo;
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final ext = path.extension(resolvedVideoPath);
+      final shortVideoPath = path.join(
+        tempDir.path,
+        'story_vid_${DateTime.now().millisecondsSinceEpoch}$ext',
+      );
+      tempVideo = await videoFile.copy(shortVideoPath);
+
+      final fromCopy = await generateFrom(tempVideo.path);
+      if (fromCopy != null && fromCopy.trim().isNotEmpty) {
+        return persistVideoThumbnailForUpload(fromCopy);
+      }
+
+      final thumb = await VideoThumbnail.thumbnailFile(
+        video: tempVideo.path,
+        thumbnailPath: tempDir.path,
+        quality: quality,
+        timeMs: 1000,
+      );
+      final rawThumb = thumb.path.trim();
+      if (rawThumb.isEmpty) return null;
+      return persistVideoThumbnailForUpload(rawThumb);
+    } catch (e, st) {
+      AppLog.error('safePickBestVideoThumbnailPath fallback: $e\n$st');
+      return null;
+    } finally {
+      if (tempVideo != null) {
+        try {
+          if (await tempVideo.exists()) await tempVideo.delete();
+        } catch (_) {}
+      }
+    }
+  }
+
   static Future<int> _videoDurationMs(String videoPath) async {
     try {
       final info = await VideoCompress.getMediaInfo(videoPath);

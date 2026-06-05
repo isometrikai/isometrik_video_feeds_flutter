@@ -132,7 +132,8 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
     }
 
     final current = _activePlayIndex;
-    final currentFraction = current == null ? 0.0 : (_visibilityFractions[current] ?? 0.0);
+    final currentFraction =
+        current == null ? 0.0 : (_visibilityFractions[current] ?? 0.0);
 
     int? newActive = current;
 
@@ -205,9 +206,8 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
         notification is ScrollEndNotification) {
       final metrics = notification.metrics;
       if (metrics.hasPixels) {
-        final threshold = metrics.maxScrollExtent > 0
-            ? metrics.maxScrollExtent * 0.65
-            : 0;
+        final threshold =
+            metrics.maxScrollExtent > 0 ? metrics.maxScrollExtent * 0.65 : 0;
         final nearEnd = metrics.extentAfter <= _loadMoreExtent;
         if (nearEnd || metrics.pixels >= threshold) {
           _scheduleLoadMore();
@@ -226,9 +226,8 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
 
       setState(() {
         _hasMorePages = true;
-        final visibleCap = widget.reelsDataList.length < 6
-            ? widget.reelsDataList.length
-            : 6;
+        final visibleCap =
+            widget.reelsDataList.length < 6 ? widget.reelsDataList.length : 6;
         for (var i = 0; i < visibleCap; i++) {
           _refreshCounts[i] = (_refreshCounts[i] ?? 0) + 1;
         }
@@ -333,9 +332,10 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
 
   ScrollPhysics _listPhysics(BuildContext context) {
     final platform = Theme.of(context).platform;
-    final parent = platform == TargetPlatform.iOS || platform == TargetPlatform.macOS
-        ? const BouncingScrollPhysics()
-        : const ClampingScrollPhysics();
+    final parent =
+        platform == TargetPlatform.iOS || platform == TargetPlatform.macOS
+            ? const BouncingScrollPhysics()
+            : const ClampingScrollPhysics();
     return AlwaysScrollableScrollPhysics(parent: parent);
   }
 
@@ -344,9 +344,8 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
     final feedUi = widget.reelsConfig.postConfig.resolvedPostFeedUIConfig;
     final showHeader = feedUi.showHeader;
     final usePostDividers = feedUi.showPostDividers;
-    final itemGap = usePostDividers
-        ? 0.0
-        : feedUi.postSpacing.clamp(0.0, double.infinity);
+    final itemGap =
+        usePostDividers ? 0.0 : feedUi.postSpacing.clamp(0.0, double.infinity);
     final topInset = widget.listTopInset ??
         (showHeader
             ? MediaQuery.paddingOf(context).top + IsrDimens.fiftySix
@@ -411,7 +410,9 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
               color: feedUi.dividerColor,
             );
           }
-          return itemGap > 0 ? SizedBox(height: itemGap) : const SizedBox.shrink();
+          return itemGap > 0
+              ? SizedBox(height: itemGap)
+              : const SizedBox.shrink();
         },
         itemBuilder: (context, index) {
           if (index >= widget.reelsDataList.length) {
@@ -539,8 +540,7 @@ class _PostFeedListItemState extends State<_PostFeedListItem> {
               ),
               reelsData: widget.reelsData,
               reelsConfig: widget.reelsConfig,
-              postSectionType:
-                  widget.postSectionType ?? PostSectionType.forYou,
+              postSectionType: widget.postSectionType ?? PostSectionType.forYou,
               isPostVisible: widget.isPostVisible,
               videoCacheManager: widget.videoCacheManager,
               loggedInUserId: widget.loggedInUserId,

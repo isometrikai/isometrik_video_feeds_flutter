@@ -1053,6 +1053,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
         'CreatePostBloc: _makePostRequest => mediaMentionUserData => ${mediaMentionUserData.map((e) => e.toJson())}');
     hashTagDataList = _postData?.tags?.hashtags ?? [];
     locationTagDataList = _postData?.tags?.places ?? [];
+    _postAttributeClass.postLink = _postData?.tags?.primaryLink;
 
     // Update postAttributeClass with the loaded data
     _postAttributeClass.mentionedUserList = [
@@ -1958,6 +1959,9 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     _postAttributeClass.hashTagDataList = hashTagDataList;
     _postAttributeClass.mediaDataList = _mediaDataList;
     _postAttributeClass.linkedProducts = linkedProducts;
+    if (_postAttributeClass.postLink?.isValid == true) {
+      _tags.links = [_postAttributeClass.postLink!];
+    }
     _postAttributeClass.selectedSound = _resolveSelectedSound();
     _postAttributeClass.createPostRequest = _createPostRequest;
     _applySelectedSoundToCreatePostRequest(_postAttributeClass.selectedSound);

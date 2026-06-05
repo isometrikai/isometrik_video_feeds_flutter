@@ -168,10 +168,23 @@ class HighlightComposerCoordinator {
     required BuildContext context,
     required StoryCubit cubit,
     required StoryHighlightData highlight,
+    String? fallbackOwnerUserId,
   }) async {
     final messenger = ScaffoldMessenger.maybeOf(context);
     final highlightId = highlight.id.trim();
     if (highlightId.isEmpty) return false;
+
+    if (!await cubit.isHighlightOwnedByCurrentUser(
+      highlight,
+      fallbackOwnerUserId: fallbackOwnerUserId,
+    )) {
+      messenger?.showSnackBar(
+        const SnackBar(
+          content: Text('You can only edit your own highlights.'),
+        ),
+      );
+      return false;
+    }
 
     final detail = await cubit.getStoryHighlightById(highlightId);
     if (!context.mounted) return false;
@@ -219,10 +232,23 @@ class HighlightComposerCoordinator {
     required StoryCubit cubit,
     required StoryHighlightData highlight,
     bool openViewerAfterAdd = false,
+    String? fallbackOwnerUserId,
   }) async {
     final messenger = ScaffoldMessenger.maybeOf(context);
     final highlightId = highlight.id.trim();
     if (highlightId.isEmpty) return false;
+
+    if (!await cubit.isHighlightOwnedByCurrentUser(
+      highlight,
+      fallbackOwnerUserId: fallbackOwnerUserId,
+    )) {
+      messenger?.showSnackBar(
+        const SnackBar(
+          content: Text('You can only add stories to your own highlights.'),
+        ),
+      );
+      return false;
+    }
 
     final selected = await _resolveSelectedStories(
       context: context,

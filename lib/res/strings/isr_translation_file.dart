@@ -94,6 +94,16 @@ class IsrTranslationFile {
   static const schedulePost = 'Schedule Post';
   static const linkProductsToPost = 'Link Products to Post';
   static const linkProducts = 'Link Products';
+  static const addLink = 'Add Link';
+  static const addLinkDescription =
+      'Add an https link and a title. Viewers can tap the button on your reel.';
+  static const linkUrl = 'Link URL';
+  static const linkTitle = 'Link title';
+  static const linkTitleHint = 'e.g. Shop now, Learn more';
+  static const enterLinkUrl = 'Enter a link URL';
+  static const enterValidHttpsLinkUrl = 'URL must use https';
+  static const enterButtonLabel = 'Enter a link title';
+  static const removeLink = 'Remove link';
   static const noProductsLinkedYet = 'No products linked yet!';
   static const connectProductsToPost =
       'Connect products to posts for better visibility and engagement';
@@ -122,6 +132,13 @@ class IsrTranslationFile {
       'Report ${type.capitalizeWords()}';
   static const postReportedSuccessfully = 'Post reported successfully';
   static const report = 'Report';
+  static const download = 'Download';
+  static const downloading = 'Downloading...';
+  static const downloadSavedToGallery = 'Saved to your gallery';
+  static const downloadFailed = 'Could not download this reel';
+  static const downloadNotAllowed = 'Downloads are not allowed for this post';
+  static const downloadPermissionDenied =
+      'Allow photo library access to save reels';
   static const dubWithAudio = 'Dub with audio';
   static const dubLockedPostMessage =
       'Unlock this post before recording a dub.';
@@ -195,6 +212,13 @@ class IsrTranslationFile {
   static const String justNow = 'Just now';
   static const String noPostsFound = 'No posts found';
   static const String inThisSocialPost = 'In this social post';
+  static const String removeMeFromPost = 'Remove me from post';
+  static const String removeTag = 'Remove tag';
+  static const String removeMeFromPostTitle = 'Remove yourself from this post?';
+  static const String removeMeFromPostMessage =
+      'Your username will no longer appear on this post. The post will not be deleted.';
+  static const String mentionRemovedSuccessfully =
+      'You have been removed from this post';
   static const String retry = 'Retry';
   static const String noPostsDescription =
       'No posts have been shared for this location yet. Be the first to share something!';

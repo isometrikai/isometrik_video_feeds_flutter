@@ -660,6 +660,78 @@ class Utility {
   static String cleanText(String inputText) => inputText.replaceAll(
       RegExp(r'[\n\t\r]'), ''); // Removes newline, tab, and carriage return
 
+  /// Confirmation before the current user removes their tag from a post.
+  static Future<bool?> showRemoveMeFromPostConfirmDialog(
+      BuildContext context) {
+    final dialogConfig = IsrVideoReelConfig.socialConfig.dialogConfig;
+    final borderRadius = dialogConfig?.borderRadius ?? 20.0;
+    final backgroundColor = dialogConfig?.backgroundColor ?? Colors.white;
+    final padding = dialogConfig?.padding ??
+        const EdgeInsets.symmetric(horizontal: 24, vertical: 28);
+    final titleStyle = dialogConfig?.titleTextStyle ??
+        IsrStyles.primaryText18.copyWith(fontWeight: FontWeight.w700);
+    final messageStyle = dialogConfig?.messageTextStyle ??
+        IsrStyles.primaryText14.copyWith(color: '4A4A4A'.toColor());
+
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => Dialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(borderRadius),
+        ),
+        backgroundColor: backgroundColor,
+        child: Padding(
+          padding: padding,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                IsrTranslationFile.removeMeFromPostTitle,
+                style: titleStyle,
+              ),
+              16.responsiveVerticalSpace,
+              Text(
+                IsrTranslationFile.removeMeFromPostMessage,
+                style: messageStyle,
+              ),
+              24.responsiveVerticalSpace,
+              AppButton(
+                title: IsrTranslationFile.removeTag,
+                width: double.infinity,
+                type: ButtonType.primary,
+                onPress: () => Navigator.of(dialogContext).pop(true),
+                backgroundColor: IsrVideoReelConfig
+                        .socialConfig.primaryButton?.backgroundColor ??
+                    IsrColors.appColor,
+                textColor: IsrVideoReelConfig
+                        .socialConfig.primaryButton?.textColor ??
+                    IsrColors.white,
+              ),
+              12.responsiveVerticalSpace,
+              AppButton(
+                title: IsrTranslationFile.cancel,
+                width: double.infinity,
+                type: ButtonType.secondary,
+                onPress: () => Navigator.of(dialogContext).pop(false),
+                backgroundColor: IsrVideoReelConfig
+                        .socialConfig.secondaryButton?.backgroundColor ??
+                    'F6F6F6'.toColor(),
+                textColor: IsrVideoReelConfig
+                        .socialConfig.secondaryButton?.textColor ??
+                    Theme.of(dialogContext).primaryColor,
+                borderColor: IsrVideoReelConfig
+                    .socialConfig.secondaryButton?.borderColor,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   ///show custom widget dialog
   static Future<void> showCustomDialog(
       {required BuildContext context, required Widget child}) {
