@@ -598,7 +598,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         loggedInUserId: _loggedInUserId,
         allowImplicitScrolling: widget.allowImplicitScrolling,
         reelsDataList: _mappedReelsForTab(tabState),
-        reelsConfig: _getReelsConfig(tabState),
+        reelsConfig: _getReelsConfig(context, tabState),
         onLoadMore: () async => await _handleLoadMore(tabState),
         onPostFeedLoadMore: () async => await _handlePostFeedLoadMore(tabState),
         onRefresh: () async {
@@ -645,13 +645,28 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     );
   }
 
-  ReelsConfig _getReelsConfig(TabStateModel tabState) {
+  EdgeInsetsGeometry _resolvedReelsOverlayPadding(BuildContext context) {
+    final overlay = _postConfig.postUIConfig?.overlayPadding;
+    final bottom = IsrDimens.resolveOverlayBottomInset(context, overlay);
+    if (overlay == null) {
+      return EdgeInsets.only(bottom: bottom);
+    }
+    final resolved = overlay.resolve(Directionality.of(context));
+    return EdgeInsets.only(
+      left: resolved.left,
+      top: resolved.top,
+      right: resolved.right,
+      bottom: bottom,
+    );
+  }
+
+  ReelsConfig _getReelsConfig(BuildContext context, TabStateModel tabState) {
     final tabData = tabState.tabDataModel;
     return ReelsConfig(
       postConfig: _postConfig,
       isTabVisible: () =>
           IsrVideoReelConfig.isHostFeedTabVisible && tabState.isVisible,
-      overlayPadding: _postConfig.postUIConfig?.overlayPadding,
+      overlayPadding: _resolvedReelsOverlayPadding(context),
       autoMoveNextMedia: _postConfig.autoMoveToNextMedia ||
           _tabConfig.autoMoveToNextPost ||
           _postConfig.autoMoveToNextPost,
@@ -920,19 +935,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       IsrDimens.sixteen;
 
   /// Bottom padding so the last post clears a host bottom navigation bar.
-  double _postFeedListBottomInset(BuildContext context) {
-    final hostNavClearance = MediaQuery.paddingOf(context).bottom + 70;
-    final overlay = _postConfig.postUIConfig?.overlayPadding;
-    if (overlay != null) {
-      final resolved = overlay.resolve(Directionality.of(context));
-      if (resolved.bottom > 0) {
-        return resolved.bottom >= hostNavClearance
-            ? resolved.bottom
-            : hostNavClearance;
-      }
-    }
-    return hostNavClearance;
-  }
+  double _postFeedListBottomInset(BuildContext context) =>
+      IsrDimens.resolveOverlayBottomInset(
+        context,
+        _postConfig.postUIConfig?.overlayPadding,
+      );
 
   Widget _buildTabBar() {
     final feedUi = _postConfig.resolvedPostFeedUIConfig;

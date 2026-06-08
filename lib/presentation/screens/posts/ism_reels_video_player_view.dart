@@ -82,6 +82,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   LocationConfig? get _locationConfig => _uiConfig?.locationConfig;
   MentionConfig? get _mentionConfig => _uiConfig?.mentionConfig;
 
+  double _overlayBottomInset(BuildContext context) =>
+      IsrDimens.resolveOverlayBottomInset(
+        context,
+        widget.reelsConfig.overlayPadding,
+      );
+
   // Add constants for media types
   static const int kPictureType = 0;
   static const int kVideoType = 1;
@@ -1424,8 +1430,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                         _reelData.mediaMetaDataList.firstOrNull?.mediaType == kVideoType ||
                         widget.onVideoCompleted != null))
                   Positioned(
-                    bottom: widget.reelsConfig.overlayPadding?.resolve(TextDirection.ltr).bottom ??
-                        0 + 3,
+                    bottom: _overlayBottomInset(context) + 3,
                     left: 0,
                     right: 0,
                     child: ValueListenableBuilder<int>(
@@ -1438,9 +1443,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 //kept separate so that it does not bloc touch/gesture to underlying widgets
                 if (!_shouldShowPaidLockOverlay)
                   Positioned(
-                    right: widget.reelsConfig.overlayPadding?.resolve(TextDirection.ltr).right ?? 0,
-                    bottom:
-                        widget.reelsConfig.overlayPadding?.resolve(TextDirection.ltr).bottom ?? 0,
+                    right: widget.reelsConfig.overlayPadding
+                            ?.resolve(Directionality.of(context))
+                            .right ??
+                        0,
+                    bottom: _overlayBottomInset(context),
                     child: widget.reelsConfig.actionWidget?.call(_reelData).child ??
                         _buildRightSideActions(),
                   ),
@@ -1449,8 +1456,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 //kept separate so that it does not bloc touch/gesture to underlying widgets
                 Positioned(
                   right: 40,
-                  bottom: widget.reelsConfig.overlayPadding?.resolve(TextDirection.ltr).bottom ?? 0,
-                  left: widget.reelsConfig.overlayPadding?.resolve(TextDirection.ltr).left ?? 0,
+                  bottom: _overlayBottomInset(context),
+                  left: widget.reelsConfig.overlayPadding
+                          ?.resolve(Directionality.of(context))
+                          .left ??
+                      0,
                   child: widget.reelsConfig.footerWidget?.call(_reelData).child ??
                       _buildBottomSectionWithoutOverlay(),
                 ),
