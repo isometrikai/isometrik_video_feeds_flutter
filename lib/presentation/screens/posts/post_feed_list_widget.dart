@@ -197,6 +197,7 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
     if (notification is ScrollStartNotification ||
         (notification is ScrollUpdateNotification &&
             notification.dragDetails != null)) {
+      PostFeedOverlayMenuCoordinator.dismissIfOpen();
       _scrollIdleDebounce?.cancel();
       _setUserScrolling(true);
     } else if (notification is ScrollEndNotification) {

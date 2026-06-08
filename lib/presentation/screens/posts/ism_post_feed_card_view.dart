@@ -1,14 +1,19 @@
 import 'dart:async';
 import 'dart:ui' show ImageFilter;
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/video_player_widget.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/like_action_widget.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_carousel_keep_alive_page.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/sound_selection/sound_track_detail_screen.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_media_carousel.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_scroll_scope.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
@@ -57,10 +62,20 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   final ValueNotifier<int> _mediaPageIndex = ValueNotifier(0);
   late final PageController _mediaPageController;
   final Map<int, GlobalKey> _videoPlayerKeys = {};
+  final GlobalKey _instagramMetaRowKey = GlobalKey();
+  OverlayEntry? _instagramMetaMenuOverlay;
+  VoidCallback? _instagramMetaMenuDismissHandler;
   var _showMuteIconBriefly = false;
   var _showPageBadge = true;
   var _isInstagramCaptionExpanded = false;
   Timer? _pageBadgeTimer;
+  AudioPlayer? _imageSoundPlayer;
+  String? _resolvedImageSoundUrl;
+  String? _imageSoundLoadedUrl;
+  var _resolvingImageSoundUrl = false;
+  Timer? _metaAlternatorTimer;
+  var _metaAlternatorShowsSound = true;
+  static const Duration _kMetaAlternatorInterval = Duration(seconds: 3);
 
   static const String _kInstagramCaptionMoreSuffix = '... more';
 
@@ -421,6 +436,10 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     VideoMuteController.notifier.addListener(_onGlobalMuteChanged);
     _mediaPageController = PageController();
     _schedulePageBadgeAutoHide();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_syncImageSoundPlayback());
+    });
+    _startMetaAlternatorIfNeeded();
   }
 
   @override
@@ -442,9 +461,12 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     }
     if (oldWidget.isPostVisible != widget.isPostVisible || lockStateChanged || timelineLockChanged) {
       _syncCarouselVideoPlayback();
+      unawaited(_syncImageSoundPlayback());
     }
     if (oldWidget.reelsData.postId != widget.reelsData.postId) {
       _isInstagramCaptionExpanded = false;
+      _metaAlternatorShowsSound = true;
+      _startMetaAlternatorIfNeeded();
     }
   }
 
@@ -454,12 +476,34 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     _mediaPageIndex.dispose();
     _mediaPageController.dispose();
     _pageBadgeTimer?.cancel();
+    _metaAlternatorTimer?.cancel();
+    _dismissInstagramMetaMenu();
+    unawaited(_disposeImageSound());
     super.dispose();
+  }
+
+  void _dismissInstagramMetaMenu([String? selection]) {
+    final handler = _instagramMetaMenuDismissHandler;
+    if (handler == null) return;
+    _instagramMetaMenuDismissHandler = null;
+    handler();
+    if (selection != null) {
+      unawaited(_handleInstagramMetaMenuSelection(selection));
+    }
+  }
+
+  Future<void> _handleInstagramMetaMenuSelection(String selection) async {
+    if (selection == 'location') {
+      await _openPostLocation();
+    } else if (selection == 'sound') {
+      await _openSoundDetails();
+    }
   }
   void _onMediaPageChanged(int index) {
     if (_mediaPageIndex.value == index) return;
     _mediaPageIndex.value = index;
     _syncCarouselVideoPlayback();
+    unawaited(_syncImageSoundPlayback());
     if (!_showPageBadge) {
       setState(() => _showPageBadge = true);
     }
@@ -486,7 +530,504 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
 
   void _onGlobalMuteChanged() {
     if (!mounted) return;
+    unawaited(
+      _imageSoundPlayer?.setVolume(VideoMuteController.isMuted ? 0.0 : 1.0) ??
+          Future.value(),
+    );
     setState(() {});
+  }
+
+  bool get _isCurrentMediaImage {
+    final list = _reel.mediaMetaDataList;
+    if (list.isEmpty) return false;
+    final i = _mediaPageIndex.value;
+    if (i < 0 || i >= list.length) return false;
+    return list[i].mediaType == _kPictureType;
+  }
+
+  bool _shouldShowImageSoundMuteControl(int pageIndex) {
+    final mediaList = _reel.mediaMetaDataList;
+    if (mediaList.isEmpty) return false;
+    final index = pageIndex.clamp(0, mediaList.length - 1);
+    if (_isVideoMedia(mediaList[index])) return false;
+    return _reel.sound?.hasId == true;
+  }
+
+  Future<void> _syncImageSoundPlayback() async {
+    if (!mounted) return;
+    if (!widget.isPostVisible || !IsrVideoReelConfig.isHostFeedTabVisible) {
+      await _pauseImageSound();
+      return;
+    }
+    if (_isCurrentMediaImage && (_reel.sound?.hasId ?? false)) {
+      await _startImageSoundIfNeeded();
+    } else {
+      await _pauseImageSound();
+    }
+  }
+
+  Future<void> _resolveImageSoundUrlIfNeeded() async {
+    if (_resolvedImageSoundUrl != null && _resolvedImageSoundUrl!.isNotEmpty) {
+      return;
+    }
+    final sound = _reel.sound;
+    if (sound == null || !sound.hasId) return;
+    final direct = (sound.previewUrl ?? '').trim();
+    if (direct.isNotEmpty) {
+      _resolvedImageSoundUrl = direct;
+      return;
+    }
+    if (_resolvingImageSoundUrl) return;
+    _resolvingImageSoundUrl = true;
+    try {
+      final useCase = IsmInjectionUtils.getUseCase<SoundLibraryUseCase>();
+      final result = await useCase.getSoundTrackById(
+        isLoading: false,
+        soundId: sound.id,
+      );
+      final track = result.data;
+      if (track != null && track.trackUrl.isNotEmpty) {
+        _resolvedImageSoundUrl = track.trackUrl;
+      }
+    } catch (e) {
+      debugPrint('Failed to resolve image sound url for ${sound.id}: $e');
+    } finally {
+      _resolvingImageSoundUrl = false;
+    }
+  }
+
+  Future<void> _startImageSoundIfNeeded() async {
+    if (!mounted) return;
+    if (!_isCurrentMediaImage) return;
+    if (!widget.isPostVisible || !IsrVideoReelConfig.isHostFeedTabVisible) return;
+    final sound = _reel.sound;
+    if (sound == null || !sound.hasId) return;
+
+    if (_resolvedImageSoundUrl == null || _resolvedImageSoundUrl!.isEmpty) {
+      await _resolveImageSoundUrlIfNeeded();
+    }
+    final url = _resolvedImageSoundUrl;
+    if (url == null || url.isEmpty) return;
+    if (!mounted) return;
+
+    final player = _imageSoundPlayer ??= AudioPlayer();
+    try {
+      if (_imageSoundLoadedUrl != url) {
+        await player.setReleaseMode(ReleaseMode.loop);
+        await player.setSource(audioSourceFromUrlOrPath(url));
+        _imageSoundLoadedUrl = url;
+      }
+      await player.setVolume(VideoMuteController.isMuted ? 0.0 : 1.0);
+      if (player.state != PlayerState.playing) {
+        await player.resume();
+      }
+    } catch (e) {
+      debugPrint('Post feed image sound playback failed: $e');
+    }
+  }
+
+  Future<void> _pauseImageSound() async {
+    final player = _imageSoundPlayer;
+    if (player == null) return;
+    try {
+      if (player.state == PlayerState.playing) {
+        await player.pause();
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _disposeImageSound() async {
+    final player = _imageSoundPlayer;
+    _imageSoundPlayer = null;
+    _imageSoundLoadedUrl = null;
+    _resolvedImageSoundUrl = null;
+    if (player == null) return;
+    try {
+      await player.stop();
+      await player.release();
+      await player.dispose();
+    } catch (_) {}
+  }
+
+  bool get _hasPostSound => _reel.sound?.hasId == true;
+
+  bool get _hasPostLocation => _reel.placeDataList?.isListEmptyOrNull == false;
+
+  bool get _hasAlternatingInstagramMeta => _hasPostSound && _hasPostLocation;
+
+  void _startMetaAlternatorIfNeeded() {
+    _metaAlternatorTimer?.cancel();
+    if (!_isInstagramStyle || !_hasAlternatingInstagramMeta) return;
+    _metaAlternatorTimer = Timer.periodic(_kMetaAlternatorInterval, (_) {
+      if (!mounted) return;
+      setState(() => _metaAlternatorShowsSound = !_metaAlternatorShowsSound);
+    });
+  }
+
+  Future<void> _openPostLocation() async {
+    final placeList = _reel.placeDataList ?? [];
+    if (placeList.isEmpty) return;
+    await widget.reelsConfig.onTapPlace?.call(_reel, placeList);
+  }
+
+  Future<void> _openSoundDetails() async {
+    final sound = _reel.sound;
+    if (sound == null || !sound.hasId) return;
+
+    IsrVideoReelConfig.pauseFeedPlayback();
+    try {
+      var track = PostSoundUtil.soundTrackFromPostSound(sound);
+      if (track.trackUrl.trim().isEmpty) {
+        final useCase = IsmInjectionUtils.getUseCase<SoundLibraryUseCase>();
+        final result = await useCase.getSoundTrackById(
+          isLoading: true,
+          soundId: sound.id,
+        );
+        final resolved = result.data;
+        if (resolved == null || resolved.trackUrl.trim().isEmpty) return;
+        track = resolved;
+      }
+      if (!mounted) return;
+      await Navigator.of(context, rootNavigator: true).push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => SoundTrackDetailScreen(
+            track: track,
+            useSoundsApi: SoundLibraryFeatureUtil.useSoundsApi,
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        IsrVideoReelConfig.resumeFeedPlayback();
+      }
+    }
+  }
+
+  void _onTapInstagramHeaderMeta() {
+    if (_hasAlternatingInstagramMeta) {
+      unawaited(_showInstagramMetaActionMenuPopup());
+      return;
+    }
+    if (_hasPostSound) {
+      unawaited(_openSoundDetails());
+      return;
+    }
+    if (_hasPostLocation) {
+      unawaited(_openPostLocation());
+    }
+  }
+
+  Future<void> _showInstagramMetaActionMenuPopup() async {
+    if (_instagramMetaMenuOverlay != null) {
+      _dismissInstagramMetaMenu();
+      return;
+    }
+
+    if (!mounted) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      final anchorContext = _instagramMetaRowKey.currentContext;
+      final renderBox = anchorContext?.findRenderObject() as RenderBox?;
+      if (renderBox == null || !renderBox.hasSize) return;
+
+      final offset = renderBox.localToGlobal(Offset.zero);
+      final size = renderBox.size;
+      final overlay = Overlay.of(context, rootOverlay: true);
+      var barrierActive = false;
+
+      void removeOverlay() {
+        _instagramMetaMenuOverlay?.remove();
+        _instagramMetaMenuOverlay = null;
+        _instagramMetaMenuDismissHandler = null;
+        PostFeedOverlayMenuCoordinator.unregister(removeOverlay);
+      }
+
+      _instagramMetaMenuDismissHandler = removeOverlay;
+      PostFeedOverlayMenuCoordinator.register(removeOverlay);
+
+      _instagramMetaMenuOverlay = OverlayEntry(
+        builder: (overlayContext) => Stack(
+          children: [
+            if (barrierActive)
+              Positioned.fill(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: () => _dismissInstagramMetaMenu(),
+                ),
+              ),
+            Positioned(
+              left: offset.dx,
+              top: offset.dy + size.height + IsrDimens.four,
+              child: _buildInstagramMetaActionMenuPanel(
+                onSelectLocation: () => _dismissInstagramMetaMenu('location'),
+                onSelectSound: () => _dismissInstagramMetaMenu('sound'),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      overlay.insert(_instagramMetaMenuOverlay!);
+
+      // Avoid dismissing on the same pointer event that opened the menu.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _instagramMetaMenuOverlay == null) return;
+        barrierActive = true;
+        _instagramMetaMenuOverlay!.markNeedsBuild();
+      });
+    });
+  }
+
+  Widget _buildInstagramMetaActionMenuPanel({
+    required VoidCallback onSelectLocation,
+    required VoidCallback onSelectSound,
+  }) =>
+      Material(
+        color: _feedUi.backgroundColor,
+        elevation: 8,
+        borderRadius: BorderRadius.circular(IsrDimens.twelve),
+        clipBehavior: Clip.antiAlias,
+        child: SizedBox(
+          width: 240,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_hasPostLocation)
+                _buildInstagramMetaMenuTapItem(
+                  icon: Icons.location_on_outlined,
+                  label: 'View location',
+                  onTap: onSelectLocation,
+                ),
+              if (_hasPostSound)
+                _buildInstagramMetaMenuTapItem(
+                  icon: Icons.music_note_outlined,
+                  label: 'View audio details',
+                  onTap: onSelectSound,
+                ),
+            ],
+          ),
+        ),
+      );
+
+  Widget _buildInstagramMetaMenuTapItem({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) =>
+      Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: IsrDimens.edgeInsetsSymmetric(
+              horizontal: IsrDimens.sixteen,
+              vertical: IsrDimens.twelve,
+            ),
+            child: _buildInstagramMetaMenuRow(icon: icon, label: label),
+          ),
+        ),
+      );
+
+  Widget _buildInstagramMetaMenuRow({
+    required IconData icon,
+    required String label,
+  }) =>
+      Row(
+        children: [
+          Icon(icon, size: IsrDimens.twenty, color: _feedUi.headerTextColor),
+          IsrDimens.boxWidth(IsrDimens.twelve),
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: IsrStyles.primaryText14.copyWith(
+                color: _feedUi.headerTextColor,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      );
+
+  Widget _buildInstagramHeaderMetaRow({required bool onMediaOverlay}) {
+    if (!_hasPostSound && !_hasPostLocation) return const SizedBox.shrink();
+
+    final textColor =
+        onMediaOverlay ? IsrColors.white : _feedUi.secondaryTextColor;
+    final iconColor =
+        onMediaOverlay ? IsrColors.white : _feedUi.secondaryTextColor;
+    final textStyle = IsrStyles.primaryText12.copyWith(
+      color: textColor,
+      fontWeight: onMediaOverlay ? FontWeight.w500 : FontWeight.w400,
+    );
+
+    Widget buildRow({
+      required Key key,
+      required IconData icon,
+      required String label,
+    }) =>
+        Row(
+          key: key,
+          children: [
+            Icon(icon, size: IsrDimens.twelve, color: iconColor),
+            IsrDimens.boxWidth(IsrDimens.four),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: textStyle,
+              ),
+            ),
+          ],
+        );
+
+    final sound = _reel.sound;
+    final locationLabel = _locationLabel ?? _reel.placeDataList?.firstOrNull?.placeName ?? '';
+
+    Widget content;
+    if (_hasAlternatingInstagramMeta) {
+      content = AnimatedSwitcher(
+        duration: const Duration(milliseconds: 350),
+        switchInCurve: Curves.easeOut,
+        switchOutCurve: Curves.easeIn,
+        transitionBuilder: (child, animation) {
+          final offsetAnimation = Tween<Offset>(
+            begin: const Offset(0, 0.35),
+            end: Offset.zero,
+          ).animate(animation);
+          return ClipRect(
+            child: SlideTransition(position: offsetAnimation, child: child),
+          );
+        },
+        layoutBuilder: (currentChild, previousChildren) => Stack(
+          alignment: AlignmentDirectional.centerStart,
+          clipBehavior: Clip.hardEdge,
+          children: [
+            ...previousChildren,
+            if (currentChild != null) currentChild,
+          ],
+        ),
+        child: _metaAlternatorShowsSound
+            ? buildRow(
+                key: const ValueKey('instagram_meta_sound'),
+                icon: Icons.music_note_rounded,
+                label: sound?.displayLabel ?? '',
+              )
+            : buildRow(
+                key: const ValueKey('instagram_meta_location'),
+                icon: Icons.location_on_rounded,
+                label: locationLabel,
+              ),
+      );
+    } else if (_hasPostSound) {
+      content = buildRow(
+        key: const ValueKey('instagram_meta_sound_only'),
+        icon: Icons.music_note_rounded,
+        label: sound?.displayLabel ?? '',
+      );
+    } else {
+      content = buildRow(
+        key: const ValueKey('instagram_meta_location_only'),
+        icon: Icons.location_on_rounded,
+        label: locationLabel,
+      );
+    }
+
+    return TapHandler(
+      key: _instagramMetaRowKey,
+      onTap: _onTapInstagramHeaderMeta,
+      child: Padding(
+        padding: EdgeInsets.only(top: IsrDimens.two),
+        child: SizedBox(
+          height: IsrDimens.sixteen,
+          child: content,
+        ),
+      ),
+    );
+  }
+
+  /// Same mention source as Following/reels overlay; falls back to timeline tags.
+  List<MentionMetaData> get _allPostMentions {
+    if (!_reel.mentions.isListEmptyOrNull) return _reel.mentions;
+    final timeline = _timelinePost;
+    final mentions = timeline?.tags?.mentions;
+    if (mentions.isListEmptyOrNull) return const [];
+    return mentions!
+        .map(
+          (m) => MentionMetaData(
+            userId: m.userId,
+            username: m.username,
+            name: m.name,
+            avatarUrl: m.avatarUrl,
+            tag: m.tag,
+            textPosition: m.textPosition != null
+                ? MentionPosition(
+                    start: m.textPosition?.start,
+                    end: m.textPosition?.end,
+                  )
+                : null,
+            mediaPosition: m.mediaPosition != null
+                ? MediaPosition(
+                    position: m.mediaPosition?.position,
+                    x: m.mediaPosition?.x,
+                    y: m.mediaPosition?.y,
+                  )
+                : null,
+          ),
+        )
+        .toList();
+  }
+
+  bool _mentionMatchesMediaPage(MentionMetaData mention, int pageIndex) {
+    final pos = mention.mediaPosition?.position;
+    if (pos == null) return pageIndex == 0;
+    final posInt = pos.toInt();
+    // APIs may send 0-based or 1-based carousel indices.
+    return posInt == pageIndex || posInt == pageIndex + 1;
+  }
+
+  List<MentionMetaData> _mentionsForMediaPage(int pageIndex) {
+    final all = _allPostMentions;
+    if (all.isEmpty) return const [];
+
+    // Single-image posts: always show the same "N people" affordance as Following.
+    if (_reel.mediaMetaDataList.length <= 1) return all;
+
+    final forPage =
+        all.where((mention) => _mentionMatchesMediaPage(mention, pageIndex)).toList();
+    if (forPage.isNotEmpty) return forPage;
+
+    // Carousel slide has no positioned tags — keep parity with Following.
+    return all;
+  }
+
+  Widget _buildMediaTaggedPeopleControl(int pageIndex) {
+    final mentions = _mentionsForMediaPage(pageIndex);
+    if (mentions.isEmpty) return const SizedBox.shrink();
+
+    // Match Instagram: compact gray pill, white icon — same scale as mute/comment.
+    final iconSize = IsrDimens.sixteen;
+
+    return Positioned(
+      bottom: IsrDimens.twelve,
+      left: IsrDimens.twelve,
+      child: GestureDetector(
+        onTap: () => _onTapMentionData(mentions),
+        child: Container(
+          padding: IsrDimens.edgeInsetsAll(IsrDimens.six),
+          decoration: _postFeedMuteButtonDecoration,
+          child: Icon(
+            Icons.person_rounded,
+            size: iconSize,
+            color: IsrColors.white,
+          ),
+        ),
+      ),
+    );
   }
 
   String? get _locationLabel {
@@ -638,6 +1179,24 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
               ),
             ),
           ),
+        ValueListenableBuilder<int>(
+          valueListenable: _mediaPageIndex,
+          builder: (context, pageIndex, _) {
+            if (!_shouldShowImageSoundMuteControl(pageIndex)) {
+              return const SizedBox.shrink();
+            }
+            return Stack(
+              children: [
+                _buildImageSoundMuteControl(),
+                if (_showMuteIconBriefly) _buildMuteToggleFeedback(),
+              ],
+            );
+          },
+        ),
+        ValueListenableBuilder<int>(
+          valueListenable: _mediaPageIndex,
+          builder: (context, pageIndex, _) => _buildMediaTaggedPeopleControl(pageIndex),
+        ),
       ],
     );
 
@@ -762,6 +1321,10 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
 
   void _toggleVideoMute() {
     VideoMuteController.toggle();
+    unawaited(
+      _imageSoundPlayer?.setVolume(VideoMuteController.isMuted ? 0.0 : 1.0) ??
+          Future.value(),
+    );
     setState(() => _showMuteIconBriefly = true);
     Future.delayed(const Duration(milliseconds: 800), () {
       if (!mounted) return;
@@ -839,13 +1402,13 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     );
   }
 
-  Widget _buildHeaderUserColumn() => TapHandler(
-        onTap: () => widget.onTapUserProfile?.call(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
+  Widget _buildHeaderUserColumn() => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TapHandler(
+            onTap: () => widget.onTapUserProfile?.call(),
+            child: Row(
               children: [
                 Flexible(
                   child: Text(
@@ -865,29 +1428,30 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
                 ],
               ],
             ),
-            if (_feedUi.headerSubtitle?.isNotEmpty == true) ...[
-              IsrDimens.boxHeight(IsrDimens.two),
-              Text(
-                _feedUi.headerSubtitle!,
-                style: IsrStyles.primaryText12.copyWith(
-                  color: _feedUi.secondaryTextColor,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+          ),
+          if (_feedUi.headerSubtitle?.isNotEmpty == true) ...[
+            IsrDimens.boxHeight(IsrDimens.two),
+            Text(
+              _feedUi.headerSubtitle!,
+              style: IsrStyles.primaryText12.copyWith(
+                color: _feedUi.secondaryTextColor,
               ),
-            ] else if (_locationLabel != null && !_isInstagramStyle) ...[
-              IsrDimens.boxHeight(IsrDimens.two),
-              Text(
-                _locationLabel!,
-                style: IsrStyles.primaryText12.copyWith(
-                  color: _feedUi.secondaryTextColor,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ] else if (_locationLabel != null && !_isInstagramStyle) ...[
+            IsrDimens.boxHeight(IsrDimens.two),
+            Text(
+              _locationLabel!,
+              style: IsrStyles.primaryText12.copyWith(
+                color: _feedUi.secondaryTextColor,
               ),
-            ],
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ],
-        ),
+          if (_isInstagramStyle) _buildInstagramHeaderMetaRow(onMediaOverlay: false),
+        ],
       );
 
   Widget _buildHeaderMoreButton() => GestureDetector(
@@ -976,29 +1540,36 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     );
   }
 
-  Widget _buildMediaUserTitle() => TapHandler(
-        onTap: () => widget.onTapUserProfile?.call(),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: Text(
-                _reel.userName ?? '',
-                style: _mediaOverlayNameStyle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+  Widget _buildMediaUserTitle() => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TapHandler(
+            onTap: () => widget.onTapUserProfile?.call(),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(
+                    _reel.userName ?? '',
+                    style: _mediaOverlayNameStyle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (_reel.isVerifiedUser == true) ...[
+                  IsrDimens.boxWidth(IsrDimens.four),
+                  AppImage.svg(
+                    AssetConstants.icVerifiedIcon,
+                    width: IsrDimens.sixteen,
+                    height: IsrDimens.sixteen,
+                  ),
+                ],
+              ],
             ),
-            if (_reel.isVerifiedUser == true) ...[
-              IsrDimens.boxWidth(IsrDimens.four),
-              AppImage.svg(
-                AssetConstants.icVerifiedIcon,
-                width: IsrDimens.sixteen,
-                height: IsrDimens.sixteen,
-              ),
-            ],
-          ],
-        ),
+          ),
+          _buildInstagramHeaderMetaRow(onMediaOverlay: true),
+        ],
       );
 
   Widget _buildMediaMoreButton() => GestureDetector(
@@ -1186,6 +1757,19 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       );
 
   Widget _buildVideoMuteControl() => Positioned(
+        bottom: IsrDimens.twelve,
+        right: IsrDimens.twelve,
+        child: GestureDetector(
+          onTap: _toggleVideoMute,
+          child: Container(
+            padding: IsrDimens.edgeInsetsAll(IsrDimens.six),
+            decoration: _postFeedMuteButtonDecoration,
+            child: _buildPostFeedMuteIcon(size: IsrDimens.sixteen),
+          ),
+        ),
+      );
+
+  Widget _buildImageSoundMuteControl() => Positioned(
         bottom: IsrDimens.twelve,
         right: IsrDimens.twelve,
         child: GestureDetector(
@@ -1707,7 +2291,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     required bool hasLocation,
     required bool hasMentions,
   }) {
-    if (hasHashtags || hasLocation || hasMentions) return true;
+    if (hasHashtags) return true;
+    if (!_isInstagramStyle && (hasLocation || hasMentions)) return true;
     if (caption.isEmpty) return false;
     return !_captionSpanFitsOneLine(
       context: context,
@@ -1835,7 +2420,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     required bool showTimestamp,
     required String? timestampLabel,
   }) {
-    final hasMeta = hasMentions || hasLocation;
+    final hasMeta = !_isInstagramStyle && (hasMentions || hasLocation);
     final parts = description.isNotEmpty ? _splitCaptionAndHashtags(description) : null;
     final usernameSpan = TextSpan(
       text: '${_reel.userName ?? ''} ',
@@ -1914,7 +2499,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     final showInstagramTimestamp =
         _isInstagramStyle && showTimestamp && _postTimestampLabel != null;
     final showInstagramEngagement = _isInstagramStyle &&
-        (description.isNotEmpty || hasMentions || hasLocation || showInstagramTimestamp);
+        (description.isNotEmpty || showInstagramTimestamp);
 
     return Padding(
       padding: IsrDimens.edgeInsetsSymmetric(
