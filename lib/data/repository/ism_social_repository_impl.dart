@@ -209,6 +209,66 @@ class SocialRepositoryImpl implements SocialRepository {
   }
 
   @override
+  Future<CustomResponse<ResponseClass?>> blockUser({
+    required bool isLoading,
+    required String blockedId,
+    required String reason,
+  }) async {
+    try {
+      final header = await _dataSource.getHeader();
+      final response = await _apiService.blockUser(
+        isLoading: isLoading,
+        header: header,
+        blockedId: blockedId,
+        reason: reason,
+      );
+      return _mapper.mapResponseData(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<CustomResponse<BlockedUsersListResponse?>> getBlockedUsers({
+    required bool isLoading,
+    required int page,
+    required int pageSize,
+    String? search,
+  }) async {
+    try {
+      final header = await _dataSource.getHeader();
+      final response = await _apiService.getBlockedUsers(
+        isLoading: isLoading,
+        header: header,
+        page: page,
+        pageSize: pageSize,
+        search: search,
+      );
+      return _socialMapper.mapBlockedUsersList(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<CustomResponse<ResponseClass?>> unblockUser({
+    required bool isLoading,
+    required String blockedId,
+  }) async {
+    try {
+      final header = await _dataSource.getHeader();
+      final response = await _apiService.unblockUser(
+        isLoading: isLoading,
+        header: header,
+        blockedId: blockedId,
+      );
+      return _mapper.mapResponseData(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
   Future<CustomResponse<ResponseClass?>> savePost({
     required bool isLoading,
     required String postId,

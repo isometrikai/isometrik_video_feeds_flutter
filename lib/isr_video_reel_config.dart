@@ -72,6 +72,9 @@ class IsrVideoReelConfig {
   /// Search Screen configuration used by SDK modules.
   static SearchScreenConfig searchScreenConfig = const SearchScreenConfig();
 
+  /// Blocked users screen configuration used by SDK modules.
+  static BlockedUsersConfig blockedUsersConfig = const BlockedUsersConfig();
+
   /// Story configuration used by SDK modules; when null, stories stay hidden.
   static StoryConfig? storyConfig;
 
@@ -212,6 +215,7 @@ class IsrVideoReelConfig {
   /// - [createEditPostConfig]: Create and edit post flows and validation.
   /// - [tagDetailsConfig]: Tagging people and tag UI.
   /// - [searchScreenConfig]: In-SDK search screen layout and options.
+  /// - [blockedUsersConfig]: Blocked users screen layout and options.
   static void setUpConfig({
     SocialConfig? socialConfig,
     PostConfig? postConfig,
@@ -220,6 +224,7 @@ class IsrVideoReelConfig {
     CreateEditPostConfig? createEditPostConfig,
     TagDetailsConfig? tagDetailsConfig,
     SearchScreenConfig? searchScreenConfig,
+    BlockedUsersConfig? blockedUsersConfig,
     StoryConfig? storyConfig,
     IsrFeedCacheConfig? feedCacheConfig,
   }) {
@@ -230,6 +235,8 @@ class IsrVideoReelConfig {
     IsrVideoReelConfig.createEditPostConfig = createEditPostConfig ?? IsrVideoReelConfig.createEditPostConfig;
     IsrVideoReelConfig.tagDetailsConfig = tagDetailsConfig ?? IsrVideoReelConfig.tagDetailsConfig;
     IsrVideoReelConfig.searchScreenConfig = searchScreenConfig ?? IsrVideoReelConfig.searchScreenConfig;
+    IsrVideoReelConfig.blockedUsersConfig =
+        blockedUsersConfig ?? IsrVideoReelConfig.blockedUsersConfig;
     IsrVideoReelConfig.storyConfig = storyConfig;
     IsrVideoReelConfig.feedCacheConfig = feedCacheConfig;
   }
