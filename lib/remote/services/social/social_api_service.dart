@@ -76,6 +76,27 @@ abstract class SocialApiService extends BaseService {
     required String targetId,
   });
 
+  Future<ResponseModel> blockUser({
+    required bool isLoading,
+    required Header header,
+    required String blockedId,
+    required String reason,
+  });
+
+  Future<ResponseModel> getBlockedUsers({
+    required bool isLoading,
+    required Header header,
+    required int page,
+    required int pageSize,
+    String? search,
+  });
+
+  Future<ResponseModel> unblockUser({
+    required bool isLoading,
+    required Header header,
+    required String blockedId,
+  });
+
   Future<ResponseModel> unFollowPost({
     required bool isLoading,
     required String followingId,

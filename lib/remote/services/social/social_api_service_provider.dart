@@ -268,6 +268,67 @@ class SocialApiServiceProvider extends SocialApiService {
       );
 
   @override
+  Future<ResponseModel> blockUser({
+    required bool isLoading,
+    required Header header,
+    required String blockedId,
+    required String reason,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.blocks,
+          NetworkRequestType.post,
+          {
+            'blocked_id': blockedId,
+            'reason': reason,
+          },
+          null,
+          headers,
+          isLoading,
+        ),
+      );
+
+  @override
+  Future<ResponseModel> getBlockedUsers({
+    required bool isLoading,
+    required Header header,
+    required int page,
+    required int pageSize,
+    String? search,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.blocks,
+          NetworkRequestType.get,
+          null,
+          {
+            'page': page.toString(),
+            'page_size': pageSize.toString(),
+            if (search?.trim().isNotEmpty == true) 'search': search,
+          },
+          headers,
+          isLoading,
+        ),
+      );
+
+  @override
+  Future<ResponseModel> unblockUser({
+    required bool isLoading,
+    required Header header,
+    required String blockedId,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.blocks,
+          NetworkRequestType.delete,
+          null,
+          {'blocked_id': blockedId},
+          headers,
+          isLoading,
+        ),
+      );
+
+  @override
   Future<ResponseModel> unFollowPost({
     required bool isLoading,
     required String followingId,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
-import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit_config.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection_config.dart';
 import 'package:ism_video_reel_player/res/constants/asset_constants.dart';
 
@@ -1341,7 +1341,7 @@ class CreateEditPostCallBackConfig {
       onLinkProduct;
 
   /// called when edit is completed and confirm License Agreement, true to proceed and false to halt
-  final Future<bool> Function(List<MediaData> mediaList)?
+  final Future<bool> Function(List<MediaData> mediaList, MediaEditSoundItem? selectedSound)?
       licenseAgreementAfterMediaEdit;
 
   /// When set, upload and create/edit post run without the SDK progress bottom sheet.
@@ -1359,7 +1359,7 @@ class CreateEditPostCallBackConfig {
         onLinkProduct,
     void Function(BackgroundPostOperationUpdate update)? onBackgroundPostOperation,
     void Function(BuildContext context)? onAddSoundFromCamera,
-    Future<bool> Function(List<MediaData> mediaList)?
+    Future<bool> Function(List<MediaData> mediaList, MediaEditSoundItem? selectedSound)?
         licenseAgreementAfterMediaEdit,
   }) =>
       CreateEditPostCallBackConfig(

@@ -153,6 +153,23 @@ class IsrAppNavigator {
     );
   }
 
+  static void navigateToBlockedUsers(
+    BuildContext context, {
+    TransitionType? transitionType,
+  }) {
+    final page = BlocProvider<BlockedUsersCubit>(
+      create: (_) {
+        final cubit = IsmInjectionUtils.getBloc<BlockedUsersCubit>();
+        cubit.loadInitial();
+        return cubit;
+      },
+      child: const BlockedUsersView(),
+    );
+    Navigator.of(context, rootNavigator: true).push(
+      _buildRoute(page: page, transitionType: transitionType),
+    );
+  }
+
   static void navigateToPlaceDetails(
     BuildContext context, {
     required String placeId,
