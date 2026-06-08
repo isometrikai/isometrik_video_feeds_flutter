@@ -212,7 +212,7 @@ class IsrAppNavigator {
       case PostSectionType.following:
         return 'Following';
       case PostSectionType.feeds:
-        return 'Feeds';
+        return 'Feed';
       case PostSectionType.trending:
         return 'Trending';
       case PostSectionType.myPost:

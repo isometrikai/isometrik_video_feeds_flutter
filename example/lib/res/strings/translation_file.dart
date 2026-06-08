@@ -24,7 +24,7 @@ class TranslationFile {
   static const String invalidEmail = 'Invalid Email';
   static const String forYou = 'For You';
   static const String following = 'Following';
-  static const String feeds = 'Feeds';
+  static const String feeds = 'Feed';
   static const String trending = 'Trending';
   static const String create = 'Create';
   static const String createAPost = 'Create a Post';
