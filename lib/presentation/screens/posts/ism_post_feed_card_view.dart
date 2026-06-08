@@ -16,6 +16,7 @@ import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_fe
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_scroll_scope.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
+import 'package:lottie/lottie.dart';
 
 /// Single post card for scrollable post-card feed tabs.
 class IsmPostFeedCardView extends StatefulWidget {
@@ -76,6 +77,15 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   Timer? _metaAlternatorTimer;
   var _metaAlternatorShowsSound = true;
   static const Duration _kMetaAlternatorInterval = Duration(seconds: 3);
+  bool _showLikeAnimation = false;
+  Timer? _likeAnimationTimer;
+  bool _isLiked = false;
+  void Function({
+    ReelsData? reelData,
+    PostSectionType? postSectionType,
+    int? watchDuration,
+    Future<bool> Function()? apiCallBack,
+  })? _onLikeTap;
 
   static const String _kInstagramCaptionMoreSuffix = '... more';
 
@@ -189,6 +199,32 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     if (locked != true) return false;
     final reason = (timeline?.lockReason ?? _reel.lockReason ?? '').toLowerCase();
     return reason == 'paid' || (_reel.isPaid == true);
+  }
+
+  bool get _canDoubleTapToLike =>
+      !_shouldShowPaidLockOverlay && _reel.postSetting?.isLikeButtonVisible == true;
+
+  Future<void> _triggerLikeAnimation() async {
+    _likeAnimationTimer?.cancel();
+    if (_isLiked != true) {
+      _onLikeTap?.call(
+        reelData: _reel,
+        postSectionType: widget.postSectionType,
+        apiCallBack: widget.onPressLikeButton != null
+            ? () => widget.onPressLikeButton!(_reel, _isLiked)
+            : null,
+      );
+    }
+    setState(() {
+      _showLikeAnimation = true;
+    });
+    _likeAnimationTimer = Timer(const Duration(milliseconds: 900), () {
+      if (mounted) {
+        setState(() {
+          _showLikeAnimation = false;
+        });
+      }
+    });
   }
 
   TimeLineData? get _timelinePost =>
@@ -477,6 +513,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     _mediaPageController.dispose();
     _pageBadgeTimer?.cancel();
     _metaAlternatorTimer?.cancel();
+    _likeAnimationTimer?.cancel();
     _dismissInstagramMetaMenu();
     unawaited(_disposeImageSound());
     super.dispose();
@@ -1197,6 +1234,17 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
           valueListenable: _mediaPageIndex,
           builder: (context, pageIndex, _) => _buildMediaTaggedPeopleControl(pageIndex),
         ),
+        if (!_shouldShowPaidLockOverlay && _showLikeAnimation)
+          Center(
+            child: IgnorePointer(
+              child: Lottie.asset(
+                AssetConstants.heartAnimation,
+                width: 250,
+                height: 250,
+                repeat: false,
+              ),
+            ),
+          ),
       ],
     );
 
@@ -1253,16 +1301,20 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   Widget _buildMediaItem(MediaMetaData media, int index) {
     if (media.mediaType == _kPictureType) {
       final imageUrl = media.mediaUrl.trim();
-      return AppImage.network(
-        imageUrl,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-        cacheKey: imageUrl,
-        fadeAnimationEnable: false,
-        placeHolderWidget: (_, __) => PostFeedMediaPlaceholder(
-          baseColor: _feedUi.dividerColor,
-          highlightColor: _feedUi.backgroundColor,
+      return GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onDoubleTap: _canDoubleTapToLike ? _triggerLikeAnimation : null,
+        child: AppImage.network(
+          imageUrl,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
+          cacheKey: imageUrl,
+          fadeAnimationEnable: false,
+          placeHolderWidget: (_, __) => PostFeedMediaPlaceholder(
+            baseColor: _feedUi.dividerColor,
+            highlightColor: _feedUi.backgroundColor,
+          ),
         ),
       );
     }
@@ -1298,6 +1350,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
             onTap: () => _toggleVideoPlayPause(playerKey),
+            onDoubleTap: _canDoubleTapToLike ? _triggerLikeAnimation : null,
           ),
         ),
         _buildVideoPlayPauseOverlay(playerKey),
@@ -1893,6 +1946,10 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     return LikeActionWidget(
       postId: _reel.postId ?? '',
       builder: (isLoading, isLiked, likeCount, onTap) {
+        _isLiked = isLiked;
+        _reel.isLiked = isLiked;
+        _reel.likesCount = likeCount;
+        _onLikeTap = onTap;
         final liked = isLiked == true;
         final count = likeCount > 0 ? likeCount : (_reel.likesCount ?? 0);
         final likeCountLabel =
