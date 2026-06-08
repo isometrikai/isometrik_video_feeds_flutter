@@ -64,6 +64,7 @@ class _FollowActionWidgetState extends State<FollowActionWidget> {
     cubit = context.getOrCreateBloc<IsmSocialActionCubit>();
     userId = widget.userId;
     postId = widget.postId;
+    isLoading = false;
     loggedInUserId = cubit.userId;
     isFollowing = widget.isFollowing ?? false;
     followRequestPending = FollowRelationshipUi.isRelationshipRequested(
@@ -79,6 +80,7 @@ class _FollowActionWidgetState extends State<FollowActionWidget> {
   _updateFollowState() async {
     userId = widget.userId;
     postId = widget.postId;
+    isLoading = false;
     loggedInUserId = cubit.userId;
     isFollowing = widget.isFollowing ?? false;
     followRequestPending = FollowRelationshipUi.isRelationshipRequested(
