@@ -146,6 +146,25 @@ class _PostItemWidgetState extends State<PostItemWidget>
     return true;
   }
 
+  /// Engagement / caption refresh from host-cache detail sync — same media,
+  /// no need to remount [IsmReelsVideoPlayerView] (that clears comments/video).
+  bool _isSoftReelUpdate(ReelsData existing, ReelsData updated) {
+    if (existing.postId != updated.postId) return false;
+    if (existing.mediaMetaDataList.length != updated.mediaMetaDataList.length) {
+      return false;
+    }
+    for (var i = 0; i < existing.mediaMetaDataList.length; i++) {
+      final prev = existing.mediaMetaDataList[i];
+      final next = updated.mediaMetaDataList[i];
+      if (prev.mediaUrl != next.mediaUrl ||
+          prev.mediaType != next.mediaType ||
+          prev.thumbnailUrl != next.thumbnailUrl) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   void _initializeContent() async {
     if (_reelsDataList.isListEmptyOrNull == false) {
       // OPTIMIZATION: Separate critical (thumbnails) from non-critical (videos) loading
@@ -294,7 +313,12 @@ class _PostItemWidgetState extends State<PostItemWidget>
       if (index != -1) {
         final postData =
             getReelData(state.postData!, loggedInUserId: widget.loggedInUserId);
-        _reelsDataList[index] = postData; // replace
+        final existing = _reelsDataList[index];
+        _reelsDataList[index] = postData;
+        if (_isSoftReelUpdate(existing, postData)) {
+          _updateState();
+          return;
+        }
         await updateStateByKey(editedIndex: index);
       }
     }

@@ -247,6 +247,36 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   @override
+  void didUpdateWidget(IsmReelsVideoPlayerView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final next = widget.reelsData;
+    if (next == null) return;
+    if (identical(oldWidget.reelsData, next)) return;
+    if (oldWidget.reelsData?.postId != next.postId) return;
+    _applySoftReelDataUpdate(next);
+  }
+
+  /// Merge engagement/caption/follow changes without restarting video or
+  /// clearing floating comments (host-cache silent detail refresh).
+  void _applySoftReelDataUpdate(ReelsData data) {
+    _reelData = data;
+    _postDescription = data.description ?? '';
+    _mentionedDataList = data.mentions;
+    _taggedDataList = data.tagDataList ?? [];
+    _mentionedMetaDataList = data.mentions
+        .where((mentionData) => mentionData.mediaPosition != null)
+        .toList();
+    _pageMentionMetaDataList = _mentionedMetaDataList
+        .where(
+          (mention) =>
+              mention.mediaPosition?.position ==
+              _currentPageNotifier.value + 1,
+        )
+        .toList();
+    if (mounted) setState(() {});
+  }
+
+  @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     debugPrint(
         'IsmReelsVideoPlayerView: didChangeAppLifecycleState index: ${widget.index}, visibleIndex: ${widget.currentIndex.value}, tabType: ${widget.postSectionType}');
@@ -438,7 +468,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           GetPostCommentsEvent(
             postId: postId!,
             isLoading: false,
-            refreshPostDetailAfterComments: IsrVideoReelConfig.feedCacheConfig != null,
+            // Initial overlay fetch only — detail refresh here remounts the
+            // reel via [IsmEditPostActionListenerState] and wipes comments.
+            refreshPostDetailAfterComments: false,
             onComplete: (comments) {
               if (!mounted) return;
               final sortedComments = comments.toList()
