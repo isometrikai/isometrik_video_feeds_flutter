@@ -83,6 +83,12 @@ abstract final class CreatePostFlowCoordinator {
     final selectedSound = _soundFromEditItems(editedMedia) ?? initialSound;
     final mediaDataList = mediaDataFromEditItems(editedMedia);
 
+    final licenseAgreementAfterMediaEdit = await IsrVideoReelConfig.createEditPostConfig.createEditPostCallBackConfig?.licenseAgreementAfterMediaEdit?.call(mediaDataList, selectedSound);
+
+    if (licenseAgreementAfterMediaEdit == false) {
+      return false;
+    }
+
     final postResult = await _pushPostAttributeStacked(
       context,
       mediaDataList: mediaDataList,
