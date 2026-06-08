@@ -627,6 +627,24 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     return buildPostItem();
   }
 
+  bool _isPostFeedLayout(TabDataModel tabData) =>
+      tabData.feedLayoutType == FeedLayoutType.postFeed;
+
+  /// While comment/share sheets are open: block auto-advance to the next clip
+  /// or post. Post-feed keeps media playing; full-screen reels also pause.
+  void _setOverlayPlaybackGate(
+    TabDataModel tabData, {
+    required bool allowPlayback,
+  }) {
+    final isPostFeed = _isPostFeedLayout(tabData);
+    _socialPostBloc.add(
+      PlayPauseVideoEvent(
+        play: allowPlayback,
+        pausePlayback: !isPostFeed,
+      ),
+    );
+  }
+
   ReelsConfig _getReelsConfig(TabStateModel tabState) {
     final tabData = tabState.tabDataModel;
     return ReelsConfig(
@@ -660,10 +678,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       },
       onTapShare: (reelsData) async {
         if (reelsData.postData is TimeLineData) {
-          _socialPostBloc.add(PlayPauseVideoEvent(play: false));
+          _setOverlayPlaybackGate(tabData, allowPlayback: false);
           final shareRes = await _postConfig.postCallBackConfig?.onShareClicked
               ?.call(reelsData.postData as TimeLineData);
-          _socialPostBloc.add(PlayPauseVideoEvent(play: true));
+          _setOverlayPlaybackGate(tabData, allowPlayback: true);
           if (shareRes != null){
             _socialPostBloc.add(OnShareSuccessEvent(shareSuccessData: shareRes));
           }
@@ -712,7 +730,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         _logProfileEvent(reelsData.userId ?? '', reelsData.userName ?? '');
       },
       onTapComment: (reelsData, totalCommentsCount) async {
-        _socialPostBloc.add(PlayPauseVideoEvent(play: false));
+        _setOverlayPlaybackGate(tabData, allowPlayback: false);
         try {
           var isUserLoggedIn = await _socialActionCubit.isUserLoggedIn;
           if (!isUserLoggedIn) {
@@ -729,7 +747,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                   : null);
           return result;
         } finally {
-          _socialPostBloc.add(PlayPauseVideoEvent(play: true));
+          _setOverlayPlaybackGate(tabData, allowPlayback: true);
         }
       },
       onPressMoreButton: (reelsData) async {

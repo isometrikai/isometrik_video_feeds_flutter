@@ -865,6 +865,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
             if (_isDisposed) return; // Safety check: Widget is disposed
 
             if (state is PlayPauseVideoState) {
+              if (!state.pausePlayback) return;
               if (state.play) {
                 if (widget.visibilityManagedByParent) {
                   if (_effectiveVisible && mounted && _isManuallyPaused) {

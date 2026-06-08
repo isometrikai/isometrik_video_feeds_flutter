@@ -591,7 +591,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             if (!mounted) return; // Safety check: Widget is disposed
 
             if (state is PlayPauseVideoState) {
-              _setPlaybackBlocked(state.play);
+              _setPlaybackBlocked(
+                state.play,
+                pausePlayback: state.pausePlayback,
+              );
+              if (!state.pausePlayback) return;
               if (state.play) {
                 if (imageVisibilityFraction == 1.0) {
                   // Fully visible → play
@@ -1336,7 +1340,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       listenWhen: (previous, current) => current is PlayPauseVideoState,
       listener: (context, state) {
         if (state is PlayPauseVideoState) {
-          _setPlaybackBlocked(state.play);
+          _setPlaybackBlocked(
+            state.play,
+            pausePlayback: state.pausePlayback,
+          );
         }
       },
       child: Stack(
@@ -2648,11 +2655,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     unawaited(_pauseImageSound());
   }
 
-  void _setPlaybackBlocked(bool isPlaying) {
+  void _setPlaybackBlocked(
+    bool isPlaying, {
+    bool pausePlayback = true,
+  }) {
     final shouldBlock = !isPlaying;
     final isCurrentReel = widget.currentIndex.value == widget.index;
     if (_isPlaybackBlocked == shouldBlock) {
       if (!shouldBlock &&
+          pausePlayback &&
           isCurrentReel &&
           IsrVideoReelConfig.isHostFeedTabVisible) {
         _resumePlayback();
@@ -2664,11 +2675,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
     _isPlaybackBlocked = shouldBlock;
     if (_isPlaybackBlocked) {
+      if (!pausePlayback) return;
       _pauseImageProgress();
       final key = _getCurrentVideoPlayerKey();
       VideoPlayerWidget.of(key)?.pause();
       return;
     }
+    if (!pausePlayback) return;
     if (isCurrentReel && IsrVideoReelConfig.isHostFeedTabVisible) {
       _resumePlayback();
       if (_isCurrentMediaImage) {

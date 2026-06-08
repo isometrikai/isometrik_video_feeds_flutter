@@ -1081,7 +1081,12 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
 
   FutureOr<void> _playPauseVideo(
       PlayPauseVideoEvent event, Emitter<SocialPostState> emit) async {
-    emit(PlayPauseVideoState(play: event.play));
+    emit(
+      PlayPauseVideoState(
+        play: event.play,
+        pausePlayback: event.pausePlayback,
+      ),
+    );
   }
 
   FutureOr<void> _onShareSuccess(

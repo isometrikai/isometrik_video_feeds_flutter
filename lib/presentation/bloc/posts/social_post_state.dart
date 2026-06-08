@@ -110,6 +110,13 @@ class PostInsightDetails extends SocialPostState {
 }
 
 class PlayPauseVideoState extends SocialPostState {
-  PlayPauseVideoState({required this.play});
+  PlayPauseVideoState({
+    required this.play,
+    this.pausePlayback = true,
+  });
+
   bool play;
+
+  /// Mirrors [PlayPauseVideoEvent.pausePlayback].
+  final bool pausePlayback;
 }

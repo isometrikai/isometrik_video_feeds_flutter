@@ -326,8 +326,16 @@ class GetSavedSoundsEvent extends SocialPostEvent {
 }
 
 class PlayPauseVideoEvent extends SocialPostEvent {
-  PlayPauseVideoEvent({required this.play});
+  PlayPauseVideoEvent({
+    required this.play,
+    this.pausePlayback = true,
+  });
+
   bool play;
+
+  /// When `false`, only blocks auto-advance to the next clip/post (overlay open)
+  /// without pausing media — used for post-feed comment/share sheets.
+  final bool pausePlayback;
 }
 
 class OnShareSuccessEvent extends SocialPostEvent {
