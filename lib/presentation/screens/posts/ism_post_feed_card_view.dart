@@ -209,7 +209,9 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   }
 
   bool _isCarouselVideoPageActive(int index) =>
-      widget.isPostVisible && _mediaPageIndex.value == index;
+      widget.reelsConfig.isTabVisible() &&
+      widget.isPostVisible &&
+      _mediaPageIndex.value == index;
 
   void _schedulePageBadgeAutoHide() {
     _pageBadgeTimer?.cancel();
@@ -1269,12 +1271,23 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
                       color: _feedUi.headerTextColor,
                     ),
                   ),
-                  TextSpan(
-                    text: description,
-                    style: _textStyleConfig?.descriptionStyle ??
+                  Utility.buildPostDescriptionTextSpan(
+                    description,
+                    _reel.mentions,
+                    _reel.tagDataList ?? const [],
+                    _textStyleConfig?.descriptionStyle ??
                         IsrStyles.primaryText14.copyWith(
                           color: _feedUi.headerTextColor,
                         ),
+                    (mention) {
+                      widget.reelsConfig.onTapMentionTag?.call(
+                        _reel,
+                        [mention],
+                      );
+                    },
+                    mentionStyle: _textStyleConfig?.mentionStyle,
+                    hashtagStyle: _textStyleConfig?.hashtagStyle,
+                    urlStyle: _textStyleConfig?.urlStyle,
                   ),
                 ],
               ),

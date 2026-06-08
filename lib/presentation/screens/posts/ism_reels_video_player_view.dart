@@ -2165,50 +2165,44 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                   return const SizedBox.shrink();
                                 }
 
-                                return GestureDetector(
-                                  onTap: () {
-                                    if (shouldTruncate) {
-                                      _isExpandedDescription.value =
-                                          !_isExpandedDescription.value;
-                                    }
-                                  },
-                                  child: RichText(
-                                    text: TextSpan(
-                                      children: [
-                                        _cachedDescriptionTextSpan!,
-                                        if (shouldTruncate)
-                                          TextSpan(
-                                            text: value
-                                                ? (_descriptionConfig
-                                                        ?.lessText ??
-                                                    ' less')
-                                                : (_descriptionConfig
-                                                        ?.moreText ??
-                                                    ' ... more'),
-                                            style: value
-                                                ? (_descriptionConfig
-                                                        ?.collapseTextStyle ??
-                                                    IsrStyles.white14.copyWith(
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                      color: IsrColors.white
-                                                          .changeOpacity(0.7),
-                                                      shadows: _textShadows,
-                                                    ))
-                                                : (_descriptionConfig
-                                                        ?.expandTextStyle ??
-                                                    IsrStyles.white14.copyWith(
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                      color: IsrColors.white
-                                                          .changeOpacity(0.7),
-                                                      shadows: _textShadows,
-                                                    )),
-                                            // Removed empty TapGestureRecognizer to prevent memory leak
-                                            // Parent GestureDetector handles the tap
-                                          ),
-                                      ],
-                                    ),
+                                return RichText(
+                                  text: TextSpan(
+                                    children: [
+                                      _cachedDescriptionTextSpan!,
+                                      if (shouldTruncate)
+                                        TextSpan(
+                                          text: value
+                                              ? (_descriptionConfig
+                                                      ?.lessText ??
+                                                  ' less')
+                                              : (_descriptionConfig
+                                                      ?.moreText ??
+                                                  ' ... more'),
+                                          style: value
+                                              ? (_descriptionConfig
+                                                      ?.collapseTextStyle ??
+                                                  IsrStyles.white14.copyWith(
+                                                    fontWeight: FontWeight.w700,
+                                                    color: IsrColors.white
+                                                        .changeOpacity(0.7),
+                                                    shadows: _textShadows,
+                                                  ))
+                                              : (_descriptionConfig
+                                                      ?.expandTextStyle ??
+                                                  IsrStyles.white14.copyWith(
+                                                    fontWeight: FontWeight.w700,
+                                                    color: IsrColors.white
+                                                        .changeOpacity(0.7),
+                                                    shadows: _textShadows,
+                                                  )),
+                                          recognizer: TapGestureRecognizer()
+                                            ..onTap = () {
+                                              _isExpandedDescription.value =
+                                                  !_isExpandedDescription
+                                                      .value;
+                                            },
+                                        ),
+                                    ],
                                   ),
                                 );
                               } catch (_) {

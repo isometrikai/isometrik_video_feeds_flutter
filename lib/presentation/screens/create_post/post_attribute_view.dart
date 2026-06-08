@@ -1128,6 +1128,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
           ),
           maxOuterHeight: null,
           wrapFieldInScrollView: false,
+          enableSuggestions: true,
           hintText: _postAttributeConfig?.captionInputConfig?.hintText ??
               '${IsrTranslationFile.addCaption}...',
           maxLines: 4,

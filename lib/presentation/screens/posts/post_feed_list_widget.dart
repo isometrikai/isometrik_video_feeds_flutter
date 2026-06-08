@@ -431,7 +431,8 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
             postSectionType: widget.postSectionType,
             loggedInUserId: widget.loggedInUserId,
             videoCacheManager: widget.videoCacheManager,
-            isPostVisible: isFirstItemByDefault || _activePlayIndex == index,
+            isPostVisible: widget.reelsConfig.isTabVisible() &&
+                (isFirstItemByDefault || _activePlayIndex == index),
             onVisibilityFractionChanged: _onItemVisibilityFractionChanged,
             onPressFollowButton: widget.onPressFollowButton,
             onPressMoreButton: widget.onPressMoreButton,

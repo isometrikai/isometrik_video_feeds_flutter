@@ -97,6 +97,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   Animation<double>? _routeEnterAnimation;
   AnimationStatusListener? _routeEnterStatusListener;
   var _initialPostLoadDispatched = false;
+  var _initialCommentOpenAttempted = false;
   var _tabChangeRequestId = 0;
   final Set<int> _materializedTabIndices = <int>{};
 
@@ -230,6 +231,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         _tearDownRouteEnterListener();
         _reelsBodyReady = true;
         _dispatchInitialPostLoad();
+        _scheduleInitialCommentOpen();
         setState(() {});
       }
 
@@ -278,6 +280,61 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                 tagType: _.tagType,
                 tagValue: _.tagValue))
             .toList()));
+  }
+
+  void _scheduleInitialCommentOpen() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          unawaited(_maybeOpenInitialComment());
+        }
+      });
+    });
+  }
+
+  Future<void> _maybeOpenInitialComment() async {
+    if (_initialCommentOpenAttempted || !_reelsBodyReady) return;
+
+    final tabData = _tabDataModelList[_currentIndex].tabDataModel;
+    final commentId = tabData.initialCommentId?.trim();
+    if (commentId == null || commentId.isEmpty) return;
+
+    final posts = tabData.reelsDataList;
+    if (posts.isEmpty) return;
+
+    _initialCommentOpenAttempted = true;
+    final startIndex = tabData.startingPostIndex ?? 0;
+    final safeIndex = startIndex < 0
+        ? 0
+        : (startIndex >= posts.length ? posts.length - 1 : startIndex);
+    final postData = posts[safeIndex];
+    final postId = (tabData.postId ?? postData.id ?? '').trim();
+    if (postId.isEmpty) return;
+
+    var isUserLoggedIn = await _socialActionCubit.isUserLoggedIn;
+    if (!isUserLoggedIn) {
+      await _socialConfig.socialCallBackConfig?.onLoginInvoked?.call();
+    }
+    isUserLoggedIn = await _socialActionCubit.isUserLoggedIn;
+    if (!isUserLoggedIn || !mounted) return;
+
+    final commentCount = postData.engagementMetrics?.comments?.toInt() ?? 0;
+
+    _socialPostBloc.add(PlayPauseVideoEvent(play: false));
+    try {
+      await _handleCommentAction(
+        postId,
+        commentCount,
+        tabData,
+        postData,
+        highlightCommentId: commentId,
+      );
+    } finally {
+      if (mounted) {
+        _socialPostBloc.add(PlayPauseVideoEvent(play: true));
+      }
+    }
   }
 
   // ✅ Provide BLoCs at the root of build
@@ -611,7 +668,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           loggedInUserId: _loggedInUserId,
           allowImplicitScrolling: widget.allowImplicitScrolling,
           reelsDataList: _mappedReelsForTab(tabState),
-          reelsConfig: _getReelsConfig(tabState),
+          reelsConfig: _getReelsConfig(tabState, index),
           onLoadMore: () async => await _handleLoadMore(tabState),
           onPostFeedLoadMore: () async =>
               await _handlePostFeedLoadMore(tabState),
@@ -641,12 +698,12 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     return buildPostItem();
   }
 
-  ReelsConfig _getReelsConfig(TabStateModel tabState) {
+  ReelsConfig _getReelsConfig(TabStateModel tabState, int tabIndex) {
     final tabData = tabState.tabDataModel;
     return ReelsConfig(
       postConfig: _postConfig,
       isTabVisible: () =>
-          IsrVideoReelConfig.isHostFeedTabVisible && tabState.isVisible,
+          IsrVideoReelConfig.isHostFeedTabVisible && _currentIndex == tabIndex,
       overlayPadding: _postConfig.postUIConfig?.overlayPadding,
       autoMoveNextMedia: _postConfig.autoMoveToNextMedia ||
           _tabConfig.autoMoveToNextPost ||
@@ -1113,8 +1170,13 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     return isFollowingPostEmpty;
   }
 
-  Future<int> _handleCommentAction(String postId, int totalCommentsCount,
-      TabDataModel tabData, TimeLineData? postData) async {
+  Future<int> _handleCommentAction(
+    String postId,
+    int totalCommentsCount,
+    TabDataModel tabData,
+    TimeLineData? postData, {
+    String? highlightCommentId,
+  }) async {
     final completer = Completer<int>();
 
     final result = await Utility.showBottomSheet<int>(
@@ -1128,6 +1190,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         ],
         child: CommentsBottomSheet(
           postId: postId,
+          highlightCommentId: highlightCommentId,
           onTapProfile: (userId) {
             _postConfig.postCallBackConfig?.onProfileClick
                 ?.call(postData, userId, null);

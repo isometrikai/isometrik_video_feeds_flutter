@@ -197,6 +197,7 @@ class IsrAppNavigator {
     PostConfig? postConfig,
     String? userId,
     String? postId,
+    String? initialCommentId,
     Function(String, String, double, double)? onTapPlace,
     TransitionType transitionType = TransitionType.rightToLeft,
   }) async {
@@ -209,6 +210,7 @@ class IsrAppNavigator {
       tagType: tagType,
       userId: userId,
       postId: postId,
+      initialCommentId: initialCommentId,
     );
 
     final page = BlocProvider<SocialPostBloc>(

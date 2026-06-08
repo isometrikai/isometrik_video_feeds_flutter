@@ -40,12 +40,13 @@ class MoreOptionsBottomSheet extends StatefulWidget {
 
 class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
   Color get _backgroundColor =>
-      IsrVideoReelConfig.socialConfig.colorsConfig?.bottomSheetBackgroundColor ??
+      IsrVideoReelConfig
+          .socialConfig.colorsConfig?.bottomSheetBackgroundColor ??
       IsrColors.white;
 
   Color get _textColor => IsrColors.primaryTextColor;
 
-  Color get _secondaryTextColor => IsrColors.secondaryTextColor;
+  // Color get _secondaryTextColor => IsrColors.secondaryTextColor;
 
   Color get _deleteTextColor => IsrColors.error;
 
@@ -138,7 +139,7 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
               Divider(height: 1, color: _dividerColor),
               _buildOption(
                 title: IsrTranslationFile.cancel,
-                textColor: _secondaryTextColor,
+                textColor: _textColor,
                 onTap: () => Navigator.pop(context),
               ),
             ],
