@@ -6,10 +6,10 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:ism_video_reel_player/core/core.dart';
-import 'package:ism_video_reel_player/isr_feed_cache_config.dart';
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/isr_feed_cache_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:talker/talker.dart';
@@ -64,7 +64,8 @@ class IsrVideoReelConfig {
   static CommentConfig commentConfig = const CommentConfig();
 
   /// Create, edit post configuration used by SDK modules.
-  static CreateEditPostConfig createEditPostConfig = const CreateEditPostConfig();
+  static CreateEditPostConfig createEditPostConfig =
+      const CreateEditPostConfig();
 
   /// Tag people configuration used by SDK modules.
   static TagDetailsConfig tagDetailsConfig = const TagDetailsConfig();
@@ -180,7 +181,8 @@ class IsrVideoReelConfig {
     IsrVideoReelConfig.appName = appName;
     if (!isSdkInitialize) {
       WidgetsFlutterBinding.ensureInitialized();
-      await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+      await SystemChrome.setPreferredOrientations(
+          [DeviceOrientation.portraitUp]);
       isrConfigureInjection();
       // ✅ Initialize SDK router
       await _initializeHive();
@@ -194,13 +196,18 @@ class IsrVideoReelConfig {
     IsrVideoReelConfig.additionalHeader = additionalHeader;
     await _storeHeaderValues(defaultHeaders);
     await _saveUserInformation(userInfoClass: userInfoClass);
-    IsrVideoReelConfig.socialConfig = socialConfig ?? IsrVideoReelConfig.socialConfig;
+    IsrVideoReelConfig.socialConfig =
+        socialConfig ?? IsrVideoReelConfig.socialConfig;
     IsrVideoReelConfig.postConfig = postConfig ?? IsrVideoReelConfig.postConfig;
     IsrVideoReelConfig.tabConfig = tabConfig ?? IsrVideoReelConfig.tabConfig;
-    IsrVideoReelConfig.commentConfig = commentConfig ?? IsrVideoReelConfig.commentConfig;
-    IsrVideoReelConfig.createEditPostConfig = createEditPostConfig ?? IsrVideoReelConfig.createEditPostConfig;
-    IsrVideoReelConfig.tagDetailsConfig = tagDetailsConfig ?? IsrVideoReelConfig.tagDetailsConfig;
-    IsrVideoReelConfig.searchScreenConfig = searchScreenConfig ?? IsrVideoReelConfig.searchScreenConfig;
+    IsrVideoReelConfig.commentConfig =
+        commentConfig ?? IsrVideoReelConfig.commentConfig;
+    IsrVideoReelConfig.createEditPostConfig =
+        createEditPostConfig ?? IsrVideoReelConfig.createEditPostConfig;
+    IsrVideoReelConfig.tagDetailsConfig =
+        tagDetailsConfig ?? IsrVideoReelConfig.tagDetailsConfig;
+    IsrVideoReelConfig.searchScreenConfig =
+        searchScreenConfig ?? IsrVideoReelConfig.searchScreenConfig;
     buildContext = getCurrentBuildContext?.call();
     debugPrint('IsrVideoReelConfig: initializeSdk: ${userInfoClass?.userId}');
     socialActionCubit.onSdkReinitializeChanged(
@@ -244,38 +251,45 @@ class IsrVideoReelConfig {
     StoryConfig? storyConfig,
     IsrFeedCacheConfig? feedCacheConfig,
   }) {
-    IsrVideoReelConfig.socialConfig = socialConfig ?? IsrVideoReelConfig.socialConfig;
+    IsrVideoReelConfig.socialConfig =
+        socialConfig ?? IsrVideoReelConfig.socialConfig;
     final resolvedPostConfig = postConfig ?? IsrVideoReelConfig.postConfig;
     IsrVideoReelConfig.postConfig = resolvedPostConfig;
     VideoMuteController.applyDefaultMuted(
       resolvedPostConfig.resolvedPostFeedUIConfig.defaultVideoMuted,
     );
     IsrVideoReelConfig.tabConfig = tabConfig ?? IsrVideoReelConfig.tabConfig;
-    IsrVideoReelConfig.commentConfig = commentConfig ?? IsrVideoReelConfig.commentConfig;
-    IsrVideoReelConfig.createEditPostConfig = createEditPostConfig ?? IsrVideoReelConfig.createEditPostConfig;
-    IsrVideoReelConfig.tagDetailsConfig = tagDetailsConfig ?? IsrVideoReelConfig.tagDetailsConfig;
-    IsrVideoReelConfig.searchScreenConfig = searchScreenConfig ?? IsrVideoReelConfig.searchScreenConfig;
+    IsrVideoReelConfig.commentConfig =
+        commentConfig ?? IsrVideoReelConfig.commentConfig;
+    IsrVideoReelConfig.createEditPostConfig =
+        createEditPostConfig ?? IsrVideoReelConfig.createEditPostConfig;
+    IsrVideoReelConfig.tagDetailsConfig =
+        tagDetailsConfig ?? IsrVideoReelConfig.tagDetailsConfig;
+    IsrVideoReelConfig.searchScreenConfig =
+        searchScreenConfig ?? IsrVideoReelConfig.searchScreenConfig;
     IsrVideoReelConfig.storyConfig = storyConfig;
     IsrVideoReelConfig.feedCacheConfig = feedCacheConfig;
   }
 
   static Future<void> _updateHeaderAddressFromIp() async {
     try {
-      await IsmInjectionUtils.getOtherClass<LocationManager>().updateHeaderLocationFromIP();
+      await IsmInjectionUtils.getOtherClass<LocationManager>()
+          .updateHeaderLocationFromIP();
     } catch (e) {
       debugPrint('Error getting location from IP: $e');
     }
   }
 
   static void _triggerEventLog() {
-    Future.delayed(const Duration(seconds: 5), () { // to send any pending event to backend
+    Future.delayed(const Duration(seconds: 5), () {
+      // to send any pending event to backend
       EventQueueProvider.instance.sendPendingEventsToBackend();
     });
   }
 
   static void registerTalker(Talker talker) {
     IsmInjectionUtils.unRegister<Talker>();
-    IsmInjectionUtils.registerOtherClass<Talker>( () => talker);
+    IsmInjectionUtils.registerOtherClass<Talker>(() => talker);
   }
 
   /// Persists [userInfoClass] (if provided) to local storage.
@@ -303,8 +317,10 @@ class IsrVideoReelConfig {
         userInfoClass?.mobileNumber, SavedValueDataType.string);
     await localStorageManager.saveValue(LocalStorageKeys.dialCode,
         userInfoClass?.dialCode, SavedValueDataType.string);
-    await localStorageManager.saveValue(LocalStorageKeys.isLoggedIn,
-        userInfoClass?.userId?.trim().isNotEmpty == true, SavedValueDataType.bool);
+    await localStorageManager.saveValue(
+        LocalStorageKeys.isLoggedIn,
+        userInfoClass?.userId?.trim().isNotEmpty == true,
+        SavedValueDataType.bool);
   }
 
   /// Triggers background precaching for the given [mediaUrls].

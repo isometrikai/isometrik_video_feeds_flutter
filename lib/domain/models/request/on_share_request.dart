@@ -1,12 +1,12 @@
 class OnShareRequest {
-
   /// Convert JSON → Object
   factory OnShareRequest.fromJson(Map<String, dynamic> json) => OnShareRequest(
-      postId: json['post_id'] as String? ?? '',
-      shareMessage: json['share_message'] as String? ?? '',
-      sharePlatform: SharePlatform.fromValue(json['share_platform'] as String?),
-      shareType: json['share_type'] as String? ?? '',
-    );
+        postId: json['post_id'] as String? ?? '',
+        shareMessage: json['share_message'] as String? ?? '',
+        sharePlatform:
+            SharePlatform.fromValue(json['share_platform'] as String?),
+        shareType: json['share_type'] as String? ?? '',
+      );
 
   const OnShareRequest({
     required this.postId,
@@ -21,11 +21,11 @@ class OnShareRequest {
 
   /// Convert Object → JSON
   Map<String, dynamic> toJson() => {
-      'post_id': postId,
-      'share_message': shareMessage,
-      'share_platform': sharePlatform.value,
-      'share_type': shareType,
-    };
+        'post_id': postId,
+        'share_message': shareMessage,
+        'share_platform': sharePlatform.value,
+        'share_type': shareType,
+      };
 
   /// Useful for modifying specific fields immutably
   OnShareRequest copyWith({
@@ -33,12 +33,13 @@ class OnShareRequest {
     String? shareMessage,
     SharePlatform? sharePlatform,
     String? shareType,
-  }) => OnShareRequest(
-      postId: postId ?? this.postId,
-      shareMessage: shareMessage ?? this.shareMessage,
-      sharePlatform: sharePlatform ?? this.sharePlatform,
-      shareType: shareType ?? this.shareType,
-    );
+  }) =>
+      OnShareRequest(
+        postId: postId ?? this.postId,
+        shareMessage: shareMessage ?? this.shareMessage,
+        sharePlatform: sharePlatform ?? this.sharePlatform,
+        shareType: shareType ?? this.shareType,
+      );
 }
 
 enum SharePlatform {
@@ -66,13 +67,10 @@ enum SharePlatform {
     final normalized = value.toLowerCase();
 
     return SharePlatform.values.firstWhere(
-          (e) => e.aliases.any(
-            (alias) => alias.toLowerCase() == normalized,
+      (e) => e.aliases.any(
+        (alias) => alias.toLowerCase() == normalized,
       ),
       orElse: () => SharePlatform.other,
     );
   }
 }
-
-
-

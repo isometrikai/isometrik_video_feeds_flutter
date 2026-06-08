@@ -143,6 +143,29 @@ class IsrAppNavigator {
     );
   }
 
+  static Future<void> navigateToSoundPostsDetail(
+    BuildContext context, {
+    required PostSoundInfo sound,
+    TimeLineData? sourcePost,
+    TransitionType? transitionType,
+  }) async {
+    final page = BlocProvider<SoundPostsDetailBloc>(
+      create: (_) => IsmInjectionUtils.getBloc<SoundPostsDetailBloc>(),
+      child: SoundPostsDetailScreen(
+        sound: sound,
+        sourcePost: sourcePost,
+      ),
+    );
+
+    await Navigator.of(context, rootNavigator: true).push(
+      _buildRoute(
+        page: page,
+        transitionType: transitionType,
+        routeName: IsrRouteNames.soundPostsDetailView,
+      ),
+    );
+  }
+
   static void navigateTagDetails(
     BuildContext context, {
     required String tagValue,
@@ -174,6 +197,7 @@ class IsrAppNavigator {
     PostConfig? postConfig,
     String? userId,
     String? postId,
+    String? initialCommentId,
     Function(String, String, double, double)? onTapPlace,
     TransitionType transitionType = TransitionType.rightToLeft,
   }) async {
@@ -186,6 +210,7 @@ class IsrAppNavigator {
       tagType: tagType,
       userId: userId,
       postId: postId,
+      initialCommentId: initialCommentId,
     );
 
     final page = BlocProvider<SocialPostBloc>(
@@ -310,6 +335,27 @@ class IsrAppNavigator {
       debugPrint('IsrAppNavigator: StoryCubit missing in context, using DI');
       return IsmInjectionUtils.getBloc<StoryCubit>();
     }
+  }
+
+  /// Edit highlight (own highlights only).
+  static Future<bool> presentEditHighlight(
+    BuildContext context, {
+    required StoryHighlightData highlight,
+    String? fallbackOwnerUserId,
+  }) async {
+    final cubit = _storyCubitFrom(context);
+    if (!await cubit.isHighlightOwnedByCurrentUser(
+      highlight,
+      fallbackOwnerUserId: fallbackOwnerUserId,
+    )) {
+      return false;
+    }
+    return HighlightComposerCoordinator.editHighlight(
+      context: context,
+      cubit: cubit,
+      highlight: highlight,
+      fallbackOwnerUserId: fallbackOwnerUserId,
+    );
   }
 
   /// Full highlight composer: pick stories (optional) → create new OR add to existing.

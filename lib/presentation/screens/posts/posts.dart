@@ -27,6 +27,7 @@ export 'stories/story_create_flow.dart';
 export 'stories/story_strip_widget.dart';
 export 'stories/widgets/story_ring_avatar.dart';
 export 'tag_details/tag_details.dart';
+export 'sound_posts_detail/sound_posts_detail.dart';
 export 'tag_people/tag_people.dart';
 export 'video_cache_manager.dart';
 export 'video_player_factory.dart';

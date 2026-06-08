@@ -16,6 +16,7 @@ class CreateStoryRequest {
     this.tags,
     this.textFormatting,
     this.videoDurationSeconds,
+    this.previewUrl,
   });
 
   final String mediaUrl;
@@ -34,11 +35,15 @@ class CreateStoryRequest {
   final Map<String, dynamic>? tags;
   final Map<String, dynamic>? textFormatting;
   final int? videoDurationSeconds;
+  final String? previewUrl;
 
   Map<String, dynamic> toJson() {
+    final isVideo = mediaType.toLowerCase().contains('video');
+    final apiMediaType = isVideo ? 'video' : 'image';
+
     final media = <String, dynamic>{
       'url': mediaUrl,
-      'media_type': mediaType,
+      'media_type': apiMediaType,
       'position': mediaPosition,
     };
     if (assetId.isStringEmptyOrNull == false) {
@@ -47,13 +52,13 @@ class CreateStoryRequest {
     if (description.isStringEmptyOrNull == false) {
       media['description'] = description;
     }
-    if (mediaType.toLowerCase().contains('video')) {
+    if (isVideo) {
       final durationSec =
           (videoDurationSeconds ?? 1).clamp(1, 86400).toDouble();
       media['duration'] = durationSec;
-      media['video'] = <String, dynamic>{
-        'duration': durationSec,
-      };
+      if (previewUrl.isStringEmptyOrNull == false) {
+        media['preview_url'] = previewUrl;
+      }
     }
 
     final out = <String, dynamic>{

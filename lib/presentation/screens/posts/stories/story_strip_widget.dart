@@ -124,7 +124,7 @@ class _StoryStripWidgetState extends State<StoryStripWidget> {
     final avatar = group.avatarUrl.trim();
     if (avatar.isNotEmpty) return avatar;
     if (group.stories.isNotEmpty) {
-      return group.stories.first.mediaUrl.trim();
+      return group.stories.first.thumbDisplayUrl;
     }
     return '';
   }

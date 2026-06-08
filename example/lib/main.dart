@@ -81,6 +81,7 @@ void _configureReelsSdk() {
     tabConfig: const isr.TabConfig(),
     storyConfig: const isr.StoryConfig(),
     createEditPostConfig: const isr.CreateEditPostConfig(
+      enableBusinessLink: true,
       createEditPostCallBackConfig: isr.CreateEditPostCallBackConfig(
         onBackgroundPostOperation: BackgroundPostUploadDemo.onSdkUpdate,
         // licenseAgreementAfterMediaEdit: (mediaList) async => true,

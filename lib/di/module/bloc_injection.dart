@@ -67,6 +67,11 @@ class BlocInjection {
           IsmInjectionUtils.getUseCase<GetTaggedPostsUseCase>(),
         ));
 
+    IsmInjectionUtils.registerBloc<SoundPostsDetailBloc>(() =>
+        SoundPostsDetailBloc(
+          IsmInjectionUtils.getUseCase<GetPostsBySoundUseCase>(),
+        ));
+
     IsmInjectionUtils.registerBloc<PlaceDetailsBloc>(() => PlaceDetailsBloc(
           IsmInjectionUtils.getUseCase<GetTaggedPostsUseCase>(),
         ));

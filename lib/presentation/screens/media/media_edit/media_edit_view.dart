@@ -311,7 +311,8 @@ class _MediaEditViewState extends State<MediaEditView> {
                     final previewItem =
                         state.mediaEditItems[state.currentIndex];
                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted) unawaited(_syncImageSoundPreview(previewItem));
+                      if (mounted)
+                        unawaited(_syncImageSoundPreview(previewItem));
                     });
                     return Stack(
                       children: [

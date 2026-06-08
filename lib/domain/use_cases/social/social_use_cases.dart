@@ -13,6 +13,7 @@ export 'get_post_insight_use_case.dart';
 export 'get_report_reasons_use_case.dart';
 export 'get_social_products_use_case.dart';
 export 'get_tagged_post_use_case.dart';
+export 'get_posts_by_sound_use_case.dart';
 export 'get_timeline_post_use_case.dart';
 export 'get_trending_post_use_case.dart';
 export 'get_user_post_data_use_case.dart';

@@ -20,6 +20,7 @@ class CommentsBottomSheet extends StatefulWidget {
     this.postData,
     this.tabData,
     this.commentConfig,
+    this.highlightCommentId,
     Key? key,
   }) : super(key: key);
 
@@ -29,6 +30,7 @@ class CommentsBottomSheet extends StatefulWidget {
   final TimeLineData? postData;
   final TabDataModel? tabData;
   final CommentConfig? commentConfig;
+  final String? highlightCommentId;
 
   @override
   State<CommentsBottomSheet> createState() => _CommentsBottomSheetState();
@@ -41,6 +43,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   var _myProfilePic = '';
   var _myDisplayName = '';
   var _isCommentsLoaded = false;
+  var _commentModifiedCount = 0;
   static const _defaultQuickEmojis = [
     '❤️',
     '👏',
@@ -179,6 +182,10 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   final _scrollController = ScrollController();
   final Map<String, GlobalKey> _commentItemKeys = {};
   final Set<String> _expandedCommentKeys = {};
+  var _highlightResolved = false;
+  var _highlightReplySearchIndex = 0;
+  String? _pendingReplyParentId;
+  String? _pendingHighlightTargetId;
   static const int _commentMaxLength = 100;
   CommentConfig get _commentConfig =>
       widget.commentConfig ?? IsrVideoReelConfig.commentConfig;
@@ -271,16 +278,198 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   }
 
   void _scrollToComment(CommentDataItem comment) {
-    final key = _commentItemKeys[
-        '${comment.id}_${comment.comment}_${comment.commentedOn?.millisecondsSinceEpoch}'];
+    final key = _commentItemKeys[_commentKeyId(comment)];
     if (key?.currentContext != null) {
       Scrollable.ensureVisible(
         key!.currentContext!,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
-        alignment: 0.0, // Scroll to top
+        alignment: 0.0,
       );
+      return;
     }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final retryKey = _commentItemKeys[_commentKeyId(comment)];
+      if (retryKey?.currentContext != null && mounted) {
+        Scrollable.ensureVisible(
+          retryKey!.currentContext!,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          alignment: 0.0,
+        );
+      }
+    });
+  }
+
+  String _commentKeyId(CommentDataItem comment) =>
+      '${comment.id}_${comment.comment}_${comment.commentedOn?.millisecondsSinceEpoch}';
+
+  String _normalizeCommentId(String id) {
+    const prefix = 'comment_';
+    final trimmed = id.trim();
+    if (trimmed.startsWith(prefix)) {
+      return trimmed.substring(prefix.length);
+    }
+    return trimmed;
+  }
+
+  bool _commentIdsMatch(String? left, String? right) {
+    if (left == null || right == null) return false;
+    final a = left.trim();
+    final b = right.trim();
+    if (a.isEmpty || b.isEmpty) return false;
+    if (a == b) return true;
+    return _normalizeCommentId(a) == _normalizeCommentId(b);
+  }
+
+  bool _commentIdEquals(String? commentId, String targetId) =>
+      _commentIdsMatch(commentId, targetId);
+
+  bool get _shouldResolveHighlight =>
+      !_highlightResolved &&
+      widget.highlightCommentId?.trim().isNotEmpty == true;
+
+  CommentDataItem? _findCommentInLoadedList(String commentId) {
+    for (final comment in _postCommentList) {
+      if (_commentIdEquals(comment.id, commentId)) {
+        return comment;
+      }
+      final child = comment.childComments
+          ?.where((reply) => _commentIdEquals(reply.id, commentId))
+          .firstOrNull;
+      if (child != null) {
+        return child;
+      }
+    }
+    return null;
+  }
+
+  CommentDataItem? _findParentOfComment(String commentId) {
+    for (final comment in _postCommentList) {
+      if (comment.childComments
+              ?.any((reply) => _commentIdEquals(reply.id, commentId)) ==
+          true) {
+        return comment;
+      }
+    }
+    return null;
+  }
+
+  void _finishHighlightResolution() {
+    _highlightResolved = true;
+    _pendingReplyParentId = null;
+    _pendingHighlightTargetId = null;
+  }
+
+  void _scrollToResolvedComment(CommentDataItem target) {
+    _finishHighlightResolution();
+
+    final parent = _findParentOfComment(target.id ?? '');
+    if (parent != null) {
+      setState(() {
+        parent.showReply = true;
+      });
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _scrollToComment(target);
+      }
+    });
+  }
+
+  void _loadMoreCommentsForHighlight(String targetId) {
+    if (_isLoadingMore || !_hasMoreComments) {
+      _searchRepliesForHighlight(targetId);
+      return;
+    }
+
+    _isLoadingMore = true;
+    _socialBloc.add(
+      GetPostCommentsEvent(
+        isLoading: false,
+        postId: widget.postId,
+        isPagination: true,
+        onComplete: (comments) {
+          if (!mounted) {
+            return;
+          }
+          setState(() {
+            if (comments.isNotEmpty) {
+              _postCommentList.addAll(comments);
+              _hasMoreComments = true;
+            } else {
+              _hasMoreComments = false;
+            }
+            _isLoadingMore = false;
+          });
+          _resolveHighlightComment(targetId);
+        },
+      ),
+    );
+  }
+
+  void _loadRepliesForHighlight(CommentDataItem parent, String targetId) {
+    _pendingReplyParentId = parent.id;
+    _pendingHighlightTargetId = targetId;
+    parent.showReply = true;
+    _socialBloc.add(
+      GetPostCommentReplyEvent(
+        isLoading: true,
+        parentComment: parent,
+        postId: widget.postId,
+      ),
+    );
+  }
+
+  void _searchRepliesForHighlight(String targetId) {
+    while (_highlightReplySearchIndex < _postCommentList.length) {
+      final parent = _postCommentList[_highlightReplySearchIndex++];
+
+      final loadedChild = parent.childComments
+          ?.where((reply) => _commentIdEquals(reply.id, targetId))
+          .firstOrNull;
+      if (loadedChild != null) {
+        _scrollToResolvedComment(loadedChild);
+        return;
+      }
+
+      if ((parent.childCommentCount ?? 0) <= 0) {
+        continue;
+      }
+
+      if (parent.childComments.isEmptyOrNull) {
+        _loadRepliesForHighlight(parent, targetId);
+        return;
+      }
+    }
+
+    _finishHighlightResolution();
+  }
+
+  void _resolveHighlightComment([String? targetIdOverride]) {
+    if (!_shouldResolveHighlight || !mounted) {
+      return;
+    }
+
+    final targetId = (targetIdOverride ?? widget.highlightCommentId)?.trim();
+    if (targetId == null || targetId.isEmpty) {
+      return;
+    }
+
+    final target = _findCommentInLoadedList(targetId);
+    if (target != null) {
+      _scrollToResolvedComment(target);
+      return;
+    }
+
+    if (_hasMoreComments && !_isLoadingMore) {
+      _loadMoreCommentsForHighlight(targetId);
+      return;
+    }
+
+    _searchRepliesForHighlight(targetId);
   }
 
   @override
@@ -290,6 +479,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     _replyFocusNode.dispose();
     _replyController.dispose();
     _commentItemKeys.clear();
+    _commentModifiedCount = 0;
     super.dispose();
   }
 
@@ -298,7 +488,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
         canPop: false,
         onPopInvokedWithResult: (didPop, _) async {
           if (!didPop) {
-            Navigator.pop(context);
+            Navigator.pop(context, _commentModifiedCount);
           }
         },
         child: BlocConsumer<SocialPostBloc, SocialPostState>(
@@ -306,7 +496,11 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
               (currentState is LoadPostCommentState &&
                   currentState.postId == widget.postId) ||
               (currentState is LoadingPostComment &&
-                  currentState.postId == widget.postId),
+                  currentState.postId == widget.postId) ||
+              (currentState is CommentCountModified &&
+                  currentState.postId == widget.postId) ||
+              (currentState is LoadPostCommentRepliesState &&
+                  currentState.parentCommentId == _pendingReplyParentId),
           listener: (context, state) {
             if (state is LoadPostCommentState &&
                 state.postId == widget.postId) {
@@ -322,6 +516,33 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                     ..addAll(
                         state.postCommentsList as Iterable<CommentDataItem>);
                 });
+                _resolveHighlightComment();
+              }
+            } else if (state is CommentCountModified &&
+                state.postId == widget.postId) {
+              _commentModifiedCount =
+                  _commentModifiedCount + state.modifiedValue;
+            } else if (state is LoadPostCommentRepliesState &&
+                state.parentCommentId == _pendingReplyParentId) {
+              final targetId = _pendingHighlightTargetId;
+              if (targetId == null) {
+                return;
+              }
+
+              final parent = _postCommentList
+                  .where((comment) => comment.id == state.parentCommentId)
+                  .firstOrNull;
+              parent?.childComments = state.postCommentRepliesList;
+
+              final child = parent?.childComments
+                  ?.where((reply) => _commentIdEquals(reply.id, targetId))
+                  .firstOrNull;
+              if (child != null) {
+                _scrollToResolvedComment(child);
+              } else {
+                _pendingReplyParentId = null;
+                _pendingHighlightTargetId = targetId;
+                _resolveHighlightComment(targetId);
               }
             }
           },
@@ -391,11 +612,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
       );
 
   GlobalKey? _getOrCreateCommentKey(CommentDataItem comment) {
-    _commentItemKeys[
-            '${comment.id}_${comment.comment}_${comment.commentedOn?.millisecondsSinceEpoch}'] =
-        GlobalKey();
-    return _commentItemKeys[
-        '${comment.id}_${comment.comment}_${comment.commentedOn?.millisecondsSinceEpoch}'];
+    final keyId = _commentKeyId(comment);
+    return _commentItemKeys.putIfAbsent(keyId, GlobalKey.new);
   }
 
   Widget _buildCommentItem(CommentDataItem commentDataItem) {
@@ -701,7 +919,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
               children: [
                 Text(title, style: titleStyle),
                 TapHandler(
-                  onTap: () => context.pop(),
+                  onTap: () => context.pop(_commentModifiedCount),
                   child: AppImage.svg(
                     _headerConfig?.closeIcon ?? AssetConstants.icClose,
                     width: _headerConfig?.closeIconSize,

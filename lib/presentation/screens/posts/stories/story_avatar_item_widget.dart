@@ -31,8 +31,8 @@ class StoryAvatarItemWidget extends StatelessWidget {
     final avatar = group.avatarUrl.trim();
     if (avatar.isNotEmpty) return avatar;
     if (group.stories.isNotEmpty) {
-      final mediaUrl = group.stories.first.mediaUrl.trim();
-      if (mediaUrl.isNotEmpty) return mediaUrl;
+      final thumb = group.stories.first.thumbDisplayUrl;
+      if (thumb.isNotEmpty) return thumb;
     }
     return '';
   }

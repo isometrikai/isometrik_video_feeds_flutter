@@ -13,10 +13,12 @@ class PostCreateEvent extends CreatePostEvent {
   PostCreateEvent({
     this.isForEdit = false,
     required this.createPostRequest,
+    this.selectedSound,
   });
 
   final bool? isForEdit;
   final CreatePostRequest createPostRequest;
+  final MediaEditSoundItem? selectedSound;
 }
 
 class PostAttributeNavigationEvent extends CreatePostEvent {

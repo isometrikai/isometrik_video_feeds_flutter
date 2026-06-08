@@ -9,6 +9,7 @@ import audio_session
 import audioplayers_darwin
 import connectivity_plus
 import device_info_plus
+import ffmpeg_kit_flutter_new
 import file_selector_macos
 import flutter_image_compress_macos
 import flutter_secure_storage_darwin
@@ -18,6 +19,7 @@ import media_kit_libs_macos_video
 import media_kit_video
 import package_info_plus
 import photo_manager
+import pro_image_editor
 import pro_video_editor
 import shared_preferences_foundation
 import sqflite_darwin
@@ -31,6 +33,7 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   AudioplayersDarwinPlugin.register(with: registry.registrar(forPlugin: "AudioplayersDarwinPlugin"))
   ConnectivityPlusPlugin.register(with: registry.registrar(forPlugin: "ConnectivityPlusPlugin"))
   DeviceInfoPlusMacosPlugin.register(with: registry.registrar(forPlugin: "DeviceInfoPlusMacosPlugin"))
+  FFmpegKitFlutterPlugin.register(with: registry.registrar(forPlugin: "FFmpegKitFlutterPlugin"))
   FileSelectorPlugin.register(with: registry.registrar(forPlugin: "FileSelectorPlugin"))
   FlutterImageCompressMacosPlugin.register(with: registry.registrar(forPlugin: "FlutterImageCompressMacosPlugin"))
   FlutterSecureStorageDarwinPlugin.register(with: registry.registrar(forPlugin: "FlutterSecureStorageDarwinPlugin"))

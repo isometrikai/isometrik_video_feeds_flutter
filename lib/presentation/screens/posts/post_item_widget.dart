@@ -268,7 +268,8 @@ class _PostItemWidgetState extends State<PostItemWidget>
             (current is IsmSaveActionListenerState &&
                 widget.postSectionType == PostSectionType.savedPost) ||
             (current is IsmDeletedPostActionListenerState) ||
-            (current is IsmEditPostActionListenerState),
+            (current is IsmEditPostActionListenerState) ||
+            (current is IsmMentionRemovedActionListenerState),
         listener: (context, state) {
           if (state is IsmFollowActionListenerState &&
               (widget.postSectionType == PostSectionType.following ||
@@ -279,6 +280,8 @@ class _PostItemWidgetState extends State<PostItemWidget>
             _updateWithSaveAction(state);
           } else if (state is IsmDeletedPostActionListenerState) {
             _updateWithDeleteAction(state);
+          } else if (state is IsmMentionRemovedActionListenerState) {
+            _updateWithMentionRemovedAction(state);
           } else if (state is IsmEditPostActionListenerState) {
             _updateWithEditAction(state);
           }
@@ -333,6 +336,40 @@ class _PostItemWidgetState extends State<PostItemWidget>
       _reelsDataList.removeWhere((element) => element.postId == state.postId);
       await updateStateByKey();
     }
+  }
+
+  Future<void> _updateWithMentionRemovedAction(
+      IsmMentionRemovedActionListenerState state) async {
+    if (!_reelsDataList.any((e) => e.postId == state.postId)) {
+      return;
+    }
+
+    if (widget.postSectionType == PostSectionType.myTaggedPost) {
+      await _updateWithDeleteAction(
+        IsmDeletedPostActionListenerState(postId: state.postId),
+      );
+      return;
+    }
+
+    final index =
+        _reelsDataList.indexWhere((element) => element.postId == state.postId);
+    if (index == -1) {
+      return;
+    }
+
+    final reel = _reelsDataList[index];
+    reel.mentions = reel.mentions
+        .where((mention) => mention.userId != state.userId)
+        .toList();
+
+    if (reel.postData is TimeLineData) {
+      final post = reel.postData as TimeLineData;
+      post.tags?.mentions
+          ?.removeWhere((mention) => mention.userId == state.userId);
+    }
+
+    _refreshCounts[index] = (_refreshCounts[index] ?? 0) + 1;
+    await updateStateByKey();
   }
 
   Future<void> _updateWithSaveAction(IsmSaveActionListenerState state) async {

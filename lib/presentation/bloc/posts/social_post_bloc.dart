@@ -868,6 +868,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       } else if (event.commentAction == CommentAction.delete &&
           event.commentId?.trim().isNotEmpty == true) {
         if (_isTopLevelCommentAction(event)) {
+          emit(CommentCountModified(postId: event.postId, modifiedValue: -1));
           _socialActionCubit.bumpCommentCount(
             event.postId,
             -1,
@@ -993,6 +994,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     );
 
     if (apiResult.isSuccess) {
+      if (_isTopLevelCommentAction(event)) {
+        emit(CommentCountModified(postId: event.postId, modifiedValue: 1));
+      }
       _sendAnalyticsEvent(
           EventType.commentCreated.value,
           event.commentId ?? '',
@@ -1122,12 +1126,22 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
 
   FutureOr<void> _removeMention(
       RemoveMentionEvent event, Emitter<SocialPostState> emit) async {
+    final userId = await _localDataUseCase.getUserId();
+    if (userId.isEmptyOrNull) {
+      event.onComplete?.call(false);
+      return;
+    }
     final apiResult = await _removeMentionUseCase.executeRemoveMention(
       isLoading: false,
       postId: event.postId,
     );
     event.onComplete?.call(apiResult.isSuccess);
-    if (apiResult.isError) {
+    if (apiResult.isSuccess) {
+      _socialActionCubit.onMentionRemoved(
+        postId: event.postId,
+        userId: userId,
+      );
+    } else if (apiResult.isError) {
       ErrorHandler.showAppError(
           appError: apiResult.error,
           isNeedToShowError: true,

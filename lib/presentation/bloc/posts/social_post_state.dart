@@ -81,6 +81,13 @@ class LoadingPostComment extends SocialPostState {
   final String postId;
 }
 
+class CommentCountModified extends SocialPostState {
+  CommentCountModified({required this.modifiedValue, required this.postId});
+
+  final String postId;
+  final int modifiedValue;
+}
+
 class LoadingPostCommentReplies extends SocialPostState {
   LoadingPostCommentReplies({
     required this.parentCommentId,

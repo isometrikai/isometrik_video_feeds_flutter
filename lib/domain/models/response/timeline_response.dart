@@ -33,7 +33,7 @@ class TimelineResponse {
       TimelineResponse(
         status: json['status'] as String? ?? '',
         message: json['message'] as String? ?? '',
-        statusCode: json['statusCode'] as num? ?? 0,
+        statusCode: (json['status_code'] ?? json['statusCode']) as num? ?? 0,
         code: json['code'] as String? ?? '',
         data: json['data'] == null
             ? []
@@ -91,7 +91,7 @@ class TimelineDataResponse {
       TimelineDataResponse(
         status: json['status'] as String? ?? '',
         message: json['message'] as String? ?? '',
-        statusCode: json['statusCode'] as num? ?? 0,
+        statusCode: (json['status_code'] ?? json['statusCode']) as num? ?? 0,
         code: json['code'] as String? ?? '',
         data: json['data'] == null
             ? null
@@ -177,6 +177,7 @@ class TimeLineData {
     this.scheduledAt,
     this.isLocked,
     this.lockReason,
+    this.allowDownload,
   });
 
   factory TimeLineData.fromMap(Map<String, dynamic> json) => TimeLineData(
@@ -226,6 +227,10 @@ class TimeLineData {
                 .toList(),
         isLocked: json['is_locked'] as bool?,
         lockReason: json['lock_reason'] as String?,
+        allowDownload: Settings._readBool(json['allow_download'],
+                key: 'allow_download') ??
+            Settings._readBool(json['allowDownload'], key: 'allowDownload') ??
+            true,
       );
   dynamic textFormatting;
   String? publishedAt;
@@ -252,6 +257,7 @@ class TimeLineData {
   List<String>? interests;
   bool? isLocked;
   String? lockReason;
+  bool? allowDownload;
 
   Map<String, dynamic> toMap() => {
         'text_formatting': textFormatting,
@@ -285,6 +291,7 @@ class TimeLineData {
         'scheduled_at': scheduledAt,
         'is_locked': isLocked,
         'lock_reason': lockReason,
+        if (allowDownload != null) 'allow_download': allowDownload,
       };
 }
 
@@ -478,6 +485,7 @@ class Settings {
     this.duetEnabled,
     this.stitchEnabled,
     this.saveEnabled,
+    this.downloadEnabled,
     this.isPaid,
     this.priceAmount,
     this.priceCurrency,
@@ -503,6 +511,10 @@ class Settings {
           _readBool(json['stitch_enabled'], key: 'stitch_enabled') ?? false,
       saveEnabled:
           _readBool(json['save_enabled'], key: 'save_enabled') ?? false,
+      downloadEnabled: _readBool(json['download_enabled'],
+              key: 'download_enabled') ??
+          _readBool(json['allow_download'], key: 'allow_download') ??
+          true,
       isPaid: normalizedIsPaid,
       priceAmount: priceAmount,
       priceCurrency: json['price_currency'] as String?,
@@ -519,6 +531,7 @@ class Settings {
   bool? duetEnabled;
   bool? stitchEnabled;
   bool? saveEnabled;
+  bool? downloadEnabled;
   bool? isPaid;
   Object? priceAmount;
   String? priceCurrency;
@@ -560,6 +573,7 @@ class Settings {
         'duet_enabled': duetEnabled,
         'stitch_enabled': stitchEnabled,
         'save_enabled': saveEnabled,
+        if (downloadEnabled != null) 'download_enabled': downloadEnabled,
         if (isPaid != null) 'is_paid': isPaid,
         if (priceAmount != null) 'price_amount': priceAmount,
         if (priceCurrency != null) 'price_currency': priceCurrency,
@@ -570,12 +584,136 @@ class Settings {
       };
 }
 
+/// Tagged link on a post (`tags.links[]`).
+class PostLinkData {
+  const PostLinkData({
+    required this.url,
+    this.title,
+    this.textPosition,
+    this.mediaPosition,
+    this.previewImage,
+    this.linkData,
+  });
+
+  factory PostLinkData.fromJson(Map<String, dynamic> json) {
+    final title = (json['title'] as String? ??
+            json['button_text'] as String? ??
+            '')
+        .trim();
+    return PostLinkData(
+      url: (json['url'] as String? ?? '').trim(),
+      title: title.isEmpty ? null : title,
+      textPosition: json['text_position'] == null
+          ? null
+          : TaggedPosition.fromJson(
+              json['text_position'] as Map<String, dynamic>),
+      mediaPosition: json['media_position'] == null
+          ? null
+          : MediaPosition.fromJson(
+              json['media_position'] as Map<String, dynamic>),
+      previewImage: json['preview_image'] as String?,
+      linkData: json['link_data'] == null
+          ? null
+          : Map<String, dynamic>.from(
+              json['link_data'] as Map<String, dynamic>),
+    );
+  }
+
+  final String url;
+  final String? title;
+  final TaggedPosition? textPosition;
+  final MediaPosition? mediaPosition;
+  final String? previewImage;
+  final Map<String, dynamic>? linkData;
+
+  String get displayTitle =>
+      (title?.trim().isNotEmpty == true) ? title!.trim() : 'Link';
+
+  bool get isValid {
+    if (url.isEmpty || title?.trim().isNotEmpty != true) return false;
+    final withScheme = url.contains('://') ? url : 'https://$url';
+    final uri = Uri.tryParse(withScheme);
+    return uri != null && uri.scheme == 'https';
+  }
+
+  /// Default sticker anchor when the user adds a link without placing it on media.
+  /// API requires each link to include `text_position` and/or `media_position`.
+  static MediaPosition defaultMediaStickerPosition({num mediaIndex = 1}) =>
+      MediaPosition(position: mediaIndex, x: 0, y: 0);
+
+  /// Link payload for create/edit when only URL + title are collected in the SDK UI.
+  factory PostLinkData.forCreate({
+    required String url,
+    required String title,
+    num mediaIndex = 1,
+  }) =>
+      PostLinkData(
+        url: url,
+        title: title,
+        mediaPosition: defaultMediaStickerPosition(mediaIndex: mediaIndex),
+      );
+
+  Map<String, dynamic> toJson() {
+    final payload = <String, dynamic>{
+      'url': _normalizedUrl(),
+      if (title != null && title!.isNotEmpty) 'title': title,
+      if (textPosition != null) 'text_position': textPosition!.toJson(),
+      if (previewImage != null && previewImage!.isNotEmpty)
+        'preview_image': previewImage,
+    };
+    final media = mediaPosition ??
+        (textPosition == null ? defaultMediaStickerPosition() : null);
+    if (media != null) {
+      payload['media_position'] = media.toJson();
+    }
+    if (linkData != null && linkData!.isNotEmpty) {
+      payload['link_data'] = linkData;
+    }
+    return payload;
+  }
+
+  String _normalizedUrl() {
+    final trimmed = url.trim();
+    if (trimmed.contains('://')) return trimmed;
+    return 'https://$trimmed';
+  }
+
+  PostLinkData copyWith({
+    String? url,
+    String? title,
+    TaggedPosition? textPosition,
+    MediaPosition? mediaPosition,
+    String? previewImage,
+    Map<String, dynamic>? linkData,
+  }) =>
+      PostLinkData(
+        url: url ?? this.url,
+        title: title ?? this.title,
+        textPosition: textPosition ?? this.textPosition,
+        mediaPosition: mediaPosition ?? this.mediaPosition,
+        previewImage: previewImage ?? this.previewImage,
+        linkData: linkData ?? this.linkData,
+      );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PostLinkData &&
+          other.url == url &&
+          other.title == title &&
+          other.previewImage == previewImage;
+
+  @override
+  int get hashCode => Object.hash(url, title, previewImage);
+}
+
 class Tags {
   Tags({
     this.mentions,
     this.hashtags,
     this.places,
     this.products,
+    this.links,
   });
 
   factory Tags.fromMap(Map<String, dynamic> json) => Tags(
@@ -603,11 +741,30 @@ class Tags {
             ? []
             : List<SocialProductData>.from((json['products'] as List).map(
                 (x) => SocialProductData.fromJson(x as Map<String, dynamic>))),
+        links: _parsePostLinks(json['links']),
       );
   List<MentionData>? mentions;
   List<MentionData>? hashtags;
   List<TaggedPlace>? places;
   List<SocialProductData>? products;
+  List<PostLinkData>? links;
+
+  static List<PostLinkData>? _parsePostLinks(dynamic raw) {
+    if (raw == null) return [];
+    if (raw is! List || raw.isEmpty) return [];
+    return raw
+        .whereType<Map<String, dynamic>>()
+        .map(PostLinkData.fromJson)
+        .where((link) => link.isValid)
+        .toList();
+  }
+
+  /// Primary CTA link for reels overlay (first valid entry).
+  PostLinkData? get primaryLink {
+    final list = links;
+    if (list == null || list.isEmpty) return null;
+    return list.firstWhere((l) => l.isValid, orElse: () => list.first);
+  }
 
   Map<String, dynamic> toMap() => {
         'mentions': mentions == null
@@ -621,6 +778,9 @@ class Tags {
         'products': products == null
             ? []
             : List<dynamic>.from(products!.map((x) => x.toJson())),
+        'links': links == null
+            ? []
+            : List<dynamic>.from(links!.map((x) => x.toJson())),
       };
 }
 
@@ -1101,6 +1261,7 @@ ReelsData getReelData(TimeLineData postData, {String? loggedInUserId}) =>
       isSavedPost: postData.isSaved,
       isVerifiedUser: false,
       productCount: postData.tags?.products?.length ?? 0,
+      postLink: postData.tags?.primaryLink,
       description: postData.caption ?? '',
       interests: postData.interests,
       sound: postData.sound,

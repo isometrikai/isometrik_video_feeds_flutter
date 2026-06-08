@@ -100,7 +100,17 @@ class StoryViewerActions {
                   height: 1,
                   color: theme.textSecondary.withValues(alpha: 0.2),
                 ),
-              if (inHighlight)
+              if (inHighlight) ...[
+                ListTile(
+                  leading: Icon(Icons.edit_outlined, color: theme.textPrimary),
+                  title: Text(
+                    IsrTranslationFile.editHighlight,
+                    style: IsrStyles.primaryText14.copyWith(
+                      color: theme.textPrimary,
+                    ),
+                  ),
+                  onTap: () => Navigator.of(context).pop('edit_highlight'),
+                ),
                 ListTile(
                   leading: Icon(
                     singleStoryHighlight
@@ -121,8 +131,8 @@ class StoryViewerActions {
                         ? 'delete_highlight'
                         : 'remove_story_from_highlight',
                   ),
-                )
-              else
+                ),
+              ] else
                 ListTile(
                   leading: Icon(Icons.delete_outline, color: theme.destructive),
                   title: Text(
@@ -154,6 +164,31 @@ class StoryViewerActions {
     }
     if (action == 'report_story') {
       await _reportStory(context: context, story: story);
+      return;
+    }
+    if (action == 'edit_highlight') {
+      if (trimmedHighlightId.isEmpty) return;
+      final detail = await storyCubit.getStoryHighlightById(trimmedHighlightId);
+      if (!context.mounted) return;
+      if (detail == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not load highlight')),
+        );
+        return;
+      }
+      if (!await storyCubit.isHighlightOwnedByCurrentUser(detail)) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You can only edit your own highlights.'),
+          ),
+        );
+        return;
+      }
+      await IsrAppNavigator.presentEditHighlight(
+        context,
+        highlight: detail,
+      );
       return;
     }
     if (action == 'delete_highlight') {
@@ -216,5 +251,4 @@ class StoryViewerActions {
       ),
     );
   }
-
 }

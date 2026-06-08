@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -12,11 +14,13 @@ class MentionListBottomSheet extends StatefulWidget {
     required this.postData,
     required this.myUserId,
     required this.onTapUserProfile,
+    this.onMentionRemoved,
   });
 
   final List<MentionMetaData> initialMentionList;
   final TimeLineData postData;
   final String myUserId;
+  final VoidCallback? onMentionRemoved;
   final Function(String userId, bool isFollowing) onTapUserProfile;
 
   @override
@@ -31,6 +35,7 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
   bool _isLoading = true;
   bool _hasMore = true;
   bool _isLoadingMore = false;
+  bool _isRemovingMention = false;
   int _currentPage = 1;
 
   @override
@@ -310,6 +315,49 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
         ),
       );
 
+  Future<void> _removeSelfFromPost() async {
+    if (_isRemovingMention || widget.myUserId.isEmpty) return;
+
+    final confirmed =
+        await Utility.showRemoveMeFromPostConfirmDialog(context);
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _isRemovingMention = true);
+
+    final completer = Completer<bool>();
+    _socialPostBloc.add(
+      RemoveMentionEvent(
+        postId: widget.postData.id ?? '',
+        onComplete: (success) {
+          if (!completer.isCompleted) {
+            completer.complete(success);
+          }
+        },
+      ),
+    );
+
+    final success = await completer.future;
+    if (!mounted) return;
+
+    setState(() => _isRemovingMention = false);
+
+    if (!success) return;
+
+    Utility.showToastMessage(IsrTranslationFile.mentionRemovedSuccessfully);
+    widget.onMentionRemoved?.call();
+
+    final updatedMentionList = widget.initialMentionList
+        .where((m) => m.userId != widget.myUserId)
+        .toList();
+
+    setState(() {
+      _socialUserList.removeWhere((u) => u.id == widget.myUserId);
+    });
+
+    if (!mounted) return;
+    context.pop(updatedMentionList);
+  }
+
   Widget _buildFollowFollowingButton(
     SocialUserData? socialUserData,
     String postId,
@@ -386,7 +434,21 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
                 );
               },
             )
-          : const SizedBox.shrink(),
+          : AppButton(
+              onPress: _isRemovingMention ? null : _removeSelfFromPost,
+              height: 36.responsiveDimension,
+              width: 100.responsiveDimension,
+              borderRadius: 40.responsiveDimension,
+              type: ButtonType.secondary,
+              borderColor: IsrColors.appColor,
+              backgroundColor: IsrColors.white,
+              title: IsrTranslationFile.removeTag,
+              isLoading: _isRemovingMention,
+              textStyle: IsrStyles.primaryText12.copyWith(
+                color: IsrColors.appColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
     );
   }
 }

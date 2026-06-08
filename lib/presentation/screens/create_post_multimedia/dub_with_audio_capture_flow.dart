@@ -11,6 +11,8 @@ import 'package:ism_video_reel_player/presentation/screens/media/media_edit/medi
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart'
     as ms;
 import 'package:ism_video_reel_player/res/res.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
+import 'package:ism_video_reel_player/utils/post_sound_util.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
@@ -116,6 +118,7 @@ class DubWithAudioCaptureCoordinator {
       videoPath: videoPath,
       reelThumbnailUrl: track.thumbnailUrl,
     );
+    final soundItem = PostSoundUtil.soundItemFromTrack(track);
     final editItem = me.MediaEditItem(
       originalPath: videoPath,
       mediaType: me.EditMediaType.video,
@@ -123,6 +126,7 @@ class DubWithAudioCaptureCoordinator {
       height: 0,
       duration: track.duration.inSeconds,
       thumbnailPath: thumb,
+      sound: soundItem,
     );
 
     await Navigator.of(context, rootNavigator: true).push<List<me.MediaEditItem>>(
@@ -130,7 +134,8 @@ class DubWithAudioCaptureCoordinator {
         settings: const RouteSettings(name: IsrRouteNames.mediaEditView),
         builder: (ctx) => me.MediaEditView(
           mediaDataList: [editItem],
-          onComplete: (edited) => _onMediaEditComplete(context, edited),
+          onComplete: (edited) =>
+              _onMediaEditComplete(context, edited, soundItem),
           onDismissEntireFlow: () =>
               IsrAppNavigator.dismissCreatePostFlow(context),
           addMoreMedia: (_) async => null,
@@ -144,8 +149,15 @@ class DubWithAudioCaptureCoordinator {
   static Future<bool> _onMediaEditComplete(
     BuildContext context,
     List<me.MediaEditItem> editedMedia,
+    MediaEditSoundItem fallbackSound,
   ) async {
     if (editedMedia.isEmpty) return false;
+    final selectedSound = editedMedia
+            .map((e) => e.sound)
+            .where((s) => PostSoundUtil.isLibrarySoundId(s?.soundId))
+            .map((s) => s!)
+            .firstOrNull ??
+        fallbackSound;
     final mediaDataList = editedMedia
         .map(
           (editItem) => MediaData(
@@ -177,6 +189,7 @@ class DubWithAudioCaptureCoordinator {
     await IsrAppNavigator.goToCreatePostAttributionView(
       context,
       newMediaDataList: mediaDataList,
+      selectedSound: selectedSound,
       dismissEntireFlowOnClose: true,
     );
     IsrAppNavigator.dismissCreatePostFlow(context);

@@ -71,9 +71,8 @@ class Utility {
     unawaited(
       showDialog<void>(
         routeSettings: const RouteSettings(name: loaderRouteName),
-        barrierColor: loaderType == LoaderType.withBackGround
-            ? null
-            : Colors.transparent,
+        barrierColor:
+            loaderType == LoaderType.withBackGround ? null : Colors.transparent,
         context: ctx,
         useRootNavigator: true,
         barrierDismissible: false,
@@ -660,6 +659,77 @@ class Utility {
   static String cleanText(String inputText) => inputText.replaceAll(
       RegExp(r'[\n\t\r]'), ''); // Removes newline, tab, and carriage return
 
+  /// Confirmation before the current user removes their tag from a post.
+  static Future<bool?> showRemoveMeFromPostConfirmDialog(BuildContext context) {
+    final dialogConfig = IsrVideoReelConfig.socialConfig.dialogConfig;
+    final borderRadius = dialogConfig?.borderRadius ?? 20.0;
+    final backgroundColor = dialogConfig?.backgroundColor ?? Colors.white;
+    final padding = dialogConfig?.padding ??
+        const EdgeInsets.symmetric(horizontal: 24, vertical: 28);
+    final titleStyle = dialogConfig?.titleTextStyle ??
+        IsrStyles.primaryText18.copyWith(fontWeight: FontWeight.w700);
+    final messageStyle = dialogConfig?.messageTextStyle ??
+        IsrStyles.primaryText14.copyWith(color: '4A4A4A'.toColor());
+
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => Dialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(borderRadius),
+        ),
+        backgroundColor: backgroundColor,
+        child: Padding(
+          padding: padding,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                IsrTranslationFile.removeMeFromPostTitle,
+                style: titleStyle,
+              ),
+              16.responsiveVerticalSpace,
+              Text(
+                IsrTranslationFile.removeMeFromPostMessage,
+                style: messageStyle,
+              ),
+              24.responsiveVerticalSpace,
+              AppButton(
+                title: IsrTranslationFile.removeTag,
+                width: double.infinity,
+                type: ButtonType.primary,
+                onPress: () => Navigator.of(dialogContext).pop(true),
+                backgroundColor: IsrVideoReelConfig
+                        .socialConfig.primaryButton?.backgroundColor ??
+                    IsrColors.appColor,
+                textColor:
+                    IsrVideoReelConfig.socialConfig.primaryButton?.textColor ??
+                        IsrColors.white,
+              ),
+              12.responsiveVerticalSpace,
+              AppButton(
+                title: IsrTranslationFile.cancel,
+                width: double.infinity,
+                type: ButtonType.secondary,
+                onPress: () => Navigator.of(dialogContext).pop(false),
+                backgroundColor: IsrVideoReelConfig
+                        .socialConfig.secondaryButton?.backgroundColor ??
+                    'F6F6F6'.toColor(),
+                textColor: IsrVideoReelConfig
+                        .socialConfig.secondaryButton?.textColor ??
+                    Theme.of(dialogContext).primaryColor,
+                borderColor: IsrVideoReelConfig
+                    .socialConfig.secondaryButton?.borderColor,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   ///show custom widget dialog
   static Future<void> showCustomDialog(
       {required BuildContext context, required Widget child}) {
@@ -783,8 +853,60 @@ class Utility {
         decoration: TextDecoration.underline,
       );
 
+  /// Styles valid phone numbers and emails inside plain caption text for post feed display.
+  static List<TextSpan> buildPlainTextSpansWithContactLinks(
+    String text,
+    TextStyle defaultStyle, {
+    TextStyle? linkStyle,
+  }) {
+    if (text.isEmpty) return const [];
+
+    final links = CaptionLinkUtils.findLinks(text);
+    if (links.isEmpty) {
+      return [TextSpan(text: text, style: defaultStyle)];
+    }
+
+    final effectiveLinkStyle = _defaultUrlStyle(defaultStyle, linkStyle);
+    final spans = <TextSpan>[];
+    var cursor = 0;
+
+    for (final link in links) {
+      if (link.start > cursor) {
+        spans.add(
+          TextSpan(
+            text: text.substring(cursor, link.start),
+            style: defaultStyle,
+          ),
+        );
+      }
+
+      spans.add(
+        TextSpan(
+          text: text.substring(link.start, link.end),
+          style: effectiveLinkStyle,
+          recognizer: TapGestureRecognizer()
+            ..onTap = () {
+              unawaited(CaptionLinkUtils.launchLink(link.type, link.value));
+            },
+        ),
+      );
+      cursor = link.end;
+    }
+
+    if (cursor < text.length) {
+      spans.add(
+        TextSpan(
+          text: text.substring(cursor),
+          style: defaultStyle,
+        ),
+      );
+    }
+
+    return spans;
+  }
+
   /// Builds a [TextSpan] for post/reel descriptions with @mentions, #hashtags,
-  /// and clickable URLs.
+  /// clickable URLs, and clickable phone numbers / email addresses.
   static TextSpan buildPostDescriptionTextSpan(
     String description,
     List<MentionMetaData> mentions,
@@ -797,7 +919,7 @@ class Utility {
   }) {
     final spans = <InlineSpan>[];
     final pattern = RegExp(
-      r'(@[a-zA-Z0-9_]+)|(#[a-zA-Z0-9_]+)|(https?:\/\/\S+|www\.\S+)',
+      r'((?<![a-zA-Z0-9._%+-])@[a-zA-Z0-9_]+)|(#[a-zA-Z0-9_]+)|(https?:\/\/\S+|www\.\S+)',
       caseSensitive: false,
     );
     final matches = pattern.allMatches(description).toList();
@@ -811,11 +933,13 @@ class Utility {
 
       if (lastIndex < start) {
         final textBefore = description.substring(lastIndex, start);
-        if (textBefore.trim().isNotEmpty) {
-          spans.add(TextSpan(text: textBefore, style: defaultStyle));
-        } else if (textBefore.isNotEmpty) {
-          spans.add(TextSpan(text: textBefore, style: defaultStyle));
-        }
+        spans.addAll(
+          buildPlainTextSpansWithContactLinks(
+            textBefore,
+            defaultStyle,
+            linkStyle: urlStyle,
+          ),
+        );
       }
 
       if (matchedText.startsWith('@') && mentions.isNotEmpty) {
@@ -835,7 +959,13 @@ class Utility {
               ..onTap = () => onMentionTap(mention),
           ));
         } else if (matchedText.isNotEmpty) {
-          spans.add(TextSpan(text: matchedText, style: defaultStyle));
+          spans.addAll(
+            buildPlainTextSpansWithContactLinks(
+              matchedText,
+              defaultStyle,
+              linkStyle: urlStyle,
+            ),
+          );
         }
       } else if (matchedText.startsWith('#')) {
         final matchingHashtags =
@@ -862,10 +992,13 @@ class Utility {
             ..onTap = () => launchExternalUrl(urlToLaunch),
         ));
       } else if (matchedText.isNotEmpty) {
-        spans.add(TextSpan(
-          text: matchedText,
-          style: defaultStyle.copyWith(fontWeight: FontWeight.w400),
-        ));
+        spans.addAll(
+          buildPlainTextSpansWithContactLinks(
+            matchedText,
+            defaultStyle,
+            linkStyle: urlStyle,
+          ),
+        );
       }
 
       lastIndex = end;
@@ -873,9 +1006,13 @@ class Utility {
 
     if (lastIndex < description.length) {
       final remainingText = description.substring(lastIndex);
-      if (remainingText.trim().isNotEmpty) {
-        spans.add(TextSpan(text: remainingText, style: defaultStyle));
-      }
+      spans.addAll(
+        buildPlainTextSpansWithContactLinks(
+          remainingText,
+          defaultStyle,
+          linkStyle: urlStyle,
+        ),
+      );
     }
 
     return TextSpan(children: spans, style: defaultStyle);
@@ -988,10 +1125,10 @@ class Utility {
     for (final position in taggedPositions) {
       // Add normal text before the tagged position
       if (position.start > currentIndex) {
-        spans.add(
-          TextSpan(
-            text: displayText.substring(currentIndex, position.start),
-            style: baseStyle,
+        spans.addAll(
+          buildPlainTextSpansWithContactLinks(
+            displayText.substring(currentIndex, position.start),
+            baseStyle,
           ),
         );
       }
@@ -1056,10 +1193,10 @@ class Utility {
 
     // Add remaining text
     if (currentIndex < displayText.length) {
-      spans.add(
-        TextSpan(
-          text: displayText.substring(currentIndex),
-          style: baseStyle,
+      spans.addAll(
+        buildPlainTextSpansWithContactLinks(
+          displayText.substring(currentIndex),
+          baseStyle,
         ),
       );
     }
@@ -1217,8 +1354,8 @@ class Utility {
       backgroundColor: backgroundColor ??
           (isDarkBG
               ? Theme.of(contextToUse).primaryColor
-              : (IsrVideoReelConfig.socialConfig.colorsConfig
-                      ?.bottomSheetBackgroundColor ??
+              : (IsrVideoReelConfig
+                      .socialConfig.colorsConfig?.bottomSheetBackgroundColor ??
                   IsrColors.white)),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(

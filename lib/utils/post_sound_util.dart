@@ -9,6 +9,16 @@ import 'package:ism_video_reel_player/utils/utility.dart';
 
 /// Maps camera / library sounds into post + media-edit models and muxes video.
 abstract final class PostSoundUtil {
+  static const int photoSoundClipMaxSeconds = 60;
+
+  /// Library sounds from `/api/v1/sounds/*` — not temporary `dub_*` ids.
+  static bool isLibrarySoundId(String? soundId) {
+    final id = soundId?.trim() ?? '';
+    if (id.isEmpty) return false;
+    if (id.startsWith('dub_')) return false;
+    return true;
+  }
+
   static MediaEditSoundItem? soundItemFromCamera(CameraBloc cameraBloc) {
     if (!cameraBloc.hasMusicSelected) return null;
     final id = cameraBloc.selectedMusicId;
@@ -82,9 +92,9 @@ abstract final class PostSoundUtil {
   static Map<String, dynamic> buildSoundSnapshot({
     required MediaEditSoundItem sound,
     int? videoDurationSeconds,
+    int maxClipSec = 60,
   }) {
     const defaultSegmentSec = 30;
-    const maxClipSec = 60;
 
     final meta = sound.soundMetadata ?? {};
     final soundSec = int.tryParse(sound.soundDuration ?? '') ??
@@ -126,8 +136,47 @@ abstract final class PostSoundUtil {
       snapshot['original_status'] = originalStatus.trim();
     }
 
+    final title = (meta['title'] as String?)?.trim();
+    if (title != null && title.isNotEmpty) {
+      snapshot['title'] = title;
+    }
+    final artist = sound.soundArtist?.trim();
+    if (artist != null && artist.isNotEmpty) {
+      snapshot['artist'] = artist;
+    }
+
     return snapshot;
   }
+
+  /// Merges `sound_id` + `sound_snapshot` into POST `/api/v1/posts` body.
+  static void mergeSoundIntoCreatePostJson({
+    required Map<String, dynamic> body,
+    required MediaEditSoundItem? sound,
+    required List<MediaData> media,
+  }) {
+    if (sound == null || !isLibrarySoundId(sound.soundId)) return;
+
+    final hasVideo = media.any((m) => _isVideoMedia(m));
+    final isImageOnly = media.isNotEmpty && !hasVideo;
+    final videoDuration = media
+        .where(_isVideoMedia)
+        .map((m) => m.duration?.toInt())
+        .whereType<int>()
+        .firstOrNull;
+
+    body['sound_id'] = sound.soundId!.trim();
+    body['sound_snapshot'] = buildSoundSnapshot(
+      sound: sound,
+      videoDurationSeconds: isImageOnly
+          ? photoSoundClipMaxSeconds
+          : videoDuration,
+      maxClipSec: isImageOnly ? photoSoundClipMaxSeconds : 60,
+    );
+  }
+
+  static bool _isVideoMedia(MediaData m) =>
+      m.mediaType == 'video' ||
+      m.postType?.toString().toLowerCase().contains('video') == true;
 
   static int? _readInt(dynamic value) {
     if (value == null) return null;

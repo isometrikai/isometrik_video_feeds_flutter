@@ -45,12 +45,15 @@ class IsmPostFeedCardView extends StatefulWidget {
   final bool isPostVisible;
   final VideoCacheManager? videoCacheManager;
   final VoidCallback? onPressMoreButton;
-  final Future<bool> Function(ReelsData reelsData, bool currentLiked)? onPressLikeButton;
-  final Future<bool> Function(ReelsData reelsData, bool currentSaved)? onPressSaveButton;
+  final Future<bool> Function(ReelsData reelsData, bool currentLiked)?
+      onPressLikeButton;
+  final Future<bool> Function(ReelsData reelsData, bool currentSaved)?
+      onPressSaveButton;
   final Future<int> Function()? onTapComment;
   final Future<void> Function()? onTapShare;
   final Future<void> Function()? onTapUserProfile;
-  final Future<bool> Function(ReelsData reelsData, bool currentFollow)? onPressFollowButton;
+  final Future<bool> Function(ReelsData reelsData, bool currentFollow)?
+      onPressFollowButton;
   final String? loggedInUserId;
   final String? logIndex;
 
@@ -101,14 +104,16 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
 
   PostFeedUIConfig get _feedUi => _postConfig.resolvedPostFeedUIConfig;
 
-  bool get _isInstagramStyle => _feedUi.cardStyle == PostFeedCardStyle.instagram;
+  bool get _isInstagramStyle =>
+      _feedUi.cardStyle == PostFeedCardStyle.instagram;
 
   bool get _showActionCounts => _feedUi.showActionCounts || _isInstagramStyle;
 
   static const Color _instagramLikeColor = Color(0xFFED4956);
 
   double get _postFeedActionIconSize =>
-      _actionIconConfig?.iconSize ?? (_isInstagramStyle ? IsrDimens.twentyFour : IsrDimens.twenty);
+      _actionIconConfig?.iconSize ??
+      (_isInstagramStyle ? IsrDimens.twentyFour : IsrDimens.twenty);
 
   bool _isVideoMedia(MediaMetaData media) => media.mediaType != _kPictureType;
 
@@ -126,7 +131,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     return (_feedUi.actionIconGapCompact + _feedUi.actionIconGapWithCount) / 2;
   }
 
-  Widget _buildActionIconRow(List<({Widget widget, bool showsCount})> segments) {
+  Widget _buildActionIconRow(
+      List<({Widget widget, bool showsCount})> segments) {
     if (segments.isEmpty) return const SizedBox.shrink();
 
     final children = <Widget>[segments.first.widget];
@@ -469,7 +475,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     );
   }
 
-  VideoCacheManager get _videoCacheManager => widget.videoCacheManager ?? VideoCacheManager();
+  VideoCacheManager get _videoCacheManager =>
+      widget.videoCacheManager ?? VideoCacheManager();
 
   @override
   void initState() {
@@ -541,6 +548,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       await _openSoundDetails();
     }
   }
+
   void _onMediaPageChanged(int index) {
     if (_mediaPageIndex.value == index) return;
     _mediaPageIndex.value = index;
@@ -559,7 +567,9 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   }
 
   bool _isCarouselVideoPageActive(int index) =>
-      widget.isPostVisible && _mediaPageIndex.value == index;
+      widget.reelsConfig.isTabVisible() &&
+      widget.isPostVisible &&
+      _mediaPageIndex.value == index;
 
   void _schedulePageBadgeAutoHide() {
     _pageBadgeTimer?.cancel();
@@ -568,7 +578,6 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       setState(() => _showPageBadge = false);
     });
   }
-
 
   void _onGlobalMuteChanged() {
     if (!mounted) return;
@@ -1087,7 +1096,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   }
 
   TextStyle get _mediaOverlayNameStyle =>
-      _textStyleConfig?.userNameStyle ?? IsrStyles.white14.copyWith(fontWeight: FontWeight.w600);
+      _textStyleConfig?.userNameStyle ??
+      IsrStyles.white14.copyWith(fontWeight: FontWeight.w600);
 
   TextStyle get _headerUserNameStyle =>
       _textStyleConfig?.userNameStyle ??
@@ -1100,7 +1110,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     final raw = _reel.createOn?.trim();
     if (raw.isStringEmptyOrNull == true) return null;
     try {
-      final relative = Utility.formatPublishedTimeAgo(DateTime.parse(raw!).toLocal());
+      final relative =
+          Utility.formatPublishedTimeAgo(DateTime.parse(raw!).toLocal());
       return relative.isEmpty ? null : relative;
     } catch (_) {
       return raw;
@@ -1133,7 +1144,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
               },
             ),
           _buildMediaSection(context),
-          if (showDotsBelowMedia) _buildCarouselDotsBelowMedia(context, mediaCount),
+          if (showDotsBelowMedia)
+            _buildCarouselDotsBelowMedia(context, mediaCount),
           _buildActionsSection(context),
           _buildEngagementSection(context),
         ],
@@ -1214,7 +1226,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
                     ),
                     child: Text(
                       '${page + 1}/${mediaList.length}',
-                      style: _textStyleConfig?.mediaCounterStyle ?? IsrStyles.white12,
+                      style: _textStyleConfig?.mediaCounterStyle ??
+                          IsrStyles.white12,
                     ),
                   ),
                 ),
@@ -1324,8 +1337,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       );
     }
 
-    final playerKey =
-        _videoPlayerKeys.putIfAbsent(index, () => GlobalKey(debugLabel: 'post_feed_video_$index'));
+    final playerKey = _videoPlayerKeys.putIfAbsent(
+        index, () => GlobalKey(debugLabel: 'post_feed_video_$index'));
 
     final video = ClipRect(
       child: VideoPlayerWidget(
@@ -1392,8 +1405,9 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
 
   Widget _buildVideoPlayPauseOverlay(GlobalKey playerKey) {
     final playerState = VideoPlayerWidget.of(playerKey);
-    final showPauseOverlay =
-        playerState != null && playerState.mounted && playerState.isManuallyPaused;
+    final showPauseOverlay = playerState != null &&
+        playerState.mounted &&
+        playerState.isManuallyPaused;
 
     if (!showPauseOverlay) {
       return const SizedBox.shrink();
@@ -1452,8 +1466,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
           width: size,
           height: size,
           isProfileImage: true,
-          textColor:
-              _userProfileConfig?.profileImagePlaceholderColor ?? _feedUi.secondaryTextColor,
+          textColor: _userProfileConfig?.profileImagePlaceholderColor ??
+              _feedUi.secondaryTextColor,
           name: '${_reel.firstName ?? ''} ${_reel.lastName ?? ''}',
         ),
       ),
@@ -1522,7 +1536,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         ),
       );
 
-  Widget _buildCarouselDotsBelowMedia(BuildContext context, int mediaCount) => Padding(
+  Widget _buildCarouselDotsBelowMedia(BuildContext context, int mediaCount) =>
+      Padding(
         padding: IsrDimens.edgeInsetsSymmetric(
           vertical: _isInstagramStyle ? IsrDimens.six : IsrDimens.eight,
         ),
@@ -1590,7 +1605,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
             width: size,
             height: size,
             isProfileImage: true,
-            textColor: _userProfileConfig?.profileImagePlaceholderColor ?? IsrColors.white,
+            textColor: _userProfileConfig?.profileImagePlaceholderColor ??
+                IsrColors.white,
             name: '${_reel.firstName ?? ''} ${_reel.lastName ?? ''}',
           ),
         ),
@@ -1641,8 +1657,9 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       );
 
   Widget _buildFollowButton({required bool instagramChipStyle}) {
-    final timelineUser =
-        _reel.postData is TimeLineData ? (_reel.postData as TimeLineData).user : null;
+    final timelineUser = _reel.postData is TimeLineData
+        ? (_reel.postData as TimeLineData).user
+        : null;
     return FollowActionWidget(
       postId: _reel.postId ?? '',
       userId: _reel.userId ?? '',
@@ -1654,8 +1671,10 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
 
         if (isLoading) {
           return SizedBox(
-            width: _followButtonConfig?.followButtonMinWidth ?? IsrDimens.fiftySix,
-            height: _followButtonConfig?.followButtonHeight ?? IsrDimens.twentyEight,
+            width:
+                _followButtonConfig?.followButtonMinWidth ?? IsrDimens.fiftySix,
+            height: _followButtonConfig?.followButtonHeight ??
+                IsrDimens.twentyEight,
             child: Center(
               child: SizedBox(
                 width: IsrDimens.sixteen,
@@ -1663,7 +1682,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    _followButtonConfig?.loadingIndicatorColor ?? IsrColors.white,
+                    _followButtonConfig?.loadingIndicatorColor ??
+                        IsrColors.white,
                   ),
                 ),
               ),
@@ -1671,7 +1691,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
           );
         }
 
-        if (followRequestPending && _reel.postSetting?.isUnFollowButtonVisible == true) {
+        if (followRequestPending &&
+            _reel.postSetting?.isUnFollowButtonVisible == true) {
           return _buildFollowChip(
             label: IsrTranslationFile.requested,
             filled: false,
@@ -1697,7 +1718,9 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
             followStatus: timelineUser?.followStatus,
           );
           return _buildFollowChip(
-            label: showRequest ? IsrTranslationFile.request : IsrTranslationFile.follow,
+            label: showRequest
+                ? IsrTranslationFile.request
+                : IsrTranslationFile.follow,
             filled: true,
             instagramChipStyle: instagramChipStyle,
             onTap: () => onTap(
@@ -1730,7 +1753,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     required VoidCallback onTap,
     required bool instagramChipStyle,
   }) {
-    final height = _followButtonConfig?.followButtonHeight ?? IsrDimens.twentyEight;
+    final height =
+        _followButtonConfig?.followButtonHeight ?? IsrDimens.twentyEight;
     final isDarkBackground = _feedUi.backgroundColor.computeLuminance() < 0.5;
     final instagramFilledDecoration = BoxDecoration(
       color: isDarkBackground
@@ -1765,13 +1789,15 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
               : (_followButtonConfig?.followingButtonDecoration ??
                   BoxDecoration(
                     borderRadius: BorderRadius.circular(IsrDimens.eight),
-                    border: Border.all(color: IsrColors.white, width: IsrDimens.one),
+                    border: Border.all(
+                        color: IsrColors.white, width: IsrDimens.one),
                   ))),
       child: MaterialButton(
         onPressed: onTap,
         elevation: 0,
         highlightElevation: 0,
-        minWidth: _followButtonConfig?.followButtonMinWidth ?? IsrDimens.fiftySix,
+        minWidth:
+            _followButtonConfig?.followButtonMinWidth ?? IsrDimens.fiftySix,
         height: height,
         padding: _followButtonConfig?.followButtonPadding ??
             IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twelve),
@@ -1957,8 +1983,9 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         _onLikeTap = onTap;
         final liked = isLiked == true;
         final count = likeCount > 0 ? likeCount : (_reel.likesCount ?? 0);
-        final likeCountLabel =
-            _showActionCounts && count > 0 ? Utility.formatEngagementCount(count) : null;
+        final likeCountLabel = _showActionCounts && count > 0
+            ? Utility.formatEngagementCount(count)
+            : null;
 
         final segments = <({Widget widget, bool showsCount})>[
           (
@@ -1966,7 +1993,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
               icon: liked
                   ? (_actionIconConfig?.likeIconSelected ??
                       AssetConstants.icPostLikeIconSelected)
-                  : (_actionIconConfig?.likeIconUnselected ?? AssetConstants.icPostLikeIcon),
+                  : (_actionIconConfig?.likeIconUnselected ??
+                      AssetConstants.icPostLikeIcon),
               applyThemeColor: !liked,
               iconColor: liked ? _instagramLikeColor : _feedUi.actionIconColor,
               countLabel: likeCountLabel,
@@ -2028,7 +2056,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   Widget _buildLeftActionIconsWithoutLike() =>
       _buildActionIconRow(_commentAndShareSegments());
 
-  Widget _buildCarouselDots(BuildContext context, int mediaCount) => ValueListenableBuilder<int>(
+  Widget _buildCarouselDots(BuildContext context, int mediaCount) =>
+      ValueListenableBuilder<int>(
         valueListenable: _mediaPageIndex,
         builder: (context, page, _) => Row(
           mainAxisSize: MainAxisSize.min,
@@ -2038,7 +2067,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
             (i) => GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: () {
-                if (!_mediaPageController.hasClients || _mediaPageIndex.value == i) {
+                if (!_mediaPageController.hasClients ||
+                    _mediaPageIndex.value == i) {
                   return;
                 }
                 _mediaPageController.animateToPage(
@@ -2050,7 +2080,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
               child: Container(
                 width: _isInstagramStyle ? IsrDimens.five : IsrDimens.six,
                 height: _isInstagramStyle ? IsrDimens.five : IsrDimens.six,
-                margin: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.two),
+                margin:
+                    IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.two),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: i == page
@@ -2089,7 +2120,9 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
                   width: _postFeedActionIconSize,
                   height: _postFeedActionIconSize,
                   fit: BoxFit.contain,
-                  color: applyThemeColor ? (iconColor ?? _feedUi.actionIconColor) : null,
+                  color: applyThemeColor
+                      ? (iconColor ?? _feedUi.actionIconColor)
+                      : null,
                 ),
               ),
               if (countLabel != null) ...[
@@ -2560,7 +2593,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     final description = _reel.description?.trim() ?? '';
     final showLikesLine = likes > 0 && !_showActionCounts;
     final showTimestamp =
-        (_feedUi.showPostTimestamp || _isInstagramStyle) && _postTimestampLabel != null;
+        (_feedUi.showPostTimestamp || _isInstagramStyle) &&
+            _postTimestampLabel != null;
     final showLegacyLocation = _locationLabel != null && !_isInstagramStyle;
     final hasMentions = _reel.mentions.isListEmptyOrNull == false;
     final hasLocation = _reel.placeDataList?.isListEmptyOrNull == false;
@@ -2598,7 +2632,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
             ),
           ],
           if (showInstagramEngagement) ...[
-            if (showLikesLine || showLegacyLocation) IsrDimens.boxHeight(IsrDimens.six),
+            if (showLikesLine || showLegacyLocation)
+              IsrDimens.boxHeight(IsrDimens.six),
             _buildInstagramEngagementContent(
               context,
               description: description,
@@ -2608,7 +2643,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
               timestampLabel: _postTimestampLabel,
             ),
           ] else if (description.isNotEmpty) ...[
-            if (showLikesLine || showLegacyLocation) IsrDimens.boxHeight(IsrDimens.six),
+            if (showLikesLine || showLegacyLocation)
+              IsrDimens.boxHeight(IsrDimens.six),
             RichText(
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
@@ -2621,9 +2657,21 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
                       color: _feedUi.headerTextColor,
                     ),
                   ),
-                  TextSpan(
-                    text: description,
-                    style: _feedCaptionBodyStyle,
+                  Utility.buildPostDescriptionTextSpan(
+                    description,
+                    _reel.mentions,
+                    _reel.tagDataList ?? const [],
+                    _textStyleConfig?.descriptionStyle ??
+                        _feedCaptionBodyStyle,
+                    (mention) {
+                      widget.reelsConfig.onTapMentionTag?.call(
+                        _reel,
+                        [mention],
+                      );
+                    },
+                    mentionStyle: _textStyleConfig?.mentionStyle,
+                    hashtagStyle: _textStyleConfig?.hashtagStyle,
+                    urlStyle: _textStyleConfig?.urlStyle,
                   ),
                 ],
               ),

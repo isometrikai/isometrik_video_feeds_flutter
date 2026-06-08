@@ -8,9 +8,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fluttertagger/fluttertagger.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
-import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
+import 'package:ism_video_reel_player/presentation/screens/create_post/add_post_link_sheet.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart'
     as mc;
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart'
     as ms;
 import 'package:ism_video_reel_player/res/res.dart';
@@ -53,6 +54,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
   // State variables for tracking changes
   bool _isPostButtonEnabled = true;
   final List<ProductDataModel> _linkedProducts = [];
+  PostLinkData? _postLink;
 
   // Description and mention handling
   late FlutterTaggerController _descriptionController;
@@ -62,8 +64,12 @@ class _PostAttributeViewState extends State<PostAttributeView>
   final List<MentionData> _mentionedUsers = [];
   final List<MentionData> _hashTags = [];
 
+  /// User ids passed into [TagPeopleScreen]; cleared after applying its result.
+  Set<String> _tagPeopleManagedUserIds = {};
+
   // Original values for comparison in edit mode
   PostAttributeClass? _originalPostAttributeClass;
+  MediaEditSoundItem? _pendingSelectedSound;
   var _isEditMode = false;
   DateTime? _selectedDate;
 
@@ -89,6 +95,9 @@ class _PostAttributeViewState extends State<PostAttributeView>
   bool get _isPaidPostEnabled =>
       IsrVideoReelConfig.createEditPostConfig.enablePaidPost;
 
+  bool get _isBusinessLinkEnabled =>
+      IsrVideoReelConfig.createEditPostConfig.enableBusinessLink;
+
   void _leaveCreateFlow({Object? result}) {
     if (widget.dismissEntireFlowOnClose) {
       IsrAppNavigator.dismissCreatePostFlow(context);
@@ -108,6 +117,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
     _socialActionCubit = context.getOrCreateBloc();
     WidgetsBinding.instance.addObserver(this);
     _isEditMode = widget.isEditMode ?? false;
+    _pendingSelectedSound = widget.selectedSound;
     final editData = widget.postData;
     if (_isEditMode && editData != null) {
       _createPostBloc.add(EditPostEvent(postData: editData));
@@ -130,11 +140,14 @@ class _PostAttributeViewState extends State<PostAttributeView>
 
   void _prepareData({PostAttributeClass? postAttributeClass}) {
     _postAttributeClass = postAttributeClass;
+    _pendingSelectedSound ??=
+        widget.selectedSound ?? postAttributeClass?.selectedSound;
     _mediaDataList = _postAttributeClass?.mediaDataList ?? [];
 
     // Load existing linked products
     _linkedProducts.clear();
     _linkedProducts.addAll(_postAttributeClass?.linkedProducts ?? []);
+    _postLink = _postAttributeClass?.postLink;
 
     // Load existing description and mentions (recreate controller + formatTags when caption has
     // @/# so fluttertagger highlights existing tags — must run before CommentTaggingTextField mounts)
@@ -295,6 +308,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
     copy.mediaDataList = List<MediaData>.from(original.mediaDataList ?? []);
     copy.linkedProducts =
         List<ProductDataModel>.from(original.linkedProducts ?? []);
+    copy.postLink = original.postLink;
     copy.allowComment = original.allowComment ?? true;
     copy.allowSave = original.allowSave ?? true;
 
@@ -319,8 +333,13 @@ class _PostAttributeViewState extends State<PostAttributeView>
           priceCurrency: originalSettings.priceCurrency,
         );
       }
+      copyRequest.soundId = originalRequest.soundId;
+      copyRequest.soundSnapshot = originalRequest.soundSnapshot == null
+          ? null
+          : Map<String, dynamic>.from(originalRequest.soundSnapshot!);
       copy.createPostRequest = copyRequest;
     }
+    copy.selectedSound = original.selectedSound;
 
     return copy;
   }
@@ -432,6 +451,15 @@ class _PostAttributeViewState extends State<PostAttributeView>
     final currentCaption = current.createPostRequest?.caption ?? '';
     if (originalCaption != currentCaption) {
       debugPrint('Changes detected in description');
+      return true;
+    }
+
+    if (original.postLink != current.postLink) {
+      debugPrint('Changes detected in post link');
+      return true;
+    }
+    if (_originalPostAttributeClass?.postLink != _postLink) {
+      debugPrint('Changes detected in local post link');
       return true;
     }
 
@@ -841,6 +869,8 @@ class _PostAttributeViewState extends State<PostAttributeView>
                             ),
                           ),
 
+                        if (_isBusinessLinkEnabled) _buildPostLinkTile(),
+
                         // Tag People
                         _buildOptionTile(
                           icon: AssetConstants.icTagUser,
@@ -849,21 +879,20 @@ class _PostAttributeViewState extends State<PostAttributeView>
                             _descriptionFocusNode.unfocus();
                             final mediaDataList =
                                 _postAttributeClass?.mediaDataList ?? [];
+                            _tagPeopleManagedUserIds = _mentionedUsers
+                                .map((m) => m.userId ?? '')
+                                .where((id) => id.isNotEmpty)
+                                .toSet();
                             final result =
                                 await IsrAppNavigator.goToTagPeopleScreen(
                                     context,
                                     mentionDataList: _mentionedUsers,
                                     mediaDataList: mediaDataList,
                                     postId: widget.postData?.id);
-                            if (result.isEmptyOrNull == false) {
-                              for (var mentionData
-                                  in result as Iterable<MentionData>) {
-                                if (!_mentionedUsers.any((element) =>
-                                    element.userId == mentionData.userId)) {
-                                  _mentionedUsers.add(mentionData);
-                                }
-                              }
-                              setState(() {});
+                            if (result != null) {
+                              _applyTagPeopleScreenResult(
+                                List<MentionData>.from(result),
+                              );
                               _updatePostButtonState();
                             }
                           },
@@ -1099,6 +1128,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
           ),
           maxOuterHeight: null,
           wrapFieldInScrollView: false,
+          enableSuggestions: true,
           hintText: _postAttributeConfig?.captionInputConfig?.hintText ??
               '${IsrTranslationFile.addCaption}...',
           maxLines: 4,
@@ -1158,8 +1188,50 @@ class _PostAttributeViewState extends State<PostAttributeView>
         ),
       );
 
-  /// Get count of tagged users
-  int _getTaggedUsersCount() => _mentionedUsers.length;
+  /// Count of people tagged on media (excludes caption-only @mentions).
+  int _getTaggedUsersCount() => _mentionedUsers
+      .where((m) => !_isCaptionOnlyMention(m))
+      .map((m) => m.userId)
+      .whereType<String>()
+      .toSet()
+      .length;
+
+  bool _isCaptionOnlyMention(MentionData mention) {
+    if (mention.textPosition != null) return true;
+    final username = (mention.username ?? '').replaceFirst('@', '');
+    if (username.isEmpty) return false;
+    return _descriptionController.text.contains('@$username');
+  }
+
+  /// Replaces media tags from [TagPeopleScreen] while keeping caption @mentions.
+  void _applyTagPeopleScreenResult(List<MentionData> mediaTags) {
+    final captionMentionsToKeep =
+        _mentionedUsers.where(_isCaptionOnlyMention).toList(growable: false);
+
+    _mentionedUsers.removeWhere(
+      (m) => _tagPeopleManagedUserIds.contains(m.userId ?? ''),
+    );
+    _mentionedUsers.addAll(mediaTags);
+    _tagPeopleManagedUserIds = {};
+
+    for (final mention in captionMentionsToKeep) {
+      if (!_mentionedUsers.any((m) => m.userId == mention.userId)) {
+        _mentionedUsers.add(mention);
+      }
+    }
+
+    final createPostBloc = context.getOrCreateBloc<CreatePostBloc>();
+    createPostBloc.mediaMentionUserData
+      ..clear()
+      ..addAll(_mentionedUsers.where((m) => !_isCaptionOnlyMention(m)));
+    createPostBloc.mentionedUserData
+      ..clear()
+      ..addAll(_mentionedUsers.where(_isCaptionOnlyMention));
+
+    _postAttributeClass?.mentionedUserList =
+        List<MentionData>.from(_mentionedUsers);
+    setState(() {});
+  }
 
   @override
   void didChangeMetrics() {
@@ -1840,6 +1912,54 @@ class _PostAttributeViewState extends State<PostAttributeView>
     debugPrint('=== _syncMentionDataToBloc END ===');
   }
 
+  Widget _buildPostLinkTile() => _buildOptionTile(
+        icon: AssetConstants.icSharePostIcon,
+        title: IsrTranslationFile.addLink,
+        subtitle: _postLink?.isValid == true ? _postLink!.url : null,
+        onTap: _openPostLinkEditor,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_postLink?.isValid == true) ...[
+              Flexible(
+                child: Text(
+                  _postLink!.displayTitle,
+                  style: IsrStyles.primaryText14,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              8.horizontalSpace,
+            ],
+            Icon(
+              Icons.chevron_right,
+              color:
+                  _postAttributeConfig?.optionTileConfig?.trailingIconColor ??
+                      IsrColors.primaryTextColor,
+              size: 20.responsiveDimension,
+            ),
+          ],
+        ),
+      );
+
+  Future<void> _openPostLinkEditor() async {
+    _descriptionFocusNode.unfocus();
+    final hostPicker = IsrVideoReelConfig
+        .createEditPostConfig.createEditPostCallBackConfig?.onAddPostLink;
+    PostLinkData? result;
+    if (hostPicker != null) {
+      result = await hostPicker(_postLink);
+    } else {
+      result = await AddPostLinkSheet.show(context, initialLink: _postLink);
+    }
+    if (!mounted || result == null) return;
+    final link = result;
+    setState(() {
+      _postLink = link.isValid ? link : null;
+      _postAttributeClass?.postLink = _postLink;
+    });
+    _updatePostButtonState();
+  }
+
   /// Get linked products from product selection screen
   void _getLinkedProducts() async {
     _descriptionFocusNode.unfocus();
@@ -1861,11 +1981,43 @@ class _PostAttributeViewState extends State<PostAttributeView>
       return;
     }
     _setPostRequest();
+    final selectedSound = _pendingSelectedSound ??
+        widget.selectedSound ??
+        _postAttributeClass?.selectedSound;
     context.getOrCreateBloc<CreatePostBloc>().add(PostCreateEvent(
           createPostRequest:
               _postAttributeClass?.createPostRequest ?? CreatePostRequest(),
+          selectedSound: selectedSound,
           isForEdit: _isEditMode,
         ));
+  }
+
+  void _applySoundToCreatePostRequest() {
+    final sound = _pendingSelectedSound ??
+        widget.selectedSound ??
+        _postAttributeClass?.selectedSound;
+    final req = _postAttributeClass?.createPostRequest;
+    final media = _postAttributeClass?.mediaDataList ?? _mediaDataList;
+    if (req == null || sound == null) return;
+    if (!PostSoundUtil.isLibrarySoundId(sound.soundId)) return;
+
+    final hasVideo = media.any(
+      (m) => m.mediaType == 'video' || m.postType == PostType.video,
+    );
+    final isImageOnly = media.isNotEmpty && !hasVideo;
+    final videoDuration = media
+        .where((m) => m.mediaType == 'video' || m.postType == PostType.video)
+        .map((m) => m.duration?.toInt())
+        .whereType<int>()
+        .firstOrNull;
+
+    req.soundId = sound.soundId!.trim();
+    req.soundSnapshot = PostSoundUtil.buildSoundSnapshot(
+      sound: sound,
+      videoDurationSeconds:
+          isImageOnly ? PostSoundUtil.photoSoundClipMaxSeconds : videoDuration,
+      maxClipSec: isImageOnly ? PostSoundUtil.photoSoundClipMaxSeconds : 60,
+    );
   }
 
   /// Pops the post-attribute route (and the rest of the create stack for new posts)
@@ -1920,10 +2072,9 @@ class _PostAttributeViewState extends State<PostAttributeView>
       }
 
       final tags = createPostRequest.tags ?? Tags();
-      if (_mentionedUsers.isEmptyOrNull == false) {
-        _postAttributeClass?.mentionedUserList = _mentionedUsers;
-        tags.mentions = _mentionedUsers;
-      }
+      _postAttributeClass?.mentionedUserList =
+          List<MentionData>.from(_mentionedUsers);
+      tags.mentions = List<MentionData>.from(_mentionedUsers);
       if (_hashTags.isNotEmpty) {
         tags.hashtags = _hashTags;
       } else if (_postAttributeClass?.hashTagDataList?.isEmptyOrNull == false) {
@@ -1936,8 +2087,11 @@ class _PostAttributeViewState extends State<PostAttributeView>
         _postAttributeClass?.linkedProducts = _linkedProducts;
         tags.products = _createPostBloc.getSocialProductList(_linkedProducts);
       }
+      _postAttributeClass?.postLink = _postLink;
+      tags.links = _postLink?.isValid == true ? [_postLink!] : [];
 
       createPostRequest.tags = tags;
+      _applySoundToCreatePostRequest();
 
       debugPrint(
           'createPostRequest.....${jsonEncode(createPostRequest.toJson())}');

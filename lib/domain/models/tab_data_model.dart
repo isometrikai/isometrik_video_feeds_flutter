@@ -18,6 +18,7 @@ class TabDataModel {
         ),
         userId: json['userId'] as String?,
         postId: json['postId'] as String?,
+        initialCommentId: json['initialCommentId'] as String?,
         tagValue: json['tagValue'] as String?,
         tagType: json['tagType'] != null
             ? TagType.values.firstWhere(
@@ -35,6 +36,7 @@ class TabDataModel {
     this.feedLayoutType = FeedLayoutType.reels,
     this.userId,
     this.postId,
+    this.initialCommentId,
     this.tagValue,
     this.tagType,
   });
@@ -49,6 +51,7 @@ class TabDataModel {
 
   String? userId;
   String? postId;
+  String? initialCommentId;
   String? tagValue;
   TagType? tagType;
 
@@ -60,6 +63,7 @@ class TabDataModel {
     FeedLayoutType? feedLayoutType,
     String? userId,
     String? postId,
+    String? initialCommentId,
     String? tagValue,
     TagType? tagType,
   }) =>
@@ -71,6 +75,7 @@ class TabDataModel {
         feedLayoutType: feedLayoutType ?? this.feedLayoutType,
         userId: userId ?? this.userId,
         postId: postId ?? this.postId,
+        initialCommentId: initialCommentId ?? this.initialCommentId,
         tagValue: tagValue ?? this.tagValue,
         tagType: tagType ?? this.tagType,
       );
@@ -83,6 +88,7 @@ class TabDataModel {
         'feedLayoutType': feedLayoutType.name,
         'userId': userId,
         'postId': postId,
+        'initialCommentId': initialCommentId,
         'tagValue': tagValue,
         'tagType': tagType?.name,
       };

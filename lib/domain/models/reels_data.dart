@@ -21,6 +21,7 @@ class ReelsData {
     this.hasTags,
     this.showBlur,
     this.productCount,
+    this.postLink,
     this.commentCount,
     this.postStatus,
     this.isCreatePostButtonVisible,
@@ -65,6 +66,7 @@ class ReelsData {
 
   final bool? showBlur;
   final int? productCount;
+  final PostLinkData? postLink;
   final int? postStatus;
   final bool? isCreatePostButtonVisible;
   final bool? isScheduledPost;
@@ -114,6 +116,7 @@ class ReelsData {
         hasTags: hasTags,
         showBlur: showBlur,
         productCount: productCount,
+        postLink: postLink,
         postStatus: postStatus,
         isCreatePostButtonVisible: isCreatePostButtonVisible,
         isScheduledPost: isScheduledPost,
