@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/video_player_widget.dart';
@@ -252,7 +253,20 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     final cb = _postConfig.postCallBackConfig?.onPaidPostUnlock;
     final post = _timelinePost;
     if (cb != null && post != null) {
-      await cb(post);
+      if (mounted) {
+        context.read<SocialPostBloc>().add(
+              PlayPauseVideoEvent(play: false, pausePlayback: false),
+            );
+      }
+      try {
+        await cb(post);
+      } finally {
+        if (mounted) {
+          context.read<SocialPostBloc>().add(
+                PlayPauseVideoEvent(play: true, pausePlayback: false),
+              );
+        }
+      }
       return;
     }
     Utility.showAppDialog(

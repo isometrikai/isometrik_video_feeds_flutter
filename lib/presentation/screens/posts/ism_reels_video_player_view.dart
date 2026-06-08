@@ -362,7 +362,16 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     final cb = _postConfig.postCallBackConfig?.onPaidPostUnlock;
     final post = _timelinePost;
     if (cb != null && post != null) {
-      await cb(post);
+      if (mounted) {
+        context.read<SocialPostBloc>().add(PlayPauseVideoEvent(play: false));
+      }
+      try {
+        await cb(post);
+      } finally {
+        if (mounted) {
+          context.read<SocialPostBloc>().add(PlayPauseVideoEvent(play: true));
+        }
+      }
       return;
     }
     Utility.showAppDialog(
