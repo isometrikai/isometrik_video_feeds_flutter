@@ -12,6 +12,7 @@ import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/video_player_widget.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/comment_count_action_widget.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/like_action_widget.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -1567,14 +1568,17 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 ),
               if (_postConfig.showViewCount) _buildEyeViewAction(),
               if (_reelData.postSetting?.isCommentButtonVisible == true)
-                StatefulBuilder(
-                  builder: (context, setBuilderState) => _buildActionButton(
-                    icon: _actionIconConfig?.commentIcon ?? AssetConstants.icCommentIcon,
-                    label: _reelData.commentCount.toString(),
-                    onTap: () {
-                      _handleCommentClick(setBuilderState);
-                    },
-                  ),
+                CommentCountActionWidget(
+                  postId: _reelData.postId ?? '',
+                  builder: (commentCount) {
+                    _reelData.commentCount = commentCount;
+                    return _buildActionButton(
+                      icon: _actionIconConfig?.commentIcon ??
+                          AssetConstants.icCommentIcon,
+                      label: commentCount.toString(),
+                      onTap: _handleCommentClick,
+                    );
+                  },
                 ),
               if (_reelData.postSetting?.isShareButtonVisible == true)
                 _buildActionButton(
@@ -2396,15 +2400,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     });
   }
 
-  void _handleCommentClick([StateSetter? setBuilderState]) async {
+  void _handleCommentClick() async {
     if (widget.reelsConfig.onTapComment == null) return;
-    final commentCount = await widget.reelsConfig.onTapComment!(
+    await widget.reelsConfig.onTapComment!(
       _reelData,
       _reelData.commentCount ?? 0,
     );
-    _reelData.commentCount = commentCount;
     await _fetchFloatingCommentsIfNeeded(forceRefresh: true);
-    if (mounted) setBuilderState?.call(() {});
   }
 
   Widget _buildPageView(int index) {

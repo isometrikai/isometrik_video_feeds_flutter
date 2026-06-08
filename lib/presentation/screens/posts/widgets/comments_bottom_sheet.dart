@@ -172,7 +172,6 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
           )
           .merge(_commentItemConfig?.hashtagTextStyle);
   CommentDataItem? _replyComment;
-  var _commentModifiedCount = 0;
   final _replyController = FlutterTaggerController();
   final _replyFocusNode = FocusNode();
   var _hasMoreComments = true;
@@ -227,8 +226,12 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   }
 
   bool _onUserScrollNotification(ScrollNotification notification) {
-    if (notification is UserScrollNotification &&
-        notification.direction != ScrollDirection.idle) {
+    if (!_replyFocusNode.hasFocus) return false;
+
+    final shouldDismiss = notification is ScrollUpdateNotification ||
+        (notification is UserScrollNotification &&
+            notification.direction != ScrollDirection.idle);
+    if (shouldDismiss) {
       _dismissCommentKeyboard();
     }
     return false;
@@ -287,7 +290,6 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     _replyFocusNode.dispose();
     _replyController.dispose();
     _commentItemKeys.clear();
-    _commentModifiedCount = 0;
     super.dispose();
   }
 
@@ -296,7 +298,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
         canPop: false,
         onPopInvokedWithResult: (didPop, _) async {
           if (!didPop) {
-            Navigator.pop(context, _commentModifiedCount);
+            Navigator.pop(context);
           }
         },
         child: BlocConsumer<SocialPostBloc, SocialPostState>(
@@ -304,8 +306,6 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
               (currentState is LoadPostCommentState &&
                   currentState.postId == widget.postId) ||
               (currentState is LoadingPostComment &&
-                  currentState.postId == widget.postId) ||
-              (currentState is CommentCountModified &&
                   currentState.postId == widget.postId),
           listener: (context, state) {
             if (state is LoadPostCommentState &&
@@ -315,10 +315,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                 _myUserId = state.myUserId ?? '';
               }
 
-              // Only update from server if list changed
               if (state.postCommentsList != null && mounted) {
-                // Don't replace entire list, just update from server
-                // Bloc already handles merging optimistic comments with server response
                 setState(() {
                   _postCommentList
                     ..clear()
@@ -326,10 +323,6 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                         state.postCommentsList as Iterable<CommentDataItem>);
                 });
               }
-            } else if (state is CommentCountModified &&
-                state.postId == widget.postId) {
-              _commentModifiedCount =
-                  _commentModifiedCount + state.modifiedValue;
             }
           },
           builder: (context, state) => Container(
@@ -361,6 +354,9 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                     if (_postCommentList.isNotEmpty == true)
                       ListView.separated(
                         controller: _scrollController,
+                        physics: const AlwaysScrollableScrollPhysics(
+                          parent: BouncingScrollPhysics(),
+                        ),
                         keyboardDismissBehavior:
                             ScrollViewKeyboardDismissBehavior.onDrag,
                         padding: _bottomSheetConfig?.padding ??
@@ -678,7 +674,10 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     final title =
         _headerConfig?.title ?? IsrTranslationFile.allComments;
 
-    return Padding(
+    return GestureDetector(
+      onTap: _dismissCommentKeyboard,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
       padding: headerPadding,
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -702,7 +701,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
               children: [
                 Text(title, style: titleStyle),
                 TapHandler(
-                  onTap: () => context.pop(_commentModifiedCount),
+                  onTap: () => context.pop(),
                   child: AppImage.svg(
                     _headerConfig?.closeIcon ?? AssetConstants.icClose,
                     width: _headerConfig?.closeIconSize,
@@ -715,6 +714,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
           else
             Center(child: Text(title, style: titleStyle)),
         ],
+      ),
       ),
     );
   }

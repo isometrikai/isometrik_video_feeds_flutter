@@ -82,6 +82,26 @@ class IsmSavePostState extends IsmSocialActionState {
       );
 }
 
+// ---------------- Comment State ---------------- //
+class IsmCommentPostState extends IsmSocialActionState {
+  IsmCommentPostState({
+    required this.postId,
+    required this.commentCount,
+  });
+
+  final String postId;
+  final int commentCount;
+
+  IsmCommentPostState copyWith({
+    String? postId,
+    int? commentCount,
+  }) =>
+      IsmCommentPostState(
+        postId: postId ?? this.postId,
+        commentCount: commentCount ?? this.commentCount,
+      );
+}
+
 // ---------------- Error States ---------------- //
 class IsmFollowErrorState extends IsmSocialActionState {
   IsmFollowErrorState({
@@ -208,6 +228,29 @@ class IsmLikeActionListenerState extends IsmSocialActionState {
         isLiked: isLiked ?? this.isLiked,
         postData: postData ?? this.postData,
         likeCount: likeCount ?? this.likeCount,
+      );
+}
+
+class IsmCommentActionListenerState extends IsmSocialActionState {
+  IsmCommentActionListenerState({
+    required this.postId,
+    required this.commentCount,
+    this.postData,
+  });
+
+  final String postId;
+  final int commentCount;
+  final TimeLineData? postData;
+
+  IsmCommentActionListenerState copyWith({
+    String? postId,
+    int? commentCount,
+    TimeLineData? postData,
+  }) =>
+      IsmCommentActionListenerState(
+        postId: postId ?? this.postId,
+        commentCount: commentCount ?? this.commentCount,
+        postData: postData ?? this.postData,
       );
 }
 

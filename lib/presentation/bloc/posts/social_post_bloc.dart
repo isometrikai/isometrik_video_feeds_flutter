@@ -867,7 +867,13 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
             IsrTranslationFile.commentReportedSuccessfully);
       } else if (event.commentAction == CommentAction.delete &&
           event.commentId?.trim().isNotEmpty == true) {
-        emit(CommentCountModified(postId: event.postId, modifiedValue: -1));
+        if (_isTopLevelCommentAction(event)) {
+          _socialActionCubit.bumpCommentCount(
+            event.postId,
+            -1,
+            postData: event.postDataModel,
+          );
+        }
         final myUserId = await _localDataUseCase.getUserId();
         final commentList = event.postCommentList?.toList() ?? [];
         if (event.parentCommentId?.trim().isNotEmpty == true) {
@@ -970,6 +976,14 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
           myUserId: myUserId,
         ),
       );
+
+      if (_isTopLevelCommentAction(event)) {
+        _socialActionCubit.bumpCommentCount(
+          event.postId,
+          1,
+          postData: event.postDataModel,
+        );
+      }
     }
 
     // Call API to create comment
@@ -979,7 +993,6 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     );
 
     if (apiResult.isSuccess) {
-      emit(CommentCountModified(postId: event.postId, modifiedValue: 1));
       _sendAnalyticsEvent(
           EventType.commentCreated.value,
           event.commentId ?? '',
@@ -1039,6 +1052,14 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
             postId: event.postId,
             myUserId: myUserId,
           ),
+        );
+      }
+
+      if (_isTopLevelCommentAction(event)) {
+        _socialActionCubit.bumpCommentCount(
+          event.postId,
+          -1,
+          postData: event.postDataModel,
         );
       }
 
@@ -1190,6 +1211,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
 
     return result.data;
   }
+
+  bool _isTopLevelCommentAction(CommentActionEvent event) =>
+      event.parentCommentId.isStringEmptyOrNull == true;
 
   /// Replaces [fresh] wherever it appears in tab post lists (bloc-owned copy).
   void _replacePostInTabLists(TimeLineData fresh) {

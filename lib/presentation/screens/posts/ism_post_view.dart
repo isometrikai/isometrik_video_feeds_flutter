@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -753,14 +752,14 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           }
           isUserLoggedIn = await _socialActionCubit.isUserLoggedIn;
           if (!isUserLoggedIn) return totalCommentsCount;
-          final result = await _handleCommentAction(
-              reelsData.postId ?? '',
-              totalCommentsCount,
-              tabData,
-              reelsData.postData is TimeLineData
-                  ? reelsData.postData as TimeLineData
-                  : null);
-          return result;
+          await _handleCommentAction(
+            reelsData.postId ?? '',
+            tabData,
+            reelsData.postData is TimeLineData
+                ? reelsData.postData as TimeLineData
+                : null,
+          );
+          return _commentCountForPost(reelsData, totalCommentsCount);
         } finally {
           _setOverlayPlaybackGate(tabData, allowPlayback: true);
         }
@@ -1116,38 +1115,72 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     return isFollowingPostEmpty;
   }
 
-  Future<int> _handleCommentAction(String postId, int totalCommentsCount,
-      TabDataModel tabData, TimeLineData? postData) async {
-    final completer = Completer<int>();
-
-    final result = await Utility.showBottomSheet<int>(
-      isSafeArea: false,
-      child: MultiBlocProvider(
-        providers: [
-          BlocProvider.value(value: _socialPostBloc),
-          BlocProvider.value(
-              value: context.getOrCreateBloc<CommentActionCubit>()),
-          BlocProvider.value(value: context.getOrCreateBloc<SearchUserBloc>()),
+  Future<void> _handleCommentAction(
+    String postId,
+    TabDataModel tabData,
+    TimeLineData? postData,
+  ) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isDismissible: false,
+      isScrollControlled: true,
+      enableDrag: false,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => Stack(
+        fit: StackFit.expand,
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => Navigator.pop(sheetContext),
+              child: const ColoredBox(color: Color(0x99000000)),
+            ),
+          ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: MultiBlocProvider(
+              providers: [
+                BlocProvider.value(value: _socialPostBloc),
+                BlocProvider.value(
+                    value: context.getOrCreateBloc<CommentActionCubit>()),
+                BlocProvider.value(
+                    value: context.getOrCreateBloc<SearchUserBloc>()),
+              ],
+              child: CommentsBottomSheet(
+                postId: postId,
+                onTapProfile: (userId) {
+                  _postConfig.postCallBackConfig?.onProfileClick
+                      ?.call(postData, userId, null);
+                  _logProfileEvent(userId, postData?.user?.username ?? '');
+                },
+                onTapHasTag: (hashTag) {
+                  _redirectToHashtag(
+                      hashTag, tabData.postSectionType, postId);
+                },
+                postData: postData,
+                tabData: tabData,
+              ),
+            ),
+          ),
         ],
-        child: CommentsBottomSheet(
-          postId: postId,
-          onTapProfile: (userId) {
-            _postConfig.postCallBackConfig?.onProfileClick
-                ?.call(postData, userId, null);
-            _logProfileEvent(userId, postData?.user?.username ?? '');
-          },
-          onTapHasTag: (hashTag) {
-            _redirectToHashtag(hashTag, tabData.postSectionType, postId);
-          },
-          postData: postData,
-          tabData: tabData,
-        ),
       ),
-      isDarkBG: true,
-      backgroundColor: Colors.black,
     );
-    completer.complete(max(totalCommentsCount + (result ?? 0), 0));
-    return completer.future;
+  }
+
+  int _commentCountForPost(ReelsData reelsData, int fallback) {
+    final postId = reelsData.postId ?? '';
+    if (postId.isNotEmpty) {
+      final fromCubit =
+          _socialActionCubit.getPostById(postId)?.engagementMetrics?.comments;
+      if (fromCubit != null) return fromCubit.toInt();
+    }
+    final postData = reelsData.postData;
+    if (postData is TimeLineData) {
+      return postData.engagementMetrics?.comments?.toInt() ??
+          reelsData.commentCount ??
+          fallback;
+    }
+    return reelsData.commentCount ?? fallback;
   }
 
   void _redirectToHashtag(

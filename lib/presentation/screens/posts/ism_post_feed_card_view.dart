@@ -9,6 +9,7 @@ import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/video_player_widget.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/comment_count_action_widget.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/like_action_widget.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_carousel_keep_alive_page.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/sound_selection/sound_track_detail_screen.dart';
@@ -225,6 +226,10 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         });
       }
     });
+  }
+
+  Future<void> _handleCommentTap() async {
+    await widget.onTapComment?.call();
   }
 
   TimeLineData? get _timelinePost =>
@@ -1987,17 +1992,23 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     final segments = <({Widget widget, bool showsCount})>[];
 
     if (_reel.postSetting?.isCommentButtonVisible == true) {
-      final commentCount = _reel.commentCount ?? 0;
-      final commentCountLabel = _showActionCounts && commentCount > 0
-          ? Utility.formatEngagementCount(commentCount)
-          : null;
       segments.add((
-        widget: _iconAction(
-          icon: _actionIconConfig?.commentIcon ?? AssetConstants.icPostCommentIcon,
-          countLabel: commentCountLabel,
-          onTap: () => widget.onTapComment?.call(),
+        widget: CommentCountActionWidget(
+          postId: _reel.postId ?? '',
+          builder: (commentCount) {
+            _reel.commentCount = commentCount;
+            final commentCountLabel = _showActionCounts && commentCount > 0
+                ? Utility.formatEngagementCount(commentCount)
+                : null;
+            return _iconAction(
+              icon: _actionIconConfig?.commentIcon ??
+                  AssetConstants.icPostCommentIcon,
+              countLabel: commentCountLabel,
+              onTap: _handleCommentTap,
+            );
+          },
         ),
-        showsCount: commentCountLabel != null,
+        showsCount: false,
       ));
     }
 

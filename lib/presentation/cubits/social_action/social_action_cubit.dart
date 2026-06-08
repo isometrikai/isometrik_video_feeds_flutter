@@ -535,6 +535,49 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     }
   }
 
+  Future<void> loadPostCommentState(String postId) async {
+    final postData = await getAsyncPostById(postId);
+    final count = postData?.engagementMetrics?.comments?.toInt() ?? 0;
+    emit(IsmCommentPostState(
+      postId: postId,
+      commentCount: max(count, 0),
+    ));
+  }
+
+  TimeLineData? _resolvePostForCommentCount(
+    String postId, {
+    TimeLineData? postData,
+  }) {
+    var post = getPostById(postId);
+    if (post == null && postData != null) {
+      updatePostList([postData]);
+      post = postData;
+    }
+    return post;
+  }
+
+  void bumpCommentCount(
+    String postId,
+    int delta, {
+    TimeLineData? postData,
+  }) {
+    if (postId.isEmpty || delta == 0) return;
+    final post = _resolvePostForCommentCount(postId, postData: postData);
+    final current = post?.engagementMetrics?.comments?.toInt() ?? 0;
+    final clamped = max(current + delta, 0);
+    if (post != null) {
+      post.engagementMetrics ??= EngagementMetrics();
+      post.engagementMetrics!.comments = clamped;
+    }
+
+    emit(IsmCommentPostState(postId: postId, commentCount: clamped));
+    emit(IsmCommentActionListenerState(
+      postId: postId,
+      commentCount: clamped,
+      postData: post,
+    ));
+  }
+
   loadPostSaveState(String postId) async {
     final postData = await getAsyncPostById(postId);
     final isSaved = postData?.isSaved ?? false;
