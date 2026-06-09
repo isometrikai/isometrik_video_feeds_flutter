@@ -109,8 +109,8 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
   var _loadMoreInFlight = false;
   var _showPaginationLoader = false;
   var _hasMorePages = true;
-  var _isUserScrolling = false;
-  int? _activePlayIndex;
+  final ValueNotifier<bool> _isUserScrollingNotifier = ValueNotifier(false);
+  final ValueNotifier<int?> _activePlayIndexNotifier = ValueNotifier(null);
   Timer? _scrollIdleDebounce;
   Timer? _precacheDebounce;
   final PostFeedImagePrecacheService _imagePrecache =
@@ -142,7 +142,7 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
       }
     }
 
-    final current = _activePlayIndex;
+    final current = _activePlayIndexNotifier.value;
     final currentFraction =
         current == null ? 0.0 : (_visibilityFractions[current] ?? 0.0);
 
@@ -170,10 +170,10 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
       }
     }
 
-    if (newActive == _activePlayIndex) return;
+    if (newActive == _activePlayIndexNotifier.value) return;
 
-    final previous = _activePlayIndex;
-    setState(() => _activePlayIndex = newActive);
+    final previous = _activePlayIndexNotifier.value;
+    _activePlayIndexNotifier.value = newActive;
 
     if (newActive != null &&
         newActive != previous &&
@@ -187,12 +187,14 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
     _scrollIdleDebounce?.cancel();
     _precacheDebounce?.cancel();
     _imagePrecache.cancel();
+    _isUserScrollingNotifier.dispose();
+    _activePlayIndexNotifier.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
   int _estimateFirstVisibleIndex() {
-    final active = _activePlayIndex;
+    final active = _activePlayIndexNotifier.value;
     if (active != null) {
       return active.clamp(0, widget.reelsDataList.length - 1);
     }
@@ -222,8 +224,8 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
   }
 
   void _setUserScrolling(bool scrolling) {
-    if (_isUserScrolling == scrolling) return;
-    setState(() => _isUserScrolling = scrolling);
+    if (_isUserScrollingNotifier.value == scrolling) return;
+    _isUserScrollingNotifier.value = scrolling;
   }
 
   bool _handleScrollNotification(ScrollNotification notification) {
@@ -406,8 +408,8 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
     // ready to play when it reaches the center of the screen.
     final cacheExtent = MediaQuery.sizeOf(context).height * 1.9;
 
-    Widget buildList(Widget list) => PostFeedScrollScope(
-          isScrolling: _isUserScrolling,
+    Widget buildList(Widget list) => ValueListenableBuilder<bool>(
+          valueListenable: _isUserScrollingNotifier,
           child: NotificationListener<ScrollNotification>(
             onNotification: _handleScrollNotification,
             child: RefreshIndicator(
@@ -415,6 +417,11 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
               onRefresh: widget.onRefresh != null ? _onRefresh : () async {},
               child: list,
             ),
+          ),
+          builder: (context, isScrolling, scrollableList) =>
+              PostFeedScrollScope(
+            isScrolling: isScrolling,
+            child: scrollableList!,
           ),
         );
 
@@ -466,29 +473,36 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
           if (index >= widget.reelsDataList.length) {
             return _buildPaginationLoader(feedUi);
           }
-          // On first frame, visibility callbacks may not have fired yet.
-          // Default to playing the first item so the feed "starts instantly".
-          final bool isFirstItemByDefault =
-              _activePlayIndex == null && index == 0;
-          return _PostFeedListItem(
-            key: ValueKey(widget.reelsDataList[index].postId),
-            index: index,
-            reelsData: widget.reelsDataList[index],
-            refreshToken: widget.refreshCounts?[index] ?? _refreshCounts[index] ?? 0,
-            reelsConfig: widget.reelsConfig,
-            postSectionType: widget.postSectionType,
-            loggedInUserId: widget.loggedInUserId,
-            videoCacheManager: widget.videoCacheManager,
-            isPostVisible: widget.reelsConfig.isTabVisible() &&
-                (isFirstItemByDefault || _activePlayIndex == index),
-            onVisibilityFractionChanged: _onItemVisibilityFractionChanged,
-            onPressFollowButton: widget.onPressFollowButton,
-            onPressMoreButton: widget.onPressMoreButton,
-            onPressLikeButton: widget.onPressLikeButton,
-            onPressSaveButton: widget.onPressSaveButton,
-            onTapUserProfile: widget.onTapUserProfile,
-            onTapShare: widget.onTapShare,
-            onTapComment: widget.onTapComment,
+          return ValueListenableBuilder<int?>(
+            valueListenable: _activePlayIndexNotifier,
+            builder: (context, activePlayIndex, _) {
+              // On first frame, visibility callbacks may not have fired yet.
+              // Default to playing the first item so the feed "starts instantly".
+              final isFirstItemByDefault =
+                  activePlayIndex == null && index == 0;
+              return _PostFeedListItem(
+                key: ValueKey(widget.reelsDataList[index].postId),
+                index: index,
+                reelsData: widget.reelsDataList[index],
+                refreshToken: widget.refreshCounts?[index] ??
+                    _refreshCounts[index] ??
+                    0,
+                reelsConfig: widget.reelsConfig,
+                postSectionType: widget.postSectionType,
+                loggedInUserId: widget.loggedInUserId,
+                videoCacheManager: widget.videoCacheManager,
+                isPostVisible: widget.reelsConfig.isTabVisible() &&
+                    (isFirstItemByDefault || activePlayIndex == index),
+                onVisibilityFractionChanged: _onItemVisibilityFractionChanged,
+                onPressFollowButton: widget.onPressFollowButton,
+                onPressMoreButton: widget.onPressMoreButton,
+                onPressLikeButton: widget.onPressLikeButton,
+                onPressSaveButton: widget.onPressSaveButton,
+                onTapUserProfile: widget.onTapUserProfile,
+                onTapShare: widget.onTapShare,
+                onTapComment: widget.onTapComment,
+              );
+            },
           );
         },
       ),

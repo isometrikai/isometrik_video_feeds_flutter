@@ -66,13 +66,16 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   static const int _kPictureType = 0;
   static const Duration _kPageBadgeAutoHideDuration = Duration(seconds: 2);
   final ValueNotifier<int> _mediaPageIndex = ValueNotifier(0);
+  final ValueNotifier<bool> _pageBadgeVisible = ValueNotifier(true);
+  final ValueNotifier<bool> _muteFeedbackVisible = ValueNotifier(false);
+  final ValueNotifier<bool> _metaAlternatorShowsSound = ValueNotifier(true);
+  final ValueNotifier<int> _videoOverlayTick = ValueNotifier(0);
+  final ValueNotifier<bool> _likeAnimationVisible = ValueNotifier(false);
   late final PageController _mediaPageController;
   final Map<int, GlobalKey> _videoPlayerKeys = {};
   final GlobalKey _instagramMetaRowKey = GlobalKey();
   OverlayEntry? _instagramMetaMenuOverlay;
   VoidCallback? _instagramMetaMenuDismissHandler;
-  var _showMuteIconBriefly = false;
-  var _showPageBadge = true;
   var _isInstagramCaptionExpanded = false;
   Timer? _pageBadgeTimer;
   AudioPlayer? _imageSoundPlayer;
@@ -80,9 +83,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   String? _imageSoundLoadedUrl;
   var _resolvingImageSoundUrl = false;
   Timer? _metaAlternatorTimer;
-  var _metaAlternatorShowsSound = true;
   static const Duration _kMetaAlternatorInterval = Duration(seconds: 3);
-  bool _showLikeAnimation = false;
   Timer? _likeAnimationTimer;
   bool _isLiked = false;
   void Function({
@@ -210,14 +211,10 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
             : null,
       );
     }
-    setState(() {
-      _showLikeAnimation = true;
-    });
+    _likeAnimationVisible.value = true;
     _likeAnimationTimer = Timer(const Duration(milliseconds: 900), () {
       if (mounted) {
-        setState(() {
-          _showLikeAnimation = false;
-        });
+        _likeAnimationVisible.value = false;
       }
     });
   }
@@ -502,7 +499,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     }
     if (oldWidget.reelsData.postId != widget.reelsData.postId) {
       _isInstagramCaptionExpanded = false;
-      _metaAlternatorShowsSound = true;
+      _metaAlternatorShowsSound.value = true;
       _startMetaAlternatorIfNeeded();
     }
   }
@@ -511,6 +508,11 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   void dispose() {
     VideoMuteController.notifier.removeListener(_onGlobalMuteChanged);
     _mediaPageIndex.dispose();
+    _pageBadgeVisible.dispose();
+    _muteFeedbackVisible.dispose();
+    _metaAlternatorShowsSound.dispose();
+    _videoOverlayTick.dispose();
+    _likeAnimationVisible.dispose();
     _mediaPageController.dispose();
     _pageBadgeTimer?.cancel();
     _metaAlternatorTimer?.cancel();
@@ -543,8 +545,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     _mediaPageIndex.value = index;
     _syncCarouselVideoPlayback();
     unawaited(_syncImageSoundPlayback());
-    if (!_showPageBadge) {
-      setState(() => _showPageBadge = true);
+    if (!_pageBadgeVisible.value) {
+      _pageBadgeVisible.value = true;
     }
     _schedulePageBadgeAutoHide();
   }
@@ -563,8 +565,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   void _schedulePageBadgeAutoHide() {
     _pageBadgeTimer?.cancel();
     _pageBadgeTimer = Timer(_kPageBadgeAutoHideDuration, () {
-      if (!mounted || !_showPageBadge) return;
-      setState(() => _showPageBadge = false);
+      if (!mounted || !_pageBadgeVisible.value) return;
+      _pageBadgeVisible.value = false;
     });
   }
 
@@ -574,7 +576,6 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       _imageSoundPlayer?.setVolume(VideoMuteController.isMuted ? 0.0 : 1.0) ??
           Future.value(),
     );
-    setState(() {});
   }
 
   bool get _isCurrentMediaImage {
@@ -700,7 +701,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     if (!_isInstagramStyle || !_hasAlternatingInstagramMeta) return;
     _metaAlternatorTimer = Timer.periodic(_kMetaAlternatorInterval, (_) {
       if (!mounted) return;
-      setState(() => _metaAlternatorShowsSound = !_metaAlternatorShowsSound);
+      _metaAlternatorShowsSound.value = !_metaAlternatorShowsSound.value;
     });
   }
 
@@ -930,38 +931,41 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
 
     Widget content;
     if (_hasAlternatingInstagramMeta) {
-      content = AnimatedSwitcher(
-        duration: const Duration(milliseconds: 350),
-        switchInCurve: Curves.easeOut,
-        switchOutCurve: Curves.easeIn,
-        transitionBuilder: (child, animation) {
-          final offsetAnimation = Tween<Offset>(
-            begin: const Offset(0, 0.35),
-            end: Offset.zero,
-          ).animate(animation);
-          return ClipRect(
-            child: SlideTransition(position: offsetAnimation, child: child),
-          );
-        },
-        layoutBuilder: (currentChild, previousChildren) => Stack(
-          alignment: AlignmentDirectional.centerStart,
-          clipBehavior: Clip.hardEdge,
-          children: [
-            ...previousChildren,
-            if (currentChild != null) currentChild,
-          ],
+      content = ValueListenableBuilder<bool>(
+        valueListenable: _metaAlternatorShowsSound,
+        builder: (context, showsSound, _) => AnimatedSwitcher(
+          duration: const Duration(milliseconds: 350),
+          switchInCurve: Curves.easeOut,
+          switchOutCurve: Curves.easeIn,
+          transitionBuilder: (child, animation) {
+            final offsetAnimation = Tween<Offset>(
+              begin: const Offset(0, 0.35),
+              end: Offset.zero,
+            ).animate(animation);
+            return ClipRect(
+              child: SlideTransition(position: offsetAnimation, child: child),
+            );
+          },
+          layoutBuilder: (currentChild, previousChildren) => Stack(
+            alignment: AlignmentDirectional.centerStart,
+            clipBehavior: Clip.hardEdge,
+            children: [
+              ...previousChildren,
+              if (currentChild != null) currentChild,
+            ],
+          ),
+          child: showsSound
+              ? buildRow(
+                  key: const ValueKey('instagram_meta_sound'),
+                  icon: Icons.music_note_rounded,
+                  label: sound?.displayLabel ?? '',
+                )
+              : buildRow(
+                  key: const ValueKey('instagram_meta_location'),
+                  icon: Icons.location_on_rounded,
+                  label: locationLabel,
+                ),
         ),
-        child: _metaAlternatorShowsSound
-            ? buildRow(
-                key: const ValueKey('instagram_meta_sound'),
-                icon: Icons.music_note_rounded,
-                label: sound?.displayLabel ?? '',
-              )
-            : buildRow(
-                key: const ValueKey('instagram_meta_location'),
-                icon: Icons.location_on_rounded,
-                label: locationLabel,
-              ),
       );
     } else if (_hasPostSound) {
       content = buildRow(
@@ -1195,28 +1199,33 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         if (_feedUi.showCarouselPageBadge && mediaList.length > 1)
           ValueListenableBuilder<int>(
             valueListenable: _mediaPageIndex,
-            builder: (context, page, _) => Positioned(
-              top: _showMediaOverlayHeader(page)
-                  ? IsrDimens.twelve + _postFeedActionIconSize + IsrDimens.eight
-                  : IsrDimens.twelve,
-              right: IsrDimens.twelve,
-              child: IgnorePointer(
-                child: AnimatedOpacity(
-                  opacity: _showPageBadge ? 1 : 0,
-                  duration: const Duration(milliseconds: 220),
-                  child: Container(
-                    padding: IsrDimens.edgeInsetsSymmetric(
-                      horizontal: IsrDimens.ten,
-                      vertical: IsrDimens.four,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.55),
-                      borderRadius: BorderRadius.circular(IsrDimens.twelve),
-                    ),
-                    child: Text(
-                      '${page + 1}/${mediaList.length}',
-                      style: _textStyleConfig?.mediaCounterStyle ??
-                          IsrStyles.white12,
+            builder: (context, page, _) => ValueListenableBuilder<bool>(
+              valueListenable: _pageBadgeVisible,
+              builder: (context, showBadge, _) => Positioned(
+                top: _showMediaOverlayHeader(page)
+                    ? IsrDimens.twelve +
+                        _postFeedActionIconSize +
+                        IsrDimens.eight
+                    : IsrDimens.twelve,
+                right: IsrDimens.twelve,
+                child: IgnorePointer(
+                  child: AnimatedOpacity(
+                    opacity: showBadge ? 1 : 0,
+                    duration: const Duration(milliseconds: 220),
+                    child: Container(
+                      padding: IsrDimens.edgeInsetsSymmetric(
+                        horizontal: IsrDimens.ten,
+                        vertical: IsrDimens.four,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.55),
+                        borderRadius: BorderRadius.circular(IsrDimens.twelve),
+                      ),
+                      child: Text(
+                        '${page + 1}/${mediaList.length}',
+                        style: _textStyleConfig?.mediaCounterStyle ??
+                            IsrStyles.white12,
+                      ),
                     ),
                   ),
                 ),
@@ -1232,7 +1241,12 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
             return Stack(
               children: [
                 _buildImageSoundMuteControl(),
-                if (_showMuteIconBriefly) _buildMuteToggleFeedback(),
+                ValueListenableBuilder<bool>(
+                  valueListenable: _muteFeedbackVisible,
+                  builder: (context, showFeedback, _) => showFeedback
+                      ? _buildMuteToggleFeedback()
+                      : const SizedBox.shrink(),
+                ),
               ],
             );
           },
@@ -1241,17 +1255,24 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
           valueListenable: _mediaPageIndex,
           builder: (context, pageIndex, _) => _buildMediaTaggedPeopleControl(pageIndex),
         ),
-        if (!_shouldShowPaidLockOverlay && _showLikeAnimation)
-          Center(
-            child: IgnorePointer(
-              child: Lottie.asset(
-                AssetConstants.heartAnimation,
-                width: 250,
-                height: 250,
-                repeat: false,
+        ValueListenableBuilder<bool>(
+          valueListenable: _likeAnimationVisible,
+          builder: (context, showLikeAnimation, _) {
+            if (_shouldShowPaidLockOverlay || !showLikeAnimation) {
+              return const SizedBox.shrink();
+            }
+            return Center(
+              child: IgnorePointer(
+                child: Lottie.asset(
+                  AssetConstants.heartAnimation,
+                  width: 250,
+                  height: 250,
+                  repeat: false,
+                ),
               ),
-            ),
-          ),
+            );
+          },
+        ),
       ],
     );
 
@@ -1362,9 +1383,18 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
             onDoubleTap: _canDoubleTapToLike ? _triggerLikeAnimation : null,
           ),
         ),
-        _buildVideoPlayPauseOverlay(playerKey),
+        ValueListenableBuilder<int>(
+          valueListenable: _videoOverlayTick,
+          builder: (context, _, __) =>
+              _buildVideoPlayPauseOverlay(playerKey),
+        ),
         _buildVideoMuteControl(),
-        if (_showMuteIconBriefly) _buildMuteToggleFeedback(),
+        ValueListenableBuilder<bool>(
+          valueListenable: _muteFeedbackVisible,
+          builder: (context, showFeedback, _) => showFeedback
+              ? _buildMuteToggleFeedback()
+              : const SizedBox.shrink(),
+        ),
       ],
     );
   }
@@ -1378,7 +1408,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     } else {
       playerState.play();
     }
-    setState(() {});
+    _videoOverlayTick.value++;
   }
 
   void _toggleVideoMute() {
@@ -1387,10 +1417,10 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       _imageSoundPlayer?.setVolume(VideoMuteController.isMuted ? 0.0 : 1.0) ??
           Future.value(),
     );
-    setState(() => _showMuteIconBriefly = true);
+    _muteFeedbackVisible.value = true;
     Future.delayed(const Duration(milliseconds: 800), () {
       if (!mounted) return;
-      setState(() => _showMuteIconBriefly = false);
+      _muteFeedbackVisible.value = false;
     });
   }
 
@@ -1785,12 +1815,15 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   Widget _buildVideoMuteControl() => Positioned(
         bottom: IsrDimens.twelve,
         right: IsrDimens.twelve,
-        child: GestureDetector(
-          onTap: _toggleVideoMute,
-          child: Container(
-            padding: IsrDimens.edgeInsetsAll(IsrDimens.six),
-            decoration: _postFeedMuteButtonDecoration,
-            child: _buildPostFeedMuteIcon(size: IsrDimens.sixteen),
+        child: ListenableBuilder(
+          listenable: VideoMuteController.notifier,
+          builder: (context, _) => GestureDetector(
+            onTap: _toggleVideoMute,
+            child: Container(
+              padding: IsrDimens.edgeInsetsAll(IsrDimens.six),
+              decoration: _postFeedMuteButtonDecoration,
+              child: _buildPostFeedMuteIcon(size: IsrDimens.sixteen),
+            ),
           ),
         ),
       );
@@ -1798,12 +1831,15 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   Widget _buildImageSoundMuteControl() => Positioned(
         bottom: IsrDimens.twelve,
         right: IsrDimens.twelve,
-        child: GestureDetector(
-          onTap: _toggleVideoMute,
-          child: Container(
-            padding: IsrDimens.edgeInsetsAll(IsrDimens.six),
-            decoration: _postFeedMuteButtonDecoration,
-            child: _buildPostFeedMuteIcon(size: IsrDimens.sixteen),
+        child: ListenableBuilder(
+          listenable: VideoMuteController.notifier,
+          builder: (context, _) => GestureDetector(
+            onTap: _toggleVideoMute,
+            child: Container(
+              padding: IsrDimens.edgeInsetsAll(IsrDimens.six),
+              decoration: _postFeedMuteButtonDecoration,
+              child: _buildPostFeedMuteIcon(size: IsrDimens.sixteen),
+            ),
           ),
         ),
       );
