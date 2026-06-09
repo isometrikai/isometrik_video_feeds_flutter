@@ -59,11 +59,4 @@ class MediaCacheFactory {
     }
     return stats;
   }
-
-  /// Clear media outside range for all types
-  static void clearOutsideRange(List<String> activeUrls) {
-    for (final manager in _cacheManagers.values) {
-      manager.clearOutsideRange(activeUrls);
-    }
-  }
 }

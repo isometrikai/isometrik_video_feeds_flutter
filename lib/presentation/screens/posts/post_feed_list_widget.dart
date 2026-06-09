@@ -404,8 +404,6 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
     final listPadding = EdgeInsets.only(top: topInset, bottom: bottomInset);
 
     final refreshDisplacement = topInset + IsrDimens.forty;
-    // Increase how far ahead the list pre-builds items so the next video is
-    // ready to play when it reaches the center of the screen.
     final cacheExtent = MediaQuery.sizeOf(context).height * 1.9;
 
     Widget buildList(Widget list) => ValueListenableBuilder<bool>(

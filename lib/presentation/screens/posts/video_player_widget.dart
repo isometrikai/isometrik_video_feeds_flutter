@@ -102,6 +102,29 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   bool get _effectiveVisible =>
       widget.visibilityManagedByParent ? _parentWantsVisible : _isVisible;
 
+  /// Same fit for thumbnail and video so reels do not jump from letterbox to full-bleed.
+  BoxFit _resolveDisplayFit({Size? videoSize}) {
+    if (widget.videoFitOverride != null) return widget.videoFitOverride!;
+
+    final w = videoSize?.width ?? 0;
+    final h = videoSize?.height ?? 0;
+    if (w > 0 && h > 0) {
+      return h > w ? BoxFit.cover : BoxFit.contain;
+    }
+
+    final ar = widget.aspectRatio;
+    if (ar != null && ar > 0) {
+      return ar < 1.0 ? BoxFit.cover : BoxFit.contain;
+    }
+
+    // Full-screen reels: portrait-style cover matches playback once dimensions load.
+    if (!widget.visibilityManagedByParent) {
+      return BoxFit.cover;
+    }
+
+    return BoxFit.contain;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -946,9 +969,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                     // Portrait (h > w) -> fill screen; square/landscape (h <= w) -> fit screen
                     if (hasValidSize) {
                       final aspect = _videoPlayerController!.aspectRatio;
-                      final isPortrait = size.height > size.width;
-                      final videoFit = widget.videoFitOverride ??
-                          (isPortrait ? BoxFit.cover : BoxFit.contain);
+                      final videoFit = _resolveDisplayFit(videoSize: size);
                       return RepaintBoundary(
                         child: FittedBox(
                           fit: videoFit,
@@ -1029,7 +1050,11 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   }
 
   Widget _buildThumbnailWidget(BuildContext context) {
-    final fit = widget.videoFitOverride ?? BoxFit.contain;
+    final fit = _resolveDisplayFit(
+      videoSize: _videoPlayerController?.isInitialized == true
+          ? _videoPlayerController!.videoSize
+          : null,
+    );
     if (fit == BoxFit.cover) {
       return SizedBox.expand(
         child: _getImageWidget(

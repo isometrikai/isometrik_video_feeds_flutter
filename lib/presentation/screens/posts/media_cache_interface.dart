@@ -27,9 +27,6 @@ abstract class IMediaCacheManager {
   /// Clear all cached media
   void clearCache();
 
-  /// Clear media outside given range
-  void clearOutsideRange(List<String> activeUrls);
-
   /// Get cache statistics
   Map<String, dynamic> getCacheStats();
 }

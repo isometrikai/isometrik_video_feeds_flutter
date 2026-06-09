@@ -97,9 +97,6 @@ abstract class IVideoCacheManager {
   /// Clear all video controllers
   void clearControllers();
 
-  /// Clear controllers outside given range
-  void clearControllersOutsideRange(List<String> activeUrls);
-
   /// Get cache statistics
   Map<String, dynamic> getCacheStats();
 }

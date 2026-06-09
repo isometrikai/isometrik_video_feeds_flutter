@@ -17,7 +17,7 @@ class PostFeedOverlayMenuCoordinator {
   static void dismissIfOpen() => _dismiss?.call();
 }
 
-/// Scroll state for post-card feeds: defers heavy media work while the list moves.
+/// Vertical scroll state for post-card feeds (e.g. lock carousel while scrolling).
 class PostFeedScrollScope extends InheritedWidget {
   const PostFeedScrollScope({
     super.key,
@@ -27,9 +27,6 @@ class PostFeedScrollScope extends InheritedWidget {
 
   /// True between [ScrollStartNotification] and [ScrollEndNotification].
   final bool isScrolling;
-
-  /// Video init/playback should run only when the list is idle.
-  bool get allowHeavyMedia => !isScrolling;
 
   static PostFeedScrollScope? maybeOf(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<PostFeedScrollScope>();

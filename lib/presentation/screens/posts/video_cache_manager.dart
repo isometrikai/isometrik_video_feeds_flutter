@@ -67,9 +67,5 @@ class VideoCacheManager implements IMediaCacheManager {
   void clearCache() => _cacheManager.clearControllers();
 
   @override
-  void clearOutsideRange(List<String> activeUrls) =>
-      _cacheManager.clearControllersOutsideRange(activeUrls);
-
-  @override
   Map<String, dynamic> getCacheStats() => _cacheManager.getCacheStats();
 }
