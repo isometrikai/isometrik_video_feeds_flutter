@@ -158,7 +158,7 @@ class _SearchUserViewState extends State<SearchUserView>
         backgroundColor: Colors.white,
         appBar: IsmCustomAppBarWidget(
           backgroundColor:
-              _searchUserConfig?.appBarConfig?.backgroundColor ?? Colors.white,
+              _searchUserConfig?.appBarConfig?.backgroundColor,
           isCrossIcon: true,
           titleText: IsrTranslationFile.tagPeople,
           centerTitle: true,
@@ -167,7 +167,7 @@ class _SearchUserViewState extends State<SearchUserView>
           actions: [
             TapHandler(
               onTap: () => Navigator.pop(context, _selectedUsers.toList()),
-              child: const Icon(Icons.check, color: Colors.black, size: 24),
+              child: Icon(Icons.check, color: IsrColors.appBarIconTextColor, size: 24.responsiveDimension),
             ),
             16.horizontalSpace,
           ],
