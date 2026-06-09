@@ -172,27 +172,14 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     return _isVideoMedia(mediaList[index]);
   }
 
-  String? get _firstImageMediaUrl {
-    final first = _reel.mediaMetaDataList.firstOrNull;
-    if (first == null || _isVideoMedia(first)) return null;
-    final url = first.mediaUrl.trim();
-    return url.isEmpty ? null : url;
-  }
-
   /// Carousel frame size is locked to the first media item (Instagram-style).
-  double _fixedCardMediaAspectRatioForUrl(String? imageUrl) {
+  double _fixedCardMediaAspectRatio() {
     if (!_isInstagramStyle) return _feedUi.mediaAspectRatio;
-    final mediaList = _reel.mediaMetaDataList;
-    if (mediaList.isEmpty) return _feedUi.mediaAspectRatio;
-    final first = mediaList.first;
-    if (_isVideoMedia(first)) {
-      return _feedUi.videoMediaAspectRatio;
-    }
-    final url = imageUrl ?? first.mediaUrl;
-    return FeedMediaOrientation.aspectRatioForImageUrl(
-      url,
-      portraitAspectRatio: _feedUi.imageMediaAspectRatio,
-      landscapeAspectRatio: _feedUi.landscapeMediaAspectRatio,
+    return FeedMediaOrientation.aspectRatioForReel(
+      _reel,
+      feedUi: _feedUi,
+      paidLockStillUrl:
+          _shouldShowPaidLockOverlay ? _paidLockStillImageUrl() : null,
     );
   }
 
@@ -470,6 +457,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
           width: double.infinity,
           height: double.infinity,
           cacheKey: imageUrl,
+          cacheManager: IsrPostFeedImageCacheManager.instance,
           fadeAnimationEnable: false,
         ),
       ),
@@ -1282,10 +1270,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     final hasFixedWidth = fixedWidth != null && fixedWidth > 0;
     final hasFixedHeight = fixedHeight != null && fixedHeight > 0;
     if (!hasFixedWidth && !hasFixedHeight) {
-      final imageUrl = _firstImageMediaUrl;
       final probeListen = _isInstagramStyle &&
-          FeedMediaOrientation.shouldProbeForCurrentConfig &&
-          imageUrl != null;
+          FeedMediaOrientation.shouldProbeForCurrentConfig;
 
       Widget frame(double aspectRatio) => AspectRatio(
             aspectRatio: aspectRatio,
@@ -1295,16 +1281,19 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       if (probeListen) {
         return ClipRect(
           child: ListenableBuilder(
-            listenable: FeedMediaOrientation.listenableForUrl(imageUrl),
-            builder: (context, _) => frame(
-              _fixedCardMediaAspectRatioForUrl(imageUrl),
+            listenable: FeedMediaOrientation.listenableForReel(
+              _reel,
+              paidLockStillUrl: _shouldShowPaidLockOverlay
+                  ? _paidLockStillImageUrl()
+                  : null,
             ),
+            builder: (context, _) => frame(_fixedCardMediaAspectRatio()),
           ),
         );
       }
 
       return ClipRect(
-        child: frame(_fixedCardMediaAspectRatioForUrl(imageUrl)),
+        child: frame(_fixedCardMediaAspectRatio()),
       );
     }
 
@@ -1329,6 +1318,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
           width: double.infinity,
           height: double.infinity,
           cacheKey: imageUrl,
+          cacheManager: IsrPostFeedImageCacheManager.instance,
           fadeAnimationEnable: false,
           placeHolderWidget: (_, __) => PostFeedMediaPlaceholder(
             baseColor: _feedUi.dividerColor,
@@ -1348,7 +1338,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         thumbnailUrl: media.thumbnailUrl,
         videoCacheManager: _videoCacheManager,
         isMuted: VideoMuteController.isMuted,
-        aspectRatio: _fixedCardMediaAspectRatioForUrl(_firstImageMediaUrl),
+        aspectRatio: _fixedCardMediaAspectRatio(),
         videoFitOverride: BoxFit.cover,
         logIndex: '${widget.logIndex}-$index',
         visibilityManagedByParent: true,

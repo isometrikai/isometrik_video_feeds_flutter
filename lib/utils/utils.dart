@@ -9,6 +9,7 @@ export 'debouncer.dart';
 export 'enums.dart';
 export 'extensions.dart';
 export 'feed_media_orientation.dart';
+export 'post_feed_image_precache_service.dart';
 export 'gallery_video_trim_util.dart';
 export 'http_header_string.dart';
 export 'isr_size_config.dart';

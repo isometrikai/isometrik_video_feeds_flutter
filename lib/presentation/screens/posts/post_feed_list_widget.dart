@@ -112,12 +112,18 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
   var _isUserScrolling = false;
   int? _activePlayIndex;
   Timer? _scrollIdleDebounce;
+  Timer? _precacheDebounce;
+  final PostFeedImagePrecacheService _imagePrecache =
+      PostFeedImagePrecacheService();
 
   @override
   void initState() {
     super.initState();
     VisibilityDetectorController.instance.updateInterval =
         const Duration(milliseconds: 100);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scheduleScrollAheadPrecache();
+    });
   }
 
   void _onItemVisibilityFractionChanged(int index, double fraction) {
@@ -179,8 +185,40 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
   @override
   void dispose() {
     _scrollIdleDebounce?.cancel();
+    _precacheDebounce?.cancel();
+    _imagePrecache.cancel();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  int _estimateFirstVisibleIndex() {
+    final active = _activePlayIndex;
+    if (active != null) {
+      return active.clamp(0, widget.reelsDataList.length - 1);
+    }
+    if (!_scrollController.hasClients || widget.reelsDataList.isEmpty) {
+      return 0;
+    }
+    const estimatedPostHeight = 520.0;
+    return (_scrollController.offset / estimatedPostHeight)
+        .floor()
+        .clamp(0, widget.reelsDataList.length - 1);
+  }
+
+  void _scheduleScrollAheadPrecache() {
+    if (!FeedMediaOrientation.shouldProbeForCurrentConfig) return;
+    _precacheDebounce?.cancel();
+    _precacheDebounce = Timer(const Duration(milliseconds: 150), () {
+      if (!mounted || widget.reelsDataList.isEmpty) return;
+      final start = _estimateFirstVisibleIndex();
+      unawaited(
+        _imagePrecache.precacheReels(
+          widget.reelsDataList,
+          context: context,
+          startIndex: start,
+        ),
+      );
+    });
   }
 
   void _setUserScrolling(bool scrolling) {
@@ -218,7 +256,11 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
         if (nearEnd || metrics.pixels >= threshold) {
           _scheduleLoadMore();
         }
+        _scheduleScrollAheadPrecache();
       }
+    }
+    if (notification is ScrollEndNotification) {
+      _scheduleScrollAheadPrecache();
     }
     return false;
   }

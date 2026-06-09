@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -30,7 +31,8 @@ class AppImage extends StatelessWidget {
   })  : _imageType = ImageType.asset,
         showError = false,
         color = null,
-        cacheKey = null;
+        cacheKey = null,
+        cacheManager = null;
 
   const AppImage.svg(
     this.path, {
@@ -54,7 +56,8 @@ class AppImage extends StatelessWidget {
     this.placeHolderWidget,
   })  : _imageType = ImageType.svg,
         showError = false,
-        cacheKey = null;
+        cacheKey = null,
+        cacheManager = null;
 
   const AppImage.network(
     this.path, {
@@ -77,6 +80,7 @@ class AppImage extends StatelessWidget {
     this.blendMode,
     this.placeHolderWidget,
     this.cacheKey,
+    this.cacheManager,
   })  : _imageType = ImageType.network,
         color = null;
 
@@ -102,7 +106,8 @@ class AppImage extends StatelessWidget {
   })  : _imageType = ImageType.file,
         showError = false,
         color = null,
-        cacheKey = null;
+        cacheKey = null,
+        cacheManager = null;
 
   final String path;
   final String name;
@@ -121,6 +126,7 @@ class AppImage extends StatelessWidget {
   final Widget? Function(double? height, double? width)? placeHolderWidget;
   /// Stable disk/memory cache id (e.g. original URL). When null, [path] is used.
   final String? cacheKey;
+  final BaseCacheManager? cacheManager;
   final BoxFit? fit;
   final bool? fadeAnimationEnable;
   final BlendMode? blendMode;
@@ -166,6 +172,7 @@ class AppImage extends StatelessWidget {
               filterQuality: filterQuality,
               textColor: textColor,
               cacheKey: cacheKey,
+              cacheManager: cacheManager,
             ),
         },
       );
@@ -231,10 +238,12 @@ class _Network extends StatelessWidget {
     this.filterQuality,
     this.textColor,
     this.cacheKey,
+    this.cacheManager,
   });
 
   final String imageUrl;
   final String? cacheKey;
+  final BaseCacheManager? cacheManager;
   final String name;
   final String? placeHolderName;
   final Widget? Function(double? height, double? width)? placeHolderWidget;
@@ -279,6 +288,7 @@ class _Network extends StatelessWidget {
     return CachedNetworkImage(
       width: width,
       imageUrl: optimizedImageUrl,
+      cacheManager: cacheManager,
       filterQuality: filterQuality ?? FilterQuality.high,
       fit: fit ?? BoxFit.cover,
       alignment: Alignment.center,

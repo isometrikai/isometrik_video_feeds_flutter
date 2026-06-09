@@ -11,6 +11,30 @@ enum PostFeedMediaOrientation {
   square,
 }
 
+enum PostFeedMediaKind {
+  image,
+  video,
+}
+
+/// Early classification for card layout and scroll-ahead precache.
+class PostFeedMediaDescriptor {
+  const PostFeedMediaDescriptor({
+    required this.kind,
+    required this.orientation,
+    this.precacheUrl,
+    this.hasKnownOrientation = false,
+    this.isPaidLocked = false,
+  });
+
+  final PostFeedMediaKind kind;
+  final PostFeedMediaOrientation orientation;
+
+  /// Safe still image URL (never a video stream).
+  final String? precacheUrl;
+  final bool hasKnownOrientation;
+  final bool isPaidLocked;
+}
+
 /// Probes image headers for feed aspect ratio when the API omits dimensions.
 abstract final class FeedMediaOrientation {
   static const int _initialProbeBytes = 65536;
@@ -22,6 +46,9 @@ abstract final class FeedMediaOrientation {
   static final Map<String, ({PostFeedMediaOrientation orientation, int width, int height})> _cache =
       {};
   static final Map<String, ValueNotifier<int>> _revisionByUrl = {};
+  static final ValueNotifier<int> _noopRevision = ValueNotifier(0);
+
+  static const int _kPictureType = 0;
 
   /// Rebuild only the post card tied to [url] when its probe finishes (not the whole feed).
   static Listenable listenableForUrl(String url) {
@@ -36,13 +63,152 @@ abstract final class FeedMediaOrientation {
   static Future<void> prefetchForPosts(Iterable<TimeLineData> posts) async {
     if (!shouldProbeForCurrentConfig) return;
 
-    final urls =
-        _imageUrlsFromPosts(posts).where((url) => !_cache.containsKey(url)).toSet();
+    final urls = <String>{};
+    for (final post in posts) {
+      final url = _safeImageUrlFromTimeline(post);
+      if (url != null) urls.add(url);
+    }
+    urls.removeWhere(_cache.containsKey);
     if (urls.isEmpty) return;
 
     try {
       await _prefetchUrls(urls).timeout(_prefetchBatchTimeout, onTimeout: () {});
     } catch (_) {}
+  }
+
+  /// Orientation probe + API dimension seed for scroll-ahead post cards.
+  static Future<void> prefetchForReels(Iterable<ReelsData> reels) async {
+    if (!shouldProbeForCurrentConfig) return;
+
+    final urls = <String>{};
+    for (final reel in reels) {
+      final descriptor = resolveDescriptor(reel);
+      _seedOrientationFromApi(reel, descriptor.precacheUrl);
+      final url = descriptor.precacheUrl;
+      if (url != null && !_cache.containsKey(url)) {
+        urls.add(url);
+      }
+    }
+    if (urls.isEmpty) return;
+
+    try {
+      await _prefetchUrls(urls).timeout(_prefetchBatchTimeout, onTimeout: () {});
+    } catch (_) {}
+  }
+
+  static Listenable listenableForReel(
+    ReelsData reel, {
+    String? paidLockStillUrl,
+  }) {
+    final url = resolveDescriptor(
+      reel,
+      paidLockStillUrl: paidLockStillUrl,
+    ).precacheUrl;
+    if (url == null || url.isEmpty) return _noopRevision;
+    return listenableForUrl(url);
+  }
+
+  static PostFeedMediaDescriptor resolveDescriptor(
+    ReelsData reel, {
+    String? paidLockStillUrl,
+  }) {
+    final paidLocked = _isPaidLockedForViewer(reel);
+    if (paidLocked) {
+      final still = _usableStill(paidLockStillUrl) ??
+          _paidLockStillImageUrl(reel);
+      final apiSize = _apiDimensions(reel);
+      final orientation = apiSize != null
+          ? _orientationFromSize(apiSize.$1, apiSize.$2)
+          : PostFeedMediaOrientation.portrait;
+      if (still != null) {
+        _seedOrientationCache(still, apiSize);
+      }
+      return PostFeedMediaDescriptor(
+        kind: PostFeedMediaKind.image,
+        orientation: orientation,
+        precacheUrl: still,
+        hasKnownOrientation: apiSize != null,
+        isPaidLocked: true,
+      );
+    }
+
+    final mediaList = reel.mediaMetaDataList;
+    if (mediaList.isEmpty) {
+      return const PostFeedMediaDescriptor(
+        kind: PostFeedMediaKind.image,
+        orientation: PostFeedMediaOrientation.portrait,
+      );
+    }
+
+    final first = mediaList.first;
+    final isVideo = first.mediaType != _kPictureType;
+    final apiSize = _apiDimensions(reel);
+
+    if (isVideo) {
+      final thumb = _usableStill(first.thumbnailUrl);
+      final orientation = apiSize != null
+          ? _orientationFromSize(apiSize.$1, apiSize.$2)
+          : (thumb != null
+              ? _orientationFromUrlOrDefault(thumb)
+              : PostFeedMediaOrientation.portrait);
+      if (thumb != null) {
+        _seedOrientationCache(thumb, apiSize);
+      }
+      return PostFeedMediaDescriptor(
+        kind: PostFeedMediaKind.video,
+        orientation: orientation,
+        precacheUrl: thumb,
+        hasKnownOrientation: apiSize != null,
+      );
+    }
+
+    final imageUrl = _usableStill(first.mediaUrl) ??
+        _usableStill(first.thumbnailUrl);
+    final orientation = apiSize != null
+        ? _orientationFromSize(apiSize.$1, apiSize.$2)
+        : (imageUrl != null
+            ? _orientationFromUrlOrDefault(imageUrl)
+            : PostFeedMediaOrientation.portrait);
+    if (imageUrl != null) {
+      _seedOrientationCache(imageUrl, apiSize);
+    }
+    return PostFeedMediaDescriptor(
+      kind: PostFeedMediaKind.image,
+      orientation: orientation,
+      precacheUrl: imageUrl,
+      hasKnownOrientation: apiSize != null,
+    );
+  }
+
+  static double aspectRatioForReel(
+    ReelsData reel, {
+    required PostFeedUIConfig feedUi,
+    String? paidLockStillUrl,
+  }) {
+    final descriptor = resolveDescriptor(
+      reel,
+      paidLockStillUrl: paidLockStillUrl,
+    );
+
+    if (descriptor.kind == PostFeedMediaKind.video &&
+        descriptor.precacheUrl == null) {
+      return feedUi.videoMediaAspectRatio;
+    }
+
+    final url = descriptor.precacheUrl;
+    if (url != null && url.isNotEmpty) {
+      return aspectRatioForImageUrl(
+        url,
+        portraitAspectRatio: feedUi.imageMediaAspectRatio,
+        landscapeAspectRatio: feedUi.landscapeMediaAspectRatio,
+      );
+    }
+
+    return switch (descriptor.orientation) {
+      PostFeedMediaOrientation.landscape => feedUi.landscapeMediaAspectRatio,
+      PostFeedMediaOrientation.square => 1,
+      PostFeedMediaOrientation.portrait => feedUi.imageMediaAspectRatio,
+    };
   }
 
   static double aspectRatioForImageUrl(
@@ -78,16 +244,109 @@ abstract final class FeedMediaOrientation {
     return portraitAspectRatio;
   }
 
-  /// Only the first image per post — carousel frame uses that orientation for all pages.
-  static Iterable<String> _imageUrlsFromPosts(Iterable<TimeLineData> posts) sync* {
-    for (final post in posts) {
-      final mediaList = post.media;
-      if (mediaList == null || mediaList.isEmpty) continue;
-      final first = mediaList.first;
-      if ((first.mediaType ?? '').toLowerCase() != 'image') continue;
-      final url = first.url?.trim();
-      if (url != null && url.isNotEmpty) yield url;
+  static String? _safeImageUrlFromTimeline(TimeLineData post) {
+    final mediaList = post.media;
+    if (mediaList == null || mediaList.isEmpty) return null;
+    final first = mediaList.first;
+    final isImage = (first.mediaType ?? '').toLowerCase() == 'image';
+    if (isImage) {
+      return _usableStill(first.url) ?? _usableStill(first.previewUrl);
     }
+    return _usableStill(first.previewUrl);
+  }
+
+  static bool _isPaidLockedForViewer(ReelsData reel) {
+    if (reel.isLocked != true) return false;
+    final reason = (reel.lockReason ?? '').toLowerCase();
+    return reason == 'paid' || reel.isPaid == true;
+  }
+
+  static String? _paidLockStillImageUrl(ReelsData reel) {
+    final timeline =
+        reel.postData is TimeLineData ? reel.postData as TimeLineData : null;
+
+    Iterable<PreviewMedia> sortedPreviews() sync* {
+      final previews = timeline?.previews;
+      if (previews == null || previews.isEmpty) return;
+      final list = List<PreviewMedia>.from(previews)
+        ..sort((a, b) => (a.position ?? 0).compareTo(b.position ?? 0));
+      yield* list;
+    }
+
+    if (reel.mediaMetaDataList.isNotEmpty) {
+      final meta = reel.mediaMetaDataList.first;
+      if (meta.mediaType != _kPictureType) {
+        final thumb = _usableStill(meta.thumbnailUrl);
+        if (thumb != null) return thumb;
+        for (final p in sortedPreviews()) {
+          final hit = _usableStill(p.url);
+          if (hit != null) return hit;
+        }
+        return null;
+      }
+      return _usableStill(meta.mediaUrl) ?? _usableStill(meta.thumbnailUrl);
+    }
+
+    for (final p in sortedPreviews()) {
+      final hit = _usableStill(p.url);
+      if (hit != null) return hit;
+    }
+    return null;
+  }
+
+  static String? _usableStill(String? candidate) {
+    final s = candidate?.trim() ?? '';
+    if (s.isEmpty || _looksLikeStreamingOrVideoUrl(s)) return null;
+    return s;
+  }
+
+  static bool _looksLikeStreamingOrVideoUrl(String url) {
+    final u = url.trim().toLowerCase();
+    if (u.isEmpty) return false;
+    return u.endsWith('.mp4') ||
+        u.endsWith('.mov') ||
+        u.endsWith('.m3u8') ||
+        u.endsWith('.webm') ||
+        u.endsWith('.m4v') ||
+        u.contains('.m3u8');
+  }
+
+  static (int, int)? _apiDimensions(ReelsData reel) {
+    final post = reel.postData;
+    if (post is! TimeLineData) return null;
+    final media = post.media;
+    if (media == null || media.isEmpty) return null;
+    final first = media.first;
+    final w = first.width?.toInt() ?? 0;
+    final h = first.height?.toInt() ?? 0;
+    if (w > 0 && h > 0) return (w, h);
+    return null;
+  }
+
+  static void _seedOrientationFromApi(ReelsData reel, String? url) {
+    if (url == null) return;
+    _seedOrientationCache(url, _apiDimensions(reel));
+  }
+
+  static void _seedOrientationCache(String url, (int, int)? size) {
+    if (size == null) return;
+    final key = url.trim();
+    if (key.isEmpty || _cache.containsKey(key)) return;
+    _cache[key] = (
+      orientation: _orientationFromSize(size.$1, size.$2),
+      width: size.$1,
+      height: size.$2,
+    );
+  }
+
+  static PostFeedMediaOrientation _orientationFromUrlOrDefault(String url) {
+    final cached = _cache[url.trim()];
+    if (cached != null) return cached.orientation;
+    final urlSize = _parseSizeFromUrl(url);
+    if (urlSize != null) {
+      return _orientationFromSize(urlSize.$1, urlSize.$2);
+    }
+    return PostFeedMediaOrientation.portrait;
   }
 
   static Future<void> _prefetchUrls(Set<String> urls) async {
