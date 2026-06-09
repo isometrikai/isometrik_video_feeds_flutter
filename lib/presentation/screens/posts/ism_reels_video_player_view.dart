@@ -13,6 +13,7 @@ import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/video_player_widget.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/comment_count_action_widget.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/instagram_follow_chip.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/like_action_widget.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -2465,23 +2466,20 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
         // Show loading indicator during API call
         if (isLoading) {
-          return Container(
-            width: _followButtonConfig?.followButtonMinWidth ?? IsrDimens.sixty,
+          return SizedBox(
+            width:
+                _followButtonConfig?.followButtonMinWidth ?? IsrDimens.fiftySix,
             height:
-                _followButtonConfig?.followButtonHeight ?? IsrDimens.twentyFour,
-            decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor.withValues(alpha: 0.7),
-              borderRadius: BorderRadius.circular(IsrDimens.twenty),
-            ),
+                _followButtonConfig?.followButtonHeight ?? IsrDimens.twentyEight,
             child: Center(
               child: SizedBox(
-                width: 16,
-                height: 16,
+                width: IsrDimens.sixteen,
+                height: IsrDimens.sixteen,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   valueColor: AlwaysStoppedAnimation<Color>(
                     _followButtonConfig?.loadingIndicatorColor ??
-                        IsrColors.white,
+                        IsrColors.primaryTextColor,
                   ),
                 ),
               ),
@@ -2489,41 +2487,19 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           );
         } else if (followRequestPending &&
             _reelData.postSetting?.isUnFollowButtonVisible == true) {
-          return Container(
-            height:
-                _followButtonConfig?.followButtonHeight ?? IsrDimens.twentyFour,
-            decoration: _followButtonConfig?.followingButtonDecoration ??
-                BoxDecoration(
-                  borderRadius: BorderRadius.circular(IsrDimens.twenty),
-                  border: Border.all(
-                      color: Theme.of(context).primaryColor,
-                      width: IsrDimens.two),
-                ),
-            child: MaterialButton(
-              minWidth:
-                  _followButtonConfig?.followButtonMinWidth ?? IsrDimens.sixty,
-              height: _followButtonConfig?.followButtonHeight ??
-                  IsrDimens.twentyFour,
-              padding: _followButtonConfig?.followButtonPadding ??
-                  IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twelve),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(IsrDimens.twenty)),
-              onPressed: () => onTap(
-                reelData: _reelData,
-                postSectionType: widget.postSectionType,
-                watchDuration: _postWatchDuration.inSeconds,
-                apiCallBack: widget.onPressFollowButton != null
-                    ? () => widget.onPressFollowButton!(_reelData, isFollowing)
-                    : null,
-              ),
-              child: Text(
-                IsrTranslationFile.requested,
-                style: _textStyleConfig?.followingButtonTextStyle ??
-                    IsrStyles.primaryText12.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).primaryColor,
-                    ),
-              ),
+          return InstagramFollowChip(
+            label: IsrTranslationFile.requested,
+            filled: false,
+            variant: FollowChipVariant.reelsOverlay,
+            followButtonConfig: _followButtonConfig,
+            textShadows: _textShadows,
+            onTap: () => onTap(
+              reelData: _reelData,
+              postSectionType: widget.postSectionType,
+              watchDuration: _postWatchDuration.inSeconds,
+              apiCallBack: widget.onPressFollowButton != null
+                  ? () => widget.onPressFollowButton!(_reelData, isFollowing)
+                  : null,
             ),
           );
         } else if (!isFollowing &&
@@ -2536,76 +2512,32 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             isRequested: timelineUser?.isRequested,
             followStatus: timelineUser?.followStatus,
           );
-          return Container(
-            height:
-                _followButtonConfig?.followButtonHeight ?? IsrDimens.twentyFour,
-            decoration: _followButtonConfig?.followButtonDecoration ??
-                BoxDecoration(
-                  color: Theme.of(context).primaryColor,
-                  borderRadius: BorderRadius.circular(IsrDimens.twenty),
-                ),
-            child: MaterialButton(
-              minWidth:
-                  _followButtonConfig?.followButtonMinWidth ?? IsrDimens.sixty,
-              height: _followButtonConfig?.followButtonHeight ??
-                  IsrDimens.twentyFour,
-              padding: _followButtonConfig?.followButtonPadding ??
-                  IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twelve),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(IsrDimens.twenty)),
-              onPressed: () => onTap(
-                reelData: _reelData,
-                postSectionType: widget.postSectionType,
-                watchDuration: _postWatchDuration.inSeconds,
-                apiCallBack: widget.onPressFollowButton != null
-                    ? () => widget.onPressFollowButton!(_reelData, isFollowing)
-                    : null,
-              ),
-              child: Text(
-                showRequest
-                    ? IsrTranslationFile.request
-                    : IsrTranslationFile.follow,
-                style: _textStyleConfig?.followButtonTextStyle ??
-                    IsrStyles.white12.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
+          return InstagramFollowChip(
+            label: showRequest
+                ? IsrTranslationFile.request
+                : IsrTranslationFile.follow,
+            filled: true,
+            variant: FollowChipVariant.reelsOverlay,
+            followButtonConfig: _followButtonConfig,
+            textShadows: _textShadows,
+            onTap: () => onTap(
+              reelData: _reelData,
+              postSectionType: widget.postSectionType,
+              watchDuration: _postWatchDuration.inSeconds,
+              apiCallBack: widget.onPressFollowButton != null
+                  ? () => widget.onPressFollowButton!(_reelData, isFollowing)
+                  : null,
             ),
           );
         } else if (isFollowing &&
             _reelData.postSetting?.isFollowButtonVisible == true) {
-          return Container(
-            height:
-                _followButtonConfig?.followButtonHeight ?? IsrDimens.twentyFour,
-            decoration: _followButtonConfig?.followingButtonDecoration ??
-                BoxDecoration(
-                  borderRadius: BorderRadius.circular(IsrDimens.twenty),
-                  border: Border.all(
-                      color: Theme.of(context).primaryColor,
-                      width: IsrDimens.two),
-                ),
-            child: MaterialButton(
-              minWidth:
-                  _followButtonConfig?.followButtonMinWidth ?? IsrDimens.sixty,
-              height: _followButtonConfig?.followButtonHeight ??
-                  IsrDimens.twentyFour,
-              padding: _followButtonConfig?.followButtonPadding ??
-                  IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twelve),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(IsrDimens.twenty),
-              ),
-              onPressed: () => onTap(reelData: _reelData),
-              // <-- your unfollow logic
-              child: Text(
-                IsrTranslationFile.following,
-                style: _textStyleConfig?.followingButtonTextStyle ??
-                    IsrStyles.primaryText12.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).primaryColor,
-                      shadows: _textShadows,
-                    ),
-              ),
-            ),
+          return InstagramFollowChip(
+            label: IsrTranslationFile.following,
+            filled: false,
+            variant: FollowChipVariant.reelsOverlay,
+            followButtonConfig: _followButtonConfig,
+            textShadows: _textShadows,
+            onTap: () => onTap(reelData: _reelData),
           );
         }
         return const SizedBox.shrink();

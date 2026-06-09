@@ -14,6 +14,7 @@ import 'package:ism_video_reel_player/presentation/screens/posts/widgets/like_ac
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_carousel_keep_alive_page.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/sound_selection/sound_track_detail_screen.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_media_carousel.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/instagram_follow_chip.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_scroll_scope.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -1445,7 +1446,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
             Expanded(child: _buildHeaderUserColumn()),
             if (!_isViewerPostAuthor) ...[
               IsrDimens.boxWidth(IsrDimens.eight),
-              _buildFollowButton(instagramChipStyle: true),
+              _buildFollowButton(variant: FollowChipVariant.feed),
             ],
             if (_reel.postSetting?.isMoreButtonVisible == true) ...[
               IsrDimens.boxWidth(IsrDimens.four),
@@ -1577,7 +1578,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
                 Expanded(child: _buildMediaUserTitle()),
                 if (!_isViewerPostAuthor) ...[
                   IsrDimens.boxWidth(IsrDimens.eight),
-                  _buildFollowButton(instagramChipStyle: false),
+                  _buildFollowButton(variant: FollowChipVariant.feed),
                 ],
                 if (_reel.postSetting?.isMoreButtonVisible == true) ...[
                   IsrDimens.boxWidth(IsrDimens.eight),
@@ -1656,7 +1657,9 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         ),
       );
 
-  Widget _buildFollowButton({required bool instagramChipStyle}) {
+  Widget _buildFollowButton({
+    FollowChipVariant variant = FollowChipVariant.theme,
+  }) {
     final timelineUser = _reel.postData is TimeLineData
         ? (_reel.postData as TimeLineData).user
         : null;
@@ -1696,7 +1699,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
           return _buildFollowChip(
             label: IsrTranslationFile.requested,
             filled: false,
-            instagramChipStyle: instagramChipStyle,
+            variant: variant,
             onTap: () => onTap(
               reelData: _reel,
               postSectionType: widget.postSectionType,
@@ -1722,7 +1725,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
                 ? IsrTranslationFile.request
                 : IsrTranslationFile.follow,
             filled: true,
-            instagramChipStyle: instagramChipStyle,
+            variant: variant,
             onTap: () => onTap(
               reelData: _reel,
               postSectionType: widget.postSectionType,
@@ -1737,7 +1740,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
           return _buildFollowChip(
             label: IsrTranslationFile.following,
             filled: false,
-            instagramChipStyle: instagramChipStyle,
+            variant: variant,
             onTap: () => onTap(reelData: _reel),
           );
         }
@@ -1751,81 +1754,30 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     required String label,
     required bool filled,
     required VoidCallback onTap,
-    required bool instagramChipStyle,
-  }) {
-    final height =
-        _followButtonConfig?.followButtonHeight ?? IsrDimens.twentyEight;
-    final isDarkBackground = _feedUi.backgroundColor.computeLuminance() < 0.5;
-    final instagramFilledDecoration = BoxDecoration(
-      color: isDarkBackground
-          ? Colors.white.withValues(alpha: 0.18)
-          : const Color(0xFFEFEFEF),
-      borderRadius: BorderRadius.circular(IsrDimens.eight),
-    );
-    final instagramOutlinedDecoration = BoxDecoration(
-      color: isDarkBackground
-          ? Colors.white.withValues(alpha: 0.14)
-          : const Color(0xFFEFEFEF),
-      borderRadius: BorderRadius.circular(IsrDimens.eight),
-      border: Border.all(
-        color: isDarkBackground
-            ? Colors.white.withValues(alpha: 0.28)
-            : const Color(0xFFDBDBDB),
-      ),
-    );
-
-    return Container(
-      height: height,
-      decoration: filled
-          ? (instagramChipStyle
-              ? instagramFilledDecoration
-              : (_followButtonConfig?.followButtonDecoration ??
-                  BoxDecoration(
-                    color: Theme.of(context).primaryColor,
-                    borderRadius: BorderRadius.circular(IsrDimens.eight),
-                  )))
-          : (instagramChipStyle
-              ? instagramOutlinedDecoration
-              : (_followButtonConfig?.followingButtonDecoration ??
-                  BoxDecoration(
-                    borderRadius: BorderRadius.circular(IsrDimens.eight),
-                    border: Border.all(
-                        color: IsrColors.white, width: IsrDimens.one),
-                  ))),
-      child: MaterialButton(
-        onPressed: onTap,
-        elevation: 0,
-        highlightElevation: 0,
-        minWidth:
-            _followButtonConfig?.followButtonMinWidth ?? IsrDimens.fiftySix,
-        height: height,
-        padding: _followButtonConfig?.followButtonPadding ??
-            IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twelve),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(IsrDimens.eight),
-        ),
-        color: Colors.transparent,
-        child: Text(
-          label,
-          style: filled
-              ? (instagramChipStyle
-                  ? IsrStyles.primaryText12.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: _feedUi.headerTextColor,
-                    )
-                  : (_textStyleConfig?.followButtonTextStyle ??
-                      IsrStyles.white12.copyWith(fontWeight: FontWeight.w600)))
-              : (instagramChipStyle
-                  ? IsrStyles.primaryText12.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: _feedUi.headerTextColor,
-                    )
-                  : (_textStyleConfig?.followingButtonTextStyle ??
-                      IsrStyles.white12.copyWith(fontWeight: FontWeight.w600))),
-        ),
-      ),
-    );
-  }
+    required FollowChipVariant variant,
+  }) =>
+      InstagramFollowChip(
+        label: label,
+        filled: filled,
+        onTap: onTap,
+        variant: variant,
+        followButtonConfig: _followButtonConfig,
+        headerTextColor: _feedUi.headerTextColor,
+        feedBackgroundIsDark:
+            _feedUi.backgroundColor.computeLuminance() < 0.5,
+        followButtonTextStyle: _textStyleConfig?.followButtonTextStyle,
+        followingButtonTextStyle:
+            _textStyleConfig?.followingButtonTextStyle,
+        textShadows: variant == FollowChipVariant.reelsOverlay
+            ? const [
+                Shadow(
+                  offset: Offset(0, 1),
+                  blurRadius: 3,
+                  color: Color(0x99000000),
+                ),
+              ]
+            : null,
+      );
 
   Widget _buildPostFeedMuteIcon({required double size}) => Icon(
         VideoMuteController.isMuted
