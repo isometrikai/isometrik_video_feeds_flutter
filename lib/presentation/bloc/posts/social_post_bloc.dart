@@ -51,6 +51,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       : super(PostLoadingState(isLoading: true)) {
     on<StartPost>(_onStartPost);
     on<LoadPostData>(_onLoadHomeData);
+    on<LoadHomeTabEvent>(_onLoadHomeTab);
     on<GetTimeLinePostEvent>(_getTimeLinePost);
     on<GetTrendingPostEvent>(_getTrendingPost);
     on<SavePostEvent>(_savePost);
@@ -103,6 +104,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   TextEditingController? descriptionController;
 
   final _postsByTab = <PostTabAssistData>[];
+  final Set<PostSectionType> _homeTabLoadInFlight = {};
 
   PostTabAssistData _getTabAssistData(PostSectionType tab) => _postsByTab
           .toList()
@@ -114,6 +116,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
 
   bool hasMorePagesForTab(PostSectionType tab) =>
       _getTabAssistData(tab).hasMorePages;
+
+  bool hasTabAssistData(PostSectionType tab) =>
+      _postsByTab.any((t) => t.postSectionType == tab);
 
   bool get _sdkFollowCacheOn =>
       IsrVideoReelConfig.feedCacheConfig != null &&
@@ -254,109 +259,134 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     LoadPostData event,
     Emitter<SocialPostState> emit,
   ) async {
-    // final userId = await _localDataUseCase.getUserId();
     try {
-      emit(PostLoadingState(isLoading: true));
       _postsByTab.clear();
       _postsByTab.addAll(event.postSections);
+      _homeTabLoadInFlight.clear();
+
       final tabList = _postsByTab.toList();
       if (event.startTabIndex > 0 && event.startTabIndex < tabList.length) {
         final startTab = tabList.removeAt(event.startTabIndex);
         tabList.insert(0, startTab);
       }
-      final isUserLoggedIn = await this.isUserLoggedIn;
-      final useFeedHostCache = IsrVideoReelConfig.feedCacheConfig != null;
-      if (!useFeedHostCache) {
-        for (final postTab in tabList) {
-          emit(PostLoadingState(
-              isLoading: true, postType: postTab.postSectionType));
-          if (postTab.postList.isEmpty) {
-            if (postTab.postId?.trim().isNotEmpty == true &&
-                postTab.postList.isEmpty) {
-              final postIdData = await _getPostDetails(postTab.postId ?? '');
-              if (postIdData != null) {
-                postTab.postList.add(postIdData);
-                add(LoadPostsEvent(
-                  postType: postTab.postSectionType,
-                  postList: postTab.postList,
-                ));
-              }
-            }
-            if (!postTab.postSectionType.isUserDependent || isUserLoggedIn) {
-              await _callGetTabPost(postTab, false, false, false, null);
-            }
-          }
-          add(LoadPostsEvent(
-            postType: postTab.postSectionType,
-            postList: postTab.postList,
-          ));
-          _socialActionCubit.updatePostList(postTab.postList);
-        }
-      } else {
-        if (_sdkFollowCacheOn) {
-          await IsrFeedCacheRepository.instance.ensureInitialized();
-        }
-        for (final postTab in tabList) {
-          if (postTab.postList.isEmpty) {
-            await _seedFollowSensitiveTabFromCache(postTab);
-          }
-          final hasSeededList = postTab.postList.isNotEmpty;
-          if (hasSeededList) {
-            unawaited(
-              FeedMediaOrientation.prefetchForPosts(postTab.postList),
-            );
-            add(LoadPostsEvent(
-              postType: postTab.postSectionType,
-              postList: postTab.postList,
-            ));
-            _socialActionCubit.updatePostList(postTab.postList);
-          } else {
-            emit(PostLoadingState(
-                isLoading: true, postType: postTab.postSectionType));
-          }
-          if (postTab.postList.isEmpty &&
-              postTab.postId?.trim().isNotEmpty == true) {
-            final postIdData = await _getPostDetails(postTab.postId ?? '');
-            if (postIdData != null) {
-              postTab.postList.add(postIdData);
-              add(LoadPostsEvent(
-                postType: postTab.postSectionType,
-                postList: postTab.postList,
-              ));
-            }
-          }
 
-          if (!postTab.postSectionType.isUserDependent || isUserLoggedIn) {
-            await _callGetTabPost(
-              postTab,
-              false,
-              false,
-              false,
-              null,
-              mergeWithExisting: hasSeededList,
-            );
-          }
-          add(LoadPostsEvent(
-            postType: postTab.postSectionType,
-            postList: postTab.postList,
-          ));
-          _socialActionCubit.updatePostList(postTab.postList);
-        }
+      if (_sdkFollowCacheOn) {
+        await IsrFeedCacheRepository.instance.ensureInitialized();
+      }
+
+      // One event per tab so Following/Feeds are not blocked behind For You.
+      for (final postTab in tabList) {
+        add(LoadHomeTabEvent(postSectionType: postTab.postSectionType));
       }
     } catch (error) {
       emit(SocialPostError(error.toString()));
     }
   }
 
+  Future<void> _onLoadHomeTab(
+    LoadHomeTabEvent event,
+    Emitter<SocialPostState> emit,
+  ) async {
+    if (_homeTabLoadInFlight.contains(event.postSectionType)) return;
+    _homeTabLoadInFlight.add(event.postSectionType);
+
+    final postTab = _getTabAssistData(event.postSectionType);
+    try {
+      final isUserLoggedIn = await this.isUserLoggedIn;
+      final useFeedHostCache = IsrVideoReelConfig.feedCacheConfig != null;
+
+      if (!useFeedHostCache) {
+        emit(PostLoadingState(
+            isLoading: true, postType: postTab.postSectionType));
+        if (postTab.postList.isEmpty) {
+          if (postTab.postId?.trim().isNotEmpty == true) {
+            final postIdData = await _getPostDetails(postTab.postId ?? '');
+            if (postIdData != null) {
+              postTab.postList.add(postIdData);
+              await _emitLoadedPosts(
+                emit,
+                postTab.postSectionType,
+                postTab.postList,
+              );
+            }
+          }
+          if (!postTab.postSectionType.isUserDependent || isUserLoggedIn) {
+            await _callGetTabPost(postTab, false, false, false, null);
+          }
+        }
+      } else {
+        if (postTab.postList.isEmpty) {
+          await _seedFollowSensitiveTabFromCache(postTab);
+        }
+        final hasSeededList = postTab.postList.isNotEmpty;
+        if (hasSeededList) {
+          unawaited(FeedMediaOrientation.prefetchForPosts(postTab.postList));
+          await _emitLoadedPosts(
+            emit,
+            postTab.postSectionType,
+            postTab.postList,
+          );
+          _socialActionCubit.updatePostList(postTab.postList);
+        } else {
+          emit(PostLoadingState(
+              isLoading: true, postType: postTab.postSectionType));
+        }
+        if (postTab.postList.isEmpty &&
+            postTab.postId?.trim().isNotEmpty == true) {
+          final postIdData = await _getPostDetails(postTab.postId ?? '');
+          if (postIdData != null) {
+            postTab.postList.add(postIdData);
+            await _emitLoadedPosts(
+              emit,
+              postTab.postSectionType,
+              postTab.postList,
+            );
+          }
+        }
+        if (!postTab.postSectionType.isUserDependent || isUserLoggedIn) {
+          await _callGetTabPost(
+            postTab,
+            false,
+            false,
+            false,
+            null,
+            mergeWithExisting: hasSeededList,
+          );
+        }
+      }
+
+      await _emitLoadedPosts(
+        emit,
+        postTab.postSectionType,
+        postTab.postList,
+      );
+      _socialActionCubit.updatePostList(postTab.postList);
+    } catch (error) {
+      await _emitLoadedPosts(
+        emit,
+        postTab.postSectionType,
+        postTab.postList,
+      );
+      emit(SocialPostError(error.toString()));
+    } finally {
+      _homeTabLoadInFlight.remove(event.postSectionType);
+    }
+  }
+
   FutureOr<void> _getMorePost(
       GetMorePostEvent event, Emitter<SocialPostState> emit) async {
+    final tab = _getTabAssistData(event.postSectionType);
     await _callGetTabPost(
-      _getTabAssistData(event.postSectionType),
+      tab,
       event.isRefresh,
       event.isPagination,
       event.isLoading,
       event.onComplete,
     );
+    if (event.onComplete == null) {
+      await _emitLoadedPosts(emit, event.postSectionType, tab.postList);
+      _socialActionCubit.updatePostList(tab.postList);
+    }
   }
 
   FutureOr<void> _getTimeLinePost(
@@ -412,6 +442,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       tabAssistData.currentPage = 1;
       tabAssistData.cursor = null;
     } else if (tabAssistData.isLoadingMore) {
+      if (onComplete != null) {
+        onComplete(List<TimeLineData>.from(tabAssistData.postList));
+      }
       return;
     }
 
@@ -1293,14 +1326,26 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     }
   }
 
-  FutureOr<void> _loadPosts(
-      LoadPostsEvent event, Emitter<SocialPostState> emit) async {
+  /// Emits [SocialPostLoadedState] immediately. Use inside [LoadPostData] instead
+  /// of [add] + [LoadPostsEvent] so each tab can clear its shimmer without
+  /// waiting for every other tab's network call to finish.
+  Future<void> _emitLoadedPosts(
+    Emitter<SocialPostState> emit,
+    PostSectionType postType,
+    List<TimeLineData> postList,
+  ) async {
     final myUserId = await _localDataUseCase.getUserId();
+    if (isClosed) return;
     emit(SocialPostLoadedState(
-      postType: event.postType,
-      postList: event.postList,
+      postType: postType,
+      postList: postList,
       userId: myUserId,
     ));
+  }
+
+  FutureOr<void> _loadPosts(
+      LoadPostsEvent event, Emitter<SocialPostState> emit) async {
+    await _emitLoadedPosts(emit, event.postType, event.postList);
   }
 
   FutureOr<void> _getPostInsightDetails(

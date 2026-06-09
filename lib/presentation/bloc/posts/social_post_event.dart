@@ -22,6 +22,15 @@ class LoadPostData extends SocialPostEvent {
   final List<PostTabAssistData> postSections;
 }
 
+/// Loads one home/reels tab without blocking other tabs (Following, Feeds, etc.).
+class LoadHomeTabEvent extends SocialPostEvent {
+  const LoadHomeTabEvent({
+    required this.postSectionType,
+  });
+
+  final PostSectionType postSectionType;
+}
+
 class LoadPostsEvent extends SocialPostEvent {
   LoadPostsEvent({
     required this.postType,

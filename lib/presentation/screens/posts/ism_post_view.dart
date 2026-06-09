@@ -208,12 +208,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         }
         if (!mounted || requestId != _tabChangeRequestId) return;
         setState(() {});
-        if (tabData.tabDataModel.reelsDataList.isEmpty && !tabData.isLoading) {
-          final result = await _handlePostRefresh(tabData);
-          if (!mounted || requestId != _tabChangeRequestId) return;
-          if (result) {
-            setState(() {});
-          }
+        if (tabData.tabDataModel.reelsDataList.isEmpty) {
+          _requestHomeTabLoad(tabData);
         }
       }
     });
@@ -279,6 +275,16 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                 tagType: _.tagType,
                 tagValue: _.tagValue))
             .toList()));
+  }
+
+  void _requestHomeTabLoad(TabStateModel tabState) {
+    tabState.isLoading = true;
+    final section = tabState.tabDataModel.postSectionType;
+    if (!_socialPostBloc.hasTabAssistData(section)) {
+      _dispatchInitialPostLoad();
+      return;
+    }
+    _socialPostBloc.add(LoadHomeTabEvent(postSectionType: section));
   }
 
   void _scheduleInitialCommentOpen() {
@@ -450,6 +456,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                       _mappedReelsByTab.remove(state.postType);
                       _mappedReelsVersionByTab.remove(state.postType);
                       tabStateData?.isLoading = false;
+                      if (mounted) setState(() {});
                     } else if (state is PostLoadingState &&
                         state.postType != null) {
                       final tabStateData = _tabDataModelList
@@ -1521,6 +1528,12 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     for (var tabData in _tabDataModelList) {
       if (tabData.tabDataModel.postSectionType.isUserDependent) {
         tabData.tabDataModel.reelsDataList.clear();
+        tabData.isLoading = true;
+        if (userId.isNotEmpty) {
+          _requestHomeTabLoad(tabData);
+        } else {
+          tabData.isLoading = false;
+        }
         updateState = true;
         debugPrint(
             'ism_post_view: user changed: $userId, reels cleared ${tabData.tabDataModel.title} ');
