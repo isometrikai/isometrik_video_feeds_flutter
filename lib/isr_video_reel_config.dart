@@ -9,6 +9,7 @@ import 'package:ism_video_reel_player/core/core.dart';
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/cache/isr_feed_cache.dart';
 import 'package:ism_video_reel_player/isr_feed_cache_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -214,6 +215,13 @@ class IsrVideoReelConfig {
       userId: userInfoClass?.userId,
       userInfoClass: userInfoClass,
     );
+    if (IsrVideoReelConfig.feedCacheConfig != null) {
+      unawaited(
+        IsrFeedCacheRepository.instance.reopenForOwner(
+          userInfoClass?.userId ?? '',
+        ),
+      );
+    }
     getBuildContext = getCurrentBuildContext;
     _triggerEventLog();
     unawaited(_updateHeaderAddressFromIp());
@@ -269,6 +277,26 @@ class IsrVideoReelConfig {
         searchScreenConfig ?? IsrVideoReelConfig.searchScreenConfig;
     IsrVideoReelConfig.storyConfig = storyConfig;
     IsrVideoReelConfig.feedCacheConfig = feedCacheConfig;
+    unawaited(_applyFeedCacheConfig(feedCacheConfig));
+  }
+
+  static Future<void> _applyFeedCacheConfig(
+    IsrFeedCacheConfig? feedCacheConfig,
+  ) async {
+    if (feedCacheConfig == null) {
+      IsrFeedCacheSync.instance.detach();
+      return;
+    }
+    var owner = 'guest';
+    try {
+      owner =
+          await IsmInjectionUtils.getUseCase<IsmLocalDataUseCase>().getUserId();
+    } catch (_) {}
+    await IsrFeedCacheRepository.instance.init(
+      config: feedCacheConfig,
+      ownerKey: owner,
+    );
+    IsrFeedCacheSync.instance.attach();
   }
 
   static Future<void> _updateHeaderAddressFromIp() async {

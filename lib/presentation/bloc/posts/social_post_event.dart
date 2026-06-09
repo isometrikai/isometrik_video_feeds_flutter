@@ -84,6 +84,13 @@ class FollowUserEvent extends SocialPostEvent {
   final FollowAction followAction;
 }
 
+/// Removes all posts by [userId] from Following/Feeds tabs and refreshes from API.
+class PurgeAuthorFromFollowFeedsEvent extends SocialPostEvent {
+  const PurgeAuthorFromFollowFeedsEvent(this.userId);
+
+  final String userId;
+}
+
 class SavePostEvent extends SocialPostEvent {
   const SavePostEvent({
     required this.postId,

@@ -59,6 +59,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     on<ReportEvent>(_report);
     on<LikePostEvent>(_likePost);
     on<FollowUserEvent>(_followUser);
+    on<PurgeAuthorFromFollowFeedsEvent>(_purgeAuthorFromFollowFeeds);
     on<DeletePostEvent>(_deletePost);
     on<GetSocialProductsEvent>(_getSocialProducts);
     on<GetPostCommentsEvent>(_getPostComments);
@@ -113,6 +114,87 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
 
   bool hasMorePagesForTab(PostSectionType tab) =>
       _getTabAssistData(tab).hasMorePages;
+
+  bool get _sdkFollowCacheOn =>
+      IsrVideoReelConfig.feedCacheConfig != null &&
+      IsrFeedCacheRepository.instance.isEnabled;
+
+  bool _useMergeForTab(
+    PostSectionType type, {
+    required bool isFromRefresh,
+    required bool mergeWithExisting,
+    required bool feedHostCacheOn,
+  }) {
+    if (!feedHostCacheOn || isrFollowSensitivePostSection(type)) {
+      return false;
+    }
+    return mergeWithExisting || isFromRefresh;
+  }
+
+  String? _timelineAuthorId(TimeLineData post) {
+    final fromUser = post.user?.id;
+    if (fromUser != null && fromUser.isNotEmpty) return fromUser;
+    final userId = post.userId;
+    if (userId != null && userId.isNotEmpty) return userId;
+    return null;
+  }
+
+  Future<void> _seedFollowSensitiveTabFromCache(PostTabAssistData postTab) async {
+    if (!_sdkFollowCacheOn || postTab.postList.isNotEmpty) return;
+    final section =
+        IsrFeedCacheSectionMapping.fromPostSectionType(postTab.postSectionType);
+    if (section == null) return;
+    await IsrFeedCacheRepository.instance.ensureInitialized();
+    if (IsrFeedCacheRepository.instance.isSectionExpired(section)) return;
+    for (final map in IsrFeedCacheRepository.instance.getPosts(section)) {
+      try {
+        postTab.postList.add(TimeLineData.fromMap(map));
+      } catch (_) {}
+    }
+  }
+
+  Future<void> _persistFollowSensitiveTabToCache(
+    PostSectionType postSectionType,
+    List<TimeLineData> posts, {
+    required bool isFromPagination,
+    required bool hasMore,
+    required int currentPage,
+  }) async {
+    if (!_sdkFollowCacheOn || !isrFollowSensitivePostSection(postSectionType)) {
+      return;
+    }
+    final section = IsrFeedCacheSectionMapping.fromPostSectionType(postSectionType);
+    if (section == null || posts.isEmpty) return;
+    final maps = posts.map((e) => e.toMap()).toList();
+    if (isFromPagination) {
+      await IsrFeedCacheRepository.instance.appendSection(
+        section,
+        maps,
+        hasMore: hasMore,
+        currentPage: currentPage,
+      );
+    } else {
+      await IsrFeedCacheRepository.instance.replaceSection(
+        section,
+        maps,
+        hasMore: hasMore,
+        currentPage: currentPage,
+      );
+    }
+  }
+
+  void _purgeAuthorFromFollowSensitiveTabs(String authorUserId) {
+    if (authorUserId.isEmpty) return;
+    for (final type in [
+      PostSectionType.following,
+      PostSectionType.feeds,
+    ]) {
+      final tab =
+          _postsByTab.where((t) => t.postSectionType == type).firstOrNull;
+      if (tab == null) continue;
+      tab.postList.removeWhere((p) => _timelineAuthorId(p) == authorUserId);
+    }
+  }
 
   void _syncPageBasedHasMore({
     required PostTabAssistData tabAssistData,
@@ -211,7 +293,13 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
           _socialActionCubit.updatePostList(postTab.postList);
         }
       } else {
+        if (_sdkFollowCacheOn) {
+          await IsrFeedCacheRepository.instance.ensureInitialized();
+        }
         for (final postTab in tabList) {
+          if (postTab.postList.isEmpty) {
+            await _seedFollowSensitiveTabFromCache(postTab);
+          }
           final hasSeededList = postTab.postList.isNotEmpty;
           if (hasSeededList) {
             unawaited(
@@ -295,11 +383,14 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     final tabAssistData = _getTabAssistData(postSectionType);
     final requestedPage = tabAssistData.currentPage;
     final feedHostCacheOn = IsrVideoReelConfig.feedCacheConfig != null;
-    // Treat host-cache refresh as a merge so the visible list is never wiped
-    // when the user pulls to refresh; new items still land on top via
-    // `mergeWithExisting`'s prepend branch below.
-    final mergeEnabled =
-        feedHostCacheOn && (mergeWithExisting || isFromRefresh);
+    // Following/Feeds always replace on refresh (unfollow-safe). Other tabs may merge.
+    final mergeEnabled = _useMergeForTab(
+      postSectionType,
+      isFromRefresh: isFromRefresh,
+      mergeWithExisting: mergeWithExisting,
+      feedHostCacheOn: feedHostCacheOn,
+    );
+    final followSensitive = isrFollowSensitivePostSection(postSectionType);
 
     // For refresh, clear cache and start from page 1. With host-cache enabled,
     // keep the existing list visible and merge new items at the top instead
@@ -506,6 +597,13 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         if (newOnly.isNotEmpty) {
           tabAssistData.postList.insertAll(0, newOnly);
         }
+      } else if (followSensitive &&
+          (isFromRefresh || tabAssistData.postList.isNotEmpty) &&
+          postDataList.isNotEmpty) {
+        // Replace in-memory list with authoritative API page (removes unfollowed authors).
+        tabAssistData.postList
+          ..clear()
+          ..addAll(postDataList);
       } else {
         tabAssistData.postList
           ..clear()
@@ -534,12 +632,26 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       unawaited(FeedMediaOrientation.prefetchForPosts(postDataList));
     }
 
+    if (followSensitive && postDataList.isNotEmpty) {
+      unawaited(
+        _persistFollowSensitiveTabToCache(
+          postSectionType,
+          isFromPagination ? postDataList : tabAssistData.postList,
+          isFromPagination: isFromPagination,
+          hasMore: tabAssistData.hasMorePages,
+          currentPage: tabAssistData.currentPage,
+        ),
+      );
+    }
+
     if (onComplete != null) {
       // When merging (host-cache enabled refresh or seeded mount), hand the
       // caller the FULL merged list so refresh UIs that do
       // `reelsDataList..clear()..addAll(result)` don't wipe cached items when
       // the API page is empty or fully overlaps the cache.
-      onComplete(mergeEnabled
+      final handFullList = mergeEnabled ||
+          (followSensitive && !isFromPagination);
+      onComplete(handFullList
           ? List<TimeLineData>.from(tabAssistData.postList)
           : postDataList);
     }
@@ -664,19 +776,51 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
 
     if (apiResult.isSuccess) {
       event.onComplete.call(true);
+      if (event.followAction == FollowAction.unfollow) {
+        _purgeAuthorFromFollowSensitiveTabs(event.followingId);
+        unawaited(
+          IsrFeedCacheRepository.instance
+              .removePostsByAuthor(event.followingId),
+        );
+      }
     } else {
       ErrorHandler.showAppError(appError: apiResult.error);
       event.onComplete.call(false);
     }
-    if (_postsByTab
-        .any((_) => _.postSectionType == PostSectionType.following)) {
-      await _callGetTabPost(_getTabAssistData(PostSectionType.following), true,
-          false, false, null);
+    if (apiResult.isSuccess) {
+      await _refreshFollowSensitiveTabsAfterFollowChange();
     }
-    if (_postsByTab.any((_) => _.postSectionType == PostSectionType.feeds)) {
-      await _callGetTabPost(
-          _getTabAssistData(PostSectionType.feeds), true, false, false, null);
+  }
+
+  Future<void> _refreshFollowSensitiveTabsAfterFollowChange() async {
+    for (final type in [
+      PostSectionType.following,
+      PostSectionType.feeds,
+    ]) {
+      if (!_postsByTab.any((t) => t.postSectionType == type)) continue;
+      final tab = _getTabAssistData(type);
+      await _callGetTabPost(tab, true, false, false, null);
+      add(LoadPostsEvent(postType: type, postList: tab.postList));
+      _socialActionCubit.updatePostList(tab.postList);
     }
+  }
+
+  FutureOr<void> _purgeAuthorFromFollowFeeds(
+    PurgeAuthorFromFollowFeedsEvent event,
+    Emitter<SocialPostState> emit,
+  ) async {
+    if (event.userId.isEmpty) return;
+    _purgeAuthorFromFollowSensitiveTabs(event.userId);
+    for (final type in [
+      PostSectionType.following,
+      PostSectionType.feeds,
+    ]) {
+      if (!_postsByTab.any((t) => t.postSectionType == type)) continue;
+      final tab = _getTabAssistData(type);
+      add(LoadPostsEvent(postType: type, postList: tab.postList));
+      _socialActionCubit.updatePostList(tab.postList);
+    }
+    await _refreshFollowSensitiveTabsAfterFollowChange();
   }
 
   FutureOr<void> _getSocialProducts(
