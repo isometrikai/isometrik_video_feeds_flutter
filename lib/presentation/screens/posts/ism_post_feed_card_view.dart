@@ -15,7 +15,7 @@ import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_fe
 import 'package:ism_video_reel_player/presentation/screens/media/sound_selection/sound_track_detail_screen.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_media_carousel.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/instagram_follow_chip.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/widgets/instagram_meta_cube_flip.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/instagram_meta_vertical_scroll.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_scroll_scope.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -944,7 +944,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       );
       content = ValueListenableBuilder<bool>(
         valueListenable: _metaAlternatorShowsSound,
-        builder: (context, showsSound, _) => InstagramMetaCubeFlip(
+        builder: (context, showsSound, _) => InstagramMetaVerticalScroll(
           showSecond: showsSound,
           firstChild: locationRow,
           secondChild: soundRow,
