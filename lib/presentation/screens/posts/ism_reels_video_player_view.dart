@@ -231,7 +231,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       if (!_hasFetchedFloatingComments) {
         _fetchFloatingCommentsIfNeeded();
       }
-      if (!_isPlaybackBlocked && IsrVideoReelConfig.isHostFeedTabVisible) {
+      if (!_isPlaybackBlocked && IsrVideoReelConfig.allowsPlayback) {
         _resumePlayback();
         if (_isCurrentMediaImage) {
           unawaited(_startImageSoundIfNeeded());
@@ -1314,7 +1314,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   Widget _buildSoundDisc(String imageUrl) {
-    final size = 28.responsiveDimension;
+    final size = 20.responsiveDimension;
     return Container(
       width: size,
       height: size,
@@ -1322,12 +1322,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         shape: BoxShape.circle,
         border: Border.all(
           color: IsrColors.white,
-          width: 1.5,
+          width: 1,
         ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.changeOpacity(0.35),
-            blurRadius: 4,
+            blurRadius: 3,
             offset: const Offset(0, 1),
           ),
         ],
@@ -1344,7 +1344,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 color: IsrColors.black.changeOpacity(0.45),
                 child: Icon(
                   Icons.music_note,
-                  size: 14.responsiveDimension,
+                  size: 10.responsiveDimension,
                   color: IsrColors.white,
                 ),
               ),
@@ -1352,7 +1352,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     );
   }
 
-  /// Song row below caption: note + title (left), circular artwork (right).
+  /// Song row below caption: note + title + circular artwork (left-aligned).
   Widget _buildPostSoundRow() {
     final sound = _reelData.sound;
     if (sound == null || !sound.hasId) return const SizedBox.shrink();
@@ -1372,7 +1372,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             shadows: _textShadows,
           ),
           IsrDimens.boxWidth(IsrDimens.six),
-          Expanded(
+          Flexible(
             child: Text(
               label,
               maxLines: 1,
@@ -1384,7 +1384,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               ),
             ),
           ),
-          IsrDimens.boxWidth(IsrDimens.ten),
+          IsrDimens.boxWidth(IsrDimens.six),
           _buildSoundDisc(thumbUrl),
         ],
       ),
@@ -2895,7 +2895,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       if (!shouldBlock &&
           pausePlayback &&
           isCurrentReel &&
-          IsrVideoReelConfig.isHostFeedTabVisible) {
+          IsrVideoReelConfig.allowsPlayback) {
         _resumePlayback();
         if (_isCurrentMediaImage) {
           unawaited(_startImageSoundIfNeeded());
@@ -2912,7 +2912,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       return;
     }
     if (!pausePlayback) return;
-    if (isCurrentReel && IsrVideoReelConfig.isHostFeedTabVisible) {
+    if (isCurrentReel && IsrVideoReelConfig.allowsPlayback) {
       _resumePlayback();
       if (_isCurrentMediaImage) {
         unawaited(_startImageSoundIfNeeded());

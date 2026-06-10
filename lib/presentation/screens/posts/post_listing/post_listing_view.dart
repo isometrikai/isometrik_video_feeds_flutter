@@ -1250,15 +1250,26 @@ class _PostListingViewState extends State<PostListingView> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            user.username ?? 'Unknown User',
-                            style: _searchScreenUIConfig
-                                    ?.accountsListConfig?.usernameStyle ??
-                                IsrStyles.primaryText16Bold.copyWith(
-                                  color: IsrColors.color242424,
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  user.username ?? 'Unknown User',
+                                  style: _searchScreenUIConfig
+                                          ?.accountsListConfig?.usernameStyle ??
+                                      IsrStyles.primaryText16Bold.copyWith(
+                                        color: IsrColors.color242424,
+                                      ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                              ),
+                              if (user.isVerified) ...[
+                                IsrDimens.boxWidth(IsrDimens.four),
+                                const Icon(Icons.verified,
+                                    color: Colors.blue, size: 16),
+                              ],
+                            ],
                           ),
                           4.responsiveVerticalSpace,
                           Text(

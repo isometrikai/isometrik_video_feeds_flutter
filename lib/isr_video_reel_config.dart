@@ -83,6 +83,42 @@ class IsrVideoReelConfig {
   /// Set by [pauseFeedPlayback] / [resumeFeedPlayback] when the host hides the reels tab.
   static bool isHostFeedTabVisible = true;
 
+  static int _overlayReelsPlayerCount = 0;
+
+  /// True when the host reels tab is visible or a full-screen overlay player is open.
+  static bool get allowsPlayback =>
+      isHostFeedTabVisible || _overlayReelsPlayerCount > 0;
+
+  static bool get isOverlayReelsPlayerActive => _overlayReelsPlayerCount > 0;
+
+  static void _emitPlayPause({required bool play}) {
+    try {
+      final bloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
+      bloc.add(PlayPauseVideoEvent(play: play));
+    } catch (e) {
+      debugPrint('IsrVideoReelConfig._emitPlayPause: $e');
+    }
+    if (play) {
+      VisibilityDetectorController.instance.notifyNow();
+    }
+  }
+
+  static void enterOverlayReelsPlayer() {
+    _overlayReelsPlayerCount++;
+    _emitPlayPause(play: true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _emitPlayPause(play: true);
+      VisibilityDetectorController.instance.notifyNow();
+    });
+  }
+
+  static void exitOverlayReelsPlayer() {
+    if (_overlayReelsPlayerCount > 0) _overlayReelsPlayerCount--;
+    if (_overlayReelsPlayerCount == 0 && !isHostFeedTabVisible) {
+      _emitPlayPause(play: false);
+    }
+  }
+
   /// Optional hook for [IsmPostView] to refresh tab visibility when the host returns to reels.
   static VoidCallback? onHostFeedTabResumed;
 

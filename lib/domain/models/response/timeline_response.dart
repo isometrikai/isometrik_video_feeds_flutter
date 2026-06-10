@@ -798,6 +798,7 @@ class SocialUserData {
     this.followStatus,
     this.targetId,
     this.isRequested,
+    this.verificationStatus,
   });
 
   factory SocialUserData.fromMap(Map<String, dynamic> json) => SocialUserData(
@@ -822,6 +823,8 @@ class SocialUserData {
         ),
         targetId: json['target_id'] as String? ?? '',
         isRequested: SocialUserData._readRequested(json),
+        verificationStatus: json['verification_status'] as String? ??
+            json['verificationStatus'] as String?,
       );
 
   /// Pending follow request sent (`is_requested` when backend adds it).
@@ -859,6 +862,10 @@ class SocialUserData {
   num? followStatus;
   String? targetId;
   bool? isRequested;
+  String? verificationStatus;
+
+  bool get isVerified =>
+      verificationStatus?.toLowerCase() == 'verified';
 
   Map<String, dynamic> toMap() => {
         'id': id,
@@ -873,6 +880,7 @@ class SocialUserData {
         'follow_status': followStatus,
         'target_id': targetId,
         'is_requested': isRequested,
+        'verification_status': verificationStatus,
       };
 }
 

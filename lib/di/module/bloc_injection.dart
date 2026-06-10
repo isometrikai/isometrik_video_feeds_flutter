@@ -67,22 +67,23 @@ class BlocInjection {
           IsmInjectionUtils.getUseCase<GetTaggedPostsUseCase>(),
         ));
 
-    IsmInjectionUtils.registerBloc<SoundPostsDetailBloc>(() =>
-        SoundPostsDetailBloc(
-          IsmInjectionUtils.getUseCase<GetPostsBySoundUseCase>(),
-        ));
+    IsmInjectionUtils.registerBloc<SoundPostsDetailBloc>(
+        () => SoundPostsDetailBloc(
+              IsmInjectionUtils.getUseCase<GetPostsBySoundUseCase>(),
+            ));
 
     IsmInjectionUtils.registerBloc<PlaceDetailsBloc>(() => PlaceDetailsBloc(
           IsmInjectionUtils.getUseCase<GetTaggedPostsUseCase>(),
         ));
 
-    IsmInjectionUtils.registerSingletonBloc<CreatePostBloc>(() => CreatePostBloc(
-          IsmInjectionUtils.getUseCase<CreatePostUseCase>(),
-          IsmInjectionUtils.getUseCase<GetSocialProductsUseCase>(),
-          localDataUseCase,
-          IsmInjectionUtils.getUseCase<GoogleCloudStorageUploaderUseCase>(),
-          IsmInjectionUtils.getUseCase<MediaProcessingUseCase>(),
-        ));
+    IsmInjectionUtils.registerSingletonBloc<CreatePostBloc>(
+        () => CreatePostBloc(
+              IsmInjectionUtils.getUseCase<CreatePostUseCase>(),
+              IsmInjectionUtils.getUseCase<GetSocialProductsUseCase>(),
+              localDataUseCase,
+              IsmInjectionUtils.getUseCase<GoogleCloudStorageUploaderUseCase>(),
+              IsmInjectionUtils.getUseCase<MediaProcessingUseCase>(),
+            ));
 
     IsmInjectionUtils.registerBloc<SearchUserBloc>(() => SearchUserBloc(
           IsmInjectionUtils.getUseCase<SearchUserUseCase>(),

@@ -221,12 +221,18 @@ class IsrAppNavigator {
         onTapPlace: onTapPlace,
         tabConfig: tabConfig,
         postConfig: postConfig,
+        isOverlayPlayer: true,
       ),
     );
 
-    await Navigator.of(context, rootNavigator: true).push(
-      _buildRoute(page: page, transitionType: transitionType),
-    );
+    IsrVideoReelConfig.enterOverlayReelsPlayer();
+    try {
+      await Navigator.of(context, rootNavigator: true).push(
+        _buildRoute(page: page, transitionType: transitionType),
+      );
+    } finally {
+      IsrVideoReelConfig.exitOverlayReelsPlayer();
+    }
   }
 
   /// Helper method to get tab title based on post section type
@@ -645,6 +651,7 @@ class IsrAppNavigator {
   static Future<List<SocialUserData>> goToSearchUserScreen(
     BuildContext context, {
     List<SocialUserData>? socialUserList,
+
     /// Max selections allowed this session (e.g. remaining total tag slots).
     /// When null, [SearchUserView] uses [TagPeopleScreenConfig.maxTaggedPeople].
     int? maxSelectablePeople,
@@ -696,8 +703,7 @@ class IsrAppNavigator {
     TransitionType? transitionType,
     String? routeName,
   }) {
-    final settings =
-        routeName != null ? RouteSettings(name: routeName) : null;
+    final settings = routeName != null ? RouteSettings(name: routeName) : null;
     if (transitionType == null) {
       return MaterialPageRoute<T>(
         builder: (context) => page,

@@ -193,12 +193,14 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     final timeline = _timelinePost;
     final locked = timeline?.isLocked ?? _reel.isLocked;
     if (locked != true) return false;
-    final reason = (timeline?.lockReason ?? _reel.lockReason ?? '').toLowerCase();
+    final reason =
+        (timeline?.lockReason ?? _reel.lockReason ?? '').toLowerCase();
     return reason == 'paid' || (_reel.isPaid == true);
   }
 
   bool get _canDoubleTapToLike =>
-      !_shouldShowPaidLockOverlay && _reel.postSetting?.isLikeButtonVisible == true;
+      !_shouldShowPaidLockOverlay &&
+      _reel.postSetting?.isLikeButtonVisible == true;
 
   Future<void> _triggerLikeAnimation() async {
     _likeAnimationTimer?.cancel();
@@ -331,7 +333,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
           children: [
             if (blurredChild != null)
               ImageFiltered(
-                imageFilter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+                imageFilter:
+                    ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
                 child: blurredChild,
               )
             else
@@ -339,7 +342,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
             Container(color: Colors.black.withValues(alpha: 0.42)),
             Center(
               child: Padding(
-                padding: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twentyEight),
+                padding: IsrDimens.edgeInsetsSymmetric(
+                    horizontal: IsrDimens.twentyEight),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -391,7 +395,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
                           vertical: IsrDimens.twelve,
                         ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(IsrDimens.twentyFive),
+                          borderRadius:
+                              BorderRadius.circular(IsrDimens.twentyFive),
                         ),
                       ),
                       child: _paidUnlockPriceLabel().isEmpty
@@ -479,8 +484,9 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   @override
   void didUpdateWidget(covariant IsmPostFeedCardView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final lockStateChanged = oldWidget.reelsData.isLocked != widget.reelsData.isLocked ||
-        oldWidget.reelsData.lockReason != widget.reelsData.lockReason;
+    final lockStateChanged =
+        oldWidget.reelsData.isLocked != widget.reelsData.isLocked ||
+            oldWidget.reelsData.lockReason != widget.reelsData.lockReason;
     final timeline = _timelinePost;
     final oldTimeline = oldWidget.reelsData.postData is TimeLineData
         ? oldWidget.reelsData.postData as TimeLineData
@@ -493,7 +499,9 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         _mediaPageController.jumpToPage(0);
       }
     }
-    if (oldWidget.isPostVisible != widget.isPostVisible || lockStateChanged || timelineLockChanged) {
+    if (oldWidget.isPostVisible != widget.isPostVisible ||
+        lockStateChanged ||
+        timelineLockChanged) {
       _syncCarouselVideoPlayback();
       unawaited(_syncImageSoundPlayback());
     }
@@ -640,7 +648,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   Future<void> _startImageSoundIfNeeded() async {
     if (!mounted) return;
     if (!_isCurrentMediaImage) return;
-    if (!widget.isPostVisible || !IsrVideoReelConfig.isHostFeedTabVisible) return;
+    if (!widget.isPostVisible || !IsrVideoReelConfig.isHostFeedTabVisible)
+      return;
     final sound = _reel.sound;
     if (sound == null || !sound.hasId) return;
 
@@ -795,7 +804,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
               Positioned.fill(
                 child: GestureDetector(
                   behavior: HitTestBehavior.translucent,
-                  onTap: () => _dismissInstagramMetaMenu(),
+                  onTap: _dismissInstagramMetaMenu,
                 ),
               ),
             Positioned(
@@ -927,7 +936,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         );
 
     final sound = _reel.sound;
-    final locationLabel = _locationLabel ?? _reel.placeDataList?.firstOrNull?.placeName ?? '';
+    final locationLabel =
+        _locationLabel ?? _reel.placeDataList?.firstOrNull?.placeName ?? '';
 
     Widget content;
     if (_hasAlternatingInstagramMeta) {
@@ -1041,8 +1051,9 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     // Single-image posts: always show the same "N people" affordance as Following.
     if (_reel.mediaMetaDataList.length <= 1) return all;
 
-    final forPage =
-        all.where((mention) => _mentionMatchesMediaPage(mention, pageIndex)).toList();
+    final forPage = all
+        .where((mention) => _mentionMatchesMediaPage(mention, pageIndex))
+        .toList();
     if (forPage.isNotEmpty) return forPage;
 
     // Carousel slide has no positioned tags — keep parity with Following.
@@ -1112,7 +1123,20 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   }
 
   @override
-  Widget build(BuildContext context) => _buildCardBody(context);
+  Widget build(BuildContext context) =>
+      BlocListener<SocialPostBloc, SocialPostState>(
+        listenWhen: (previous, current) => current is PlayPauseVideoState,
+        listener: (context, state) {
+          if (state is! PlayPauseVideoState || !state.pausePlayback) return;
+          if (!state.play) {
+            unawaited(_pauseImageSound());
+          } else {
+            unawaited(_syncImageSoundPlayback());
+          }
+          _syncCarouselVideoPlayback();
+        },
+        child: _buildCardBody(context),
+      );
 
   Widget _buildCardBody(BuildContext context) {
     final mediaCount = _reel.mediaMetaDataList.length;
@@ -1253,7 +1277,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         ),
         ValueListenableBuilder<int>(
           valueListenable: _mediaPageIndex,
-          builder: (context, pageIndex, _) => _buildMediaTaggedPeopleControl(pageIndex),
+          builder: (context, pageIndex, _) =>
+              _buildMediaTaggedPeopleControl(pageIndex),
         ),
         ValueListenableBuilder<bool>(
           valueListenable: _likeAnimationVisible,
@@ -1291,8 +1316,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     final hasFixedWidth = fixedWidth != null && fixedWidth > 0;
     final hasFixedHeight = fixedHeight != null && fixedHeight > 0;
     if (!hasFixedWidth && !hasFixedHeight) {
-      final probeListen = _isInstagramStyle &&
-          FeedMediaOrientation.shouldProbeForCurrentConfig;
+      final probeListen =
+          _isInstagramStyle && FeedMediaOrientation.shouldProbeForCurrentConfig;
 
       Widget frame(double aspectRatio) => AspectRatio(
             aspectRatio: aspectRatio,
@@ -1304,9 +1329,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
           child: ListenableBuilder(
             listenable: FeedMediaOrientation.listenableForReel(
               _reel,
-              paidLockStillUrl: _shouldShowPaidLockOverlay
-                  ? _paidLockStillImageUrl()
-                  : null,
+              paidLockStillUrl:
+                  _shouldShowPaidLockOverlay ? _paidLockStillImageUrl() : null,
             ),
             builder: (context, _) => frame(_fixedCardMediaAspectRatio()),
           ),
@@ -1385,8 +1409,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         ),
         ValueListenableBuilder<int>(
           valueListenable: _videoOverlayTick,
-          builder: (context, _, __) =>
-              _buildVideoPlayPauseOverlay(playerKey),
+          builder: (context, _, __) => _buildVideoPlayPauseOverlay(playerKey),
         ),
         _buildVideoMuteControl(),
         ValueListenableBuilder<bool>(
@@ -1543,7 +1566,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
               overflow: TextOverflow.ellipsis,
             ),
           ],
-          if (_isInstagramStyle) _buildInstagramHeaderMetaRow(onMediaOverlay: false),
+          if (_isInstagramStyle)
+            _buildInstagramHeaderMetaRow(onMediaOverlay: false),
         ],
       );
 
@@ -1783,11 +1807,9 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         variant: variant,
         followButtonConfig: _followButtonConfig,
         headerTextColor: _feedUi.headerTextColor,
-        feedBackgroundIsDark:
-            _feedUi.backgroundColor.computeLuminance() < 0.5,
+        feedBackgroundIsDark: _feedUi.backgroundColor.computeLuminance() < 0.5,
         followButtonTextStyle: _textStyleConfig?.followButtonTextStyle,
-        followingButtonTextStyle:
-            _textStyleConfig?.followingButtonTextStyle,
+        followingButtonTextStyle: _textStyleConfig?.followingButtonTextStyle,
         textShadows: variant == FollowChipVariant.reelsOverlay
             ? const [
                 Shadow(
@@ -2166,7 +2188,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         color: _feedUi.headerTextColor,
       );
 
-  ({String caption, String hashtags}) _splitCaptionAndHashtags(String description) {
+  ({String caption, String hashtags}) _splitCaptionAndHashtags(
+      String description) {
     final index = description.indexOf('#');
     if (index < 0) {
       return (caption: description, hashtags: '');
@@ -2177,7 +2200,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     );
   }
 
-  TextSpan _buildDescriptionTextSpan(String text) => Utility.buildPostDescriptionTextSpan(
+  TextSpan _buildDescriptionTextSpan(String text) =>
+      Utility.buildPostDescriptionTextSpan(
         text,
         _reel.mentions,
         _reel.tagDataList ?? [],
@@ -2302,8 +2326,9 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
             ? mentionList.first.username ?? ''
             : '${mentionList.length} people')
         : null;
-    final locationLabel =
-        hasLocation ? (_locationLabel ?? placeList.firstOrNull?.placeName) : null;
+    final locationLabel = hasLocation
+        ? (_locationLabel ?? placeList.firstOrNull?.placeName)
+        : null;
 
     final segments = <Widget>[];
     void addSegment(Widget segment) {
@@ -2461,7 +2486,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
             text: TextSpan(
               children: [
                 usernameSpan,
-                if (parts.caption.isNotEmpty) _buildDescriptionTextSpan(parts.caption),
+                if (parts.caption.isNotEmpty)
+                  _buildDescriptionTextSpan(parts.caption),
               ],
             ),
           ),
@@ -2500,7 +2526,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     required String? timestampLabel,
   }) {
     final hasMeta = !_isInstagramStyle && (hasMentions || hasLocation);
-    final parts = description.isNotEmpty ? _splitCaptionAndHashtags(description) : null;
+    final parts =
+        description.isNotEmpty ? _splitCaptionAndHashtags(description) : null;
     final usernameSpan = TextSpan(
       text: '${_reel.userName ?? ''} ',
       style: _feedUsernameStyle,
@@ -2570,16 +2597,15 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     final likes = _reel.likesCount ?? 0;
     final description = _reel.description?.trim() ?? '';
     final showLikesLine = likes > 0 && !_showActionCounts;
-    final showTimestamp =
-        (_feedUi.showPostTimestamp || _isInstagramStyle) &&
-            _postTimestampLabel != null;
+    final showTimestamp = (_feedUi.showPostTimestamp || _isInstagramStyle) &&
+        _postTimestampLabel != null;
     final showLegacyLocation = _locationLabel != null && !_isInstagramStyle;
     final hasMentions = _reel.mentions.isListEmptyOrNull == false;
     final hasLocation = _reel.placeDataList?.isListEmptyOrNull == false;
     final showInstagramTimestamp =
         _isInstagramStyle && showTimestamp && _postTimestampLabel != null;
-    final showInstagramEngagement = _isInstagramStyle &&
-        (description.isNotEmpty || showInstagramTimestamp);
+    final showInstagramEngagement =
+        _isInstagramStyle && (description.isNotEmpty || showInstagramTimestamp);
 
     return Padding(
       padding: IsrDimens.edgeInsetsSymmetric(
@@ -2639,8 +2665,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
                     description,
                     _reel.mentions,
                     _reel.tagDataList ?? const [],
-                    _textStyleConfig?.descriptionStyle ??
-                        _feedCaptionBodyStyle,
+                    _textStyleConfig?.descriptionStyle ?? _feedCaptionBodyStyle,
                     (mention) {
                       widget.reelsConfig.onTapMentionTag?.call(
                         _reel,

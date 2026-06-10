@@ -751,7 +751,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   bool get _feedAllowsPlayback =>
       (widget.isParentVisible?.call() ?? true) &&
-      IsrVideoReelConfig.isHostFeedTabVisible;
+      IsrVideoReelConfig.allowsPlayback;
 
   bool _mayStartPlayback({bool activeReel = false}) =>
       _feedAllowsPlayback && (_isVisible || activeReel);
@@ -781,11 +781,15 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   void _startPlaybackNow() {
     _pendingBlocResume = false;
-    unawaited(
-      _videoPlayerController!.setVolume(widget.isMuted ? 0.0 : 1.0),
-    );
-    if (!_videoPlayerController!.isPlaying) {
-      unawaited(_videoPlayerController!.play());
+    final controller = _videoPlayerController;
+    if (controller == null ||
+        !controller.isInitialized ||
+        controller.isDisposed) {
+      return;
+    }
+    unawaited(controller.setVolume(widget.isMuted ? 0.0 : 1.0));
+    if (!controller.isPlaying) {
+      unawaited(controller.play());
     }
     _logVideoStartedEvent();
   }
@@ -797,7 +801,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     // Current reel after host tab switch: only require home shell tab, not
     // parent VisibilityDetector (often still false until user scrolls).
     if (activeReel) {
-      if (!IsrVideoReelConfig.isHostFeedTabVisible) return;
+      if (!IsrVideoReelConfig.allowsPlayback) return;
       if (_isInitialized &&
           _videoPlayerController != null &&
           _videoPlayerController!.isInitialized &&
@@ -883,6 +887,17 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       _hasPlayed = false;
       _isInitialized = false;
       _initializeVideoPlayer();
+    }
+
+    if (oldWidget.isPreloaded &&
+        !widget.isPreloaded &&
+        !widget.visibilityManagedByParent) {
+      _isVisible = true;
+      if (_isInitialized) {
+        forceResume(activeReel: true);
+      } else {
+        _initializeVideoPlayer();
+      }
     }
   }
 

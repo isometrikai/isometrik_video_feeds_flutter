@@ -10,5 +10,5 @@ export 'place_details/place_details.dart';
 export 'post_listing/post_listing.dart';
 export 'posts/social_posts.dart';
 export 'search_user/search_user.dart';
-export 'tag_details/tag_details.dart';
 export 'sound_posts_detail/sound_posts_detail.dart';
+export 'tag_details/tag_details.dart';

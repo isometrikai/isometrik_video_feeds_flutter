@@ -30,8 +30,7 @@ class StoryViewerMediaContent extends StatelessWidget {
       return ColoredBox(
         color: Colors.black,
         child: FittedBox(
-          fit: BoxFit.cover,
-          clipBehavior: Clip.hardEdge,
+          fit: BoxFit.contain,
           child: SizedBox(
             width: size.width > 0 ? size.width : ar,
             height: size.height > 0 ? size.height : 1,

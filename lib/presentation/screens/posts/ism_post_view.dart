@@ -25,6 +25,7 @@ class IsmPostView extends StatefulWidget {
     this.tabConfig,
     this.postConfig,
     this.centralKey,
+    this.isOverlayPlayer = false,
   });
 
   final List<TabDataModel> tabDataModelList;
@@ -33,6 +34,9 @@ class IsmPostView extends StatefulWidget {
   final TabConfig? tabConfig;
   final PostConfig? postConfig;
   final String? centralKey;
+
+  /// Full-screen player pushed over Explore/Profile; ignores host tab pause.
+  final bool isOverlayPlayer;
 
   /// Optional callback to override default place navigation
   /// If not provided, SDK will navigate to PlaceDetailsView automatically
@@ -110,7 +114,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       _socialPostBloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
     }
     _socialActionCubit = context.getOrCreateBloc();
-    IsrVideoReelConfig.onHostFeedTabResumed = _onHostFeedTabResumed;
+    if (!widget.isOverlayPlayer) {
+      IsrVideoReelConfig.onHostFeedTabResumed = _onHostFeedTabResumed;
+    }
     _onStartInit();
     super.initState();
   }
@@ -145,6 +151,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       _currentIndex = 0;
     }
     _materializedTabIndices.add(_currentIndex);
+    if (widget.isOverlayPlayer && _tabDataModelList.isNotEmpty) {
+      _tabDataModelList[_currentIndex].isVisible = true;
+    }
     if (!IsrVideoReelConfig.isSdkInitialize) {
       Utility.showToastMessage('sdk not initialized');
       return;
@@ -751,8 +760,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     final tabData = tabState.tabDataModel;
     return ReelsConfig(
       postConfig: _postConfig,
-      isTabVisible: () =>
-          IsrVideoReelConfig.isHostFeedTabVisible && tabState.isVisible,
+      isTabVisible: () => widget.isOverlayPlayer
+          ? tabState.isVisible
+          : IsrVideoReelConfig.isHostFeedTabVisible && tabState.isVisible,
       overlayPadding: _resolvedReelsOverlayPadding(context),
       autoMoveNextMedia: _postConfig.autoMoveToNextMedia ||
           _tabConfig.autoMoveToNextPost ||
@@ -1183,7 +1193,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    if (IsrVideoReelConfig.onHostFeedTabResumed == _onHostFeedTabResumed) {
+    if (!widget.isOverlayPlayer &&
+        IsrVideoReelConfig.onHostFeedTabResumed == _onHostFeedTabResumed) {
       IsrVideoReelConfig.onHostFeedTabResumed = null;
     }
     _tearDownRouteEnterListener();
@@ -1254,8 +1265,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                   _logProfileEvent(userId, postData?.user?.username ?? '');
                 },
                 onTapHasTag: (hashTag) {
-                  _redirectToHashtag(
-                      hashTag, tabData.postSectionType, postId);
+                  _redirectToHashtag(hashTag, tabData.postSectionType, postId);
                 },
                 postData: postData,
                 tabData: tabData,
