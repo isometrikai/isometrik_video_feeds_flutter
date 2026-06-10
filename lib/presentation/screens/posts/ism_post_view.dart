@@ -811,18 +811,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
               reelData.postId ?? '',
             );
             return null;
-          } else {
-            if (mention.userId.isStringEmptyOrNull == false) {
-              _postConfig.postCallBackConfig?.onProfileClick?.call(
-                  reelData.postData is TimeLineData
-                      ? reelData.postData as TimeLineData
-                      : null,
-                  mention.userId!,
-                  null);
-              _logProfileEvent(reelData.userId ?? '', reelData.userName ?? '');
-            }
           }
-        } else if (reelData.postData is TimeLineData) {
+        }
+        if (reelData.postData is TimeLineData) {
           _socialPostBloc.add(PlayPauseVideoEvent(play: false));
           final res = await _showMentionList(
             mentionList,

@@ -15,6 +15,7 @@ import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_fe
 import 'package:ism_video_reel_player/presentation/screens/media/sound_selection/sound_track_detail_screen.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_media_carousel.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/instagram_follow_chip.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/instagram_meta_vertical_scroll.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_scroll_scope.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -941,40 +942,22 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
 
     Widget content;
     if (_hasAlternatingInstagramMeta) {
+      final locationRow = buildRow(
+        key: const ValueKey('instagram_meta_location'),
+        icon: Icons.location_on_rounded,
+        label: locationLabel,
+      );
+      final soundRow = buildRow(
+        key: const ValueKey('instagram_meta_sound'),
+        icon: Icons.music_note_rounded,
+        label: sound?.displayLabel ?? '',
+      );
       content = ValueListenableBuilder<bool>(
         valueListenable: _metaAlternatorShowsSound,
-        builder: (context, showsSound, _) => AnimatedSwitcher(
-          duration: const Duration(milliseconds: 350),
-          switchInCurve: Curves.easeOut,
-          switchOutCurve: Curves.easeIn,
-          transitionBuilder: (child, animation) {
-            final offsetAnimation = Tween<Offset>(
-              begin: const Offset(0, 0.35),
-              end: Offset.zero,
-            ).animate(animation);
-            return ClipRect(
-              child: SlideTransition(position: offsetAnimation, child: child),
-            );
-          },
-          layoutBuilder: (currentChild, previousChildren) => Stack(
-            alignment: AlignmentDirectional.centerStart,
-            clipBehavior: Clip.hardEdge,
-            children: [
-              ...previousChildren,
-              if (currentChild != null) currentChild,
-            ],
-          ),
-          child: showsSound
-              ? buildRow(
-                  key: const ValueKey('instagram_meta_sound'),
-                  icon: Icons.music_note_rounded,
-                  label: sound?.displayLabel ?? '',
-                )
-              : buildRow(
-                  key: const ValueKey('instagram_meta_location'),
-                  icon: Icons.location_on_rounded,
-                  label: locationLabel,
-                ),
+        builder: (context, showsSound, _) => InstagramMetaVerticalScroll(
+          showSecond: showsSound,
+          firstChild: locationRow,
+          secondChild: soundRow,
         ),
       );
     } else if (_hasPostSound) {
