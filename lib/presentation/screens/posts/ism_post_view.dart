@@ -686,6 +686,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         key: Key(
             'reels_tab_${tab.tabDataModel.title}_${tab.tabDataModel.postSectionType.name}_${tab.tabDataModel.tagValue}_${tab.tabDataModel.userId}_${tab.tabDataModel.postId}_'),
         onVisibilityChanged: (VisibilityInfo info) {
+          final tabIndex = _tabDataModelList.indexOf(tab);
+          if (tabIndex != _currentIndex) {
+            tab.isVisible = false;
+            return;
+          }
           tab.isVisible = info.visibleFraction >= 0.85;
         },
         child: BlocBuilder<SocialPostBloc, SocialPostState>(

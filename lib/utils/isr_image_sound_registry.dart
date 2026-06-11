@@ -1,4 +1,5 @@
 import 'package:audioplayers/audioplayers.dart';
+import 'package:ism_video_reel_player/utils/isr_active_video_player_registry.dart';
 
 /// Tracks image-post [AudioPlayer] instances. Only one [owner] may play at a time.
 abstract final class IsrImageSoundRegistry {
@@ -18,9 +19,10 @@ abstract final class IsrImageSoundRegistry {
     _activeOwner = null;
   }
 
-  /// Stops every other player and grants [owner] exclusive image-sound playback.
+  /// Stops competing video/image audio and grants [owner] exclusive image-sound playback.
   static Future<bool> beginPlaybackFor(Object owner) async {
     if (!identical(_activeOwner, owner)) {
+      IsrActiveVideoPlayerRegistry.pauseAll();
       await stopAll();
       _activeOwner = owner;
     }

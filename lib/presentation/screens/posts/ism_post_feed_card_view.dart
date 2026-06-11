@@ -696,7 +696,11 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     if (url == null || url.isEmpty) return;
 
     if (!await IsrImageSoundRegistry.beginPlaybackFor(this)) return;
-    if (!mounted || !_mayPlayFeedMedia()) return;
+    if (!mounted ||
+        !_mayPlayFeedMedia() ||
+        !IsrImageSoundRegistry.ownsPlayback(this)) {
+      return;
+    }
 
     final player = _imageSoundPlayer ??= AudioPlayer();
     IsrImageSoundRegistry.register(player);
@@ -705,6 +709,11 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         await player.setReleaseMode(ReleaseMode.loop);
         await player.setSource(audioSourceFromUrlOrPath(url));
         _imageSoundLoadedUrl = url;
+      }
+      if (!mounted ||
+          !_mayPlayFeedMedia() ||
+          !IsrImageSoundRegistry.ownsPlayback(this)) {
+        return;
       }
       await player.setVolume(VideoMuteController.isMuted ? 0.0 : 1.0);
       if (player.state != PlayerState.playing) {

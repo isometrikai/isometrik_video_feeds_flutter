@@ -2821,12 +2821,25 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (_resolvedImageSoundUrl == null || _resolvedImageSoundUrl!.isEmpty) {
       await _resolveImageSoundUrlIfNeeded();
     }
+    if (!mounted ||
+        !_isCurrentReel ||
+        !widget.reelsConfig.isTabVisible() ||
+        IsrVideoReelConfig.isAppInBackground ||
+        !IsrVideoReelConfig.allowsPlayback) {
+      return;
+    }
     final url = _resolvedImageSoundUrl;
     if (url == null || url.isEmpty) return;
-    if (!mounted || !_isCurrentReel) return;
 
     if (!await IsrImageSoundRegistry.beginPlaybackFor(this)) return;
-    if (!_isCurrentReel || !mounted) return;
+    if (!mounted ||
+        !_isCurrentReel ||
+        !widget.reelsConfig.isTabVisible() ||
+        IsrVideoReelConfig.isAppInBackground ||
+        !IsrVideoReelConfig.allowsPlayback ||
+        !IsrImageSoundRegistry.ownsPlayback(this)) {
+      return;
+    }
 
     final player = _imageSoundPlayer ??= AudioPlayer();
     IsrImageSoundRegistry.register(player);
@@ -2835,6 +2848,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         await player.setReleaseMode(ReleaseMode.loop);
         await player.setSource(audioSourceFromUrlOrPath(url));
         _imageSoundLoadedUrl = url;
+      }
+      if (!mounted ||
+          !_isCurrentReel ||
+          !widget.reelsConfig.isTabVisible() ||
+          !IsrImageSoundRegistry.ownsPlayback(this)) {
+        return;
       }
       await player.setVolume(VideoMuteController.isMuted ? 0.0 : 1.0);
       if (player.state != PlayerState.playing) {

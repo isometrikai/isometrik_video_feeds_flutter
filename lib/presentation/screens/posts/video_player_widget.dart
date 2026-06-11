@@ -7,6 +7,7 @@ import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/utils/isr_active_video_player_registry.dart';
+import 'package:ism_video_reel_player/utils/isr_image_sound_registry.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -843,6 +844,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   void _startPlaybackNow() {
     if (!_feedAllowsPlayback) return;
 
+    unawaited(IsrImageSoundRegistry.stopAll());
     _pendingBlocResume = false;
     final controller = _videoPlayerController;
     if (controller == null ||
