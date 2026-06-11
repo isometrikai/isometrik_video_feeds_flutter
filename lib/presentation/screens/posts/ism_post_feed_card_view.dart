@@ -305,7 +305,11 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     if (cb != null && post != null) {
       if (mounted) {
         context.read<SocialPostBloc>().add(
-              PlayPauseVideoEvent(play: false, pausePlayback: false),
+              PlayPauseVideoEvent(
+                play: false,
+                pausePlayback: false,
+                scopedPostSection: widget.postSectionType,
+              ),
             );
       }
       try {
@@ -313,7 +317,11 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       } finally {
         if (mounted) {
           context.read<SocialPostBloc>().add(
-                PlayPauseVideoEvent(play: true, pausePlayback: false),
+                PlayPauseVideoEvent(
+                  play: true,
+                  pausePlayback: false,
+                  scopedPostSection: widget.postSectionType,
+                ),
               );
         }
       }
@@ -1116,6 +1124,12 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         listenWhen: (previous, current) => current is PlayPauseVideoState,
         listener: (context, state) {
           if (state is! PlayPauseVideoState) return;
+          if (!IsrVideoReelConfig.playPauseAppliesToSection(
+            widget.postSectionType,
+            state,
+          )) {
+            return;
+          }
           if (!state.play) {
             unawaited(_pauseImageSound());
             if (state.pausePlayback) {
@@ -1385,6 +1399,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         logIndex: '${widget.logIndex}-$index',
         visibilityManagedByParent: true,
         isParentVisible: () => _isCarouselVideoPageActive(index),
+        postSectionType: widget.postSectionType,
         onVisibilityChanged: (_) {},
       ),
     );

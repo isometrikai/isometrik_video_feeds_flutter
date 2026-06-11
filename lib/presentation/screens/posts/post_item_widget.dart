@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:preload_page_view/preload_page_view.dart';
@@ -290,6 +291,14 @@ class _PostItemWidgetState extends State<PostItemWidget>
           listenWhen: (previous, current) => current is PlayPauseVideoState,
           listener: (context, state) {
             if (state is PlayPauseVideoState) {
+              final section = widget.postSectionType;
+              if (section != null &&
+                  !IsrVideoReelConfig.playPauseAppliesToSection(
+                    section,
+                    state,
+                  )) {
+                return;
+              }
               _isPlaybackBlocked = !state.play;
             }
           },

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/data/data.dart';
+import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -34,6 +35,7 @@ class VideoPlayerWidget extends StatefulWidget {
     this.logIndex,
     this.isParentVisible,
     this.visibilityManagedByParent = false,
+    this.postSectionType,
   });
 
   final String mediaUrl;
@@ -52,6 +54,7 @@ class VideoPlayerWidget extends StatefulWidget {
 
   /// When true, defers to [isParentVisible] only (no nested [VisibilityDetector]).
   final bool visibilityManagedByParent;
+  final PostSectionType? postSectionType;
   final String? logIndex;
 
   @override
@@ -934,6 +937,14 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           if (_isDisposed) return; // Safety check: Widget is disposed
 
           if (state is PlayPauseVideoState) {
+            final section = widget.postSectionType;
+            if (section != null &&
+                !IsrVideoReelConfig.playPauseAppliesToSection(
+                  section,
+                  state,
+                )) {
+              return;
+            }
             if (!state.pausePlayback) return;
             if (state.play) {
               if (widget.visibilityManagedByParent) {

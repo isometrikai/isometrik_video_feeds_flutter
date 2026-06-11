@@ -97,6 +97,16 @@ class IsrVideoReelConfig {
 
   static bool get isOverlayReelsPlayerActive => _overlayReelsPlayerCount > 0;
 
+  /// Whether [state] should be handled by a player in [section].
+  /// Null scope on the state applies to every section (host-wide pause/resume).
+  static bool playPauseAppliesToSection(
+    PostSectionType section,
+    PlayPauseVideoState state,
+  ) {
+    final scope = state.scopedPostSection;
+    return scope == null || scope == section;
+  }
+
   static void _emitPlayPause({required bool play}) {
     try {
       final bloc = IsmInjectionUtils.getBloc<SocialPostBloc>();

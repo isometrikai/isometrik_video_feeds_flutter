@@ -114,10 +114,14 @@ class PlayPauseVideoState extends SocialPostState {
   PlayPauseVideoState({
     required this.play,
     this.pausePlayback = true,
+    this.scopedPostSection,
   });
 
   bool play;
 
   /// Mirrors [PlayPauseVideoEvent.pausePlayback].
   final bool pausePlayback;
+
+  /// Mirrors [PlayPauseVideoEvent.scopedPostSection].
+  final PostSectionType? scopedPostSection;
 }

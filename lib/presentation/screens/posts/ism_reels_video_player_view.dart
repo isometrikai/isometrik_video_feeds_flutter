@@ -466,13 +466,23 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     final post = _timelinePost;
     if (cb != null && post != null) {
       if (mounted) {
-        context.read<SocialPostBloc>().add(PlayPauseVideoEvent(play: false));
+        context.read<SocialPostBloc>().add(
+              PlayPauseVideoEvent(
+                play: false,
+                scopedPostSection: widget.postSectionType,
+              ),
+            );
       }
       try {
         await cb(post);
       } finally {
         if (mounted) {
-          context.read<SocialPostBloc>().add(PlayPauseVideoEvent(play: true));
+          context.read<SocialPostBloc>().add(
+                PlayPauseVideoEvent(
+                  play: true,
+                  scopedPostSection: widget.postSectionType,
+                ),
+              );
         }
       }
       return;
@@ -720,7 +730,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           listener: (context, state) {
             if (!mounted) return; // Safety check: Widget is disposed
 
-            if (state is PlayPauseVideoState) {
+            if (state is PlayPauseVideoState &&
+                _handlesPlayPauseState(state)) {
               _setPlaybackBlocked(
                 state.play,
                 pausePlayback: state.pausePlayback,
@@ -1015,6 +1026,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         isPreloaded: isPreloaded,
         logIndex: logIndex,
         isParentVisible: widget.reelsConfig.isTabVisible,
+        postSectionType: widget.postSectionType,
       );
 
   void _toggleMentions() {
@@ -1528,7 +1540,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       child: BlocListener<SocialPostBloc, SocialPostState>(
         listenWhen: (previous, current) => current is PlayPauseVideoState,
         listener: (context, state) {
-          if (state is PlayPauseVideoState) {
+          if (state is PlayPauseVideoState && _handlesPlayPauseState(state)) {
             _setPlaybackBlocked(
               state.play,
               pausePlayback: state.pausePlayback,
@@ -2911,6 +2923,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _isImagePaused = true;
     unawaited(_pauseImageSound());
   }
+
+  bool _handlesPlayPauseState(PlayPauseVideoState state) =>
+      IsrVideoReelConfig.playPauseAppliesToSection(
+        widget.postSectionType,
+        state,
+      );
 
   void _setPlaybackBlocked(
     bool isPlaying, {

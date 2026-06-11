@@ -345,6 +345,7 @@ class PlayPauseVideoEvent extends SocialPostEvent {
   PlayPauseVideoEvent({
     required this.play,
     this.pausePlayback = true,
+    this.scopedPostSection,
   });
 
   bool play;
@@ -352,6 +353,10 @@ class PlayPauseVideoEvent extends SocialPostEvent {
   /// When `false`, only blocks auto-advance to the next clip/post (overlay open)
   /// without pausing media — used for post-feed comment/share sheets.
   final bool pausePlayback;
+
+  /// When set, only players for this home/overlay tab section react.
+  /// Null broadcasts to every section (host pause/resume, tab handoff pause).
+  final PostSectionType? scopedPostSection;
 }
 
 class OnShareSuccessEvent extends SocialPostEvent {

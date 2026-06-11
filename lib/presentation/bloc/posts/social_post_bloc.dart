@@ -1287,6 +1287,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       PlayPauseVideoState(
         play: event.play,
         pausePlayback: event.pausePlayback,
+        scopedPostSection: event.scopedPostSection,
       ),
     );
   }

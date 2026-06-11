@@ -233,12 +233,32 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     if (newIndex >= 0 && newIndex < _tabDataModelList.length) {
       _tabDataModelList[newIndex].isVisible = true;
     }
+    // Global pause so every kept-alive tab stops; resume only the entering tab.
     _socialPostBloc.add(PlayPauseVideoEvent(play: false, pausePlayback: true));
+    final newSection = _tabDataModelList[newIndex].tabDataModel.postSectionType;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _socialPostBloc.add(PlayPauseVideoEvent(play: true, pausePlayback: true));
+      _emitScopedPlayPause(
+        newSection,
+        play: true,
+        pausePlayback: true,
+      );
       VisibilityDetectorController.instance.notifyNow();
     });
+  }
+
+  void _emitScopedPlayPause(
+    PostSectionType section, {
+    required bool play,
+    bool pausePlayback = true,
+  }) {
+    _socialPostBloc.add(
+      PlayPauseVideoEvent(
+        play: play,
+        pausePlayback: pausePlayback,
+        scopedPostSection: section,
+      ),
+    );
   }
 
   void _scheduleReelsBodyWhenRouteSettled() {
@@ -352,7 +372,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
     final commentCount = postData.engagementMetrics?.comments?.toInt() ?? 0;
 
-    _socialPostBloc.add(PlayPauseVideoEvent(play: false));
+    _emitScopedPlayPause(tabData.postSectionType, play: false);
     try {
       await _handleCommentAction(
         postId,
@@ -363,7 +383,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       );
     } finally {
       if (mounted) {
-        _socialPostBloc.add(PlayPauseVideoEvent(play: true));
+        _emitScopedPlayPause(tabData.postSectionType, play: true);
       }
     }
   }
@@ -753,11 +773,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     required bool allowPlayback,
   }) {
     final isPostFeed = _isPostFeedLayout(tabData);
-    _socialPostBloc.add(
-      PlayPauseVideoEvent(
-        play: allowPlayback,
-        pausePlayback: !isPostFeed,
-      ),
+    _emitScopedPlayPause(
+      tabData.postSectionType,
+      play: allowPlayback,
+      pausePlayback: !isPostFeed,
     );
   }
 
@@ -806,10 +825,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       },
       onTaggedProduct: (reelsData) async {
         if (reelsData.postData is TimeLineData) {
-          _socialPostBloc.add(PlayPauseVideoEvent(play: false));
+          _emitScopedPlayPause(tabData.postSectionType, play: false);
           await _postConfig.postCallBackConfig?.onTagProductClick
               ?.call(reelsData.postData as TimeLineData);
-          _socialPostBloc.add(PlayPauseVideoEvent(play: true));
+          _emitScopedPlayPause(tabData.postSectionType, play: true);
         }
       },
       onTapShare: (reelsData) async {
@@ -838,12 +857,12 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           }
         }
         if (reelData.postData is TimeLineData) {
-          _socialPostBloc.add(PlayPauseVideoEvent(play: false));
+          _emitScopedPlayPause(tabData.postSectionType, play: false);
           final res = await _showMentionList(
             mentionList,
             reelData.postData as TimeLineData,
           );
-          _socialPostBloc.add(PlayPauseVideoEvent(play: true));
+          _emitScopedPlayPause(tabData.postSectionType, play: true);
           return res;
         }
         return mentionList;
@@ -883,7 +902,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       },
       onPressMoreButton: (reelsData) async {
         if (reelsData.postData is TimeLineData) {
-          _socialPostBloc.add(PlayPauseVideoEvent(play: false));
+          _emitScopedPlayPause(tabData.postSectionType, play: false);
           final sheetResult = await _handleMoreOptions(
             reelsData.postData as TimeLineData,
             tabData,
@@ -895,55 +914,55 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
               config: _postConfig.dubWithAudioConfig,
               customHandler: _postConfig.postCallBackConfig?.onDubWithAudio,
             );
-            _socialPostBloc.add(PlayPauseVideoEvent(play: true));
+            _emitScopedPlayPause(tabData.postSectionType, play: true);
             IsrVideoReelConfig.resumePlaybackIfAllowed();
           } else if (sheetResult == MoreOptionsSheetResult.download) {
             await _downloadPost(reelsData.postData as TimeLineData);
-            _socialPostBloc.add(PlayPauseVideoEvent(play: true));
+            _emitScopedPlayPause(tabData.postSectionType, play: true);
           } else {
-            _socialPostBloc.add(PlayPauseVideoEvent(play: true));
+            _emitScopedPlayPause(tabData.postSectionType, play: true);
           }
         }
       },
       onPressLike: _postConfig.postCallBackConfig?.onLikeClick == null
           ? null
           : (reelsData, isLiked) async {
-              _socialPostBloc.add(PlayPauseVideoEvent(play: false));
+              _emitScopedPlayPause(tabData.postSectionType, play: false);
               final postData = reelsData.postData is TimeLineData
                   ? reelsData.postData as TimeLineData
                   : null;
               final result = await _postConfig.postCallBackConfig?.onLikeClick
                   ?.call(postData, isLiked);
-              _socialPostBloc.add(PlayPauseVideoEvent(play: true));
+              _emitScopedPlayPause(tabData.postSectionType, play: true);
               return result ?? false;
             },
       onPressSave: (reelsData, currentSaved) async {
         if (_postConfig.postCallBackConfig?.onSaveClicked == null) {
-          _socialPostBloc.add(PlayPauseVideoEvent(play: false));
+          _emitScopedPlayPause(tabData.postSectionType, play: false);
           final res = await _handleCollection(reelsData, currentSaved);
-          _socialPostBloc.add(PlayPauseVideoEvent(play: true));
+          _emitScopedPlayPause(tabData.postSectionType, play: true);
           return res;
         } else {
-          _socialPostBloc.add(PlayPauseVideoEvent(play: false));
+          _emitScopedPlayPause(tabData.postSectionType, play: false);
           final postData = reelsData.postData is TimeLineData
               ? reelsData.postData as TimeLineData
               : null;
           final result = await _postConfig.postCallBackConfig?.onSaveClicked
               ?.call(postData, currentSaved);
-          _socialPostBloc.add(PlayPauseVideoEvent(play: true));
+          _emitScopedPlayPause(tabData.postSectionType, play: true);
           return result ?? false;
         }
       },
       onPressFollow: _postConfig.postCallBackConfig?.onFollowClick == null
           ? null
           : (reelsData, isFollowed) async {
-              _socialPostBloc.add(PlayPauseVideoEvent(play: false));
+              _emitScopedPlayPause(tabData.postSectionType, play: false);
               final postData = reelsData.postData is TimeLineData
                   ? reelsData.postData as TimeLineData
                   : null;
               final result = await _postConfig.postCallBackConfig?.onFollowClick
                   ?.call(postData, isFollowed);
-              _socialPostBloc.add(PlayPauseVideoEvent(play: true));
+              _emitScopedPlayPause(tabData.postSectionType, play: true);
               return result ?? false;
             },
     );
