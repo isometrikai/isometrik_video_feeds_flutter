@@ -104,6 +104,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       IsrDimens.resolveOverlayBottomInset(
         context,
         widget.reelsConfig.overlayPadding,
+        includeHostBottomNav:
+            !IsrVideoReelConfig.isOverlayReelsPlayerActive,
       );
 
   // Add constants for media types

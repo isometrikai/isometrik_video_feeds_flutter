@@ -746,7 +746,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   EdgeInsetsGeometry _resolvedReelsOverlayPadding(BuildContext context) {
     final overlay = _postConfig.postUIConfig?.overlayPadding;
-    final bottom = IsrDimens.resolveOverlayBottomInset(context, overlay);
+    final bottom = IsrDimens.resolveOverlayBottomInset(
+      context,
+      overlay,
+      includeHostBottomNav: !widget.isOverlayPlayer,
+    );
     if (overlay == null) {
       return EdgeInsets.only(bottom: bottom);
     }
@@ -1039,6 +1043,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       IsrDimens.resolveOverlayBottomInset(
         context,
         _postConfig.postUIConfig?.overlayPadding,
+        includeHostBottomNav: !widget.isOverlayPlayer,
       );
 
   Widget _buildTabBar() {
