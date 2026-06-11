@@ -12,6 +12,8 @@ import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/cache/isr_feed_cache.dart';
 import 'package:ism_video_reel_player/isr_feed_cache_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
+import 'package:ism_video_reel_player/utils/isr_active_video_player_registry.dart';
+import 'package:ism_video_reel_player/utils/isr_image_sound_registry.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:talker/talker.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -85,13 +87,32 @@ class IsrVideoReelConfig {
 
   static int _overlayReelsPlayerCount = 0;
 
+  /// Section for the topmost overlay player (explore/profile grid reels).
+  static PostSectionType? _activeOverlaySection;
+
   /// In-SDK routes (sound detail, capture flow) that must pause media without
   /// clearing [isHostFeedTabVisible] — otherwise profile/explore can bleed audio.
   static int _playbackSuppressionCount = 0;
 
+  /// Set while the OS has the app in background — blocks resume without clearing
+  /// [isHostFeedTabVisible] (user may still be on the reels shell tab).
+  static bool _appInBackground = false;
+
+  /// True after lifecycle paused media; cleared on [resumeFromAppForeground].
+  static bool _lifecyclePlaybackSuspended = false;
+
+  static AppLifecycleState? _lastLifecycleState;
+
+  /// Ignores destructive `inactive` handling right after [resumed] (iOS often
+  /// delivers `resumed` then `inactive` when returning to foreground).
+  static DateTime? _ignoreInactiveUntil;
+
+  static bool get isAppInBackground => _appInBackground;
+
   /// True when the host reels tab or overlay player is active and nothing is
   /// suppressing playback.
   static bool get allowsPlayback =>
+      !_appInBackground &&
       (isHostFeedTabVisible || _overlayReelsPlayerCount > 0) &&
       _playbackSuppressionCount == 0;
 
@@ -119,24 +140,114 @@ class IsrVideoReelConfig {
     }
   }
 
-  static void enterOverlayReelsPlayer() {
+  /// Opens a full-screen overlay player (explore/profile grid, notifications).
+  ///
+  /// Pauses the kept-alive home [IsmPostView] first, then resumes only the
+  /// overlay tab section — a global `play: true` was waking background audio.
+  static void enterOverlayReelsPlayer({
+    PostSectionType? overlaySection,
+  }) {
+    _emitPlayPause(play: false);
     _overlayReelsPlayerCount++;
-    _emitPlayPause(play: true);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _emitPlayPause(play: true);
+    if (overlaySection != null) {
+      _activeOverlaySection = overlaySection;
+    }
+
+    void resumeOverlayOnly() {
+      if (_overlayReelsPlayerCount == 0 ||
+          _appInBackground ||
+          !allowsPlayback) {
+        return;
+      }
+      try {
+        final bloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
+        bloc.add(
+          PlayPauseVideoEvent(
+            play: true,
+            scopedPostSection: overlaySection,
+          ),
+        );
+      } catch (e) {
+        debugPrint('IsrVideoReelConfig.enterOverlayReelsPlayer: $e');
+      }
       VisibilityDetectorController.instance.notifyNow();
-    });
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => resumeOverlayOnly());
   }
 
   static void exitOverlayReelsPlayer() {
     if (_overlayReelsPlayerCount > 0) _overlayReelsPlayerCount--;
-    if (_overlayReelsPlayerCount == 0 && !isHostFeedTabVisible) {
-      _emitPlayPause(play: false);
+    if (_overlayReelsPlayerCount == 0) {
+      _activeOverlaySection = null;
+      if (!isHostFeedTabVisible) {
+        _emitPlayPause(play: false);
+      }
     }
   }
 
   /// Optional hook for [IsmPostView] to refresh tab visibility when the host returns to reels.
   static VoidCallback? onHostFeedTabResumed;
+
+  /// Returns the host home tab section (For You / Following / Feed) for scoped resume.
+  static PostSectionType? Function()? getActiveHostPostSection;
+
+  static final List<VoidCallback> _appForegroundResumedListeners =
+      <VoidCallback>[];
+
+  static final Map<PostSectionType, VoidCallback>
+      _sectionForegroundResumeHandlers = <PostSectionType, VoidCallback>{};
+
+  /// Registers a listener for app foreground return (host + overlay players).
+  static void registerAppForegroundResumedListener(VoidCallback listener) {
+    if (!_appForegroundResumedListeners.contains(listener)) {
+      _appForegroundResumedListeners.add(listener);
+    }
+  }
+
+  static void unregisterAppForegroundResumedListener(VoidCallback listener) {
+    _appForegroundResumedListeners.remove(listener);
+  }
+
+  static void _notifyAppForegroundResumed() {
+    for (final listener in _appForegroundResumedListeners.toList()) {
+      try {
+        listener();
+      } catch (e) {
+        debugPrint('IsrVideoReelConfig._notifyAppForegroundResumed: $e');
+      }
+    }
+  }
+
+  /// [PostItemWidget] registers so the visible reel can resume after lifecycle.
+  static void registerSectionForegroundResume(
+    PostSectionType section,
+    VoidCallback handler,
+  ) {
+    _sectionForegroundResumeHandlers[section] = handler;
+  }
+
+  static void unregisterSectionForegroundResume(PostSectionType section) {
+    _sectionForegroundResumeHandlers.remove(section);
+  }
+
+  static void _invokeSectionForegroundResume(PostSectionType? section) {
+    if (section != null) {
+      try {
+        _sectionForegroundResumeHandlers[section]?.call();
+      } catch (e) {
+        debugPrint('IsrVideoReelConfig._invokeSectionForegroundResume: $e');
+      }
+      return;
+    }
+    for (final handler in _sectionForegroundResumeHandlers.values.toList()) {
+      try {
+        handler();
+      } catch (e) {
+        debugPrint('IsrVideoReelConfig._invokeSectionForegroundResume: $e');
+      }
+    }
+  }
 
   /// Host-only: user left the reels bottom-nav tab (profile, explore, etc.).
   static void pauseFeedPlayback() {
@@ -147,7 +258,10 @@ class IsrVideoReelConfig {
   /// Host-only: user returned to the reels bottom-nav tab.
   static void resumeFeedPlayback() {
     isHostFeedTabVisible = true;
-    _emitPlaybackResume(notifyHostTabResumed: true);
+    _emitPlaybackResume(
+      notifyHostTabResumed: true,
+      scopedPostSection: getActiveHostPostSection?.call(),
+    );
   }
 
   /// SDK overlays (sound sheet, capture) — pause without clearing host visibility.
@@ -169,35 +283,130 @@ class IsrVideoReelConfig {
     _emitPlaybackResume();
   }
 
-  static void _emitPlaybackResume({bool notifyHostTabResumed = false}) {
-    if (!allowsPlayback) return;
+  /// Hard-stops video widgets and image-post [AudioPlayer] instances.
+  static Future<void> hardStopAllReelsMedia() async {
+    _emitPlayPause(play: false);
+    IsrActiveVideoPlayerRegistry.pauseAll();
+    await IsrImageSoundRegistry.stopAll();
+  }
+
+  /// Pauses all reels media when the app moves to background.
+  ///
+  /// Does not clear [isHostFeedTabVisible] — pair with [resumeFromAppForeground].
+  static void pauseForAppBackground() {
+    _appInBackground = true;
+    _lifecyclePlaybackSuspended = true;
+    unawaited(hardStopAllReelsMedia());
+  }
+
+  /// Restores playback after foreground return when policy allows.
+  ///
+  /// Pass [hostReelsTabVisible] true when the shell is still on the reels tab so
+  /// the main feed can resume; overlay-only playback resumes when an overlay
+  /// player is active regardless.
+  static void resumeFromAppForeground({required bool hostReelsTabVisible}) {
+    final shouldResume = _appInBackground || _lifecyclePlaybackSuspended;
+    _appInBackground = false;
+    _lifecyclePlaybackSuspended = false;
+    if (!shouldResume) return;
+
+    if (!hostReelsTabVisible && _overlayReelsPlayerCount == 0) return;
+
+    PostSectionType? resumeSection;
+    if (hostReelsTabVisible) {
+      isHostFeedTabVisible = true;
+      resumeSection = getActiveHostPostSection?.call();
+      onHostFeedTabResumed?.call();
+    } else if (_overlayReelsPlayerCount > 0) {
+      resumeSection = _activeOverlaySection;
+    }
+
+    _notifyAppForegroundResumed();
+    _resumeOnlyCurrentReelAfterForeground(resumeSection);
+  }
+
+  /// Silence everything, then nudge only the active section's current reel once.
+  static void _resumeOnlyCurrentReelAfterForeground(
+    PostSectionType? section,
+  ) {
+    if (_appInBackground || !allowsPlayback) return;
+
+    IsrActiveVideoPlayerRegistry.pauseAll();
+    _emitPlayPause(play: false);
+    unawaited(IsrImageSoundRegistry.stopAll());
+
+    if (section == null) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_appInBackground || !allowsPlayback) return;
+      _invokeSectionForegroundResume(section);
+    });
+  }
+
+  /// Host wiring for [WidgetsBindingObserver.didChangeAppLifecycleState].
+  static void handleAppLifecycleState(
+    AppLifecycleState state, {
+    required bool hostReelsTabVisible,
+  }) {
+    switch (state) {
+      case AppLifecycleState.inactive:
+        if (_ignoreInactiveUntil != null &&
+            DateTime.now().isBefore(_ignoreInactiveUntil!)) {
+          break;
+        }
+        // Leaving foreground: stop audio before `paused` on iOS without flags.
+        if (_lastLifecycleState == AppLifecycleState.resumed &&
+            !_appInBackground) {
+          _lifecyclePlaybackSuspended = true;
+          unawaited(hardStopAllReelsMedia());
+        }
+        break;
+      case AppLifecycleState.paused:
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.detached:
+        pauseForAppBackground();
+        break;
+      case AppLifecycleState.resumed:
+        resumeFromAppForeground(hostReelsTabVisible: hostReelsTabVisible);
+        _ignoreInactiveUntil =
+            DateTime.now().add(const Duration(milliseconds: 800));
+        break;
+    }
+    _lastLifecycleState = state;
+  }
+
+  static void _emitPlaybackResume({
+    bool notifyHostTabResumed = false,
+    PostSectionType? scopedPostSection,
+  }) {
+    if (_appInBackground || !allowsPlayback) return;
 
     void emitResume() {
-      if (!allowsPlayback) return;
+      if (_appInBackground || !allowsPlayback) return;
       try {
         final bloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
-        bloc.add(PlayPauseVideoEvent(play: true));
+        bloc.add(
+          PlayPauseVideoEvent(
+            play: true,
+            scopedPostSection: scopedPostSection,
+          ),
+        );
       } catch (e) {
         debugPrint('IsrVideoReelConfig._emitPlaybackResume: $e');
       }
       VisibilityDetectorController.instance.notifyNow();
     }
 
-    emitResume();
     if (notifyHostTabResumed) {
       onHostFeedTabResumed?.call();
     }
+
+    emitResume();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      emitResume();
       if (notifyHostTabResumed) {
         onHostFeedTabResumed?.call();
       }
-    });
-    Future.delayed(const Duration(milliseconds: 300), () {
       emitResume();
-      if (notifyHostTabResumed) {
-        onHostFeedTabResumed?.call();
-      }
     });
   }
 

@@ -64,7 +64,9 @@ class _PostItemWidgetState extends State<PostItemWidget>
   List<ReelsData> _reelsDataList = [];
   late final IsmSocialActionCubit _ismSocialActionCubit;
   late final ValueNotifier<int> _currentIndex;
+  final ValueNotifier<int> _lifecycleResumeTick = ValueNotifier<int>(0);
   bool _isPlaybackBlocked = false;
+  late final VoidCallback _sectionForegroundResumeHandler;
 
   bool _isInitialized = false;
 
@@ -90,7 +92,22 @@ class _PostItemWidgetState extends State<PostItemWidget>
     _pageController =
         PreloadPageController(initialPage: widget.startingPostIndex ?? 0);
     _currentIndex = ValueNotifier<int>(widget.startingPostIndex ?? 0);
+    _sectionForegroundResumeHandler = _onSectionForegroundResume;
+    final section = widget.postSectionType;
+    if (section != null) {
+      IsrVideoReelConfig.registerSectionForegroundResume(
+        section,
+        _sectionForegroundResumeHandler,
+      );
+    }
     _initializeContent();
+  }
+
+  void _onSectionForegroundResume() {
+    if (!mounted || !IsrVideoReelConfig.allowsPlayback) return;
+    if (!widget.reelsConfig.isTabVisible()) return;
+    _isPlaybackBlocked = false;
+    _lifecycleResumeTick.value++;
   }
 
   @override
@@ -243,8 +260,13 @@ class _PostItemWidgetState extends State<PostItemWidget>
 
   @override
   void dispose() {
+    final section = widget.postSectionType;
+    if (section != null) {
+      IsrVideoReelConfig.unregisterSectionForegroundResume(section);
+    }
     _pageController.dispose();
     _currentIndex.dispose();
+    _lifecycleResumeTick.dispose();
     // Don't clear all cache on dispose, only clear controllers
     // _videoCacheManager.clearControllers();
     super.dispose();
@@ -476,6 +498,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
         reelsDataList: _reelsDataList,
         refreshCounts: _refreshCounts,
         reelsConfig: widget.reelsConfig,
+        lifecycleResumeTick: _lifecycleResumeTick,
         postSectionType: widget.postSectionType,
         listTopInset: widget.postFeedListTopInset,
         listBottomInset: widget.postFeedListBottomInset,
@@ -587,6 +610,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
                     child: IsmReelsVideoPlayerView(
                       index: index,
                       currentIndex: _currentIndex,
+                      lifecycleResumeTick: _lifecycleResumeTick,
                       reelsData: reelsData,
                       postSectionType:
                           widget.postSectionType ?? PostSectionType.following,

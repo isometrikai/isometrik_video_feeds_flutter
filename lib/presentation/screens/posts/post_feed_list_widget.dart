@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_scroll_scope.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -46,6 +48,7 @@ class PostFeedListWidget extends StatefulWidget {
     this.onTapComment,
     this.onTapShare,
     this.onTapUserProfile,
+    this.lifecycleResumeTick,
   });
 
   final List<ReelsData> reelsDataList;
@@ -86,6 +89,9 @@ class PostFeedListWidget extends StatefulWidget {
   final Future<void> Function(ReelsData reelsData)? onTapShare;
   final Future<void> Function(ReelsData reelsData)? onTapUserProfile;
 
+  /// Bumped by [PostItemWidget] after app foreground return (post-card feed only).
+  final ValueNotifier<int>? lifecycleResumeTick;
+
   @override
   State<PostFeedListWidget> createState() => _PostFeedListWidgetState();
 }
@@ -109,6 +115,7 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
   var _loadMoreInFlight = false;
   var _showPaginationLoader = false;
   var _hasMorePages = true;
+  var _feedTabWasVisible = true;
   final ValueNotifier<bool> _isUserScrollingNotifier = ValueNotifier(false);
   final ValueNotifier<int?> _activePlayIndexNotifier = ValueNotifier(null);
   Timer? _scrollIdleDebounce;
@@ -119,10 +126,41 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
   @override
   void initState() {
     super.initState();
+    _feedTabWasVisible = widget.reelsConfig.isTabVisible();
+    widget.lifecycleResumeTick?.addListener(_onLifecycleResumeTick);
     VisibilityDetectorController.instance.updateInterval =
         const Duration(milliseconds: 100);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scheduleScrollAheadPrecache();
+    });
+  }
+
+  void _onLifecycleResumeTick() {
+    if (!IsrVideoReelConfig.allowsPlayback ||
+        !widget.reelsConfig.isTabVisible()) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      VisibilityDetectorController.instance.notifyNow();
+      _recomputeActivePlayIndex();
+      if (_activePlayIndexNotifier.value == null &&
+          widget.reelsDataList.isNotEmpty) {
+        _activePlayIndexNotifier.value = 0;
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !widget.reelsConfig.isTabVisible()) return;
+        final section = widget.postSectionType;
+        if (section == null) return;
+        try {
+          IsmInjectionUtils.getBloc<SocialPostBloc>().add(
+            PlayPauseVideoEvent(
+              play: true,
+              scopedPostSection: section,
+            ),
+          );
+        } catch (_) {}
+      });
     });
   }
 
@@ -133,6 +171,14 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
   }
 
   void _recomputeActivePlayIndex() {
+    if (!widget.reelsConfig.isTabVisible() ||
+        !IsrVideoReelConfig.allowsPlayback) {
+      if (_activePlayIndexNotifier.value != null) {
+        _activePlayIndexNotifier.value = null;
+      }
+      return;
+    }
+
     int? candidate;
     var maxFraction = 0.0;
     for (final entry in _visibilityFractions.entries) {
@@ -148,25 +194,21 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
 
     int? newActive = current;
 
-    // If the challenger is clearly leading, switch to it.
     if (candidate != null && maxFraction >= _minPlayFraction) {
       newActive = candidate;
-
-      if (current != null && current != candidate) {
-        if (currentFraction >= _stickyPlayFraction &&
-            maxFraction - currentFraction < _switchLeadFraction) {
-          newActive = current;
-        }
+      // Keep current only while it still occupies a full play slot and the
+      // challenger is not clearly ahead (avoids flicker between two tall posts).
+      if (current != null &&
+          current != candidate &&
+          currentFraction >= _minPlayFraction &&
+          maxFraction - currentFraction < _switchLeadFraction) {
+        newActive = current;
       }
-    } else {
-      // Otherwise keep playing the current post if it still has enough
-      // visible area. This avoids the "pause-on-scroll" feeling.
-      if (current == null || currentFraction < _stickyPlayFraction) {
-        if (candidate != null && maxFraction >= _stickyPlayFraction) {
-          newActive = candidate;
-        } else {
-          newActive = null;
-        }
+    } else if (current == null || currentFraction < _minPlayFraction) {
+      if (candidate != null && maxFraction >= _stickyPlayFraction) {
+        newActive = candidate;
+      } else {
+        newActive = null;
       }
     }
 
@@ -183,7 +225,17 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
   }
 
   @override
+  void didUpdateWidget(PostFeedListWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.lifecycleResumeTick != widget.lifecycleResumeTick) {
+      oldWidget.lifecycleResumeTick?.removeListener(_onLifecycleResumeTick);
+      widget.lifecycleResumeTick?.addListener(_onLifecycleResumeTick);
+    }
+  }
+
+  @override
   void dispose() {
+    widget.lifecycleResumeTick?.removeListener(_onLifecycleResumeTick);
     _scrollIdleDebounce?.cancel();
     _precacheDebounce?.cancel();
     _imagePrecache.cancel();
@@ -262,6 +314,8 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
       }
     }
     if (notification is ScrollEndNotification) {
+      VisibilityDetectorController.instance.notifyNow();
+      _recomputeActivePlayIndex();
       _scheduleScrollAheadPrecache();
     }
     return false;
@@ -391,6 +445,12 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final feedTabVisible = widget.reelsConfig.isTabVisible();
+    if (_feedTabWasVisible && !feedTabVisible) {
+      _activePlayIndexNotifier.value = null;
+    }
+    _feedTabWasVisible = feedTabVisible;
+
     final feedUi = widget.reelsConfig.postConfig.resolvedPostFeedUIConfig;
     final showHeader = feedUi.showHeader;
     final usePostDividers = feedUi.showPostDividers;

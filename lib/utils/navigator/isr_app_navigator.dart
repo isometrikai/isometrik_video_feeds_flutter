@@ -225,7 +225,9 @@ class IsrAppNavigator {
       ),
     );
 
-    IsrVideoReelConfig.enterOverlayReelsPlayer();
+    IsrVideoReelConfig.enterOverlayReelsPlayer(
+      overlaySection: postSectionType,
+    );
     try {
       await Navigator.of(context, rootNavigator: true).push(
         _buildRoute(page: page, transitionType: transitionType),

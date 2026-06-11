@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
+import 'package:ism_video_reel_player/utils/isr_active_video_player_registry.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -36,6 +37,7 @@ class VideoPlayerWidget extends StatefulWidget {
     this.isParentVisible,
     this.visibilityManagedByParent = false,
     this.postSectionType,
+    this.onPlaybackStateChanged,
   });
 
   final String mediaUrl;
@@ -57,6 +59,9 @@ class VideoPlayerWidget extends StatefulWidget {
   final PostSectionType? postSectionType;
   final String? logIndex;
 
+  /// Notifies when play/pause state changes (e.g. feed play icon overlay).
+  final VoidCallback? onPlaybackStateChanged;
+
   @override
   State<VideoPlayerWidget> createState() => _VideoPlayerWidgetState();
 
@@ -76,6 +81,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   bool _isManuallyPaused =
       false; // Track if video was manually paused (e.g., long press)
   bool _pendingBlocResume = false;
+  late final VoidCallback _backgroundPauseHandler;
   Duration _maxWatchPosition = Duration.zero; // Track maximum watch position
 
   // Track video start and progress milestones
@@ -131,6 +137,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   @override
   void initState() {
     super.initState();
+    _backgroundPauseHandler = () {
+      if (!_isDisposed) pauseForLifecycle();
+    };
+    IsrActiveVideoPlayerRegistry.registerPauseHandler(_backgroundPauseHandler);
     _isVisible = widget.visibilityManagedByParent
         ? _parentWantsVisible
         : !widget.isPreloaded;
@@ -195,6 +205,11 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     } catch (e) {
       debugPrint('⚠️ VideoPlayerWidget: Error syncing playback state: $e');
     }
+    _notifyPlaybackStateChanged();
+  }
+
+  void _notifyPlaybackStateChanged() {
+    widget.onPlaybackStateChanged?.call();
   }
 
   /// Called when the video playing state changes
@@ -213,6 +228,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         setState(() {});
       }
     }
+    _notifyPlaybackStateChanged();
   }
 
   void _syncVisibilityFromParent() {
@@ -721,7 +737,15 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     }
   }
 
-  bool get isManuallyPaused => _isManuallyPaused;
+  bool get isPlayerReady =>
+      !_isDisposed &&
+      _isInitialized &&
+      _videoPlayerController != null &&
+      _videoPlayerController!.isInitialized &&
+      !_videoPlayerController!.isDisposed;
+
+  /// True when the clip is loaded but not playing (manual or lifecycle pause).
+  bool get showPausedIndicator => isPlayerReady && !isPlaying;
 
   bool get isPlaying {
     if (_isDisposed ||
@@ -733,14 +757,23 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     return _videoPlayerController!.isPlaying;
   }
 
-  bool get isVideoReady => _isInitialized && isPlaying;
-
   // Public methods to control playback
   void pause() {
-    if (_isDisposed) return; // Safety check: Don't operate on disposed widget
-
+    if (_isDisposed) return;
     _isManuallyPaused = true;
-    // Safety check: ensure controller is valid and not disposed
+    _pauseControllerIfPlaying();
+    _notifyPlaybackStateChanged();
+  }
+
+  /// Background / tab-handoff pause — does not require a user tap to resume.
+  void pauseForLifecycle() {
+    if (_isDisposed) return;
+    _pendingBlocResume = false;
+    _pauseControllerIfPlaying();
+    _notifyPlaybackStateChanged();
+  }
+
+  void _pauseControllerIfPlaying() {
     if (_videoPlayerController != null &&
         _videoPlayerController!.isInitialized &&
         !_videoPlayerController!.isDisposed &&
@@ -754,6 +787,16 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   void syncParentVisibility() {
     if (!widget.visibilityManagedByParent || _isDisposed) return;
     _syncVisibilityFromParent();
+    _tryConsumePendingBlocResume();
+  }
+
+  void _tryConsumePendingBlocResume() {
+    if (!_pendingBlocResume || _isManuallyPaused || !_feedAllowsPlayback) {
+      return;
+    }
+    if (_tryStartPlaybackNow()) {
+      _pendingBlocResume = false;
+    }
   }
 
   bool get _feedAllowsPlayback =>
@@ -794,6 +837,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       }
       _logVideoStartedEvent();
     }
+    _notifyPlaybackStateChanged();
   }
 
   void _startPlaybackNow() {
@@ -811,6 +855,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       unawaited(controller.play());
     }
     _logVideoStartedEvent();
+    _notifyPlaybackStateChanged();
   }
 
   void forceResume({bool activeReel = false}) {
@@ -818,20 +863,29 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     _isManuallyPaused = false;
 
     if (!_feedAllowsPlayback) {
-      _pendingBlocResume = false;
+      _pendingBlocResume = true;
       return;
     }
 
+    if (_tryStartPlaybackNow(activeReel: activeReel)) {
+      _notifyPlaybackStateChanged();
+      return;
+    }
+    _pendingBlocResume = true;
+    _notifyPlaybackStateChanged();
+    VisibilityDetectorController.instance.notifyNow();
+  }
+
+  bool _tryStartPlaybackNow({bool activeReel = false}) {
     if (_isInitialized &&
         _videoPlayerController != null &&
         _videoPlayerController!.isInitialized &&
         !_videoPlayerController!.isDisposed &&
         _mayStartPlayback(activeReel: activeReel)) {
       _startPlaybackNow();
-      return;
+      return true;
     }
-    _pendingBlocResume = true;
-    VisibilityDetectorController.instance.notifyNow();
+    return false;
   }
 
   /// Seek to a specific position in the video
@@ -914,6 +968,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       debugPrint('⚠️ state VideoPlayerWidget: (${widget.logIndex}) dispose');
     }
     _isDisposed = true;
+    IsrActiveVideoPlayerRegistry.unregisterPauseHandler(_backgroundPauseHandler);
     // Cancel timers
     _stopStuckVideoDetection();
     _controllerReadyCheckTimer?.cancel();
@@ -951,17 +1006,20 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
             }
             if (!state.pausePlayback) return;
             if (state.play) {
+              _isManuallyPaused = false;
               if (widget.visibilityManagedByParent) {
-                if (_effectiveVisible && mounted && _isManuallyPaused) {
-                  play();
+                syncParentVisibility();
+                if (_effectiveVisible && mounted) {
+                  forceResume();
+                } else {
+                  _pendingBlocResume = true;
                 }
               } else {
-                _isManuallyPaused = false;
                 forceResume(activeReel: true);
               }
             } else {
               _pendingBlocResume = false;
-              pause();
+              pauseForLifecycle();
             }
           }
         },

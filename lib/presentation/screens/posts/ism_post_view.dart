@@ -11,6 +11,8 @@ import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
+import 'package:ism_video_reel_player/utils/isr_active_video_player_registry.dart';
+import 'package:ism_video_reel_player/utils/isr_image_sound_registry.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart' hide RefreshIndicator;
 import 'package:visibility_detector/visibility_detector.dart';
@@ -116,12 +118,29 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     _socialActionCubit = context.getOrCreateBloc();
     if (!widget.isOverlayPlayer) {
       IsrVideoReelConfig.onHostFeedTabResumed = _onHostFeedTabResumed;
+      IsrVideoReelConfig.getActiveHostPostSection = () => _currentPostSectionType;
     }
+    IsrVideoReelConfig.registerAppForegroundResumedListener(
+      _onAppForegroundResumed,
+    );
     _onStartInit();
     super.initState();
   }
 
   void _onHostFeedTabResumed() {
+    _markCurrentTabVisibleForPlayback();
+  }
+
+  void _onAppForegroundResumed() {
+    if (widget.isOverlayPlayer) {
+      if (!IsrVideoReelConfig.isOverlayReelsPlayerActive) return;
+    } else if (IsrVideoReelConfig.isOverlayReelsPlayerActive) {
+      return;
+    }
+    _markCurrentTabVisibleForPlayback();
+  }
+
+  void _markCurrentTabVisibleForPlayback() {
     if (!mounted) return;
     if (_currentIndex >= 0 && _currentIndex < _tabDataModelList.length) {
       _tabDataModelList[_currentIndex].isVisible = true;
@@ -225,16 +244,28 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     });
   }
 
-  /// Stops image/sound bleed from a kept-alive offstage tab (e.g. For You → Feed).
+  /// Stops image/sound bleed from a kept-alive offstage tab (e.g. Feed → Following).
   void _handoffTabPlayback({required int lastIndex, required int newIndex}) {
+    unawaited(
+      _handoffTabPlaybackAsync(lastIndex: lastIndex, newIndex: newIndex),
+    );
+  }
+
+  Future<void> _handoffTabPlaybackAsync({
+    required int lastIndex,
+    required int newIndex,
+  }) async {
     if (lastIndex >= 0 && lastIndex < _tabDataModelList.length) {
       _tabDataModelList[lastIndex].isVisible = false;
+      final oldSection =
+          _tabDataModelList[lastIndex].tabDataModel.postSectionType;
+      IsrActiveVideoPlayerRegistry.pauseAll();
+      _emitScopedPlayPause(oldSection, play: false);
+      await IsrImageSoundRegistry.stopAll();
     }
     if (newIndex >= 0 && newIndex < _tabDataModelList.length) {
       _tabDataModelList[newIndex].isVisible = true;
     }
-    // Global pause so every kept-alive tab stops; resume only the entering tab.
-    _socialPostBloc.add(PlayPauseVideoEvent(play: false, pausePlayback: true));
     final newSection = _tabDataModelList[newIndex].tabDataModel.postSectionType;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -801,11 +832,15 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   ReelsConfig _getReelsConfig(BuildContext context, TabStateModel tabState) {
     final tabData = tabState.tabDataModel;
+    final tabIndex = _tabDataModelList.indexOf(tabState);
     return ReelsConfig(
       postConfig: _postConfig,
-      isTabVisible: () => widget.isOverlayPlayer
-          ? tabState.isVisible
-          : IsrVideoReelConfig.isHostFeedTabVisible && tabState.isVisible,
+      isTabVisible: () {
+        if (widget.isOverlayPlayer) return tabState.isVisible;
+        if (!IsrVideoReelConfig.isHostFeedTabVisible) return false;
+        if (tabIndex == _currentIndex) return true;
+        return tabState.isVisible;
+      },
       overlayPadding: _resolvedReelsOverlayPadding(context),
       autoMoveNextMedia: _postConfig.autoMoveToNextMedia ||
           _tabConfig.autoMoveToNextPost ||
@@ -1231,7 +1266,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     if (!widget.isOverlayPlayer &&
         IsrVideoReelConfig.onHostFeedTabResumed == _onHostFeedTabResumed) {
       IsrVideoReelConfig.onHostFeedTabResumed = null;
+      IsrVideoReelConfig.getActiveHostPostSection = null;
     }
+    IsrVideoReelConfig.unregisterAppForegroundResumedListener(
+      _onAppForegroundResumed,
+    );
     _tearDownRouteEnterListener();
     _postTabController?.dispose();
     _centralTadData.remove(centralKey);

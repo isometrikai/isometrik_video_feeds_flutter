@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
+import 'package:ism_video_reel_player/utils/isr_image_sound_registry.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/video_player_widget.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/comment_count_action_widget.dart';
@@ -490,6 +491,20 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     _startMetaAlternatorIfNeeded();
   }
 
+  bool _mayPlayFeedMedia() =>
+      widget.reelsConfig.isTabVisible() &&
+      widget.isPostVisible &&
+      IsrVideoReelConfig.allowsPlayback &&
+      !IsrVideoReelConfig.isAppInBackground;
+
+  Future<void> _stopAllCardMedia() async {
+    for (final key in _videoPlayerKeys.values) {
+      VideoPlayerWidget.of(key)?.pauseForLifecycle();
+    }
+    _videoOverlayTick.value++;
+    await _pauseImageSound();
+  }
+
   @override
   void didUpdateWidget(covariant IsmPostFeedCardView oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -511,8 +526,12 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     if (oldWidget.isPostVisible != widget.isPostVisible ||
         lockStateChanged ||
         timelineLockChanged) {
-      _syncCarouselVideoPlayback();
-      unawaited(_syncImageSoundPlayback());
+      if (!widget.isPostVisible && oldWidget.isPostVisible) {
+        unawaited(_stopAllCardMedia());
+      } else {
+        _syncCarouselVideoPlayback();
+        unawaited(_syncImageSoundPlayback());
+      }
     }
     if (oldWidget.reelsData.postId != widget.reelsData.postId) {
       _isInstagramCaptionExpanded = false;
@@ -574,10 +593,20 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     }
   }
 
+  void _forceResumeVisibleMedia() {
+    if (!mounted || !_mayPlayFeedMedia()) return;
+    for (final entry in _videoPlayerKeys.entries) {
+      if (_isCarouselVideoPageActive(entry.key)) {
+        VideoPlayerWidget.of(entry.value)?.forceResume();
+      } else {
+        VideoPlayerWidget.of(entry.value)?.pauseForLifecycle();
+      }
+    }
+    unawaited(_syncImageSoundPlayback());
+  }
+
   bool _isCarouselVideoPageActive(int index) =>
-      widget.reelsConfig.isTabVisible() &&
-      widget.isPostVisible &&
-      _mediaPageIndex.value == index;
+      _mayPlayFeedMedia() && _mediaPageIndex.value == index;
 
   void _schedulePageBadgeAutoHide() {
     _pageBadgeTimer?.cancel();
@@ -613,9 +642,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
 
   Future<void> _syncImageSoundPlayback() async {
     if (!mounted) return;
-    if (!widget.isPostVisible ||
-        !widget.reelsConfig.isTabVisible() ||
-        !IsrVideoReelConfig.allowsPlayback) {
+    if (!_mayPlayFeedMedia()) {
       await _pauseImageSound();
       return;
     }
@@ -657,24 +684,22 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   }
 
   Future<void> _startImageSoundIfNeeded() async {
-    if (!mounted) return;
-    if (!_isCurrentMediaImage) return;
-    if (!widget.isPostVisible ||
-        !widget.reelsConfig.isTabVisible() ||
-        !IsrVideoReelConfig.allowsPlayback) {
-      return;
-    }
+    if (!mounted || !_isCurrentMediaImage || !_mayPlayFeedMedia()) return;
     final sound = _reel.sound;
     if (sound == null || !sound.hasId) return;
 
     if (_resolvedImageSoundUrl == null || _resolvedImageSoundUrl!.isEmpty) {
       await _resolveImageSoundUrlIfNeeded();
     }
+    if (!mounted || !_mayPlayFeedMedia()) return;
     final url = _resolvedImageSoundUrl;
     if (url == null || url.isEmpty) return;
-    if (!mounted) return;
+
+    if (!await IsrImageSoundRegistry.beginPlaybackFor(this)) return;
+    if (!mounted || !_mayPlayFeedMedia()) return;
 
     final player = _imageSoundPlayer ??= AudioPlayer();
+    IsrImageSoundRegistry.register(player);
     try {
       if (_imageSoundLoadedUrl != url) {
         await player.setReleaseMode(ReleaseMode.loop);
@@ -692,11 +717,10 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
 
   Future<void> _pauseImageSound() async {
     final player = _imageSoundPlayer;
+    IsrImageSoundRegistry.releaseOwner(this);
     if (player == null) return;
     try {
-      if (player.state == PlayerState.playing) {
-        await player.pause();
-      }
+      await player.stop();
     } catch (_) {}
   }
 
@@ -705,7 +729,9 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     _imageSoundPlayer = null;
     _imageSoundLoadedUrl = null;
     _resolvedImageSoundUrl = null;
+    IsrImageSoundRegistry.releaseOwner(this);
     if (player == null) return;
+    IsrImageSoundRegistry.unregister(player);
     try {
       await player.stop();
       await player.release();
@@ -1131,20 +1157,18 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
             return;
           }
           if (!state.play) {
-            unawaited(_pauseImageSound());
-            if (state.pausePlayback) {
-              _syncCarouselVideoPlayback();
-            }
+            unawaited(_stopAllCardMedia());
+            return;
+          }
+          if (!_mayPlayFeedMedia()) {
+            unawaited(_stopAllCardMedia());
             return;
           }
           if (!state.pausePlayback) {
-            if (widget.isPostVisible && widget.reelsConfig.isTabVisible()) {
-              unawaited(_syncImageSoundPlayback());
-            }
+            unawaited(_syncImageSoundPlayback());
             return;
           }
-          unawaited(_syncImageSoundPlayback());
-          _syncCarouselVideoPlayback();
+          _forceResumeVisibleMedia();
         },
         child: _buildCardBody(context),
       );
@@ -1401,6 +1425,9 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         isParentVisible: () => _isCarouselVideoPageActive(index),
         postSectionType: widget.postSectionType,
         onVisibilityChanged: (_) {},
+        onPlaybackStateChanged: () {
+          if (mounted) _videoOverlayTick.value++;
+        },
       ),
     );
 
@@ -1461,11 +1488,12 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
 
   Widget _buildVideoPlayPauseOverlay(GlobalKey playerKey) {
     final playerState = VideoPlayerWidget.of(playerKey);
-    final showPauseOverlay = playerState != null &&
-        playerState.mounted &&
-        playerState.isManuallyPaused;
+    if (playerState == null || !playerState.mounted) {
+      return const SizedBox.shrink();
+    }
 
-    if (!showPauseOverlay) {
+    final showPlayIcon = playerState.showPausedIndicator;
+    if (!showPlayIcon) {
       return const SizedBox.shrink();
     }
 
