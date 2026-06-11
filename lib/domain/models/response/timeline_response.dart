@@ -229,8 +229,7 @@ class TimeLineData {
         lockReason: json['lock_reason'] as String?,
         allowDownload: Settings._readBool(json['allow_download'],
                 key: 'allow_download') ??
-            Settings._readBool(json['allowDownload'], key: 'allowDownload') ??
-            true,
+            Settings._readBool(json['allowDownload'], key: 'allowDownload'),
       );
   dynamic textFormatting;
   String? publishedAt;
@@ -511,10 +510,9 @@ class Settings {
           _readBool(json['stitch_enabled'], key: 'stitch_enabled') ?? false,
       saveEnabled:
           _readBool(json['save_enabled'], key: 'save_enabled') ?? false,
-      downloadEnabled: _readBool(json['download_enabled'],
-              key: 'download_enabled') ??
-          _readBool(json['allow_download'], key: 'allow_download') ??
-          true,
+      downloadEnabled:
+          _readBool(json['download_enabled'], key: 'download_enabled') ??
+              true,
       isPaid: normalizedIsPaid,
       priceAmount: priceAmount,
       priceCurrency: json['price_currency'] as String?,
@@ -573,7 +571,7 @@ class Settings {
         'duet_enabled': duetEnabled,
         'stitch_enabled': stitchEnabled,
         'save_enabled': saveEnabled,
-        if (downloadEnabled != null) 'download_enabled': downloadEnabled,
+        'download_enabled': downloadEnabled ?? true,
         if (isPaid != null) 'is_paid': isPaid,
         if (priceAmount != null) 'price_amount': priceAmount,
         if (priceCurrency != null) 'price_currency': priceCurrency,

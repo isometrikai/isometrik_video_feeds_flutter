@@ -22,15 +22,15 @@ class ReelDownloadUtil {
 
   static const int _maxVideoDownloadBytes = 150 * 1024 * 1024;
 
-  /// Host [PostConfig.canDownload]; per-post API flags are ignored for now
-  /// (backend allows download on all posts until settings are returned).
+  /// Host [PostConfig.canDownload] plus API `settings.download_enabled`
+  /// (defaults to `true` when omitted).
   static bool isPostDownloadAllowed({
     required PostConfig postConfig,
     required TimeLineData post,
   }) {
     if (!postConfig.canDownload) return false;
     if (post.isLocked == true) return false;
-    return true;
+    return post.settings?.downloadEnabled ?? true;
   }
 
   /// Downloads all media items for [post] into the gallery.

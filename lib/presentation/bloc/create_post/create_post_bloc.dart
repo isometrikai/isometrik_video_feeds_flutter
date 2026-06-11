@@ -842,6 +842,10 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       if (_postAttributeClass.allowSave != settings.saveEnabled) {
         settings.saveEnabled = _postAttributeClass.allowSave;
       }
+
+      if (_postAttributeClass.allowDownload != settings.downloadEnabled) {
+        settings.downloadEnabled = _postAttributeClass.allowDownload;
+      }
       _postData?.settings = settings;
     }
   }
@@ -1064,6 +1068,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     _postAttributeClass.taggedPlaces = locationTagDataList;
     _postAttributeClass.allowSave = _postData?.settings?.saveEnabled;
     _postAttributeClass.allowComment = _postData?.settings?.commentsEnabled;
+    _postAttributeClass.allowDownload = _postData?.settings?.downloadEnabled;
     final postSettings = _postData?.settings;
     if (postSettings != null) {
       _createPostRequest.settings = PostSettingModel(
@@ -1073,6 +1078,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
         commentsEnabled: postSettings.commentsEnabled,
         duetEnabled: postSettings.duetEnabled,
         saveEnabled: postSettings.saveEnabled,
+        downloadEnabled: postSettings.downloadEnabled,
         stitchEnabled: postSettings.stitchEnabled,
         isPaid: postSettings.isPaid,
         priceAmount: postSettings.priceAmount,

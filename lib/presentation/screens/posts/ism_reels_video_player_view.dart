@@ -287,8 +287,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _pageMentionMetaDataList = _mentionedMetaDataList
         .where(
           (mention) =>
-              mention.mediaPosition?.position ==
-              _currentPageNotifier.value + 1,
+              mention.mediaPosition?.position == _currentPageNotifier.value + 1,
         )
         .toList();
     if (mounted) setState(() {});
@@ -1365,12 +1364,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(
-            Icons.music_note,
-            size: IsrDimens.fourteen,
-            color: IsrColors.white,
-            shadows: _textShadows,
-          ),
+          _buildSoundDisc(thumbUrl),
           IsrDimens.boxWidth(IsrDimens.six),
           Flexible(
             child: Text(
@@ -1384,8 +1378,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               ),
             ),
           ),
-          IsrDimens.boxWidth(IsrDimens.six),
-          _buildSoundDisc(thumbUrl),
+          // IsrDimens.boxWidth(IsrDimens.six),
         ],
       ),
     );
@@ -1589,7 +1582,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                             .right ??
                         0,
                     bottom: _overlayBottomInset(context),
-                    child: widget.reelsConfig.actionWidget?.call(_reelData).child ??
+                    child: widget.reelsConfig.actionWidget
+                            ?.call(_reelData)
+                            .child ??
                         _buildRightSideActions(),
                   ),
 
@@ -1602,8 +1597,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                           ?.resolve(Directionality.of(context))
                           .left ??
                       0,
-                  child: widget.reelsConfig.footerWidget?.call(_reelData).child ??
-                      _buildBottomSectionWithoutOverlay(),
+                  child:
+                      widget.reelsConfig.footerWidget?.call(_reelData).child ??
+                          _buildBottomSectionWithoutOverlay(),
                 ),
                 // Persistent mute icon indicator in top-right (placed last to be on top)
                 // if (_isMuted &&
@@ -1908,7 +1904,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       await hostHandler(_reelData.postData as TimeLineData, link);
       return;
     }
-    Utility.launchExternalUrl(link.url.contains('://') ? link.url : 'https://${link.url}');
+    Utility.launchExternalUrl(
+        link.url.contains('://') ? link.url : 'https://${link.url}');
   }
 
   Widget _buildPostLinkChip() {
@@ -2216,11 +2213,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                       if (shouldTruncate)
                                         TextSpan(
                                           text: value
-                                              ? (_descriptionConfig
-                                                      ?.lessText ??
+                                              ? (_descriptionConfig?.lessText ??
                                                   ' less')
-                                              : (_descriptionConfig
-                                                      ?.moreText ??
+                                              : (_descriptionConfig?.moreText ??
                                                   ' ... more'),
                                           style: value
                                               ? (_descriptionConfig
@@ -2242,8 +2237,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                           recognizer: TapGestureRecognizer()
                                             ..onTap = () {
                                               _isExpandedDescription.value =
-                                                  !_isExpandedDescription
-                                                      .value;
+                                                  !_isExpandedDescription.value;
                                             },
                                         ),
                                     ],
@@ -2469,8 +2463,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           return SizedBox(
             width:
                 _followButtonConfig?.followButtonMinWidth ?? IsrDimens.fiftySix,
-            height:
-                _followButtonConfig?.followButtonHeight ?? IsrDimens.twentyEight,
+            height: _followButtonConfig?.followButtonHeight ??
+                IsrDimens.twentyEight,
             child: Center(
               child: SizedBox(
                 width: IsrDimens.sixteen,

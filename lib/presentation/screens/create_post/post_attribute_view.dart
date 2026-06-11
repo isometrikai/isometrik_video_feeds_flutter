@@ -179,9 +179,11 @@ class _PostAttributeViewState extends State<PostAttributeView>
     // Set default values for new posts
     _postAttributeClass?.allowComment ??= true;
     _postAttributeClass?.allowSave ??= true;
+    _postAttributeClass?.allowDownload ??= true;
     _postAttributeClass?.createPostRequest?.settings ??= PostSettingModel(
       commentsEnabled: _postAttributeClass?.allowComment ?? true,
       saveEnabled: _postAttributeClass?.allowSave ?? true,
+      downloadEnabled: _postAttributeClass?.allowDownload ?? true,
       isPaid: false,
     );
     final existingAmount =
@@ -311,6 +313,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
     copy.postLink = original.postLink;
     copy.allowComment = original.allowComment ?? true;
     copy.allowSave = original.allowSave ?? true;
+    copy.allowDownload = original.allowDownload ?? true;
 
     // Deep copy the createPostRequest
     if (original.createPostRequest != null) {
@@ -327,6 +330,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
           commentsEnabled: originalSettings.commentsEnabled,
           duetEnabled: originalSettings.duetEnabled,
           saveEnabled: originalSettings.saveEnabled,
+          downloadEnabled: originalSettings.downloadEnabled,
           stitchEnabled: originalSettings.stitchEnabled,
           isPaid: originalSettings.isPaid,
           priceAmount: originalSettings.priceAmount,
@@ -432,7 +436,8 @@ class _PostAttributeViewState extends State<PostAttributeView>
 
     // Check settings changes
     if (original.allowComment != current.allowComment ||
-        original.allowSave != current.allowSave) {
+        original.allowSave != current.allowSave ||
+        original.allowDownload != current.allowDownload) {
       debugPrint('Changes detected in settings');
       return true;
     }
@@ -948,6 +953,19 @@ class _PostAttributeViewState extends State<PostAttributeView>
                           },
                         ),
 
+                        // Allow Downloads
+                        _buildSwitchTile(
+                          icon: AssetConstants.icAllowSave,
+                          title: IsrTranslationFile.allowDownloads,
+                          value: _postAttributeClass?.allowDownload == true,
+                          onChanged: (value) {
+                            setState(() {
+                              _postAttributeClass?.allowDownload = value;
+                            });
+                            _updatePostButtonState();
+                          },
+                        ),
+
                         // Schedule Post (only if not in edit mode)
                         if (!_isEditMode) _buildSchedulePostTile(),
                       ],
@@ -1341,6 +1359,9 @@ class _PostAttributeViewState extends State<PostAttributeView>
                 saveEnabled: settings?.saveEnabled ??
                     _postAttributeClass?.allowSave ??
                     true,
+                downloadEnabled: settings?.downloadEnabled ??
+                    _postAttributeClass?.allowDownload ??
+                    true,
                 isPaid: value,
                 priceAmount: value ? currentAmount : null,
                 priceCurrency: value
@@ -1385,6 +1406,9 @@ class _PostAttributeViewState extends State<PostAttributeView>
                       saveEnabled: oldSettings?.saveEnabled ??
                           _postAttributeClass?.allowSave ??
                           true,
+                      downloadEnabled: oldSettings?.downloadEnabled ??
+                          _postAttributeClass?.allowDownload ??
+                          true,
                       isPaid: true,
                       priceAmount: parsedAmount,
                       priceCurrency: IsrVideoReelConfig
@@ -1427,6 +1451,9 @@ class _PostAttributeViewState extends State<PostAttributeView>
                                   true,
                               saveEnabled: settings?.saveEnabled ??
                                   _postAttributeClass?.allowSave ??
+                                  true,
+                              downloadEnabled: settings?.downloadEnabled ??
+                                  _postAttributeClass?.allowDownload ??
                                   true,
                               isPaid: true,
                               priceAmount: amount,
@@ -2033,6 +2060,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
       final settings = PostSettingModel(
         saveEnabled: _postAttributeClass?.allowSave,
         commentsEnabled: _postAttributeClass?.allowComment,
+        downloadEnabled: _postAttributeClass?.allowDownload,
         isPaid: _isPaidPostEnabled
             ? (_postAttributeClass?.createPostRequest?.settings?.isPaid ??
                 false)

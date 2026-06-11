@@ -29,8 +29,8 @@ class PostConfig {
   final bool enableDubWithAudio;
   final DubWithAudioConfig? dubWithAudioConfig;
 
-  /// When true, viewers can download reels from the more-options sheet (except
-  /// locked posts). Per-post download flags from the API default to allowed.
+  /// When true, viewers can download reels from the more-options sheet when
+  /// `settings.download_enabled` is true (API default: true).
   final bool canDownload;
 
   /// UI config for post-card tabs. Defaults to [PostFeedUIConfig.instagram] when null.
