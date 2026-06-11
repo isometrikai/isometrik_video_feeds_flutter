@@ -583,7 +583,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       widget.onVisibilityChanged(_isVisible);
     }
 
-    if (_isVisible && _pendingBlocResume && !_isManuallyPaused) {
+    if (_pendingBlocResume &&
+        !_isManuallyPaused &&
+        _mayStartPlayback(activeReel: true)) {
       _pendingBlocResume = false;
       play();
     }
@@ -658,7 +660,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   /// Check if video is stuck and try to recover
   void _checkAndRecoverStuckVideo() {
-    if (_isDisposed || !_isVisible || _isManuallyPaused) {
+    if (_isDisposed ||
+        !_mayStartPlayback(activeReel: true) ||
+        _isManuallyPaused) {
       _stopStuckVideoDetection();
       return;
     }
@@ -756,8 +760,18 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       (widget.isParentVisible?.call() ?? true) &&
       IsrVideoReelConfig.allowsPlayback;
 
-  bool _mayStartPlayback({bool activeReel = false}) =>
-      _feedAllowsPlayback && (_isVisible || activeReel);
+  /// Whether this player may start/resume right now.
+  ///
+  /// Parent-managed players (feed carousel) always follow [_effectiveVisible].
+  /// Full-screen reels may use [activeReel] to tolerate VisibilityDetector lag
+  /// on the current clip, but still require [_feedAllowsPlayback] (tab + host).
+  bool _mayStartPlayback({bool activeReel = false}) {
+    if (!_feedAllowsPlayback) return false;
+    if (widget.visibilityManagedByParent) {
+      return _effectiveVisible;
+    }
+    return _isVisible || activeReel;
+  }
 
   void play() {
     if (_isDisposed) return; // Safety check: Don't operate on disposed widget
@@ -783,6 +797,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   }
 
   void _startPlaybackNow() {
+    if (!_feedAllowsPlayback) return;
+
     _pendingBlocResume = false;
     final controller = _videoPlayerController;
     if (controller == null ||
@@ -801,28 +817,16 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     if (_isDisposed) return;
     _isManuallyPaused = false;
 
-    // Current reel after host tab switch: only require home shell tab, not
-    // parent VisibilityDetector (often still false until user scrolls).
-    if (activeReel) {
-      if (!IsrVideoReelConfig.allowsPlayback) return;
-      if (_isInitialized &&
-          _videoPlayerController != null &&
-          _videoPlayerController!.isInitialized &&
-          !_videoPlayerController!.isDisposed) {
-        _startPlaybackNow();
-        return;
-      }
-      _pendingBlocResume = true;
-      VisibilityDetectorController.instance.notifyNow();
+    if (!_feedAllowsPlayback) {
+      _pendingBlocResume = false;
       return;
     }
 
-    if (!_feedAllowsPlayback) return;
     if (_isInitialized &&
         _videoPlayerController != null &&
         _videoPlayerController!.isInitialized &&
         !_videoPlayerController!.isDisposed &&
-        _mayStartPlayback()) {
+        _mayStartPlayback(activeReel: activeReel)) {
       _startPlaybackNow();
       return;
     }
@@ -953,7 +957,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                 }
               } else {
                 _isManuallyPaused = false;
-                forceResume();
+                forceResume(activeReel: true);
               }
             } else {
               _pendingBlocResume = false;
