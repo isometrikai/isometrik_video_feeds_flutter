@@ -169,15 +169,25 @@ class IsrDimens {
   static double hostBottomNavClearance(BuildContext context) =>
       MediaQuery.paddingOf(context).bottom + hostBottomNavBarHeight;
 
-  /// Resolves configured overlay padding, ensuring at least [hostBottomNavClearance].
+  /// Resolves configured overlay padding.
+  ///
+  /// When [includeHostBottomNav] is true (main reels tab), enforces at least
+  /// [hostBottomNavClearance]. When false (full-screen overlay player pushed
+  /// from Explore/Profile), only the system safe-area inset applies — setting
+  /// `bottom: 0` is honored instead of falling back to nav-bar clearance.
   static double resolveOverlayBottomInset(
     BuildContext context,
-    EdgeInsetsGeometry? overlayPadding,
-  ) {
-    final hostClearance = hostBottomNavClearance(context);
+    EdgeInsetsGeometry? overlayPadding, {
+    bool includeHostBottomNav = true,
+  }) {
+    final safeBottom = MediaQuery.paddingOf(context).bottom;
+    final hostClearance = safeBottom +
+        (includeHostBottomNav ? hostBottomNavBarHeight : 0);
     if (overlayPadding == null) return hostClearance;
     final resolved = overlayPadding.resolve(Directionality.of(context));
-    if (resolved.bottom <= 0) return hostClearance;
+    if (resolved.bottom <= 0) {
+      return includeHostBottomNav ? hostClearance : safeBottom;
+    }
     return resolved.bottom >= hostClearance ? resolved.bottom : hostClearance;
   }
 }

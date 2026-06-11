@@ -2,6 +2,8 @@ export 'comment_tagging_text_field.dart';
 export 'comments_bottom_sheet.dart';
 export 'follow_action_widget.dart';
 export 'like_comment_icon_view.dart';
+export 'reels_overlay_text.dart';
+export 'isr_sdk_text_style_scope.dart';
 export 'mention_list_bottom_sheet.dart';
 export 'more_options_bottom_sheet.dart';
 export 'post_feed_media_placeholder.dart';

@@ -15,6 +15,8 @@ import 'package:ism_video_reel_player/presentation/screens/posts/video_player_wi
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/comment_count_action_widget.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/instagram_follow_chip.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/like_action_widget.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/isr_sdk_text_style_scope.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/reels_overlay_text.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:lottie/lottie.dart';
@@ -102,6 +104,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       IsrDimens.resolveOverlayBottomInset(
         context,
         widget.reelsConfig.overlayPadding,
+        includeHostBottomNav:
+            !IsrVideoReelConfig.isOverlayReelsPlayerActive,
       );
 
   // Add constants for media types
@@ -166,6 +170,53 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           blurRadius: 8,
         ),
       ];
+
+  static const Color _kReelsOverlayLabelColor = ReelsOverlayText.foreground;
+
+  /// Subtle shadow so counts stay readable without looking black on dark video.
+  List<Shadow> get _reelsActionLabelShadows => [
+        Shadow(
+          color: Colors.black.withValues(alpha: 0.55),
+          blurRadius: 3,
+          offset: const Offset(0, 1),
+        ),
+      ];
+
+  TextStyle get _reelsActionLabelStyle {
+    final configured = _textStyleConfig?.actionLabelStyle;
+    final fallback = IsrStyles.white12;
+    return TextStyle(
+      inherit: false,
+      color: configured?.color ?? _kReelsOverlayLabelColor,
+      fontSize: configured?.fontSize ?? fallback.fontSize,
+      fontWeight: configured?.fontWeight ?? FontWeight.w500,
+      fontFamily: configured?.fontFamily ?? fallback.fontFamily,
+      letterSpacing: configured?.letterSpacing,
+      height: configured?.height,
+      shadows: configured?.shadows ?? _reelsActionLabelShadows,
+      decoration: TextDecoration.none,
+      decorationColor: Colors.transparent,
+    );
+  }
+
+  Widget _reelsOverlayLabel(
+    String text, {
+    VoidCallback? onTap,
+  }) {
+    final style = _reelsActionLabelStyle;
+    final label = ReelsOverlayText(
+      text,
+      fontSize: style.fontSize,
+      fontWeight: style.fontWeight,
+      fontFamily: style.fontFamily,
+      letterSpacing: style.letterSpacing,
+      height: style.height,
+      shadows: style.shadows,
+    );
+    if (onTap == null) return label;
+    return GestureDetector(onTap: onTap, child: label);
+  }
+
   late ReelsData _reelData;
 
   bool _mentionsVisible = false;
@@ -1472,17 +1523,19 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   Widget build(BuildContext context) {
     debugPrint(
         'IsmReelsVideoPlayerView: build index: ${widget.index}, visibleIndex: ${widget.currentIndex.value}, tabType: ${widget.postSectionType}');
-    return BlocListener<SocialPostBloc, SocialPostState>(
-      listenWhen: (previous, current) => current is PlayPauseVideoState,
-      listener: (context, state) {
-        if (state is PlayPauseVideoState) {
-          _setPlaybackBlocked(
-            state.play,
-            pausePlayback: state.pausePlayback,
-          );
-        }
-      },
-      child: Stack(
+    return IsrSdkTextStyleScope(
+      useReelsOverlayDefaults: true,
+      child: BlocListener<SocialPostBloc, SocialPostState>(
+        listenWhen: (previous, current) => current is PlayPauseVideoState,
+        listener: (context, state) {
+          if (state is PlayPauseVideoState) {
+            _setPlaybackBlocked(
+              state.play,
+              pausePlayback: state.pausePlayback,
+            );
+          }
+        },
+        child: Stack(
         fit: StackFit.expand,
         children: [
           // Only the main GestureDetector as child of the outer Stack
@@ -1620,6 +1673,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           ),
         ],
       ),
+      ),
     );
   }
 
@@ -1627,11 +1681,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         child: Padding(
           padding: IsrDimens.edgeInsets(
               bottom: IsrDimens.forty, right: IsrDimens.sixteen),
-          child: DefaultTextStyle.merge(
-            style: const TextStyle(
-              decoration: TextDecoration.none,
-              decorationColor: Colors.transparent,
-            ),
+          child: DefaultTextStyle(
+            style: _reelsActionLabelStyle,
             child: Column(
               spacing: IsrDimens.twenty,
               mainAxisSize: MainAxisSize.min,
@@ -1660,10 +1711,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                         ),
                       ),
                       IsrDimens.boxHeight(IsrDimens.ten),
-                      Text(
-                        IsrTranslationFile.create,
-                        style: IsrStyles.white12,
-                      ),
+                      _reelsOverlayLabel(IsrTranslationFile.create),
                     ],
                   ),
                 ],
@@ -1793,15 +1841,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               ),
             ),
             IsrDimens.boxHeight(IsrDimens.four),
-            Text(
-              (_reelData.viewCount ?? 0).toString(),
-              style: _textStyleConfig?.actionLabelStyle ??
-                  IsrStyles.white12.copyWith(
-                    fontWeight: FontWeight.w500,
-                    decoration: TextDecoration.none,
-                    shadows: _textShadows,
-                  ),
-            ),
+            _reelsOverlayLabel((_reelData.viewCount ?? 0).toString()),
           ],
         ),
       );
@@ -1879,20 +1919,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               ),
             if (label.isStringEmptyOrNull == false) ...[
               IsrDimens.boxHeight(IsrDimens.four),
-              GestureDetector(
+              _reelsOverlayLabel(
+                label ?? '',
                 onTap: onLabelTap ?? onTap,
-                child: Text(
-                  label ?? '',
-                  style: (_textStyleConfig?.actionLabelStyle ??
-                          IsrStyles.white12.copyWith(
-                            fontWeight: FontWeight.w500,
-                            shadows: _textShadows,
-                          ))
-                      .copyWith(
-                    decoration: TextDecoration.none,
-                    decorationColor: Colors.transparent,
-                  ),
-                ),
               ),
             ],
           ],

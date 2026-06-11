@@ -370,9 +370,12 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   // ✅ Provide BLoCs at the root of build
   @override
-  Widget build(BuildContext context) => MultiBlocProvider(
-        providers: _getAllBlocProviders(),
-        child: _buildContent(),
+  Widget build(BuildContext context) => IsrSdkTextStyleScope(
+        useReelsOverlayDefaults: !_isCurrentTabPostFeed,
+        child: MultiBlocProvider(
+          providers: _getAllBlocProviders(),
+          child: _buildContent(),
+        ),
       );
 
   /// ✅ Get all BLoC providers needed by the SDK
@@ -760,7 +763,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   EdgeInsetsGeometry _resolvedReelsOverlayPadding(BuildContext context) {
     final overlay = _postConfig.postUIConfig?.overlayPadding;
-    final bottom = IsrDimens.resolveOverlayBottomInset(context, overlay);
+    final bottom = IsrDimens.resolveOverlayBottomInset(
+      context,
+      overlay,
+      includeHostBottomNav: !widget.isOverlayPlayer,
+    );
     if (overlay == null) {
       return EdgeInsets.only(bottom: bottom);
     }
@@ -1053,6 +1060,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       IsrDimens.resolveOverlayBottomInset(
         context,
         _postConfig.postUIConfig?.overlayPadding,
+        includeHostBottomNav: !widget.isOverlayPlayer,
       );
 
   Widget _buildTabBar() {
