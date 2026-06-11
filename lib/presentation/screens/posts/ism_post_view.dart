@@ -896,7 +896,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
               customHandler: _postConfig.postCallBackConfig?.onDubWithAudio,
             );
             _socialPostBloc.add(PlayPauseVideoEvent(play: true));
-            IsrVideoReelConfig.resumeFeedPlayback();
+            IsrVideoReelConfig.resumePlaybackIfAllowed();
           } else if (sheetResult == MoreOptionsSheetResult.download) {
             await _downloadPost(reelsData.postData as TimeLineData);
             _socialPostBloc.add(PlayPauseVideoEvent(play: true));

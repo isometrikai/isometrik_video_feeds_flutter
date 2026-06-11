@@ -29,14 +29,14 @@ class IsrAppNavigator {
   static void dismissCreatePostFlow(BuildContext context) {
     final nav = Navigator.of(context, rootNavigator: true);
     if (!nav.canPop()) {
-      IsrVideoReelConfig.resumeFeedPlayback();
+      IsrVideoReelConfig.resumePlaybackIfAllowed();
       return;
     }
     nav.popUntil((route) {
       final name = route.settings.name;
       return name == null || !_createPostFlowRouteNames.contains(name);
     });
-    IsrVideoReelConfig.resumeFeedPlayback();
+    IsrVideoReelConfig.resumePlaybackIfAllowed();
   }
 
   /// Navigate to post listing screen

@@ -80,14 +80,20 @@ class IsrVideoReelConfig {
   /// When non-null, the host app may persist feed slices (e.g. Hive) alongside the SDK.
   static IsrFeedCacheConfig? feedCacheConfig;
 
-  /// Set by [pauseFeedPlayback] / [resumeFeedPlayback] when the host hides the reels tab.
+  /// Set only by the host via [pauseFeedPlayback] / [resumeFeedPlayback].
   static bool isHostFeedTabVisible = true;
 
   static int _overlayReelsPlayerCount = 0;
 
-  /// True when the host reels tab is visible or a full-screen overlay player is open.
+  /// In-SDK routes (sound detail, capture flow) that must pause media without
+  /// clearing [isHostFeedTabVisible] — otherwise profile/explore can bleed audio.
+  static int _playbackSuppressionCount = 0;
+
+  /// True when the host reels tab or overlay player is active and nothing is
+  /// suppressing playback.
   static bool get allowsPlayback =>
-      isHostFeedTabVisible || _overlayReelsPlayerCount > 0;
+      (isHostFeedTabVisible || _overlayReelsPlayerCount > 0) &&
+      _playbackSuppressionCount == 0;
 
   static bool get isOverlayReelsPlayerActive => _overlayReelsPlayerCount > 0;
 
@@ -122,39 +128,66 @@ class IsrVideoReelConfig {
   /// Optional hook for [IsmPostView] to refresh tab visibility when the host returns to reels.
   static VoidCallback? onHostFeedTabResumed;
 
-  /// Pauses reels media when leaving the feed, switching tabs, or backgrounding.
+  /// Host-only: user left the reels bottom-nav tab (profile, explore, etc.).
   static void pauseFeedPlayback() {
     isHostFeedTabVisible = false;
-    try {
-      final bloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
-      bloc.add(PlayPauseVideoEvent(play: false));
-    } catch (e) {
-      debugPrint('IsrVideoReelConfig.pauseFeedPlayback: $e');
-    }
+    _emitPlayPause(play: false);
   }
 
+  /// Host-only: user returned to the reels bottom-nav tab.
   static void resumeFeedPlayback() {
     isHostFeedTabVisible = true;
+    _emitPlaybackResume(notifyHostTabResumed: true);
+  }
+
+  /// SDK overlays (sound sheet, capture) — pause without clearing host visibility.
+  static void suppressPlayback() {
+    _playbackSuppressionCount++;
+    _emitPlayPause(play: false);
+  }
+
+  /// Pair with [suppressPlayback]; resumes only if the host tab is still reels.
+  static void releasePlaybackSuppression() {
+    if (_playbackSuppressionCount > 0) {
+      _playbackSuppressionCount--;
+    }
+    _emitPlaybackResume();
+  }
+
+  /// Resume after an in-app flow without flipping [isHostFeedTabVisible].
+  static void resumePlaybackIfAllowed() {
+    _emitPlaybackResume();
+  }
+
+  static void _emitPlaybackResume({bool notifyHostTabResumed = false}) {
+    if (!allowsPlayback) return;
 
     void emitResume() {
+      if (!allowsPlayback) return;
       try {
         final bloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
         bloc.add(PlayPauseVideoEvent(play: true));
       } catch (e) {
-        debugPrint('IsrVideoReelConfig.resumeFeedPlayback: $e');
+        debugPrint('IsrVideoReelConfig._emitPlaybackResume: $e');
       }
       VisibilityDetectorController.instance.notifyNow();
     }
 
     emitResume();
-    onHostFeedTabResumed?.call();
+    if (notifyHostTabResumed) {
+      onHostFeedTabResumed?.call();
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       emitResume();
-      onHostFeedTabResumed?.call();
+      if (notifyHostTabResumed) {
+        onHostFeedTabResumed?.call();
+      }
     });
     Future.delayed(const Duration(milliseconds: 300), () {
       emitResume();
-      onHostFeedTabResumed?.call();
+      if (notifyHostTabResumed) {
+        onHostFeedTabResumed?.call();
+      }
     });
   }
 

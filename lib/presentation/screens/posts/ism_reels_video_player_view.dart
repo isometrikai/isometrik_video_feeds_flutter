@@ -1451,7 +1451,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       return;
     }
 
-    IsrVideoReelConfig.pauseFeedPlayback();
+    IsrVideoReelConfig.suppressPlayback();
     try {
       await IsrAppNavigator.navigateToSoundPostsDetail(
         context,
@@ -1460,7 +1460,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       );
     } finally {
       if (mounted) {
-        IsrVideoReelConfig.resumeFeedPlayback();
+        IsrVideoReelConfig.releasePlaybackSuppression();
       }
     }
   }

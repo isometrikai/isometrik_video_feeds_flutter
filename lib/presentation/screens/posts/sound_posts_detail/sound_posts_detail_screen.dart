@@ -189,13 +189,13 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
     if (_useAudioLoading) return;
     setState(() => _useAudioLoading = true);
     await _previewPlayer.pause();
-    IsrVideoReelConfig.pauseFeedPlayback();
+    IsrVideoReelConfig.suppressPlayback();
     try {
       await UseSoundCaptureCoordinator.startFromPostSound(context, _sound);
     } finally {
       if (mounted) {
         setState(() => _useAudioLoading = false);
-        IsrVideoReelConfig.resumeFeedPlayback();
+        IsrVideoReelConfig.releasePlaybackSuppression();
       }
     }
   }

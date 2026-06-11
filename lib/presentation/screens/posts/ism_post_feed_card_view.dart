@@ -730,7 +730,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     final sound = _reel.sound;
     if (sound == null || !sound.hasId) return;
 
-    IsrVideoReelConfig.pauseFeedPlayback();
+    IsrVideoReelConfig.suppressPlayback();
     try {
       var track = PostSoundUtil.soundTrackFromPostSound(sound);
       if (track.trackUrl.trim().isEmpty) {
@@ -754,7 +754,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       );
     } finally {
       if (mounted) {
-        IsrVideoReelConfig.resumeFeedPlayback();
+        IsrVideoReelConfig.releasePlaybackSuppression();
       }
     }
   }
