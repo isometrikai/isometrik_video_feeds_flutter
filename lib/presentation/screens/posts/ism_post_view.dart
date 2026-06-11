@@ -353,9 +353,12 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   // ✅ Provide BLoCs at the root of build
   @override
-  Widget build(BuildContext context) => MultiBlocProvider(
-        providers: _getAllBlocProviders(),
-        child: _buildContent(),
+  Widget build(BuildContext context) => IsrSdkTextStyleScope(
+        useReelsOverlayDefaults: !_isCurrentTabPostFeed,
+        child: MultiBlocProvider(
+          providers: _getAllBlocProviders(),
+          child: _buildContent(),
+        ),
       );
 
   /// ✅ Get all BLoC providers needed by the SDK
