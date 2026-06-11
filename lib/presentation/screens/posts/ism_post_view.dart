@@ -216,11 +216,28 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           }
         }
         if (!mounted || requestId != _tabChangeRequestId) return;
+        _handoffTabPlayback(lastIndex: lastIndex, newIndex: newIndex);
         setState(() {});
         if (tabData.tabDataModel.reelsDataList.isEmpty) {
           _requestHomeTabLoad(tabData);
         }
       }
+    });
+  }
+
+  /// Stops image/sound bleed from a kept-alive offstage tab (e.g. For You → Feed).
+  void _handoffTabPlayback({required int lastIndex, required int newIndex}) {
+    if (lastIndex >= 0 && lastIndex < _tabDataModelList.length) {
+      _tabDataModelList[lastIndex].isVisible = false;
+    }
+    if (newIndex >= 0 && newIndex < _tabDataModelList.length) {
+      _tabDataModelList[newIndex].isVisible = true;
+    }
+    _socialPostBloc.add(PlayPauseVideoEvent(play: false, pausePlayback: true));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _socialPostBloc.add(PlayPauseVideoEvent(play: true, pausePlayback: true));
+      VisibilityDetectorController.instance.notifyNow();
     });
   }
 

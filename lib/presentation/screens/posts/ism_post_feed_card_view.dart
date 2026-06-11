@@ -605,7 +605,9 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
 
   Future<void> _syncImageSoundPlayback() async {
     if (!mounted) return;
-    if (!widget.isPostVisible || !IsrVideoReelConfig.isHostFeedTabVisible) {
+    if (!widget.isPostVisible ||
+        !widget.reelsConfig.isTabVisible() ||
+        !IsrVideoReelConfig.allowsPlayback) {
       await _pauseImageSound();
       return;
     }
@@ -649,8 +651,11 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   Future<void> _startImageSoundIfNeeded() async {
     if (!mounted) return;
     if (!_isCurrentMediaImage) return;
-    if (!widget.isPostVisible || !IsrVideoReelConfig.isHostFeedTabVisible)
+    if (!widget.isPostVisible ||
+        !widget.reelsConfig.isTabVisible() ||
+        !IsrVideoReelConfig.allowsPlayback) {
       return;
+    }
     final sound = _reel.sound;
     if (sound == null || !sound.hasId) return;
 
@@ -1110,12 +1115,21 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       BlocListener<SocialPostBloc, SocialPostState>(
         listenWhen: (previous, current) => current is PlayPauseVideoState,
         listener: (context, state) {
-          if (state is! PlayPauseVideoState || !state.pausePlayback) return;
+          if (state is! PlayPauseVideoState) return;
           if (!state.play) {
             unawaited(_pauseImageSound());
-          } else {
-            unawaited(_syncImageSoundPlayback());
+            if (state.pausePlayback) {
+              _syncCarouselVideoPlayback();
+            }
+            return;
           }
+          if (!state.pausePlayback) {
+            if (widget.isPostVisible && widget.reelsConfig.isTabVisible()) {
+              unawaited(_syncImageSoundPlayback());
+            }
+            return;
+          }
+          unawaited(_syncImageSoundPlayback());
           _syncCarouselVideoPlayback();
         },
         child: _buildCardBody(context),

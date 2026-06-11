@@ -225,13 +225,16 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (_wasVisiblePost && !isVisible) {
       _logWatchPostEvent();
       _pauseImageProgress();
+      unawaited(_stopImageSound());
       final key = _getCurrentVideoPlayerKey();
       VideoPlayerWidget.of(key)?.pause();
     } else if (!_wasVisiblePost && isVisible) {
       if (!_hasFetchedFloatingComments) {
         _fetchFloatingCommentsIfNeeded();
       }
-      if (!_isPlaybackBlocked && IsrVideoReelConfig.allowsPlayback) {
+      if (!_isPlaybackBlocked &&
+          widget.reelsConfig.isTabVisible() &&
+          IsrVideoReelConfig.allowsPlayback) {
         _resumePlayback();
         if (_isCurrentMediaImage) {
           unawaited(_startImageSoundIfNeeded());
@@ -2743,6 +2746,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (!_isCurrentMediaImage) return;
     if (_isImagePaused || _isPlaybackBlocked) return;
     if (widget.currentIndex.value != widget.index) return;
+    if (!widget.reelsConfig.isTabVisible()) return;
     final sound = _reelData.sound;
     if (sound == null || !sound.hasId) return;
 
@@ -2885,10 +2889,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }) {
     final shouldBlock = !isPlaying;
     final isCurrentReel = widget.currentIndex.value == widget.index;
+    final tabVisible = widget.reelsConfig.isTabVisible();
     if (_isPlaybackBlocked == shouldBlock) {
       if (!shouldBlock &&
           pausePlayback &&
           isCurrentReel &&
+          tabVisible &&
           IsrVideoReelConfig.allowsPlayback) {
         _resumePlayback();
         if (_isCurrentMediaImage) {
@@ -2899,18 +2905,37 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
     _isPlaybackBlocked = shouldBlock;
     if (_isPlaybackBlocked) {
+      if (!tabVisible || !isCurrentReel || pausePlayback) {
+        unawaited(_pauseImageSound());
+      }
       if (!pausePlayback) return;
       _pauseImageProgress();
       final key = _getCurrentVideoPlayerKey();
       VideoPlayerWidget.of(key)?.pause();
       return;
     }
-    if (!pausePlayback) return;
-    if (isCurrentReel && IsrVideoReelConfig.allowsPlayback) {
+    if (!pausePlayback) {
+      if (isCurrentReel && tabVisible) {
+        unawaited(_syncImageSoundAfterOverlay());
+      }
+      return;
+    }
+    if (isCurrentReel && tabVisible && IsrVideoReelConfig.allowsPlayback) {
       _resumePlayback();
       if (_isCurrentMediaImage) {
         unawaited(_startImageSoundIfNeeded());
       }
+    }
+  }
+
+  Future<void> _syncImageSoundAfterOverlay() async {
+    if (!mounted || _isPlaybackBlocked || !widget.reelsConfig.isTabVisible()) {
+      return;
+    }
+    if (_isCurrentMediaImage && (_reelData.sound?.hasId ?? false)) {
+      await _startImageSoundIfNeeded();
+    } else {
+      await _pauseImageSound();
     }
   }
 
