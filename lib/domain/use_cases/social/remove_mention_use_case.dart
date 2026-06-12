@@ -15,7 +15,10 @@ class RemoveMentionUseCase extends BaseUseCase {
           isLoading: isLoading,
           postId: postId,
         );
+        final statusCode = response.responseCode ?? 0;
         return ApiResult(
-            data: response.responseCode == 200 ? response.data : null);
+          data: statusCode >= 200 && statusCode < 300 ? response.data : null,
+          statusCode: statusCode,
+        );
       });
 }

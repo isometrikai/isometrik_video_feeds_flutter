@@ -118,7 +118,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     _socialActionCubit = context.getOrCreateBloc();
     if (!widget.isOverlayPlayer) {
       IsrVideoReelConfig.onHostFeedTabResumed = _onHostFeedTabResumed;
-      IsrVideoReelConfig.getActiveHostPostSection = () => _currentPostSectionType;
+      IsrVideoReelConfig.getActiveHostPostSection =
+          () => _currentPostSectionType;
     }
     IsrVideoReelConfig.registerAppForegroundResumedListener(
       _onAppForegroundResumed,
@@ -941,6 +942,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         }
       },
       onPressMoreButton: (reelsData) async {
+        final isUserLoggedIn = await _ensureUserLoggedIn();
+        if (!isUserLoggedIn) return;
         if (reelsData.postData is TimeLineData) {
           _emitScopedPlayPause(tabData.postSectionType, play: false);
           final sheetResult = await _handleMoreOptions(
@@ -1302,6 +1305,14 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     return isFollowingPostEmpty;
   }
 
+  Future<bool> _ensureUserLoggedIn() async {
+    var isUserLoggedIn = await _socialActionCubit.isUserLoggedIn;
+    if (!isUserLoggedIn) {
+      await _socialConfig.socialCallBackConfig?.onLoginInvoked?.call();
+    }
+    return _socialActionCubit.isUserLoggedIn;
+  }
+
   Future<int> _handleCommentAction(
     String postId,
     int totalCommentsCount,
@@ -1503,7 +1514,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   Future<bool> _executeRemoveMentionFromPost({
     required String postId,
   }) async {
-    final confirmed = await Utility.showRemoveMeFromPostConfirmDialog(context);
+    // Bottom sheet route must finish closing before the confirm dialog opens.
+    await Future<void>.delayed(const Duration(milliseconds: 150));
+    if (!mounted) return false;
+
+    final confirmed = await Utility.showRemoveMeFromPostConfirmDialog();
     if (confirmed != true) return false;
 
     final completer = Completer<bool>();
@@ -1722,6 +1737,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         return sheetResult;
       case MoreOptionsSheetResult.removeMeFromPost:
         if (onRemoveMeFromPost != null) {
+          await Future<void>.delayed(const Duration(milliseconds: 120));
           await onRemoveMeFromPost();
         }
         return null;

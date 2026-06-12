@@ -217,7 +217,7 @@ class IsrTranslationFile {
   static const String removeTag = 'Remove tag';
   static const String removeMeFromPostTitle = 'Remove yourself from this post?';
   static const String removeMeFromPostMessage =
-      'Your username will no longer appear on this post. The post will not be deleted.';
+      'Your  will no longer appear on this post.';
   static const String mentionRemovedSuccessfully =
       'You have been removed from this post';
   static const String retry = 'Retry';

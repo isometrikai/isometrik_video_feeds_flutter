@@ -1271,6 +1271,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _callOnTapMentionData([MentionMetaData(userId: userId)]);
   }
 
+  void _onTapFloatingCommentProfile(String userId) {
+    if (userId.isStringEmptyOrNull) return;
+    final postData = _reelData.postData is TimeLineData
+        ? _reelData.postData as TimeLineData
+        : null;
+    widget.reelsConfig.postConfig.postCallBackConfig?.onProfileClick
+        ?.call(postData, userId, null);
+  }
+
   void _onTapBelowCommentHashtag(String hashtag) {
     if (hashtag.isStringEmptyOrNull) return;
     _callOnTapMentionData([MentionMetaData(tag: hashtag)]);
@@ -2465,7 +2474,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   overflow: TextOverflow.ellipsis,
                   text: TextSpan(
                     children: [
-                      TextSpan(text: username, style: usernameStyle),
+                      TextSpan(
+                        text: username,
+                        style: usernameStyle,
+                        recognizer: TapGestureRecognizer()
+                          ..onTap = () => _onTapFloatingCommentProfile(
+                                comment.commentedByUserId ?? '',
+                              ),
+                      ),
                       const TextSpan(text: ' '),
                       ...Utility.buildCommentTextSpans(
                         comment.comment ?? '',
