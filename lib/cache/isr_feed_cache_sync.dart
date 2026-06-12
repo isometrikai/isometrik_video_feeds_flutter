@@ -48,13 +48,17 @@ class IsrFeedCacheSync {
     if (state is IsmFollowActionListenerState && !state.isFollowing) {
       final userId = state.userId;
       if (userId.isEmpty) return;
-      unawaited(IsrFeedCacheRepository.instance.removePostsByAuthor(userId));
-      try {
-        final bloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
-        bloc.add(PurgeAuthorFromFollowFeedsEvent(userId));
-      } catch (e) {
-        debugPrint('[IsrFeedCacheSync] purge author: $e');
-      }
+      unawaited(_purgeUnfollowedAuthor(userId));
+    }
+  }
+
+  Future<void> _purgeUnfollowedAuthor(String userId) async {
+    await IsrFeedCacheRepository.instance.removePostsByAuthor(userId);
+    try {
+      final bloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
+      bloc.add(PurgeAuthorFromFollowFeedsEvent(userId));
+    } catch (e) {
+      debugPrint('[IsrFeedCacheSync] purge author: $e');
     }
   }
 }

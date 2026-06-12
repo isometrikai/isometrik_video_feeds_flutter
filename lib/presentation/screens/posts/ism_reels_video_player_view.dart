@@ -2598,7 +2598,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             variant: FollowChipVariant.reelsOverlay,
             followButtonConfig: _followButtonConfig,
             textShadows: _textShadows,
-            onTap: () => onTap(reelData: _reelData),
+            onTap: () => onTap(
+              reelData: _reelData,
+              postSectionType: widget.postSectionType,
+              watchDuration: _postWatchDuration.inSeconds,
+              apiCallBack: widget.onPressFollowButton != null
+                  ? () => widget.onPressFollowButton!(_reelData, isFollowing)
+                  : null,
+            ),
           );
         }
         return const SizedBox.shrink();

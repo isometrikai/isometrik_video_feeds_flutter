@@ -421,6 +421,19 @@ class _PostItemWidgetState extends State<PostItemWidget>
     await _doMediaCaching(refreshIndex);
   }
 
+  String? _reelAuthorUserId(ReelsData reel) {
+    final direct = reel.userId;
+    if (direct != null && direct.isNotEmpty) return direct;
+    final post = reel.postData;
+    if (post is TimeLineData) {
+      final fromUser = post.user?.id;
+      if (fromUser != null && fromUser.isNotEmpty) return fromUser;
+      final userId = post.userId;
+      if (userId != null && userId.isNotEmpty) return userId;
+    }
+    return null;
+  }
+
   Future<void> _updateWithFollowAction(
       IsmFollowActionListenerState state) async {
     var updateState = false;
@@ -453,8 +466,10 @@ class _PostItemWidgetState extends State<PostItemWidget>
       }
     } else if (!state.isFollowing &&
         !state.followRequestPending &&
-        _reelsDataList.any((element) => element.userId == state.userId)) {
-      _reelsDataList.removeWhere((element) => element.userId == state.userId);
+        _reelsDataList.any((element) => _reelAuthorUserId(element) == state.userId)) {
+      _reelsDataList.removeWhere(
+        (element) => _reelAuthorUserId(element) == state.userId,
+      );
       updateState = true;
     }
     if (updateState) {
