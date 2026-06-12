@@ -1431,7 +1431,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       isLoading: false,
       isPagination: false,
       isRefresh: true,
-      postSectionType: _currentPostSectionType,
+      postSectionType: tabState.tabDataModel.postSectionType,
       memberUserId: '',
       onComplete: (postDataList) async {
         tabState.tabDataModel.reelsDataList

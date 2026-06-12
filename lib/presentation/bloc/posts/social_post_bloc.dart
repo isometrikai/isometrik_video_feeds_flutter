@@ -169,7 +169,17 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       return;
     }
     final section = IsrFeedCacheSectionMapping.fromPostSectionType(postSectionType);
-    if (section == null || posts.isEmpty) return;
+    if (section == null) return;
+    if (posts.isEmpty) {
+      if (isFromPagination) return;
+      await IsrFeedCacheRepository.instance.replaceSection(
+        section,
+        const [],
+        hasMore: hasMore,
+        currentPage: currentPage,
+      );
+      return;
+    }
     final maps = posts.map((e) => e.toMap()).toList();
     if (isFromPagination) {
       await IsrFeedCacheRepository.instance.appendSection(
@@ -426,7 +436,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     // keep the existing list visible and merge new items at the top instead
     // (pull-to-refresh becomes "fetch fresh, prepend new").
     if (isFromRefresh) {
-      if (!feedHostCacheOn) {
+      if (!feedHostCacheOn || followSensitive) {
         tabAssistData.postList.clear();
       }
       tabAssistData.currentPage = 1;
@@ -596,7 +606,37 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       apiPostResult?.forEach((_) => _.isFollowing = true);
     }
     postDataList.addAll(apiPostResult ?? []);
-    if (postDataList.isNotEmpty) {
+    final apiSucceeded = apiError == null;
+
+    if (followSensitive && !isFromPagination && apiSucceeded) {
+      tabAssistData.postList
+        ..clear()
+        ..addAll(postDataList);
+      if (postDataList.isNotEmpty) {
+        _socialActionCubit.updatePostList(postDataList);
+        tabAssistData.currentPage++;
+        _syncPageBasedHasMore(
+          tabAssistData: tabAssistData,
+          pageItems: postDataList,
+          total: timelineResponse?.total,
+          totalPages: timelineResponse?.totalPages,
+          apiPage: timelineResponse?.page ?? requestedPage,
+        );
+        unawaited(FeedMediaOrientation.prefetchForPosts(postDataList));
+      } else {
+        tabAssistData.hasMorePages = false;
+        tabAssistData.currentPage = 1;
+      }
+      unawaited(
+        _persistFollowSensitiveTabToCache(
+          postSectionType,
+          tabAssistData.postList,
+          isFromPagination: false,
+          hasMore: tabAssistData.hasMorePages,
+          currentPage: tabAssistData.currentPage,
+        ),
+      );
+    } else if (postDataList.isNotEmpty) {
       _socialActionCubit.updatePostList(postDataList);
 
       if (isFromPagination) {
@@ -630,13 +670,6 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         if (newOnly.isNotEmpty) {
           tabAssistData.postList.insertAll(0, newOnly);
         }
-      } else if (followSensitive &&
-          (isFromRefresh || tabAssistData.postList.isNotEmpty) &&
-          postDataList.isNotEmpty) {
-        // Replace in-memory list with authoritative API page (removes unfollowed authors).
-        tabAssistData.postList
-          ..clear()
-          ..addAll(postDataList);
       } else {
         tabAssistData.postList
           ..clear()
@@ -653,28 +686,28 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
           apiPage: timelineResponse?.page ?? requestedPage,
         );
       }
+      unawaited(FeedMediaOrientation.prefetchForPosts(postDataList));
+
+      if (followSensitive) {
+        unawaited(
+          _persistFollowSensitiveTabToCache(
+            postSectionType,
+            isFromPagination ? postDataList : tabAssistData.postList,
+            isFromPagination: isFromPagination,
+            hasMore: tabAssistData.hasMorePages,
+            currentPage: tabAssistData.currentPage,
+          ),
+        );
+      }
     } else {
       tabAssistData.hasMorePages = false;
       if (!mergeEnabled) {
         tabAssistData.cursor = null;
-        ErrorHandler.showAppError(
-            appError: apiError, errorViewType: ErrorViewType.snackBar);
+        if (apiError != null) {
+          ErrorHandler.showAppError(
+              appError: apiError, errorViewType: ErrorViewType.snackBar);
+        }
       }
-    }
-    if (postDataList.isNotEmpty) {
-      unawaited(FeedMediaOrientation.prefetchForPosts(postDataList));
-    }
-
-    if (followSensitive && postDataList.isNotEmpty) {
-      unawaited(
-        _persistFollowSensitiveTabToCache(
-          postSectionType,
-          isFromPagination ? postDataList : tabAssistData.postList,
-          isFromPagination: isFromPagination,
-          hasMore: tabAssistData.hasMorePages,
-          currentPage: tabAssistData.currentPage,
-        ),
-      );
     }
 
     if (onComplete != null) {
