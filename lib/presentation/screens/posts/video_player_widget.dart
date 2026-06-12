@@ -814,6 +814,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     if (widget.visibilityManagedByParent) {
       return _effectiveVisible;
     }
+    // A preloaded (non-current) reel must never force-play; otherwise a scoped
+    // play event would resume both the current reel and the preloaded next one.
+    if (widget.isPreloaded) return _isVisible;
     return _isVisible || activeReel;
   }
 
