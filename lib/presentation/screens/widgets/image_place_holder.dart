@@ -37,7 +37,12 @@ class ImagePlaceHolder extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: backgroundColor ?? Colors.transparent,
-          border: Border.all(color: borderColor ?? Colors.white),
+          border: Border.all(
+            color: borderColor ??
+                (Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : Colors.black.withValues(alpha: 0.12)),
+          ),
           shape: boxShape ?? BoxShape.rectangle,
           borderRadius: boxShape == BoxShape.rectangle ? borderRadius : null,
           gradient: gradient,

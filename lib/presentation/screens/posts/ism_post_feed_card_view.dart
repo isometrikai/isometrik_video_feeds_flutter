@@ -159,8 +159,11 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     );
   }
 
+  bool get _isTextOnlyPost => _timelinePost?.isTextPost == true;
+
   bool _showHeaderAboveMedia(int mediaIndex) {
     if (!_isInstagramStyle) return false;
+    if (_isTextOnlyPost) return true;
     final mediaList = _reel.mediaMetaDataList;
     if (mediaList.isEmpty) return false;
     final index = mediaIndex.clamp(0, mediaList.length - 1);
@@ -169,6 +172,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
 
   bool _showMediaOverlayHeader(int mediaIndex) {
     if (!_isInstagramStyle) return true;
+    if (_isTextOnlyPost) return false;
     final mediaList = _reel.mediaMetaDataList;
     if (mediaList.isEmpty) return false;
     final index = mediaIndex.clamp(0, mediaList.length - 1);
@@ -1218,6 +1222,14 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     final mediaList = _reel.mediaMetaDataList;
     final fixedHeight = _feedUi.mediaFrameHeight;
     final fixedWidth = _feedUi.mediaFrameWidth;
+    final timeline = _timelinePost;
+    if (timeline?.isTextPost == true) {
+      return _wrapMediaFrame(
+        fixedWidth: fixedWidth,
+        fixedHeight: fixedHeight,
+        child: FeedTextPostContent(formatting: timeline!.textPostFormatting),
+      );
+    }
     if (mediaList.isEmpty) {
       return _wrapMediaFrame(
         fixedWidth: fixedWidth,
@@ -1548,20 +1560,48 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         ),
       );
 
+  Border get _profileAvatarBorder =>
+      _userProfileConfig?.profileImageBorder ??
+      Border.all(
+        color: _feedUi.backgroundColor.computeLuminance() > 0.5
+            ? _feedUi.dividerColor
+            : IsrColors.white.withValues(alpha: 0.9),
+        width: IsrDimens.one,
+      );
+
   Widget _buildHeaderProfileAvatar() {
     final size = _userProfileConfig?.profileImageSize ?? IsrDimens.thirtyTwo;
+    final firstName = _reel.firstName ?? '';
+    final lastName = _reel.lastName ?? '';
+    final placeholderTextColor =
+        _userProfileConfig?.profileImagePlaceholderColor ??
+            _feedUi.secondaryTextColor;
     return TapHandler(
       borderRadius: size / 2,
       onTap: () => widget.onTapUserProfile?.call(),
-      child: ClipOval(
-        child: AppImage.network(
-          _reel.profilePhoto ?? '',
-          width: size,
-          height: size,
-          isProfileImage: true,
-          textColor: _userProfileConfig?.profileImagePlaceholderColor ??
-              _feedUi.secondaryTextColor,
-          name: '${_reel.firstName ?? ''} ${_reel.lastName ?? ''}',
+      child: AppImage.network(
+        _reel.profilePhoto ?? '',
+        width: size,
+        height: size,
+        isProfileImage: true,
+        border: _profileAvatarBorder,
+        textColor: placeholderTextColor,
+        name: '$firstName $lastName',
+        placeHolderWidget: (h, w) => DecoratedBox(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: _feedUi.dividerColor.withValues(alpha: 0.35),
+          ),
+          child: Center(
+            child: Text(
+              Utility.getInitials(firstName: firstName, lastName: lastName),
+              style: IsrStyles.secondaryText14.copyWith(
+                fontWeight: FontWeight.w500,
+                color: placeholderTextColor,
+              ),
+              maxLines: 1,
+            ),
+          ),
         ),
       ),
     );

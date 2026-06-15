@@ -508,6 +508,7 @@ class SocialRepositoryImpl implements SocialRepository {
     required bool isLoading,
     required int page,
     required int pageLimit,
+    String? postTypes,
   }) async {
     try {
       final header = await _dataSource.getHeader();
@@ -516,6 +517,7 @@ class SocialRepositoryImpl implements SocialRepository {
         header: header,
         page: page,
         pageLimit: pageLimit,
+        postTypes: postTypes,
       );
       return await _mapTimelineResponseWithLocalActions(response);
     } catch (e) {

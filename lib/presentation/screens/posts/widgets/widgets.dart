@@ -1,4 +1,6 @@
 export 'comment_tagging_text_field.dart';
+export 'feed_text_post_content.dart';
+export 'text_post_formatting.dart';
 export 'comments_bottom_sheet.dart';
 export 'follow_action_widget.dart';
 export 'like_comment_icon_view.dart';

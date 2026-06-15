@@ -153,7 +153,12 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     if (IsrFeedCacheRepository.instance.isSectionExpired(section)) return;
     for (final map in IsrFeedCacheRepository.instance.getPosts(section)) {
       try {
-        postTab.postList.add(TimeLineData.fromMap(map));
+        final post = TimeLineData.fromMap(map);
+        if (postTab.postSectionType == PostSectionType.following &&
+            TimelinePostTypeUtil.isTextPost(post)) {
+          continue;
+        }
+        postTab.postList.add(post);
       } catch (_) {}
     }
   }
@@ -504,11 +509,24 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         });
         break;
       case PostSectionType.following:
+        final timelineResult = await _getTimelinePostUseCase.executeTimeLinePost(
+          isLoading: isLoading,
+          page: tabAssistData.currentPage,
+          pageLimit: tabAssistData.pageSize,
+          postTypes: TimelinePostTypeUtil.followingPostTypes,
+        );
+        apiError = timelineResult.error;
+        timelineResponse = timelineResult.data;
+        apiPostResult = TimelinePostTypeUtil.withoutTextPosts(
+          timelineResponse?.data ?? const [],
+        );
+        break;
       case PostSectionType.feeds:
         final timelineResult = await _getTimelinePostUseCase.executeTimeLinePost(
           isLoading: isLoading,
           page: tabAssistData.currentPage,
           pageLimit: tabAssistData.pageSize,
+          postTypes: TimelinePostTypeUtil.feedPostTypes,
         );
         apiError = timelineResult.error;
         timelineResponse = timelineResult.data;

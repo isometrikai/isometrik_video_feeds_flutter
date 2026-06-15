@@ -1,0 +1,22 @@
+import 'package:ism_video_reel_player/domain/domain.dart';
+
+/// Helpers for timeline post `type` handling (Feed vs Following).
+abstract final class TimelinePostTypeUtil {
+  TimelinePostTypeUtil._();
+
+  static bool isTextPost(TimeLineData post) =>
+      (post.type ?? '').trim().toLowerCase() == 'text';
+
+  static List<TimeLineData> withoutTextPosts(Iterable<TimeLineData> posts) =>
+      posts.where((p) => !isTextPost(p)).toList();
+
+  /// Timeline API `post_types` for the Feed tab (media + text).
+  static const feedPostTypes = 'image,video,carousel,reel,text';
+
+  /// Timeline API `post_types` for Following (media only).
+  static const followingPostTypes = 'image,video,carousel,reel';
+}
+
+extension TimeLineDataTextPostX on TimeLineData {
+  bool get isTextPost => TimelinePostTypeUtil.isTextPost(this);
+}

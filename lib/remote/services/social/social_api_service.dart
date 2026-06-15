@@ -28,6 +28,7 @@ abstract class SocialApiService extends BaseService {
     required Header header,
     required int page,
     required int pageLimit,
+    String? postTypes,
   });
 
   Future<ResponseModel> getTrendingPosts({

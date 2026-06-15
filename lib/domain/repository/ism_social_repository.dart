@@ -154,6 +154,7 @@ abstract class SocialRepository extends BaseRepository {
     required bool isLoading,
     required int page,
     required int pageLimit,
+    String? postTypes,
   });
 
   Future<CustomResponse<ResponseClass?>> processMedia({

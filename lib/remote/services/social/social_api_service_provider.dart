@@ -112,6 +112,7 @@ class SocialApiServiceProvider extends SocialApiService {
     required Header header,
     required int page,
     required int pageLimit,
+    String? postTypes,
   }) =>
       _getHeaders(header).then(
         (headers) => networkClient.makeRequest(
@@ -121,6 +122,8 @@ class SocialApiServiceProvider extends SocialApiService {
           {
             'page': page.toString(),
             'page_size': pageLimit.toString(),
+            if (postTypes != null && postTypes.isNotEmpty)
+              'post_types': postTypes,
           },
           headers,
           isLoading,

@@ -10,12 +10,14 @@ class GetTimelinePostUseCase extends BaseUseCase {
     required bool isLoading,
     required int page,
     required int pageLimit,
+    String? postTypes,
   }) async =>
       await super.execute(() async {
         final response = await _repository.getTimeLinePosts(
           isLoading: isLoading,
           page: page,
           pageLimit: pageLimit,
+          postTypes: postTypes,
         );
         return ApiResult(
             data: response.responseCode == 200 ? response.data : null);

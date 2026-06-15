@@ -314,10 +314,12 @@ class _Network extends StatelessWidget {
         ),
       ),
       placeholder: (context, url) => _buildNetworkPlaceholder(
+        context: context,
         initials: initials,
         customPlaceholder: placeHolderWidget?.call(height, width),
       ),
       errorWidget: (context, url, error) => _buildNetworkPlaceholder(
+        context: context,
         initials: initials,
         customPlaceholder: placeHolderWidget?.call(height, width),
       ),
@@ -374,6 +376,7 @@ class _Network extends StatelessWidget {
       );
 
   Widget _buildNetworkPlaceholder({
+    required BuildContext context,
     required String initials,
     Widget? customPlaceholder,
   }) {
@@ -391,6 +394,11 @@ class _Network extends StatelessWidget {
         borderRadius: borderRadius,
         placeHolderName: placeHolderName,
         boxShape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
+        borderColor: isProfileImage
+            ? (Theme.of(context).brightness == Brightness.dark
+                ? Colors.white.withValues(alpha: 0.9)
+                : Colors.black.withValues(alpha: 0.12))
+            : null,
         child: name.isStringEmptyOrNull == false && isProfileImage
             ? Center(
                 child: FittedBox(
