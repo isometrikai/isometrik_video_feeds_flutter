@@ -60,6 +60,24 @@ abstract class SocialRepository extends BaseRepository {
     required String targetId,
   });
 
+  Future<CustomResponse<ResponseClass?>> blockUser({
+    required bool isLoading,
+    required String blockedId,
+    required String reason,
+  });
+
+  Future<CustomResponse<BlockedUsersListResponse?>> getBlockedUsers({
+    required bool isLoading,
+    required int page,
+    required int pageSize,
+    String? search,
+  });
+
+  Future<CustomResponse<ResponseClass?>> unblockUser({
+    required bool isLoading,
+    required String blockedId,
+  });
+
   Future<CustomResponse<ResponseClass?>> savePost({
     required bool isLoading,
     required String postId,
@@ -249,12 +267,14 @@ abstract class SocialRepository extends BaseRepository {
     required int page,
     required int pageSize,
     required bool isPublicOnly,
+    String? postId,
   });
 
   Future<CustomResponse<ResponseClass?>> movePostToCollection({
     required bool isLoading,
     required String postId,
-    required String collectionId,
+    required List<String> collectionIds,
+    required List<String> removeCollectionIds,
   });
 
   Future<CustomResponse<ResponseClass?>> updateCollection({

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -440,7 +439,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       ];
 
   // ✅ Don't wrap with BlocProvider again - just use BlocConsumer
-  Widget _buildContent() => AnnotatedRegion(
+  Widget _buildContent() => Material(
+        type: MaterialType.transparency,
+        child: AnnotatedRegion(
         value: SystemUiOverlayStyle(
           statusBarColor: _statusBarConfig?.statusBarColor ??
               (_isCurrentTabPostFeed
@@ -565,6 +566,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
               ],
             ),
           ),
+        ),
         ),
       );
 
@@ -944,30 +946,37 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       onPressMoreButton: (reelsData) async {
         final isUserLoggedIn = await _ensureUserLoggedIn();
         if (!isUserLoggedIn) return;
-        if (reelsData.postData is TimeLineData) {
-          _emitScopedPlayPause(tabData.postSectionType, play: false);
-          final sheetResult = await _handleMoreOptions(
-            reelsData.postData as TimeLineData,
-            tabData,
+        final postId = reelsData.postId;
+        if (postId == null || postId.isEmpty) return;
+        _emitScopedPlayPause(tabData.postSectionType, play: false);
+        final postData =
+            await _socialActionCubit.getAsyncPostById(postId) ??
+                ((reelsData.postData is TimeLineData &&
+                        (reelsData.postData as TimeLineData).id == postId)
+                    ? reelsData.postData as TimeLineData
+                    : null);
+        if (postData == null) {
+          _emitScopedPlayPause(tabData.postSectionType, play: true);
+          return;
+        }
+        final sheetResult = await _handleMoreOptions(postData, tabData);
+        if (sheetResult == MoreOptionsSheetResult.dubWithAudio) {
+          await DubWithAudioCaptureCoordinator.handleFromPost(
+            context,
+            postData,
+            config: _postConfig.dubWithAudioConfig,
+            customHandler: _postConfig.postCallBackConfig?.onDubWithAudio,
           );
-          if (sheetResult == MoreOptionsSheetResult.dubWithAudio) {
-            await DubWithAudioCaptureCoordinator.handleFromPost(
-              context,
-              reelsData.postData as TimeLineData,
-              config: _postConfig.dubWithAudioConfig,
-              customHandler: _postConfig.postCallBackConfig?.onDubWithAudio,
-            );
-            _emitScopedPlayPause(tabData.postSectionType, play: true);
-            IsrVideoReelConfig.resumePlaybackIfAllowed();
-          } else if (sheetResult == MoreOptionsSheetResult.download) {
-            await _downloadPost(reelsData.postData as TimeLineData);
-            _emitScopedPlayPause(tabData.postSectionType, play: true);
-          } else {
-            _emitScopedPlayPause(tabData.postSectionType, play: true);
-          }
+          _emitScopedPlayPause(tabData.postSectionType, play: true);
+          IsrVideoReelConfig.resumePlaybackIfAllowed();
+        } else if (sheetResult == MoreOptionsSheetResult.download) {
+          await _downloadPost(postData);
+          _emitScopedPlayPause(tabData.postSectionType, play: true);
+        } else {
+          _emitScopedPlayPause(tabData.postSectionType, play: true);
         }
       },
-      onPressLike: _postConfig.postCallBackConfig?.onLikeClick == null
+        onPressLike: _postConfig.postCallBackConfig?.onLikeClick == null
           ? null
           : (reelsData, isLiked) async {
               _emitScopedPlayPause(tabData.postSectionType, play: false);
@@ -1098,11 +1107,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   // Interaction handlers
   Future<ReelsData?> _handleCreatePost(TabDataModel tabData) async {
     final completer = Completer<ReelsData>();
-    final postDataModelString =
+    final result =
         await IsrAppNavigator.goToCreatePostView(context);
-    if (postDataModelString.isStringEmptyOrNull == false) {
-      final postDataModel = TimeLineData.fromMap(
-          jsonDecode(postDataModelString!) as Map<String, dynamic>);
+    if (result is TimeLineData) {
+      final postDataModel = result;
       final reelsData =
           getReelData(postDataModel, loggedInUserId: _loggedInUserId);
       completer.complete(reelsData);
@@ -1557,13 +1565,19 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           );
         },
         onReportPost: () async {
+          var isUserLoggedIn = await _socialActionCubit.isUserLoggedIn;
+          if (!isUserLoggedIn) {
+            await IsrVideoReelConfig.socialConfig.socialCallBackConfig?.onLoginInvoked
+                ?.call();
+          }
+          isUserLoggedIn = await _socialActionCubit.isUserLoggedIn;
+          if (!isUserLoggedIn) return false;
           final completer = Completer<dynamic>();
           final result = await showDialog<dynamic>(
             context: context,
             builder: (_) => ReportReasonDialog(
               reasonFor: ReasonsFor.socialPost,
               contentId: postDataModel.id ?? '',
-              showToastOnSuccess: false,
               onReportInvoked: (reason) {
                 completer.complete(true);
               },
@@ -1571,9 +1585,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                 completer.complete(false);
               },
               onReportSuccess: (reason) {
-                Utility.showInSnackBar(
-                    IsrTranslationFile.postReportedSuccessfully, context,
-                    isSuccessIcon: true);
                 _logReportEvent(postDataModel, reason.name ?? '', tabData);
               },
             ),
@@ -1856,10 +1867,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         borderRadius: buttonConfig?.borderRadius,
       );
 
-  Future<String?> _handleEditPost(TimeLineData postDataModel) async {
-    final postDataString = await IsrAppNavigator.goToEditPostView(context,
+  Future<TimeLineData?> _handleEditPost(TimeLineData postDataModel) async {
+    final postData = await IsrAppNavigator.goToEditPostView(context,
         postData: postDataModel);
-    return postDataString;
+    return postData is TimeLineData ? postData : null;
   }
 
   void _logReportEvent(TimeLineData postDataModel, String reportReason,

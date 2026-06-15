@@ -47,6 +47,7 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
   }
 
   final _uniquePostList = <String, TimeLineData>{};
+  final _inFlightPostDetailsRequests = <String, Future<TimeLineData?>>{};
 
   updatePostList(List<TimeLineData> postList) {
     for (var element in postList) {
@@ -63,8 +64,23 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
           ? _uniquePostList.values.where(filter).toList()
           : _uniquePostList.values.toList();
 
-  Future<TimeLineData?> getAsyncPostById(String postId) async =>
-      _uniquePostList[postId] ?? await _getPostDetails(postId);
+  Future<TimeLineData?> getAsyncPostById(String postId) async {
+    final cached = _uniquePostList[postId];
+    if (cached != null) {
+      return cached;
+    }
+
+    final inFlight = _inFlightPostDetailsRequests[postId];
+    if (inFlight != null) {
+      return inFlight;
+    }
+
+    final future = _getPostDetails(postId).whenComplete(() {
+      _inFlightPostDetailsRequests.remove(postId);
+    });
+    _inFlightPostDetailsRequests[postId] = future;
+    return future;
+  }
 
   Future<TimeLineData?> _getPostDetails(String postId,
       {bool showError = false}) async {
@@ -693,12 +709,18 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
   void onPostCreated({String? postId, TimeLineData? postData}) {
     debugPrint(
         'IsmSocialActionCubit onPostCreated -> postId: $postId, postData: ${postData?.toMap()}');
+    if (postData != null) {
+      updatePostList([postData]);
+    }
     emit(IsmCreatePostActionListenerState(postData: postData, postId: postId));
   }
 
   void onPostEdited({String? postId, TimeLineData? postData}) {
     debugPrint(
         'IsmSocialActionCubit onPostEdited -> postId: $postId, postData: ${postData?.toMap()}');
+    if (postData != null) {
+      updatePostList([postData]);
+    }
     emit(IsmEditPostActionListenerState(postData: postData, postId: postId));
   }
 

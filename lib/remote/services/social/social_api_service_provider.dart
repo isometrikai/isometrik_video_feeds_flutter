@@ -268,6 +268,67 @@ class SocialApiServiceProvider extends SocialApiService {
       );
 
   @override
+  Future<ResponseModel> blockUser({
+    required bool isLoading,
+    required Header header,
+    required String blockedId,
+    required String reason,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.blocks,
+          NetworkRequestType.post,
+          {
+            'blocked_id': blockedId,
+            'reason': reason,
+          },
+          null,
+          headers,
+          isLoading,
+        ),
+      );
+
+  @override
+  Future<ResponseModel> getBlockedUsers({
+    required bool isLoading,
+    required Header header,
+    required int page,
+    required int pageSize,
+    String? search,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.blocks,
+          NetworkRequestType.get,
+          null,
+          {
+            'page': page.toString(),
+            'page_size': pageSize.toString(),
+            if (search?.trim().isNotEmpty == true) 'search': search,
+          },
+          headers,
+          isLoading,
+        ),
+      );
+
+  @override
+  Future<ResponseModel> unblockUser({
+    required bool isLoading,
+    required Header header,
+    required String blockedId,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.blocks,
+          NetworkRequestType.delete,
+          null,
+          {'blocked_id': blockedId},
+          headers,
+          isLoading,
+        ),
+      );
+
+  @override
   Future<ResponseModel> unFollowPost({
     required bool isLoading,
     required String followingId,
@@ -936,6 +997,7 @@ class SocialApiServiceProvider extends SocialApiService {
     required int page,
     required int pageSize,
     required bool isPublicOnly,
+    String? postId,
   }) =>
       _getHeaders(header).then(
         (headers) => networkClient.makeRequest(
@@ -946,6 +1008,7 @@ class SocialApiServiceProvider extends SocialApiService {
             'page': page.toString(),
             'page_size': pageSize.toString(),
             'public_only': isPublicOnly.toString(),
+            if (postId != null && postId.isNotEmpty) 'post_id': postId,
           },
           headers,
           isLoading,
@@ -957,17 +1020,20 @@ class SocialApiServiceProvider extends SocialApiService {
     required bool isLoading,
     required Header header,
     required String postId,
-    required String collectionId,
+    required List<String> collectionIds,
+    required List<String> removeCollectionIds,
   }) =>
       _getHeaders(header).then(
         (headers) => networkClient.makeRequest(
           SocialApiEndPoints.postMoveToCollection,
           NetworkRequestType.post,
-          null,
           {
             'post_id': postId,
-            'collection_id': collectionId,
+            if (collectionIds.isNotEmpty) 'collection_ids': collectionIds,
+            if (removeCollectionIds.isNotEmpty)
+              'removeCollectionIds': removeCollectionIds,
           },
+          null,
           headers,
           isLoading,
         ),

@@ -78,13 +78,41 @@ class AssetConstants {
   static const String icLockIcon = '${packageName}assets/icons/ic_lock.svg';
   static const String icEmptyImageVector = '${packageName}assets/icons/ic_empty_image_vector.svg';
   static const String icEditIcon = '${packageName}assets/icons/ic_edit.svg';
-  static const String icNoScheduledPost = '${packageName}assets/icons/ic_timer_icon.svg';
-  static const String icPostLikeIcon = '${packageName}assets/icons/ic_post_like_icon.svg';
+  static const String icNoScheduledPost =
+      '${packageName}assets/icons/ic_timer_icon.svg';
+  static const String icPostLikeIcon =
+      '${packageName}assets/icons/ic_post_like_icon.svg';
   static const String icPostLikeIconSelected =
       '${packageName}assets/icons/ic_post_like_icon_selected.svg';
-  static const String icPostShareIcon = '${packageName}assets/icons/ic_post_share_icon.svg';
-  static const String icPostSaveIcon = '${packageName}assets/icons/ic_post_save_icon.svg';
+  static const String icPostShareIcon =
+      '${packageName}assets/icons/ic_post_share_icon.svg';
+  static const String icPostSaveIcon =
+      '${packageName}assets/icons/ic_post_save_icon.svg';
   static const String icPostSaveIconSelected =
       '${packageName}assets/icons/ic_post_save_icon_selected.svg';
-  static const String icPostCommentIcon = '${packageName}assets/icons/ic_post_comment_icon.svg';
+  static const String icPostCommentIcon =
+      '${packageName}assets/icons/ic_post_comment_icon.svg';
+
+  /// Default SVG assets shown in the media editor sticker picker.
+  static const List<String> defaultMediaEditorStickerAssets = [
+    icHeartIconSelected,
+    icVerifiedIcon,
+    icHashTagIcon,
+    icTagIcon,
+    icTagUser,
+    icSharePostIcon,
+    icCommentIcon,
+    icSaveSelected,
+    icCartIcon,
+    icCameraIcon,
+    icGalleryIcon,
+    icTimerIcon,
+    icPostLocation,
+    icPlacesIcon,
+    icSearchIcon,
+    greenTickIcon,
+    icAllowComment,
+    icAllowSave,
+    icCloudUploadIcon,
+  ];
 }

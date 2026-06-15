@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
-import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit_config.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection_config.dart';
+import 'package:ism_video_reel_player/res/constants/asset_constants.dart';
 
 class CreateEditPostConfig {
   const CreateEditPostConfig({
     this.createEditPostCallBackConfig,
     this.createEditPostUIConfig,
+    this.mediaEditorStickersConfig = const MediaEditorStickersConfig(),
     this.autoMoveToNextPost = true,
     this.enablePaidPost = false,
     this.enableBusinessLink = false,
@@ -17,6 +19,10 @@ class CreateEditPostConfig {
 
   final CreateEditPostCallBackConfig? createEditPostCallBackConfig;
   final CreateEditPostUIConfig? createEditPostUIConfig;
+
+  /// Stickers available in the pro media editor sticker picker.
+  final MediaEditorStickersConfig mediaEditorStickersConfig;
+
   final bool autoMoveToNextPost;
   final bool enablePaidPost;
 
@@ -31,6 +37,7 @@ class CreateEditPostConfig {
   CreateEditPostConfig copyWith({
     CreateEditPostCallBackConfig? createEditPostCallBackConfig,
     CreateEditPostUIConfig? createEditPostUIConfig,
+    MediaEditorStickersConfig? mediaEditorStickersConfig,
     bool? autoMoveToNextPost,
     bool? enablePaidPost,
     bool? enableBusinessLink,
@@ -43,6 +50,8 @@ class CreateEditPostConfig {
             createEditPostCallBackConfig ?? this.createEditPostCallBackConfig,
         createEditPostUIConfig:
             createEditPostUIConfig ?? this.createEditPostUIConfig,
+        mediaEditorStickersConfig:
+            mediaEditorStickersConfig ?? this.mediaEditorStickersConfig,
         autoMoveToNextPost: autoMoveToNextPost ?? this.autoMoveToNextPost,
         enablePaidPost: enablePaidPost ?? this.enablePaidPost,
         enableBusinessLink: enableBusinessLink ?? this.enableBusinessLink,
@@ -51,6 +60,42 @@ class CreateEditPostConfig {
         paidPostCurrency: paidPostCurrency ?? this.paidPostCurrency,
         paidPostAmountSuggestions:
             paidPostAmountSuggestions ?? this.paidPostAmountSuggestions,
+      );
+}
+
+/// Configures sticker assets for the media editor sticker tool.
+class MediaEditorStickersConfig {
+  const MediaEditorStickersConfig({
+    List<String>? stickerAssetPaths,
+    this.pickerTitle = 'Stickers',
+    this.layerSize = 100,
+    this.gridCrossAxisCount = 4,
+  }) : stickerAssetPaths =
+            stickerAssetPaths ?? AssetConstants.defaultMediaEditorStickerAssets;
+
+  /// Package asset paths (SVG) used as stickers.
+  final List<String> stickerAssetPaths;
+
+  /// Title shown above the sticker grid.
+  final String pickerTitle;
+
+  /// Width and height of the sticker placed on the canvas.
+  final double layerSize;
+
+  /// Number of columns in the sticker picker grid.
+  final int gridCrossAxisCount;
+
+  MediaEditorStickersConfig copyWith({
+    List<String>? stickerAssetPaths,
+    String? pickerTitle,
+    double? layerSize,
+    int? gridCrossAxisCount,
+  }) =>
+      MediaEditorStickersConfig(
+        stickerAssetPaths: stickerAssetPaths ?? this.stickerAssetPaths,
+        pickerTitle: pickerTitle ?? this.pickerTitle,
+        layerSize: layerSize ?? this.layerSize,
+        gridCrossAxisCount: gridCrossAxisCount ?? this.gridCrossAxisCount,
       );
 }
 
@@ -1309,7 +1354,7 @@ class CreateEditPostCallBackConfig {
   final Future<PostLinkData?> Function(PostLinkData? currentLink)? onAddPostLink;
 
   /// called when edit is completed and confirm License Agreement, true to proceed and false to halt
-  final Future<bool> Function(List<MediaData> mediaList)?
+  final Future<bool> Function(List<MediaData> mediaList, MediaEditSoundItem? selectedSound)?
       licenseAgreementAfterMediaEdit;
 
   /// When set, upload and create/edit post run without the SDK progress bottom sheet.
@@ -1328,7 +1373,7 @@ class CreateEditPostCallBackConfig {
     Future<PostLinkData?> Function(PostLinkData? currentLink)? onAddPostLink,
     void Function(BackgroundPostOperationUpdate update)? onBackgroundPostOperation,
     void Function(BuildContext context)? onAddSoundFromCamera,
-    Future<bool> Function(List<MediaData> mediaList)?
+    Future<bool> Function(List<MediaData> mediaList, MediaEditSoundItem? selectedSound)?
         licenseAgreementAfterMediaEdit,
   }) =>
       CreateEditPostCallBackConfig(

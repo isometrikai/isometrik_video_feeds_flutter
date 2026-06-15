@@ -1,7 +1,7 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit_config.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/pro_media_editor/pro_media_util.dart';
 import 'package:path_provider/path_provider.dart';
@@ -44,7 +44,9 @@ class _ProImageEditorWrapperState extends State<ProImageEditorWrapper> {
   @override
   Widget build(BuildContext context) => _buildImageEditor();
 
-  Widget _buildImageEditor() => Scaffold(
+  Widget _buildImageEditor() => AnnotatedRegion<SystemUiOverlayStyle>(
+        value: mediaEditorUiOverlay(widget.mediaEditConfig),
+        child: Scaffold(
         body: FutureBuilder<Uint8List>(
           future: File(widget.mediaPath).readAsBytes(),
           builder: (context, snapshot) {
@@ -88,6 +90,7 @@ class _ProImageEditorWrapperState extends State<ProImageEditorWrapper> {
             );
           },
         ),
+      ),
       );
 
   /// Get editor configuration based on editing mode

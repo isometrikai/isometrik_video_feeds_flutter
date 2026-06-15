@@ -26,14 +26,12 @@ class PostAttributeView extends StatefulWidget {
     this.postData,
     this.newMediaDataList,
     this.selectedSound,
-    this.dismissEntireFlowOnClose = false,
   });
 
   final bool? isEditMode;
   final List<MediaData>? newMediaDataList;
   final MediaEditSoundItem? selectedSound;
   final TimeLineData? postData;
-  final bool dismissEntireFlowOnClose;
 
   @override
   State<PostAttributeView> createState() => _PostAttributeViewState();
@@ -98,16 +96,26 @@ class _PostAttributeViewState extends State<PostAttributeView>
   bool get _isBusinessLinkEnabled =>
       IsrVideoReelConfig.createEditPostConfig.enableBusinessLink;
 
-  void _leaveCreateFlow({Object? result}) {
-    if (widget.dismissEntireFlowOnClose) {
-      IsrAppNavigator.dismissCreatePostFlow(context);
-    } else if (widget.isEditMode != true) {
-      Navigator.pop(context, null);
+  void _leaveCreateFlow({TimeLineData? result}) {
+    if (widget.isEditMode != true) {
       Navigator.pop(context, null);
       Navigator.pop(context, result);
     } else {
       Navigator.pop(context, result);
     }
+  }
+
+  void _resetLocalEditState() {
+    _linkedProducts.clear();
+    _mentionedUsers.clear();
+    _hashTags.clear();
+    _mediaDataList.clear();
+    _postAttributeClass = null;
+    _originalPostAttributeClass = null;
+    _didApplyInitialCaptionTagHighlights = false;
+    _descriptionController.text = '';
+    _paidAmountController.clear();
+    _selectedDate = null;
   }
 
   @override
@@ -116,6 +124,8 @@ class _PostAttributeViewState extends State<PostAttributeView>
     _progressCubit = context.getOrCreateBloc();
     _socialActionCubit = context.getOrCreateBloc();
     WidgetsBinding.instance.addObserver(this);
+    _descriptionController = FlutterTaggerController();
+    _resetLocalEditState();
     _isEditMode = widget.isEditMode ?? false;
     _pendingSelectedSound = widget.selectedSound;
     final editData = widget.postData;
@@ -134,7 +144,6 @@ class _PostAttributeViewState extends State<PostAttributeView>
         _performScrollToCaptionInput();
       }
     });
-    _descriptionController = FlutterTaggerController();
     super.initState();
   }
 
@@ -604,7 +613,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
           return;
         }
         if (state is PostAttributionUpdatedState &&
-            state.postAttributeClass != _postAttributeClass) {
+            state.postAttributeClass != null) {
           setState(() {
             _prepareData(postAttributeClass: state.postAttributeClass);
           });
@@ -613,9 +622,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
           if (_useBackgroundPostUi) {
             if (!mounted) return;
             _doMediaCaching(state.mediaDataList);
-            final postData = state.postDataModel != null
-                ? jsonEncode(state.postDataModel!.toMap())
-                : null;
+            final postData = state.postDataModel;
             _popNavigatorStackForBackgroundPost(result: postData);
             return;
           }
@@ -625,9 +632,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
           } else {
             _socialActionCubit.onPostCreated(postId: state.postDataModel?.id);
           }
-          final postData = state.postDataModel != null
-              ? jsonEncode(state.postDataModel!.toMap())
-              : null;
+          final postData = state.postDataModel;
           Utility.showBottomSheet(
             child: _buildSuccessBottomSheet(
               onTapBack: () => _leaveCreateFlow(result: postData),
@@ -672,18 +677,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
       child: _buildPage(),
     );
 
-    if (!widget.dismissEntireFlowOnClose) {
-      return page;
-    }
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) {
-          IsrAppNavigator.dismissCreatePostFlow(context);
-        }
-      },
-      child: page,
-    );
+    return page;
   }
 
   Widget _buildPage() => Scaffold(
@@ -691,17 +685,12 @@ class _PostAttributeViewState extends State<PostAttributeView>
             _postAttributeConfig?.scaffoldBackgroundColor ?? Colors.white,
         appBar: IsmCustomAppBarWidget(
           backgroundColor:
-              _postAttributeConfig?.appBarConfig?.backgroundColor ??
-                  Colors.white,
+              _postAttributeConfig?.appBarConfig?.backgroundColor,
           titleText: widget.isEditMode == true
               ? IsrTranslationFile.editPost
               : IsrTranslationFile.newPost,
           centerTitle: true,
           titleStyle: _postAttributeConfig?.appBarConfig?.titleStyle,
-          isCrossIcon: widget.dismissEntireFlowOnClose,
-          onTap: widget.dismissEntireFlowOnClose
-              ? () => IsrAppNavigator.dismissCreatePostFlow(context)
-              : null,
         ),
         body: Column(
           children: [
@@ -762,7 +751,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
                             horizontal: 5.responsiveDimension),
                         child: Center(
                           child: GestureDetector(
-                            onTap: _changeCover,
+                            onTap: widget.isEditMode == true ? null : _changeCover,
                             child: Container(
                               margin: IsrDimens.edgeInsetsAll(
                                   7.responsiveDimension),
@@ -792,41 +781,59 @@ class _PostAttributeViewState extends State<PostAttributeView>
                                                 ?.createPostRequest
                                                 ?.previews
                                                 ?.firstOrNull
-                                                ?.localFilePath ??
+                                                ?.localFilePath
+                                                ?.takeIfNotEmpty() ??
                                             _postAttributeClass
                                                 ?.createPostRequest
                                                 ?.previews
                                                 ?.firstOrNull
-                                                ?.url ??
+                                                ?.url
+                                                ?.takeIfNotEmpty() ??
+                                            _postAttributeClass
+                                                ?.createPostRequest
+                                                ?.media
+                                                ?.firstOrNull
+                                                ?.previewUrl
+                                                ?.takeIfNotEmpty() ??
+                                            _postAttributeClass
+                                                ?.createPostRequest?.media
+                                                ?.where((m) =>
+                                                    m.mediaType?.mediaType ==
+                                                    MediaType.photo)
+                                                .firstOrNull
+                                                ?.url
+                                                ?.takeIfNotEmpty() ??
                                             ''),
-                                        Positioned(
-                                          left: 0,
-                                          right: 0,
-                                          bottom: 0,
-                                          child: Container(
-                                            width: double.infinity,
-                                            height: 28.responsiveDimension,
-                                            color: (_postAttributeConfig
-                                                        ?.mediaPreviewConfig
-                                                        ?.changeCoverOverlayColor ??
-                                                    IsrColors.black)
-                                                .withValues(alpha: 0.3),
-                                            child: Center(
-                                              child: Text(
-                                                IsrTranslationFile.changeCover,
-                                                style: _postAttributeConfig
-                                                        ?.mediaPreviewConfig
-                                                        ?.changeCoverTextStyle ??
-                                                    IsrStyles.primaryText12
-                                                        .copyWith(
-                                                      color: IsrColors.white,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                    ),
+                                        if (widget.isEditMode != true)
+                                          Positioned(
+                                            left: 0,
+                                            right: 0,
+                                            bottom: 0,
+                                            child: Container(
+                                              width: double.infinity,
+                                              height: 28.responsiveDimension,
+                                              color: (_postAttributeConfig
+                                                          ?.mediaPreviewConfig
+                                                          ?.changeCoverOverlayColor ??
+                                                      IsrColors.black)
+                                                  .withValues(alpha: 0.3),
+                                              child: Center(
+                                                child: Text(
+                                                  IsrTranslationFile
+                                                      .changeCover,
+                                                  style: _postAttributeConfig
+                                                          ?.mediaPreviewConfig
+                                                          ?.changeCoverTextStyle ??
+                                                      IsrStyles.primaryText12
+                                                          .copyWith(
+                                                        color: IsrColors.white,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
+                                                ),
                                               ),
                                             ),
                                           ),
-                                        )
                                       ],
                                     ),
                                   ),
@@ -2049,7 +2056,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
 
   /// Pops the post-attribute route (and the rest of the create stack for new posts)
   /// so the user can use the app while upload/create continues in the bloc.
-  void _popNavigatorStackForBackgroundPost({String? result}) {
+  void _popNavigatorStackForBackgroundPost({TimeLineData? result}) {
     if (!mounted) return;
     _leaveCreateFlow(result: result);
   }

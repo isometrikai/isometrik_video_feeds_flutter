@@ -88,7 +88,7 @@ class _SaveActionWidgetState extends State<SaveActionWidget> {
   @override
   Widget build(BuildContext context) =>
       context.attachBlocIfNeeded<IsmSocialActionCubit>(
-        child: BlocBuilder<IsmSocialActionCubit, IsmSocialActionState>(
+        child: BlocConsumer<IsmSocialActionCubit, IsmSocialActionState>(
           buildWhen: (previous, current) {
             // Listen to both IsmSavePostState and IsmSaveActionListenerState
             // This ensures updates from outside the package are reflected
@@ -99,7 +99,20 @@ class _SaveActionWidgetState extends State<SaveActionWidget> {
                 current.postId == postId) {
               return true;
             }
+            if (current is IsmUserChangedActionListenerState) {
+              return true;
+            }
             return false;
+          },
+          listenWhen: (previous, current) =>
+          current is IsmUserChangedActionListenerState,
+          listener: (context, state) {
+            if (state is IsmUserChangedActionListenerState) {
+              isSaved = false;
+              if (state.userId.isNotEmpty) { // not guest get like state
+                cubit.loadPostSaveState(widget.postId);
+              }
+            }
           },
           builder: (context, state) {
             if (state is IsmSavePostState && state.postId == postId) {

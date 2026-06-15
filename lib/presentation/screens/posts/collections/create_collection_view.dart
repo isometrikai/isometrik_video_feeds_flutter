@@ -102,7 +102,9 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
                 _collectionBloc.add(
                   MoveToCollectionEvent(
                     postId: widget.productOrPostId ?? '',
-                    collectionId: state.collectionId,
+                    collectionIds: state.collectionId.isNotEmpty
+                        ? [state.collectionId]
+                        : [],
                   ),
                 );
               } else {

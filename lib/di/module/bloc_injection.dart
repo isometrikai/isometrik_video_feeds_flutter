@@ -124,6 +124,15 @@ class BlocInjection {
       ),
     );
 
+    IsmInjectionUtils.registerBloc<BlockedUsersCubit>(
+      () => BlockedUsersCubit(
+        getBlockedUsersUseCase:
+            IsmInjectionUtils.getUseCase<GetBlockedUsersUseCase>(),
+        unblockUserUseCase:
+            IsmInjectionUtils.getUseCase<UnblockUserUseCase>(),
+      ),
+    );
+
     IsmInjectionUtils.registerSingletonBloc<StoryCubit>(
       () => StoryCubit(
         IsmInjectionUtils.getUseCase<StoryUseCase>(),

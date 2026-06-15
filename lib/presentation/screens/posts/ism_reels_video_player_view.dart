@@ -92,7 +92,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   ShopUIConfig? get _shopUIConfig => _uiConfig?.shopUIConfig;
   PostLinkUIConfig? get _postLinkUIConfig => _uiConfig?.postLinkUIConfig;
   FollowButtonConfig? get _followButtonConfig => _uiConfig?.followButtonConfig;
-
   bool get _shouldShowPostLinkChip =>
       IsrVideoReelConfig.createEditPostConfig.enableBusinessLink &&
       _reelData.postLink?.isValid == true;
@@ -155,22 +154,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   int get _maxLengthToShow => _descriptionConfig?.maxLengthToShow ?? 50;
   int get _maxLinesToShow => _descriptionConfig?.maxLinesToShow ?? 2;
 
-  /// Strong text shadows for visibility on any background
+  /// Subtle shadow for white overlay text — readable on light and dark media.
   List<Shadow> get _textShadows =>
       _descriptionConfig?.textShadows ??
-      [
+      const [
         Shadow(
-          color: Colors.black.changeOpacity(0.9),
+          color: Color(0x99000000),
           blurRadius: 2,
-          offset: const Offset(0, 1),
-        ),
-        Shadow(
-          color: Colors.black.changeOpacity(0.7),
-          blurRadius: 4,
-        ),
-        Shadow(
-          color: Colors.black.changeOpacity(0.5),
-          blurRadius: 8,
+          offset: Offset(0, 1),
         ),
       ];
 
@@ -218,6 +209,36 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     );
     if (onTap == null) return label;
     return GestureDetector(onTap: onTap, child: label);
+  }
+
+  List<BoxShadow> get _defaultActionIconShadow => const [
+        BoxShadow(
+          color: Color(0x40000000),
+          blurRadius: 2,
+          offset: Offset(0, 1),
+        ),
+      ];
+
+  /// Overlay text that stays white and ignores theme [DefaultTextStyle] merge.
+  TextStyle _overlayTextStyle(
+    TextStyle fallback, {
+    TextStyle? custom,
+    FontWeight? fontWeight,
+    Color? color,
+    bool includeShadow = true,
+  }) {
+    final style = custom ?? fallback;
+    return TextStyle(
+      inherit: false,
+      color: color ?? style.color ?? fallback.color ?? IsrColors.white,
+      fontSize: style.fontSize ?? fallback.fontSize,
+      fontWeight: fontWeight ?? style.fontWeight ?? fallback.fontWeight,
+      fontFamily: style.fontFamily ?? fallback.fontFamily,
+      letterSpacing: style.letterSpacing ?? fallback.letterSpacing,
+      height: style.height ?? fallback.height,
+      decoration: TextDecoration.none,
+      shadows: includeShadow ? (style.shadows ?? _textShadows) : null,
+    );
   }
 
   late ReelsData _reelData;
@@ -1301,10 +1322,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         ),
         child: Text(
           '${currentPage + 1}/${_reelData.mediaMetaDataList.length}',
-          style: _textStyleConfig?.mediaCounterStyle ??
-              IsrStyles.white12.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
+          style: _overlayTextStyle(
+            IsrStyles.white12,
+            custom: _textStyleConfig?.mediaCounterStyle,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ),
     );
@@ -1342,12 +1364,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               mentionList.length == 1
                   ? mentionList.first.username ?? ''
                   : '${mentionList.length} people',
-              style: _textStyleConfig?.mentionStyle ??
-                  IsrStyles.white14.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: IsrColors.white,
-                    shadows: _textShadows,
-                  ),
+              style: _overlayTextStyle(
+                IsrStyles.white14,
+                custom: _textStyleConfig?.mentionStyle,
+                fontWeight: FontWeight.w600,
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -1509,13 +1530,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     return Text(
       placeList.first.placeName,
-      style: _textStyleConfig?.locationStyle ??
-          IsrStyles.white14.copyWith(
-            fontWeight: FontWeight.w600,
-            color: IsrColors.white,
-            decoration: TextDecoration.none,
-            shadows: _textShadows,
-          ),
+      style: _overlayTextStyle(
+        IsrStyles.white14,
+        custom: _textStyleConfig?.locationStyle,
+        fontWeight: FontWeight.w600,
+      ),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
     );
@@ -1868,20 +1887,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                boxShadow: _actionIconConfig?.iconShadow ??
-                    [
-                      BoxShadow(
-                        color: Colors.black.changeOpacity(0.2),
-                        blurRadius: IsrDimens.three,
-                        spreadRadius: IsrDimens.three,
-                      ),
-                    ],
+                boxShadow:
+                    _actionIconConfig?.iconShadow ?? _defaultActionIconShadow,
               ),
               child: Icon(
                 Icons.remove_red_eye_outlined,
                 color: IsrColors.white,
                 size: _actionIconConfig?.iconSize ?? IsrDimens.twentyFive,
-                shadows: _textShadows,
               ),
             ),
             IsrDimens.boxHeight(IsrDimens.four),
@@ -1946,13 +1958,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     boxShadow: _actionIconConfig?.iconShadow ??
-                        [
-                          BoxShadow(
-                            color: Colors.black.changeOpacity(0.2),
-                            blurRadius: IsrDimens.three,
-                            spreadRadius: IsrDimens.three,
-                          ),
-                        ],
+                        _defaultActionIconShadow,
                   ),
                   child: AppImage.svg(
                     icon,
@@ -2189,11 +2195,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                   },
                                   child: Text(
                                     _reelData.userName ?? '',
-                                    style: _textStyleConfig?.userNameStyle ??
-                                        IsrStyles.white14.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                          shadows: _textShadows,
-                                        ),
+                                    style: _overlayTextStyle(
+                                      IsrStyles.white14,
+                                      custom: _textStyleConfig?.userNameStyle,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -2259,19 +2265,39 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                     displayText.trim(),
                                     _mentionedDataList,
                                     _taggedDataList,
-                                    _textStyleConfig?.descriptionStyle ??
-                                        IsrStyles.white14.copyWith(
-                                          color: IsrColors.white
-                                              .changeOpacity(0.9),
-                                          shadows: _textShadows,
-                                        ),
+                                    _overlayTextStyle(
+                                      IsrStyles.white14,
+                                      custom:
+                                          _textStyleConfig?.descriptionStyle,
+                                      color: IsrColors.white.changeOpacity(0.9),
+                                    ),
                                     (mention) =>
                                         _callOnTapMentionData([mention]),
                                     mentionStyle:
-                                        _textStyleConfig?.mentionStyle,
+                                        _textStyleConfig?.mentionStyle != null
+                                            ? _overlayTextStyle(
+                                                IsrStyles.white14,
+                                                custom: _textStyleConfig
+                                                    ?.mentionStyle,
+                                                fontWeight: FontWeight.w600,
+                                              )
+                                            : null,
                                     hashtagStyle:
-                                        _textStyleConfig?.hashtagStyle,
-                                    urlStyle: _textStyleConfig?.urlStyle,
+                                        _textStyleConfig?.hashtagStyle != null
+                                            ? _overlayTextStyle(
+                                                IsrStyles.white14,
+                                                custom: _textStyleConfig
+                                                    ?.hashtagStyle,
+                                                fontWeight: FontWeight.w600,
+                                              )
+                                            : null,
+                                    urlStyle: _textStyleConfig?.urlStyle != null
+                                        ? _overlayTextStyle(
+                                            IsrStyles.white14,
+                                            custom: _textStyleConfig?.urlStyle,
+                                            fontWeight: FontWeight.w600,
+                                          )
+                                        : null,
                                   );
                                 }
 
@@ -2282,41 +2308,46 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                   return const SizedBox.shrink();
                                 }
 
-                                return RichText(
-                                  text: TextSpan(
-                                    children: [
-                                      _cachedDescriptionTextSpan!,
-                                      if (shouldTruncate)
-                                        TextSpan(
-                                          text: value
-                                              ? (_descriptionConfig?.lessText ??
-                                                  ' less')
-                                              : (_descriptionConfig?.moreText ??
-                                                  ' ... more'),
-                                          style: value
-                                              ? (_descriptionConfig
-                                                      ?.collapseTextStyle ??
-                                                  IsrStyles.white14.copyWith(
+                                return GestureDetector(
+                                  onTap: () {
+                                    if (shouldTruncate) {
+                                      _isExpandedDescription.value =
+                                          !_isExpandedDescription.value;
+                                    }
+                                  },
+                                  child: RichText(
+                                    text: TextSpan(
+                                      children: [
+                                        _cachedDescriptionTextSpan!,
+                                        if (shouldTruncate)
+                                          TextSpan(
+                                            text: value
+                                                ? (_descriptionConfig
+                                                        ?.lessText ??
+                                                    ' less')
+                                                : (_descriptionConfig
+                                                        ?.moreText ??
+                                                    ' ... more'),
+                                            style: value
+                                                ? _overlayTextStyle(
+                                                    IsrStyles.white14,
+                                                    custom: _descriptionConfig
+                                                        ?.collapseTextStyle,
                                                     fontWeight: FontWeight.w700,
                                                     color: IsrColors.white
                                                         .changeOpacity(0.7),
-                                                    shadows: _textShadows,
-                                                  ))
-                                              : (_descriptionConfig
-                                                      ?.expandTextStyle ??
-                                                  IsrStyles.white14.copyWith(
+                                                  )
+                                                : _overlayTextStyle(
+                                                    IsrStyles.white14,
+                                                    custom: _descriptionConfig
+                                                        ?.expandTextStyle,
                                                     fontWeight: FontWeight.w700,
                                                     color: IsrColors.white
                                                         .changeOpacity(0.7),
-                                                    shadows: _textShadows,
-                                                  )),
-                                          recognizer: TapGestureRecognizer()
-                                            ..onTap = () {
-                                              _isExpandedDescription.value =
-                                                  !_isExpandedDescription.value;
-                                            },
-                                        ),
-                                    ],
+                                                  ),
+                                          ),
+                                      ],
+                                    ),
                                   ),
                                 );
                               } catch (_) {
@@ -2366,9 +2397,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             Container(
               child: Text(
                 publishedTimeLabel,
-                style: IsrStyles.white12.copyWith(
-                  decoration: TextDecoration.none,
-                ),
+                style: _overlayTextStyle(IsrStyles.white12),
               ),
             ),
           ],
@@ -2407,24 +2436,33 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       return const SizedBox.shrink();
     }
 
-    final usernameStyle = (_belowCommentsConfig?.usernameStyle ??
-            _textStyleConfig?.userNameStyle ??
-            IsrStyles.white12)
-        .copyWith(fontWeight: FontWeight.w700, shadows: _textShadows);
-    final commentStyle = (_belowCommentsConfig?.commentTextStyle ??
-            _textStyleConfig?.descriptionStyle ??
-            IsrStyles.white12)
-        .copyWith(
-            color: IsrColors.white.changeOpacity(0.9), shadows: _textShadows);
-    final userTagStyle = (_belowCommentsConfig?.userTagTextStyle ??
-            commentStyle.copyWith(fontWeight: FontWeight.w600))
-        .copyWith(shadows: _textShadows);
-    final hashtagStyle = (_belowCommentsConfig?.hashtagTextStyle ??
-            commentStyle.copyWith(fontWeight: FontWeight.w600))
-        .copyWith(shadows: _textShadows);
-    final buttonStyle = _belowCommentsConfig?.viewAllCommentsStyle ??
-        _descriptionConfig?.expandTextStyle ??
-        IsrStyles.white12;
+    final usernameStyle = _overlayTextStyle(
+      IsrStyles.white12,
+      custom: _belowCommentsConfig?.usernameStyle ??
+          _textStyleConfig?.userNameStyle,
+      fontWeight: FontWeight.w700,
+    );
+    final commentStyle = _overlayTextStyle(
+      IsrStyles.white12,
+      custom: _belowCommentsConfig?.commentTextStyle ??
+          _textStyleConfig?.descriptionStyle,
+      color: IsrColors.white.changeOpacity(0.9),
+    );
+    final userTagStyle = _overlayTextStyle(
+      IsrStyles.white12,
+      custom: _belowCommentsConfig?.userTagTextStyle,
+      fontWeight: FontWeight.w600,
+    );
+    final hashtagStyle = _overlayTextStyle(
+      IsrStyles.white12,
+      custom: _belowCommentsConfig?.hashtagTextStyle,
+      fontWeight: FontWeight.w600,
+    );
+    final buttonStyle = _overlayTextStyle(
+      IsrStyles.white12,
+      custom: _belowCommentsConfig?.viewAllCommentsStyle ??
+          _descriptionConfig?.expandTextStyle,
+    );
 
     final commentSpacing =
         _belowCommentsConfig?.commentSpacing ?? IsrDimens.four;
@@ -2519,11 +2557,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         ),
         child: Text(
           IsrTranslationFile.creatorEarnsCommission,
-          style: _textStyleConfig?.commissionTagStyle ??
-              IsrStyles.white10.copyWith(
-                color: IsrColors.colorF4F4F4,
-                decoration: TextDecoration.none,
-              ),
+          style: _overlayTextStyle(
+            IsrStyles.white10,
+            custom: _textStyleConfig?.commissionTagStyle,
+            color: IsrColors.colorF4F4F4,
+          ),
         ),
       );
 
