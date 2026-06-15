@@ -92,6 +92,17 @@ class TextPostFormatting {
     );
   }
 
+  /// Smaller type for grid thumbnails (explore / profile); full-screen uses [buildTextStyle].
+  TextStyle buildThumbnailTextStyle({
+    double fontSizeDivisor = 2.3,
+    double minFontSize = 8,
+    double maxFontSize = 12,
+  }) {
+    final scaled =
+        (fontSize / fontSizeDivisor).clamp(minFontSize, maxFontSize).toDouble();
+    return buildTextStyle().copyWith(fontSize: scaled, height: 1.15);
+  }
+
   Gradient? get backgroundGradient {
     if (backgroundType.toLowerCase() != 'gradient') return null;
     final colors = TextPostGradientPalette.colorsFor(backgroundValue);
