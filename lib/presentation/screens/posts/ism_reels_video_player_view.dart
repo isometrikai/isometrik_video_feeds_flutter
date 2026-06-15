@@ -15,7 +15,7 @@ import 'package:ism_video_reel_player/presentation/screens/posts/video_player_wi
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/comment_count_action_widget.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/instagram_follow_chip.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/like_action_widget.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/widgets/isr_sdk_text_style_scope.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/feed_text_post_content.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/reels_overlay_text.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/isr_image_sound_registry.dart';
@@ -261,11 +261,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   bool _isSeeking = false; // Flag to prevent progress updates during seeking
 
   // post Progress Tracking
-  int get _postTotalDurationSeconds => _reelData.mediaMetaDataList.isEmpty
-      ? 0
-      : _reelData.mediaMetaDataList
-          .map((e) => e.durationSeconds)
-          .reduce((a, b) => a + b);
+  int get _postTotalDurationSeconds {
+    if (_isTextOnlyPost) {
+      return AppConstants.defaultImagePostDurationSeconds;
+    }
+    if (_reelData.mediaMetaDataList.isEmpty) return 0;
+    return _reelData.mediaMetaDataList
+        .map((e) => e.durationSeconds)
+        .reduce((a, b) => a + b);
+  }
   Duration _postWatchDuration = Duration.zero;
   final ValueNotifier<double> _postProgress = ValueNotifier<double>(0.0);
   bool _wasVisiblePost = false;
@@ -405,6 +409,21 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       ? _reelData.postData as TimeLineData
       : null;
 
+  bool get _isTextOnlyPost => _timelinePost?.isTextPost == true;
+
+  /// Text-only posts and image slides advance on a timer (not video playback).
+  bool get _usesTimedAdvance => _isTextOnlyPost || _isCurrentMediaImage;
+
+  int get _currentTimedAdvanceDurationSeconds {
+    if (_isTextOnlyPost) {
+      return AppConstants.defaultImagePostDurationSeconds;
+    }
+    return _reelData
+        .mediaMetaDataList[_currentPageNotifier.value].durationSeconds
+        .clamp(AppConstants.minImagePostDurationSeconds,
+            AppConstants.maxImagePostDurationSeconds);
+  }
+
   static bool _looksLikeStreamingOrVideoUrl(String url) {
     final u = url.trim().toLowerCase();
     if (u.isEmpty) return false;
@@ -538,13 +557,17 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       //resent image progress
       _resetPostProgress();
 
-      // Start image view timer only if current media is an image
-      final mediaList = _reelData.mediaMetaDataList;
-      final page = _currentPageNotifier.value;
-      if (mediaList.isNotEmpty &&
-          page < mediaList.length &&
-          mediaList[page].mediaType == kPictureType) {
+      // Start timed advance for text-only posts or image slides.
+      if (_isTextOnlyPost) {
         _startOrResumeImageProgress();
+      } else {
+        final mediaList = _reelData.mediaMetaDataList;
+        final page = _currentPageNotifier.value;
+        if (mediaList.isNotEmpty &&
+            page < mediaList.length &&
+            mediaList[page].mediaType == kPictureType) {
+          _startOrResumeImageProgress();
+        }
       }
     }
 
@@ -933,7 +956,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     Widget mediaWidget;
 
-    if (_reelData.showBlur == true) {
+    if (_isTextOnlyPost) {
+      mediaWidget = SizedBox.expand(
+        child: FeedTextPostContent(
+          formatting: _timelinePost!.textPostFormatting,
+        ),
+      );
+    } else if (_reelData.showBlur == true) {
       mediaWidget = _getImageWidget(
         imageUrl: _reelData
             .mediaMetaDataList[_currentPageNotifier.value].thumbnailUrl,
@@ -1076,7 +1105,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   Widget _buildMediaIndicators(int currentPage) {
     final primaryColor = Theme.of(context).primaryColor;
-    final mediaCount = _reelData.mediaMetaDataList.length;
+    final mediaCount =
+        _isTextOnlyPost ? 1 : _reelData.mediaMetaDataList.length;
+    if (mediaCount == 0) return const SizedBox.shrink();
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: IsrDimens.eight),
@@ -1116,7 +1147,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }) {
     final isCurrentMedia = index == currentPage;
     final isCompletedMedia = index < currentPage;
-    final isVideo = _reelData.mediaMetaDataList[index].mediaType == kVideoType;
+    final isVideo = !_isTextOnlyPost &&
+        _reelData.mediaMetaDataList[index].mediaType == kVideoType;
     final borderRadius = _mediaIndicatorConfig?.indicatorBorderRadius ??
         BorderRadius.circular(IsrDimens.two);
     final indicatorHeight =
@@ -1522,9 +1554,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       videoPlayerState.pause();
     }
 
-    // Start image view timer only if current media is an image
-    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType ==
-        kPictureType) {
+    // Start timed advance pause for text-only posts or image slides.
+    if (_usesTimedAdvance) {
       _pauseImageProgress();
     }
   }
@@ -1547,9 +1578,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
     VisibilityDetectorController.instance.notifyNow();
 
-    // Start image view timer only if current media is an image
-    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType ==
-        kPictureType) {
+    // Resume timed advance for text-only posts or image slides.
+    if (_usesTimedAdvance) {
       _startOrResumeImageProgress();
     }
   }
@@ -1598,6 +1628,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   ),
                 if (!_shouldShowPaidLockOverlay &&
                     _showMuteAnimation &&
+                    !_isTextOnlyPost &&
+                    _reelData.mediaMetaDataList.isNotEmpty &&
                     _reelData.mediaMetaDataList[_currentPageNotifier.value]
                             .mediaType ==
                         kVideoType)
@@ -1649,7 +1681,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
                 // show progress indicator if there are multiple videos or single media is video or autoMoveNextMedia is true
                 if (!_shouldShowPaidLockOverlay &&
-                    (_reelData.mediaMetaDataList.isNotEmpty ||
+                    (_isTextOnlyPost ||
+                        _reelData.mediaMetaDataList.isNotEmpty ||
                         _reelData.mediaMetaDataList.firstOrNull?.mediaType ==
                             kVideoType ||
                         widget.onVideoCompleted != null))
@@ -2728,9 +2761,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   /// Handles mute/unmute toggle for videos, and for image posts that carry a
   /// sound (Instagram-style image-with-audio).
   void _toggleMuteAndUnMute() {
+    if (_isTextOnlyPost) return;
+    final list = _reelData.mediaMetaDataList;
+    if (list.isEmpty) return;
     final isVideo =
-        _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType ==
-            kVideoType;
+        list[_currentPageNotifier.value].mediaType == kVideoType;
     final hasImageSound =
         _isCurrentMediaImage && (_reelData.sound?.hasId ?? false);
     if (!isVideo && !hasImageSound) {
@@ -2939,11 +2974,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
     final shouldAutoMove =
         widget.reelsConfig.autoMoveNextMedia || widget.onVideoCompleted != null;
-    final imageTotalDuration = Duration(
-        seconds: _reelData
-            .mediaMetaDataList[_currentPageNotifier.value].durationSeconds
-            .clamp(AppConstants.minImagePostDurationSeconds,
-                AppConstants.maxImagePostDurationSeconds));
+    final imageTotalDuration =
+        Duration(seconds: _currentTimedAdvanceDurationSeconds);
 
     _imageViewTimer?.cancel();
     _isImagePaused = false;

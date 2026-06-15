@@ -154,10 +154,6 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     for (final map in IsrFeedCacheRepository.instance.getPosts(section)) {
       try {
         final post = TimeLineData.fromMap(map);
-        if (postTab.postSectionType == PostSectionType.following &&
-            TimelinePostTypeUtil.isTextPost(post)) {
-          continue;
-        }
         postTab.postList.add(post);
       } catch (_) {}
     }
@@ -517,9 +513,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         );
         apiError = timelineResult.error;
         timelineResponse = timelineResult.data;
-        apiPostResult = TimelinePostTypeUtil.withoutTextPosts(
-          timelineResponse?.data ?? const [],
-        );
+        apiPostResult = timelineResponse?.data;
         break;
       case PostSectionType.feeds:
         final timelineResult = await _getTimelinePostUseCase.executeTimeLinePost(

@@ -13,8 +13,8 @@ abstract final class TimelinePostTypeUtil {
   /// Timeline API `post_types` for the Feed tab (media + text).
   static const feedPostTypes = 'image,video,carousel,reel,text';
 
-  /// Timeline API `post_types` for Following (media only).
-  static const followingPostTypes = 'image,video,carousel,reel';
+  /// Timeline API `post_types` for Following (media + text).
+  static const followingPostTypes = 'image,video,carousel,reel,text';
 }
 
 extension TimeLineDataTextPostX on TimeLineData {
