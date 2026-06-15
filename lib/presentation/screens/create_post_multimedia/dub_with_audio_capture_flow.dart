@@ -102,6 +102,7 @@ class DubWithAudioCaptureCoordinator {
       videoPath: capture.mediaPath,
       reelThumbnailUrl: track.thumbnailUrl,
     );
+    final soundItem = PostSoundUtil.soundItemFromTrack(track);
     final editItem = me.MediaEditItem(
       originalPath: capture.mediaPath,
       mediaType: me.EditMediaType.video,
@@ -109,6 +110,7 @@ class DubWithAudioCaptureCoordinator {
       height: 0,
       duration: track.duration.inSeconds,
       thumbnailPath: thumb,
+      sound: soundItem,
     );
 
     final edited = await IsrAppNavigator.presentCreatePostMediaEditor(

@@ -36,14 +36,14 @@ class IsrAppNavigator {
   static void dismissCreatePostFlow(BuildContext context) {
     final nav = Navigator.of(context, rootNavigator: true);
     if (!nav.canPop()) {
-      IsrVideoReelConfig.resumeFeedPlayback();
+      IsrVideoReelConfig.resumePlaybackIfAllowed();
       return;
     }
     nav.popUntil((route) {
       final name = route.settings.name;
       return name == null || !_createPostFlowRouteNames.contains(name);
     });
-    IsrVideoReelConfig.resumeFeedPlayback();
+    IsrVideoReelConfig.resumePlaybackIfAllowed();
   }
 
   /// Dismisses overlays above [routeName], then pops that route with [result].
@@ -193,6 +193,29 @@ class IsrAppNavigator {
     );
   }
 
+  static Future<void> navigateToSoundPostsDetail(
+    BuildContext context, {
+    required PostSoundInfo sound,
+    TimeLineData? sourcePost,
+    TransitionType? transitionType,
+  }) async {
+    final page = BlocProvider<SoundPostsDetailBloc>(
+      create: (_) => IsmInjectionUtils.getBloc<SoundPostsDetailBloc>(),
+      child: SoundPostsDetailScreen(
+        sound: sound,
+        sourcePost: sourcePost,
+      ),
+    );
+
+    await Navigator.of(context, rootNavigator: true).push(
+      _buildRoute(
+        page: page,
+        transitionType: transitionType,
+        routeName: IsrRouteNames.soundPostsDetailView,
+      ),
+    );
+  }
+
   static void navigateTagDetails(
     BuildContext context, {
     required String tagValue,
@@ -224,6 +247,7 @@ class IsrAppNavigator {
     PostConfig? postConfig,
     String? userId,
     String? postId,
+    String? initialCommentId,
     Function(String, String, double, double)? onTapPlace,
     TransitionType transitionType = TransitionType.rightToLeft,
   }) async {
@@ -236,6 +260,7 @@ class IsrAppNavigator {
       tagType: tagType,
       userId: userId,
       postId: postId,
+      initialCommentId: initialCommentId,
     );
 
     final page = BlocProvider<SocialPostBloc>(
@@ -246,12 +271,20 @@ class IsrAppNavigator {
         onTapPlace: onTapPlace,
         tabConfig: tabConfig,
         postConfig: postConfig,
+        isOverlayPlayer: true,
       ),
     );
 
-    await Navigator.of(context, rootNavigator: true).push(
-      _buildRoute(page: page, transitionType: transitionType),
+    IsrVideoReelConfig.enterOverlayReelsPlayer(
+      overlaySection: postSectionType,
     );
+    try {
+      await Navigator.of(context, rootNavigator: true).push(
+        _buildRoute(page: page, transitionType: transitionType),
+      );
+    } finally {
+      IsrVideoReelConfig.exitOverlayReelsPlayer();
+    }
   }
 
   /// Helper method to get tab title based on post section type
@@ -261,6 +294,8 @@ class IsrAppNavigator {
         return 'For You';
       case PostSectionType.following:
         return 'Following';
+      case PostSectionType.feeds:
+        return 'Feed';
       case PostSectionType.trending:
         return 'Trending';
       case PostSectionType.myPost:
@@ -517,6 +552,27 @@ class IsrAppNavigator {
       debugPrint('IsrAppNavigator: StoryCubit missing in context, using DI');
       return IsmInjectionUtils.getBloc<StoryCubit>();
     }
+  }
+
+  /// Edit highlight (own highlights only).
+  static Future<bool> presentEditHighlight(
+    BuildContext context, {
+    required StoryHighlightData highlight,
+    String? fallbackOwnerUserId,
+  }) async {
+    final cubit = _storyCubitFrom(context);
+    if (!await cubit.isHighlightOwnedByCurrentUser(
+      highlight,
+      fallbackOwnerUserId: fallbackOwnerUserId,
+    )) {
+      return false;
+    }
+    return HighlightComposerCoordinator.editHighlight(
+      context: context,
+      cubit: cubit,
+      highlight: highlight,
+      fallbackOwnerUserId: fallbackOwnerUserId,
+    );
   }
 
   /// Full highlight composer: pick stories (optional) → create new OR add to existing.
@@ -787,6 +843,7 @@ class IsrAppNavigator {
   static Future<List<SocialUserData>> goToSearchUserScreen(
     BuildContext context, {
     List<SocialUserData>? socialUserList,
+
     /// Max selections allowed this session (e.g. remaining total tag slots).
     /// When null, [SearchUserView] uses [TagPeopleScreenConfig.maxTaggedPeople].
     int? maxSelectablePeople,
@@ -838,8 +895,7 @@ class IsrAppNavigator {
     TransitionType? transitionType,
     String? routeName,
   }) {
-    final settings =
-        routeName != null ? RouteSettings(name: routeName) : null;
+    final settings = routeName != null ? RouteSettings(name: routeName) : null;
     if (transitionType == null) {
       return MaterialPageRoute<T>(
         builder: (context) => page,

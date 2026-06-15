@@ -17,8 +17,7 @@ class AppConstants {
   static const String primaryFontFamily = 'Satoshi';
   static const String secondaryFontFamily = 'Agenda';
 
-  static const String emailPattern =
-      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
+  static const String emailPattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
 
   static const String passwordPattern =
       r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[!@#\$&*~]).{8,}$';
@@ -99,7 +98,7 @@ class AppConstants {
 }
 
 abstract class AppUrl {
-  static const String appBaseUrl = 'https://api.trulyfreehome.dev';
+  static const String appBaseUrl = 'https://api.dev.trulyfree.com';
   static const String socialBaseUrl = 'https://social-apis.dev.trulyfree.com';
   static const String gumletUrl = 'https://cdn.trulyfreehome.dev';
 }

@@ -561,18 +561,6 @@ class CachedVideoCacheManager implements IVideoCacheManager {
   }
 
   @override
-  void clearControllersOutsideRange(List<String> activeUrls) {
-    final urlsToKeep = Set<String>.from(activeUrls);
-    final urlsToRemove = _videoControllerCache.keys
-        .where((url) => !urlsToKeep.contains(url))
-        .toList();
-
-    for (final url in urlsToRemove) {
-      clearVideo(url);
-    }
-  }
-
-  @override
   Map<String, dynamic> getCacheStats() => {
         'cached_videos': _videoControllerCache.length,
         'initializing_videos': _initializationCache.length,

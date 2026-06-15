@@ -181,6 +181,11 @@ class _StoryGridTile extends StatelessWidget {
                   ? AppImage.network(story.thumbUrl, fit: BoxFit.cover)
                   : ColoredBox(
                       color: theme.textSecondary.withValues(alpha: 0.12),
+                      child: Icon(
+                        Icons.videocam_outlined,
+                        color: theme.textSecondary,
+                        size: 32,
+                      ),
                     ),
               if (story.dateLabel.isNotEmpty)
                 Positioned(

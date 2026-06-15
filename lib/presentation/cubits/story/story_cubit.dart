@@ -2,8 +2,9 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:ism_video_reel_player/data/managers/story_viewed_local_store.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
+import 'package:ism_video_reel_player/utils/app_log.dart';
+import 'package:ism_video_reel_player/utils/media_util.dart';
 import 'package:video_compress/video_compress.dart';
 
 /// Story cubit handling story feed and highlight CRUD/action calls.
@@ -27,6 +28,21 @@ class StoryCubit extends Cubit<StoryState> {
 
   List<StoryGroup> get cachedStoryGroups => [..._unViewed, ..._viewed];
   String get currentUserId => _currentUserId;
+
+  /// True when [highlight] belongs to the signed-in user.
+  Future<bool> isHighlightOwnedByCurrentUser(
+    StoryHighlightData highlight, {
+    String? fallbackOwnerUserId,
+  }) async {
+    if (_currentUserId.isEmpty) {
+      _currentUserId = await _localDataUseCase.getUserId();
+    }
+    final ownerId = highlight.userId.trim().isNotEmpty
+        ? highlight.userId.trim()
+        : (fallbackOwnerUserId ?? '').trim();
+    final current = _currentUserId.trim();
+    return ownerId.isNotEmpty && current.isNotEmpty && ownerId == current;
+  }
 
   bool get _usesBackgroundStoryUi =>
       IsrVideoReelConfig.storyConfig?.storyCallbackConfig
@@ -281,7 +297,14 @@ class StoryCubit extends Cubit<StoryState> {
   Future<void> _runCreateStoryFromPayload(StoryUploadPayload payload) async {
     final mediaUrl = payload.mediaUrl?.trim() ?? '';
     if (mediaUrl.isNotEmpty) {
-      final request = await _createStoryRequest(mediaUrl, payload);
+      final previewUrlOverride = payload.mediaType.toLowerCase().contains('video')
+          ? await _uploadVideoStoryPreview(payload)
+          : null;
+      final request = await _createStoryRequest(
+        mediaUrl,
+        payload,
+        previewUrlOverride: previewUrlOverride,
+      );
       await createStory(request);
       return;
     }
@@ -355,7 +378,14 @@ class StoryCubit extends Cubit<StoryState> {
     if (_usesBackgroundStoryUi) {
       _notifyBackgroundStoryUpload(percent: 100, fileName: fileName);
     }
-    final request = await _createStoryRequest(uploadedUrl!.trim(), payload);
+    final previewUrlOverride = payload.mediaType.toLowerCase().contains('video')
+        ? await _uploadVideoStoryPreview(payload)
+        : null;
+    final request = await _createStoryRequest(
+      uploadedUrl!.trim(),
+      payload,
+      previewUrlOverride: previewUrlOverride,
+    );
     await createStory(request);
   }
 
@@ -414,7 +444,14 @@ class StoryCubit extends Cubit<StoryState> {
       if (_usesBackgroundStoryUi) {
         _notifyBackgroundStoryUpload(percent: 100, fileName: fileName);
       }
-      final request = await _createStoryRequest(uploadedUrl.trim(), payload);
+      final uploadedPreviewUrl = mediaType == MediaType.video
+          ? await _uploadVideoStoryPreview(payload)
+          : null;
+      final request = await _createStoryRequest(
+        uploadedUrl.trim(),
+        payload,
+        previewUrlOverride: uploadedPreviewUrl,
+      );
       await createStory(request);
     } catch (e) {
       if (_usesBackgroundStoryUi) {
@@ -555,10 +592,12 @@ class StoryCubit extends Cubit<StoryState> {
 
   Future<CreateStoryRequest> _createStoryRequest(
     String mediaUrl,
-    StoryUploadPayload payload,
-  ) async {
+    StoryUploadPayload payload, {
+    String? previewUrlOverride,
+  }) async {
+    final isVideo = payload.mediaType.toLowerCase().contains('video');
     var videoDurationSeconds = payload.videoDurationSeconds;
-    if (payload.mediaType.toLowerCase().contains('video') &&
+    if (isVideo &&
         (videoDurationSeconds == null || videoDurationSeconds <= 0) &&
         payload.file != null) {
       try {
@@ -569,22 +608,151 @@ class StoryCubit extends Cubit<StoryState> {
         videoDurationSeconds = 1;
       }
     }
+    String? previewUrl;
+    if (isVideo) {
+      final override = previewUrlOverride?.trim() ?? '';
+      previewUrl = override.isNotEmpty
+          ? override
+          : await _resolveVideoPreviewUrl(payload);
+    }
     return CreateStoryRequest(
-        mediaUrl: mediaUrl,
-        mediaType: payload.mediaType,
-        caption: payload.caption,
-        expiresInHours: payload.expiresInHours,
-        mediaPosition: payload.mediaPosition,
-        assetId: payload.assetId,
-        description: payload.description,
-        extraData: payload.extraData,
-        privacy: payload.privacy,
-        soundId: payload.soundId,
-        soundSnapshot: payload.soundSnapshot,
-        tags: payload.tags,
-        textFormatting: payload.textFormatting,
-        videoDurationSeconds: videoDurationSeconds,
+      mediaUrl: mediaUrl,
+      mediaType: payload.mediaType,
+      caption: payload.caption,
+      expiresInHours: payload.expiresInHours,
+      mediaPosition: payload.mediaPosition,
+      assetId: payload.assetId,
+      description: payload.description,
+      extraData: payload.extraData,
+      privacy: payload.privacy,
+      soundId: payload.soundId,
+      soundSnapshot: payload.soundSnapshot,
+      tags: payload.tags,
+      textFormatting: payload.textFormatting,
+      videoDurationSeconds: videoDurationSeconds,
+      previewUrl: previewUrl,
+    );
+  }
+
+  Future<String?> _resolveVideoPreviewUrl(StoryUploadPayload payload) async {
+    final existing = payload.previewUrl?.trim() ?? '';
+    if (existing.isNotEmpty) return existing;
+    return _uploadVideoStoryPreview(payload);
+  }
+
+  Future<String?> _uploadVideoStoryPreview(StoryUploadPayload payload) async {
+    final preparedPath = await _localVideoThumbnailPath(payload);
+    if (preparedPath == null || preparedPath.trim().isEmpty) {
+      AppLog.error(
+        'Story video preview: thumbnail generation failed '
+        '(file=${payload.file?.path ?? 'none'})',
       );
+      return null;
+    }
+    final prepared = File(preparedPath);
+    final uploaded = await _uploadStoryPreviewFile(
+      prepared,
+      uploadFileName:
+          'story_preview_${DateTime.now().millisecondsSinceEpoch}.jpg',
+    );
+    if (uploaded == null || uploaded.trim().isEmpty) {
+      final bytes = await prepared.length();
+      AppLog.error(
+        'Story video preview: thumbnail upload failed '
+        '(path=${prepared.path}, bytes=$bytes)',
+      );
+    }
+    return uploaded;
+  }
+
+  Future<String?> _localVideoThumbnailPath(StoryUploadPayload payload) async {
+    final videoFile = payload.file;
+    if (videoFile == null) return null;
+
+    final readableVideo = await MediaUtil.openReadableMediaFile(videoFile.path);
+    if (readableVideo == null) return null;
+
+    return MediaUtil.safePickBestVideoThumbnailPath(
+      videoPath: readableVideo.path,
+    );
+  }
+
+  Future<String?> _uploadStoryPreviewFile(
+    File file, {
+    String? uploadFileName,
+  }) async {
+    final readable = await MediaUtil.openReadableMediaFile(file.path);
+    if (readable == null) return null;
+    final filePath = readable.path;
+
+    final storyConfig = IsrVideoReelConfig.storyConfig;
+    final callbackConfig = storyConfig?.storyCallbackConfig;
+    final socialUpload = IsrVideoReelConfig
+        .socialConfig.socialCallBackConfig?.uploadMediaToCloud;
+    final callback = storyConfig?.uploadMediaToCloud ??
+        callbackConfig?.uploadMediaToCloud ??
+        socialUpload;
+
+    final fileName = uploadFileName?.trim().isNotEmpty == true
+        ? uploadFileName!.trim()
+        : filePath.split('/').last;
+    final dotIndex = fileName.lastIndexOf('.');
+    final extension = dotIndex > 0 ? fileName.substring(dotIndex + 1) : 'jpg';
+
+    if (callback != null) {
+      try {
+        final uploadedUrl = await callback(
+          readable,
+          fileName,
+          MediaType.photo,
+          (_) {},
+          'stories',
+          extension,
+        );
+        final url = uploadedUrl.trim();
+        return url.isEmpty ? null : url;
+      } catch (e, st) {
+        AppLog.error('Story video preview: host upload error: $e\n$st');
+        return null;
+      }
+    }
+
+    final uploadMode = storyConfig?.uploadMode ??
+        callbackConfig?.uploadMode ??
+        StoryUploadMode.hostProvidedUrl;
+    if (uploadMode == StoryUploadMode.sdkManagedGoogleCloud) {
+      final userId = await _localDataUseCase.getUserId();
+      final uploadedUrl =
+          await _googleCloudStorageUploaderUseCase.executeGoogleCloudStorageUploader(
+        file: readable,
+        fileName: fileName,
+        userId: userId,
+        fileExtension: extension,
+        cloudFolderName: 'stories',
+      );
+      final url = (uploadedUrl ?? '').trim();
+      return url.isEmpty ? null : url;
+    }
+
+    final gcs = IsrVideoReelConfig.socialConfig.googleCloudUpload;
+    if (gcs != null &&
+        gcs.bucketName.isNotEmpty &&
+        gcs.credentialsJsonPath.isNotEmpty) {
+      final userId = await _localDataUseCase.getUserId();
+      final uploadedUrl =
+          await _googleCloudStorageUploaderUseCase.executeGoogleCloudStorageUploader(
+        file: readable,
+        fileName: fileName,
+        userId: userId,
+        fileExtension: extension,
+        cloudFolderName: 'stories',
+      );
+      final url = (uploadedUrl ?? '').trim();
+      return url.isEmpty ? null : url;
+    }
+
+    AppLog.error('Story video preview: no upload callback configured');
+    return null;
   }
 
   void _emitFeedIfCached() {
@@ -811,6 +979,30 @@ class StoryCubit extends Cubit<StoryState> {
     emit(result.isSuccess
         ? const StoryActionSuccess('update_highlight')
         : StoryError(result.error?.message ?? 'Unable to update highlight.'));
+  }
+
+  Future<bool> updateHighlightMetadata({
+    required String highlightId,
+    required String title,
+    String? coverUrl,
+    int? sortOrder,
+  }) async {
+    final result = await _storyUseCase.executeUpdateStoryHighlight(
+      isLoading: false,
+      highlightId: highlightId,
+      request: UpdateStoryHighlightRequest(
+        title: title,
+        coverUrl: coverUrl,
+        sortOrder: sortOrder,
+      ),
+    );
+    if (result.isSuccess) {
+      _notifyHostHighlightsChanged();
+      emit(const StoryActionSuccess('update_highlight'));
+      return true;
+    }
+    emit(StoryError(result.error?.message ?? 'Unable to update highlight.'));
+    return false;
   }
 
   Future<bool> deleteHighlight(String highlightId) async {

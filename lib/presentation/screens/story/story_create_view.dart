@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -6,6 +7,7 @@ import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/cubits/story/story.dart';
 import 'package:ism_video_reel_player/res/res.dart';
+import 'package:video_player/video_player.dart';
 
 class StoryCreateView extends StatefulWidget {
   const StoryCreateView({super.key});
@@ -115,6 +117,24 @@ class _StoryCreateViewState extends State<StoryCreateView> {
                       Expanded(
                         child: ListView(
                           children: [
+                            if (composerState.file != null &&
+                                composerState.mediaType == 'video') ...[
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(
+                                  IsrDimens.twelve,
+                                ),
+                                child: AspectRatio(
+                                  aspectRatio: 9 / 16,
+                                  child: _StoryVideoPreview(
+                                    key: ValueKey(
+                                      composerState.file!.path,
+                                    ),
+                                    file: composerState.file!,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: IsrDimens.twelve),
+                            ],
                             if (composerState.file != null)
                               Container(
                                 padding: IsrDimens.edgeInsetsSymmetric(
@@ -265,4 +285,72 @@ class _StoryCreateViewState extends State<StoryCreateView> {
           ),
         ),
       );
+}
+
+class _StoryVideoPreview extends StatefulWidget {
+  const _StoryVideoPreview({
+    super.key,
+    required this.file,
+  });
+
+  final File file;
+
+  @override
+  State<_StoryVideoPreview> createState() => _StoryVideoPreviewState();
+}
+
+class _StoryVideoPreviewState extends State<_StoryVideoPreview> {
+  VideoPlayerController? _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = VideoPlayerController.file(widget.file)
+      ..initialize().then((_) {
+        if (!mounted) return;
+        setState(() {});
+        _controller
+          ?..setLooping(true)
+          ..play();
+      });
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) {
+      return const ColoredBox(
+        color: Colors.black,
+        child: Center(
+          child: SizedBox(
+            width: 28,
+            height: 28,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Colors.white54,
+            ),
+          ),
+        ),
+      );
+    }
+
+    final size = controller.value.size;
+    return ColoredBox(
+      color: Colors.black,
+      child: FittedBox(
+        fit: BoxFit.contain,
+        child: SizedBox(
+          width: size.width > 0 ? size.width : controller.value.aspectRatio,
+          height: size.height > 0 ? size.height : 1,
+          child: VideoPlayer(controller),
+        ),
+      ),
+    );
+  }
 }

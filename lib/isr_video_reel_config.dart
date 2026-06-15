@@ -6,11 +6,14 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:ism_video_reel_player/core/core.dart';
-import 'package:ism_video_reel_player/isr_feed_cache_config.dart';
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/cache/isr_feed_cache.dart';
+import 'package:ism_video_reel_player/isr_feed_cache_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
+import 'package:ism_video_reel_player/utils/isr_active_video_player_registry.dart';
+import 'package:ism_video_reel_player/utils/isr_image_sound_registry.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:talker/talker.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -64,7 +67,8 @@ class IsrVideoReelConfig {
   static CommentConfig commentConfig = const CommentConfig();
 
   /// Create, edit post configuration used by SDK modules.
-  static CreateEditPostConfig createEditPostConfig = const CreateEditPostConfig();
+  static CreateEditPostConfig createEditPostConfig =
+      const CreateEditPostConfig();
 
   /// Tag people configuration used by SDK modules.
   static TagDetailsConfig tagDetailsConfig = const TagDetailsConfig();
@@ -81,45 +85,331 @@ class IsrVideoReelConfig {
   /// When non-null, the host app may persist feed slices (e.g. Hive) alongside the SDK.
   static IsrFeedCacheConfig? feedCacheConfig;
 
-  /// Set by [pauseFeedPlayback] / [resumeFeedPlayback] when the host hides the reels tab.
+  /// Set only by the host via [pauseFeedPlayback] / [resumeFeedPlayback].
   static bool isHostFeedTabVisible = true;
 
-  /// Optional hook for [IsmPostView] to refresh tab visibility when the host returns to reels.
-  static VoidCallback? onHostFeedTabResumed;
+  static int _overlayReelsPlayerCount = 0;
 
-  /// Pauses reels media when leaving the feed, switching tabs, or backgrounding.
-  static void pauseFeedPlayback() {
-    isHostFeedTabVisible = false;
+  /// Section for the topmost overlay player (explore/profile grid reels).
+  static PostSectionType? _activeOverlaySection;
+
+  /// In-SDK routes (sound detail, capture flow) that must pause media without
+  /// clearing [isHostFeedTabVisible] — otherwise profile/explore can bleed audio.
+  static int _playbackSuppressionCount = 0;
+
+  /// Set while the OS has the app in background — blocks resume without clearing
+  /// [isHostFeedTabVisible] (user may still be on the reels shell tab).
+  static bool _appInBackground = false;
+
+  /// True after lifecycle paused media; cleared on [resumeFromAppForeground].
+  static bool _lifecyclePlaybackSuspended = false;
+
+  static AppLifecycleState? _lastLifecycleState;
+
+  /// Ignores destructive `inactive` handling right after [resumed] (iOS often
+  /// delivers `resumed` then `inactive` when returning to foreground).
+  static DateTime? _ignoreInactiveUntil;
+
+  static bool get isAppInBackground => _appInBackground;
+
+  /// True when the host reels tab or overlay player is active and nothing is
+  /// suppressing playback.
+  static bool get allowsPlayback =>
+      !_appInBackground &&
+      (isHostFeedTabVisible || _overlayReelsPlayerCount > 0) &&
+      _playbackSuppressionCount == 0;
+
+  static bool get isOverlayReelsPlayerActive => _overlayReelsPlayerCount > 0;
+
+  /// Whether [state] should be handled by a player in [section].
+  /// Null scope on the state applies to every section (host-wide pause/resume).
+  static bool playPauseAppliesToSection(
+    PostSectionType section,
+    PlayPauseVideoState state,
+  ) {
+    final scope = state.scopedPostSection;
+    return scope == null || scope == section;
+  }
+
+  static void _emitPlayPause({required bool play}) {
     try {
       final bloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
-      bloc.add(PlayPauseVideoEvent(play: false));
+      bloc.add(PlayPauseVideoEvent(play: play));
     } catch (e) {
-      debugPrint('IsrVideoReelConfig.pauseFeedPlayback: $e');
+      debugPrint('IsrVideoReelConfig._emitPlayPause: $e');
+    }
+    if (play) {
+      VisibilityDetectorController.instance.notifyNow();
     }
   }
 
-  static void resumeFeedPlayback() {
-    isHostFeedTabVisible = true;
+  /// Opens a full-screen overlay player (explore/profile grid, notifications).
+  ///
+  /// Pauses the kept-alive home [IsmPostView] first, then resumes only the
+  /// overlay tab section — a global `play: true` was waking background audio.
+  static void enterOverlayReelsPlayer({
+    PostSectionType? overlaySection,
+  }) {
+    _emitPlayPause(play: false);
+    _overlayReelsPlayerCount++;
+    if (overlaySection != null) {
+      _activeOverlaySection = overlaySection;
+    }
 
-    void emitResume() {
+    void resumeOverlayOnly() {
+      if (_overlayReelsPlayerCount == 0 ||
+          _appInBackground ||
+          !allowsPlayback) {
+        return;
+      }
       try {
         final bloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
-        bloc.add(PlayPauseVideoEvent(play: true));
+        bloc.add(
+          PlayPauseVideoEvent(
+            play: true,
+            scopedPostSection: overlaySection,
+          ),
+        );
       } catch (e) {
-        debugPrint('IsrVideoReelConfig.resumeFeedPlayback: $e');
+        debugPrint('IsrVideoReelConfig.enterOverlayReelsPlayer: $e');
       }
       VisibilityDetectorController.instance.notifyNow();
     }
 
-    emitResume();
-    onHostFeedTabResumed?.call();
+    WidgetsBinding.instance.addPostFrameCallback((_) => resumeOverlayOnly());
+  }
+
+  static void exitOverlayReelsPlayer() {
+    if (_overlayReelsPlayerCount > 0) _overlayReelsPlayerCount--;
+    if (_overlayReelsPlayerCount == 0) {
+      _activeOverlaySection = null;
+      if (!isHostFeedTabVisible) {
+        _emitPlayPause(play: false);
+      }
+    }
+  }
+
+  /// Optional hook for [IsmPostView] to refresh tab visibility when the host returns to reels.
+  static VoidCallback? onHostFeedTabResumed;
+
+  /// Returns the host home tab section (For You / Following / Feed) for scoped resume.
+  static PostSectionType? Function()? getActiveHostPostSection;
+
+  static final List<VoidCallback> _appForegroundResumedListeners =
+      <VoidCallback>[];
+
+  static final Map<PostSectionType, VoidCallback>
+      _sectionForegroundResumeHandlers = <PostSectionType, VoidCallback>{};
+
+  /// Registers a listener for app foreground return (host + overlay players).
+  static void registerAppForegroundResumedListener(VoidCallback listener) {
+    if (!_appForegroundResumedListeners.contains(listener)) {
+      _appForegroundResumedListeners.add(listener);
+    }
+  }
+
+  static void unregisterAppForegroundResumedListener(VoidCallback listener) {
+    _appForegroundResumedListeners.remove(listener);
+  }
+
+  static void _notifyAppForegroundResumed() {
+    for (final listener in _appForegroundResumedListeners.toList()) {
+      try {
+        listener();
+      } catch (e) {
+        debugPrint('IsrVideoReelConfig._notifyAppForegroundResumed: $e');
+      }
+    }
+  }
+
+  /// [PostItemWidget] registers so the visible reel can resume after lifecycle.
+  static void registerSectionForegroundResume(
+    PostSectionType section,
+    VoidCallback handler,
+  ) {
+    _sectionForegroundResumeHandlers[section] = handler;
+  }
+
+  static void unregisterSectionForegroundResume(PostSectionType section) {
+    _sectionForegroundResumeHandlers.remove(section);
+  }
+
+  static void _invokeSectionForegroundResume(PostSectionType? section) {
+    if (section != null) {
+      try {
+        _sectionForegroundResumeHandlers[section]?.call();
+      } catch (e) {
+        debugPrint('IsrVideoReelConfig._invokeSectionForegroundResume: $e');
+      }
+      return;
+    }
+    for (final handler in _sectionForegroundResumeHandlers.values.toList()) {
+      try {
+        handler();
+      } catch (e) {
+        debugPrint('IsrVideoReelConfig._invokeSectionForegroundResume: $e');
+      }
+    }
+  }
+
+  /// Host-only: user left the reels bottom-nav tab (profile, explore, etc.).
+  static void pauseFeedPlayback() {
+    isHostFeedTabVisible = false;
+    _emitPlayPause(play: false);
+  }
+
+  /// Host-only: user returned to the reels bottom-nav tab.
+  static void resumeFeedPlayback() {
+    isHostFeedTabVisible = true;
+    _emitPlaybackResume(
+      notifyHostTabResumed: true,
+      scopedPostSection: getActiveHostPostSection?.call(),
+    );
+  }
+
+  /// SDK overlays (sound sheet, capture) — pause without clearing host visibility.
+  static void suppressPlayback() {
+    _playbackSuppressionCount++;
+    _emitPlayPause(play: false);
+  }
+
+  /// Pair with [suppressPlayback]; resumes only if the host tab is still reels.
+  static void releasePlaybackSuppression() {
+    if (_playbackSuppressionCount > 0) {
+      _playbackSuppressionCount--;
+    }
+    _emitPlaybackResume();
+  }
+
+  /// Resume after an in-app flow without flipping [isHostFeedTabVisible].
+  static void resumePlaybackIfAllowed() {
+    _emitPlaybackResume();
+  }
+
+  /// Hard-stops video widgets and image-post [AudioPlayer] instances.
+  static Future<void> hardStopAllReelsMedia() async {
+    _emitPlayPause(play: false);
+    IsrActiveVideoPlayerRegistry.pauseAll();
+    await IsrImageSoundRegistry.stopAll();
+  }
+
+  /// Pauses all reels media when the app moves to background.
+  ///
+  /// Does not clear [isHostFeedTabVisible] — pair with [resumeFromAppForeground].
+  static void pauseForAppBackground() {
+    _appInBackground = true;
+    _lifecyclePlaybackSuspended = true;
+    unawaited(hardStopAllReelsMedia());
+  }
+
+  /// Restores playback after foreground return when policy allows.
+  ///
+  /// Pass [hostReelsTabVisible] true when the shell is still on the reels tab so
+  /// the main feed can resume; overlay-only playback resumes when an overlay
+  /// player is active regardless.
+  static void resumeFromAppForeground({required bool hostReelsTabVisible}) {
+    final shouldResume = _appInBackground || _lifecyclePlaybackSuspended;
+    _appInBackground = false;
+    _lifecyclePlaybackSuspended = false;
+    if (!shouldResume) return;
+
+    if (!hostReelsTabVisible && _overlayReelsPlayerCount == 0) return;
+
+    PostSectionType? resumeSection;
+    if (hostReelsTabVisible) {
+      isHostFeedTabVisible = true;
+      resumeSection = getActiveHostPostSection?.call();
+      onHostFeedTabResumed?.call();
+    } else if (_overlayReelsPlayerCount > 0) {
+      resumeSection = _activeOverlaySection;
+    }
+
+    _notifyAppForegroundResumed();
+    _resumeOnlyCurrentReelAfterForeground(resumeSection);
+  }
+
+  /// Silence everything, then nudge only the active section's current reel once.
+  static void _resumeOnlyCurrentReelAfterForeground(
+    PostSectionType? section,
+  ) {
+    if (_appInBackground || !allowsPlayback) return;
+
+    IsrActiveVideoPlayerRegistry.pauseAll();
+    _emitPlayPause(play: false);
+    unawaited(IsrImageSoundRegistry.stopAll());
+
+    if (section == null) return;
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      emitResume();
-      onHostFeedTabResumed?.call();
+      if (_appInBackground || !allowsPlayback) return;
+      _invokeSectionForegroundResume(section);
     });
-    Future.delayed(const Duration(milliseconds: 300), () {
-      emitResume();
+  }
+
+  /// Host wiring for [WidgetsBindingObserver.didChangeAppLifecycleState].
+  static void handleAppLifecycleState(
+    AppLifecycleState state, {
+    required bool hostReelsTabVisible,
+  }) {
+    switch (state) {
+      case AppLifecycleState.inactive:
+        if (_ignoreInactiveUntil != null &&
+            DateTime.now().isBefore(_ignoreInactiveUntil!)) {
+          break;
+        }
+        // Leaving foreground: stop audio before `paused` on iOS without flags.
+        if (_lastLifecycleState == AppLifecycleState.resumed &&
+            !_appInBackground) {
+          _lifecyclePlaybackSuspended = true;
+          unawaited(hardStopAllReelsMedia());
+        }
+        break;
+      case AppLifecycleState.paused:
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.detached:
+        pauseForAppBackground();
+        break;
+      case AppLifecycleState.resumed:
+        resumeFromAppForeground(hostReelsTabVisible: hostReelsTabVisible);
+        _ignoreInactiveUntil =
+            DateTime.now().add(const Duration(milliseconds: 800));
+        break;
+    }
+    _lastLifecycleState = state;
+  }
+
+  static void _emitPlaybackResume({
+    bool notifyHostTabResumed = false,
+    PostSectionType? scopedPostSection,
+  }) {
+    if (_appInBackground || !allowsPlayback) return;
+
+    void emitResume() {
+      if (_appInBackground || !allowsPlayback) return;
+      try {
+        final bloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
+        bloc.add(
+          PlayPauseVideoEvent(
+            play: true,
+            scopedPostSection: scopedPostSection,
+          ),
+        );
+      } catch (e) {
+        debugPrint('IsrVideoReelConfig._emitPlaybackResume: $e');
+      }
+      VisibilityDetectorController.instance.notifyNow();
+    }
+
+    if (notifyHostTabResumed) {
       onHostFeedTabResumed?.call();
+    }
+
+    emitResume();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (notifyHostTabResumed) {
+        onHostFeedTabResumed?.call();
+      }
+      emitResume();
     });
   }
 
@@ -169,7 +459,8 @@ class IsrVideoReelConfig {
     IsrVideoReelConfig.appName = appName;
     if (!isSdkInitialize) {
       WidgetsFlutterBinding.ensureInitialized();
-      await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+      await SystemChrome.setPreferredOrientations(
+          [DeviceOrientation.portraitUp]);
       isrConfigureInjection();
       // ✅ Initialize SDK router
       await _initializeHive();
@@ -189,6 +480,13 @@ class IsrVideoReelConfig {
       userId: userInfoClass?.userId,
       userInfoClass: userInfoClass,
     );
+    if (IsrVideoReelConfig.feedCacheConfig != null) {
+      unawaited(
+        IsrFeedCacheRepository.instance.reopenForOwner(
+          userInfoClass?.userId ?? '',
+        ),
+      );
+    }
     getBuildContext = getCurrentBuildContext;
     _triggerEventLog();
     unawaited(_updateHeaderAddressFromIp());
@@ -228,36 +526,67 @@ class IsrVideoReelConfig {
     StoryConfig? storyConfig,
     IsrFeedCacheConfig? feedCacheConfig,
   }) {
-    IsrVideoReelConfig.socialConfig = socialConfig ?? IsrVideoReelConfig.socialConfig;
-    IsrVideoReelConfig.postConfig = postConfig ?? IsrVideoReelConfig.postConfig;
+    IsrVideoReelConfig.socialConfig =
+        socialConfig ?? IsrVideoReelConfig.socialConfig;
+    final resolvedPostConfig = postConfig ?? IsrVideoReelConfig.postConfig;
+    IsrVideoReelConfig.postConfig = resolvedPostConfig;
+    VideoMuteController.applyDefaultMuted(
+      resolvedPostConfig.resolvedPostFeedUIConfig.defaultVideoMuted,
+    );
     IsrVideoReelConfig.tabConfig = tabConfig ?? IsrVideoReelConfig.tabConfig;
-    IsrVideoReelConfig.commentConfig = commentConfig ?? IsrVideoReelConfig.commentConfig;
-    IsrVideoReelConfig.createEditPostConfig = createEditPostConfig ?? IsrVideoReelConfig.createEditPostConfig;
-    IsrVideoReelConfig.tagDetailsConfig = tagDetailsConfig ?? IsrVideoReelConfig.tagDetailsConfig;
-    IsrVideoReelConfig.searchScreenConfig = searchScreenConfig ?? IsrVideoReelConfig.searchScreenConfig;
+    IsrVideoReelConfig.commentConfig =
+        commentConfig ?? IsrVideoReelConfig.commentConfig;
+    IsrVideoReelConfig.createEditPostConfig =
+        createEditPostConfig ?? IsrVideoReelConfig.createEditPostConfig;
+    IsrVideoReelConfig.tagDetailsConfig =
+        tagDetailsConfig ?? IsrVideoReelConfig.tagDetailsConfig;
+    IsrVideoReelConfig.searchScreenConfig =
+        searchScreenConfig ?? IsrVideoReelConfig.searchScreenConfig;
     IsrVideoReelConfig.blockedUsersConfig =
         blockedUsersConfig ?? IsrVideoReelConfig.blockedUsersConfig;
     IsrVideoReelConfig.storyConfig = storyConfig;
     IsrVideoReelConfig.feedCacheConfig = feedCacheConfig;
+    unawaited(_applyFeedCacheConfig(feedCacheConfig));
+  }
+
+  static Future<void> _applyFeedCacheConfig(
+    IsrFeedCacheConfig? feedCacheConfig,
+  ) async {
+    if (feedCacheConfig == null) {
+      IsrFeedCacheSync.instance.detach();
+      return;
+    }
+    var owner = 'guest';
+    try {
+      owner =
+          await IsmInjectionUtils.getUseCase<IsmLocalDataUseCase>().getUserId();
+    } catch (_) {}
+    await IsrFeedCacheRepository.instance.init(
+      config: feedCacheConfig,
+      ownerKey: owner,
+    );
+    IsrFeedCacheSync.instance.attach();
   }
 
   static Future<void> _updateHeaderAddressFromIp() async {
     try {
-      await IsmInjectionUtils.getOtherClass<LocationManager>().updateHeaderLocationFromIP();
+      await IsmInjectionUtils.getOtherClass<LocationManager>()
+          .updateHeaderLocationFromIP();
     } catch (e) {
       debugPrint('Error getting location from IP: $e');
     }
   }
 
   static void _triggerEventLog() {
-    Future.delayed(const Duration(seconds: 5), () { // to send any pending event to backend
+    Future.delayed(const Duration(seconds: 5), () {
+      // to send any pending event to backend
       EventQueueProvider.instance.sendPendingEventsToBackend();
     });
   }
 
   static void registerTalker(Talker talker) {
     IsmInjectionUtils.unRegister<Talker>();
-    IsmInjectionUtils.registerOtherClass<Talker>( () => talker);
+    IsmInjectionUtils.registerOtherClass<Talker>(() => talker);
   }
 
   /// Persists [userInfoClass] (if provided) to local storage.
@@ -285,8 +614,10 @@ class IsrVideoReelConfig {
         userInfoClass?.mobileNumber, SavedValueDataType.string);
     await localStorageManager.saveValue(LocalStorageKeys.dialCode,
         userInfoClass?.dialCode, SavedValueDataType.string);
-    await localStorageManager.saveValue(LocalStorageKeys.isLoggedIn,
-        userInfoClass?.userId?.trim().isNotEmpty == true, SavedValueDataType.bool);
+    await localStorageManager.saveValue(
+        LocalStorageKeys.isLoggedIn,
+        userInfoClass?.userId?.trim().isNotEmpty == true,
+        SavedValueDataType.bool);
   }
 
   /// Triggers background precaching for the given [mediaUrls].

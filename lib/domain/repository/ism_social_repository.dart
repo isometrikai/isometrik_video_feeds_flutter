@@ -212,6 +212,13 @@ abstract class SocialRepository extends BaseRepository {
     required int pageLimit,
   });
 
+  Future<CustomResponse<PostsBySoundResponse?>> getPostsBySound({
+    required bool isLoading,
+    required String soundId,
+    required int page,
+    required int pageSize,
+  });
+
   Future<CustomResponse<TimelineResponse?>> getProfileSavedPostData({
     required bool isLoading,
     required int page,

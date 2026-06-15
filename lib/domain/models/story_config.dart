@@ -130,6 +130,7 @@ class StoryUiConfig {
   final Color? hasUnviewedRingColor;
   final Color? seenBorderColor;
   final Color? unseenBorderColor;
+
   /// Gradient colors for unviewed story / highlight rings (host theme).
   final List<Color>? unseenRingGradientColors;
   final TextStyle? titleStyle;
@@ -137,6 +138,7 @@ class StoryUiConfig {
   final Color? addStoryAccentColor;
   final String? addStoryTitle;
   final bool showTitles;
+
   /// When true, shows the first "Add Story" tile with a + badge on the strip.
   final bool showAddStoryTile;
   final Color? bottomSheetBackgroundColor;
@@ -190,15 +192,13 @@ class StoryUiConfig {
         showAddStoryTile: showAddStoryTile ?? this.showAddStoryTile,
         bottomSheetBackgroundColor:
             bottomSheetBackgroundColor ?? this.bottomSheetBackgroundColor,
-        bottomSheetTextColor:
-            bottomSheetTextColor ?? this.bottomSheetTextColor,
-        bottomSheetSecondaryTextColor: bottomSheetSecondaryTextColor ??
-            this.bottomSheetSecondaryTextColor,
+        bottomSheetTextColor: bottomSheetTextColor ?? this.bottomSheetTextColor,
+        bottomSheetSecondaryTextColor:
+            bottomSheetSecondaryTextColor ?? this.bottomSheetSecondaryTextColor,
         destructiveColor: destructiveColor ?? this.destructiveColor,
         successColor: successColor ?? this.successColor,
         primaryButtonColor: primaryButtonColor ?? this.primaryButtonColor,
-        onPrimaryButtonColor:
-            onPrimaryButtonColor ?? this.onPrimaryButtonColor,
+        onPrimaryButtonColor: onPrimaryButtonColor ?? this.onPrimaryButtonColor,
       );
 }
 
@@ -224,6 +224,8 @@ class StoryUploadPayload {
     this.tags,
     this.textFormatting,
     this.videoDurationSeconds,
+    this.previewUrl,
+    this.previewLocalPath,
   });
 
   final File? file;
@@ -241,6 +243,12 @@ class StoryUploadPayload {
   final Map<String, dynamic>? tags;
   final Map<String, dynamic>? textFormatting;
   final int? videoDurationSeconds;
+
+  /// Public thumbnail URL for video stories (host may set when media is pre-uploaded).
+  final String? previewUrl;
+
+  /// Local JPEG path from an early thumbnail pass (before video upload).
+  final String? previewLocalPath;
 }
 
 class StoryCallbackConfig {
@@ -253,6 +261,7 @@ class StoryCallbackConfig {
     this.onStoryFeedLoaded,
     this.onStoryActionError,
     this.onHighlightTap,
+    this.onHighlightEdit,
     this.onHighlightOpenDiagnostics,
     this.onHighlightsChanged,
     this.resolveCurrentUserAvatarUrl,
@@ -281,12 +290,18 @@ class StoryCallbackConfig {
   final void Function(List<StoryGroup> storyGroups)? onStoryFeedLoaded;
   final void Function(String action, String message)? onStoryActionError;
   final Future<void> Function(StoryHighlightData highlight)? onHighlightTap;
+
+  /// Host profile long-press / overflow. When null, SDK opens the edit screen.
+  final Future<void> Function(StoryHighlightData highlight)? onHighlightEdit;
   final void Function(HighlightOpenDiagnostics diagnostics)?
       onHighlightOpenDiagnostics;
+
   /// Host app should refresh profile highlight strip / list.
   final void Function()? onHighlightsChanged;
+
   /// Host provides the signed-in user's profile image for the Add Story tile.
   final Future<String?> Function()? resolveCurrentUserAvatarUrl;
+
   /// Called when a viewer reports someone else's story (not shown for own stories).
   final Future<void> Function(StoryData story)? onReportStory;
   final StoryUploadMode uploadMode;

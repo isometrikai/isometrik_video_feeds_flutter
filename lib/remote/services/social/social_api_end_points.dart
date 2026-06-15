@@ -43,6 +43,7 @@ class SocialApiEndPoints {
   static String getUserProfile(String userId) =>
       '/api/v1/users/$userId/profile';
   static const String getTaggedPosts = '/api/v1/tags/posts';
+  static const String getPostsBySound = '/api/v1/posts/sound';
   static const String getForYouPosts = '/api/v1/posts/fyp';
   static const String getMentionedUsers = '/api/v1/posts';
   static String postScheduledPost(String postId) =>

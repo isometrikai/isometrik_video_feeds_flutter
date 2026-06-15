@@ -22,6 +22,15 @@ class LoadPostData extends SocialPostEvent {
   final List<PostTabAssistData> postSections;
 }
 
+/// Loads one home/reels tab without blocking other tabs (Following, Feeds, etc.).
+class LoadHomeTabEvent extends SocialPostEvent {
+  const LoadHomeTabEvent({
+    required this.postSectionType,
+  });
+
+  final PostSectionType postSectionType;
+}
+
 class LoadPostsEvent extends SocialPostEvent {
   LoadPostsEvent({
     required this.postType,
@@ -82,6 +91,13 @@ class FollowUserEvent extends SocialPostEvent {
   final String followingId;
   final Function(bool) onComplete;
   final FollowAction followAction;
+}
+
+/// Removes all posts by [userId] from Following/Feeds tabs and refreshes from API.
+class PurgeAuthorFromFollowFeedsEvent extends SocialPostEvent {
+  const PurgeAuthorFromFollowFeedsEvent(this.userId);
+
+  final String userId;
 }
 
 class SavePostEvent extends SocialPostEvent {
@@ -326,8 +342,21 @@ class GetSavedSoundsEvent extends SocialPostEvent {
 }
 
 class PlayPauseVideoEvent extends SocialPostEvent {
-  PlayPauseVideoEvent({required this.play});
+  PlayPauseVideoEvent({
+    required this.play,
+    this.pausePlayback = true,
+    this.scopedPostSection,
+  });
+
   bool play;
+
+  /// When `false`, only blocks auto-advance to the next clip/post (overlay open)
+  /// without pausing media — used for post-feed comment/share sheets.
+  final bool pausePlayback;
+
+  /// When set, only players for this home/overlay tab section react.
+  /// Null broadcasts to every section (host pause/resume, tab handoff pause).
+  final PostSectionType? scopedPostSection;
 }
 
 class OnShareSuccessEvent extends SocialPostEvent {

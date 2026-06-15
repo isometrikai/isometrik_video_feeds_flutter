@@ -10,7 +10,7 @@ class HighlightStoryItem {
 
   factory HighlightStoryItem.fromStory(StoryData story) => HighlightStoryItem(
         id: story.id,
-        thumbUrl: story.mediaUrl,
+        thumbUrl: story.thumbDisplayUrl,
         dateLabel: _dateLabelFromStory(story),
       );
 

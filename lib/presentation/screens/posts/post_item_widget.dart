@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:preload_page_view/preload_page_view.dart';
@@ -14,8 +15,12 @@ class PostItemWidget extends StatefulWidget {
   const PostItemWidget({
     super.key,
     this.onLoadMore,
+    this.onPostFeedLoadMore,
     this.onRefresh,
     this.postSectionType,
+    this.feedLayoutType = FeedLayoutType.reels,
+    this.postFeedListTopInset,
+    this.postFeedListBottomInset,
     this.onTapPlaceHolder,
     this.startingPostIndex = 0,
     this.loggedInUserId,
@@ -27,9 +32,18 @@ class PostItemWidget extends StatefulWidget {
   });
 
   final Future<List<ReelsData>> Function()? onLoadMore;
+  final Future<PostFeedLoadMoreResult> Function()? onPostFeedLoadMore;
   final Widget? Function()? getEmptyScreen;
   final Future<bool> Function()? onRefresh;
   final PostSectionType? postSectionType;
+  final FeedLayoutType feedLayoutType;
+
+  /// When the reels tab bar overlays a post-card tab, inset scroll content below it.
+  final double? postFeedListTopInset;
+
+  /// When a host bottom nav overlays the feed, inset scroll content above it.
+  final double? postFeedListBottomInset;
+
   final VoidCallback? onTapPlaceHolder;
   final int? startingPostIndex;
   final String? loggedInUserId;
@@ -50,7 +64,9 @@ class _PostItemWidgetState extends State<PostItemWidget>
   List<ReelsData> _reelsDataList = [];
   late final IsmSocialActionCubit _ismSocialActionCubit;
   late final ValueNotifier<int> _currentIndex;
+  final ValueNotifier<int> _lifecycleResumeTick = ValueNotifier<int>(0);
   bool _isPlaybackBlocked = false;
+  late final VoidCallback _sectionForegroundResumeHandler;
 
   bool _isInitialized = false;
 
@@ -76,7 +92,22 @@ class _PostItemWidgetState extends State<PostItemWidget>
     _pageController =
         PreloadPageController(initialPage: widget.startingPostIndex ?? 0);
     _currentIndex = ValueNotifier<int>(widget.startingPostIndex ?? 0);
+    _sectionForegroundResumeHandler = _onSectionForegroundResume;
+    final section = widget.postSectionType;
+    if (section != null) {
+      IsrVideoReelConfig.registerSectionForegroundResume(
+        section,
+        _sectionForegroundResumeHandler,
+      );
+    }
     _initializeContent();
+  }
+
+  void _onSectionForegroundResume() {
+    if (!mounted || !IsrVideoReelConfig.allowsPlayback) return;
+    if (!widget.reelsConfig.isTabVisible()) return;
+    _isPlaybackBlocked = false;
+    _lifecycleResumeTick.value++;
   }
 
   @override
@@ -85,6 +116,71 @@ class _PostItemWidgetState extends State<PostItemWidget>
     if (!_isInitialized) {
       _isInitialized = true;
     }
+  }
+
+  @override
+  void didUpdateWidget(PostItemWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_sameReelsList(oldWidget.reelsDataList, widget.reelsDataList)) return;
+
+    if (_isPostFeedLayout &&
+        widget.reelsDataList.length > _reelsDataList.length &&
+        _hasSameReelsPrefix(_reelsDataList, widget.reelsDataList)) {
+      final existingIds = _reelsDataList.map((e) => e.postId).toSet();
+      final appended = widget.reelsDataList
+          .where((reel) => !existingIds.contains(reel.postId))
+          .toList();
+      if (appended.isNotEmpty) {
+        _reelsDataList.addAll(appended);
+        _updateState();
+        return;
+      }
+    }
+
+    _reelsDataList = List<ReelsData>.from(widget.reelsDataList);
+    _updateState();
+  }
+
+  bool _sameReelsList(List<ReelsData> previous, List<ReelsData> next) {
+    if (identical(previous, next)) return true;
+    if (previous.length != next.length) return false;
+    for (var i = 0; i < previous.length; i++) {
+      if (previous[i].postId != next[i].postId) return false;
+      if (previous[i].isLocked != next[i].isLocked) return false;
+      if (previous[i].lockReason != next[i].lockReason) return false;
+      if (previous[i].mediaMetaDataList.length !=
+          next[i].mediaMetaDataList.length) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool _hasSameReelsPrefix(List<ReelsData> prefix, List<ReelsData> full) {
+    if (prefix.length > full.length) return false;
+    for (var i = 0; i < prefix.length; i++) {
+      if (prefix[i].postId != full[i].postId) return false;
+    }
+    return true;
+  }
+
+  /// Engagement / caption refresh from host-cache detail sync — same media,
+  /// no need to remount [IsmReelsVideoPlayerView] (that clears comments/video).
+  bool _isSoftReelUpdate(ReelsData existing, ReelsData updated) {
+    if (existing.postId != updated.postId) return false;
+    if (existing.mediaMetaDataList.length != updated.mediaMetaDataList.length) {
+      return false;
+    }
+    for (var i = 0; i < existing.mediaMetaDataList.length; i++) {
+      final prev = existing.mediaMetaDataList[i];
+      final next = updated.mediaMetaDataList[i];
+      if (prev.mediaUrl != next.mediaUrl ||
+          prev.mediaType != next.mediaType ||
+          prev.thumbnailUrl != next.thumbnailUrl) {
+        return false;
+      }
+    }
+    return true;
   }
 
   void _initializeContent() async {
@@ -164,8 +260,13 @@ class _PostItemWidgetState extends State<PostItemWidget>
 
   @override
   void dispose() {
+    final section = widget.postSectionType;
+    if (section != null) {
+      IsrVideoReelConfig.unregisterSectionForegroundResume(section);
+    }
     _pageController.dispose();
     _currentIndex.dispose();
+    _lifecycleResumeTick.dispose();
     // Don't clear all cache on dispose, only clear controllers
     // _videoCacheManager.clearControllers();
     super.dispose();
@@ -173,6 +274,9 @@ class _PostItemWidgetState extends State<PostItemWidget>
 
   @override
   bool get wantKeepAlive => true;
+
+  bool get _isPostFeedLayout =>
+      widget.feedLayoutType == FeedLayoutType.postFeed;
 
   @override
   Widget build(BuildContext context) {
@@ -182,20 +286,25 @@ class _PostItemWidgetState extends State<PostItemWidget>
       child: BlocListener<IsmSocialActionCubit, IsmSocialActionState>(
         listenWhen: (previous, current) =>
             (current is IsmFollowActionListenerState &&
-                widget.postSectionType == PostSectionType.following) ||
+                (widget.postSectionType == PostSectionType.following ||
+                    widget.postSectionType == PostSectionType.feeds)) ||
             (current is IsmSaveActionListenerState &&
                 widget.postSectionType == PostSectionType.savedPost) ||
             (current is IsmDeletedPostActionListenerState) ||
-            (current is IsmEditPostActionListenerState),
+            (current is IsmEditPostActionListenerState) ||
+            (current is IsmMentionRemovedActionListenerState),
         listener: (context, state) {
           if (state is IsmFollowActionListenerState &&
-              widget.postSectionType == PostSectionType.following) {
+              (widget.postSectionType == PostSectionType.following ||
+                  widget.postSectionType == PostSectionType.feeds)) {
             _updateWithFollowAction(state);
           } else if (state is IsmSaveActionListenerState &&
               widget.postSectionType == PostSectionType.savedPost) {
             _updateWithSaveAction(state);
           } else if (state is IsmDeletedPostActionListenerState) {
             _updateWithDeleteAction(state);
+          } else if (state is IsmMentionRemovedActionListenerState) {
+            _updateWithMentionRemovedAction(state);
           } else if (state is IsmEditPostActionListenerState) {
             _updateWithEditAction(state);
           }
@@ -204,12 +313,22 @@ class _PostItemWidgetState extends State<PostItemWidget>
           listenWhen: (previous, current) => current is PlayPauseVideoState,
           listener: (context, state) {
             if (state is PlayPauseVideoState) {
+              final section = widget.postSectionType;
+              if (section != null &&
+                  !IsrVideoReelConfig.playPauseAppliesToSection(
+                    section,
+                    state,
+                  )) {
+                return;
+              }
               _isPlaybackBlocked = !state.play;
             }
           },
           child: _reelsDataList.isListEmptyOrNull == true
               ? _buildPlaceHolder(context)
-              : _buildContent(context),
+              : _isPostFeedLayout
+                  ? _buildPostFeedContent(context)
+                  : _buildContent(context),
         ),
       ),
     );
@@ -228,8 +347,13 @@ class _PostItemWidgetState extends State<PostItemWidget>
       if (index != -1) {
         final postData =
             getReelData(state.postData!, loggedInUserId: widget.loggedInUserId);
-        _reelsDataList[index] = postData; // replace
-        await updateStateByKey();
+        final existing = _reelsDataList[index];
+        _reelsDataList[index] = postData;
+        if (_isSoftReelUpdate(existing, postData)) {
+          _updateState();
+          return;
+        }
+        await updateStateByKey(editedIndex: index);
       }
     }
   }
@@ -245,6 +369,40 @@ class _PostItemWidgetState extends State<PostItemWidget>
     }
   }
 
+  Future<void> _updateWithMentionRemovedAction(
+      IsmMentionRemovedActionListenerState state) async {
+    if (!_reelsDataList.any((e) => e.postId == state.postId)) {
+      return;
+    }
+
+    if (widget.postSectionType == PostSectionType.myTaggedPost) {
+      await _updateWithDeleteAction(
+        IsmDeletedPostActionListenerState(postId: state.postId),
+      );
+      return;
+    }
+
+    final index =
+        _reelsDataList.indexWhere((element) => element.postId == state.postId);
+    if (index == -1) {
+      return;
+    }
+
+    final reel = _reelsDataList[index];
+    reel.mentions = reel.mentions
+        .where((mention) => mention.userId != state.userId)
+        .toList();
+
+    if (reel.postData is TimeLineData) {
+      final post = reel.postData as TimeLineData;
+      post.tags?.mentions
+          ?.removeWhere((mention) => mention.userId == state.userId);
+    }
+
+    _refreshCounts[index] = (_refreshCounts[index] ?? 0) + 1;
+    await updateStateByKey();
+  }
+
   Future<void> _updateWithSaveAction(IsmSaveActionListenerState state) async {
     if (!state.isSaved && widget.postSectionType == PostSectionType.savedPost) {
       _reelsDataList.removeWhere((element) => element.postId == state.postId);
@@ -252,16 +410,28 @@ class _PostItemWidgetState extends State<PostItemWidget>
     }
   }
 
-  Future<void> updateStateByKey() async {
-    // Get current index before refresh
-    final currentIndex = _resolvedCurrentPageIndex;
-    debugPrint('🔄 MainWidget: Starting update at index $currentIndex');
+  Future<void> updateStateByKey({int? editedIndex}) async {
+    final refreshIndex = editedIndex ?? _resolvedCurrentPageIndex;
+    debugPrint('🔄 MainWidget: Starting update at index $refreshIndex');
 
     // Increment refresh count to force rebuild
-    _refreshCounts[currentIndex] = (_refreshCounts[currentIndex] ?? 0) + 1;
+    _refreshCounts[refreshIndex] = (_refreshCounts[refreshIndex] ?? 0) + 1;
     _updateState();
     // Re-initialize caching for current index after successful refresh
-    await _doMediaCaching(currentIndex);
+    await _doMediaCaching(refreshIndex);
+  }
+
+  String? _reelAuthorUserId(ReelsData reel) {
+    final direct = reel.userId;
+    if (direct != null && direct.isNotEmpty) return direct;
+    final post = reel.postData;
+    if (post is TimeLineData) {
+      final fromUser = post.user?.id;
+      if (fromUser != null && fromUser.isNotEmpty) return fromUser;
+      final userId = post.userId;
+      if (userId != null && userId.isNotEmpty) return userId;
+    }
+    return null;
   }
 
   Future<void> _updateWithFollowAction(
@@ -296,8 +466,10 @@ class _PostItemWidgetState extends State<PostItemWidget>
       }
     } else if (!state.isFollowing &&
         !state.followRequestPending &&
-        _reelsDataList.any((element) => element.userId == state.userId)) {
-      _reelsDataList.removeWhere((element) => element.userId == state.userId);
+        _reelsDataList.any((element) => _reelAuthorUserId(element) == state.userId)) {
+      _reelsDataList.removeWhere(
+        (element) => _reelAuthorUserId(element) == state.userId,
+      );
       updateState = true;
     }
     if (updateState) {
@@ -322,6 +494,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
                       child: Center(
                         child: PostPlaceHolderView(
                               postSectionType: widget.postSectionType,
+                              feedLayoutType: widget.feedLayoutType,
                               onTap: () {
                                 if (widget.onTapPlaceHolder != null) {
                                   widget.onTapPlaceHolder!();
@@ -334,6 +507,65 @@ class _PostItemWidgetState extends State<PostItemWidget>
             ),
           ),
         ],
+      );
+
+  Widget _buildPostFeedContent(BuildContext context) => PostFeedListWidget(
+        reelsDataList: _reelsDataList,
+        refreshCounts: _refreshCounts,
+        reelsConfig: widget.reelsConfig,
+        lifecycleResumeTick: _lifecycleResumeTick,
+        postSectionType: widget.postSectionType,
+        listTopInset: widget.postFeedListTopInset,
+        listBottomInset: widget.postFeedListBottomInset,
+        loggedInUserId: widget.loggedInUserId,
+        videoCacheManager: _videoCacheManager,
+        getEmptyScreen: widget.getEmptyScreen,
+        onTapPlaceHolder: widget.onTapPlaceHolder,
+        onReelsChange: widget.reelsConfig.onReelsChange,
+        onLoadMore: () async {
+          if (widget.onPostFeedLoadMore != null) {
+            final result = await widget.onPostFeedLoadMore!();
+            if (result.items.isNotEmpty) {
+              final existingIds =
+                  _reelsDataList.map((reel) => reel.postId).toSet();
+              final appended = result.items
+                  .where((reel) => !existingIds.contains(reel.postId))
+                  .toList();
+              if (appended.isNotEmpty) {
+                _reelsDataList.addAll(appended);
+                _updateState();
+              }
+            }
+            return result;
+          }
+          if (widget.onLoadMore == null) {
+            return const PostFeedLoadMoreResult(items: [], hasMore: false);
+          }
+          final value = await widget.onLoadMore!();
+          if (value.isListEmptyOrNull) {
+            return const PostFeedLoadMoreResult(items: [], hasMore: false);
+          }
+          final newReels = value.where((newReel) => !_reelsDataList
+              .any((existing) => existing.postId == newReel.postId));
+          if (newReels.isNotEmpty) {
+            _reelsDataList.addAll(newReels);
+            _updateState();
+          }
+          return PostFeedLoadMoreResult(
+            items: newReels.toList(),
+            hasMore: value.length >= 20,
+          );
+        },
+        onRefresh: _refreshPostFeed,
+        onPressMoreButton: widget.reelsConfig.onPressMoreButton,
+        onCreatePost: widget.reelsConfig.onCreatePost,
+        onPressFollowButton: widget.reelsConfig.onPressFollow,
+        onPressLikeButton: widget.reelsConfig.onPressLike,
+        onPressSaveButton: widget.reelsConfig.onPressSave,
+        onTapMentionTag: widget.reelsConfig.onTapMentionTag,
+        onTapComment: widget.reelsConfig.onTapComment,
+        onTapShare: widget.reelsConfig.onTapShare,
+        onTapUserProfile: widget.reelsConfig.onTapUserProfile,
       );
 
   Widget _buildContent(BuildContext context) => Column(
@@ -393,6 +625,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
                     child: IsmReelsVideoPlayerView(
                       index: index,
                       currentIndex: _currentIndex,
+                      lifecycleResumeTick: _lifecycleResumeTick,
                       reelsData: reelsData,
                       postSectionType:
                           widget.postSectionType ?? PostSectionType.following,
@@ -675,6 +908,26 @@ class _PostItemWidgetState extends State<PostItemWidget>
           _updateState();
         });
       }
+    }
+  }
+
+  Future<bool> _refreshPostFeed() async {
+    try {
+      if (widget.onRefresh == null) return false;
+      final result = await widget.onRefresh!.call();
+      if (result == true && mounted) {
+        await WidgetsBinding.instance.endOfFrame;
+        if (!mounted) return result;
+        _reelsDataList = List<ReelsData>.from(widget.reelsDataList);
+        _updateState();
+        if (_reelsDataList.isNotEmpty) {
+          await _doMediaCaching(0);
+        }
+      }
+      return result;
+    } catch (e) {
+      debugPrint('❌ PostItemWidget: Error during post-feed refresh - $e');
+      return false;
     }
   }
 

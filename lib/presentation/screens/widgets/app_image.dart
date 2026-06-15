@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -29,7 +30,9 @@ class AppImage extends StatelessWidget {
     this.placeHolderWidget,
   })  : _imageType = ImageType.asset,
         showError = false,
-        color = null;
+        color = null,
+        cacheKey = null,
+        cacheManager = null;
 
   const AppImage.svg(
     this.path, {
@@ -52,7 +55,9 @@ class AppImage extends StatelessWidget {
     this.blendMode,
     this.placeHolderWidget,
   })  : _imageType = ImageType.svg,
-        showError = false;
+        showError = false,
+        cacheKey = null,
+        cacheManager = null;
 
   const AppImage.network(
     this.path, {
@@ -74,6 +79,8 @@ class AppImage extends StatelessWidget {
     this.textColor,
     this.blendMode,
     this.placeHolderWidget,
+    this.cacheKey,
+    this.cacheManager,
   })  : _imageType = ImageType.network,
         color = null;
 
@@ -98,7 +105,9 @@ class AppImage extends StatelessWidget {
     this.placeHolderWidget,
   })  : _imageType = ImageType.file,
         showError = false,
-        color = null;
+        color = null,
+        cacheKey = null,
+        cacheManager = null;
 
   final String path;
   final String name;
@@ -115,6 +124,9 @@ class AppImage extends StatelessWidget {
   final EdgeInsets? padding;
   final String? placeHolderName;
   final Widget? Function(double? height, double? width)? placeHolderWidget;
+  /// Stable disk/memory cache id (e.g. original URL). When null, [path] is used.
+  final String? cacheKey;
+  final BaseCacheManager? cacheManager;
   final BoxFit? fit;
   final bool? fadeAnimationEnable;
   final BlendMode? blendMode;
@@ -159,6 +171,8 @@ class AppImage extends StatelessWidget {
               fadeAnimationEnable: fadeAnimationEnable,
               filterQuality: filterQuality,
               textColor: textColor,
+              cacheKey: cacheKey,
+              cacheManager: cacheManager,
             ),
         },
       );
@@ -223,9 +237,13 @@ class _Network extends StatelessWidget {
     this.fadeAnimationEnable = false,
     this.filterQuality,
     this.textColor,
+    this.cacheKey,
+    this.cacheManager,
   });
 
   final String imageUrl;
+  final String? cacheKey;
+  final BaseCacheManager? cacheManager;
   final String name;
   final String? placeHolderName;
   final Widget? Function(double? height, double? width)? placeHolderWidget;
@@ -265,13 +283,17 @@ class _Network extends StatelessWidget {
       return _buildNetworkSvg(optimizedImageUrl, initials);
     }
 
+    final diskCacheKey = cacheKey ?? cleanedUrl;
+
     return CachedNetworkImage(
       width: width,
       imageUrl: optimizedImageUrl,
+      cacheManager: cacheManager,
       filterQuality: filterQuality ?? FilterQuality.high,
       fit: fit ?? BoxFit.cover,
       alignment: Alignment.center,
-      cacheKey: optimizedImageUrl,
+      cacheKey: diskCacheKey,
+      useOldImageOnUrlChange: true,
       fadeInDuration: fadeAnimationEnable ?? false
           ? const Duration(milliseconds: 300)
           : Duration.zero,
@@ -291,78 +313,14 @@ class _Network extends StatelessWidget {
           ),
         ),
       ),
-      placeholder: (context, url) => showError
-          ? ImagePlaceHolder(
-              width: width,
-              height: height,
-              borderRadius: borderRadius,
-              placeHolderName: placeHolderName,
-              boxShape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
-              child: placeHolderWidget?.call(height, width) ?? (name.isStringEmptyOrNull == false && isProfileImage
-                  ? Center(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            initials,
-                            style: IsrStyles.secondaryText14.copyWith(
-                                fontWeight: FontWeight.w500, color: textColor),
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                          ),
-                        ),
-                      ),
-                    )
-                  : null
-              ),
-            )
-          : Container(
-              width: width,
-              height: height,
-              decoration: BoxDecoration(
-                color: Colors.black.changeOpacity(0.3),
-                borderRadius: borderRadius,
-                shape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
-              ),
-            ),
-      errorWidget: (context, url, error) => showError
-          ? ImagePlaceHolder(
-              width: width,
-              height: height,
-              borderRadius: borderRadius,
-              boxFit: fit ?? BoxFit.contain,
-              padding: 4,
-              placeHolderName: placeHolderName,
-              boxShape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
-              child: placeHolderWidget?.call(height, width) ?? (name.isStringEmptyOrNull == false && isProfileImage
-                  ? Center(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            initials,
-                            style: IsrStyles.secondaryText14.copyWith(
-                                fontWeight: FontWeight.w500, color: textColor),
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                          ),
-                        ),
-                      ),
-                    )
-                  : null
-              ),
-            )
-          : Container(
-              width: width,
-              height: height,
-              decoration: BoxDecoration(
-                color: Colors.black.changeOpacity(0.3),
-                borderRadius: borderRadius,
-                shape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
-              ),
-            ),
+      placeholder: (context, url) => _buildNetworkPlaceholder(
+        initials: initials,
+        customPlaceholder: placeHolderWidget?.call(height, width),
+      ),
+      errorWidget: (context, url, error) => _buildNetworkPlaceholder(
+        initials: initials,
+        customPlaceholder: placeHolderWidget?.call(height, width),
+      ),
     );
   }
 
@@ -414,6 +372,56 @@ class _Network extends StatelessWidget {
                 ),
         ),
       );
+
+  Widget _buildNetworkPlaceholder({
+    required String initials,
+    Widget? customPlaceholder,
+  }) {
+    if (customPlaceholder != null) {
+      return SizedBox(
+        width: width,
+        height: height,
+        child: customPlaceholder,
+      );
+    }
+    if (showError) {
+      return ImagePlaceHolder(
+        width: width,
+        height: height,
+        borderRadius: borderRadius,
+        placeHolderName: placeHolderName,
+        boxShape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
+        child: name.isStringEmptyOrNull == false && isProfileImage
+            ? Center(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(
+                      initials,
+                      style: IsrStyles.secondaryText14.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: textColor,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                    ),
+                  ),
+                ),
+              )
+            : null,
+      );
+    }
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: Colors.black.changeOpacity(0.3),
+        borderRadius: borderRadius,
+        shape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
+      ),
+    );
+  }
 }
 
 class _Svg extends StatelessWidget {
@@ -438,7 +446,7 @@ class _Svg extends StatelessWidget {
         path,
         height: height,
         width: width,
-        fit: fit ?? BoxFit.cover,
+        fit: fit ?? BoxFit.contain,
         colorFilter: color != null
             ? ColorFilter.mode(
                 color!,

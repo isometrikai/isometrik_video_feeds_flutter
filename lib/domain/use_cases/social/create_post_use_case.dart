@@ -75,6 +75,7 @@ class CreatePostUseCase extends BaseUseCase {
     "comments_enabled": true,
     "duet_enabled": true,
     "save_enabled": true,
+    "download_enabled": true,
     "stitch_enabled": true
   },
   "sound_id": "sound_123",

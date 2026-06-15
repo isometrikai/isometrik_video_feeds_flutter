@@ -7,14 +7,39 @@ class PostPlaceHolderView extends StatelessWidget {
   const PostPlaceHolderView({
     super.key,
     required this.postSectionType,
+    this.feedLayoutType = FeedLayoutType.reels,
     this.onTap,
   });
 
   final PostSectionType? postSectionType;
+  final FeedLayoutType feedLayoutType;
   final VoidCallback? onTap;
 
+  bool get _isPostFeedLayout => feedLayoutType == FeedLayoutType.postFeed;
+
+  PostFeedUIConfig get _postFeedUi =>
+      IsrVideoReelConfig.postConfig.resolvedPostFeedUIConfig;
+
   @override
-  Widget build(BuildContext context) => Center(
+  Widget build(BuildContext context) {
+    final titleStyle = _isPostFeedLayout
+        ? IsrStyles.primaryText14.copyWith(
+            fontWeight: FontWeight.w700,
+            color: _postFeedUi.headerTextColor,
+          )
+        : IsrStyles.white14.copyWith(
+            fontWeight: FontWeight.w700,
+            color: IsrColors.color333333,
+          );
+    final subtitleStyle = _isPostFeedLayout
+        ? IsrStyles.primaryText14.copyWith(
+            color: _postFeedUi.secondaryTextColor,
+          )
+        : IsrStyles.white14.copyWith(
+            color: IsrColors.color909090,
+          );
+
+    return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -22,28 +47,27 @@ class PostPlaceHolderView extends StatelessWidget {
               padding: IsrDimens.edgeInsetsAll(IsrDimens.fifteen),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.changeOpacity(0.3),
+                color: _isPostFeedLayout
+                    ? _postFeedUi.dividerColor
+                    : Colors.white.changeOpacity(0.3),
               ),
               child:
                   const AppImage.svg(AssetConstants.icAddFollowerPlaceHolder),
             ),
             IsrDimens.boxHeight(IsrDimens.ten),
             Text(
-              postSectionType == PostSectionType.following
+              postSectionType == PostSectionType.following ||
+                      postSectionType == PostSectionType.feeds
                   ? IsrTranslationFile.notFollowingAnyone
                   : IsrTranslationFile.noPostAvailable,
-              style: IsrStyles.white14.copyWith(
-                fontWeight: FontWeight.w700,
-                color: IsrColors.color333333,
-              ),
+              style: titleStyle,
             ),
-            if (postSectionType == PostSectionType.following) ...[
+            if (postSectionType == PostSectionType.following ||
+                postSectionType == PostSectionType.feeds) ...[
               IsrDimens.boxHeight(IsrDimens.five),
               Text(
                 IsrTranslationFile.startFollowing,
-                style: IsrStyles.white14.copyWith(
-                  color: IsrColors.color909090,
-                ),
+                style: subtitleStyle,
               ),
               IsrDimens.boxHeight(IsrDimens.twenty),
               AppButton(
@@ -61,4 +85,5 @@ class PostPlaceHolderView extends StatelessWidget {
           ],
         ),
       );
+  }
 }

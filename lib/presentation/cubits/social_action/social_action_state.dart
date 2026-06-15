@@ -82,6 +82,26 @@ class IsmSavePostState extends IsmSocialActionState {
       );
 }
 
+// ---------------- Comment State ---------------- //
+class IsmCommentPostState extends IsmSocialActionState {
+  IsmCommentPostState({
+    required this.postId,
+    required this.commentCount,
+  });
+
+  final String postId;
+  final int commentCount;
+
+  IsmCommentPostState copyWith({
+    String? postId,
+    int? commentCount,
+  }) =>
+      IsmCommentPostState(
+        postId: postId ?? this.postId,
+        commentCount: commentCount ?? this.commentCount,
+      );
+}
+
 // ---------------- Error States ---------------- //
 class IsmFollowErrorState extends IsmSocialActionState {
   IsmFollowErrorState({
@@ -211,6 +231,29 @@ class IsmLikeActionListenerState extends IsmSocialActionState {
       );
 }
 
+class IsmCommentActionListenerState extends IsmSocialActionState {
+  IsmCommentActionListenerState({
+    required this.postId,
+    required this.commentCount,
+    this.postData,
+  });
+
+  final String postId;
+  final int commentCount;
+  final TimeLineData? postData;
+
+  IsmCommentActionListenerState copyWith({
+    String? postId,
+    int? commentCount,
+    TimeLineData? postData,
+  }) =>
+      IsmCommentActionListenerState(
+        postId: postId ?? this.postId,
+        commentCount: commentCount ?? this.commentCount,
+        postData: postData ?? this.postData,
+      );
+}
+
 class IsmSaveActionListenerState extends IsmSocialActionState {
   IsmSaveActionListenerState({
     required this.postId,
@@ -282,6 +325,16 @@ class IsmDeletedPostActionListenerState extends IsmSocialActionState {
       IsmDeletedPostActionListenerState(
         postId: postId ?? this.postId,
       );
+}
+
+class IsmMentionRemovedActionListenerState extends IsmSocialActionState {
+  IsmMentionRemovedActionListenerState({
+    required this.postId,
+    required this.userId,
+  });
+
+  final String postId;
+  final String userId;
 }
 
 class IsmUserChangedActionListenerState extends IsmSocialActionState {

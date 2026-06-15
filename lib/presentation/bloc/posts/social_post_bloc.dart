@@ -51,6 +51,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       : super(PostLoadingState(isLoading: true)) {
     on<StartPost>(_onStartPost);
     on<LoadPostData>(_onLoadHomeData);
+    on<LoadHomeTabEvent>(_onLoadHomeTab);
     on<GetTimeLinePostEvent>(_getTimeLinePost);
     on<GetTrendingPostEvent>(_getTrendingPost);
     on<SavePostEvent>(_savePost);
@@ -59,6 +60,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     on<ReportEvent>(_report);
     on<LikePostEvent>(_likePost);
     on<FollowUserEvent>(_followUser);
+    on<PurgeAuthorFromFollowFeedsEvent>(_purgeAuthorFromFollowFeeds);
     on<DeletePostEvent>(_deletePost);
     on<GetSocialProductsEvent>(_getSocialProducts);
     on<GetPostCommentsEvent>(_getPostComments);
@@ -102,6 +104,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   TextEditingController? descriptionController;
 
   final _postsByTab = <PostTabAssistData>[];
+  final Set<PostSectionType> _homeTabLoadInFlight = {};
 
   PostTabAssistData _getTabAssistData(PostSectionType tab) => _postsByTab
           .toList()
@@ -110,6 +113,130 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         _postsByTab.add(tabAssist);
         return tabAssist;
       });
+
+  bool hasMorePagesForTab(PostSectionType tab) =>
+      _getTabAssistData(tab).hasMorePages;
+
+  bool hasTabAssistData(PostSectionType tab) =>
+      _postsByTab.any((t) => t.postSectionType == tab);
+
+  bool get _sdkFollowCacheOn =>
+      IsrVideoReelConfig.feedCacheConfig != null &&
+      IsrFeedCacheRepository.instance.isEnabled;
+
+  bool _useMergeForTab(
+    PostSectionType type, {
+    required bool isFromRefresh,
+    required bool mergeWithExisting,
+    required bool feedHostCacheOn,
+  }) {
+    if (!feedHostCacheOn || isrFollowSensitivePostSection(type)) {
+      return false;
+    }
+    return mergeWithExisting || isFromRefresh;
+  }
+
+  String? _timelineAuthorId(TimeLineData post) {
+    final fromUser = post.user?.id;
+    if (fromUser != null && fromUser.isNotEmpty) return fromUser;
+    final userId = post.userId;
+    if (userId != null && userId.isNotEmpty) return userId;
+    return null;
+  }
+
+  Future<void> _seedFollowSensitiveTabFromCache(PostTabAssistData postTab) async {
+    if (!_sdkFollowCacheOn || postTab.postList.isNotEmpty) return;
+    final section =
+        IsrFeedCacheSectionMapping.fromPostSectionType(postTab.postSectionType);
+    if (section == null) return;
+    await IsrFeedCacheRepository.instance.ensureInitialized();
+    if (IsrFeedCacheRepository.instance.isSectionExpired(section)) return;
+    for (final map in IsrFeedCacheRepository.instance.getPosts(section)) {
+      try {
+        postTab.postList.add(TimeLineData.fromMap(map));
+      } catch (_) {}
+    }
+  }
+
+  Future<void> _persistFollowSensitiveTabToCache(
+    PostSectionType postSectionType,
+    List<TimeLineData> posts, {
+    required bool isFromPagination,
+    required bool hasMore,
+    required int currentPage,
+  }) async {
+    if (!_sdkFollowCacheOn || !isrFollowSensitivePostSection(postSectionType)) {
+      return;
+    }
+    final section = IsrFeedCacheSectionMapping.fromPostSectionType(postSectionType);
+    if (section == null) return;
+    if (posts.isEmpty) {
+      if (isFromPagination) return;
+      await IsrFeedCacheRepository.instance.replaceSection(
+        section,
+        const [],
+        hasMore: hasMore,
+        currentPage: currentPage,
+      );
+      return;
+    }
+    final maps = posts.map((e) => e.toMap()).toList();
+    if (isFromPagination) {
+      await IsrFeedCacheRepository.instance.appendSection(
+        section,
+        maps,
+        hasMore: hasMore,
+        currentPage: currentPage,
+      );
+    } else {
+      await IsrFeedCacheRepository.instance.replaceSection(
+        section,
+        maps,
+        hasMore: hasMore,
+        currentPage: currentPage,
+      );
+    }
+  }
+
+  void _purgeAuthorFromFollowSensitiveTabs(String authorUserId) {
+    if (authorUserId.isEmpty) return;
+    for (final type in [
+      PostSectionType.following,
+      PostSectionType.feeds,
+    ]) {
+      final tab =
+          _postsByTab.where((t) => t.postSectionType == type).firstOrNull;
+      if (tab == null) continue;
+      tab.postList.removeWhere((p) => _timelineAuthorId(p) == authorUserId);
+    }
+  }
+
+  void _syncPageBasedHasMore({
+    required PostTabAssistData tabAssistData,
+    required List<TimeLineData> pageItems,
+    num? total,
+    num? totalPages,
+    num? apiPage,
+  }) {
+    if (pageItems.isEmpty) {
+      tabAssistData.hasMorePages = false;
+      return;
+    }
+
+    final totalPagesInt = totalPages?.toInt() ?? 0;
+    final totalInt = total?.toInt() ?? 0;
+    final apiPageInt = apiPage?.toInt() ?? tabAssistData.currentPage;
+
+    if (totalPagesInt > 0) {
+      tabAssistData.hasMorePages = apiPageInt < totalPagesInt;
+      return;
+    }
+    if (totalInt > 0) {
+      tabAssistData.hasMorePages = tabAssistData.postList.length < totalInt;
+      return;
+    }
+    tabAssistData.hasMorePages = pageItems.length >= tabAssistData.pageSize;
+  }
 
   int currentPage = 0;
   final followingPageSize = 20;
@@ -142,100 +269,134 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     LoadPostData event,
     Emitter<SocialPostState> emit,
   ) async {
-    // final userId = await _localDataUseCase.getUserId();
     try {
-      emit(PostLoadingState(isLoading: true));
       _postsByTab.clear();
       _postsByTab.addAll(event.postSections);
+      _homeTabLoadInFlight.clear();
+
       final tabList = _postsByTab.toList();
       if (event.startTabIndex > 0 && event.startTabIndex < tabList.length) {
         final startTab = tabList.removeAt(event.startTabIndex);
         tabList.insert(0, startTab);
       }
-      final isUserLoggedIn = await this.isUserLoggedIn;
-      final useFeedHostCache = IsrVideoReelConfig.feedCacheConfig != null;
-      if (!useFeedHostCache) {
-        for (final postTab in tabList) {
-          emit(PostLoadingState(
-              isLoading: true, postType: postTab.postSectionType));
-          if (postTab.postList.isEmpty) {
-            if (postTab.postId?.trim().isNotEmpty == true &&
-                postTab.postList.isEmpty) {
-              final postIdData = await _getPostDetails(postTab.postId ?? '');
-              if (postIdData != null) {
-                postTab.postList.add(postIdData);
-                add(LoadPostsEvent(
-                  postType: postTab.postSectionType,
-                  postList: postTab.postList,
-                ));
-              }
-            }
-            if (!postTab.postSectionType.isUserDependent || isUserLoggedIn) {
-              await _callGetTabPost(postTab, false, false, false, null);
-            }
-          }
-          add(LoadPostsEvent(
-            postType: postTab.postSectionType,
-            postList: postTab.postList,
-          ));
-          _socialActionCubit.updatePostList(postTab.postList);
-        }
-      } else {
-        for (final postTab in tabList) {
-          final hasSeededList = postTab.postList.isNotEmpty;
-          if (hasSeededList) {
-            add(LoadPostsEvent(
-              postType: postTab.postSectionType,
-              postList: postTab.postList,
-            ));
-            _socialActionCubit.updatePostList(postTab.postList);
-          } else {
-            emit(PostLoadingState(
-                isLoading: true, postType: postTab.postSectionType));
-          }
-          if (postTab.postList.isEmpty &&
-              postTab.postId?.trim().isNotEmpty == true) {
-            final postIdData = await _getPostDetails(postTab.postId ?? '');
-            if (postIdData != null) {
-              postTab.postList.add(postIdData);
-              add(LoadPostsEvent(
-                postType: postTab.postSectionType,
-                postList: postTab.postList,
-              ));
-            }
-          }
 
-          if (!postTab.postSectionType.isUserDependent || isUserLoggedIn) {
-            await _callGetTabPost(
-              postTab,
-              false,
-              false,
-              false,
-              null,
-              mergeWithExisting: hasSeededList,
-            );
-          }
-          add(LoadPostsEvent(
-            postType: postTab.postSectionType,
-            postList: postTab.postList,
-          ));
-          _socialActionCubit.updatePostList(postTab.postList);
-        }
+      if (_sdkFollowCacheOn) {
+        await IsrFeedCacheRepository.instance.ensureInitialized();
+      }
+
+      // One event per tab so Following/Feeds are not blocked behind For You.
+      for (final postTab in tabList) {
+        add(LoadHomeTabEvent(postSectionType: postTab.postSectionType));
       }
     } catch (error) {
       emit(SocialPostError(error.toString()));
     }
   }
 
+  Future<void> _onLoadHomeTab(
+    LoadHomeTabEvent event,
+    Emitter<SocialPostState> emit,
+  ) async {
+    if (_homeTabLoadInFlight.contains(event.postSectionType)) return;
+    _homeTabLoadInFlight.add(event.postSectionType);
+
+    final postTab = _getTabAssistData(event.postSectionType);
+    try {
+      final isUserLoggedIn = await this.isUserLoggedIn;
+      final useFeedHostCache = IsrVideoReelConfig.feedCacheConfig != null;
+
+      if (!useFeedHostCache) {
+        emit(PostLoadingState(
+            isLoading: true, postType: postTab.postSectionType));
+        if (postTab.postList.isEmpty) {
+          if (postTab.postId?.trim().isNotEmpty == true) {
+            final postIdData = await _getPostDetails(postTab.postId ?? '');
+            if (postIdData != null) {
+              postTab.postList.add(postIdData);
+              await _emitLoadedPosts(
+                emit,
+                postTab.postSectionType,
+                postTab.postList,
+              );
+            }
+          }
+          if (!postTab.postSectionType.isUserDependent || isUserLoggedIn) {
+            await _callGetTabPost(postTab, false, false, false, null);
+          }
+        }
+      } else {
+        if (postTab.postList.isEmpty) {
+          await _seedFollowSensitiveTabFromCache(postTab);
+        }
+        final hasSeededList = postTab.postList.isNotEmpty;
+        if (hasSeededList) {
+          unawaited(FeedMediaOrientation.prefetchForPosts(postTab.postList));
+          await _emitLoadedPosts(
+            emit,
+            postTab.postSectionType,
+            postTab.postList,
+          );
+          _socialActionCubit.updatePostList(postTab.postList);
+        } else {
+          emit(PostLoadingState(
+              isLoading: true, postType: postTab.postSectionType));
+        }
+        if (postTab.postList.isEmpty &&
+            postTab.postId?.trim().isNotEmpty == true) {
+          final postIdData = await _getPostDetails(postTab.postId ?? '');
+          if (postIdData != null) {
+            postTab.postList.add(postIdData);
+            await _emitLoadedPosts(
+              emit,
+              postTab.postSectionType,
+              postTab.postList,
+            );
+          }
+        }
+        if (!postTab.postSectionType.isUserDependent || isUserLoggedIn) {
+          await _callGetTabPost(
+            postTab,
+            false,
+            false,
+            false,
+            null,
+            mergeWithExisting: hasSeededList,
+          );
+        }
+      }
+
+      await _emitLoadedPosts(
+        emit,
+        postTab.postSectionType,
+        postTab.postList,
+      );
+      _socialActionCubit.updatePostList(postTab.postList);
+    } catch (error) {
+      await _emitLoadedPosts(
+        emit,
+        postTab.postSectionType,
+        postTab.postList,
+      );
+      emit(SocialPostError(error.toString()));
+    } finally {
+      _homeTabLoadInFlight.remove(event.postSectionType);
+    }
+  }
+
   FutureOr<void> _getMorePost(
       GetMorePostEvent event, Emitter<SocialPostState> emit) async {
+    final tab = _getTabAssistData(event.postSectionType);
     await _callGetTabPost(
-      _getTabAssistData(event.postSectionType),
+      tab,
       event.isRefresh,
       event.isPagination,
       event.isLoading,
       event.onComplete,
     );
+    if (event.onComplete == null) {
+      await _emitLoadedPosts(emit, event.postSectionType, tab.postList);
+      _socialActionCubit.updatePostList(tab.postList);
+    }
   }
 
   FutureOr<void> _getTimeLinePost(
@@ -260,21 +421,26 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   }) async {
     final postSectionType = postTabAssistData.postSectionType;
     final tabAssistData = _getTabAssistData(postSectionType);
+    final requestedPage = tabAssistData.currentPage;
     final feedHostCacheOn = IsrVideoReelConfig.feedCacheConfig != null;
-    // Treat host-cache refresh as a merge so the visible list is never wiped
-    // when the user pulls to refresh; new items still land on top via
-    // `mergeWithExisting`'s prepend branch below.
-    final mergeEnabled =
-        feedHostCacheOn && (mergeWithExisting || isFromRefresh);
+    // Following/Feeds always replace on refresh (unfollow-safe). Other tabs may merge.
+    final mergeEnabled = _useMergeForTab(
+      postSectionType,
+      isFromRefresh: isFromRefresh,
+      mergeWithExisting: mergeWithExisting,
+      feedHostCacheOn: feedHostCacheOn,
+    );
+    final followSensitive = isrFollowSensitivePostSection(postSectionType);
 
     // For refresh, clear cache and start from page 1. With host-cache enabled,
     // keep the existing list visible and merge new items at the top instead
     // (pull-to-refresh becomes "fetch fresh, prepend new").
     if (isFromRefresh) {
-      if (!feedHostCacheOn) {
+      if (!feedHostCacheOn || followSensitive) {
         tabAssistData.postList.clear();
       }
       tabAssistData.currentPage = 1;
+      tabAssistData.hasMorePages = true;
       tabAssistData.isLoadingMore = false;
       tabAssistData.cursor = null;
     } else if (!isFromPagination && tabAssistData.postList.isNotEmpty) {
@@ -286,6 +452,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       tabAssistData.currentPage = 1;
       tabAssistData.cursor = null;
     } else if (tabAssistData.isLoadingMore) {
+      if (onComplete != null) {
+        onComplete(List<TimeLineData>.from(tabAssistData.postList));
+      }
       return;
     }
 
@@ -314,6 +483,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     // Route to the correct use case based on PostSectionType
     List<TimeLineData>? apiPostResult;
     AppError? apiError;
+    TimelineResponse? timelineResponse;
     switch (postSectionType) {
       case PostSectionType.trending:
         apiPostResult = await _getTrendingPostUseCase
@@ -344,16 +514,15 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         });
         break;
       case PostSectionType.following:
-        apiPostResult = await _getTimelinePostUseCase
-            .executeTimeLinePost(
+      case PostSectionType.feeds:
+        final timelineResult = await _getTimelinePostUseCase.executeTimeLinePost(
           isLoading: isLoading,
           page: tabAssistData.currentPage,
           pageLimit: tabAssistData.pageSize,
-        )
-            .then((result) {
-          apiError = result.error;
-          return result.data?.data;
-        });
+        );
+        apiError = timelineResult.error;
+        timelineResponse = timelineResult.data;
+        apiPostResult = timelineResponse?.data;
         break;
       case PostSectionType.savedPost:
         apiPostResult = await _savePostUseCase
@@ -432,11 +601,42 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     if (postIdPostData != null) {
       postDataList.add(postIdPostData);
     }
-    if (tabAssistData.postSectionType == PostSectionType.following) {
+    if (tabAssistData.postSectionType == PostSectionType.following ||
+        tabAssistData.postSectionType == PostSectionType.feeds) {
       apiPostResult?.forEach((_) => _.isFollowing = true);
     }
     postDataList.addAll(apiPostResult ?? []);
-    if (postDataList.isNotEmpty) {
+    final apiSucceeded = apiError == null;
+
+    if (followSensitive && !isFromPagination && apiSucceeded) {
+      tabAssistData.postList
+        ..clear()
+        ..addAll(postDataList);
+      if (postDataList.isNotEmpty) {
+        _socialActionCubit.updatePostList(postDataList);
+        tabAssistData.currentPage++;
+        _syncPageBasedHasMore(
+          tabAssistData: tabAssistData,
+          pageItems: postDataList,
+          total: timelineResponse?.total,
+          totalPages: timelineResponse?.totalPages,
+          apiPage: timelineResponse?.page ?? requestedPage,
+        );
+        unawaited(FeedMediaOrientation.prefetchForPosts(postDataList));
+      } else {
+        tabAssistData.hasMorePages = false;
+        tabAssistData.currentPage = 1;
+      }
+      unawaited(
+        _persistFollowSensitiveTabToCache(
+          postSectionType,
+          tabAssistData.postList,
+          isFromPagination: false,
+          hasMore: tabAssistData.hasMorePages,
+          currentPage: tabAssistData.currentPage,
+        ),
+      );
+    } else if (postDataList.isNotEmpty) {
       _socialActionCubit.updatePostList(postDataList);
 
       if (isFromPagination) {
@@ -476,17 +676,48 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
           ..addAll(postDataList);
       }
       tabAssistData.currentPage++;
-    } else if (!mergeEnabled) {
-      tabAssistData.cursor = null;
-      ErrorHandler.showAppError(
-          appError: apiError, errorViewType: ErrorViewType.snackBar);
+      if (postSectionType == PostSectionType.following ||
+          postSectionType == PostSectionType.feeds) {
+        _syncPageBasedHasMore(
+          tabAssistData: tabAssistData,
+          pageItems: postDataList,
+          total: timelineResponse?.total,
+          totalPages: timelineResponse?.totalPages,
+          apiPage: timelineResponse?.page ?? requestedPage,
+        );
+      }
+      unawaited(FeedMediaOrientation.prefetchForPosts(postDataList));
+
+      if (followSensitive) {
+        unawaited(
+          _persistFollowSensitiveTabToCache(
+            postSectionType,
+            isFromPagination ? postDataList : tabAssistData.postList,
+            isFromPagination: isFromPagination,
+            hasMore: tabAssistData.hasMorePages,
+            currentPage: tabAssistData.currentPage,
+          ),
+        );
+      }
+    } else {
+      tabAssistData.hasMorePages = false;
+      if (!mergeEnabled) {
+        tabAssistData.cursor = null;
+        if (apiError != null) {
+          ErrorHandler.showAppError(
+              appError: apiError, errorViewType: ErrorViewType.snackBar);
+        }
+      }
     }
+
     if (onComplete != null) {
       // When merging (host-cache enabled refresh or seeded mount), hand the
       // caller the FULL merged list so refresh UIs that do
       // `reelsDataList..clear()..addAll(result)` don't wipe cached items when
       // the API page is empty or fully overlaps the cache.
-      onComplete(mergeEnabled
+      final handFullList = mergeEnabled ||
+          (followSensitive && !isFromPagination);
+      onComplete(handFullList
           ? List<TimeLineData>.from(tabAssistData.postList)
           : postDataList);
     }
@@ -611,18 +842,51 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
 
     if (apiResult.isSuccess) {
       event.onComplete.call(true);
+      if (event.followAction == FollowAction.unfollow) {
+        _purgeAuthorFromFollowSensitiveTabs(event.followingId);
+        unawaited(
+          IsrFeedCacheRepository.instance
+              .removePostsByAuthor(event.followingId),
+        );
+      }
     } else {
       ErrorHandler.showAppError(appError: apiResult.error);
       event.onComplete.call(false);
     }
-    if (_postsByTab
-        .any((_) => _.postSectionType == PostSectionType.following)) {
-      await _callGetTabPost(_getTabAssistData(PostSectionType.following), true,
-          false, false, null);
-      // add(LoadPostsEvent(
-      //     postsByTab: _postsByTab.asMap().map((key, value) =>
-      //         MapEntry(value.postSectionType, value.postList))));
+    if (apiResult.isSuccess) {
+      await _refreshFollowSensitiveTabsAfterFollowChange();
     }
+  }
+
+  Future<void> _refreshFollowSensitiveTabsAfterFollowChange() async {
+    for (final type in [
+      PostSectionType.following,
+      PostSectionType.feeds,
+    ]) {
+      if (!_postsByTab.any((t) => t.postSectionType == type)) continue;
+      final tab = _getTabAssistData(type);
+      await _callGetTabPost(tab, true, false, false, null);
+      add(LoadPostsEvent(postType: type, postList: tab.postList));
+      _socialActionCubit.updatePostList(tab.postList);
+    }
+  }
+
+  FutureOr<void> _purgeAuthorFromFollowFeeds(
+    PurgeAuthorFromFollowFeedsEvent event,
+    Emitter<SocialPostState> emit,
+  ) async {
+    if (event.userId.isEmpty) return;
+    _purgeAuthorFromFollowSensitiveTabs(event.userId);
+    for (final type in [
+      PostSectionType.following,
+      PostSectionType.feeds,
+    ]) {
+      if (!_postsByTab.any((t) => t.postSectionType == type)) continue;
+      final tab = _getTabAssistData(type);
+      add(LoadPostsEvent(postType: type, postList: tab.postList));
+      _socialActionCubit.updatePostList(tab.postList);
+    }
+    await _refreshFollowSensitiveTabsAfterFollowChange();
   }
 
   FutureOr<void> _getSocialProducts(
@@ -663,9 +927,12 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       emit(LoadingPostComment(postId: event.postId));
     }
     _commentPage = event.isPagination ? _commentPage + 1 : 1;
+    // Do not pass [event.isLoading] to the network layer: Utility.showLoader /
+    // closeProgressDialog use the root navigator and will pop the comments
+    // bottom sheet when the fetch completes (same pattern as comment replies).
     final apiResult = await _getPostCommentUseCase.executeGetPostComment(
       postId: event.postId,
-      isLoading: event.isLoading == true,
+      isLoading: false,
       page: _commentPage,
       pageLimit: 20,
     );
@@ -800,7 +1067,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         .also((_) => debugPrint('comment: comment req tag: ${_.toJson()}'));
 
     final apiResult = await _commentUseCase.executeCommentAction(
-      isLoading: event.isLoading ?? true,
+      isLoading: event.isLoading == true,
       commentRequest: commentRequest.toJson(),
     );
 
@@ -810,7 +1077,14 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
             IsrTranslationFile.commentReportedSuccessfully);
       } else if (event.commentAction == CommentAction.delete &&
           event.commentId?.trim().isNotEmpty == true) {
-        emit(CommentCountModified(postId: event.postId, modifiedValue: -1));
+        if (_isTopLevelCommentAction(event)) {
+          emit(CommentCountModified(postId: event.postId, modifiedValue: -1));
+          _socialActionCubit.bumpCommentCount(
+            event.postId,
+            -1,
+            postData: event.postDataModel,
+          );
+        }
         final myUserId = await _localDataUseCase.getUserId();
         final commentList = event.postCommentList?.toList() ?? [];
         if (event.parentCommentId?.trim().isNotEmpty == true) {
@@ -913,16 +1187,26 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
           myUserId: myUserId,
         ),
       );
+
+      if (_isTopLevelCommentAction(event)) {
+        _socialActionCubit.bumpCommentCount(
+          event.postId,
+          1,
+          postData: event.postDataModel,
+        );
+      }
     }
 
     // Call API to create comment
     final apiResult = await _commentUseCase.executeCommentAction(
-      isLoading: event.isLoading ?? true,
+      isLoading: event.isLoading == true,
       commentRequest: commentRequest.toJson(),
     );
 
     if (apiResult.isSuccess) {
-      emit(CommentCountModified(postId: event.postId, modifiedValue: 1));
+      if (_isTopLevelCommentAction(event)) {
+        emit(CommentCountModified(postId: event.postId, modifiedValue: 1));
+      }
       _sendAnalyticsEvent(
           EventType.commentCreated.value,
           event.commentId ?? '',
@@ -985,6 +1269,14 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         );
       }
 
+      if (_isTopLevelCommentAction(event)) {
+        _socialActionCubit.bumpCommentCount(
+          event.postId,
+          -1,
+          postData: event.postDataModel,
+        );
+      }
+
       ErrorHandler.showAppError(
           appError: apiResult.error,
           isNeedToShowError: apiResult.statusCode == 500,
@@ -1024,7 +1316,13 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
 
   FutureOr<void> _playPauseVideo(
       PlayPauseVideoEvent event, Emitter<SocialPostState> emit) async {
-    emit(PlayPauseVideoState(play: event.play));
+    emit(
+      PlayPauseVideoState(
+        play: event.play,
+        pausePlayback: event.pausePlayback,
+        scopedPostSection: event.scopedPostSection,
+      ),
+    );
   }
 
   FutureOr<void> _onShareSuccess(
@@ -1041,12 +1339,22 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
 
   FutureOr<void> _removeMention(
       RemoveMentionEvent event, Emitter<SocialPostState> emit) async {
+    final userId = await _localDataUseCase.getUserId();
+    if (userId.isEmptyOrNull) {
+      event.onComplete?.call(false);
+      return;
+    }
     final apiResult = await _removeMentionUseCase.executeRemoveMention(
       isLoading: false,
       postId: event.postId,
     );
     event.onComplete?.call(apiResult.isSuccess);
-    if (apiResult.isError) {
+    if (apiResult.isSuccess) {
+      _socialActionCubit.onMentionRemoved(
+        postId: event.postId,
+        userId: userId,
+      );
+    } else if (apiResult.isError) {
       ErrorHandler.showAppError(
           appError: apiResult.error,
           isNeedToShowError: true,
@@ -1054,14 +1362,26 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     }
   }
 
-  FutureOr<void> _loadPosts(
-      LoadPostsEvent event, Emitter<SocialPostState> emit) async {
+  /// Emits [SocialPostLoadedState] immediately. Use inside [LoadPostData] instead
+  /// of [add] + [LoadPostsEvent] so each tab can clear its shimmer without
+  /// waiting for every other tab's network call to finish.
+  Future<void> _emitLoadedPosts(
+    Emitter<SocialPostState> emit,
+    PostSectionType postType,
+    List<TimeLineData> postList,
+  ) async {
     final myUserId = await _localDataUseCase.getUserId();
+    if (isClosed) return;
     emit(SocialPostLoadedState(
-      postType: event.postType,
-      postList: event.postList,
+      postType: postType,
+      postList: postList,
       userId: myUserId,
     ));
+  }
+
+  FutureOr<void> _loadPosts(
+      LoadPostsEvent event, Emitter<SocialPostState> emit) async {
+    await _emitLoadedPosts(emit, event.postType, event.postList);
   }
 
   FutureOr<void> _getPostInsightDetails(
@@ -1130,6 +1450,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
 
     return result.data;
   }
+
+  bool _isTopLevelCommentAction(CommentActionEvent event) =>
+      event.parentCommentId.isStringEmptyOrNull == true;
 
   /// Replaces [fresh] wherever it appears in tab post lists (bloc-owned copy).
   void _replacePostInTabLists(TimeLineData fresh) {

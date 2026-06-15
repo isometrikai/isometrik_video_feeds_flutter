@@ -52,6 +52,12 @@ class SocialMapper {
           data: timelineResponseFromJson(response.data),
           responseCode: response.statusCode);
 
+  CustomResponse<PostsBySoundResponse?> mapPostsBySoundResponse(
+          ResponseModel response) =>
+      CustomResponse(
+          data: postsBySoundResponseFromJson(response.data),
+          responseCode: response.statusCode);
+
   CustomResponse<TimelineDataResponse?> mapTimelineDataResponse(
       ResponseModel response) =>
       CustomResponse(

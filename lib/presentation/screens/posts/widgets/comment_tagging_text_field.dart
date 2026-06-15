@@ -30,29 +30,41 @@ class CommentTaggingTextField extends StatefulWidget {
     this.onAddHashTagData,
     this.onRemoveHashTagData,
     this.overlayPosition = OverlayPosition.top,
+
     /// Width of the floating suggestion overlay (user + hashtag). When null, content uses
     /// the full width of the text field (fluttertagger default).
     this.overlayWidth,
     this.autoFocus,
     this.focusNode,
+
     /// Puts @ / # suggestion lists below the field (create-post caption) instead of a floating overlay.
     this.inlineSuggestionsBelow = false,
+
     /// Puts @ / # suggestion lists above the field (comments sheet) instead of a floating overlay.
     this.inlineSuggestionsAbove = false,
     this.searchDebounce = const Duration(milliseconds: 10),
+
     /// When set, search is skipped while the whole field text is shorter than this (caption UX).
     this.minTotalTextLengthForSearch,
+
     /// Search runs only when `query.length > minSearchQueryLength`. Default `1` matches comments (need 2+ query chars).
     /// Use `2` for create-post (need 3+ chars after @/#), matching the previous caption field behavior.
     this.minSearchQueryLength = 1,
+
     /// Padding around the text field only (e.g. horizontal inset for caption).
     this.textFieldPadding,
+
     /// Max height of the outer wrapper when not inline. Defaults to `150` when null (comment sheet).
     this.maxOuterHeight,
+
     /// Wraps the field in a [SingleChildScrollView] (comment box); caption turns this off.
     this.wrapFieldInScrollView = true,
+
     /// Maximum viewport fraction used by inline suggestions list(s).
     this.inlineSuggestionMaxHeightFactor = 0.3,
+
+    /// Enables keyboard autocorrect and word suggestions (caption field).
+    this.enableSuggestions = false,
   }) : super(key: key);
 
   final FlutterTaggerController controller;
@@ -85,6 +97,7 @@ class CommentTaggingTextField extends StatefulWidget {
   final double? maxOuterHeight;
   final bool wrapFieldInScrollView;
   final double inlineSuggestionMaxHeightFactor;
+  final bool enableSuggestions;
 
   /// Registers plain `@name` / `#tag` segments in the tagger trie so they render with tag styling.
   ///
@@ -232,9 +245,8 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
     final text = widget.controller.text;
     final sel = widget.controller.selection;
     final len = text.length;
-    final cursor = !sel.isValid
-        ? len
-        : math.min(len, math.max(0, sel.baseOffset));
+    final cursor =
+        !sel.isValid ? len : math.min(len, math.max(0, sel.baseOffset));
 
     if (_isCursorInIncompleteTagSearch(text, cursor)) return;
 
@@ -346,8 +358,7 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
     );
   }
 
-  bool _hasHashtagAt(String tag, int start, int end) =>
-      _addedHashtags.any(
+  bool _hasHashtagAt(String tag, int start, int end) => _addedHashtags.any(
         (m) =>
             (m.tag ?? '').trim() == tag.trim() &&
             m.textPosition?.start == start &&
@@ -615,7 +626,8 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
                         height: 25.responsiveDimension,
                         width: 25.responsiveDimension,
                         border: Border.all(color: '979797'.toColor()),
-                        name: user.username?.substring(0, 1).toUpperCase() ?? '',
+                        name:
+                            user.username?.substring(0, 1).toUpperCase() ?? '',
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -695,9 +707,7 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
                           height: 25.responsiveDimension,
                           width: 25.responsiveDimension,
                           border: Border.all(color: '979797'.toColor()),
-                          name: user.username
-                                  ?.substring(0, 1)
-                                  .toUpperCase() ??
+                          name: user.username?.substring(0, 1).toUpperCase() ??
                               '',
                         )
                       else
@@ -706,14 +716,11 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
                           backgroundColor: IsrColors.white,
                           child: Text(
                             Utility.getInitials(
-                              firstName: user.displayName
-                                      ?.split(' ')
-                                      .firstOrNull ??
-                                  '',
-                              lastName: user.displayName
-                                      ?.split(' ')
-                                      .lastOrNull ??
-                                  '',
+                              firstName:
+                                  user.displayName?.split(' ').firstOrNull ??
+                                      '',
+                              lastName:
+                                  user.displayName?.split(' ').lastOrNull ?? '',
                             ),
                             style: IsrStyles.primaryText12.copyWith(
                               color: IsrColors.appColor,
@@ -771,9 +778,8 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
     }
     final query = _currentHashQuery().trim();
     final showHashtagResults = _hashTagResults.isNotEmpty;
-    final showAddTagOption = !_showLoading &&
-        query.isNotEmpty &&
-        !_hashTagInResults(query);
+    final showAddTagOption =
+        !_showLoading && query.isNotEmpty && !_hashTagInResults(query);
     if (!showHashtagResults && !showAddTagOption) {
       return const SizedBox.shrink();
     }
@@ -875,8 +881,7 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
 
   Widget _buildHashtagSuggestionsContent() {
     final query = _currentHashQuery().trim();
-    final showAddTagOption =
-        query.isNotEmpty && !_hashTagInResults(query);
+    final showAddTagOption = query.isNotEmpty && !_hashTagInResults(query);
     final itemCount = _hashTagResults.length + (showAddTagOption ? 1 : 0);
     if (itemCount == 0) return const SizedBox.shrink();
 
@@ -913,8 +918,8 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
                 child: InkWell(
                   onTap: () => _selectHashTag(hasTag),
                   child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 12, horizontal: 16),
                     child: Row(
                       children: [
                         Expanded(
@@ -984,9 +989,7 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final maxW = constraints.maxWidth;
-        final effectiveW = maxW.isFinite && maxW > 0
-            ? math.min(w, maxW)
-            : w;
+        final effectiveW = maxW.isFinite && maxW > 0 ? math.min(w, maxW) : w;
         return Align(
           alignment: Alignment.topCenter,
           child: SizedBox(
@@ -1007,6 +1010,9 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
     final fieldStyle = widget.inlineSuggestionsBelow
         ? baseStyle.copyWith(color: widget.textStyle?.color ?? Colors.black87)
         : baseStyle;
+    final contentPadding =
+        (widget.decoration?.contentPadding as EdgeInsets?) ??
+            const EdgeInsets.all(16);
 
     return FlutterTagger(
       controller: widget.controller,
@@ -1016,18 +1022,17 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
       padding: EdgeInsets.zero,
       triggerStrategy: TriggerStrategy.deferred,
       searchRegex: RegExp(r'[^\s@#]'),
-      tagTextFormatter: (id, tag, triggerCharacter) =>
-          '$triggerCharacter$tag',
+      tagTextFormatter: (id, tag, triggerCharacter) => '$triggerCharacter$tag',
       triggerCharacterAndStyles: {
         '@': widget.userTagTextStyle ??
             baseStyle.copyWith(
               color: IsrColors.appColor,
-              fontWeight: FontWeight.w600,
+              fontWeight: baseStyle.fontWeight ?? FontWeight.w400,
             ),
         '#': widget.hashtagTextStyle ??
             baseStyle.copyWith(
               color: IsrColors.appColor,
-              fontWeight: FontWeight.w600,
+              fontWeight: baseStyle.fontWeight ?? FontWeight.w400,
             ),
       },
       overlay: _useInlineSuggestions
@@ -1040,10 +1045,10 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
         maxLength: widget.maxLength,
         maxLines: widget.maxLines,
         minLines: widget.minLines,
-        autocorrect: false,
+        autocorrect: widget.enableSuggestions,
         expands: widget.expands,
         autofocus: widget.autoFocus == true,
-        enableSuggestions: false,
+        enableSuggestions: widget.enableSuggestions,
         keyboardType: TextInputType.multiline,
         textInputAction: TextInputAction.newline,
         style: fieldStyle,
@@ -1056,7 +1061,7 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
                     fontSize: 14,
                   ),
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.all(16),
+              contentPadding: contentPadding,
             ),
         onTap: widget.onTap,
       ),

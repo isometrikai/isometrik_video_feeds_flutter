@@ -105,6 +105,16 @@ class IsrTranslationFile {
   static const schedulePost = 'Schedule Post';
   static const linkProductsToPost = 'Link Products to Post';
   static const linkProducts = 'Link Products';
+  static const addLink = 'Add Link';
+  static const addLinkDescription =
+      'Add an https link and a title. Viewers can tap the button on your reel.';
+  static const linkUrl = 'Link URL';
+  static const linkTitle = 'Link title';
+  static const linkTitleHint = 'e.g. Shop now, Learn more';
+  static const enterLinkUrl = 'Enter a link URL';
+  static const enterValidHttpsLinkUrl = 'URL must use https';
+  static const enterButtonLabel = 'Enter a link title';
+  static const removeLink = 'Remove link';
   static const noProductsLinkedYet = 'No products linked yet!';
   static const connectProductsToPost =
       'Connect products to posts for better visibility and engagement';
@@ -133,12 +143,30 @@ class IsrTranslationFile {
       'Report ${type.capitalizeWords()}';
   static const postReportedSuccessfully = 'Post reported successfully';
   static const report = 'Report';
+  static const download = 'Download';
+  static const downloading = 'Downloading...';
+  static const downloadSavedToGallery = 'Saved to your gallery';
+  static const downloadFailed = 'Could not download this reel';
+  static const downloadNotAllowed = 'Downloads are not allowed for this post';
+  static const downloadPermissionDenied =
+      'Allow photo library access to save reels';
   static const dubWithAudio = 'Dub with audio';
   static const dubLockedPostMessage =
       'Unlock this post before recording a dub.';
   static const dubNoVideoMessage = 'This post has no video to dub.';
   static const dubExtractAudioFailedMessage =
       'Could not extract audio from this reel.';
+  static const useAudio = 'Use audio';
+  static const soundPreviewUnavailable =
+      'Preview is not available for this sound.';
+  static const soundPreviewPlayFailed = 'Could not play preview';
+  static const soundDetailReelSingular = 'Reel';
+  static const soundDetailReelsPlural = 'Reels';
+  static const soundDetailUntitled = 'Untitled';
+  static const soundDetailUnknownArtist = 'Unknown artist';
+  static const soundDetailShareSoon = 'Sharing will be available soon';
+  static const soundDetailNoPosts = 'No posts use this sound yet';
+  static const tryAgain = 'Try again';
   static const reports = 'Reports';
   static const confirm = 'Confirm';
   static const failedToLoadReportReasons = 'Failed to load report reasons';
@@ -175,13 +203,14 @@ class IsrTranslationFile {
   static const String editPostConfirmation =
       'Are you sure you want to edit the post?';
   static const postDeletedSuccessfully = 'Post deleted successfully';
-  static const String allComments = 'All Comments';
+  static const String allComments = 'Comments';
   static const String reply = 'Reply';
   static const String viewReplies = 'View Replies';
   static const String hideReplies = 'Hide Replies';
   static const String like = 'like';
   static const String likes = 'likes';
-  static const String addAComment = 'Add a comment';
+  static const String addAComment = 'Join the conversation...';
+  static const String addAReply = 'Add a reply...';
   static const String replyingTo = 'Replying to';
   static const String noCommentsYet = 'No Comments Yet';
   static const String beTheFirstOneToPostAComment =
@@ -195,6 +224,13 @@ class IsrTranslationFile {
   static const String justNow = 'Just now';
   static const String noPostsFound = 'No posts found';
   static const String inThisSocialPost = 'In this social post';
+  static const String removeMeFromPost = 'Remove me from post';
+  static const String removeTag = 'Remove tag';
+  static const String removeMeFromPostTitle = 'Remove yourself from this post?';
+  static const String removeMeFromPostMessage =
+      'Your  will no longer appear on this post.';
+  static const String mentionRemovedSuccessfully =
+      'You have been removed from this post';
   static const String retry = 'Retry';
   static const String noPostsDescription =
       'No posts have been shared for this location yet. Be the first to share something!';
@@ -305,6 +341,11 @@ class IsrTranslationFile {
   static const String modifySchedule = 'Modify Schedule';
   static const String newStory = 'New Story';
   static const String createNewHighlight = 'Create new highlight';
+  static const String editHighlight = 'Edit highlight';
+  static const String editHighlightCover = 'Edit cover';
+  static const String highlightNameHint = 'Highlight name';
+  static const String highlightStoriesSection = 'STORIES';
+  static const String addStoriesToHighlight = 'Add stories';
   static const String addToExistingHighlight = 'Add to existing highlight';
   static const String addToHighlights = 'Add to highlights';
   static const String noHighlightsCreateFirst =

@@ -88,6 +88,9 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   TimeLineData? _postData;
 
   PostAttributeClass _postAttributeClass = PostAttributeClass();
+  MediaEditSoundItem? _selectedPostSound;
+  String? _pendingCreatePostSoundId;
+  Map<String, dynamic>? _pendingCreatePostSoundSnapshot;
   final List<MediaData> _mediaDataList = [];
   var _selectedMediaIndex = 0;
   var _tags = Tags();
@@ -229,9 +232,14 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   FutureOr<void> _initState(
       CreatePostInitialEvent event, Emitter<CreatePostState> emit) async {
     _resetData();
+    _selectedPostSound = event.selectedSound;
     if (event.selectedSound != null) {
       _postAttributeClass.selectedSound = event.selectedSound;
     }
+    _cacheSoundForCreateApi(
+      sound: event.selectedSound,
+      request: _createPostRequest,
+    );
     final postAttribution =
         await preparePostAttribution(newMediaDataList: event.newMediaDataList);
     emit(PostAttributionUpdatedState(postAttributeClass: postAttribution));
@@ -265,6 +273,9 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     _coverFileName = '';
     _tags = _createPostRequest.tags ?? Tags();
     _tags.products = [];
+    _selectedPostSound = null;
+    _pendingCreatePostSoundId = null;
+    _pendingCreatePostSoundSnapshot = null;
     resetApiCall();
   }
 
@@ -701,7 +712,14 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       PostCreateEvent event, Emitter<CreatePostState> emit) async {
     _lastPostCreateEventForRetry = event;
     _createPostRequest = event.createPostRequest;
-    debugPrint('_createPostRequest....${jsonEncode(_createPostRequest)}');
+    if (event.selectedSound != null) {
+      _selectedPostSound = event.selectedSound;
+      _postAttributeClass.selectedSound = event.selectedSound;
+    }
+    _cacheSoundForCreateApi(
+      sound: event.selectedSound ?? _selectedPostSound,
+      request: _createPostRequest,
+    );
 
     if (event.isForEdit != true &&
         IsrVideoReelConfig.postConfig.isCaptionRequired &&
@@ -719,6 +737,10 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       final uploadSuccess = await _runLocalMediaUploads(emit);
       if (!uploadSuccess) return;
       _createPostRequest.media = _mediaDataList;
+      final createPayload = _buildCreatePostPayload();
+      debugPrint(
+        'createPost API payload: ${jsonEncode(createPayload)}',
+      );
 
       if (_usesBackgroundPostUi) {
         _notifyBackgroundCreatingPost();
@@ -726,7 +748,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
       final apiResult = await _createPostUseCase.executeCreatePost(
         isLoading: !_usesBackgroundPostUi,
-        createPostRequest: _createPostRequest.toJson(),
+        createPostRequest: createPayload,
       );
       if (apiResult.isSuccess) {
         _postData = null;
@@ -827,6 +849,10 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
       if (_postAttributeClass.allowSave != settings.saveEnabled) {
         settings.saveEnabled = _postAttributeClass.allowSave;
+      }
+
+      if (_postAttributeClass.allowDownload != settings.downloadEnabled) {
+        settings.downloadEnabled = _postAttributeClass.allowDownload;
       }
       _postData?.settings = settings;
     }
@@ -1042,6 +1068,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
         'CreatePostBloc: _makePostRequest => mediaMentionUserData => ${mediaMentionUserData.map((e) => e.toJson())}');
     hashTagDataList = _postData?.tags?.hashtags ?? [];
     locationTagDataList = _postData?.tags?.places ?? [];
+    _postAttributeClass.postLink = _postData?.tags?.primaryLink;
 
     // Update postAttributeClass with the loaded data
     _postAttributeClass.mentionedUserList = [
@@ -1052,6 +1079,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     _postAttributeClass.taggedPlaces = locationTagDataList;
     _postAttributeClass.allowSave = _postData?.settings?.saveEnabled;
     _postAttributeClass.allowComment = _postData?.settings?.commentsEnabled;
+    _postAttributeClass.allowDownload = _postData?.settings?.downloadEnabled;
     final postSettings = _postData?.settings;
     if (postSettings != null) {
       _createPostRequest.settings = PostSettingModel(
@@ -1061,6 +1089,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
         commentsEnabled: postSettings.commentsEnabled,
         duetEnabled: postSettings.duetEnabled,
         saveEnabled: postSettings.saveEnabled,
+        downloadEnabled: postSettings.downloadEnabled,
         stitchEnabled: postSettings.stitchEnabled,
         isPaid: postSettings.isPaid,
         priceAmount: postSettings.priceAmount,
@@ -1947,22 +1976,132 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     _postAttributeClass.hashTagDataList = hashTagDataList;
     _postAttributeClass.mediaDataList = _mediaDataList;
     _postAttributeClass.linkedProducts = linkedProducts;
+    if (_postAttributeClass.postLink?.isValid == true) {
+      _tags.links = [_postAttributeClass.postLink!];
+    }
+    _postAttributeClass.selectedSound = _resolveSelectedSound();
     _postAttributeClass.createPostRequest = _createPostRequest;
     _applySelectedSoundToCreatePostRequest(_postAttributeClass.selectedSound);
+    _cacheSoundForCreateApi(
+      sound: _postAttributeClass.selectedSound,
+      request: _createPostRequest,
+    );
     return _postAttributeClass;
   }
 
-  void _applySelectedSoundToCreatePostRequest(MediaEditSoundItem? sound) {
-    if (sound?.soundId == null || sound!.soundId!.isEmpty) return;
+  MediaEditSoundItem? _soundItemFromCreatePostRequest() {
+    if (!PostSoundUtil.isLibrarySoundId(_createPostRequest.soundId)) {
+      return null;
+    }
+    final snapshot = _createPostRequest.soundSnapshot;
+    return MediaEditSoundItem(
+      soundId: _createPostRequest.soundId,
+      soundMetadata:
+          snapshot == null ? null : Map<String, dynamic>.from(snapshot),
+      soundDuration: snapshot?['segment_duration']?.toString(),
+      soundArtist: snapshot?['artist'] as String?,
+    );
+  }
+
+  MediaEditSoundItem? _resolveSelectedSound() =>
+      _selectedPostSound ??
+      _postAttributeClass.selectedSound ??
+      _soundItemFromCreatePostRequest();
+
+  void _cacheSoundForCreateApi({
+    MediaEditSoundItem? sound,
+    CreatePostRequest? request,
+  }) {
+    final resolved = sound ?? _soundItemFromRequest(request);
+    if (!PostSoundUtil.isLibrarySoundId(resolved?.soundId)) return;
+
+    final hasVideo = _mediaDataList.any(
+      (m) => m.mediaType == 'video' || m.postType == PostType.video,
+    );
+    final isImageOnly = _mediaDataList.isNotEmpty && !hasVideo;
     final videoDuration = _mediaDataList
         .where((m) => m.mediaType == 'video' || m.postType == PostType.video)
         .map((m) => m.duration?.toInt())
         .whereType<int>()
         .firstOrNull;
-    _createPostRequest.soundId = sound.soundId;
+
+    _pendingCreatePostSoundId = resolved!.soundId!.trim();
+    _pendingCreatePostSoundSnapshot = PostSoundUtil.buildSoundSnapshot(
+      sound: resolved,
+      videoDurationSeconds: isImageOnly
+          ? PostSoundUtil.photoSoundClipMaxSeconds
+          : videoDuration,
+      maxClipSec: isImageOnly ? PostSoundUtil.photoSoundClipMaxSeconds : 60,
+    );
+    _createPostRequest.soundId = _pendingCreatePostSoundId;
+    _createPostRequest.soundSnapshot = _pendingCreatePostSoundSnapshot;
+  }
+
+  MediaEditSoundItem? _soundItemFromRequest(CreatePostRequest? request) {
+    if (request == null ||
+        !PostSoundUtil.isLibrarySoundId(request.soundId)) {
+      return null;
+    }
+    final snapshot = request.soundSnapshot;
+    return MediaEditSoundItem(
+      soundId: request.soundId,
+      soundMetadata:
+          snapshot == null ? null : Map<String, dynamic>.from(snapshot),
+      soundDuration: snapshot?['segment_duration']?.toString(),
+      soundArtist: snapshot?['artist'] as String?,
+    );
+  }
+
+  void _applyPendingSoundToPayload(Map<String, dynamic> payload) {
+    final soundId = _pendingCreatePostSoundId?.trim();
+    if (!PostSoundUtil.isLibrarySoundId(soundId)) return;
+    payload['sound_id'] = soundId;
+    final snapshot = _pendingCreatePostSoundSnapshot;
+    if (snapshot != null && snapshot.isNotEmpty) {
+      payload['sound_snapshot'] = Map<String, dynamic>.from(snapshot);
+    }
+  }
+
+  Map<String, dynamic> _buildCreatePostPayload() {
+    final sound = _resolveSelectedSound();
+    _cacheSoundForCreateApi(sound: sound, request: _createPostRequest);
+    _applySelectedSoundToCreatePostRequest(sound);
+    final payload = Map<String, dynamic>.from(_createPostRequest.toJson());
+    PostSoundUtil.mergeSoundIntoCreatePostJson(
+      body: payload,
+      sound: sound,
+      media: _mediaDataList,
+    );
+    _applyPendingSoundToPayload(payload);
+    return payload;
+  }
+
+  void _applySelectedSoundToCreatePostRequest(MediaEditSoundItem? sound) {
+    final resolved = sound ?? _soundItemFromCreatePostRequest();
+    if (!PostSoundUtil.isLibrarySoundId(resolved?.soundId)) {
+      if (!PostSoundUtil.isLibrarySoundId(_createPostRequest.soundId)) {
+        _createPostRequest.soundId = null;
+        _createPostRequest.soundSnapshot = null;
+      }
+      return;
+    }
+    sound = resolved;
+    final hasVideo = _mediaDataList.any(
+      (m) => m.mediaType == 'video' || m.postType == PostType.video,
+    );
+    final isImageOnly = _mediaDataList.isNotEmpty && !hasVideo;
+    final videoDuration = _mediaDataList
+        .where((m) => m.mediaType == 'video' || m.postType == PostType.video)
+        .map((m) => m.duration?.toInt())
+        .whereType<int>()
+        .firstOrNull;
+    _createPostRequest.soundId = sound!.soundId!.trim();
     _createPostRequest.soundSnapshot = PostSoundUtil.buildSoundSnapshot(
       sound: sound,
-      videoDurationSeconds: videoDuration,
+      videoDurationSeconds: isImageOnly
+          ? PostSoundUtil.photoSoundClipMaxSeconds
+          : videoDuration,
+      maxClipSec: isImageOnly ? PostSoundUtil.photoSoundClipMaxSeconds : 60,
     );
   }
 

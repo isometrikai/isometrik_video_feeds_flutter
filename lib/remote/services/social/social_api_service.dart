@@ -242,6 +242,14 @@ abstract class SocialApiService extends BaseService {
     required int pageLimit,
   });
 
+  Future<ResponseModel> getPostsBySound({
+    required bool isLoading,
+    required Header header,
+    required String soundId,
+    required int page,
+    required int pageSize,
+  });
+
   Future<ResponseModel> getProfileSavedPostData({
     required bool isLoading,
     required Header header,

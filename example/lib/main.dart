@@ -17,6 +17,7 @@ void main() async {
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   configureInjection();
   await initializeReelsSdk();
+  _configureReelsSdk();
   runApp(MyApp());
 }
 
@@ -62,9 +63,7 @@ Future<void> initializeReelsSdk() async {
       'version': appVersion,
       'currencySymbol': '\$',
       'currencyCode': 'USD',
-      'platform': Utility
-          .platFormType()
-          .platformText,
+      'platform': Utility.platFormType().platformText,
       'latitude': DefaultValues.defaultLatitude,
       'longitude': DefaultValues.defaultLongitude,
       'x-tenant-id': AppConstants.tenantId,
@@ -82,6 +81,7 @@ void _configureReelsSdk() {
     tabConfig: const isr.TabConfig(),
     storyConfig: const isr.StoryConfig(),
     createEditPostConfig: const isr.CreateEditPostConfig(
+      enableBusinessLink: true,
       createEditPostCallBackConfig: isr.CreateEditPostCallBackConfig(
         onBackgroundPostOperation: BackgroundPostUploadDemo.onSdkUpdate,
         // licenseAgreementAfterMediaEdit: (mediaList) async => true,
@@ -104,7 +104,8 @@ void _configureReelsSdk() {
         navigationBarColor: Colors.white,
         navigationBarIconBrightness: Brightness.dark,
         brightness: Brightness.light, // Light or dark theme
-        splashColor: const Color(0xFF006CD8).withValues(alpha: 0.5), // Splash effect color
+        splashColor: const Color(0xFF006CD8)
+            .withValues(alpha: 0.5), // Splash effect color
       ),
 
       // Toast Configuration
@@ -119,7 +120,8 @@ void _configureReelsSdk() {
       dialogConfig: const isr.DialogConfig(
         backgroundColor: Colors.white, // Dialog background
         borderRadius: 12.0, // Rounded corners
-        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 28), // Internal padding
+        padding: EdgeInsets.symmetric(
+            horizontal: 24, vertical: 28), // Internal padding
         titleTextStyle: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w700,
@@ -206,14 +208,22 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => MultiBlocProvider(
         providers: [
-          BlocProvider(create: (context) => InjectionUtils.getBloc<SplashBloc>()),
-          BlocProvider(create: (context) => InjectionUtils.getBloc<LandingBloc>()),
+          BlocProvider(
+              create: (context) => InjectionUtils.getBloc<SplashBloc>()),
+          BlocProvider(
+              create: (context) => InjectionUtils.getBloc<LandingBloc>()),
           BlocProvider(create: (context) => InjectionUtils.getBloc<AuthBloc>()),
           BlocProvider(create: (context) => InjectionUtils.getBloc<HomeBloc>()),
-          BlocProvider(create: (context) => InjectionUtils.getBloc<NavItemCubit>()),
-          BlocProvider(create: (context) => InjectionUtils.getBloc<ProfileBloc>()),
-          BlocProvider(create: (context) => InjectionUtils.getBloc<UploadProgressCubit>()),
-          BlocProvider(create: (context) => InjectionUtils.getBloc<CommentActionCubit>()),
+          BlocProvider(
+              create: (context) => InjectionUtils.getBloc<NavItemCubit>()),
+          BlocProvider(
+              create: (context) => InjectionUtils.getBloc<ProfileBloc>()),
+          BlocProvider(
+              create: (context) =>
+                  InjectionUtils.getBloc<UploadProgressCubit>()),
+          BlocProvider(
+              create: (context) =>
+                  InjectionUtils.getBloc<CommentActionCubit>()),
           ...isr.IsrVideoReelConfig.getIsmSingletonBlocProviders(),
         ],
         child: ScreenUtilInit(
@@ -226,14 +236,13 @@ class MyApp extends StatelessWidget {
             builder: (context, constraints) => OrientationBuilder(
               builder: (context, orientation) {
                 SizeConfig().init(constraints, orientation);
-                _configureReelsSdk();
                 return GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: Utility.hideKeyboard,
                   child: MaterialApp.router(
-                    debugShowCheckedModeBanner: false,
-                    theme: appTheme,
-                    routerConfig: AppRouter.router,
+                      debugShowCheckedModeBanner: false,
+                      theme: appTheme,
+                      routerConfig: AppRouter.router,
                       builder: (context, child) {
                         final content = child ?? const SizedBox.shrink();
                         return Stack(
@@ -242,8 +251,7 @@ class MyApp extends StatelessWidget {
                             const BackgroundPostUploadBanner(),
                           ],
                         );
-                      }
-                  ),
+                      }),
                 );
               },
             ),

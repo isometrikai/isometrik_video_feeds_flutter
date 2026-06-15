@@ -5,16 +5,22 @@ class PostConfig {
   const PostConfig({
     this.postUIConfig,
     this.postCallBackConfig,
+    this.postFeedUIConfig,
     this.autoMoveToNextMedia = true,
     this.autoMoveToNextPost = true,
     this.isCaptionRequired = false,
     this.showViewCount = false,
     this.enableDubWithAudio = false,
     this.dubWithAudioConfig,
+    this.canDownload = false,
   });
 
   final PostUIConfig? postUIConfig;
   final PostCallBackConfig? postCallBackConfig;
+
+  /// Styling for scrollable post-card tabs ([FeedLayoutType.postFeed] on [TabDataModel]).
+  final PostFeedUIConfig? postFeedUIConfig;
+
   final bool autoMoveToNextMedia;
   final bool autoMoveToNextPost;
   final bool isCaptionRequired;
@@ -23,27 +29,180 @@ class PostConfig {
   final bool enableDubWithAudio;
   final DubWithAudioConfig? dubWithAudioConfig;
 
+  /// When true, viewers can download reels from the more-options sheet when
+  /// `settings.download_enabled` is true (API default: true).
+  final bool canDownload;
+
+  /// UI config for post-card tabs. Defaults to [PostFeedUIConfig.instagram] when null.
+  PostFeedUIConfig get resolvedPostFeedUIConfig =>
+      postFeedUIConfig ?? PostFeedUIConfig.instagram;
+
   PostConfig copyWith({
     PostUIConfig? postUIConfig,
     PostCallBackConfig? postCallBackConfig,
+    PostFeedUIConfig? postFeedUIConfig,
     bool? autoMoveToNextMedia,
     bool? autoMoveToNextPost,
     bool? isCaptionRequired,
     bool? showViewCount,
     bool? enableDubWithAudio,
     DubWithAudioConfig? dubWithAudioConfig,
+    bool? canDownload,
   }) =>
       PostConfig(
         postUIConfig: postUIConfig ?? this.postUIConfig,
         postCallBackConfig: postCallBackConfig ?? this.postCallBackConfig,
+        postFeedUIConfig: postFeedUIConfig ?? this.postFeedUIConfig,
         autoMoveToNextMedia: autoMoveToNextMedia ?? this.autoMoveToNextMedia,
         autoMoveToNextPost: autoMoveToNextPost ?? this.autoMoveToNextPost,
         isCaptionRequired: isCaptionRequired ?? this.isCaptionRequired,
         showViewCount: showViewCount ?? this.showViewCount,
         enableDubWithAudio: enableDubWithAudio ?? this.enableDubWithAudio,
         dubWithAudioConfig: dubWithAudioConfig ?? this.dubWithAudioConfig,
+        canDownload: canDownload ?? this.canDownload,
       );
 }
+
+/// Builds the action row for scrollable post-card feed tabs.
+typedef PostFeedActionWidgetBuilder = Widget Function(
+  ReelsData reelsData,
+  PostFeedActionBuildContext actionContext,
+);
+
+/// Context passed to [PostFeedActionWidgetBuilder] for custom action UIs.
+class PostFeedActionBuildContext {
+  const PostFeedActionBuildContext({
+    required this.currentMediaIndex,
+    required this.mediaCount,
+    required this.postSectionType,
+  });
+
+  final int currentMediaIndex;
+  final int mediaCount;
+  final PostSectionType postSectionType;
+}
+
+/// Post card layout for scrollable post-card feed tabs.
+enum PostFeedCardStyle {
+  /// Profile row and follow button overlaid on media with a top gradient.
+  overlayHeader,
+
+  /// Classic feed: header above media, carousel dots under media, compact follow chip.
+  instagram,
+}
+
+/// UI tokens for the scrollable post-card feed layout.
+class PostFeedUIConfig {
+  const PostFeedUIConfig({
+    this.title,
+    this.titleTextStyle,
+    this.actionWidget,
+    this.backgroundColor = const Color(0xFFFFFFFF),
+    this.dividerColor = const Color(0xFFEFEFEF),
+    this.headerTextColor = const Color(0xFF262626),
+    this.secondaryTextColor = const Color(0xFF8E8E8E),
+    this.actionIconColor = const Color(0xFF262626),
+    this.mediaAspectRatio = 1.0,
+    this.mediaFrameHeight,
+    this.mediaFrameWidth,
+    this.showCarouselPageBadge = true,
+    this.showCarouselDots = true,
+    this.postSpacing = 12.0,
+    this.showHeader = true,
+    this.defaultVideoMuted = false,
+    this.enableVideoTapControls = true,
+    this.cardStyle = PostFeedCardStyle.overlayHeader,
+    this.showActionCounts = false,
+    this.showPostTimestamp = false,
+    this.showPostDividers = false,
+    this.headerSubtitle,
+    this.videoMediaAspectRatio = 3 / 4,
+    this.imageMediaAspectRatio = 3 / 4,
+    this.landscapeMediaAspectRatio = 1.91,
+    this.actionIconGapCompact = 10,
+    this.actionIconGapWithCount = 16,
+  });
+
+  /// Instagram-style post feed: header above media, counts, timestamps, dividers.
+  ///
+  /// Default styling for post-card feed tabs when [PostConfig.postFeedUIConfig] is null.
+  static const instagram = PostFeedUIConfig(
+    cardStyle: PostFeedCardStyle.instagram,
+    showHeader: false,
+    showActionCounts: true,
+    showPostTimestamp: true,
+    showPostDividers: true,
+    postSpacing: 0,
+  );
+
+  /// Header title for post-card feed tabs. Falls back to the active tab title when null or empty.
+  final String? title;
+
+  /// Optional override for the header title text style.
+  final TextStyle? titleTextStyle;
+
+  /// Custom action row below media. When null, SDK default actions are shown.
+  final PostFeedActionWidgetBuilder? actionWidget;
+
+  final Color backgroundColor;
+  final Color dividerColor;
+  final Color headerTextColor;
+  final Color secondaryTextColor;
+  final Color actionIconColor;
+  final double mediaAspectRatio;
+
+  /// When set, all post media (image/video) uses a fixed-height frame.
+  /// This keeps every post visually consistent regardless of media dimensions.
+  final double? mediaFrameHeight;
+
+  /// Optional fixed width. When null, media spans the full available width (edge to edge).
+  final double? mediaFrameWidth;
+
+  final bool showCarouselPageBadge;
+  final bool showCarouselDots;
+  final double postSpacing;
+
+  /// When false, the post-feed header row is hidden.
+  final bool showHeader;
+
+  /// When true, videos start muted (sound off). Defaults to false (sound on).
+  final bool defaultVideoMuted;
+
+  /// When true, tap toggles play/pause and a mute control is shown on video.
+  final bool enableVideoTapControls;
+
+  /// [PostFeedCardStyle.instagram] places the user row above media (Instagram-style).
+  final PostFeedCardStyle cardStyle;
+
+  /// Shows like/comment counts beside action icons (common with [PostFeedCardStyle.instagram]).
+  final bool showActionCounts;
+
+  /// Shows relative publish time under the caption (e.g. "2 days ago").
+  final bool showPostTimestamp;
+
+  /// Thin dividers between posts instead of only [postSpacing] gaps.
+  final bool showPostDividers;
+
+  /// Optional subtitle under the username in the post header (e.g. "Suggested for you").
+  final String? headerSubtitle;
+
+  /// Aspect ratio (width / height) for video media in [PostFeedCardStyle.instagram] (default 3:4).
+  final double videoMediaAspectRatio;
+
+  /// Aspect ratio (width / height) for image media in [PostFeedCardStyle.instagram] (default 3:4).
+  /// Taller than 1:1 so portrait photos are not heavily cropped like a square frame.
+  final double imageMediaAspectRatio;
+
+  /// Aspect ratio (width / height) for landscape images (Instagram-style wide frame).
+  final double landscapeMediaAspectRatio;
+
+  /// Horizontal gap between action icons when neither adjacent action shows a count.
+  final double actionIconGapCompact;
+
+  /// Horizontal gap between action icons when at least one adjacent action shows a count.
+  final double actionIconGapWithCount;
+}
+
 
 class PostUIConfig {
   const PostUIConfig({
@@ -51,6 +210,7 @@ class PostUIConfig {
     this.actionIconConfig,
     this.textStyleConfig,
     this.shopUIConfig,
+    this.postLinkUIConfig,
     this.followButtonConfig,
     this.mediaIndicatorConfig,
     this.userProfileConfig,
@@ -63,6 +223,7 @@ class PostUIConfig {
   final ActionIconConfig? actionIconConfig;
   final TextStyleConfig? textStyleConfig;
   final ShopUIConfig? shopUIConfig;
+  final PostLinkUIConfig? postLinkUIConfig;
   final FollowButtonConfig? followButtonConfig;
   final MediaIndicatorConfig? mediaIndicatorConfig;
   final UserProfileConfig? userProfileConfig;
@@ -75,6 +236,7 @@ class PostUIConfig {
     ActionIconConfig? actionIconConfig,
     TextStyleConfig? textStyleConfig,
     ShopUIConfig? shopUIConfig,
+    PostLinkUIConfig? postLinkUIConfig,
     FollowButtonConfig? followButtonConfig,
     MediaIndicatorConfig? mediaIndicatorConfig,
     UserProfileConfig? userProfileConfig,
@@ -87,6 +249,7 @@ class PostUIConfig {
         actionIconConfig: actionIconConfig ?? this.actionIconConfig,
         textStyleConfig: textStyleConfig ?? this.textStyleConfig,
         shopUIConfig: shopUIConfig ?? this.shopUIConfig,
+        postLinkUIConfig: postLinkUIConfig ?? this.postLinkUIConfig,
         followButtonConfig: followButtonConfig ?? this.followButtonConfig,
         mediaIndicatorConfig: mediaIndicatorConfig ?? this.mediaIndicatorConfig,
         userProfileConfig: userProfileConfig ?? this.userProfileConfig,
@@ -300,6 +463,43 @@ class ShopUIConfig {
         shopContainerPadding: shopContainerPadding ?? this.shopContainerPadding,
         shopIconSize: shopIconSize ?? this.shopIconSize,
         shopIconColor: shopIconColor ?? this.shopIconColor,
+      );
+}
+
+/// CTA chip for `tags.links` on reels (Instagram-style).
+class PostLinkUIConfig {
+  const PostLinkUIConfig({
+    this.containerDecoration,
+    this.containerPadding,
+    this.icon,
+    this.iconSize,
+    this.iconColor,
+    this.textStyle,
+  });
+
+  final BoxDecoration? containerDecoration;
+  final EdgeInsetsGeometry? containerPadding;
+  final IconData? icon;
+  final double? iconSize;
+  final Color? iconColor;
+  final TextStyle? textStyle;
+
+  PostLinkUIConfig copyWith({
+    BoxDecoration? containerDecoration,
+    EdgeInsetsGeometry? containerPadding,
+    IconData? icon,
+    double? iconSize,
+    Color? iconColor,
+    TextStyle? textStyle,
+  }) =>
+      PostLinkUIConfig(
+        containerDecoration:
+            containerDecoration ?? this.containerDecoration,
+        containerPadding: containerPadding ?? this.containerPadding,
+        icon: icon ?? this.icon,
+        iconSize: iconSize ?? this.iconSize,
+        iconColor: iconColor ?? this.iconColor,
+        textStyle: textStyle ?? this.textStyle,
       );
 }
 
@@ -573,6 +773,7 @@ class PostCallBackConfig {
     this.onCommentClick,
     this.onProfileClick,
     this.onTagProductClick,
+    this.onPostLinkClick,
     this.onPostChanged,
     this.onLikeCountClicked,
     this.onViewCountClicked,
@@ -592,6 +793,8 @@ class PostCallBackConfig {
   final Function(TimeLineData postData)? onCommentClick;
   final Function(TimeLineData? postData, String userId, bool? isFollowing)? onProfileClick;
   final Future<void> Function(TimeLineData postData)? onTagProductClick;
+  final Future<void> Function(TimeLineData postData, PostLinkData link)?
+      onPostLinkClick;
   final Function(TimeLineData postData, int index)? onPostChanged;
   final Future<void> Function(TimeLineData postData)? onLikeCountClicked;
   final Future<void> Function(TimeLineData postData)? onViewCountClicked;
@@ -617,6 +820,8 @@ class PostCallBackConfig {
     Function(TimeLineData postData)? onCommentClick,
     Function(TimeLineData? postData, String userId, bool? isFollowing)? onProfileClick,
     Future<void> Function(TimeLineData postData)? onTagProductClick,
+    Future<void> Function(TimeLineData postData, PostLinkData link)?
+        onPostLinkClick,
     Function(TimeLineData postData, int index)? onPostChanged,
     Future<void> Function(TimeLineData postData)? onLikeCountClicked,
     Future<void> Function(TimeLineData postData)? onViewCountClicked,
@@ -635,6 +840,7 @@ class PostCallBackConfig {
         onCommentClick: onCommentClick ?? this.onCommentClick,
         onProfileClick: onProfileClick ?? this.onProfileClick,
         onTagProductClick: onTagProductClick ?? this.onTagProductClick,
+        onPostLinkClick: onPostLinkClick ?? this.onPostLinkClick,
         onPostChanged: onPostChanged ?? this.onPostChanged,
         onLikeCountClicked: onLikeCountClicked ?? this.onLikeCountClicked,
         onViewCountClicked: onViewCountClicked ?? this.onViewCountClicked,

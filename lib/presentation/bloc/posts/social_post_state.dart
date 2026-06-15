@@ -83,8 +83,9 @@ class LoadingPostComment extends SocialPostState {
 
 class CommentCountModified extends SocialPostState {
   CommentCountModified({required this.modifiedValue, required this.postId});
+
   final String postId;
-  final int modifiedValue; // +1 for created and -1 for deleted
+  final int modifiedValue;
 }
 
 class LoadingPostCommentReplies extends SocialPostState {
@@ -110,6 +111,17 @@ class PostInsightDetails extends SocialPostState {
 }
 
 class PlayPauseVideoState extends SocialPostState {
-  PlayPauseVideoState({required this.play});
+  PlayPauseVideoState({
+    required this.play,
+    this.pausePlayback = true,
+    this.scopedPostSection,
+  });
+
   bool play;
+
+  /// Mirrors [PlayPauseVideoEvent.pausePlayback].
+  final bool pausePlayback;
+
+  /// Mirrors [PlayPauseVideoEvent.scopedPostSection].
+  final PostSectionType? scopedPostSection;
 }

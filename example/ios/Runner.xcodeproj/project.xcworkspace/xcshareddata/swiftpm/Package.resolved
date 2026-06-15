@@ -5,8 +5,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/rudderlabs/rudder-sdk-ios.git",
       "state" : {
-        "revision" : "c4ae59552166f0a59e47c2f936ccead40f13a8c0",
-        "version" : "1.32.0"
+        "revision" : "bfead24f126ee62747ce368372091ef05716b450",
+        "version" : "1.32.1"
       }
     },
     {

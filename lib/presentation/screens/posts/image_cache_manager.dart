@@ -207,17 +207,6 @@ class ImageCacheManager implements IMediaCacheManager {
   }
 
   @override
-  void clearOutsideRange(List<String> activeUrls) {
-    final urlsToRemove =
-        _imageCache.keys.where((url) => !activeUrls.contains(url)).toList();
-    for (final url in urlsToRemove) {
-      if (!_visibleImages.contains(url)) {
-        clearMedia(url);
-      }
-    }
-  }
-
-  @override
   Map<String, dynamic> getCacheStats() => {
         'totalCached': _imageCache.length,
         'visibleCount': _visibleImages.length,

@@ -11,6 +11,7 @@ class CreateEditPostConfig {
     this.mediaEditorStickersConfig = const MediaEditorStickersConfig(),
     this.autoMoveToNextPost = true,
     this.enablePaidPost = false,
+    this.enableBusinessLink = false,
     this.enableAddSoundOnCamera = false,
     this.paidPostCurrency = 'coin',
     this.paidPostAmountSuggestions = const [10, 50, 100, 150],
@@ -24,6 +25,11 @@ class CreateEditPostConfig {
 
   final bool autoMoveToNextPost;
   final bool enablePaidPost;
+
+  /// When true, creators can add `tags.links` (URL + title) while posting.
+  /// Host app must opt in when configuring the SDK create/edit post config.
+  final bool enableBusinessLink;
+
   final bool enableAddSoundOnCamera;
   final String paidPostCurrency;
   final List<int> paidPostAmountSuggestions;
@@ -34,6 +40,7 @@ class CreateEditPostConfig {
     MediaEditorStickersConfig? mediaEditorStickersConfig,
     bool? autoMoveToNextPost,
     bool? enablePaidPost,
+    bool? enableBusinessLink,
     bool? enableAddSoundOnCamera,
     String? paidPostCurrency,
     List<int>? paidPostAmountSuggestions,
@@ -47,6 +54,7 @@ class CreateEditPostConfig {
             mediaEditorStickersConfig ?? this.mediaEditorStickersConfig,
         autoMoveToNextPost: autoMoveToNextPost ?? this.autoMoveToNextPost,
         enablePaidPost: enablePaidPost ?? this.enablePaidPost,
+        enableBusinessLink: enableBusinessLink ?? this.enableBusinessLink,
         enableAddSoundOnCamera:
             enableAddSoundOnCamera ?? this.enableAddSoundOnCamera,
         paidPostCurrency: paidPostCurrency ?? this.paidPostCurrency,
@@ -1332,6 +1340,7 @@ class BackgroundPostOperationUpdate {
 class CreateEditPostCallBackConfig {
   const CreateEditPostCallBackConfig({
     this.onLinkProduct,
+    this.onAddPostLink,
     this.onBackgroundPostOperation,
     this.onAddSoundFromCamera,
     this.licenseAgreementAfterMediaEdit,
@@ -1339,6 +1348,10 @@ class CreateEditPostCallBackConfig {
 
   final Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
       onLinkProduct;
+
+  /// Optional host link picker when adding `tags.links`. When null, SDK shows
+  /// the built-in add-link bottom sheet.
+  final Future<PostLinkData?> Function(PostLinkData? currentLink)? onAddPostLink;
 
   /// called when edit is completed and confirm License Agreement, true to proceed and false to halt
   final Future<bool> Function(List<MediaData> mediaList, MediaEditSoundItem? selectedSound)?
@@ -1357,6 +1370,7 @@ class CreateEditPostCallBackConfig {
   CreateEditPostCallBackConfig copyWith({
     Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
         onLinkProduct,
+    Future<PostLinkData?> Function(PostLinkData? currentLink)? onAddPostLink,
     void Function(BackgroundPostOperationUpdate update)? onBackgroundPostOperation,
     void Function(BuildContext context)? onAddSoundFromCamera,
     Future<bool> Function(List<MediaData> mediaList, MediaEditSoundItem? selectedSound)?
@@ -1364,6 +1378,7 @@ class CreateEditPostCallBackConfig {
   }) =>
       CreateEditPostCallBackConfig(
         onLinkProduct: onLinkProduct ?? this.onLinkProduct,
+        onAddPostLink: onAddPostLink ?? this.onAddPostLink,
         licenseAgreementAfterMediaEdit: licenseAgreementAfterMediaEdit ??
             this.licenseAgreementAfterMediaEdit,
         onBackgroundPostOperation:

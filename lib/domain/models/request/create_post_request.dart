@@ -115,6 +115,8 @@ class PostSettingModel {
           _readBool(json['comments_enabled'], key: 'comments_enabled') ?? false,
       duetEnabled: _readBool(json['duet_enabled'], key: 'duet_enabled') ?? false,
       saveEnabled: _readBool(json['save_enabled'], key: 'save_enabled') ?? false,
+      downloadEnabled:
+          _readBool(json['download_enabled'], key: 'download_enabled') ?? true,
       stitchEnabled:
           _readBool(json['stitch_enabled'], key: 'stitch_enabled') ?? false,
       isPaid: normalizedIsPaid,
@@ -130,6 +132,7 @@ class PostSettingModel {
     this.commentsEnabled,
     this.duetEnabled,
     this.saveEnabled,
+    this.downloadEnabled,
     this.stitchEnabled,
     this.isPaid,
     this.priceAmount,
@@ -142,6 +145,7 @@ class PostSettingModel {
   final bool? commentsEnabled;
   final bool? duetEnabled;
   final bool? saveEnabled;
+  final bool? downloadEnabled;
   final bool? stitchEnabled;
   final bool? isPaid;
   final Object? priceAmount;
@@ -183,6 +187,7 @@ class PostSettingModel {
       'comments_enabled': commentsEnabled ?? false,
       'duet_enabled': duetEnabled ?? false,
       'save_enabled': saveEnabled ?? false,
+      'download_enabled': downloadEnabled ?? true,
       'stitch_enabled': stitchEnabled ?? false,
     };
     final shouldSendPaidFields = isPaid == true &&

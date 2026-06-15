@@ -42,6 +42,13 @@ class _HomeScreenState extends State<HomeScreen> {
             startingPostIndex: 0,
           ),
           isr.TabDataModel(
+            postSectionType: isr.PostSectionType.feeds,
+            title: TranslationFile.feeds,
+            feedLayoutType: isr.FeedLayoutType.postFeed,
+            reelsDataList: [],
+            startingPostIndex: 0,
+          ),
+          isr.TabDataModel(
             postSectionType: isr.PostSectionType.trending,
             title: TranslationFile.trending,
             reelsDataList: [],

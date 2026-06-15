@@ -12,8 +12,13 @@ class TabDataModel {
           (e) => e.name == json['postSectionType'],
           orElse: () => PostSectionType.trending,
         ),
+        feedLayoutType: FeedLayoutType.values.firstWhere(
+          (e) => e.name == json['feedLayoutType'],
+          orElse: () => FeedLayoutType.reels,
+        ),
         userId: json['userId'] as String?,
         postId: json['postId'] as String?,
+        initialCommentId: json['initialCommentId'] as String?,
         tagValue: json['tagValue'] as String?,
         tagType: json['tagType'] != null
             ? TagType.values.firstWhere(
@@ -28,8 +33,10 @@ class TabDataModel {
     required this.reelsDataList,
     this.startingPostIndex = 0,
     required this.postSectionType,
+    this.feedLayoutType = FeedLayoutType.reels,
     this.userId,
     this.postId,
+    this.initialCommentId,
     this.tagValue,
     this.tagType,
   });
@@ -38,8 +45,13 @@ class TabDataModel {
   List<TimeLineData> reelsDataList;
   final int? startingPostIndex;
   final PostSectionType postSectionType;
+
+  /// Per-tab layout: full-screen reels or scrollable post cards.
+  final FeedLayoutType feedLayoutType;
+
   String? userId;
   String? postId;
+  String? initialCommentId;
   String? tagValue;
   TagType? tagType;
 
@@ -48,8 +60,10 @@ class TabDataModel {
     List<TimeLineData>? reelsDataList,
     int? startingPostIndex,
     PostSectionType? postSectionType,
+    FeedLayoutType? feedLayoutType,
     String? userId,
     String? postId,
+    String? initialCommentId,
     String? tagValue,
     TagType? tagType,
   }) =>
@@ -58,8 +72,10 @@ class TabDataModel {
         reelsDataList: reelsDataList ?? this.reelsDataList,
         startingPostIndex: startingPostIndex ?? this.startingPostIndex,
         postSectionType: postSectionType ?? this.postSectionType,
+        feedLayoutType: feedLayoutType ?? this.feedLayoutType,
         userId: userId ?? this.userId,
         postId: postId ?? this.postId,
+        initialCommentId: initialCommentId ?? this.initialCommentId,
         tagValue: tagValue ?? this.tagValue,
         tagType: tagType ?? this.tagType,
       );
@@ -69,8 +85,10 @@ class TabDataModel {
         'reelsDataList': reelsDataList.map((e) => e.toMap()).toList(),
         'startingPostIndex': startingPostIndex,
         'postSectionType': postSectionType.name,
+        'feedLayoutType': feedLayoutType.name,
         'userId': userId,
         'postId': postId,
+        'initialCommentId': initialCommentId,
         'tagValue': tagValue,
         'tagType': tagType?.name,
       };

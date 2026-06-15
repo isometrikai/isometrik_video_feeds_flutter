@@ -79,10 +79,10 @@ class _StoryViewerViewState extends State<StoryViewerView> {
     super.dispose();
   }
 
-  StoryGroup? get _group => _groups.isEmpty ||
-          _viewerCubit.state.groupIndex >= _groups.length
-      ? null
-      : _groups[_viewerCubit.state.groupIndex];
+  StoryGroup? get _group =>
+      _groups.isEmpty || _viewerCubit.state.groupIndex >= _groups.length
+          ? null
+          : _groups[_viewerCubit.state.groupIndex];
 
   int get _highlightStoryCount {
     if ((widget.highlightId ?? '').trim().isEmpty) return 0;
@@ -90,7 +90,8 @@ class _StoryViewerViewState extends State<StoryViewerView> {
   }
 
   void _onHighlightStoryRemoved(String storyId) {
-    final removeIndex = _group?.stories.indexWhere((s) => s.id == storyId) ?? -1;
+    final removeIndex =
+        _group?.stories.indexWhere((s) => s.id == storyId) ?? -1;
     setState(() {
       _groups = _groups
           .map(
@@ -136,7 +137,15 @@ class _StoryViewerViewState extends State<StoryViewerView> {
 
   void _closeViewer() {
     if (!mounted) return;
-    Navigator.of(context).pop(_groups);
+
+    final viewerRoute = ModalRoute.of(context);
+    if (viewerRoute == null) {
+      Navigator.of(context).pop(_groups);
+      return;
+    }
+    Navigator.of(context).popUntil((route) => route == viewerRoute);
+    if (!mounted) return;
+    Navigator.of(context).pop<List<StoryGroup>>(_groups);
   }
 
   bool _isVideo(StoryData s) {
@@ -249,8 +258,8 @@ class _StoryViewerViewState extends State<StoryViewerView> {
           (s) => s.id == storyId ? s.copyWith(isViewed: true) : s,
         )
         .toList();
-    final allDone = nextStories.isNotEmpty &&
-        nextStories.every((s) => s.isViewed);
+    final allDone =
+        nextStories.isNotEmpty && nextStories.every((s) => s.isViewed);
     return StoryGroup(
       userId: group.userId,
       username: group.username,
@@ -354,9 +363,8 @@ class _StoryViewerViewState extends State<StoryViewerView> {
               isViewed: g.isViewed,
               stories: g.stories
                   .map(
-                    (s) => s.id == storyId
-                        ? s.copyWith(isReacted: isReacted)
-                        : s,
+                    (s) =>
+                        s.id == storyId ? s.copyWith(isReacted: isReacted) : s,
                   )
                   .toList(),
             ),
@@ -405,8 +413,7 @@ class _StoryViewerViewState extends State<StoryViewerView> {
 
   bool get _inHighlightViewer => (widget.highlightId ?? '').trim().isNotEmpty;
 
-  bool get _showAddToHighlight =>
-      _canManageCurrentStory && !_inHighlightViewer;
+  bool get _showAddToHighlight => _canManageCurrentStory && !_inHighlightViewer;
 
   Future<void> _onAddToHighlightPressed() async {
     final story = _story;
@@ -547,10 +554,10 @@ class _StoryViewerViewState extends State<StoryViewerView> {
                             onAddToHighlightPressed: _showAddToHighlight
                                 ? _onAddToHighlightPressed
                                 : null,
-                            onDeleteStoryPressed: _canManageCurrentStory &&
-                                    !_inHighlightViewer
-                                ? _onDeleteStoryPressed
-                                : null,
+                            onDeleteStoryPressed:
+                                _canManageCurrentStory && !_inHighlightViewer
+                                    ? _onDeleteStoryPressed
+                                    : null,
                             onClose: _closeViewer,
                             onMoreActionsPressed: _onMoreActionsPressed,
                           ),

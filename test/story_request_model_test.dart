@@ -105,7 +105,7 @@ void main() {
     expect(json['story_ids'], ['story_1', 'story_2']);
   });
 
-  test('CreateStoryRequest video body includes flat and nested duration', () {
+  test('CreateStoryRequest video body matches VideoMedia schema', () {
     final request = CreateStoryRequest(
       mediaUrl: 'https://example.com/video.mp4',
       mediaType: 'video',
@@ -115,9 +115,22 @@ void main() {
     );
     final json = request.toJson();
     final media = json['media'] as Map<String, dynamic>?;
-    expect(media!['duration'], 12.0);
-    final video = media['video'] as Map<String, dynamic>?;
-    expect(video, isNotNull);
-    expect(video!['duration'], 12.0);
+    expect(media!['media_type'], 'video');
+    expect(media['duration'], 12.0);
+    expect(media.containsKey('preview_url'), isFalse);
+    expect(media.containsKey('video'), isFalse);
+  });
+
+  test('CreateStoryRequest video includes preview_url when set', () {
+    final request = CreateStoryRequest(
+      mediaUrl: 'https://example.com/video.mp4',
+      mediaType: 'video',
+      mediaPosition: 1,
+      videoDurationSeconds: 8,
+      previewUrl: 'https://example.com/video_thumb.jpg',
+    );
+    final media = request.toJson()['media'] as Map<String, dynamic>?;
+    expect(media!['preview_url'], 'https://example.com/video_thumb.jpg');
+    expect(media['duration'], 8.0);
   });
 }

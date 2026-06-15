@@ -150,6 +150,7 @@ class StoryData {
     this.id = '',
     this.userId = '',
     this.mediaUrl = '',
+    this.previewUrl = '',
     this.mediaType = '',
     this.caption = '',
     this.username = '',
@@ -178,6 +179,9 @@ class StoryData {
           mediaMap?['url']?.toString() ??
           mediaMap?['media_url']?.toString() ??
           '',
+      previewUrl: map['preview_url']?.toString() ??
+          mediaMap?['preview_url']?.toString() ??
+          '',
       mediaType: map['media_type']?.toString() ??
           mediaMap?['media_type']?.toString() ??
           '',
@@ -199,6 +203,7 @@ class StoryData {
     String? id,
     String? userId,
     String? mediaUrl,
+    String? previewUrl,
     String? mediaType,
     String? caption,
     String? username,
@@ -214,6 +219,7 @@ class StoryData {
         id: id ?? this.id,
         userId: userId ?? this.userId,
         mediaUrl: mediaUrl ?? this.mediaUrl,
+        previewUrl: previewUrl ?? this.previewUrl,
         mediaType: mediaType ?? this.mediaType,
         caption: caption ?? this.caption,
         username: username ?? this.username,
@@ -229,7 +235,17 @@ class StoryData {
   final String id;
   final String userId;
   final String mediaUrl;
+  final String previewUrl;
   final String mediaType;
+
+  /// Thumbnail for story rings and highlight pickers (video uses [previewUrl]).
+  String get thumbDisplayUrl {
+    final preview = previewUrl.trim();
+    if (mediaType.toLowerCase().contains('video') && preview.isNotEmpty) {
+      return preview;
+    }
+    return mediaUrl.trim();
+  }
   final String caption;
   final String username;
   final String fullName;

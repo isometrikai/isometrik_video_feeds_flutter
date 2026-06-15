@@ -313,9 +313,6 @@ class StandardVideoNonPreloadedManager implements IVideoCacheManager {
   void clearControllers() {}
 
   @override
-  void clearControllersOutsideRange(List<String> activeUrls) {}
-
-  @override
   Map<String, dynamic> getCacheStats() => const {
         'mode': 'non-cache',
         'cached_videos': 0,

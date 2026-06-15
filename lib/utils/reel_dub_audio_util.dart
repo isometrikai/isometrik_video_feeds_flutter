@@ -58,13 +58,18 @@ class ReelDubAudioUtil {
         _firstNonEmpty(firstMedia?.url) ??
         '';
 
+    final postSound = post.sound;
+    final librarySoundId = _firstNonEmpty(postSound?.id) ??
+        _firstNonEmpty(post.soundId);
+
     return SoundTrack(
-      id: 'dub_${post.id ?? audioFilePath.hashCode}',
-      thumbnailUrl: thumbnailUrl,
+      id: librarySoundId ?? 'dub_${post.id ?? audioFilePath.hashCode}',
+      thumbnailUrl: _firstNonEmpty(postSound?.thumbnailUrl) ?? thumbnailUrl,
       trackUrl: audioFilePath,
-      title: 'Original audio',
-      author: author,
+      title: _firstNonEmpty(postSound?.title) ?? 'Original audio',
+      author: _firstNonEmpty(postSound?.artist) ?? author,
       duration: Duration(seconds: durationSeconds.clamp(1, 3600)),
+      originalStatus: postSound?.snapshot?['original_status'] as String?,
     );
   }
 }
