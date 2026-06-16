@@ -127,6 +127,9 @@ class TextPostFormatting {
 
   Color get fallbackBackgroundColor {
     if (!hasBackground) return const Color(0xFF000000);
+    // Solid / plain backgrounds are expressed as a hex color value.
+    final hex = _tryParseHexColor(backgroundValue);
+    if (hex != null) return hex;
     return TextPostGradientPalette.colorsFor(backgroundValue).first;
   }
 
@@ -137,6 +140,19 @@ class TextPostFormatting {
     if (value.length == 6) value = 'FF$value';
     final parsed = int.tryParse(value, radix: 16);
     if (parsed == null) return Colors.white;
+    return Color(parsed);
+  }
+
+  /// Returns a [Color] when [raw] looks like a hex value (`#RRGGBB` /
+  /// `#AARRGGBB`), otherwise `null` so callers can fall back to gradient keys.
+  static Color? _tryParseHexColor(String raw) {
+    var value = raw.trim();
+    if (value.isEmpty) return null;
+    if (value.startsWith('#')) value = value.substring(1);
+    if (value.length != 6 && value.length != 8) return null;
+    if (value.length == 6) value = 'FF$value';
+    final parsed = int.tryParse(value, radix: 16);
+    if (parsed == null) return null;
     return Color(parsed);
   }
 }
@@ -172,6 +188,9 @@ class TextPostGradientPalette {
     final normalized = key.trim().toLowerCase();
     return _gradients[normalized] ?? _default;
   }
+
+  /// Ordered gradient keys, used by the composer to render selectable swatches.
+  static List<String> get gradientKeys => _gradients.keys.toList(growable: false);
 }
 
 extension TimeLineDataTextFormattingX on TimeLineData {

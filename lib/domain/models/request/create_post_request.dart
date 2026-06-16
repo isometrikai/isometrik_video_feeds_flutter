@@ -23,6 +23,7 @@ class CreatePostRequest {
     this.mentions,
     this.soundId,
     this.soundSnapshot,
+    this.textFormatting,
   });
 
   factory CreatePostRequest.fromJson(Map<String, dynamic> json) =>
@@ -58,6 +59,11 @@ class CreatePostRequest {
             : Map<String, dynamic>.from(
                 json['sound_snapshot'] as Map<String, dynamic>,
               ),
+        textFormatting: json['text_formatting'] == null
+            ? null
+            : Map<String, dynamic>.from(
+                json['text_formatting'] as Map<String, dynamic>,
+              ),
       );
   String? postId;
   String? caption;
@@ -73,7 +79,25 @@ class CreatePostRequest {
   String? soundId;
   Map<String, dynamic>? soundSnapshot;
 
-  Map<String, dynamic> toJson() => {
+  /// `text_formatting` payload for `type: text` posts. When set, the post is a
+  /// text-only post and the media/caption/settings keys are omitted.
+  Map<String, dynamic>? textFormatting;
+
+  bool get isTextPost =>
+      (type ?? '').trim().toLowerCase() == 'text' || textFormatting != null;
+
+  Map<String, dynamic> toJson() {
+    if (isTextPost) {
+      return {
+        if (postId != null && postId!.isNotEmpty) 'id': postId,
+        'type': type ?? 'text',
+        'visibility': visibility,
+        if (textFormatting != null) 'text_formatting': textFormatting,
+        if (scheduleTime != null && scheduleTime!.isNotEmpty)
+          'scheduled_at': scheduleTime,
+      };
+    }
+    return {
         'id': postId,
         'caption': caption,
         'media': media == null
@@ -95,6 +119,7 @@ class CreatePostRequest {
         if (soundSnapshot != null && soundSnapshot!.isNotEmpty)
           'sound_snapshot': soundSnapshot,
       };
+  }
 }
 
 class PostSettingModel {

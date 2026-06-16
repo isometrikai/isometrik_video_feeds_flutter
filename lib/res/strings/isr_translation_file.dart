@@ -54,6 +54,9 @@ class IsrTranslationFile {
   static const String allowSave = 'Allow Save';
   static const String allowDownloads = 'Allow Downloads';
   static const String post = 'Post';
+  static const String whatsHappening = "What's happening?";
+  static const String card = 'Card';
+  static const String text = 'Text';
   static const String sdkNotInitialized = 'sdk not initialized';
   static const String noInternet = 'No Internet';
   static const String shop = 'Shop';

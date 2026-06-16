@@ -718,6 +718,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     );
 
     if (event.isForEdit != true &&
+        !_createPostRequest.isTextPost &&
         IsrVideoReelConfig.postConfig.isCaptionRequired &&
         (_createPostRequest.caption?.trim().isEmpty ?? true)) {
       Utility.showAppDialog(
@@ -750,7 +751,13 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
         _postData = null;
         final createPostData = apiResult.data?.data;
         final postId = createPostData?.id ?? '';
-        final needsProcessing = _isMediaChanged(includeCoverChange: false);
+        // Text posts carry no media, but the backend still creates them in a
+        // pending state and relies on `start-processing` to approve/publish.
+        final isTextPost =
+            (_createPostRequest.type ?? '').trim().toLowerCase() ==
+                SocialPostType.text;
+        final needsProcessing =
+            isTextPost || _isMediaChanged(includeCoverChange: false);
         if (needsProcessing) {
           add(MediaProcessingEvent(postId: postId));
         } else {
