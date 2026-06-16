@@ -517,10 +517,20 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
             return const SizedBox.shrink();
           }
           if (usePostDividers) {
-            return Divider(
-              height: IsrDimens.one,
-              thickness: IsrDimens.one,
-              color: feedUi.dividerColor,
+            final dividerGapBefore =
+                feedUi.postDividerSpacing.clamp(0.0, double.infinity);
+            final dividerGapAfter =
+                feedUi.postDividerSpacingAfter.clamp(0.0, double.infinity);
+            return Padding(
+              padding: EdgeInsets.only(
+                top: dividerGapBefore,
+                bottom: dividerGapAfter,
+              ),
+              child: Divider(
+                height: IsrDimens.one,
+                thickness: IsrDimens.one,
+                color: feedUi.dividerColor,
+              ),
             );
           }
           return itemGap > 0

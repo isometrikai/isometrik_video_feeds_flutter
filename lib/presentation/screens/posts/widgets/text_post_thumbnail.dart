@@ -38,6 +38,28 @@ class TextPostThumbnail extends StatelessWidget {
       return ColoredBox(color: formatting.fallbackBackgroundColor);
     }
 
+    if (!formatting.hasBackground) {
+      return ColoredBox(
+        color: const Color(0xFF000000),
+        child: Padding(
+          padding: padding,
+          child: Align(
+            alignment: Alignment.topLeft,
+            child: Text(
+              formatting.text,
+              textAlign: formatting.textAlignValue,
+              maxLines: maxLines,
+              overflow: TextOverflow.ellipsis,
+              style: formatting.buildThumbnailTextStyle(
+                fontSizeDivisor: fontSizeDivisor,
+                textColorOverride: Colors.white,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     final gradient = formatting.backgroundGradient;
     return DecoratedBox(
       decoration: BoxDecoration(

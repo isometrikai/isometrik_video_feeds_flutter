@@ -33,8 +33,8 @@ class TextPostFormatting {
       fontSize: (map['font_size'] as num?)?.toDouble() ?? 18,
       fontStyle: map['font_style'] as String? ?? 'normal',
       textAlign: map['text_align'] as String? ?? 'center',
-      backgroundType: background?['type'] as String? ?? 'gradient',
-      backgroundValue: background?['value'] as String? ?? 'blue_purple',
+      backgroundType: background?['type'] as String? ?? '',
+      backgroundValue: background?['value'] as String? ?? '',
       textColor: background?['text_color'] as String? ?? '#FFFFFF',
     );
   }
@@ -52,6 +52,9 @@ class TextPostFormatting {
   final String textColor;
 
   bool get hasContent => text.trim().isNotEmpty;
+
+  /// `true` when API `background` includes a non-empty `type` (gradient/color).
+  bool get hasBackground => backgroundType.trim().isNotEmpty;
 
   Alignment get alignment {
     switch (textAlign.toLowerCase()) {
@@ -75,36 +78,45 @@ class TextPostFormatting {
     }
   }
 
-  TextStyle buildTextStyle() {
+  TextStyle buildTextStyle({Color? textColorOverride}) {
     final normalizedStyle = fontStyle.toLowerCase();
     final weight =
         normalizedStyle == 'bold' ? FontWeight.bold : FontWeight.normal;
     final style =
         normalizedStyle == 'italic' ? FontStyle.italic : FontStyle.normal;
+    final resolvedColor = textColorOverride ??
+        (hasBackground ? _parseHexColor(textColor) : null);
 
     return GoogleFonts.getFont(
       fontFamily,
       fontSize: fontSize,
       fontWeight: weight,
       fontStyle: style,
-      color: _parseHexColor(textColor),
+      color: resolvedColor,
       height: 1.35,
     );
   }
+
+  TextStyle buildPlainTextStyle(Color textColor) =>
+      buildTextStyle(textColorOverride: textColor);
 
   /// Smaller type for grid thumbnails (explore / profile); full-screen uses [buildTextStyle].
   TextStyle buildThumbnailTextStyle({
     double fontSizeDivisor = 2.3,
     double minFontSize = 8,
     double maxFontSize = 12,
+    Color? textColorOverride,
   }) {
     final scaled =
         (fontSize / fontSizeDivisor).clamp(minFontSize, maxFontSize).toDouble();
-    return buildTextStyle().copyWith(fontSize: scaled, height: 1.15);
+    return buildTextStyle(textColorOverride: textColorOverride)
+        .copyWith(fontSize: scaled, height: 1.15);
   }
 
   Gradient? get backgroundGradient {
-    if (backgroundType.toLowerCase() != 'gradient') return null;
+    if (!hasBackground || backgroundType.toLowerCase() != 'gradient') {
+      return null;
+    }
     final colors = TextPostGradientPalette.colorsFor(backgroundValue);
     return LinearGradient(
       begin: Alignment.topLeft,
@@ -113,8 +125,10 @@ class TextPostFormatting {
     );
   }
 
-  Color get fallbackBackgroundColor =>
-      TextPostGradientPalette.colorsFor(backgroundValue).first;
+  Color get fallbackBackgroundColor {
+    if (!hasBackground) return const Color(0xFF000000);
+    return TextPostGradientPalette.colorsFor(backgroundValue).first;
+  }
 
   static Color _parseHexColor(String raw) {
     var value = raw.trim();

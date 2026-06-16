@@ -4,6 +4,7 @@ import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/models/models.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
+import 'package:ism_video_reel_player/presentation/screens/create_post_multimedia/create_text_post_flow_coordinator.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart'
     as ms;
@@ -296,6 +297,16 @@ class IsrAppNavigator {
     );
     return result;
   }
+
+  /// Default text-post flow: compose text → publish.
+  static Future<dynamic> goToCreateTextPostView(
+    BuildContext context, {
+    TransitionType? transitionType,
+  }) =>
+      CreateTextPostFlowCoordinator.run(
+        context,
+        transitionType: transitionType,
+      );
 
   static Future<void> goToCreateStoryView(
     BuildContext context, {

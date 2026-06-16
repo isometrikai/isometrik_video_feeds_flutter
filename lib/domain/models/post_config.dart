@@ -115,12 +115,16 @@ class PostFeedUIConfig {
     this.showActionCounts = false,
     this.showPostTimestamp = false,
     this.showPostDividers = false,
+    this.postDividerSpacing = 6.0,
+    this.postDividerSpacingAfter = 2.0,
     this.headerSubtitle,
     this.videoMediaAspectRatio = 3 / 4,
     this.imageMediaAspectRatio = 3 / 4,
     this.landscapeMediaAspectRatio = 1.91,
     this.actionIconGapCompact = 10,
     this.actionIconGapWithCount = 16,
+    this.actionIconSize,
+    this.formattedTextPostAspectRatio = 1,
   });
 
   /// Instagram-style post feed: header above media, counts, timestamps, dividers.
@@ -133,6 +137,12 @@ class PostFeedUIConfig {
     showPostTimestamp: true,
     showPostDividers: true,
     postSpacing: 0,
+    postDividerSpacing: 12,
+    postDividerSpacingAfter: 4,
+    actionIconSize: 24,
+    actionIconGapCompact: 12,
+    actionIconGapWithCount: 12,
+    formattedTextPostAspectRatio: 4 / 5,
   );
 
   /// Header title for post-card feed tabs. Falls back to the active tab title when null or empty.
@@ -183,6 +193,12 @@ class PostFeedUIConfig {
   /// Thin dividers between posts instead of only [postSpacing] gaps.
   final bool showPostDividers;
 
+  /// Vertical padding above each divider when [showPostDividers] is true.
+  final double postDividerSpacing;
+
+  /// Vertical padding below each divider before the next post starts.
+  final double postDividerSpacingAfter;
+
   /// Optional subtitle under the username in the post header (e.g. "Suggested for you").
   final String? headerSubtitle;
 
@@ -201,6 +217,87 @@ class PostFeedUIConfig {
 
   /// Horizontal gap between action icons when at least one adjacent action shows a count.
   final double actionIconGapWithCount;
+
+  /// Feed-only action icon size (like, comment, share, bookmark). Does not affect Reels.
+  final double? actionIconSize;
+
+  /// Aspect ratio (width / height) for formatted text-post gradient blocks in feed.
+  final double formattedTextPostAspectRatio;
+
+  PostFeedUIConfig copyWith({
+    String? title,
+    TextStyle? titleTextStyle,
+    PostFeedActionWidgetBuilder? actionWidget,
+    Color? backgroundColor,
+    Color? dividerColor,
+    Color? headerTextColor,
+    Color? secondaryTextColor,
+    Color? actionIconColor,
+    double? mediaAspectRatio,
+    double? mediaFrameHeight,
+    double? mediaFrameWidth,
+    bool? showCarouselPageBadge,
+    bool? showCarouselDots,
+    double? postSpacing,
+    bool? showHeader,
+    bool? defaultVideoMuted,
+    bool? enableVideoTapControls,
+    PostFeedCardStyle? cardStyle,
+    bool? showActionCounts,
+    bool? showPostTimestamp,
+    bool? showPostDividers,
+    double? postDividerSpacing,
+    double? postDividerSpacingAfter,
+    String? headerSubtitle,
+    double? videoMediaAspectRatio,
+    double? imageMediaAspectRatio,
+    double? landscapeMediaAspectRatio,
+    double? actionIconGapCompact,
+    double? actionIconGapWithCount,
+    double? actionIconSize,
+    double? formattedTextPostAspectRatio,
+  }) =>
+      PostFeedUIConfig(
+        title: title ?? this.title,
+        titleTextStyle: titleTextStyle ?? this.titleTextStyle,
+        actionWidget: actionWidget ?? this.actionWidget,
+        backgroundColor: backgroundColor ?? this.backgroundColor,
+        dividerColor: dividerColor ?? this.dividerColor,
+        headerTextColor: headerTextColor ?? this.headerTextColor,
+        secondaryTextColor: secondaryTextColor ?? this.secondaryTextColor,
+        actionIconColor: actionIconColor ?? this.actionIconColor,
+        mediaAspectRatio: mediaAspectRatio ?? this.mediaAspectRatio,
+        mediaFrameHeight: mediaFrameHeight ?? this.mediaFrameHeight,
+        mediaFrameWidth: mediaFrameWidth ?? this.mediaFrameWidth,
+        showCarouselPageBadge:
+            showCarouselPageBadge ?? this.showCarouselPageBadge,
+        showCarouselDots: showCarouselDots ?? this.showCarouselDots,
+        postSpacing: postSpacing ?? this.postSpacing,
+        showHeader: showHeader ?? this.showHeader,
+        defaultVideoMuted: defaultVideoMuted ?? this.defaultVideoMuted,
+        enableVideoTapControls:
+            enableVideoTapControls ?? this.enableVideoTapControls,
+        cardStyle: cardStyle ?? this.cardStyle,
+        showActionCounts: showActionCounts ?? this.showActionCounts,
+        showPostTimestamp: showPostTimestamp ?? this.showPostTimestamp,
+        showPostDividers: showPostDividers ?? this.showPostDividers,
+        postDividerSpacing: postDividerSpacing ?? this.postDividerSpacing,
+        postDividerSpacingAfter:
+            postDividerSpacingAfter ?? this.postDividerSpacingAfter,
+        headerSubtitle: headerSubtitle ?? this.headerSubtitle,
+        videoMediaAspectRatio:
+            videoMediaAspectRatio ?? this.videoMediaAspectRatio,
+        imageMediaAspectRatio:
+            imageMediaAspectRatio ?? this.imageMediaAspectRatio,
+        landscapeMediaAspectRatio:
+            landscapeMediaAspectRatio ?? this.landscapeMediaAspectRatio,
+        actionIconGapCompact: actionIconGapCompact ?? this.actionIconGapCompact,
+        actionIconGapWithCount:
+            actionIconGapWithCount ?? this.actionIconGapWithCount,
+        actionIconSize: actionIconSize ?? this.actionIconSize,
+        formattedTextPostAspectRatio:
+            formattedTextPostAspectRatio ?? this.formattedTextPostAspectRatio,
+      );
 }
 
 

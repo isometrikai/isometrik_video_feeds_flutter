@@ -7,15 +7,40 @@ class FeedTextPostContent extends StatelessWidget {
     super.key,
     required this.formatting,
     this.padding = const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
+    this.plainTextColor,
+    this.plainBackgroundColor,
   });
 
   final TextPostFormatting formatting;
   final EdgeInsetsGeometry padding;
+  final Color? plainTextColor;
+  final Color? plainBackgroundColor;
 
   @override
   Widget build(BuildContext context) {
     if (!formatting.hasContent) {
-      return const ColoredBox(color: Color(0xFFEAEAEA));
+      return ColoredBox(color: formatting.fallbackBackgroundColor);
+    }
+
+    if (!formatting.hasBackground) {
+      final textColor = plainTextColor ?? Colors.white;
+      return ColoredBox(
+        color: plainBackgroundColor ?? const Color(0xFF000000),
+        child: Padding(
+          padding: padding,
+          child: Align(
+            alignment: formatting.alignment,
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Text(
+                formatting.text,
+                textAlign: formatting.textAlignValue,
+                style: formatting.buildPlainTextStyle(textColor),
+              ),
+            ),
+          ),
+        ),
+      );
     }
 
     final gradient = formatting.backgroundGradient;
