@@ -469,6 +469,7 @@ class IsrAppNavigator {
     required List<MediaData> mediaDataList,
     MediaEditSoundItem? selectedSound,
     TransitionType? transitionType,
+    bool dismissEntireFlowOnClose = false,
   }) async {
     if (mediaDataList.isEmpty) return null;
 
@@ -477,6 +478,7 @@ class IsrAppNavigator {
         newMediaDataList: mediaDataList,
         selectedSound: selectedSound,
         isEditMode: false,
+        dismissEntireFlowOnClose: dismissEntireFlowOnClose,
       ),
     );
 
@@ -753,12 +755,14 @@ class IsrAppNavigator {
     List<MediaData>? newMediaDataList,
     MediaEditSoundItem? selectedSound,
     TransitionType? transitionType,
+    bool dismissEntireFlowOnClose = false,
   }) =>
       presentCreatePostFromMedia(
         context,
         mediaDataList: newMediaDataList ?? const [],
         selectedSound: selectedSound,
         transitionType: transitionType,
+        dismissEntireFlowOnClose: dismissEntireFlowOnClose,
       );
 
   static Future<List<TaggedPlace>?> goToSearchLocation(

@@ -142,12 +142,19 @@ class _MediaOptionTile extends StatelessWidget {
                 Container(
                   width: 56.responsiveDimension,
                   height: 56.responsiveDimension,
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     color: Colors.white,
                     shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.black,
+                      width: 1.5,
+                    ),
                   ),
-                  child: Icon(icon,
-                      size: 28.responsiveDimension, color: theme.textPrimary),
+                  child: Icon(
+                    icon,
+                    size: 28.responsiveDimension,
+                    color: Colors.black,
+                  ),
                 ),
                 12.responsiveVerticalSpace,
                 Text(

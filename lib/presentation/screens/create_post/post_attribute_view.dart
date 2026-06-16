@@ -26,12 +26,18 @@ class PostAttributeView extends StatefulWidget {
     this.postData,
     this.newMediaDataList,
     this.selectedSound,
+    this.dismissEntireFlowOnClose = false,
   });
 
   final bool? isEditMode;
   final List<MediaData>? newMediaDataList;
   final MediaEditSoundItem? selectedSound;
   final TimeLineData? postData;
+
+  /// When true, close/success dismisses every create-post route (e.g. dub flow
+  /// with a media editor still on the stack). The default stacked coordinator
+  /// flow keeps this false so each step pops once and bubbles the result.
+  final bool dismissEntireFlowOnClose;
 
   @override
   State<PostAttributeView> createState() => _PostAttributeViewState();
@@ -72,6 +78,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
   DateTime? _selectedDate;
 
   bool _isDialogOpen = false;
+  bool _createFlowDismissed = false;
 
   // Throttle post-button updates when returning from other screens to reduce transition jank
   static const _postButtonUpdateThrottleMs = 150;
@@ -97,12 +104,21 @@ class _PostAttributeViewState extends State<PostAttributeView>
       IsrVideoReelConfig.createEditPostConfig.enableBusinessLink;
 
   void _leaveCreateFlow({TimeLineData? result}) {
-    if (widget.isEditMode != true) {
-      Navigator.pop(context, null);
+    if (widget.isEditMode == true) {
       Navigator.pop(context, result);
-    } else {
-      Navigator.pop(context, result);
+      return;
     }
+    if (_useBackgroundPostUi || widget.dismissEntireFlowOnClose) {
+      _dismissEntireCreateFlow();
+      return;
+    }
+    Navigator.pop(context, result);
+  }
+
+  void _dismissEntireCreateFlow() {
+    if (_createFlowDismissed) return;
+    _createFlowDismissed = true;
+    IsrAppNavigator.dismissCreatePostFlow(context);
   }
 
   void _resetLocalEditState() {
@@ -622,8 +638,9 @@ class _PostAttributeViewState extends State<PostAttributeView>
           if (_useBackgroundPostUi) {
             if (!mounted) return;
             _doMediaCaching(state.mediaDataList);
-            final postData = state.postDataModel;
-            _popNavigatorStackForBackgroundPost(result: postData);
+            if (!_createFlowDismissed) {
+              _popNavigatorStackForBackgroundPost(result: state.postDataModel);
+            }
             return;
           }
           if (widget.isEditMode == true) {
@@ -2306,6 +2323,9 @@ class _PostAttributeViewState extends State<PostAttributeView>
                       20.responsiveDimension,
                   width: _postAttributeConfig?.switchTileConfig?.iconSize ??
                       20.responsiveDimension,
+                  color: _postAttributeConfig?.switchTileConfig?.iconColor ??
+                      _postAttributeConfig?.optionTileConfig?.iconColor ??
+                      IsrColors.primaryTextColor,
                 ),
                 8.horizontalSpace,
                 Expanded(
