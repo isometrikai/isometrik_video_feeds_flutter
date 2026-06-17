@@ -712,22 +712,6 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       PostCreateEvent event, Emitter<CreatePostState> emit) async {
     _lastPostCreateEventForRetry = event;
     _createPostRequest = event.createPostRequest;
-    if (event.isForEdit != true &&
-        _createPostRequest.isTextPost &&
-        event.attachedMedia?.isNotEmpty == true) {
-      _mediaDataList.clear();
-      for (var i = 0; i < event.attachedMedia!.length; i++) {
-        final processed = await _processMediaData(event.attachedMedia![i], i);
-        if (processed != null) {
-          _mediaDataList.add(processed);
-        }
-      }
-      if (_mediaDataList.isNotEmpty) {
-        await _ensureUniqueUploadNamesForMedia();
-        await _prepareCoverForLocalUpload();
-        _createPostRequest.media = _mediaDataList;
-      }
-    }
     if (event.selectedSound != null) {
       _selectedPostSound = event.selectedSound;
       _postAttributeClass.selectedSound = event.selectedSound;

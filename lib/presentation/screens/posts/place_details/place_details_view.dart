@@ -396,19 +396,29 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(8.responsiveDimension),
           child: Stack(
+            fit: StackFit.expand,
             children: [
               _buildPostImage(post),
               _buildUserProfileOverlay(post),
               if (post.tags?.products?.isListEmptyOrNull == false)
                 _buildShopButtonOverlay(post),
-              if (post.media?.first.mediaType?.mediaType == MediaType.video)
-                _buildVideoIcon(),
+              if (_isVideoPost(post)) _buildVideoIcon(),
             ],
           ),
         ),
       );
 
+  bool _isVideoPost(TimeLineData post) {
+    final media = post.media;
+    if (media == null || media.isEmpty) return false;
+    return media.first.mediaType?.mediaType == MediaType.video;
+  }
+
   Widget _buildPostImage(TimeLineData post) {
+    if (post.isTextOnlyPost) {
+      return TextPostThumbnail.fromPost(post);
+    }
+
     var coverUrl = '';
     if (post.previews.isEmptyOrNull == false) {
       final previewUrl = post.previews?.first.url ?? '';

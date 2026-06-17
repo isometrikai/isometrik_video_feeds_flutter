@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,7 +6,6 @@ import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
-import 'package:ism_video_reel_player/presentation/screens/create_post_multimedia/create_text_post_flow_coordinator.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
@@ -21,8 +18,7 @@ import 'package:ism_video_reel_player/utils/utils.dart';
 ///   style, text alignment and text color.
 ///
 /// Reuses the shared [CreatePostBloc] to publish a `text` type post through the
-/// SDK create-post pipeline. Optional image/video attachments are uploaded
-/// before the create-post API call.
+/// SDK create-post pipeline (no media upload step is required for text posts).
 class CreateTextPostView extends StatefulWidget {
   const CreateTextPostView({super.key});
 
@@ -105,9 +101,7 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
   int _fontSize = 24;
   String _fontStyle = 'normal';
   String _cardTextAlign = 'center';
-  final List<MediaData> _attachedMedia = [];
   final List<TaggedPlace> _taggedPlaces = [];
-  bool _isPickingMedia = false;
 
   CreatePostBloc get _createPostBloc =>
       IsmInjectionUtils.getBloc<CreatePostBloc>();
@@ -117,27 +111,7 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
           ?.onBackgroundPostOperation !=
       null;
 
-  bool get _canPost =>
-      (_controller.text.trim().isNotEmpty || _attachedMedia.isNotEmpty) &&
-      !_isPosting &&
-      !_isPickingMedia;
-
-  int get _attachedImageCount => _attachedMedia
-      .where((m) => m.postType == PostType.photo || m.mediaType == 'image')
-      .length;
-
-  int get _attachedVideoCount => _attachedMedia
-      .where((m) => m.postType == PostType.video || m.mediaType == 'video')
-      .length;
-
-  int get _remainingMediaSlots =>
-      AppConstants.totalMediaLimit - _attachedMedia.length;
-
-  int get _remainingImageSlots =>
-      AppConstants.imageMediaLimit - _attachedImageCount;
-
-  int get _remainingVideoSlots =>
-      AppConstants.videoMediaLimit - _attachedVideoCount;
+  bool get _canPost => _controller.text.trim().isNotEmpty && !_isPosting;
 
   int get _currentLimit =>
       _isCard ? CreateTextPostView.cardLimit : CreateTextPostView.plainLimit;
@@ -235,7 +209,7 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
 
   void _onPost() {
     final text = _controller.text.trim();
-    if ((text.isEmpty && _attachedMedia.isEmpty) || _isPosting) return;
+    if (text.isEmpty || _isPosting) return;
     _focusNode.unfocus();
     setState(() => _isPosting = true);
 
@@ -258,19 +232,12 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
       type: SocialPostType.text,
       visibility: SocialPostVisibility.public,
       textFormatting: textFormatting,
-      media: _attachedMedia.isEmpty ? null : List<MediaData>.from(_attachedMedia),
       tags: _taggedPlaces.isEmpty
           ? null
           : Tags(places: List<TaggedPlace>.from(_taggedPlaces)),
     );
 
-    _createPostBloc.add(
-      PostCreateEvent(
-        createPostRequest: request,
-        attachedMedia:
-            _attachedMedia.isEmpty ? null : List<MediaData>.from(_attachedMedia),
-      ),
-    );
+    _createPostBloc.add(PostCreateEvent(createPostRequest: request));
   }
 
   Future<void> _pickLocation() async {
@@ -302,55 +269,6 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
     if (name.isEmpty) return city;
     if (city.isEmpty || name == city) return name;
     return '$name, $city';
-  }
-
-  Future<void> _pickFromGallery() async {
-    if (_isPickingMedia || _remainingMediaSlots <= 0) return;
-    setState(() => _isPickingMedia = true);
-    try {
-      final picked = await CreateTextPostFlowCoordinator.pickFromGallery(
-        context,
-        remainingSlots: _remainingMediaSlots,
-        remainingImages: _remainingImageSlots,
-        remainingVideos: _remainingVideoSlots,
-      );
-      _appendAttachedMedia(picked);
-    } finally {
-      if (mounted) setState(() => _isPickingMedia = false);
-    }
-  }
-
-  Future<void> _captureFromCamera() async {
-    if (_isPickingMedia || _remainingMediaSlots <= 0) return;
-    setState(() => _isPickingMedia = true);
-    try {
-      final captured =
-          await CreateTextPostFlowCoordinator.captureFromCamera(context);
-      _appendAttachedMedia(captured);
-    } finally {
-      if (mounted) setState(() => _isPickingMedia = false);
-    }
-  }
-
-  void _appendAttachedMedia(List<MediaData> items) {
-    if (!mounted || items.isEmpty) return;
-    setState(() {
-      for (final item in items) {
-        if (_attachedMedia.length >= AppConstants.totalMediaLimit) break;
-        item.position = _attachedMedia.length + 1;
-        _attachedMedia.add(item);
-      }
-    });
-  }
-
-  void _removeAttachedMedia(int index) {
-    if (index < 0 || index >= _attachedMedia.length) return;
-    setState(() {
-      _attachedMedia.removeAt(index);
-      for (var i = 0; i < _attachedMedia.length; i++) {
-        _attachedMedia[i].position = i + 1;
-      }
-    });
   }
 
   /// Pops the composer exactly once, after the current frame, to avoid
@@ -439,16 +357,12 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
                         const SizedBox(height: 12),
                         _buildLocationChip(),
                       ],
-                      if (_attachedMedia.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        _buildAttachedMediaPreview(),
-                      ],
                     ],
                   ),
                 ),
               ),
               Container(height: 1, color: dividerColor),
-              _buildMediaAttachBar(),
+              _buildComposerToolbar(),
               if (_isCard) _buildCardToolbar(),
               _buildBottomBar(),
             ],
@@ -601,59 +515,27 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
   }) =>
       null;
 
-  Widget _buildMediaAttachBar() {
-    final mediaDisabled =
-        _isPosting || _isPickingMedia || _remainingMediaSlots <= 0;
-    final mediaIconColor = mediaDisabled
-        ? IsrColors.secondaryTextColor.withValues(alpha: 0.35)
-        : IsrColors.appColor;
+  Widget _buildComposerToolbar() {
     final hasLocation = _taggedPlaces.isNotEmpty;
     final locationIconColor = _isPosting
         ? IsrColors.secondaryTextColor.withValues(alpha: 0.35)
         : IsrColors.appColor;
 
     return Padding(
-        padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
-        child: Row(
-          children: [
-            IconButton(
-              onPressed: mediaDisabled ? null : _pickFromGallery,
-              icon: Icon(Icons.photo_library_outlined, color: mediaIconColor),
-              tooltip: IsrTranslationFile.choosePhotoOrVideo,
+      padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: _isPosting ? null : _pickLocation,
+            icon: Icon(
+              hasLocation ? Icons.location_on : Icons.location_on_outlined,
+              color: locationIconColor,
             ),
-            IconButton(
-              onPressed: mediaDisabled ? null : _captureFromCamera,
-              icon: Icon(Icons.photo_camera_outlined, color: mediaIconColor),
-              tooltip: IsrTranslationFile.choosePhotoOrVideo,
-            ),
-            IconButton(
-              onPressed: _isPosting ? null : _pickLocation,
-              icon: Icon(
-                hasLocation ? Icons.location_on : Icons.location_on_outlined,
-                color: locationIconColor,
-              ),
-              tooltip: IsrTranslationFile.addLocation,
-            ),
-            if (_isPickingMedia)
-              SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(IsrColors.appColor),
-                ),
-              ),
-            if (_attachedMedia.isNotEmpty)
-              Text(
-                '${_attachedMedia.length}/${AppConstants.totalMediaLimit}',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: IsrColors.secondaryTextColor.withValues(alpha: 0.7),
-                ),
-              ),
-          ],
-        ),
-      );
+            tooltip: IsrTranslationFile.addLocation,
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildLocationChip() {
@@ -697,78 +579,6 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
       ),
     );
   }
-
-  Widget _buildAttachedMediaPreview() => SizedBox(
-        height: 112,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          itemCount: _attachedMedia.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 8),
-          itemBuilder: (context, index) {
-            final media = _attachedMedia[index];
-            final previewPath = media.previewUrl ??
-                media.coverFileLocalPath ??
-                media.localPath ??
-                '';
-            final isVideo = media.postType == PostType.video ||
-                media.mediaType == 'video';
-            return Stack(
-              clipBehavior: Clip.none,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: SizedBox(
-                    width: 112,
-                    height: 112,
-                    child: previewPath.isNotEmpty && File(previewPath).existsSync()
-                        ? Image.file(
-                            File(previewPath),
-                            fit: BoxFit.cover,
-                          )
-                        : ColoredBox(
-                            color: IsrColors.dividerColor,
-                            child: Icon(
-                              isVideo ? Icons.videocam : Icons.image,
-                              color: IsrColors.secondaryTextColor,
-                            ),
-                          ),
-                  ),
-                ),
-                if (isVideo)
-                  const Positioned.fill(
-                    child: Center(
-                      child: Icon(
-                        Icons.play_circle_fill,
-                        color: Colors.white70,
-                        size: 36,
-                      ),
-                    ),
-                  ),
-                Positioned(
-                  top: -6,
-                  right: -6,
-                  child: GestureDetector(
-                    onTap: _isPosting ? null : () => _removeAttachedMedia(index),
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        color: IsrColors.appBarColor,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: IsrColors.dividerColor),
-                      ),
-                      child: Icon(
-                        Icons.close,
-                        size: 16,
-                        color: IsrColors.primaryTextColor,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-      );
 
   Widget _buildBottomBar() {
     final length = _controller.text.length;

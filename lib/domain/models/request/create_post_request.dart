@@ -85,8 +85,6 @@ class CreatePostRequest {
   bool get isTextPost =>
       (type ?? '').trim().toLowerCase() == 'text' || textFormatting != null;
 
-  bool get hasAttachedMedia => media != null && media!.isNotEmpty;
-
   bool get hasTags =>
       tags != null &&
       ((tags!.places?.isNotEmpty ?? false) ||
@@ -102,10 +100,6 @@ class CreatePostRequest {
         'type': type ?? 'text',
         'visibility': visibility,
         if (textFormatting != null) 'text_formatting': textFormatting,
-        if (hasAttachedMedia)
-          'media': List<dynamic>.from(media!.map((x) => x.toMap())),
-        if (hasAttachedMedia && previews != null && previews!.isNotEmpty)
-          'previews': List<dynamic>.from(previews!.map((x) => x.toMap())),
         if (hasTags) 'tags': tags!.toMap(),
         if (scheduleTime != null && scheduleTime!.isNotEmpty)
           'scheduled_at': scheduleTime,
