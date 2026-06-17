@@ -162,13 +162,6 @@ class IsrDimens {
   static EdgeInsets getSafeAreaPadding(BuildContext context) =>
       MediaQuery.of(context).padding;
 
-  /// Height of a host app bottom navigation bar overlaid on the feed.
-  static const double hostBottomNavBarHeight = 70;
-
-  /// Space needed so reel overlays clear the host bottom nav and system inset.
-  static double hostBottomNavClearance(BuildContext context) =>
-      MediaQuery.paddingOf(context).bottom + hostBottomNavBarHeight;
-
   /// Resolves configured overlay padding.
   ///
   /// When [includeHostBottomNav] is true (main reels tab), enforces at least
@@ -177,17 +170,14 @@ class IsrDimens {
   /// `bottom: 0` is honored instead of falling back to nav-bar clearance.
   static double resolveOverlayBottomInset(
     BuildContext context,
-    EdgeInsetsGeometry? overlayPadding, {
-    bool includeHostBottomNav = true,
-  }) {
+    EdgeInsetsGeometry? overlayPadding,
+      ) {
     final safeBottom = MediaQuery.paddingOf(context).bottom;
-    final hostClearance = safeBottom +
-        (includeHostBottomNav ? hostBottomNavBarHeight : 0);
-    if (overlayPadding == null) return hostClearance;
+    if (overlayPadding == null) return safeBottom;
     final resolved = overlayPadding.resolve(Directionality.of(context));
     if (resolved.bottom <= 0) {
-      return includeHostBottomNav ? hostClearance : safeBottom;
+      return safeBottom;
     }
-    return resolved.bottom >= hostClearance ? resolved.bottom : hostClearance;
+    return resolved.bottom >= safeBottom ? resolved.bottom : safeBottom;
   }
 }
