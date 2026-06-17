@@ -76,6 +76,9 @@ class IsrVideoReelConfig {
   /// Search Screen configuration used by SDK modules.
   static SearchScreenConfig searchScreenConfig = const SearchScreenConfig();
 
+  /// Blocked users screen configuration used by SDK modules.
+  static BlockedUsersConfig blockedUsersConfig = const BlockedUsersConfig();
+
   /// Story configuration used by SDK modules; when null, stories stay hidden.
   static StoryConfig? storyConfig;
 
@@ -448,20 +451,6 @@ class IsrVideoReelConfig {
     required Map<String, dynamic> defaultHeaders,
     required String appName,
     Map<String, String>? additionalHeader,
-    @Deprecated('Use setUpConfig(socialConfig: ...) instead.')
-    SocialConfig? socialConfig,
-    @Deprecated('Use setUpConfig(postConfig: ...) instead.')
-    PostConfig? postConfig,
-    @Deprecated('Use setUpConfig(tabConfig: ...) instead.')
-    TabConfig? tabConfig,
-    @Deprecated('Use setUpConfig(commentConfig: ...) instead.')
-    CommentConfig? commentConfig,
-    @Deprecated('Use setUpConfig(createEditPostConfig: ...) instead.')
-    CreateEditPostConfig? createEditPostConfig,
-    @Deprecated('Use setUpConfig(tagDetailsConfig: ...) instead.')
-    TagDetailsConfig? tagDetailsConfig,
-    @Deprecated('Use setUpConfig(searchScreenConfig: ...) instead.')
-    SearchScreenConfig? searchScreenConfig,
     required BuildContext? Function()? getCurrentBuildContext,
   }) async {
     IsrVideoReelConfig.baseUrl = baseUrl;
@@ -485,18 +474,6 @@ class IsrVideoReelConfig {
     IsrVideoReelConfig.additionalHeader = additionalHeader;
     await _storeHeaderValues(defaultHeaders);
     await _saveUserInformation(userInfoClass: userInfoClass);
-    IsrVideoReelConfig.socialConfig =
-        socialConfig ?? IsrVideoReelConfig.socialConfig;
-    IsrVideoReelConfig.postConfig = postConfig ?? IsrVideoReelConfig.postConfig;
-    IsrVideoReelConfig.tabConfig = tabConfig ?? IsrVideoReelConfig.tabConfig;
-    IsrVideoReelConfig.commentConfig =
-        commentConfig ?? IsrVideoReelConfig.commentConfig;
-    IsrVideoReelConfig.createEditPostConfig =
-        createEditPostConfig ?? IsrVideoReelConfig.createEditPostConfig;
-    IsrVideoReelConfig.tagDetailsConfig =
-        tagDetailsConfig ?? IsrVideoReelConfig.tagDetailsConfig;
-    IsrVideoReelConfig.searchScreenConfig =
-        searchScreenConfig ?? IsrVideoReelConfig.searchScreenConfig;
     buildContext = getCurrentBuildContext?.call();
     debugPrint('IsrVideoReelConfig: initializeSdk: ${userInfoClass?.userId}');
     socialActionCubit.onSdkReinitializeChanged(
@@ -536,6 +513,7 @@ class IsrVideoReelConfig {
   /// - [createEditPostConfig]: Create and edit post flows and validation.
   /// - [tagDetailsConfig]: Tagging people and tag UI.
   /// - [searchScreenConfig]: In-SDK search screen layout and options.
+  /// - [blockedUsersConfig]: Blocked users screen layout and options.
   static void setUpConfig({
     SocialConfig? socialConfig,
     PostConfig? postConfig,
@@ -544,6 +522,7 @@ class IsrVideoReelConfig {
     CreateEditPostConfig? createEditPostConfig,
     TagDetailsConfig? tagDetailsConfig,
     SearchScreenConfig? searchScreenConfig,
+    BlockedUsersConfig? blockedUsersConfig,
     StoryConfig? storyConfig,
     IsrFeedCacheConfig? feedCacheConfig,
   }) {
@@ -563,6 +542,8 @@ class IsrVideoReelConfig {
         tagDetailsConfig ?? IsrVideoReelConfig.tagDetailsConfig;
     IsrVideoReelConfig.searchScreenConfig =
         searchScreenConfig ?? IsrVideoReelConfig.searchScreenConfig;
+    IsrVideoReelConfig.blockedUsersConfig =
+        blockedUsersConfig ?? IsrVideoReelConfig.blockedUsersConfig;
     IsrVideoReelConfig.storyConfig = storyConfig;
     IsrVideoReelConfig.feedCacheConfig = feedCacheConfig;
     unawaited(_applyFeedCacheConfig(feedCacheConfig));

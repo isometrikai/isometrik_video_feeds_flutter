@@ -8,7 +8,7 @@ class VideoInitializingWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.white,
         body: Container(
           color: Colors.white.withValues(alpha: 0.5),
           child: Center(

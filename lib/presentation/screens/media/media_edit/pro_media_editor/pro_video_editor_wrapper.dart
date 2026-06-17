@@ -2,13 +2,13 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit_config.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/pro_media_editor/pro_media_util.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/pro_media_editor/pro_video_assist/mixins/video_editor_mixin.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/pro_media_editor/pro_video_assist/widgets/video_initializing_widget.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
-// import '../../custom_pro_image_editor/pro_image_editor.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/core/models/video/editor_video_model.dart';
 import 'package:video_player/video_player.dart';
@@ -46,6 +46,7 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
   @override
   void initState() {
     super.initState();
+    _applySystemUiOverlay();
     _initializePlayer();
   }
 
@@ -53,6 +54,12 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
   void dispose() {
     _videoController.dispose();
     super.dispose();
+  }
+
+  void _applySystemUiOverlay() {
+    SystemChrome.setSystemUIOverlayStyle(
+      mediaEditorUiOverlay(widget.mediaEditConfig),
+    );
   }
 
   void _initializePlayer() async {
@@ -74,8 +81,6 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
             top: 16.responsiveDimension,
             left: 12.responsiveDimension,
             right: 12.responsiveDimension),
-        trimBarPadding: EdgeInsets.only(
-            bottom: 16.responsiveDimension, top: 16.responsiveDimension),
         muteButtonBackground:
             widget.mediaEditConfig.blackColor.withValues(alpha: 0.4),
         muteButtonColor: widget.mediaEditConfig.whiteColor,
@@ -115,6 +120,9 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
     _videoController.addListener(_onDurationChange);
 
     setState(() {});
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _applySystemUiOverlay();
+    });
   }
 
   void _onDurationChange() {
@@ -158,11 +166,17 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
   }
 
   @override
-  Widget build(BuildContext context) => AnimatedSwitcher(
-        duration: const Duration(milliseconds: 220),
-        child: proVideoController == null
-            ? const VideoInitializingWidget()
-            : _buildEditor(),
+  Widget build(BuildContext context) => AnnotatedRegion<SystemUiOverlayStyle>(
+        value: mediaEditorUiOverlay(widget.mediaEditConfig),
+        child: Scaffold(
+          backgroundColor: widget.mediaEditConfig.whiteColor,
+          body: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            child: proVideoController == null
+                ? const VideoInitializingWidget()
+                : _buildEditor(),
+          ),
+        ),
       );
 
   Widget _buildEditor() => ProImageEditor.video(
@@ -189,12 +203,13 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
   /// Get editor configuration based on editing mode
   ProImageEditorConfigs _getEditorConfigs() {
     var _mainEditorConfig = mainEditorConfig(widget.mediaEditConfig).copyWith(
-      widgets: MainEditorWidgets(
+      widgets: buildMainEditorWidgets(
+        widget.mediaEditConfig,
         removeLayerArea: (
-          removeAreaKey,
-          editor,
-          rebuildStream,
-          isLayerBeingTransformed,
+          GlobalKey removeAreaKey,
+          ProImageEditorState editor,
+          Stream<void> rebuildStream,
+          bool isLayerBeingTransformed,
         ) =>
             VideoEditorRemoveArea(
           removeAreaKey: removeAreaKey,
@@ -229,7 +244,7 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
     ]);
     var _videoConfig = videoConfigs.copyWith(
       playTimeSmoothingDuration: const Duration(milliseconds: 600),
-      showTrimBar: false,
+      enableTrimBar: false,
     );
 
     var _proConfig = proImageEditorConfigs(widget.mediaEditConfig);
@@ -237,13 +252,22 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
     // Configure based on editing mode
     switch (widget.editingMode) {
       case 'Trim':
-        _mainEditorConfig =
-            _mainEditorConfig.copyWith(tools: [], showUndoRedoActions: false);
+        _mainEditorConfig = _mainEditorConfig.copyWith(
+          tools: [],
+          widgets: buildMainEditorWidgets(
+            widget.mediaEditConfig,
+            hideBottomBar: true,
+            hideUndoRedoActions: true,
+            removeLayerArea: _mainEditorConfig.widgets.removeLayerArea,
+          ),
+        );
         _proConfig = _proConfig.copyWith(
-            layerInteraction: const LayerInteractionConfigs(
-                hideBottomToolbar: true, hideToolbarOnInteraction: true));
+          layerInteraction: const LayerInteractionConfigs(
+            hideToolbarOnInteraction: true,
+          ),
+        );
         _videoConfig = _videoConfig.copyWith(
-          showTrimBar: true,
+          enableTrimBar: true,
         );
         break;
 

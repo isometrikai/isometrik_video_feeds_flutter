@@ -48,6 +48,15 @@ class IsmDataProvider {
   CancelOutgoingFollowRequestUseCase get _cancelOutgoingFollowRequestUseCase =>
       IsmInjectionUtils.getUseCase<CancelOutgoingFollowRequestUseCase>();
 
+  BlockUserUseCase get _blockUserUseCase =>
+      IsmInjectionUtils.getUseCase<BlockUserUseCase>();
+
+  GetBlockedUsersUseCase get _getBlockedUsersUseCase =>
+      IsmInjectionUtils.getUseCase<GetBlockedUsersUseCase>();
+
+  UnblockUserUseCase get _unblockUserUseCase =>
+      IsmInjectionUtils.getUseCase<UnblockUserUseCase>();
+
   StoryUseCase get _storyUseCase =>
       IsmInjectionUtils.getUseCase<StoryUseCase>();
 
@@ -108,6 +117,7 @@ class IsmDataProvider {
     required int pageSize,
     bool isLoading = false,
     bool isPublicOnly = false,
+    String? postId,
     Function(String, int)? onSuccess,
     Function(String, int)? onError,
   }) async {
@@ -117,6 +127,7 @@ class IsmDataProvider {
         page: page,
         pageSize: pageSize,
         isPublicOnly: isPublicOnly,
+        postId: postId,
       ),
       toJson: (data) => data?.toMap() ?? {},
       onSuccess: onSuccess,
@@ -188,7 +199,8 @@ class IsmDataProvider {
   /// Move post to collection
   Future<void> movePostToCollection({
     required String postId,
-    required String collectionId,
+    required List<String> collectionIds,
+    List<String> removeCollectionIds = const [],
     bool isLoading = false,
     Function(String, int)? onSuccess,
     Function(String, int)? onError,
@@ -197,7 +209,8 @@ class IsmDataProvider {
       apiCall: () => _collectionUseCase.executeMoveToCollection(
         isLoading: isLoading,
         postId: postId,
-        collectionId: collectionId,
+        collectionIds: collectionIds,
+        removeCollectionIds: removeCollectionIds,
       ),
       toJson: (data) => data?.toMap() ?? {},
       onSuccess: onSuccess,
@@ -394,6 +407,67 @@ class IsmDataProvider {
       apiCall: () => _cancelOutgoingFollowRequestUseCase.cancel(
         isLoading: isLoading,
         targetId: targetId,
+      ),
+      toJson: (data) => data?.toMap() ?? {},
+      onSuccess: onSuccess,
+      onError: onError,
+    );
+  }
+
+  /// Block a user
+  Future<void> blockUser({
+    required String blockedId,
+    String reason = 'blocked',
+    bool isLoading = false,
+    Function(String, int)? onSuccess,
+    Function(String, int)? onError,
+  }) async {
+    await _executeApiCall(
+      apiCall: () => _blockUserUseCase.block(
+        isLoading: isLoading,
+        blockedId: blockedId,
+        reason: reason,
+      ),
+      toJson: (data) => data?.toMap() ?? {},
+      successStatusCode: 201,
+      onSuccess: onSuccess,
+      onError: onError,
+    );
+  }
+
+  /// Get blocked users list with pagination and optional search
+  Future<void> getBlockedUsers({
+    required int page,
+    required int pageSize,
+    String? search,
+    bool isLoading = false,
+    Function(String, int)? onSuccess,
+    Function(String, int)? onError,
+  }) async {
+    await _executeApiCall(
+      apiCall: () => _getBlockedUsersUseCase.getBlockedUsers(
+        isLoading: isLoading,
+        page: page,
+        pageSize: pageSize,
+        search: search,
+      ),
+      toJson: (data) => data?.toMap() ?? {},
+      onSuccess: onSuccess,
+      onError: onError,
+    );
+  }
+
+  /// Unblock a user
+  Future<void> unblockUser({
+    required String blockedId,
+    bool isLoading = false,
+    Function(String, int)? onSuccess,
+    Function(String, int)? onError,
+  }) async {
+    await _executeApiCall(
+      apiCall: () => _unblockUserUseCase.unblock(
+        isLoading: isLoading,
+        blockedId: blockedId,
       ),
       toJson: (data) => data?.toMap() ?? {},
       onSuccess: onSuccess,

@@ -35,6 +35,17 @@ class IsrTranslationFile {
   static const String cancelRequest = 'Cancel';
   static const String noIncomingRequests = 'No incoming requests';
   static const String noOutgoingRequests = 'No outgoing requests';
+  static const String blockedUsers = 'Blocked users';
+  static const String searchBlockedUsers = 'Search blocked users';
+  static const String unblock = 'Unblock';
+  static const String unblockUser = 'Unblock user';
+  static const String unblockUserConfirmation =
+      'Are you sure you want to unblock this user?';
+  static const String noBlockedUsers = 'No blocked users';
+  static const String noBlockedUsersMessage =
+      'Users you block will appear here.';
+  static const String userUnblockedSuccessfully = 'User unblocked successfully';
+  static const String userBlockedSuccessfully = 'User blocked successfully';
   static const String required = 'Required';
   static const String passwordValidationString =
       'You need to enter at least 8 characters , with X capital , y special characters and z small alphabets and q digits';
@@ -220,7 +231,7 @@ class IsrTranslationFile {
   static const String removeTag = 'Remove tag';
   static const String removeMeFromPostTitle = 'Remove yourself from this post?';
   static const String removeMeFromPostMessage =
-      'Your username will no longer appear on this post. The post will not be deleted.';
+      'Your  will no longer appear on this post.';
   static const String mentionRemovedSuccessfully =
       'You have been removed from this post';
   static const String retry = 'Retry';

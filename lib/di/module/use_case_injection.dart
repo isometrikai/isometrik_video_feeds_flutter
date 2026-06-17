@@ -47,6 +47,12 @@ class UseCaseInjection {
     IsmInjectionUtils.registerUseCase<CancelOutgoingFollowRequestUseCase>(() =>
         CancelOutgoingFollowRequestUseCase(
             IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<BlockUserUseCase>(() =>
+        BlockUserUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<GetBlockedUsersUseCase>(() =>
+        GetBlockedUsersUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<UnblockUserUseCase>(() =>
+        UnblockUserUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<SavePostUseCase>(
         () => SavePostUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<GetUserPostDataUseCase>(() =>

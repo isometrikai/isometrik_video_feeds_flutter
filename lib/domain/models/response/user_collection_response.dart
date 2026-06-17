@@ -50,6 +50,7 @@ class CollectionData {
         postCount: json['postCount'] as int? ?? 0,
         productCount: json['productCount'] as int? ?? 0,
         likes: json['likes'] as int? ?? 0,
+        containsPost: json['contains_post'] as bool? ?? false,
       );
 
   CollectionData({
@@ -67,6 +68,7 @@ class CollectionData {
     this.postCount,
     this.productCount,
     this.likes,
+    this.containsPost,
   });
 
   final String? id;
@@ -83,6 +85,7 @@ class CollectionData {
   final int? postCount;
   final int? productCount;
   final int? likes;
+  final bool? containsPost;
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -102,6 +105,7 @@ class CollectionData {
         'postCount': postCount,
         'productCount': productCount,
         'likes': likes,
+        'contains_post': containsPost,
       };
 }
 

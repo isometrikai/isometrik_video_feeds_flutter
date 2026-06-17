@@ -421,6 +421,19 @@ class _PostItemWidgetState extends State<PostItemWidget>
     await _doMediaCaching(refreshIndex);
   }
 
+  String? _reelAuthorUserId(ReelsData reel) {
+    final direct = reel.userId;
+    if (direct != null && direct.isNotEmpty) return direct;
+    final post = reel.postData;
+    if (post is TimeLineData) {
+      final fromUser = post.user?.id;
+      if (fromUser != null && fromUser.isNotEmpty) return fromUser;
+      final userId = post.userId;
+      if (userId != null && userId.isNotEmpty) return userId;
+    }
+    return null;
+  }
+
   Future<void> _updateWithFollowAction(
       IsmFollowActionListenerState state) async {
     var updateState = false;
@@ -453,8 +466,10 @@ class _PostItemWidgetState extends State<PostItemWidget>
       }
     } else if (!state.isFollowing &&
         !state.followRequestPending &&
-        _reelsDataList.any((element) => element.userId == state.userId)) {
-      _reelsDataList.removeWhere((element) => element.userId == state.userId);
+        _reelsDataList.any((element) => _reelAuthorUserId(element) == state.userId)) {
+      _reelsDataList.removeWhere(
+        (element) => _reelAuthorUserId(element) == state.userId,
+      );
       updateState = true;
     }
     if (updateState) {
@@ -655,18 +670,8 @@ class _PostItemWidgetState extends State<PostItemWidget>
                       onPressSaveButton: widget.reelsConfig.onPressSave,
                       onTapMentionTag: (mentionedList) async {
                         if (widget.reelsConfig.onTapMentionTag != null) {
-                          final result = await widget.reelsConfig
-                              .onTapMentionTag!(reelsData, mentionedList);
-                          if (result.isListEmptyOrNull == false) {
-                            final index = _reelsDataList.indexWhere((element) =>
-                                element.postId == reelsData.postId);
-                            if (index != -1) {
-                              _reelsDataList[index].mentions = result ?? [];
-                              _refreshCounts[index] =
-                                  (_refreshCounts[index] ?? 0) + 1;
-                              _updateState();
-                            }
-                          }
+                          await widget.reelsConfig.onTapMentionTag!(reelsData, mentionedList);
+                          // for untagging, do so from IsmSocialActionCubit
                         }
                       },
                       onTapCartIcon: (productId) {

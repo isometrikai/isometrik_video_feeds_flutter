@@ -86,6 +86,22 @@ class SocialMapper {
     }
   }
 
+  CustomResponse<BlockedUsersListResponse?> mapBlockedUsersList(
+      ResponseModel response) {
+    try {
+      final data = BlockedUsersListResponse.fromJson(response.data);
+      return CustomResponse(
+        data: data,
+        responseCode: response.statusCode,
+      );
+    } catch (_) {
+      return CustomResponse(
+        data: BlockedUsersListResponse(items: []),
+        responseCode: response.statusCode,
+      );
+    }
+  }
+
   CustomResponse<SearchUserResponse?> mapSearchUserResponse(
           ResponseModel response) =>
       CustomResponse(

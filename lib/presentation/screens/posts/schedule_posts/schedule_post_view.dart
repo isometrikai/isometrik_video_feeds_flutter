@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -399,10 +398,10 @@ class _SchedulePostViewState extends State<SchedulePostView> {
   }
 
   void _handleEditPost(TimeLineData data) async {
-    final postDataString = await IsrAppNavigator.goToEditPostView(context, postData: data);
+    final result = await IsrAppNavigator.goToEditPostView(context, postData: data);
     try {
-      final postData = TimeLineData.fromMap(
-          jsonDecode(postDataString!) as Map<String, dynamic>);
+      final postData = result is TimeLineData ? result : null;
+      if (postData == null) return;
       final index =
           _postList.indexWhere((element) => element.id == postData.id);
       if (index != -1) {

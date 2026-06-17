@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit_config.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/pro_media_editor/pro_video_editor_wrapper.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -12,12 +13,14 @@ class GalleryVideoTrimUtil {
   static const int defaultMaxSeconds = 60;
 
   static MediaEditConfig defaultMediaEditConfig() => MediaEditConfig(
-        primaryColor: IsrColors.appColor,
-        primaryTextColor: IsrColors.primaryTextColor,
-        backgroundColor: Colors.white,
-        appBarColor: Colors.white,
-        primaryFontFamily: AppConstants.primaryFontFamily,
-      );
+    primaryColor: IsrColors.appColor,
+    primaryTextColor: IsrColors.primaryTextColor,
+    backgroundColor: Colors.white,
+    appBarColor: Colors.white,
+    primaryFontFamily: AppConstants.primaryFontFamily,
+    mediaEditorStickersConfig:
+    IsrVideoReelConfig.createEditPostConfig.mediaEditorStickersConfig,
+  );
 
   static Future<int?> durationSeconds(String videoPath) async {
     try {

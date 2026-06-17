@@ -1,3 +1,4 @@
+export 'blocked_users_config.dart';
 export 'comment_config.dart';
 export 'camera_capture_result.dart';
 export 'create_post_launch_config.dart';

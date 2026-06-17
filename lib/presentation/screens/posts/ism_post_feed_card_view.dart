@@ -1991,7 +1991,13 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
             label: IsrTranslationFile.following,
             filled: false,
             variant: variant,
-            onTap: () => onTap(reelData: _reel),
+            onTap: () => onTap(
+              reelData: _reel,
+              postSectionType: widget.postSectionType,
+              apiCallBack: widget.onPressFollowButton != null
+                  ? () => widget.onPressFollowButton!(_reel, isFollowing)
+                  : null,
+            ),
           );
         }
 

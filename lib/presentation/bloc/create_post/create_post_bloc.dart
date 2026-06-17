@@ -257,6 +257,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     FocusManager.instance.primaryFocus?.unfocus();
     _cancelCompression();
     _createPostRequest = CreatePostRequest();
+    _postData = null;
     mentionedUserData.clear();
     mediaMentionUserData.clear();
     hashTagDataList.clear();
@@ -265,8 +266,11 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     _selectedMediaIndex = 0;
     _isForEdit = false;
     descriptionText = '';
-    // linkedProducts.clear();
+    linkedProducts.clear();
     _linkedSocialProducts.clear();
+    _coverImage = '';
+    _coverImageExtension = '';
+    _coverFileName = '';
     _tags = _createPostRequest.tags ?? Tags();
     _tags.products = [];
     _selectedPostSound = null;
@@ -795,7 +799,11 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     apiResult = await _createPostUseCase.executeEditPost(
       isLoading: !_usesBackgroundPostUi,
       postId: _postData?.id ?? '',
-      editPostRequest: _createPostRequest.toJson(),
+      editPostRequest: _createPostRequest.toJson().run((body) {
+        body.remove('media'); // non editable
+        body.remove('previews'); // non editable
+        return body;
+      }),
     );
     if (apiResult.isSuccess) {
       if (_postData != null) {
@@ -839,7 +847,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   void _updatePostData() {
     _postData?.tags = _createPostRequest.tags;
     _postData?.caption = _createPostRequest.caption;
-    _postData?.media = _createPostRequest.media;
+    _postData?.media = _createPostRequest.media?.toList();
     final settings = _postData?.settings;
     if (settings != null) {
       if (_postAttributeClass.allowComment != settings.commentsEnabled) {
@@ -1014,16 +1022,19 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       // Update the original list element
       _mediaDataList[i] = element;
     }
-    if (_postData?.tags?.products.isListEmptyOrNull == false) {
-      final socialProductList = _postData?.tags?.products;
-      linkedProducts = _getProductDataModel(socialProductList ?? []);
-      emit(
-        LoadLinkedProductsState(
-          productList: linkedProducts,
-          totalProductsCount: linkedProducts.length,
-        ),
-      );
-    }
+    final socialProductList = _postData?.tags?.products;
+    linkedProducts = socialProductList.isListEmptyOrNull
+        ? []
+        : _getProductDataModel(socialProductList!);
+    _linkedSocialProducts
+      ..clear()
+      ..addAll(linkedProducts);
+    emit(
+      LoadLinkedProductsState(
+        productList: linkedProducts,
+        totalProductsCount: linkedProducts.length,
+      ),
+    );
     _isForEdit = true;
     _makePostRequest();
     // emit(MediaSelectedState(
