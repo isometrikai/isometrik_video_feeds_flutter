@@ -126,6 +126,7 @@ class DubWithAudioCaptureCoordinator {
     await IsrAppNavigator.presentCreatePostFromMedia(
       context,
       mediaDataList: mediaDataList,
+      dismissEntireFlowOnClose: true,
     );
   }
 

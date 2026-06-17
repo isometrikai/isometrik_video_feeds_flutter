@@ -352,6 +352,7 @@ class OptionTileConfig {
 class SwitchTileConfig {
   const SwitchTileConfig({
     this.iconSize,
+    this.iconColor,
     this.titleStyle,
     this.activeThumbColor,
     this.inactiveThumbColor,
@@ -362,6 +363,7 @@ class SwitchTileConfig {
   });
 
   final double? iconSize;
+  final Color? iconColor;
   final TextStyle? titleStyle;
   final Color? activeThumbColor;
   final Color? inactiveThumbColor;
@@ -372,6 +374,7 @@ class SwitchTileConfig {
 
   SwitchTileConfig copyWith({
     double? iconSize,
+    Color? iconColor,
     TextStyle? titleStyle,
     Color? activeThumbColor,
     Color? inactiveThumbColor,
@@ -382,6 +385,7 @@ class SwitchTileConfig {
   }) =>
       SwitchTileConfig(
         iconSize: iconSize ?? this.iconSize,
+        iconColor: iconColor ?? this.iconColor,
         titleStyle: titleStyle ?? this.titleStyle,
         activeThumbColor: activeThumbColor ?? this.activeThumbColor,
         inactiveThumbColor: inactiveThumbColor ?? this.inactiveThumbColor,
