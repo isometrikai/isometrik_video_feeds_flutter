@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -45,8 +46,11 @@ class MediaSelectionBloc
 
   // Thumbnail cache
   final Map<String, String> _thumbnailCache = {};
+  final Map<String, Uint8List> _assetThumbnailCache = {};
   final Set<String> _thumbnailGenerationInProgress = {};
+  final Set<String> _assetThumbnailGenerationInProgress = {};
   final int _maxConcurrentThumbnails = 3;
+  final int _maxConcurrentAssetThumbnails = 6;
 
   Future<void> _onInitial(
     MediaSelectionInitialEvent event,
@@ -230,11 +234,9 @@ class MediaSelectionBloc
         _hasMore = false;
       }
 
-      // Convert assets to MediaAssetData
-      final mediaDataList =
-          await Future.wait(assets.map(_convertAssetToMediaAssetData));
-
-      final newMedia = mediaDataList
+      // Convert assets without resolving full files — thumbnails load lazily in the grid.
+      final newMedia = assets
+          .map(_convertAssetToMediaAssetData)
           .where((media) => media != null)
           .cast<MediaAssetData>()
           .toList();
@@ -498,33 +500,51 @@ class MediaSelectionBloc
     ProceedToEditFilterEvent event,
     Emitter<MediaSelectionState> emit,
   ) async {
-    final mediaToEdit = event.media ?? _selectedMedia;
+    final mediaToEdit = event.media ?? List<MediaAssetData>.from(_selectedMedia);
     if (mediaToEdit.isEmpty) {
       emit(MediaSelectionErrorState(
           message: 'Please select at least one media item'));
       return;
     }
 
+    final needsResolve =
+        mediaToEdit.any((media) => media.assetEntity != null && media.localPath == null);
+    if (needsResolve && state is MediaSelectionLoadedState) {
+      emit((state as MediaSelectionLoadedState)
+          .copyWith(isResolvingSelection: true));
+    }
+
+    for (final media in mediaToEdit) {
+      final resolved = await media.ensureFileResolved();
+      if (!resolved) {
+        emit(MediaSelectionErrorState(
+            message: 'Unable to access the selected media file'));
+        emit(MediaSelectionLoadedState(
+          media: List.from(_media),
+          albums: _albums,
+          currentAlbum: _currentAlbum,
+          selectedMedia: List.from(_selectedMedia),
+          isMultiSelectMode: _isMultiSelectMode,
+          hasMore: _hasMore,
+        ));
+        return;
+      }
+    }
+
     emit(MediaSelectionCompletedState(selectedMedia: mediaToEdit));
   }
 
-  Future<MediaAssetData?> _convertAssetToMediaAssetData(
-      pm.AssetEntity asset) async {
+  MediaAssetData? _convertAssetToMediaAssetData(pm.AssetEntity asset) {
     try {
-      final file = await asset.file;
-      if (file == null) return null;
-
       final isVideo = asset.type == pm.AssetType.video;
 
       return MediaAssetData(
         assetId: asset.id,
-        localPath: file.path,
-        file: file,
+        assetEntity: asset,
         mediaType: isVideo ? SelectedMediaType.video : SelectedMediaType.image,
         width: asset.width,
         height: asset.height,
         duration: asset.duration,
-        extension: file.path.split('.').last,
       );
     } catch (e) {
       debugPrint('Error converting asset to MediaAssetData: $e');
@@ -569,6 +589,47 @@ class MediaSelectionBloc
   }
 
   // Thumbnail methods
+  Future<Uint8List?> getAssetThumbnail(
+    pm.AssetEntity asset, {
+    int size = 300,
+  }) async {
+    final cacheKey = '${asset.id}_$size';
+    if (_assetThumbnailCache.containsKey(cacheKey)) {
+      return _assetThumbnailCache[cacheKey];
+    }
+
+    if (_assetThumbnailGenerationInProgress.contains(cacheKey)) {
+      while (_assetThumbnailGenerationInProgress.contains(cacheKey)) {
+        await Future.delayed(const Duration(milliseconds: 50));
+      }
+      return _assetThumbnailCache[cacheKey];
+    }
+
+    while (_assetThumbnailGenerationInProgress.length >=
+        _maxConcurrentAssetThumbnails) {
+      await Future.delayed(const Duration(milliseconds: 25));
+    }
+
+    _assetThumbnailGenerationInProgress.add(cacheKey);
+
+    try {
+      final quality = _config?.thumbnailQuality ?? 50;
+      final data = await asset.thumbnailDataWithSize(
+        pm.ThumbnailSize.square(size),
+        quality: quality,
+      );
+      if (data != null) {
+        _assetThumbnailCache[cacheKey] = data;
+      }
+      return data;
+    } catch (e) {
+      debugPrint('Error loading thumbnail for ${asset.id}: $e');
+      return null;
+    } finally {
+      _assetThumbnailGenerationInProgress.remove(cacheKey);
+    }
+  }
+
   Future<String?> getVideoThumbnail(String videoPath) async {
     // Check cache first
     if (_thumbnailCache.containsKey(videoPath)) {
@@ -622,6 +683,8 @@ class MediaSelectionBloc
       }
     }
     _thumbnailCache.clear();
+    _assetThumbnailCache.clear();
     _thumbnailGenerationInProgress.clear();
+    _assetThumbnailGenerationInProgress.clear();
   }
 }

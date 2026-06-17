@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
+import 'package:photo_manager/photo_manager.dart' as pm;
 
 enum SelectedMediaType {
   image,
@@ -44,6 +45,7 @@ class MediaAssetData {
     this.localPath,
     this.isTemp,
     this.file,
+    this.assetEntity,
     this.mediaType,
     this.height,
     this.width,
@@ -84,6 +86,7 @@ class MediaAssetData {
   String? localPath;
   String? isTemp;
   File? file;
+  pm.AssetEntity? assetEntity;
   SelectedMediaType? mediaType;
   int? height;
   int? width;
@@ -94,6 +97,25 @@ class MediaAssetData {
   bool? isCaptured;
   MediaEditSoundItem? sound;
   bool soundAppliedToVideo;
+
+  /// Resolves the on-disk file for gallery assets. Safe to call multiple times.
+  Future<bool> ensureFileResolved() async {
+    if (file != null && localPath?.isNotEmpty == true) {
+      return true;
+    }
+
+    final entity = assetEntity;
+    if (entity != null) {
+      final resolved = await entity.file;
+      if (resolved == null) return false;
+      file = resolved;
+      localPath = resolved.path;
+      extension ??= resolved.path.split('.').last;
+      return true;
+    }
+
+    return localPath?.isNotEmpty == true;
+  }
 
   // Calculate orientation from height and width when not given
   Orientation? get calculatedOrientation {

@@ -37,6 +37,7 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   late final MediaSelectionBloc _bloc;
   late ScrollController _scrollController;
+  int _thumbnailSize = 300;
 
   Animation<double>? _routeTransitionAnimation;
   AnimationStatusListener? _routeTransitionListener;
@@ -116,8 +117,16 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
   }
 
   void _onScroll() {
+    if (!_scrollController.hasClients) return;
+
+    final state = _bloc.state;
+    if (state is! MediaSelectionLoadedState) return;
+    if (state.isLoadingMore || !state.hasMore || state.isResolvingSelection) {
+      return;
+    }
+
     if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
+        _scrollController.position.maxScrollExtent - 300) {
       _bloc.add(LoadMoreMediaEvent());
     }
   }
@@ -246,41 +255,13 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
     return 0; // Images don't have duration
   }
 
-  Widget _buildOptimizedMediaContent(MediaAssetData mediaData) {
-    if (mediaData.mediaType == SelectedMediaType.video) {
-      // Use cached thumbnail if available
-      if (mediaData.thumbnailPath?.isNotEmpty == true) {
-        return _buildCachedImage(mediaData.thumbnailPath!);
-      }
-
-      // Generate thumbnail with throttling
-      return _buildThumbnailWithThrottling(mediaData);
-    } else {
-      // For images, use direct file loading with error handling
-      return _buildCachedImage(mediaData.localPath ?? '');
-    }
-  }
-
-  Widget _buildThumbnailWithThrottling(MediaAssetData mediaData) =>
-      FutureBuilder<String?>(
-        future: _bloc.getVideoThumbnail(mediaData.localPath ?? ''),
-        builder: (context, snapshot) {
-          if (snapshot.hasData && snapshot.data != null) {
-            mediaData.thumbnailPath = snapshot.data;
-            return _buildCachedImage(snapshot.data!);
-          }
-          return Center(
-            child: CircularProgressIndicator(
-                color: widget.mediaSelectionConfig.primaryColor),
-          );
-        },
-      );
-
-  Widget _buildCachedImage(String imagePath) => AppImage.file(
-        imagePath,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
+  Widget _buildOptimizedMediaContent(MediaAssetData mediaData) =>
+      AssetThumbnailWidget(
+        key: ValueKey('thumb_${mediaData.assetId}'),
+        mediaData: mediaData,
+        loadThumbnail: _bloc.getAssetThumbnail,
+        thumbnailSize: _thumbnailSize,
+        loadingColor: widget.mediaSelectionConfig.primaryColor,
       );
 
   void _onAlbumSelected(pm.AssetPathEntity album) {
@@ -471,6 +452,17 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
               right: 0,
               child: _buildSelectedMediaBottomSheet(state),
             ),
+          if (state.isResolvingSelection)
+            Positioned.fill(
+              child: ColoredBox(
+                color: Colors.black.withValues(alpha: 0.2),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: widget.mediaSelectionConfig.primaryColor,
+                  ),
+                ),
+              ),
+            ),
         ],
       );
 
@@ -655,20 +647,29 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
 
     // Calculate aspect ratio for reels-like layout
     final screenSize = MediaQuery.of(context).size;
+    final devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
 
     // For reels-like layout, we want items to be taller than wide
     // Calculate crossAxisCount based on screen width and desired item width
     final desiredItemWidth = widget.mediaSelectionConfig.gridItemMaxWidth;
     final crossAxisCount =
         (screenSize.width / desiredItemWidth).floor().clamp(2, 6);
+    final effectiveCrossAxisCount = crossAxisCount > 2 ? crossAxisCount : 2;
+
+    _thumbnailSize = ((screenSize.width / effectiveCrossAxisCount) *
+            devicePixelRatio)
+        .ceil()
+        .clamp(180, 420);
 
     // Use 9:16 aspect ratio as default (9/16 = 0.5625)
     final itemAspectRatio = widget.mediaSelectionConfig.gridItemAspectRatio;
 
     return GridView.builder(
       controller: _scrollController,
+      addAutomaticKeepAlives: false,
+      addRepaintBoundaries: true,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: (crossAxisCount > 2) ? crossAxisCount : 2,
+        crossAxisCount: effectiveCrossAxisCount,
         crossAxisSpacing: 2,
         mainAxisSpacing: 2,
         childAspectRatio: itemAspectRatio,
@@ -687,8 +688,10 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
 
         // Show loading indicator at the end when loading more
         if (galleryIndex == state.media.length && state.isLoadingMore) {
-          return const Center(
-            child: CircularProgressIndicator(color: Colors.black),
+          return Center(
+            child: CircularProgressIndicator(
+              color: widget.mediaSelectionConfig.primaryColor,
+            ),
           );
         }
 
@@ -701,7 +704,10 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
         final isSelected = state.selectedMedia.contains(mediaData);
         final selectedIndex = state.selectedMedia.indexOf(mediaData);
 
-        return _buildMediaItem(mediaData, isSelected, selectedIndex, state);
+        return RepaintBoundary(
+          key: ValueKey('media_${mediaData.assetId}'),
+          child: _buildMediaItem(mediaData, isSelected, selectedIndex, state),
+        );
       },
     );
   }
