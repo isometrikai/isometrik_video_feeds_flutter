@@ -430,7 +430,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       ? _reelData.postData as TimeLineData
       : null;
 
-  bool get _isTextOnlyPost => _timelinePost?.isTextPost == true;
+  bool get _isTextOnlyPost => _timelinePost?.isTextOnlyPost == true;
 
   /// Text-only posts and image slides advance on a timer (not video playback).
   bool get _usesTimedAdvance => _isTextOnlyPost || _isCurrentMediaImage;

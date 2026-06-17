@@ -162,7 +162,9 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     );
   }
 
-  bool get _isTextOnlyPost => _timelinePost?.isTextPost == true;
+  bool get _isTextPost => _timelinePost?.isTextPost == true;
+
+  bool get _isTextOnlyPost => _timelinePost?.isTextOnlyPost == true;
 
   double get _textPostActionIndent {
     if (!_isTextOnlyPost) return 0;
@@ -1389,12 +1391,14 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
                 return _buildPostHeaderAboveMedia(context);
               },
             ),
-          if (_isTextOnlyPost)
-            _buildTextPostSection(context)
-          else
+          if (_isTextPost)
+            _buildTextPostSection(context),
+          if (!_isTextOnlyPost)
             _buildMediaSection(context),
           if (showDotsBelowMedia)
             _buildCarouselDotsBelowMedia(context, mediaCount),
+          if (_isTextPost && _hasPostLocation)
+            _buildTextPostLocationRow(),
           _buildActionsSection(context),
           _buildEngagementSection(context),
         ],
@@ -1737,6 +1741,46 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
           : null,
       formattedAspectRatio: _feedUi.formattedTextPostAspectRatio,
     );
+  }
+
+  /// Location line for text-only posts — below body text, above action icons.
+  Widget _buildTextPostLocationRow() {
+    final label = _textPostLocationDisplayLabel;
+    if (label.isStringEmptyOrNull == true) return const SizedBox.shrink();
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        IsrDimens.twelve + _textPostActionIndent,
+        IsrDimens.four,
+        IsrDimens.twelve,
+        IsrDimens.two,
+      ),
+      child: TapHandler(
+        onTap: _openPostLocation,
+        child: Text(
+          label!,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: _textStyleConfig?.locationStyle ??
+              IsrStyles.primaryText12.copyWith(
+                color: _feedUi.secondaryTextColor,
+                fontWeight: FontWeight.w400,
+              ),
+        ),
+      ),
+    );
+  }
+
+  String? get _textPostLocationDisplayLabel {
+    final place = _reel.placeDataList?.firstOrNull;
+    if (place == null) return _locationLabel;
+
+    final name = place.placeName.trim();
+    final city = (place.city ?? '').trim();
+    if (name.isEmpty && city.isEmpty) return null;
+    if (name.isEmpty) return city;
+    if (city.isEmpty || name == city) return name;
+    return '$name-$city';
   }
 
   bool get _isDarkFeedBackground =>

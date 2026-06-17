@@ -712,6 +712,22 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       PostCreateEvent event, Emitter<CreatePostState> emit) async {
     _lastPostCreateEventForRetry = event;
     _createPostRequest = event.createPostRequest;
+    if (event.isForEdit != true &&
+        _createPostRequest.isTextPost &&
+        event.attachedMedia?.isNotEmpty == true) {
+      _mediaDataList.clear();
+      for (var i = 0; i < event.attachedMedia!.length; i++) {
+        final processed = await _processMediaData(event.attachedMedia![i], i);
+        if (processed != null) {
+          _mediaDataList.add(processed);
+        }
+      }
+      if (_mediaDataList.isNotEmpty) {
+        await _ensureUniqueUploadNamesForMedia();
+        await _prepareCoverForLocalUpload();
+        _createPostRequest.media = _mediaDataList;
+      }
+    }
     if (event.selectedSound != null) {
       _selectedPostSound = event.selectedSound;
       _postAttributeClass.selectedSound = event.selectedSound;
@@ -755,7 +771,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
         _postData = null;
         final createPostData = apiResult.data?.data;
         final postId = createPostData?.id ?? '';
-        // Text posts carry no media, but the backend still creates them in a
+        // Text posts may include media; the backend still creates them in a
         // pending state and relies on `start-processing` to approve/publish.
         final isTextPost =
             (_createPostRequest.type ?? '').trim().toLowerCase() ==

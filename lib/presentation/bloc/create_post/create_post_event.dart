@@ -14,11 +14,15 @@ class PostCreateEvent extends CreatePostEvent {
     this.isForEdit = false,
     required this.createPostRequest,
     this.selectedSound,
+    this.attachedMedia,
   });
 
   final bool? isForEdit;
   final CreatePostRequest createPostRequest;
   final MediaEditSoundItem? selectedSound;
+
+  /// Local media picked in the text-post composer (uploaded before create API).
+  final List<MediaData>? attachedMedia;
 }
 
 class PostAttributeNavigationEvent extends CreatePostEvent {

@@ -79,12 +79,21 @@ class CreatePostRequest {
   String? soundId;
   Map<String, dynamic>? soundSnapshot;
 
-  /// `text_formatting` payload for `type: text` posts. When set, the post is a
-  /// text-only post and the media/caption/settings keys are omitted.
+  /// `text_formatting` payload for `type: text` posts.
   Map<String, dynamic>? textFormatting;
 
   bool get isTextPost =>
       (type ?? '').trim().toLowerCase() == 'text' || textFormatting != null;
+
+  bool get hasAttachedMedia => media != null && media!.isNotEmpty;
+
+  bool get hasTags =>
+      tags != null &&
+      ((tags!.places?.isNotEmpty ?? false) ||
+          (tags!.mentions?.isNotEmpty ?? false) ||
+          (tags!.hashtags?.isNotEmpty ?? false) ||
+          (tags!.products?.isNotEmpty ?? false) ||
+          (tags!.links?.isNotEmpty ?? false));
 
   Map<String, dynamic> toJson() {
     if (isTextPost) {
@@ -93,6 +102,11 @@ class CreatePostRequest {
         'type': type ?? 'text',
         'visibility': visibility,
         if (textFormatting != null) 'text_formatting': textFormatting,
+        if (hasAttachedMedia)
+          'media': List<dynamic>.from(media!.map((x) => x.toMap())),
+        if (hasAttachedMedia && previews != null && previews!.isNotEmpty)
+          'previews': List<dynamic>.from(previews!.map((x) => x.toMap())),
+        if (hasTags) 'tags': tags!.toMap(),
         if (scheduleTime != null && scheduleTime!.isNotEmpty)
           'scheduled_at': scheduleTime,
       };

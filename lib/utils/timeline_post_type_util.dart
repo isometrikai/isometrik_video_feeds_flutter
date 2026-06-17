@@ -19,4 +19,8 @@ abstract final class TimelinePostTypeUtil {
 
 extension TimeLineDataTextPostX on TimeLineData {
   bool get isTextPost => TimelinePostTypeUtil.isTextPost(this);
+
+  /// Text post with no attached image/video media.
+  bool get isTextOnlyPost =>
+      isTextPost && (media == null || media!.isEmpty);
 }
