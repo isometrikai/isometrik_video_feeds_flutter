@@ -246,10 +246,12 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
         backgroundColor: Colors.white,
         appBar: IsmCustomAppBarWidget(
           backgroundColor:
-              _tagPeopleConfig?.appBarConfig?.backgroundColor ?? Colors.white,
+              _tagPeopleConfig?.appBarConfig?.backgroundColor,
           leading: IconButton(
             icon: Icon(Icons.close,
-                color: Colors.black, size: 24.responsiveDimension),
+                color: IsrColors.appBarIconTextColor,
+                size: 24.responsiveDimension,
+            ),
             onPressed: () => Navigator.pop(context),
           ),
           titleText: 'Tag people',
@@ -260,7 +262,11 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
           actions: [
             TapHandler(
               onTap: _setData,
-              child: const Icon(Icons.check, color: Colors.black, size: 24),
+              child: Icon(
+                Icons.check,
+                color: IsrColors.appBarIconTextColor,
+                size: 24.responsiveDimension,
+              ),
             ),
             16.horizontalSpace,
           ],

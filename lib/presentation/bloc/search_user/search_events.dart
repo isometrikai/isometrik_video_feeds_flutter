@@ -9,10 +9,12 @@ class SearchUserEvent extends SearchEvents {
     required this.searchText,
     this.onComplete,
     this.isLoading = true,
+    this.isFromPagination = false,
   });
 
   final bool? isLoading;
   final String searchText;
+  final bool isFromPagination;
   final Function(List<SocialUserData>)? onComplete;
 }
 

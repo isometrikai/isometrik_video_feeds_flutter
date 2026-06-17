@@ -18,8 +18,10 @@ class SearchUserBloc extends Bloc<SearchEvents, SearchStates> {
 
   final SearchUserUseCase searchUserUseCase;
   final SearchTagUseCase searchTagUseCase;
-  final List<SocialUserData> _searchUsersList = [];
   final List<HashTagData> _searchTagList = [];
+
+  var _searchUserPage = 1;
+  final _searchUserLimit = 20;
 
   FutureOr<void> _searchUser(
       SearchUserEvent event, Emitter<SearchStates> emit) async {
@@ -29,18 +31,32 @@ class SearchUserBloc extends Bloc<SearchEvents, SearchStates> {
         return;
       }
     }
+
+    if (event.isFromPagination) {
+      _searchUserPage = _searchUserPage + 1;
+    } else {
+      _searchUserPage = 1;
+    }
+
     final apiResult = await searchUserUseCase.executeSearchUser(
       isLoading: event.isLoading == true,
-      limit: 20,
-      page: 1,
+      limit: _searchUserLimit,
+      page: _searchUserPage,
       searchText: event.searchText,
     );
-    _searchUsersList.clear();
+
+    var results = <SocialUserData>[];
     if (apiResult.isSuccess) {
-      _searchUsersList.addAll(apiResult.data?.data ?? []);
+      results = apiResult.data?.data ?? [];
+      if (event.isFromPagination && results.isEmpty) {
+        _searchUserPage = _searchUserPage > 1 ? _searchUserPage - 1 : 1;
+      }
+    } else if (event.isFromPagination) {
+      _searchUserPage = _searchUserPage > 1 ? _searchUserPage - 1 : 1;
     }
+
     if (event.onComplete != null) {
-      event.onComplete!(_searchUsersList);
+      event.onComplete!(results);
     }
   }
 
