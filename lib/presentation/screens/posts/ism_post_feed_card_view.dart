@@ -76,8 +76,11 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   late final PageController _mediaPageController;
   final Map<int, GlobalKey> _videoPlayerKeys = {};
   final GlobalKey _instagramMetaRowKey = GlobalKey();
+  final GlobalKey _textPostAvatarKey = GlobalKey();
   OverlayEntry? _instagramMetaMenuOverlay;
+  OverlayEntry? _textPostProfileMenuOverlay;
   VoidCallback? _instagramMetaMenuDismissHandler;
+  VoidCallback? _textPostProfileMenuDismissHandler;
   var _isInstagramCaptionExpanded = false;
   Timer? _pageBadgeTimer;
   AudioPlayer? _imageSoundPlayer;
@@ -565,6 +568,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     _metaAlternatorTimer?.cancel();
     _likeAnimationTimer?.cancel();
     _dismissInstagramMetaMenu();
+    _dismissTextPostProfileMenu();
     unawaited(_disposeImageSound());
     super.dispose();
   }
@@ -586,6 +590,176 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       await _openSoundDetails();
     }
   }
+
+  void _dismissTextPostProfileMenu([String? selection]) {
+    final handler = _textPostProfileMenuDismissHandler;
+    if (handler == null) return;
+    _textPostProfileMenuDismissHandler = null;
+    handler();
+    if (selection == 'profile') {
+      unawaited(widget.onTapUserProfile?.call());
+    }
+  }
+
+  Future<void> _showTextPostProfileMenuPopup({
+    required bool isFollowing,
+    required bool followRequestPending,
+    required bool showFollowOption,
+    required bool showFollowingOption,
+    required Future<void> Function() onFollow,
+  }) async {
+    if (_textPostProfileMenuOverlay != null) {
+      _dismissTextPostProfileMenu();
+      return;
+    }
+
+    PostFeedOverlayMenuCoordinator.dismissIfOpen();
+    _dismissInstagramMetaMenu();
+
+    if (!mounted) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      final anchorContext = _textPostAvatarKey.currentContext;
+      final renderBox = anchorContext?.findRenderObject() as RenderBox?;
+      if (renderBox == null || !renderBox.hasSize) return;
+
+      final offset = renderBox.localToGlobal(Offset.zero);
+      final size = renderBox.size;
+      final overlay = Overlay.of(context, rootOverlay: true);
+      var barrierActive = false;
+
+      void removeOverlay() {
+        _textPostProfileMenuOverlay?.remove();
+        _textPostProfileMenuOverlay = null;
+        _textPostProfileMenuDismissHandler = null;
+        PostFeedOverlayMenuCoordinator.unregister(removeOverlay);
+      }
+
+      _textPostProfileMenuDismissHandler = removeOverlay;
+      PostFeedOverlayMenuCoordinator.register(removeOverlay);
+
+      _textPostProfileMenuOverlay = OverlayEntry(
+        builder: (overlayContext) => Stack(
+          children: [
+            if (barrierActive)
+              Positioned.fill(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: _dismissTextPostProfileMenu,
+                ),
+              ),
+            Positioned(
+              left: offset.dx,
+              top: offset.dy + (size.height * 0.15),
+              child: _buildTextPostProfileMenuPanel(
+                isFollowing: isFollowing,
+                followRequestPending: followRequestPending,
+                showFollowOption: showFollowOption,
+                showFollowingOption: showFollowingOption,
+                onFollow: () {
+                  _dismissTextPostProfileMenu();
+                  unawaited(onFollow());
+                },
+                onVisitProfile: () => _dismissTextPostProfileMenu('profile'),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      overlay.insert(_textPostProfileMenuOverlay!);
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _textPostProfileMenuOverlay == null) return;
+        barrierActive = true;
+        _textPostProfileMenuOverlay!.markNeedsBuild();
+      });
+    });
+  }
+
+  Widget _buildTextPostProfileMenuPanel({
+    required bool isFollowing,
+    required bool followRequestPending,
+    required bool showFollowOption,
+    required bool showFollowingOption,
+    required VoidCallback onFollow,
+    required VoidCallback onVisitProfile,
+  }) {
+    final showFollowItem = (showFollowOption && (!isFollowing || followRequestPending)) ||
+        (showFollowingOption && isFollowing && !followRequestPending);
+    final followLabel = followRequestPending
+        ? IsrTranslationFile.requested
+        : isFollowing
+            ? IsrTranslationFile.following
+            : IsrTranslationFile.follow;
+    final followIcon = followRequestPending || isFollowing
+        ? Icons.check
+        : Icons.add_circle_outline;
+
+    return Material(
+      color: _feedUi.backgroundColor,
+      elevation: 8,
+      shadowColor: Colors.black.withValues(alpha: 0.18),
+      borderRadius: BorderRadius.circular(IsrDimens.twelve),
+      clipBehavior: Clip.antiAlias,
+      child: SizedBox(
+        width: 220,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (showFollowItem)
+              _buildTextPostProfileMenuItem(
+                icon: followIcon,
+                label: followLabel,
+                onTap: onFollow,
+              ),
+            _buildTextPostProfileMenuItem(
+              icon: Icons.person_outline,
+              label: IsrTranslationFile.visitProfile,
+              onTap: onVisitProfile,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextPostProfileMenuItem({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) =>
+      Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: IsrDimens.edgeInsetsSymmetric(
+              horizontal: IsrDimens.sixteen,
+              vertical: IsrDimens.fourteen,
+            ),
+            child: Row(
+              children: [
+                Icon(icon, size: IsrDimens.twentyTwo, color: _feedUi.headerTextColor),
+                IsrDimens.boxWidth(IsrDimens.twelve),
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: IsrStyles.primaryText14.copyWith(
+                      color: _feedUi.headerTextColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
 
   void _onMediaPageChanged(int index) {
     if (_mediaPageIndex.value == index) return;
@@ -1576,13 +1750,17 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
 
   Widget _buildTextPostProfileAvatarWithFollowBadge() {
     final size = _userProfileConfig?.profileImageSize ?? IsrDimens.thirtyTwo;
-    final avatar = _buildHeaderProfileAvatar();
+    final avatar = _buildHeaderProfileAvatar(enableTap: false);
 
-    if (_isViewerPostAuthor) return avatar;
+    if (_isViewerPostAuthor) {
+      return _buildHeaderProfileAvatar(avatarKey: _textPostAvatarKey);
+    }
 
     final showFollowControls = _reel.postSetting?.isUnFollowButtonVisible == true ||
         _reel.postSetting?.isFollowButtonVisible == true;
-    if (!showFollowControls) return avatar;
+    if (!showFollowControls) {
+      return _buildHeaderProfileAvatar(avatarKey: _textPostAvatarKey);
+    }
 
     final timelineUser = _reel.postData is TimeLineData
         ? (_reel.postData as TimeLineData).user
@@ -1598,8 +1776,6 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         _reel.isFollow = isFollowing;
 
         Widget? badge;
-        VoidCallback? onBadgeTap;
-
         if (isLoading) {
           badge = SizedBox(
             width: IsrDimens.twenty,
@@ -1612,44 +1788,42 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         } else if (followRequestPending &&
             _reel.postSetting?.isUnFollowButtonVisible == true) {
           badge = _buildTextPostFollowBadge(icon: Icons.check);
-          onBadgeTap = () => onTap(
-                reelData: _reel,
-                postSectionType: widget.postSectionType,
-                apiCallBack: widget.onPressFollowButton != null
-                    ? () => widget.onPressFollowButton!(_reel, isFollowing)
-                    : null,
-              );
         } else if (!isFollowing &&
             !followRequestPending &&
             _reel.postSetting?.isUnFollowButtonVisible == true) {
           badge = _buildTextPostFollowBadge(icon: Icons.add);
-          onBadgeTap = () => onTap(
+        } else if (isFollowing &&
+            _reel.postSetting?.isFollowButtonVisible == true) {
+          badge = _buildTextPostFollowBadge(icon: Icons.check);
+        }
+
+        final avatarContent = badge == null
+            ? avatar
+            : FeedTextPostAvatarFollowBadge(
+                avatar: avatar,
+                avatarSize: size,
+                badge: badge,
+              );
+
+        return TapHandler(
+          key: _textPostAvatarKey,
+          borderRadius: size / 2,
+          onTap: () => unawaited(
+            _showTextPostProfileMenuPopup(
+              isFollowing: isFollowing,
+              followRequestPending: followRequestPending,
+              showFollowOption: _reel.postSetting?.isUnFollowButtonVisible == true,
+              showFollowingOption: _reel.postSetting?.isFollowButtonVisible == true,
+              onFollow: () => onTap(
                 reelData: _reel,
                 postSectionType: widget.postSectionType,
                 apiCallBack: widget.onPressFollowButton != null
                     ? () => widget.onPressFollowButton!(_reel, isFollowing)
                     : null,
-              );
-        } else if (isFollowing &&
-            _reel.postSetting?.isFollowButtonVisible == true) {
-          badge = _buildTextPostFollowBadge(icon: Icons.check);
-          onBadgeTap = () => onTap(reelData: _reel);
-        }
-
-        if (badge == null) return avatar;
-
-        final badgeWidget = onBadgeTap == null
-            ? badge
-            : TapHandler(
-                onTap: onBadgeTap,
-                borderRadius: 9,
-                child: badge,
-              );
-
-        return FeedTextPostAvatarFollowBadge(
-          avatar: avatar,
-          avatarSize: size,
-          badge: badgeWidget,
+              ),
+            ),
+          ),
+          child: avatarContent,
         );
       },
     );
@@ -1688,7 +1862,11 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         width: IsrDimens.one,
       );
 
-  Widget _buildHeaderProfileAvatar() {
+  Widget _buildHeaderProfileAvatar({
+    Key? avatarKey,
+    VoidCallback? onTap,
+    bool enableTap = true,
+  }) {
     final size = _userProfileConfig?.profileImageSize ?? IsrDimens.thirtyTwo;
     final firstName = _reel.firstName ?? '';
     final lastName = _reel.lastName ?? '';
@@ -1696,22 +1874,27 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     final nameSeed = '$firstName $lastName'.trim().isNotEmpty
         ? '$firstName $lastName'
         : (_reel.userName ?? initials);
-    return TapHandler(
-      borderRadius: size / 2,
-      onTap: () => widget.onTapUserProfile?.call(),
-      child: AppImage.network(
-        _reel.profilePhoto ?? '',
-        width: size,
-        height: size,
-        isProfileImage: true,
-        border: _profileAvatarBorder,
-        name: '$firstName $lastName',
-        placeHolderWidget: (h, w) => FeedProfileInitialsPlaceholder(
-          initials: initials,
-          size: h ?? w ?? size,
-          seed: nameSeed,
-        ),
+    final image = AppImage.network(
+      _reel.profilePhoto ?? '',
+      width: size,
+      height: size,
+      isProfileImage: true,
+      border: _profileAvatarBorder,
+      name: '$firstName $lastName',
+      placeHolderWidget: (h, w) => FeedProfileInitialsPlaceholder(
+        initials: initials,
+        size: h ?? w ?? size,
+        seed: nameSeed,
       ),
+    );
+
+    if (!enableTap) return image;
+
+    return TapHandler(
+      key: avatarKey,
+      borderRadius: size / 2,
+      onTap: onTap ?? () => widget.onTapUserProfile?.call(),
+      child: image,
     );
   }
 

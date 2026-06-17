@@ -68,6 +68,7 @@ class IsrTranslationFile {
   static const String whatsHappening = "What's happening?";
   static const String card = 'Card';
   static const String text = 'Text';
+  static const String visitProfile = 'Visit profile';
   static const String sdkNotInitialized = 'sdk not initialized';
   static const String noInternet = 'No Internet';
   static const String shop = 'Shop';
