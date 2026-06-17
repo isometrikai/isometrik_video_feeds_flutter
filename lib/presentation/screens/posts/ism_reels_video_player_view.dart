@@ -120,11 +120,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   TapGestureRecognizer? _tapGestureRecognizer;
 
-  // GlobalKeys to control video players for long press pause/play
-  // For single video, use _currentVideoPlayerKey
-  // For carousel, use _videoPlayerKeys map
+  // GlobalKeys to control video players for tap play/pause.
   final GlobalKey _currentVideoPlayerKey = GlobalKey();
   final Map<int, GlobalKey> _videoPlayerKeys = {};
+  final ValueNotifier<int> _videoOverlayTick = ValueNotifier(0);
 
   // Get the key for the current video player
   GlobalKey _getCurrentVideoPlayerKey() {
@@ -258,9 +257,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   bool _showLikeAnimation = false;
   Timer? _likeAnimationTimer;
-  bool _showMuteAnimation = false;
-  Timer? _muteAnimationTimer;
-  double _muteIconScale = 1.0;
 
   // Image view tracking
   Timer? _imageViewTimer;
@@ -727,12 +723,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _tapGestureRecognizer?.dispose();
     _pageController?.dispose();
     _likeAnimationTimer?.cancel();
-    _muteAnimationTimer?.cancel();
     _audioDebounceTimer?.cancel();
     _imageViewTimer?.cancel();
     unawaited(_disposeImageSound());
     _currentMediaProgress.dispose();
     _postProgress.dispose();
+    _videoOverlayTick.dispose();
     debugPrint(
         'IsmReelsVideoPlayerView: dispose index: ${widget.index}, visibleIndex: ${widget.currentIndex.value}, tabType: ${widget.postSectionType}');
     super.dispose();
@@ -998,28 +994,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       mediaWidget = _buildSingleMediaContent();
     }
 
-    // Wrap media content with mentions overlay
-    return Stack(
-      children: [
-        GestureDetector(
-          onTap: _toggleMuteAndUnMute,
-          onDoubleTap: _triggerLikeAnimation,
-          child: mediaWidget,
-        ),
-
-        // // Mentions overlay with center area for tap-through
-        // if (_mentionsVisible && _pageMentionMetaDataList.isListEmptyOrNull == false)
-        //   _buildMentionsOverlayWithCenterArea(),
-      ],
-    );
+    // Media only — tap play/pause is handled by the outer [GestureDetector].
+    return mediaWidget;
   }
 
   Widget _buildMediaCarousel() => Stack(
         fit: StackFit.expand,
         children: [
-          GestureDetector(
-            onTap: _toggleMentions,
-            child: PreloadPageView.builder(
+          PreloadPageView.builder(
               preloadPagesCount: 1,
               controller: _pageController,
               // padEnds: false,
@@ -1029,7 +1011,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               itemCount: _reelData.mediaMetaDataList.length,
               itemBuilder: (context, index) => _buildPageView(index),
             ),
-          ),
 
           // Media counter
           Positioned(
@@ -1093,36 +1074,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         logIndex: logIndex,
         isParentVisible: widget.reelsConfig.isTabVisible,
         postSectionType: widget.postSectionType,
+        onPlaybackStateChanged: () {
+          if (mounted) _videoOverlayTick.value++;
+        },
       );
-
-  void _toggleMentions() {
-    if (_pageMentionMetaDataList.isListEmptyOrNull == false) {
-      if (_mentionsVisible) {
-        _autoHideMentions();
-      } else {
-        _toggleMuteAndUnMute();
-      }
-    } else {
-      _toggleMuteAndUnMute();
-      // _togglePlayPause();
-    }
-  }
-
-  void _autoHideMentions() {
-    if (_mentionsVisible) {
-      setState(() {
-        _mentionsVisible = false;
-      });
-    } else {
-      Future.delayed(const Duration(seconds: 4), () {
-        if (mounted && _mentionsVisible) {
-          setState(() {
-            _mentionsVisible = false;
-          });
-        }
-      });
-    }
-  }
 
   Widget _buildMediaIndicators(int currentPage) {
     final primaryColor = Theme.of(context).primaryColor;
@@ -1572,19 +1527,55 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     );
   }
 
-  void _togglePlayPause() {
-    if (!mounted) return; // Safety check: Widget is disposed
+  bool get _shouldShowReelsMuteControl {
+    if (_isTextOnlyPost) return false;
+    final list = _reelData.mediaMetaDataList;
+    if (list.isEmpty) return false;
+    final index = _currentPageNotifier.value.clamp(0, list.length - 1);
+    final media = list[index];
+    final isVideo = media.mediaType == kVideoType;
+    final hasImageSound =
+        media.mediaType == kPictureType && (_reelData.sound?.hasId ?? false);
+    return isVideo || hasImageSound;
+  }
 
-    // Pause video on long press start
-    final key = _getCurrentVideoPlayerKey();
-    final videoPlayerState = VideoPlayerWidget.of(key);
-    if (videoPlayerState != null && videoPlayerState.mounted) {
-      videoPlayerState.pause();
+  bool get _isReelsPlaybackPaused {
+    if (_isTextOnlyPost) return _isImagePaused;
+    final player = VideoPlayerWidget.of(_getCurrentVideoPlayerKey());
+    if (player != null && player.mounted) {
+      return player.showPausedIndicator;
+    }
+    if (_usesTimedAdvance) return _isImagePaused;
+    return false;
+  }
+
+  BoxDecoration get _reelsControlButtonDecoration => BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.45),
+        shape: BoxShape.circle,
+      );
+
+  /// Tap anywhere on the reel: pause / resume (Instagram-style).
+  void _onReelTapTogglePlayPause() {
+    if (!mounted || _shouldShowPaidLockOverlay || _isTextOnlyPost) return;
+
+    final player = VideoPlayerWidget.of(_getCurrentVideoPlayerKey());
+    if (player != null && player.mounted) {
+      if (player.isPlaying) {
+        player.pause();
+      } else {
+        player.play();
+      }
+      _videoOverlayTick.value++;
+      return;
     }
 
-    // Start timed advance pause for text-only posts or image slides.
     if (_usesTimedAdvance) {
-      _pauseImageProgress();
+      if (_isImagePaused) {
+        _startOrResumeImageProgress();
+      } else {
+        _pauseImageProgress();
+      }
+      _videoOverlayTick.value++;
     }
   }
 
@@ -1633,13 +1624,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         children: [
           // Only the main GestureDetector as child of the outer Stack
           GestureDetector(
-            onTap: _shouldShowPaidLockOverlay ? null : _toggleMuteAndUnMute,
-            onLongPressStart:
-                _shouldShowPaidLockOverlay ? null : (_) => _togglePlayPause(),
+            onTap: _shouldShowPaidLockOverlay ? null : _onReelTapTogglePlayPause,
             onDoubleTap:
                 _shouldShowPaidLockOverlay ? null : _triggerLikeAnimation,
-            onLongPressEnd:
-                _shouldShowPaidLockOverlay ? null : (_) => _resumePlayback(),
             child: Stack(
               fit: StackFit.expand,
               alignment: Alignment.center,
@@ -1654,30 +1641,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       repeat: false,
                     ),
                   ),
-                if (!_shouldShowPaidLockOverlay &&
-                    _showMuteAnimation &&
-                    !_isTextOnlyPost &&
-                    _reelData.mediaMetaDataList.isNotEmpty &&
-                    _reelData.mediaMetaDataList[_currentPageNotifier.value]
-                            .mediaType ==
-                        kVideoType)
-                  Center(
-                    child: AnimatedScale(
-                      scale: _muteIconScale,
-                      duration: const Duration(milliseconds: 200),
-                      curve: Curves.elasticOut,
-                      child: Container(
-                        padding: const EdgeInsets.all(24),
-                        child: AppImage.svg(
-                          VideoMuteController.isMuted
-                              ? (_actionIconConfig?.muteIcon ??
-                                  AssetConstants.icMuteIcon)
-                              : (_actionIconConfig?.unmuteIcon ??
-                                  AssetConstants.icUnMuteIcon),
-                        ),
-                      ),
-                    ),
-                  ),
+                ValueListenableBuilder<int>(
+                  valueListenable: _videoOverlayTick,
+                  builder: (context, _, __) => _buildReelsPausedOverlay(),
+                ),
 
                 // Bottom gradient overlay for text readability
                 Positioned(
@@ -1769,6 +1736,51 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           ),
         ],
       ),
+      ),
+    );
+  }
+
+  /// Instagram-style paused overlay: small mute on top, large play below.
+  Widget _buildReelsPausedOverlay() {
+    if (_shouldShowPaidLockOverlay || !_isReelsPlaybackPaused) {
+      return const SizedBox.shrink();
+    }
+
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_shouldShowReelsMuteControl)
+            ListenableBuilder(
+              listenable: VideoMuteController.notifier,
+              builder: (context, _) => GestureDetector(
+                onTap: _toggleMuteAndUnMute,
+                child: Container(
+                  padding: IsrDimens.edgeInsetsAll(IsrDimens.eight),
+                  decoration: _reelsControlButtonDecoration,
+                  child: Icon(
+                    VideoMuteController.isMuted
+                        ? Icons.volume_off_rounded
+                        : Icons.volume_up_rounded,
+                    color: IsrColors.white,
+                    size: IsrDimens.twenty,
+                  ),
+                ),
+              ),
+            ),
+          if (_shouldShowReelsMuteControl) SizedBox(height: IsrDimens.sixteen),
+          IgnorePointer(
+            child: Container(
+              padding: IsrDimens.edgeInsetsAll(IsrDimens.twelve),
+              decoration: _reelsControlButtonDecoration,
+              child: Icon(
+                Icons.play_arrow_rounded,
+                color: IsrColors.white,
+                size: IsrDimens.forty,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -2725,36 +2737,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     });
   }
 
-  void _triggerMuteAnimation() {
-    // Cancel any existing animation
-    _muteAnimationTimer?.cancel();
-
-    if (!mounted) return;
-
-    setState(() {
-      _showMuteAnimation = true;
-      _muteIconScale = 1.3;
-    });
-
-    // Animate scale down after a short delay
-    Future.delayed(const Duration(milliseconds: 120), () {
-      if (mounted && _showMuteAnimation) {
-        setState(() {
-          _muteIconScale = 1.0;
-        });
-      }
-    });
-
-    // Hide animation after delay
-    _muteAnimationTimer = Timer(const Duration(milliseconds: 700), () {
-      if (mounted) {
-        setState(() {
-          _showMuteAnimation = false;
-        });
-      }
-    });
-  }
-
   void _handleCommentClick() async {
     if (widget.reelsConfig.onTapComment == null) return;
     await widget.reelsConfig.onTapComment!(
@@ -2848,7 +2830,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       _imageSoundPlayer?.setVolume(VideoMuteController.isMuted ? 0.0 : 1.0) ??
           Future.value(),
     );
-    _triggerMuteAnimation();
+    _videoOverlayTick.value++;
   }
 
   void _resetPostProgress() {
