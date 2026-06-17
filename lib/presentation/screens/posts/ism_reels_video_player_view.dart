@@ -110,6 +110,43 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             !IsrVideoReelConfig.isOverlayReelsPlayerActive,
       );
 
+  static const double _scrubTouchZoneHeight = 52;
+  static const double _scrubBarExpandedHeight = 10;
+  static const double _scrubThumbSize = 16;
+  static const Duration _scrubExpandDuration = Duration(milliseconds: 180);
+
+  bool get _shouldShowMediaIndicators =>
+      !_shouldShowPaidLockOverlay &&
+      (_isTextOnlyPost ||
+          _reelData.mediaMetaDataList.isNotEmpty ||
+          _reelData.mediaMetaDataList.firstOrNull?.mediaType == kVideoType ||
+          widget.onVideoCompleted != null);
+
+  double _mediaIndicatorClearance({required bool expanded}) {
+    if (!_shouldShowMediaIndicators) return 0;
+    final idleBarHeight =
+        (_mediaIndicatorConfig?.indicatorHeight ?? IsrDimens.six)
+            .clamp(4.0, 8.0);
+    final segmentRowHeight =
+        _hasMultipleMedia ? idleBarHeight + IsrDimens.six : 0;
+    final barAreaHeight = expanded ? _scrubThumbSize : idleBarHeight;
+    // Reserve only the visible bar area; touch padding extends into nav clearance.
+    return segmentRowHeight + barAreaHeight + IsrDimens.ten;
+  }
+
+  double _contentBottomInset(
+    BuildContext context, {
+    required bool scrubExpanded,
+  }) =>
+      _overlayBottomInset(context) +
+      _mediaIndicatorClearance(expanded: scrubExpanded);
+
+  bool _isVideoAtPage(int page) {
+    if (_isTextOnlyPost) return false;
+    if (page < 0 || page >= _reelData.mediaMetaDataList.length) return false;
+    return _reelData.mediaMetaDataList[page].mediaType == kVideoType;
+  }
+
   // Add constants for media types
   static const int kPictureType = 0;
   static const int kVideoType = 1;
@@ -275,6 +312,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   Duration _currentMediaWatchDuration = Duration.zero;
   final ValueNotifier<double> _currentMediaProgress =
       ValueNotifier<double>(0.0);
+  final ValueNotifier<bool> _isSeekBarExpanded = ValueNotifier<bool>(false);
   bool _isSeeking = false; // Flag to prevent progress updates during seeking
 
   // post Progress Tracking
@@ -687,6 +725,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     if (_currentPageNotifier.value == index) return;
 
+    _isSeekBarExpanded.value = false;
+    _isSeeking = false;
+
     // Hide mentions when changing pages
     if (_mentionsVisible) {
       _mentionsVisible = false;
@@ -727,6 +768,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _imageViewTimer?.cancel();
     unawaited(_disposeImageSound());
     _currentMediaProgress.dispose();
+    _isSeekBarExpanded.dispose();
     _postProgress.dispose();
     _videoOverlayTick.dispose();
     debugPrint(
@@ -1158,51 +1200,253 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     // For current media - show progress bar or seekbar
     if (isVideo) {
-      return _buildVideoSeekbar(primaryColor, borderRadius);
+      // Video scrubbing uses the full-width overlay in [_buildMediaProgressLayer].
+      return SizedBox(height: indicatorHeight);
     } else {
       return _buildImageProgressIndicator(primaryColor, borderRadius);
     }
   }
 
-  Widget _buildVideoSeekbar(Color pendingColor, BorderRadius borderRadius) =>
-      ValueListenableBuilder<double>(
-        valueListenable: _currentMediaProgress,
-        builder: (context, progress, child) => GestureDetector(
-          onHorizontalDragStart: (_) => _onSeekStart(),
-          onHorizontalDragEnd: (_) => _onSeekEnd(),
-          onHorizontalDragUpdate: (details) {
-            final box = context.findRenderObject() as RenderBox;
-            final localPosition = box.globalToLocal(details.globalPosition);
-            final newProgress =
-                (localPosition.dx / box.size.width).clamp(0.0, 1.0);
-            _onSeekVideo(newProgress);
-          },
-          child: Container(
-            height: _mediaIndicatorConfig?.indicatorHeight ?? IsrDimens.six,
-            decoration: BoxDecoration(
-              color: _mediaIndicatorConfig?.pendingColor ??
-                  const Color(
-                      0x80FFFFFF), // 50% white for pending - always visible
-              borderRadius: borderRadius,
-            ),
-            child: ClipRRect(
-              borderRadius: borderRadius,
-              child: FractionallySizedBox(
-                alignment: Alignment.centerLeft,
-                widthFactor: progress.clamp(0.0, 1.0),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: _mediaIndicatorConfig?.progressColor ??
-                        IsrColors.appColor
-                            .applyOpacity(0.7), // Pure white for progressed
-                    borderRadius: borderRadius,
-                  ),
+  Widget _buildMediaProgressLayer(int currentPage) {
+    if (_isVideoAtPage(currentPage)) {
+      return _buildVideoScrubOverlay(currentPage);
+    }
+    return _buildMediaIndicators(currentPage);
+  }
+
+  Widget _buildVideoScrubOverlay(int currentPage) {
+    final pendingColor = _mediaIndicatorConfig?.pendingColor ??
+        const Color(0x80FFFFFF);
+    final progressColor = _mediaIndicatorConfig?.progressColor ??
+        IsrColors.appColor.applyOpacity(0.9);
+    final idleBarHeight =
+        (_mediaIndicatorConfig?.indicatorHeight ?? IsrDimens.six).clamp(4.0, 8.0);
+    final borderRadius = _mediaIndicatorConfig?.indicatorBorderRadius ??
+        BorderRadius.circular(IsrDimens.two);
+
+    return ValueListenableBuilder<bool>(
+      valueListenable: _isSeekBarExpanded,
+      builder: (context, expanded, _) {
+        return ValueListenableBuilder<double>(
+          valueListenable: _currentMediaProgress,
+          builder: (context, progress, __) {
+            final barHeight = expanded ? _scrubBarExpandedHeight : idleBarHeight;
+            final clampedProgress = progress.clamp(0.0, 1.0);
+
+            return Listener(
+              behavior: HitTestBehavior.opaque,
+              onPointerDown: (event) {
+                _onSeekStart(expand: true);
+                _updateSeekFromGlobalPosition(context, event.position);
+              },
+              onPointerMove: (event) {
+                if (!_isSeeking) return;
+                _updateSeekFromGlobalPosition(context, event.position);
+              },
+              onPointerUp: (_) {
+                if (_isSeeking) _onSeekEnd();
+              },
+              onPointerCancel: (_) {
+                if (_isSeeking) _onSeekEnd();
+              },
+              child: SizedBox(
+                height: _scrubTouchZoneHeight,
+                width: double.infinity,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (_hasMultipleMedia) ...[
+                      _buildMultiMediaSegmentRow(
+                        currentPage: currentPage,
+                        indicatorHeight: idleBarHeight,
+                      ),
+                      SizedBox(height: IsrDimens.six),
+                    ],
+                    Padding(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: IsrDimens.eight),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final trackWidth = constraints.maxWidth;
+                          final thumbLeft =
+                              (trackWidth * clampedProgress) - (_scrubThumbSize / 2);
+
+                          return AnimatedContainer(
+                            duration: _scrubExpandDuration,
+                            curve: Curves.easeOutCubic,
+                            height: expanded ? _scrubThumbSize : idleBarHeight,
+                            alignment: Alignment.centerLeft,
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              alignment: Alignment.centerLeft,
+                              children: [
+                                AnimatedContainer(
+                                  duration: _scrubExpandDuration,
+                                  curve: Curves.easeOutCubic,
+                                  height: barHeight,
+                                  width: trackWidth,
+                                  decoration: BoxDecoration(
+                                    color: pendingColor,
+                                    borderRadius: expanded
+                                        ? BorderRadius.circular(5)
+                                        : borderRadius,
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: expanded
+                                        ? BorderRadius.circular(5)
+                                        : borderRadius,
+                                    child: Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: FractionallySizedBox(
+                                        widthFactor: clampedProgress,
+                                        heightFactor: 1,
+                                        child: ColoredBox(color: progressColor),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                if (expanded)
+                                  Positioned(
+                                    left: thumbLeft.clamp(
+                                      0.0,
+                                      trackWidth - _scrubThumbSize,
+                                    ),
+                                    child: Container(
+                                      width: _scrubThumbSize,
+                                      height: _scrubThumbSize,
+                                      decoration: BoxDecoration(
+                                        color: progressColor,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Colors.white,
+                                          width: 2,
+                                        ),
+                                        boxShadow: const [
+                                          BoxShadow(
+                                            color: Color(0x66000000),
+                                            blurRadius: 4,
+                                            offset: Offset(0, 1),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildMultiMediaSegmentRow({
+    required int currentPage,
+    required double indicatorHeight,
+  }) {
+    final mediaCount = _reelData.mediaMetaDataList.length;
+    final borderRadius = _mediaIndicatorConfig?.indicatorBorderRadius ??
+        BorderRadius.circular(IsrDimens.two);
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: IsrDimens.eight),
+      child: Row(
+        children: List.generate(
+          mediaCount,
+          (index) => Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(
+                left: index == 0
+                    ? 0
+                    : (_mediaIndicatorConfig?.indicatorSpacing ??
+                        IsrDimens.two),
+                right: index == mediaCount - 1
+                    ? 0
+                    : (_mediaIndicatorConfig?.indicatorSpacing ??
+                        IsrDimens.two),
+              ),
+              child: _buildStaticMediaIndicator(
+                index: index,
+                currentPage: currentPage,
+                indicatorHeight: indicatorHeight,
+                borderRadius: borderRadius,
+                hideCurrentVideoTrack: true,
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildStaticMediaIndicator({
+    required int index,
+    required int currentPage,
+    required double indicatorHeight,
+    required BorderRadius borderRadius,
+    bool hideCurrentVideoTrack = false,
+  }) {
+    final isCurrentMedia = index == currentPage;
+    final isCompletedMedia = index < currentPage;
+    final isVideo = _isVideoAtPage(index);
+
+    if (isCurrentMedia && isVideo && hideCurrentVideoTrack) {
+      return SizedBox(height: indicatorHeight);
+    }
+
+    if (isCompletedMedia) {
+      return Container(
+        height: indicatorHeight,
+        decoration: BoxDecoration(
+          color: _mediaIndicatorConfig?.completedColor ??
+              IsrColors.appColor.applyOpacity(0.7),
+          borderRadius: borderRadius,
+        ),
       );
+    }
+
+    if (!isCurrentMedia) {
+      return Container(
+        height: indicatorHeight,
+        decoration: BoxDecoration(
+          color: _mediaIndicatorConfig?.pendingColor ??
+              const Color(0x80FFFFFF),
+          borderRadius: borderRadius,
+        ),
+      );
+    }
+
+    return Container(
+      height: indicatorHeight,
+      decoration: BoxDecoration(
+        color: _mediaIndicatorConfig?.pendingColor ??
+            const Color(0x80FFFFFF),
+        borderRadius: borderRadius,
+      ),
+    );
+  }
+
+  void _updateSeekFromGlobalPosition(
+    BuildContext context,
+    Offset globalPosition,
+  ) {
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return;
+    final localPosition = box.globalToLocal(globalPosition);
+    final horizontalPadding = IsrDimens.eight;
+    final trackWidth = box.size.width - (horizontalPadding * 2);
+    if (trackWidth <= 0) return;
+    final dx = (localPosition.dx - horizontalPadding).clamp(0.0, trackWidth);
+    final newProgress = (dx / trackWidth).clamp(0.0, 1.0);
+    _onSeekVideo(newProgress);
+  }
 
   Widget _buildImageProgressIndicator(
           Color pendingColor, BorderRadius borderRadius) =>
@@ -1235,8 +1479,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         ),
       );
 
-  void _onSeekStart() {
+  void _onSeekStart({bool expand = false}) {
     _isSeeking = true;
+    if (expand) {
+      _isSeekBarExpanded.value = true;
+    }
     // Pause video while seeking
     final key = _getCurrentVideoPlayerKey();
     final videoPlayerState = VideoPlayerWidget.of(key);
@@ -1259,7 +1506,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
     // Delay resetting the flag to allow seek to complete
     Future.delayed(const Duration(milliseconds: 100), () {
+      if (!mounted) return;
       _isSeeking = false;
+      _isSeekBarExpanded.value = false;
       videoPlayerState?.play();
     });
   }
@@ -1527,26 +1776,23 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     );
   }
 
-  bool get _shouldShowReelsMuteControl {
+  bool get _isCurrentMediaVideo {
     if (_isTextOnlyPost) return false;
     final list = _reelData.mediaMetaDataList;
     if (list.isEmpty) return false;
     final index = _currentPageNotifier.value.clamp(0, list.length - 1);
-    final media = list[index];
-    final isVideo = media.mediaType == kVideoType;
-    final hasImageSound =
-        media.mediaType == kPictureType && (_reelData.sound?.hasId ?? false);
-    return isVideo || hasImageSound;
+    return list[index].mediaType == kVideoType;
+  }
+
+  bool get _shouldShowReelsMuteControl {
+    if (!_isCurrentMediaVideo) return false;
+    return true;
   }
 
   bool get _isReelsPlaybackPaused {
-    if (_isTextOnlyPost) return _isImagePaused;
+    if (!_isCurrentMediaVideo) return false;
     final player = VideoPlayerWidget.of(_getCurrentVideoPlayerKey());
-    if (player != null && player.mounted) {
-      return player.showPausedIndicator;
-    }
-    if (_usesTimedAdvance) return _isImagePaused;
-    return false;
+    return player != null && player.mounted && player.showPausedIndicator;
   }
 
   BoxDecoration get _reelsControlButtonDecoration => BoxDecoration(
@@ -1554,29 +1800,19 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         shape: BoxShape.circle,
       );
 
-  /// Tap anywhere on the reel: pause / resume (Instagram-style).
+  /// Tap anywhere on the reel: pause / resume (Instagram-style, video only).
   void _onReelTapTogglePlayPause() {
-    if (!mounted || _shouldShowPaidLockOverlay || _isTextOnlyPost) return;
+    if (!mounted || _shouldShowPaidLockOverlay || !_isCurrentMediaVideo) return;
 
     final player = VideoPlayerWidget.of(_getCurrentVideoPlayerKey());
-    if (player != null && player.mounted) {
-      if (player.isPlaying) {
-        player.pause();
-      } else {
-        player.play();
-      }
-      _videoOverlayTick.value++;
-      return;
-    }
+    if (player == null || !player.mounted) return;
 
-    if (_usesTimedAdvance) {
-      if (_isImagePaused) {
-        _startOrResumeImageProgress();
-      } else {
-        _pauseImageProgress();
-      }
-      _videoOverlayTick.value++;
+    if (player.isPlaying) {
+      player.pause();
+    } else {
+      player.play();
     }
+    _videoOverlayTick.value++;
   }
 
   void _resumePlayback() {
@@ -1619,130 +1855,130 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             );
           }
         },
-        child: Stack(
-        fit: StackFit.expand,
-        children: [
-          // Only the main GestureDetector as child of the outer Stack
-          GestureDetector(
-            onTap: _shouldShowPaidLockOverlay ? null : _onReelTapTogglePlayPause,
-            onDoubleTap:
-                _shouldShowPaidLockOverlay ? null : _triggerLikeAnimation,
-            child: Stack(
-              fit: StackFit.expand,
-              alignment: Alignment.center,
-              children: [
-                _buildMediaContent(),
-                if (!_shouldShowPaidLockOverlay && _showLikeAnimation)
-                  Center(
-                    child: Lottie.asset(
-                      AssetConstants.heartAnimation,
-                      width: 250,
-                      height: 250,
-                      repeat: false,
-                    ),
-                  ),
-                ValueListenableBuilder<int>(
-                  valueListenable: _videoOverlayTick,
-                  builder: (context, _, __) => _buildReelsPausedOverlay(),
-                ),
+        child: ValueListenableBuilder<bool>(
+          valueListenable: _isSeekBarExpanded,
+          builder: (context, scrubExpanded, _) {
+            final contentBottom = _contentBottomInset(
+              context,
+              scrubExpanded: scrubExpanded,
+            );
 
-                // Bottom gradient overlay for text readability
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: IgnorePointer(
-                    child: RepaintBoundary(
-                      child: Container(
-                        height: IsrDimens.getScreenHeight(context) * 0.45,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withValues(alpha: 0.05),
-                              Colors.black.withValues(alpha: 0.2),
-                              Colors.black.withValues(alpha: 0.5),
-                              Colors.black.withValues(alpha: 0.7),
-                            ],
-                            stops: const [0.0, 0.2, 0.5, 0.8, 1.0],
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                GestureDetector(
+                  onTap: _shouldShowPaidLockOverlay
+                      ? null
+                      : _onReelTapTogglePlayPause,
+                  onDoubleTap: _shouldShowPaidLockOverlay
+                      ? null
+                      : _triggerLikeAnimation,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    alignment: Alignment.center,
+                    children: [
+                      _buildMediaContent(),
+                      if (!_shouldShowPaidLockOverlay && _showLikeAnimation)
+                        Center(
+                          child: Lottie.asset(
+                            AssetConstants.heartAnimation,
+                            width: 250,
+                            height: 250,
+                            repeat: false,
+                          ),
+                        ),
+                      ValueListenableBuilder<int>(
+                        valueListenable: _videoOverlayTick,
+                        builder: (context, _, __) =>
+                            _buildReelsPausedOverlay(),
+                      ),
+
+                      // Bottom gradient overlay for text readability
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        child: IgnorePointer(
+                          child: RepaintBoundary(
+                            child: Container(
+                              height:
+                                  IsrDimens.getScreenHeight(context) * 0.45,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.transparent,
+                                    Colors.black.withValues(alpha: 0.05),
+                                    Colors.black.withValues(alpha: 0.2),
+                                    Colors.black.withValues(alpha: 0.5),
+                                    Colors.black.withValues(alpha: 0.7),
+                                  ],
+                                  stops: const [0.0, 0.2, 0.5, 0.8, 1.0],
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ),
-                    ),
+
+                      //right action
+                      //kept separate so that it does not bloc touch/gesture to underlying widgets
+                      if (!_shouldShowPaidLockOverlay)
+                        Positioned(
+                          right: widget.reelsConfig.overlayPadding
+                                  ?.resolve(Directionality.of(context))
+                                  .right ??
+                              0,
+                          bottom: contentBottom,
+                          child: widget.reelsConfig.actionWidget
+                                  ?.call(_reelData)
+                                  .child ??
+                              _buildRightSideActions(),
+                        ),
+
+                      //bottom section
+                      //kept separate so that it does not bloc touch/gesture to underlying widgets
+                      Positioned(
+                        right: 40,
+                        bottom: contentBottom,
+                        left: widget.reelsConfig.overlayPadding
+                                ?.resolve(Directionality.of(context))
+                                .left ??
+                            0,
+                        child: widget.reelsConfig.footerWidget
+                                ?.call(_reelData)
+                                .child ??
+                            _buildBottomSectionWithoutOverlay(),
+                      ),
+                    ],
                   ),
                 ),
-
-                // show progress indicator if there are multiple videos or single media is video or autoMoveNextMedia is true
-                if (!_shouldShowPaidLockOverlay &&
-                    (_isTextOnlyPost ||
-                        _reelData.mediaMetaDataList.isNotEmpty ||
-                        _reelData.mediaMetaDataList.firstOrNull?.mediaType ==
-                            kVideoType ||
-                        widget.onVideoCompleted != null))
+                // Outside tap-to-pause so scrubbing does not toggle playback.
+                if (_shouldShowMediaIndicators)
                   Positioned(
-                    bottom: _overlayBottomInset(context) + 3,
+                    bottom: _overlayBottomInset(context),
                     left: 0,
                     right: 0,
                     child: ValueListenableBuilder<int>(
                       valueListenable: _currentPageNotifier,
                       builder: (context, value, child) =>
-                          _buildMediaIndicators(value),
+                          _buildMediaProgressLayer(value),
                     ),
                   ),
-
-                //right action
-                //kept separate so that it does not bloc touch/gesture to underlying widgets
-                if (!_shouldShowPaidLockOverlay)
-                  Positioned(
-                    right: widget.reelsConfig.overlayPadding
-                            ?.resolve(Directionality.of(context))
-                            .right ??
-                        0,
-                    bottom: _overlayBottomInset(context),
-                    child: widget.reelsConfig.actionWidget
-                            ?.call(_reelData)
-                            .child ??
-                        _buildRightSideActions(),
-                  ),
-
-                //bottom section
-                //kept separate so that it does not bloc touch/gesture to underlying widgets
-                Positioned(
-                  right: 40,
-                  bottom: _overlayBottomInset(context),
-                  left: widget.reelsConfig.overlayPadding
-                          ?.resolve(Directionality.of(context))
-                          .left ??
-                      0,
-                  child:
-                      widget.reelsConfig.footerWidget?.call(_reelData).child ??
-                          _buildBottomSectionWithoutOverlay(),
-                ),
-                // Persistent mute icon indicator in top-right (placed last to be on top)
-                // if (_isMuted &&
-                //     _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kVideoType)
-                //   Align(
-                //     alignment: Alignment.center,
-                //     child: GestureDetector(
-                //       behavior: HitTestBehavior.opaque,
-                //       onTap: _toggleMuteAndUnMute,
-                //       child: const AppImage.svg(AssetConstants.icMuteIcon),
-                //     ),
-                //   ),
               ],
-            ),
-          ),
-        ],
-      ),
+            );
+          },
+        ),
       ),
     );
   }
 
-  /// Instagram-style paused overlay: small mute on top, large play below.
+  /// Instagram-style paused overlay: small mute on top, large play below (video only).
   Widget _buildReelsPausedOverlay() {
-    if (_shouldShowPaidLockOverlay || !_isReelsPlaybackPaused) {
+    if (_shouldShowPaidLockOverlay ||
+        !_isCurrentMediaVideo ||
+        !_isReelsPlaybackPaused) {
       return const SizedBox.shrink();
     }
 
