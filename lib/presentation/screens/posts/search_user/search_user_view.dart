@@ -40,6 +40,8 @@ class _SearchUserViewState extends State<SearchUserView>
   Timer? _debounce;
   String _currentSearchText = '';
   bool _isSelectingUser = false;
+  bool _hasMoreData = true;
+  bool _isLoadingMore = false;
 
   // Configuration getters
   SearchUserScreenConfig? get _searchUserConfig => IsrVideoReelConfig
@@ -121,6 +123,8 @@ class _SearchUserViewState extends State<SearchUserView>
       setState(() {
         _isSearching = true;
         _searchResults.clear();
+        _hasMoreData = true;
+        _isLoadingMore = false;
       });
 
       // await _loadingAnimationController.repeat();
@@ -141,15 +145,70 @@ class _SearchUserViewState extends State<SearchUserView>
     });
   }
 
-  void _setResult(List<SocialUserData> userList) {
+  void _setResult(
+    List<SocialUserData> userList, {
+    bool isFromPagination = false,
+  }) {
     if (mounted) {
       _loadingAnimationController.stop();
       setState(() {
         _isSearching = false;
-        _searchResults.clear();
-        _searchResults.addAll(userList);
+        _isLoadingMore = false;
+        if (isFromPagination) {
+          if (userList.isNotEmpty) {
+            _searchResults.addAll(userList);
+          } else {
+            _hasMoreData = false;
+          }
+        } else {
+          _searchResults
+            ..clear()
+            ..addAll(userList);
+          _hasMoreData = userList.isNotEmpty;
+        }
       });
-      _resultsAnimationController.forward();
+      if (!isFromPagination) {
+        _resultsAnimationController.forward();
+      }
+    }
+  }
+
+  void _loadMore() {
+    if (_currentSearchText.isEmpty ||
+        _isLoadingMore ||
+        !_hasMoreData ||
+        _isSearching) {
+      return;
+    }
+
+    setState(() => _isLoadingMore = true);
+
+    _searchUserBloc.add(
+      SearchUserEvent(
+        isLoading: false,
+        searchText: _currentSearchText,
+        isFromPagination: true,
+        onComplete: (userList) {
+          if (_currentSearchText.isNotEmpty) {
+            _setResult(userList, isFromPagination: true);
+          }
+        },
+      ),
+    );
+  }
+
+  void _handleScrollNotification(ScrollNotification notification) {
+    if (!mounted) return;
+
+    final metrics = notification.metrics;
+    if (metrics.maxScrollExtent == 0) return;
+
+    final scrollPercentage = metrics.pixels / metrics.maxScrollExtent;
+    if (scrollPercentage >= 0.65 &&
+        !_isLoadingMore &&
+        _hasMoreData &&
+        !_isSearching) {
+      _loadMore();
     }
   }
 
@@ -158,7 +217,7 @@ class _SearchUserViewState extends State<SearchUserView>
         backgroundColor: Colors.white,
         appBar: IsmCustomAppBarWidget(
           backgroundColor:
-              _searchUserConfig?.appBarConfig?.backgroundColor ?? Colors.white,
+              _searchUserConfig?.appBarConfig?.backgroundColor,
           isCrossIcon: true,
           titleText: IsrTranslationFile.tagPeople,
           centerTitle: true,
@@ -167,7 +226,7 @@ class _SearchUserViewState extends State<SearchUserView>
           actions: [
             TapHandler(
               onTap: () => Navigator.pop(context, _selectedUsers.toList()),
-              child: const Icon(Icons.check, color: Colors.black, size: 24),
+              child: Icon(Icons.check, color: IsrColors.appBarIconTextColor, size: 24.responsiveDimension),
             ),
             16.horizontalSpace,
           ],
@@ -424,18 +483,37 @@ class _SearchUserViewState extends State<SearchUserView>
         ),
       );
 
-  Widget _buildSearchResults() => ListView.builder(
-        padding: IsrDimens.edgeInsets(top: 16.responsiveDimension),
-        itemCount: _searchResults.length,
-        itemBuilder: (context, index) {
-          final result = _searchResults[index];
-          return Column(
-            children: [
-              _buildSearchResultItem(result, index),
-              if (index != _searchResults.length - 1) const CustomDivider(),
-            ],
-          );
+  Widget _buildSearchResults() => NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          if (notification is ScrollUpdateNotification) {
+            _handleScrollNotification(notification);
+          }
+          return false;
         },
+        child: ListView.builder(
+          padding: IsrDimens.edgeInsets(top: 16.responsiveDimension),
+          itemCount: _searchResults.length + (_isLoadingMore ? 1 : 0),
+          itemBuilder: (context, index) {
+            if (index == _searchResults.length) {
+              return Padding(
+                padding: IsrDimens.edgeInsetsSymmetric(
+                  vertical: 16.responsiveDimension,
+                ),
+                child: const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              );
+            }
+
+            final result = _searchResults[index];
+            return Column(
+              children: [
+                _buildSearchResultItem(result, index),
+                if (index != _searchResults.length - 1) const CustomDivider(),
+              ],
+            );
+          },
+        ),
       );
 
   Widget _buildSearchResultItem(SocialUserData result, int index) {
