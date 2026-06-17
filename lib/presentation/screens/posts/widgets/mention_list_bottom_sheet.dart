@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:ism_video_reel_player/core/core.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -38,6 +39,19 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
   bool _hasMore = true;
   bool _isLoadingMore = false;
   int _currentPage = 1;
+
+  Color get _backgroundColor =>
+      IsrVideoReelConfig
+          .socialConfig.colorsConfig?.bottomSheetBackgroundColor ??
+      IsrColors.white;
+
+  Color get _primaryTextColor => IsrColors.primaryTextColor;
+
+  Color get _secondaryTextColor => IsrColors.secondaryTextColor;
+
+  Color get _dividerColor => IsrColors.dividerColor;
+
+  Color get _secondaryButtonBackground => IsrColors.scaffoldColor;
 
   @override
   void initState() {
@@ -125,7 +139,7 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
               maxHeight: MediaQuery.of(context).size.height * 0.9,
             ),
             decoration: BoxDecoration(
-              color: IsrColors.white,
+              color: _backgroundColor,
               borderRadius: BorderRadius.vertical(
                 top: Radius.circular(IsrDimens.twenty),
               ),
@@ -146,7 +160,7 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
                         IsrTranslationFile.inThisSocialPost,
                         style: IsrStyles.primaryText18.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: IsrColors.black,
+                          color: _primaryTextColor,
                         ),
                       ),
                       TapHandler(
@@ -157,7 +171,7 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
                           padding: IsrDimens.edgeInsetsAll(IsrDimens.eight),
                           child: Icon(
                             Icons.close,
-                            color: IsrColors.black,
+                            color: _primaryTextColor,
                             size: IsrDimens.twentyFour,
                           ),
                         ),
@@ -165,7 +179,7 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
                     ],
                   ),
                 ),
-                const Divider(height: 1),
+                Divider(height: 1, color: _dividerColor),
                 // User List
                 _isLoading
                     ? Padding(
@@ -192,7 +206,7 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
                                     child: Text(
                                       'No mentions found',
                                       style: IsrStyles.primaryText14.copyWith(
-                                        color: IsrColors.grey,
+                                        color: _secondaryTextColor,
                                       ),
                                     ),
                                   ),
@@ -236,9 +250,9 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
         ),
         decoration: BoxDecoration(
           border: index < _socialUserList.length - 1
-              ? const Border(
+              ? Border(
                   bottom: BorderSide(
-                    color: IsrColors.colorDBDBDB,
+                    color: _dividerColor,
                     width: 0.5,
                   ),
                 )
@@ -262,7 +276,7 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: IsrColors.colorDBDBDB,
+                          color: _dividerColor,
                           width: 1,
                         ),
                       ),
@@ -289,7 +303,7 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
                                 'Unknown User',
                             style: IsrStyles.primaryText14.copyWith(
                               fontWeight: FontWeight.w600,
-                              color: IsrColors.black,
+                              color: _primaryTextColor,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -298,7 +312,7 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
                           Text(
                             socialUserData?.username?.takeIfNotEmpty() ?? '',
                             style: IsrStyles.primaryText12.copyWith(
-                              color: '767676'.toColor(),
+                              color: _secondaryTextColor,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -403,7 +417,7 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
                     borderRadius: 40.responsiveDimension,
                     type: ButtonType.secondary,
                     borderColor: IsrColors.appColor,
-                    backgroundColor: IsrColors.white,
+                    backgroundColor: _secondaryButtonBackground,
                     title: IsrTranslationFile.requested,
                     isLoading: isLoading,
                     textStyle: IsrStyles.primaryText12.copyWith(
@@ -445,7 +459,7 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
                   borderRadius: 40.responsiveDimension,
                   type: ButtonType.secondary,
                   borderColor: IsrColors.appColor,
-                  backgroundColor: IsrColors.white,
+                  backgroundColor: _secondaryButtonBackground,
                   title: IsrTranslationFile.following,
                   isLoading: isLoading,
                   textStyle: IsrStyles.primaryText12.copyWith(
@@ -464,7 +478,7 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
                 borderRadius: 40.responsiveDimension,
                 type: ButtonType.secondary,
                 borderColor: IsrColors.appColor,
-                backgroundColor: IsrColors.white,
+                backgroundColor: _secondaryButtonBackground,
                 title: IsrTranslationFile.removeTag,
                 textStyle: IsrStyles.primaryText12.copyWith(
                   color: IsrColors.appColor,
