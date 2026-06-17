@@ -288,6 +288,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
             setState(() {
               _isInitialized = true;
             });
+            _syncPlaybackState();
           }
         });
       }
@@ -359,12 +360,15 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       } else {
         debugPrint(
             '⚠️ VideoPlayerWidget: Failed to initialize video: ${widget.mediaUrl}');
-        // If visible, schedule a retry
-        if (_isVisible && mounted) {
+        // If visible and playback is allowed, schedule a retry
+        if (_isVisible && _feedAllowsPlayback && mounted) {
           debugPrint(
               '🔄 VideoPlayerWidget: Scheduling retry for visible video...');
           Future.delayed(const Duration(seconds: 1), () {
-            if (!_isDisposed && _isVisible && !_isInitialized) {
+            if (!_isDisposed &&
+                _isVisible &&
+                _feedAllowsPlayback &&
+                !_isInitialized) {
               _isInitializing = false;
               _initializeVideoPlayer();
             }
@@ -374,10 +378,13 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     } catch (e) {
       debugPrint('❌ VideoPlayerWidget: Error initializing video: $e');
       // If visible, schedule a retry on error
-      if (_isVisible && mounted) {
+      if (_isVisible && _feedAllowsPlayback && mounted) {
         debugPrint('🔄 VideoPlayerWidget: Scheduling retry after error...');
         Future.delayed(const Duration(seconds: 2), () {
-          if (!_isDisposed && _isVisible && !_isInitialized) {
+          if (!_isDisposed &&
+              _isVisible &&
+              _feedAllowsPlayback &&
+              !_isInitialized) {
             _isInitializing = false;
             _initializeVideoPlayer();
           }
@@ -421,14 +428,15 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         _videoPlayerController!.setVolume(widget.isMuted ? 0.0 : 1.0),
       ]);
 
-      // If widget is visible when initialized, start playing immediately
-      if (_isVisible) {
-        // Don't await play - let it start immediately
+      // If widget is visible when initialized, start playing only when allowed.
+      if (_mayStartPlayback()) {
         unawaited(_videoPlayerController!.play());
         widget.videoCacheManager.markAsVisible(widget.mediaUrl);
-        // Start stuck video detection to handle videos that don't start
         _startStuckVideoDetection();
       } else {
+        if (_videoPlayerController!.isPlaying) {
+          unawaited(_videoPlayerController!.pause());
+        }
         widget.videoCacheManager.markAsNotVisible(widget.mediaUrl);
       }
     } catch (e) {
