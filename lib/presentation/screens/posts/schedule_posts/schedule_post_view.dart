@@ -512,6 +512,7 @@ class _SchedulePostViewState extends State<SchedulePostView> {
       textColor: buttonConfig?.textColor ?? defaultTextColor,
       borderColor: buttonConfig?.borderColor,
       borderRadius: buttonConfig?.borderRadius,
+      textStyle: buttonConfig?.textStyle,
     );
 
   Future<bool?> _showPostNowDialog(BuildContext context) {
