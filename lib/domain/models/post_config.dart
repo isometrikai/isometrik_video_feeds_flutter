@@ -305,6 +305,7 @@ class PostUIConfig {
   const PostUIConfig({
     this.overlayPadding,
     this.actionIconConfig,
+    this.reelsActionIconConfig,
     this.textStyleConfig,
     this.shopUIConfig,
     this.postLinkUIConfig,
@@ -317,7 +318,13 @@ class PostUIConfig {
   });
 
   final EdgeInsetsGeometry? overlayPadding;
+
+  /// Action icons for scrollable post-card feed tabs (Feed layout).
   final ActionIconConfig? actionIconConfig;
+
+  /// Action icons for full-screen reels tabs (For You / Following).
+  /// When null, [actionIconConfig] is used as a fallback.
+  final ActionIconConfig? reelsActionIconConfig;
   final TextStyleConfig? textStyleConfig;
   final ShopUIConfig? shopUIConfig;
   final PostLinkUIConfig? postLinkUIConfig;
@@ -331,6 +338,7 @@ class PostUIConfig {
   PostUIConfig copyWith({
     EdgeInsetsGeometry? overlayPadding,
     ActionIconConfig? actionIconConfig,
+    ActionIconConfig? reelsActionIconConfig,
     TextStyleConfig? textStyleConfig,
     ShopUIConfig? shopUIConfig,
     PostLinkUIConfig? postLinkUIConfig,
@@ -344,6 +352,8 @@ class PostUIConfig {
       PostUIConfig(
         overlayPadding: overlayPadding ?? this.overlayPadding,
         actionIconConfig: actionIconConfig ?? this.actionIconConfig,
+        reelsActionIconConfig:
+            reelsActionIconConfig ?? this.reelsActionIconConfig,
         textStyleConfig: textStyleConfig ?? this.textStyleConfig,
         shopUIConfig: shopUIConfig ?? this.shopUIConfig,
         postLinkUIConfig: postLinkUIConfig ?? this.postLinkUIConfig,
@@ -353,6 +363,86 @@ class PostUIConfig {
         descriptionConfig: descriptionConfig ?? this.descriptionConfig,
         locationConfig: locationConfig ?? this.locationConfig,
         mentionConfig: mentionConfig ?? this.mentionConfig,
+      );
+}
+
+/// Visual container style for reels side action icons.
+enum ActionIconContainerStyle {
+  /// Default: icon only with optional drop shadow (current SDK behavior).
+  plain,
+
+  /// Frosted-glass circular background with blur and border.
+  glass,
+}
+
+/// Styling for [ActionIconContainerStyle.glass] reels action icons.
+class ActionIconGlassConfig {
+  const ActionIconGlassConfig({
+    this.containerSize = 40,
+    this.backgroundColor = const Color(0x00000000),
+    this.highlightColor = const Color(0x00000000),
+    this.shadowColor = const Color(0x00000000),
+    this.innerHighlightColor = const Color(0x00000000),
+    this.borderColor = const Color(0xB3FFFFFF),
+    this.borderShadowColor = const Color(0x14FFFFFF),
+    this.borderWidth = 1,
+    this.blurSigma = 12,
+    this.iconScale = 1,
+  });
+
+  /// Diameter of the circular glass button.
+  final double containerSize;
+
+  /// Base frosted fill.
+  final Color backgroundColor;
+
+  /// North-west (top-left) glass highlight where the light hits.
+  final Color highlightColor;
+
+  /// South-east (bottom-right) shaded depth tint.
+  final Color shadowColor;
+
+  /// Inner top-left shine.
+  final Color innerHighlightColor;
+
+  /// Lit north-west edge of the rim.
+  final Color borderColor;
+
+  /// Shaded south-east edge of the rim.
+  final Color borderShadowColor;
+
+  final double borderWidth;
+
+  /// Backdrop blur strength.
+  final double blurSigma;
+
+  /// Scales the icon inside the glass circle to offset asset padding.
+  final double iconScale;
+
+  ActionIconGlassConfig copyWith({
+    double? containerSize,
+    Color? backgroundColor,
+    Color? highlightColor,
+    Color? shadowColor,
+    Color? innerHighlightColor,
+    Color? borderColor,
+    Color? borderShadowColor,
+    double? borderWidth,
+    double? blurSigma,
+    double? iconScale,
+  }) =>
+      ActionIconGlassConfig(
+        containerSize: containerSize ?? this.containerSize,
+        backgroundColor: backgroundColor ?? this.backgroundColor,
+        highlightColor: highlightColor ?? this.highlightColor,
+        shadowColor: shadowColor ?? this.shadowColor,
+        innerHighlightColor:
+            innerHighlightColor ?? this.innerHighlightColor,
+        borderColor: borderColor ?? this.borderColor,
+        borderShadowColor: borderShadowColor ?? this.borderShadowColor,
+        borderWidth: borderWidth ?? this.borderWidth,
+        blurSigma: blurSigma ?? this.blurSigma,
+        iconScale: iconScale ?? this.iconScale,
       );
 }
 
@@ -370,7 +460,17 @@ class ActionIconConfig {
     this.unmuteIcon,
     this.iconSize,
     this.iconShadow,
+    this.containerStyle = ActionIconContainerStyle.plain,
+    this.glassConfig,
+    this.useHostAppAssets = false,
   });
+
+  /// Preset for glassmorphism reels action buttons.
+  static const glass = ActionIconConfig(
+    containerStyle: ActionIconContainerStyle.glass,
+    iconSize: 24,
+    glassConfig: ActionIconGlassConfig(),
+  );
 
   /// Icon path for selected/liked state
   final String? likeIconSelected;
@@ -405,6 +505,16 @@ class ActionIconConfig {
   /// Shadow configuration for action icons
   final List<BoxShadow>? iconShadow;
 
+  /// Container style for reels side action icons.
+  /// Defaults to [ActionIconContainerStyle.plain].
+  final ActionIconContainerStyle containerStyle;
+
+  /// Glass styling when [containerStyle] is [ActionIconContainerStyle.glass].
+  final ActionIconGlassConfig? glassConfig;
+
+  /// When true, icon paths resolve from the host app's root asset bundle.
+  final bool useHostAppAssets;
+
   ActionIconConfig copyWith({
     String? likeIconSelected,
     String? likeIconUnselected,
@@ -417,6 +527,9 @@ class ActionIconConfig {
     String? unmuteIcon,
     double? iconSize,
     List<BoxShadow>? iconShadow,
+    ActionIconContainerStyle? containerStyle,
+    ActionIconGlassConfig? glassConfig,
+    bool? useHostAppAssets,
   }) =>
       ActionIconConfig(
         likeIconSelected: likeIconSelected ?? this.likeIconSelected,
@@ -430,6 +543,9 @@ class ActionIconConfig {
         unmuteIcon: unmuteIcon ?? this.unmuteIcon,
         iconSize: iconSize ?? this.iconSize,
         iconShadow: iconShadow ?? this.iconShadow,
+        containerStyle: containerStyle ?? this.containerStyle,
+        glassConfig: glassConfig ?? this.glassConfig,
+        useHostAppAssets: useHostAppAssets ?? this.useHostAppAssets,
       );
 }
 

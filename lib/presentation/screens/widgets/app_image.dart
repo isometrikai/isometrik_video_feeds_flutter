@@ -32,7 +32,8 @@ class AppImage extends StatelessWidget {
         showError = false,
         color = null,
         cacheKey = null,
-        cacheManager = null;
+        cacheManager = null,
+        package = null;
 
   const AppImage.svg(
     this.path, {
@@ -54,6 +55,7 @@ class AppImage extends StatelessWidget {
     this.textColor,
     this.blendMode,
     this.placeHolderWidget,
+    this.package,
   })  : _imageType = ImageType.svg,
         showError = false,
         cacheKey = null,
@@ -82,7 +84,8 @@ class AppImage extends StatelessWidget {
     this.cacheKey,
     this.cacheManager,
   })  : _imageType = ImageType.network,
-        color = null;
+        color = null,
+        package = null;
 
   const AppImage.file(
     this.path, {
@@ -107,7 +110,8 @@ class AppImage extends StatelessWidget {
         showError = false,
         color = null,
         cacheKey = null,
-        cacheManager = null;
+        cacheManager = null,
+        package = null;
 
   final String path;
   final String name;
@@ -132,6 +136,7 @@ class AppImage extends StatelessWidget {
   final BlendMode? blendMode;
   final FilterQuality? filterQuality;
   final Color? textColor;
+  final String? package;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -150,7 +155,7 @@ class AppImage extends StatelessWidget {
           ImageType.asset =>
             _Asset(path, fit: fit, height: height, width: width),
           ImageType.svg =>
-            _Svg(path, fit: fit, color: color, height: height, width: width, blendMode: blendMode,),
+            _Svg(path, fit: fit, color: color, height: height, width: width, blendMode: blendMode, package: package,),
           ImageType.file => _File(
               path,
               fit: fit,
@@ -440,6 +445,7 @@ class _Svg extends StatelessWidget {
     this.height,
     this.width,
     this.blendMode,
+    this.package,
   });
 
   final String path;
@@ -448,6 +454,7 @@ class _Svg extends StatelessWidget {
   final double? height;
   final double? width;
   final BlendMode? blendMode;
+  final String? package;
 
   @override
   Widget build(BuildContext context) => SvgPicture.asset(
@@ -455,6 +462,7 @@ class _Svg extends StatelessWidget {
         height: height,
         width: width,
         fit: fit ?? BoxFit.contain,
+        package: package,
         colorFilter: color != null
             ? ColorFilter.mode(
                 color!,

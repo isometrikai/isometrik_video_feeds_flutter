@@ -42,7 +42,7 @@ class ReelsOverlayText extends StatelessWidget {
         overflow: overflow,
         style: TextStyle(
           inherit: false,
-          color: foreground,
+          foreground: Paint()..color = foreground,
           fontSize: fontSize,
           fontWeight: fontWeight,
           fontFamily: fontFamily,

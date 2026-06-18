@@ -1,3 +1,4 @@
+export 'action_icon_container.dart';
 export 'comment_tagging_text_field.dart';
 export 'feed_plain_text_post_body.dart';
 export 'feed_plain_text_post_section.dart';

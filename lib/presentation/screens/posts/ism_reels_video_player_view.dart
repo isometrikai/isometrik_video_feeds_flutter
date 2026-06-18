@@ -88,7 +88,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   // Config helper getters
   PostUIConfig? get _uiConfig => _postConfig.postUIConfig;
-  ActionIconConfig? get _actionIconConfig => _uiConfig?.actionIconConfig;
+  ActionIconConfig? get _actionIconConfig =>
+      _uiConfig?.reelsActionIconConfig ?? _uiConfig?.actionIconConfig;
   TextStyleConfig? get _textStyleConfig => _uiConfig?.textStyleConfig;
   ShopUIConfig? get _shopUIConfig => _uiConfig?.shopUIConfig;
   PostLinkUIConfig? get _postLinkUIConfig => _uiConfig?.postLinkUIConfig;
@@ -200,8 +201,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         ),
       ];
 
-  static const Color _kReelsOverlayLabelColor = ReelsOverlayText.foreground;
-
   /// Subtle shadow so counts stay readable without looking black on dark video.
   List<Shadow> get _reelsActionLabelShadows => [
         Shadow(
@@ -216,7 +215,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     final fallback = IsrStyles.white12;
     return TextStyle(
       inherit: false,
-      color: configured?.color ?? _kReelsOverlayLabelColor,
       fontSize: configured?.fontSize ?? fallback.fontSize,
       fontWeight: configured?.fontWeight ?? FontWeight.w500,
       fontFamily: configured?.fontFamily ?? fallback.fontFamily,
@@ -245,14 +243,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (onTap == null) return label;
     return GestureDetector(onTap: onTap, child: label);
   }
-
-  List<BoxShadow> get _defaultActionIconShadow => const [
-        BoxShadow(
-          color: Color(0x40000000),
-          blurRadius: 2,
-          offset: Offset(0, 1),
-        ),
-      ];
 
   /// Overlay text that stays white and ignores theme [DefaultTextStyle] merge.
   TextStyle _overlayTextStyle(
@@ -2024,138 +2014,136 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         child: Padding(
           padding: IsrDimens.edgeInsets(
               bottom: IsrDimens.forty, right: IsrDimens.sixteen),
-          child: DefaultTextStyle(
-            style: _reelsActionLabelStyle,
-            child: Column(
-              spacing: IsrDimens.twenty,
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                if (_reelData.postSetting?.isCreatePostButtonVisible ==
-                    true) ...[
-                  Column(
-                    children: [
-                      Container(
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Theme.of(context).primaryColor,
-                        ),
-                        child: IconButton(
-                          onPressed: () async {
-                            if (widget.onCreatePost != null) {
-                              await widget.onCreatePost!();
-                            }
-                          },
-                          icon: Icon(
-                            Icons.add,
-                            color: IsrColors.white,
-                          ),
+          child: Column(
+            spacing: IsrDimens.twenty,
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              if (_reelData.postSetting?.isCreatePostButtonVisible == true) ...[
+                Column(
+                  children: [
+                    Container(
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Theme.of(context).primaryColor,
+                      ),
+                      child: IconButton(
+                        onPressed: () async {
+                          if (widget.onCreatePost != null) {
+                            await widget.onCreatePost!();
+                          }
+                        },
+                        icon: Icon(
+                          Icons.add,
+                          color: IsrColors.white,
                         ),
                       ),
-                      IsrDimens.boxHeight(IsrDimens.ten),
-                      _reelsOverlayLabel(IsrTranslationFile.create),
-                    ],
-                  ),
-                ],
-                if (_reelData.postSetting?.isLikeButtonVisible == true)
-                  LikeActionWidget(
-                    postId: _reelData.postId ?? '',
-                    builder: (isLoading, isLiked, likeCount, onTap) {
-                      _isLikeActionLoading = isLoading;
-                      _reelData.isLiked = isLiked;
-                      _reelData.likesCount = likeCount;
-                      _onLikeTap = onTap;
-                      final likeIcon = isLiked == true
-                          ? (_actionIconConfig?.likeIconSelected ??
-                              AssetConstants.icLikeSelected)
-                          : (_actionIconConfig?.likeIconUnselected ??
-                              AssetConstants.icLikeUnSelected);
-                      return _buildActionButton(
-                        icon: likeIcon,
-                        onTap: () => onTap(
-                          reelData: _reelData,
-                          watchDuration: _postWatchDuration.inSeconds,
-                          postSectionType: widget.postSectionType,
-                          apiCallBack: widget.onPressLikeButton != null
-                              ? () => widget.onPressLikeButton!(
-                                    _reelData,
-                                    isLiked,
-                                  )
-                              : null,
-                        ),
-                        onLabelTap: _handleLikeCountTap,
-                        label: likeCount.toString(),
-                        isLoading: false, //isLoading,
-                      );
-                    },
-                  ),
-                if (_postConfig.showViewCount) _buildEyeViewAction(),
-                if (_reelData.postSetting?.isCommentButtonVisible == true)
-                  CommentCountActionWidget(
-                    postId: _reelData.postId ?? '',
-                    builder: (commentCount) {
-                      _reelData.commentCount = commentCount;
-                      return _buildActionButton(
-                        icon: _actionIconConfig?.commentIcon ??
-                            AssetConstants.icCommentIcon,
-                        label: commentCount.toString(),
-                        onTap: _handleCommentClick,
-                      );
-                    },
-                  ),
-                if (_reelData.postSetting?.isShareButtonVisible == true)
-                  _buildActionButton(
-                    icon: _actionIconConfig?.shareIcon ??
-                        AssetConstants.icShareIconSvg,
-                    label: IsrTranslationFile.share,
-                    onTap: () async {
-                      if (widget.reelsConfig.onTapShare == null) return;
-                      await widget.reelsConfig.onTapShare!(_reelData);
-                    },
-                  ),
-                if (_reelData.postStatus != 0 &&
-                    _reelData.postSetting?.isSaveButtonVisible == true)
-                  SaveActionWidget(
-                    postId: _reelData.postId ?? '',
-                    builder: (isLoading, isSaved, onTap) {
-                      _reelData.isSavedPost = isSaved;
-                      return _buildActionButton(
-                        icon: isSaved == true
-                            ? (_actionIconConfig?.saveIconSelected ??
-                                AssetConstants.icSaveSelected)
-                            : (_actionIconConfig?.saveIconUnselected ??
-                                AssetConstants.icSaveUnSelected),
-                        label: isSaved == true
-                            ? IsrTranslationFile.saved
-                            : IsrTranslationFile.save,
-                        onTap: () => onTap(
-                          reelData: _reelData,
-                          watchDuration: _postWatchDuration.inSeconds,
-                          postSectionType: widget.postSectionType,
-                          apiCallBack: widget.onPressSaveButton != null
-                              ? () =>
-                                  widget.onPressSaveButton!(_reelData, isSaved)
-                              : null,
-                        ),
-                        isLoading: false, //isLoading,
-                      );
-                    },
-                  ),
-                if (_reelData.postSetting?.isMoreButtonVisible == true)
-                  _buildActionButton(
-                    icon: _actionIconConfig?.moreIcon ??
-                        AssetConstants.icMoreIcon,
-                    label: '',
-                    onTap: () async {
-                      if (widget.onPressMoreButton == null) return;
-                      widget.onPressMoreButton!();
-                    },
-                  ),
+                    ),
+                    IsrDimens.boxHeight(IsrDimens.ten),
+                    _reelsOverlayLabel(IsrTranslationFile.create),
+                  ],
+                ),
               ],
+              if (_reelData.postSetting?.isLikeButtonVisible == true)
+                LikeActionWidget(
+                  postId: _reelData.postId ?? '',
+                  initialLikeCount: _reelData.likesCount,
+                  initialIsLiked: _reelData.isLiked,
+                  builder: (isLoading, isLiked, likeCount, onTap) {
+                    _isLikeActionLoading = isLoading;
+                    _reelData.isLiked = isLiked;
+                    _reelData.likesCount = likeCount;
+                    _onLikeTap = onTap;
+                    final likeIcon = isLiked == true
+                        ? (_actionIconConfig?.likeIconSelected ??
+                            AssetConstants.icLikeSelected)
+                        : (_actionIconConfig?.likeIconUnselected ??
+                            AssetConstants.icLikeUnSelected);
+                    return _buildActionButton(
+                      icon: likeIcon,
+                      label: likeCount.toString(),
+                      onTap: () => onTap(
+                        reelData: _reelData,
+                        watchDuration: _postWatchDuration.inSeconds,
+                        postSectionType: widget.postSectionType,
+                        apiCallBack: widget.onPressLikeButton != null
+                            ? () => widget.onPressLikeButton!(
+                                  _reelData,
+                                  isLiked,
+                                )
+                            : null,
+                      ),
+                      onLabelTap: _handleLikeCountTap,
+                      isLoading: false, //isLoading,
+                    );
+                  },
+                ),
+              if (_postConfig.showViewCount) _buildEyeViewAction(),
+              if (_reelData.postSetting?.isCommentButtonVisible == true)
+                CommentCountActionWidget(
+                  postId: _reelData.postId ?? '',
+                  builder: (commentCount) {
+                    _reelData.commentCount = commentCount;
+                    return _buildActionButton(
+                      icon: _actionIconConfig?.commentIcon ??
+                          AssetConstants.icCommentIcon,
+                      label: commentCount.toString(),
+                      onTap: _handleCommentClick,
+                    );
+                  },
+                ),
+              if (_reelData.postSetting?.isShareButtonVisible == true)
+                _buildActionButton(
+                  icon: _actionIconConfig?.shareIcon ??
+                      AssetConstants.icShareIconSvg,
+                  label: IsrTranslationFile.share,
+                  onTap: () async {
+                    if (widget.reelsConfig.onTapShare == null) return;
+                    await widget.reelsConfig.onTapShare!(_reelData);
+                  },
+                ),
+              if (_reelData.postStatus != 0 &&
+                  _reelData.postSetting?.isSaveButtonVisible == true)
+                SaveActionWidget(
+                  postId: _reelData.postId ?? '',
+                  builder: (isLoading, isSaved, onTap) {
+                    _reelData.isSavedPost = isSaved;
+                    return _buildActionButton(
+                      icon: isSaved == true
+                          ? (_actionIconConfig?.saveIconSelected ??
+                              AssetConstants.icSaveSelected)
+                          : (_actionIconConfig?.saveIconUnselected ??
+                              AssetConstants.icSaveUnSelected),
+                      label: isSaved == true
+                          ? IsrTranslationFile.saved
+                          : IsrTranslationFile.save,
+                      onTap: () => onTap(
+                        reelData: _reelData,
+                        watchDuration: _postWatchDuration.inSeconds,
+                        postSectionType: widget.postSectionType,
+                        apiCallBack: widget.onPressSaveButton != null
+                            ? () =>
+                                widget.onPressSaveButton!(_reelData, isSaved)
+                            : null,
+                      ),
+                      isLoading: false, //isLoading,
+                    );
+                  },
+                ),
+              if (_reelData.postSetting?.isMoreButtonVisible == true)
+                _buildActionButton(
+                  icon: _actionIconConfig?.moreIcon ??
+                      AssetConstants.icMoreIcon,
+                  label: '',
+                  onTap: () async {
+                    if (widget.onPressMoreButton == null) return;
+                    widget.onPressMoreButton!();
+                  },
+                ),
+            ],
             ),
           ),
-        ),
       );
 
   Widget _buildEyeViewAction() => GestureDetector(
@@ -2163,13 +2151,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow:
-                    _actionIconConfig?.iconShadow ?? _defaultActionIconShadow,
-              ),
+            ActionIconContainer(
+              config: _actionIconConfig,
               child: Icon(
                 Icons.remove_red_eye_outlined,
                 color: IsrColors.white,
@@ -2233,17 +2216,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             else
               GestureDetector(
                 onTap: onIconTap ?? onTap,
-                child: Container(
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: _actionIconConfig?.iconShadow ??
-                        _defaultActionIconShadow,
-                  ),
-                  child: AppImage.svg(
-                    icon,
-                    width: _actionIconConfig?.iconSize ?? IsrDimens.twentyFive,
-                    height: _actionIconConfig?.iconSize ?? IsrDimens.twentyFive,
+                child: ActionIconContainer(
+                  config: _actionIconConfig,
+                  child: ActionIconImage(
+                    path: icon,
+                    config: _actionIconConfig,
                   ),
                 ),
               ),

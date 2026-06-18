@@ -10,9 +10,13 @@ class LikeActionWidget extends StatefulWidget {
     super.key,
     required this.postId,
     required this.builder,
+    this.initialLikeCount,
+    this.initialIsLiked,
   });
 
   final String postId;
+  final int? initialLikeCount;
+  final bool? initialIsLiked;
   final Widget Function(
     bool isLoading,
     bool isLiked,
@@ -42,6 +46,8 @@ class _LikeActionWidgetState extends State<LikeActionWidget> {
     super.initState();
     cubit = context.getOrCreateBloc<IsmSocialActionCubit>();
     postId = widget.postId;
+    likeCount = widget.initialLikeCount ?? 0;
+    isLiked = widget.initialIsLiked ?? false;
     cubit.loadPostLikeState(widget.postId);
   }
 
@@ -141,13 +147,7 @@ class _LikeActionWidgetState extends State<LikeActionWidget> {
               isLoading = false; // Listener state means action is complete
               likeCount = state.likeCount;
             }
-            return GestureDetector(
-              onTap: isLoading
-                  ? null
-                  : ({ReelsData? reelsData, int? watchDuration}) =>
-                      _onTap(reelData: reelsData, watchDuration: watchDuration),
-              child: widget.builder(isLoading, isLiked, likeCount, _onTap),
-            );
+            return widget.builder(isLoading, isLiked, likeCount, _onTap);
           },
         ),
       );
