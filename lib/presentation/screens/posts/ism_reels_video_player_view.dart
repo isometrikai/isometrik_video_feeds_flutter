@@ -90,6 +90,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   PostUIConfig? get _uiConfig => _postConfig.postUIConfig;
   ActionIconConfig? get _actionIconConfig =>
       _uiConfig?.reelsActionIconConfig ?? _uiConfig?.actionIconConfig;
+  bool get _isGlassReelsActionIcons =>
+      _actionIconConfig?.containerStyle == ActionIconContainerStyle.glass;
   TextStyleConfig? get _textStyleConfig => _uiConfig?.textStyleConfig;
   ShopUIConfig? get _shopUIConfig => _uiConfig?.shopUIConfig;
   PostLinkUIConfig? get _postLinkUIConfig => _uiConfig?.postLinkUIConfig;
@@ -201,12 +203,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         ),
       ];
 
-  /// Subtle shadow so counts stay readable without looking black on dark video.
-  List<Shadow> get _reelsActionLabelShadows => [
+  /// Centered halo — action labels sit directly under icons, so avoid a
+  /// downward offset that reads as a disconnected smudge below the bubble.
+  List<Shadow> get _reelsActionLabelShadows => const [
         Shadow(
-          color: Colors.black.withValues(alpha: 0.55),
-          blurRadius: 3,
-          offset: const Offset(0, 1),
+          color: Color(0x99000000),
+          blurRadius: 2,
+          offset: Offset.zero,
         ),
       ];
 
@@ -230,6 +233,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     String text, {
     VoidCallback? onTap,
     Key? labelKey,
+    bool singleLine = false,
   }) {
     final style = _reelsActionLabelStyle;
     final label = ReelsOverlayText(
@@ -241,6 +245,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       letterSpacing: style.letterSpacing,
       height: style.height,
       shadows: style.shadows,
+      maxLines: singleLine ? 1 : null,
+      overflow: singleLine ? TextOverflow.visible : null,
     );
     if (onTap == null) return label;
     return GestureDetector(onTap: onTap, child: label);
@@ -2072,6 +2078,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                         ),
                       ),
                       label: likeCount.toString(),
+                      labelKey: ValueKey(
+                        'like_count_${_reelData.postId}_$likeCount',
+                      ),
                       onIconTap: () => onTap(
                         reelData: _reelData,
                         watchDuration: _postWatchDuration.inSeconds,
@@ -2198,26 +2207,43 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
   }
 
-  double get _reelsSideActionSlotWidth =>
-      _actionIconConfig?.glassConfig?.containerSize.toDouble() ?? 40;
+  static const double _plainActionIconShadowClipExtension = 3;
 
-  /// Icon and count in isolated paint layers so glass/icon shadows never bleed
-  /// onto the label (heart count was picking up the bubble's outer shadow).
+  double get _reelsSideActionSlotWidth {
+    if (_isGlassReelsActionIcons) {
+      return _actionIconConfig?.glassConfig?.containerSize.toDouble() ?? 40;
+    }
+    return _actionIconConfig?.iconSize ?? IsrDimens.twentyFive;
+  }
+
+  double get _reelsSideActionIconSlotHeight {
+    if (_isGlassReelsActionIcons) {
+      return _reelsSideActionSlotWidth;
+    }
+    return _reelsSideActionSlotWidth + _plainActionIconShadowClipExtension;
+  }
+
+  /// Isolates icon paint from count labels so shadows never bleed onto digits.
+  /// Glass uses a 40×40 clip; plain uses icon width + a small shadow margin.
   Widget _buildReelsSideActionColumn({
     required Widget icon,
     String? label,
+    Key? labelKey,
     VoidCallback? onIconTap,
     VoidCallback? onLabelTap,
     VoidCallback? onTap,
     bool isLoading = false,
   }) {
     final slotWidth = _reelsSideActionSlotWidth;
+    final iconSlotHeight = _reelsSideActionIconSlotHeight;
+    final labelGap =
+        _isGlassReelsActionIcons ? IsrDimens.eight : IsrDimens.four;
 
     Widget iconSlot;
     if (isLoading) {
       iconSlot = SizedBox(
         width: slotWidth,
-        height: slotWidth,
+        height: iconSlotHeight,
         child: Center(
           child: SizedBox(
             width: IsrDimens.twenty,
@@ -2235,17 +2261,31 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       iconSlot = RepaintBoundary(
         child: SizedBox(
           width: slotWidth,
-          height: slotWidth,
+          height: iconSlotHeight,
           child: ClipRect(
             clipBehavior: Clip.hardEdge,
-            child: GestureDetector(
-              onTap: onIconTap ?? onTap,
-              behavior: HitTestBehavior.opaque,
-              child: icon,
+            child: Align(
+              alignment: Alignment.center,
+              child: GestureDetector(
+                onTap: onIconTap ?? onTap,
+                behavior: HitTestBehavior.opaque,
+                child: icon,
+              ),
             ),
           ),
         ),
       );
+    }
+
+    Widget? labelWidget;
+    if (label.isStringEmptyOrNull == false) {
+      final overlayLabel = _reelsOverlayLabel(
+        label!,
+        onTap: onLabelTap ?? onTap,
+        labelKey: labelKey ?? ValueKey('reels_action_$label'),
+        singleLine: true,
+      );
+      labelWidget = RepaintBoundary(child: overlayLabel);
     }
 
     return Column(
@@ -2253,20 +2293,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         iconSlot,
-        if (label.isStringEmptyOrNull == false) ...[
-          IsrDimens.boxHeight(IsrDimens.eight),
-          RepaintBoundary(
-            child: SizedBox(
-              width: slotWidth,
-              child: Center(
-                child: _reelsOverlayLabel(
-                  label!,
-                  onTap: onLabelTap ?? onTap,
-                  labelKey: ValueKey('reels_action_$label'),
-                ),
-              ),
-            ),
-          ),
+        if (labelWidget != null) ...[
+          IsrDimens.boxHeight(labelGap),
+          labelWidget,
         ],
       ],
     );

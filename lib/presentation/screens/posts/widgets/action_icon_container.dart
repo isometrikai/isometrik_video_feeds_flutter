@@ -11,7 +11,7 @@ const List<BoxShadow> kDefaultActionIconShadow = [
   BoxShadow(
     color: Color(0x40000000),
     blurRadius: 2,
-    offset: Offset(0, 1),
+    offset: Offset.zero,
   ),
 ];
 
