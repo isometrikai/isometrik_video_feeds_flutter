@@ -104,15 +104,17 @@ class _PostAttributeViewState extends State<PostAttributeView>
       IsrVideoReelConfig.createEditPostConfig.enableBusinessLink;
 
   void _leaveCreateFlow({TimeLineData? result}) {
-    if (widget.isEditMode == true) {
-      Navigator.pop(context, result);
+    if (widget.isEditMode == true) { // edit flow dismiss
+      Navigator.pop(context, result); // dismiss edit flow (post attribute page)
       return;
     }
     if (_useBackgroundPostUi || widget.dismissEntireFlowOnClose) {
       _dismissEntireCreateFlow();
       return;
     }
-    Navigator.pop(context, result);
+    // dismiss create flow
+    Navigator.pop(context, null); // dismiss progress dialog
+    Navigator.pop(context, result); // dismiss create flow (post attribute page)
   }
 
   void _dismissEntireCreateFlow() {
