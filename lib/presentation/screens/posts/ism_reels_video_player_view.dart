@@ -229,10 +229,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   Widget _reelsOverlayLabel(
     String text, {
     VoidCallback? onTap,
+    Key? labelKey,
   }) {
     final style = _reelsActionLabelStyle;
     final label = ReelsOverlayText(
       text,
+      key: labelKey,
       fontSize: style.fontSize,
       fontWeight: style.fontWeight,
       fontFamily: style.fontFamily,
@@ -2047,6 +2049,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               ],
               if (_reelData.postSetting?.isLikeButtonVisible == true)
                 LikeActionWidget(
+                  key: ValueKey('like_action_${_reelData.postId}'),
                   postId: _reelData.postId ?? '',
                   initialLikeCount: _reelData.likesCount,
                   initialIsLiked: _reelData.isLiked,
@@ -2060,10 +2063,16 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                             AssetConstants.icLikeSelected)
                         : (_actionIconConfig?.likeIconUnselected ??
                             AssetConstants.icLikeUnSelected);
-                    return _buildActionButton(
-                      icon: likeIcon,
+                    return _buildReelsSideActionColumn(
+                      icon: ActionIconContainer(
+                        config: _actionIconConfig,
+                        child: ActionIconImage(
+                          path: likeIcon,
+                          config: _actionIconConfig,
+                        ),
+                      ),
                       label: likeCount.toString(),
-                      onTap: () => onTap(
+                      onIconTap: () => onTap(
                         reelData: _reelData,
                         watchDuration: _postWatchDuration.inSeconds,
                         postSectionType: widget.postSectionType,
@@ -2075,7 +2084,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                             : null,
                       ),
                       onLabelTap: _handleLikeCountTap,
-                      isLoading: false, //isLoading,
                     );
                   },
                 ),
@@ -2190,6 +2198,80 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
   }
 
+  double get _reelsSideActionSlotWidth =>
+      _actionIconConfig?.glassConfig?.containerSize.toDouble() ?? 40;
+
+  /// Icon and count in isolated paint layers so glass/icon shadows never bleed
+  /// onto the label (heart count was picking up the bubble's outer shadow).
+  Widget _buildReelsSideActionColumn({
+    required Widget icon,
+    String? label,
+    VoidCallback? onIconTap,
+    VoidCallback? onLabelTap,
+    VoidCallback? onTap,
+    bool isLoading = false,
+  }) {
+    final slotWidth = _reelsSideActionSlotWidth;
+
+    Widget iconSlot;
+    if (isLoading) {
+      iconSlot = SizedBox(
+        width: slotWidth,
+        height: slotWidth,
+        child: Center(
+          child: SizedBox(
+            width: IsrDimens.twenty,
+            height: IsrDimens.twenty,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                Theme.of(context).primaryColor,
+              ),
+            ),
+          ),
+        ),
+      );
+    } else {
+      iconSlot = RepaintBoundary(
+        child: SizedBox(
+          width: slotWidth,
+          height: slotWidth,
+          child: ClipRect(
+            clipBehavior: Clip.hardEdge,
+            child: GestureDetector(
+              onTap: onIconTap ?? onTap,
+              behavior: HitTestBehavior.opaque,
+              child: icon,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        iconSlot,
+        if (label.isStringEmptyOrNull == false) ...[
+          IsrDimens.boxHeight(IsrDimens.eight),
+          RepaintBoundary(
+            child: SizedBox(
+              width: slotWidth,
+              child: Center(
+                child: _reelsOverlayLabel(
+                  label!,
+                  onTap: onLabelTap ?? onTap,
+                  labelKey: ValueKey('reels_action_$label'),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
   Widget _buildActionButton({
     required String icon,
     String? label,
@@ -2198,41 +2280,19 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     VoidCallback? onLabelTap,
     bool isLoading = false,
   }) =>
-      GestureDetector(
-        onTap: onTap,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isLoading)
-              SizedBox(
-                width: IsrDimens.twenty,
-                height: IsrDimens.twenty,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                      Theme.of(context).primaryColor),
-                ),
-              )
-            else
-              GestureDetector(
-                onTap: onIconTap ?? onTap,
-                child: ActionIconContainer(
-                  config: _actionIconConfig,
-                  child: ActionIconImage(
-                    path: icon,
-                    config: _actionIconConfig,
-                  ),
-                ),
-              ),
-            if (label.isStringEmptyOrNull == false) ...[
-              IsrDimens.boxHeight(IsrDimens.four),
-              _reelsOverlayLabel(
-                label ?? '',
-                onTap: onLabelTap ?? onTap,
-              ),
-            ],
-          ],
+      _buildReelsSideActionColumn(
+        icon: ActionIconContainer(
+          config: _actionIconConfig,
+          child: ActionIconImage(
+            path: icon,
+            config: _actionIconConfig,
+          ),
         ),
+        label: label,
+        onTap: onTap,
+        onIconTap: onIconTap,
+        onLabelTap: onLabelTap,
+        isLoading: isLoading,
       );
 
   Future<void> _onPostLinkTap() async {

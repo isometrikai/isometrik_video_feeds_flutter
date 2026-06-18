@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 
 /// Labels drawn on top of reels video (counts, Share, Save).
 ///
-/// Host apps often wrap the SDK in a dark [DefaultTextStyle] for the Feed tab.
-/// Material 3 [TextStyle.foreground] on that style overrides [TextStyle.color]
-/// when styles merge, so normal [Text] can render black on video. This widget
-/// always paints with an explicit white foreground and never inherits theme text.
+/// Uses [inherit: false] and an explicit white [color] so host-app theme text
+/// cannot paint counts black. Do not set [foreground] and [shadows] together —
+/// that can double-render round glyphs like "0".
 class ReelsOverlayText extends StatelessWidget {
   const ReelsOverlayText(
     this.data, {
@@ -42,7 +41,7 @@ class ReelsOverlayText extends StatelessWidget {
         overflow: overflow,
         style: TextStyle(
           inherit: false,
-          foreground: Paint()..color = foreground,
+          color: foreground,
           fontSize: fontSize,
           fontWeight: fontWeight,
           fontFamily: fontFamily,

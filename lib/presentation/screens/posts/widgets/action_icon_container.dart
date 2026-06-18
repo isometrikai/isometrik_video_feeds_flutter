@@ -76,26 +76,6 @@ class ActionIconImage extends StatelessWidget {
       image = Transform.scale(scale: _scale, child: image);
     }
 
-    // Soft shadow halo keeps white icons crisp on bright or busy backgrounds.
-    if (_isGlass) {
-      image = Stack(
-        alignment: Alignment.center,
-        children: [
-          ImageFiltered(
-            imageFilter: ImageFilter.blur(sigmaX: 1.6, sigmaY: 1.6),
-            child: ColorFiltered(
-              colorFilter: const ColorFilter.mode(
-                Color(0x8A000000),
-                BlendMode.srcIn,
-              ),
-              child: image,
-            ),
-          ),
-          image,
-        ],
-      );
-    }
-
     return image;
   }
 }
@@ -130,29 +110,12 @@ class ActionIconContainer extends StatelessWidget {
     final glass = config?.glassConfig ?? const ActionIconGlassConfig();
     final size = glass.containerSize;
 
+    // No outer [boxShadow] — it paints outside the 40×40 bounds and bleeds onto
+    // the count label stacked below in the reels action column.
     return SizedBox(
       width: size,
       height: size,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          boxShadow: const [
-            // Cast shadow falls to the south-east (light from north-west).
-            BoxShadow(
-              color: Color(0x40000000),
-              blurRadius: 10,
-              offset: Offset(3, 4),
-            ),
-            // Faint lift on the lit north-west edge.
-            BoxShadow(
-              color: Color(0x1FFFFFFF),
-              blurRadius: 2,
-              offset: Offset(-1, -1),
-            ),
-          ],
-        ),
-        // Rim gradient: bright at north-west, shaded at south-east.
-        child: Container(
+      child: Container(
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: LinearGradient(
@@ -211,7 +174,6 @@ class ActionIconContainer extends StatelessWidget {
               ],
             ),
           ),
-        ),
       ),
     );
   }
