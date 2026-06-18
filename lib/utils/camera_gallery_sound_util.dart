@@ -34,9 +34,12 @@ abstract final class CameraGallerySoundUtil {
 
     if (showLoader) await Utility.showLoader();
     try {
+      final videoDurationSec = await MediaUtil.videoDurationSeconds(videoPath);
       final muxed = await MediaUtil.muxVideoWithMusicFromUrl(
         videoPath: videoPath,
         musicUrlOrPath: musicPath,
+        maxDurationSeconds:
+            videoDurationSec > 0 ? videoDurationSec : null,
       );
       if (muxed != null &&
           muxed != videoPath &&

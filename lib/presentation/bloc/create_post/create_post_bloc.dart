@@ -2026,6 +2026,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       (m) => m.mediaType == 'video' || m.postType == PostType.video,
     );
     final isImageOnly = _mediaDataList.isNotEmpty && !hasVideo;
+    final imageCount = PostSoundUtil.imageCountFromMediaData(_mediaDataList);
+    final imageClipSec = PostSoundUtil.imagePostSoundDurationSeconds(imageCount);
     final videoDuration = _mediaDataList
         .where((m) => m.mediaType == 'video' || m.postType == PostType.video)
         .map((m) => m.duration?.toInt())
@@ -2035,10 +2037,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     _pendingCreatePostSoundId = resolved!.soundId!.trim();
     _pendingCreatePostSoundSnapshot = PostSoundUtil.buildSoundSnapshot(
       sound: resolved,
-      videoDurationSeconds: isImageOnly
-          ? PostSoundUtil.photoSoundClipMaxSeconds
-          : videoDuration,
-      maxClipSec: isImageOnly ? PostSoundUtil.photoSoundClipMaxSeconds : 60,
+      videoDurationSeconds: isImageOnly ? imageClipSec : videoDuration,
+      maxClipSec: isImageOnly ? imageClipSec : 60,
     );
     _createPostRequest.soundId = _pendingCreatePostSoundId;
     _createPostRequest.soundSnapshot = _pendingCreatePostSoundSnapshot;
@@ -2097,6 +2097,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       (m) => m.mediaType == 'video' || m.postType == PostType.video,
     );
     final isImageOnly = _mediaDataList.isNotEmpty && !hasVideo;
+    final imageCount = PostSoundUtil.imageCountFromMediaData(_mediaDataList);
+    final imageClipSec = PostSoundUtil.imagePostSoundDurationSeconds(imageCount);
     final videoDuration = _mediaDataList
         .where((m) => m.mediaType == 'video' || m.postType == PostType.video)
         .map((m) => m.duration?.toInt())
@@ -2105,10 +2107,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     _createPostRequest.soundId = sound!.soundId!.trim();
     _createPostRequest.soundSnapshot = PostSoundUtil.buildSoundSnapshot(
       sound: sound,
-      videoDurationSeconds: isImageOnly
-          ? PostSoundUtil.photoSoundClipMaxSeconds
-          : videoDuration,
-      maxClipSec: isImageOnly ? PostSoundUtil.photoSoundClipMaxSeconds : 60,
+      videoDurationSeconds: isImageOnly ? imageClipSec : videoDuration,
+      maxClipSec: isImageOnly ? imageClipSec : 60,
     );
   }
 

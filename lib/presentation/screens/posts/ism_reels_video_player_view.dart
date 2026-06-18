@@ -19,6 +19,7 @@ import 'package:ism_video_reel_player/presentation/screens/posts/widgets/feed_te
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/reels_overlay_text.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/isr_image_sound_registry.dart';
+import 'package:ism_video_reel_player/utils/post_sound_util.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:lottie/lottie.dart';
 import 'package:preload_page_view/preload_page_view.dart';
@@ -3117,6 +3118,18 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
   }
 
+  int _imageSoundSlideIndex() {
+    final list = _reelData.mediaMetaDataList;
+    final current = _currentPageNotifier.value;
+    var imageIndex = 0;
+    for (var i = 0; i < current && i < list.length; i++) {
+      if (list[i].mediaType == kPictureType) {
+        imageIndex++;
+      }
+    }
+    return imageIndex;
+  }
+
   Future<void> _startImageSoundIfNeeded() async {
     if (!mounted) return;
     if (!_isCurrentMediaImage) return;
@@ -3156,10 +3169,18 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     final player = _imageSoundPlayer ??= AudioPlayer();
     IsrImageSoundRegistry.register(player);
     try {
-      if (_imageSoundLoadedUrl != url) {
-        await player.setReleaseMode(ReleaseMode.loop);
-        await player.setSource(audioSourceFromUrlOrPath(url));
-        _imageSoundLoadedUrl = url;
+      final slideIndex = _imageSoundSlideIndex();
+      final startOffset = Duration(
+        seconds: slideIndex * PostSoundUtil.imageSoundSecondsPerSlide,
+      );
+      final clipKey = '$url#$slideIndex';
+      if (_imageSoundLoadedUrl != clipKey) {
+        await player.setReleaseMode(ReleaseMode.stop);
+        await player.setSource(
+          audioSourceFromUrlOrPath(url),
+        );
+        await player.seek(startOffset);
+        _imageSoundLoadedUrl = clipKey;
       }
       if (!mounted ||
           !_isCurrentReel ||

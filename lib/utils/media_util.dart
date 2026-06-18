@@ -28,9 +28,10 @@ class MediaUtil {
     required String outputPath,
     required String videoMap,
     required String audioMap,
+    int? maxDurationSeconds,
   }) async {
     try {
-      final session = await FFmpegKit.executeWithArguments([
+      final args = <String>[
         '-y',
         '-i',
         videoPath,
@@ -53,8 +54,12 @@ class MediaUtil {
         '-movflags',
         '+faststart',
         '-shortest',
-        outputPath,
-      ]);
+      ];
+      if (maxDurationSeconds != null && maxDurationSeconds > 0) {
+        args.addAll(['-t', '$maxDurationSeconds']);
+      }
+      args.add(outputPath);
+      final session = await FFmpegKit.executeWithArguments(args);
       final code = await session.getReturnCode();
       final out = File(outputPath);
       if (ReturnCode.isSuccess(code) &&
@@ -78,6 +83,7 @@ class MediaUtil {
     required String videoPath,
     required String audioPath,
     required String outputPath,
+    int? maxDurationSeconds,
   }) async {
     const variants = <List<String>>[
       ['0:v:0', '1:a:0'],
@@ -94,6 +100,7 @@ class MediaUtil {
         outputPath: outputPath,
         videoMap: pair[0],
         audioMap: pair[1],
+        maxDurationSeconds: maxDurationSeconds,
       );
       if (ok) return true;
     }
@@ -102,9 +109,13 @@ class MediaUtil {
 
   /// Replaces video audio with [musicUrlOrPath] (URL or file). Mux, strip-then-mux,
   /// and several `-map` variants; temp download cleaned on success.
+  ///
+  /// When [maxDurationSeconds] is set, output is trimmed to that length so audio
+  /// cannot outlast the video.
   static Future<String?> muxVideoWithMusicFromUrl({
     required String videoPath,
     required String musicUrlOrPath,
+    int? maxDurationSeconds,
   }) async {
     File? strippedVideoFile;
     File? downloaded;
@@ -156,6 +167,7 @@ class MediaUtil {
         videoPath: videoPath,
         audioPath: audioPath,
         outputPath: outputPath,
+        maxDurationSeconds: maxDurationSeconds,
       )) {
         await _deleteIfExists(downloaded);
         return outputPath;
@@ -194,6 +206,7 @@ class MediaUtil {
         videoPath: strippedVideoFile.path,
         audioPath: audioPath,
         outputPath: outputPath,
+        maxDurationSeconds: maxDurationSeconds,
       )) {
         await _deleteIfExists(strippedVideoFile);
         await _deleteIfExists(downloaded);
@@ -742,6 +755,12 @@ class MediaUtil {
     }
   }
 
+  static Future<int> videoDurationSeconds(String videoPath) async {
+    final ms = await _videoDurationMs(videoPath);
+    if (ms <= 0) return 0;
+    return (ms / 1000).round();
+  }
+
   static Future<int> _videoDurationMs(String videoPath) async {
     try {
       final info = await VideoCompress.getMediaInfo(videoPath);
@@ -799,5 +818,93 @@ class MediaUtil {
     } catch (_) {
       return 0;
     }
+  }
+
+  /// Trims [inputPath] to [start, end] without re-encoding when possible.
+  static Future<String?> trimVideoSegment({
+    required String inputPath,
+    required Duration start,
+    required Duration end,
+  }) async {
+    if (end <= start) return null;
+
+    final input = await openReadableMediaFile(inputPath);
+    if (input == null) {
+      AppLog.error('trimVideoSegment: input missing at $inputPath');
+      return null;
+    }
+
+    final dir = await getTemporaryDirectory();
+    final outputPath = path.join(
+      dir.path,
+      'trim_${const Uuid().v4()}.mp4',
+    );
+
+    final startSec = (start.inMicroseconds / 1000000).toStringAsFixed(3);
+    final durationSec =
+        ((end - start).inMicroseconds / 1000000).toStringAsFixed(3);
+
+    Future<bool> runTrim(List<String> args) async {
+      try {
+        final session = await FFmpegKit.executeWithArguments(args);
+        final code = await session.getReturnCode();
+        final out = File(outputPath);
+        if (ReturnCode.isSuccess(code) &&
+            await out.exists() &&
+            await out.length() > 64) {
+          return true;
+        }
+        await _deleteIfExists(out);
+        return false;
+      } catch (e, st) {
+        AppLog.error('trimVideoSegment ffmpeg: $e\n$st');
+        await _deleteIfExists(File(outputPath));
+        return false;
+      }
+    }
+
+    final copyArgs = <String>[
+      '-y',
+      '-ss',
+      startSec,
+      '-i',
+      input.path,
+      '-t',
+      durationSec,
+      '-c',
+      'copy',
+      '-avoid_negative_ts',
+      'make_zero',
+      '-movflags',
+      '+faststart',
+      outputPath,
+    ];
+    if (await runTrim(copyArgs)) return outputPath;
+
+    final reencodeArgs = <String>[
+      '-y',
+      '-ss',
+      startSec,
+      '-i',
+      input.path,
+      '-t',
+      durationSec,
+      '-c:v',
+      'libx264',
+      '-preset',
+      'fast',
+      '-crf',
+      '18',
+      '-c:a',
+      'aac',
+      '-b:a',
+      '192k',
+      '-movflags',
+      '+faststart',
+      outputPath,
+    ];
+    if (await runTrim(reencodeArgs)) return outputPath;
+
+    return null;
   }
 }

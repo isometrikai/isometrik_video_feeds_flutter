@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,10 +8,11 @@ import 'package:ism_video_reel_player/presentation/screens/media/media_edit/medi
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/pro_media_editor/pro_media_util.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/pro_media_editor/pro_video_assist/mixins/video_editor_mixin.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/pro_media_editor/pro_video_assist/widgets/video_initializing_widget.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/pro_media_editor/widgets/isr_video_editor_trim_bar.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
 import 'package:pro_image_editor/pro_image_editor.dart';
-import 'package:pro_video_editor/core/models/video/editor_video_model.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:video_player/video_player.dart';
 
 class ProVideoEditorWrapper extends StatefulWidget {
@@ -41,18 +43,19 @@ class ProVideoEditorWrapper extends StatefulWidget {
 
 class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
     with VideoEditorMixin {
-  late VideoPlayerController _videoController;
+  VideoPlayerController? _videoController;
+  String? _initError;
 
   @override
   void initState() {
     super.initState();
     _applySystemUiOverlay();
-    _initializePlayer();
+    unawaited(_initializePlayer());
   }
 
   @override
   void dispose() {
-    _videoController.dispose();
+    _videoController?.dispose();
     super.dispose();
   }
 
@@ -62,73 +65,113 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
     );
   }
 
-  void _initializePlayer() async {
-    videoConfigs = VideoEditorConfigs(
-      initialMuted: false,
-      initialPlay: false,
-      isAudioSupported: true,
-      enablePlayButton: true,
-      minTrimDuration:
-          widget.minTrimDuration ?? const Duration(seconds: 5),
-      maxTrimDuration: widget.maxTrimDuration,
-      controlsPosition: VideoEditorControlPosition.bottom,
-      style: VideoEditorStyle(
-        trimBarBackground: widget.mediaEditConfig.primaryColor,
-        trimBarBorderWidth: 2,
-        trimBarColor: widget.mediaEditConfig.primaryColor,
-        toolbarPadding: EdgeInsets.only(
+  Future<void> _initializePlayer() async {
+    try {
+      video = EditorVideo.file(File(widget.mediaPath));
+      _videoController = VideoPlayerController.file(File(widget.mediaPath));
+
+      await video.safeFilePath();
+      videoMetadata = await ProVideoEditor.instance.getMetadata(video);
+
+      final trimBarMaxScale = _trimBarMaxScaleFor(
+        widget.maxTrimDuration ?? videoMetadata.duration,
+        videoMetadata.duration,
+      );
+      final minTrimDuration = _effectiveMinTrimDuration(
+        videoMetadata.duration,
+        widget.minTrimDuration,
+      );
+      const trimBarHandlerButtonSize = 12.0;
+      final toolbarHorizontalPadding = max(
+        trimBarHandlerButtonSize,
+        16.responsiveDimension,
+      );
+
+      videoConfigs = VideoEditorConfigs(
+        initialMuted: false,
+        initialPlay: false,
+        isAudioSupported: true,
+        enablePlayButton: true,
+        minTrimDuration: minTrimDuration,
+        maxTrimDuration: widget.maxTrimDuration,
+        trimBarMinScale: 1,
+        trimBarMaxScale: trimBarMaxScale,
+        controlsPosition: VideoEditorControlPosition.bottom,
+        widgets: const VideoEditorWidgets(
+          trimBar: IsrVideoEditorTrimBar(),
+        ),
+        style: VideoEditorStyle(
+          trimBarBackground: widget.mediaEditConfig.primaryColor,
+          trimBarBorderWidth: 2.5,
+          trimBarColor: widget.mediaEditConfig.primaryColor,
+          trimBarHeight: 56,
+          trimBarHandlerWidth: 32,
+          trimBarHandlerButtonSize: trimBarHandlerButtonSize,
+          toolbarPadding: EdgeInsets.only(
             bottom: 16.responsiveDimension,
             top: 16.responsiveDimension,
-            left: 12.responsiveDimension,
-            right: 12.responsiveDimension),
-        muteButtonBackground:
-            widget.mediaEditConfig.blackColor.withValues(alpha: 0.4),
-        muteButtonColor: widget.mediaEditConfig.whiteColor,
-        trimDurationBackground:
-            widget.mediaEditConfig.blackColor.withValues(alpha: 0.4),
-        trimDurationTextColor: widget.mediaEditConfig.whiteColor,
-        playIndicatorBackground:
-            widget.mediaEditConfig.blackColor.withValues(alpha: 0.4),
-        playIndicatorColor: widget.mediaEditConfig.whiteColor,
-      ),
-    );
-    generateThumbnails();
-    video = EditorVideo.file(File(widget.mediaPath));
-    _videoController = VideoPlayerController.file(File(widget.mediaPath));
+            left: toolbarHorizontalPadding,
+            right: toolbarHorizontalPadding,
+          ),
+          muteButtonBackground:
+              widget.mediaEditConfig.blackColor.withValues(alpha: 0.4),
+          muteButtonColor: widget.mediaEditConfig.whiteColor,
+          trimDurationBackground:
+              widget.mediaEditConfig.blackColor.withValues(alpha: 0.4),
+          trimDurationTextColor: widget.mediaEditConfig.whiteColor,
+          playIndicatorBackground:
+              widget.mediaEditConfig.blackColor.withValues(alpha: 0.4),
+          playIndicatorColor: widget.mediaEditConfig.whiteColor,
+        ),
+      );
 
-    await Future.wait([
-      setMetadata(),
-      _videoController.initialize(),
-      _videoController.setLooping(false),
-      _videoController.setVolume(videoConfigs.initialMuted ? 0 : 100),
-      videoConfigs.initialPlay
-          ? _videoController.play()
-          : _videoController.pause(),
-    ]);
-    if (!mounted) return;
+      generateThumbnails(trimBarMaxScale: trimBarMaxScale);
 
-    // Check if videoMetadata was successfully initialized
-    proVideoController = ProVideoController(
-      videoPlayer: _buildVideoPlayer(),
-      initialResolution: videoMetadata.resolution,
-      videoDuration: videoMetadata.duration,
-      fileSize: videoMetadata.fileSize,
-      bitrate: videoMetadata.bitrate,
-      thumbnails: thumbnails,
-    );
+      await _videoController!.initialize();
+      await _videoController!.setLooping(false);
+      await _videoController!.setVolume(videoConfigs.initialMuted ? 0 : 100);
+      if (videoConfigs.initialPlay) {
+        await _videoController!.play();
+      } else {
+        await _videoController!.pause();
+      }
 
-    _videoController.addListener(_onDurationChange);
+      if (!mounted) return;
 
-    setState(() {});
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _applySystemUiOverlay();
-    });
+      final playerSize = _videoController!.value.size;
+      final effectiveResolution = playerSize.width > 0 && playerSize.height > 0
+          ? playerSize
+          : videoMetadata.resolution;
+
+      proVideoController = ProVideoController(
+        videoPlayer: _buildVideoPlayer(),
+        initialResolution: effectiveResolution,
+        videoDuration: videoMetadata.duration,
+        fileSize: videoMetadata.fileSize,
+        bitrate: videoMetadata.bitrate,
+        thumbnails: thumbnails,
+      );
+
+      final controller = _videoController!;
+      controller.addListener(_onDurationChange);
+
+      setState(() {});
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _applySystemUiOverlay();
+      });
+    } catch (e, st) {
+      debugPrint('ProVideoEditorWrapper init failed: $e\n$st');
+      if (!mounted) return;
+      setState(() => _initError = e.toString());
+    }
   }
 
   void _onDurationChange() {
+    final controller = _videoController;
+    if (controller == null || proVideoController == null) return;
     // Use videoMetadata duration if available, otherwise use controller duration
     final totalVideoDuration = videoMetadata.duration;
-    final duration = _videoController.value.position;
+    final duration = controller.value.position;
     proVideoController!.setPlayTime(duration);
 
     if (durationSpan != null && duration >= durationSpan!.end) {
@@ -152,8 +195,8 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
     proVideoController!.pause();
     proVideoController!.setPlayTime(durationSpan!.start);
 
-    await _videoController.pause();
-    await _videoController.seekTo(span.start);
+    await _videoController!.pause();
+    await _videoController!.seekTo(span.start);
 
     isSeeking = false;
 
@@ -172,9 +215,38 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
           backgroundColor: widget.mediaEditConfig.whiteColor,
           body: AnimatedSwitcher(
             duration: const Duration(milliseconds: 220),
-            child: proVideoController == null
-                ? const VideoInitializingWidget()
-                : _buildEditor(),
+            child: _initError != null
+                ? _buildInitError()
+                : proVideoController == null
+                    ? const VideoInitializingWidget()
+                    : _buildEditor(),
+          ),
+        ),
+      );
+
+  Widget _buildInitError() => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              const SizedBox(height: 16),
+              Text(
+                'Could not open video editor',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: widget.mediaEditConfig.primaryTextColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Go back'),
+              ),
+            ],
           ),
         ),
       );
@@ -184,13 +256,13 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
         callbacks: ProImageEditorCallbacks(
           onCompleteWithParameters: _saveEditedVideo,
           videoEditorCallbacks: VideoEditorCallbacks(
-            onPause: _videoController.pause,
-            onPlay: _videoController.play,
+            onPause: () => _videoController?.pause(),
+            onPlay: () => _videoController?.play(),
             onMuteToggle: (isMuted) {
-              _videoController.setVolume(isMuted ? 0 : 100);
+              _videoController?.setVolume(isMuted ? 0 : 100);
             },
             onTrimSpanUpdate: (durationSpan) {
-              if (_videoController.value.isPlaying) {
+              if (_videoController?.value.isPlaying ?? false) {
                 proVideoController!.pause();
               }
             },
@@ -288,19 +360,30 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
     );
   }
 
-  Widget _buildVideoPlayer() => Center(
-        child: AspectRatio(
-          aspectRatio: _videoController.value.size.aspectRatio,
-          child: VideoPlayer(
-            _videoController,
-          ),
-        ),
-      );
+  Widget _buildVideoPlayer() {
+    final controller = _videoController!;
+    final videoSize = controller.value.size;
+    if (videoSize.width <= 0 || videoSize.height <= 0) {
+      return const ColoredBox(color: Colors.black);
+    }
+
+    // Render at native video resolution so pro_image_editor's FittedBox only
+    // scales down (sharp), never upscales a tiny texture.
+    return FittedBox(
+      fit: BoxFit.contain,
+      child: SizedBox(
+        width: videoSize.width,
+        height: videoSize.height,
+        child: VideoPlayer(controller),
+      ),
+    );
+  }
 
   Future<void> _saveEditedVideo(CompleteParameters parameters) async {
     try {
-      // 1️⃣ Generate the edited video file path
-      final outputPath = await generateVideo(parameters);
+      final outputPath = widget.editingMode == 'Trim'
+          ? await _exportTrimOnly(parameters)
+          : await generateVideo(parameters);
       if (outputPath == null) {
         return; // nothing to save
       }
@@ -369,11 +452,55 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
     }
   }
 
+  Future<String?> _exportTrimOnly(CompleteParameters parameters) async {
+    final start =
+        parameters.startTime ?? proVideoController?.startTime ?? Duration.zero;
+    final end = parameters.endTime ??
+        proVideoController?.endTime ??
+        videoMetadata.duration;
+
+    if (end <= start) return null;
+
+    const slack = Duration(milliseconds: 250);
+    if (start <= Duration.zero && end >= videoMetadata.duration - slack) {
+      return widget.mediaPath;
+    }
+
+    return MediaUtil.trimVideoSegment(
+      inputPath: widget.mediaPath,
+      start: start,
+      end: end,
+    );
+  }
+
   bool _hasNavigated = false;
   void _navigateBack(Map<String, dynamic> result) {
     if (!_hasNavigated && mounted) {
       _hasNavigated = true;
       Navigator.pop(context, result);
     }
+  }
+
+  /// Allows pinch-zooming enough that short clips (e.g. 15s) fill the bar.
+  static double _trimBarMaxScaleFor(Duration maxTrim, Duration videoDuration) {
+    final videoUs = videoDuration.inMicroseconds;
+    final trimUs = maxTrim.inMicroseconds;
+    if (videoUs <= 0 || trimUs <= 0) return 12;
+    final ratio = trimUs / videoUs;
+    if (ratio >= 0.45) return 5;
+    return (0.58 / ratio).clamp(5, 24);
+  }
+
+  static Duration _effectiveMinTrimDuration(
+    Duration videoDuration,
+    Duration? requestedMinTrim,
+  ) {
+    final requested = requestedMinTrim ?? const Duration(seconds: 1);
+    if (videoDuration <= Duration.zero) return requested;
+    if (requested > videoDuration) return videoDuration;
+    if (requested <= Duration.zero) {
+      return const Duration(milliseconds: 500);
+    }
+    return requested;
   }
 }

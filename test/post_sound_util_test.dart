@@ -27,6 +27,28 @@ void main() {
     expect(snapshot['captured_at'], isA<String>());
   });
 
+  test('buildSoundSnapshot uses 3 seconds per image for image-only posts', () {
+    final sound = MediaEditSoundItem(
+      soundId: 'snd_test',
+      soundDuration: '300',
+    );
+
+    final snapshot = PostSoundUtil.buildSoundSnapshot(
+      sound: sound,
+      videoDurationSeconds: PostSoundUtil.imagePostSoundDurationSeconds(2),
+      maxClipSec: PostSoundUtil.imagePostSoundDurationSeconds(2),
+    );
+
+    expect(snapshot['segment_duration'], 6);
+    expect(snapshot['end_time'], 6);
+  });
+
+  test('imagePostSoundDurationSeconds multiplies image count by 3', () {
+    expect(PostSoundUtil.imagePostSoundDurationSeconds(1), 3);
+    expect(PostSoundUtil.imagePostSoundDurationSeconds(2), 6);
+    expect(PostSoundUtil.imagePostSoundDurationSeconds(4), 12);
+  });
+
   test('buildSoundSnapshot uses shorter video when under 60s', () {
     final sound = MediaEditSoundItem(
       soundId: 'snd_test',

@@ -710,9 +710,12 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
           finalVideoPath != null) {
         final videoIn = finalVideoPath;
         final musicIn = _selectedMusicPreviewUrl!;
+        final videoDurationSec = await MediaUtil.videoDurationSeconds(videoIn);
         final muxed = await MediaUtil.muxVideoWithMusicFromUrl(
           videoPath: videoIn,
           musicUrlOrPath: musicIn,
+          maxDurationSeconds:
+              videoDurationSec > 0 ? videoDurationSec : null,
         );
         if (muxed != null && await File(muxed).exists()) {
           if (muxed != videoIn) {

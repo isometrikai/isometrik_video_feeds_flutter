@@ -2056,6 +2056,8 @@ class _PostAttributeViewState extends State<PostAttributeView>
       (m) => m.mediaType == 'video' || m.postType == PostType.video,
     );
     final isImageOnly = media.isNotEmpty && !hasVideo;
+    final imageCount = PostSoundUtil.imageCountFromMediaData(media);
+    final imageClipSec = PostSoundUtil.imagePostSoundDurationSeconds(imageCount);
     final videoDuration = media
         .where((m) => m.mediaType == 'video' || m.postType == PostType.video)
         .map((m) => m.duration?.toInt())
@@ -2065,9 +2067,8 @@ class _PostAttributeViewState extends State<PostAttributeView>
     req.soundId = sound.soundId!.trim();
     req.soundSnapshot = PostSoundUtil.buildSoundSnapshot(
       sound: sound,
-      videoDurationSeconds:
-          isImageOnly ? PostSoundUtil.photoSoundClipMaxSeconds : videoDuration,
-      maxClipSec: isImageOnly ? PostSoundUtil.photoSoundClipMaxSeconds : 60,
+      videoDurationSeconds: isImageOnly ? imageClipSec : videoDuration,
+      maxClipSec: isImageOnly ? imageClipSec : 60,
     );
   }
 

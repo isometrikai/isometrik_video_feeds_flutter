@@ -3,13 +3,36 @@ import 'dart:io';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_models.dart';
 import 'package:ism_video_reel_player/utils/camera_gallery_sound_util.dart';
 import 'package:ism_video_reel_player/utils/media_util.dart';
 import 'package:ism_video_reel_player/utils/utility.dart';
 
 /// Maps camera / library sounds into post + media-edit models and muxes video.
 abstract final class PostSoundUtil {
+  /// Seconds of sound used per image slide in carousel / image posts.
+  static const int imageSoundSecondsPerSlide = 3;
+
+  /// Legacy cap for image-only sound clips (prefer [imagePostSoundDurationSeconds]).
   static const int photoSoundClipMaxSeconds = 60;
+
+  /// Total sound length for an image-only post: 3 seconds per image.
+  static int imagePostSoundDurationSeconds(int imageCount) {
+    final count = imageCount < 1 ? 1 : imageCount;
+    return count * imageSoundSecondsPerSlide;
+  }
+
+  static int imageCountFromMediaData(Iterable<MediaData> media) => media
+      .where(
+        (m) =>
+            m.mediaType == 'image' ||
+            m.postType?.toString().toLowerCase() == 'image',
+      )
+      .length;
+
+  static int imageCountFromEditItems(Iterable<MediaEditItem> items) => items
+      .where((item) => item.mediaType == EditMediaType.image)
+      .length;
 
   /// Library sounds from `/api/v1/sounds/*` — not temporary `dub_*` ids.
   static bool isLibrarySoundId(String? soundId) {
@@ -158,19 +181,19 @@ abstract final class PostSoundUtil {
 
     final hasVideo = media.any((m) => _isVideoMedia(m));
     final isImageOnly = media.isNotEmpty && !hasVideo;
+    final imageCount = imageCountFromMediaData(media);
     final videoDuration = media
         .where(_isVideoMedia)
         .map((m) => m.duration?.toInt())
         .whereType<int>()
         .firstOrNull;
+    final imageClipSec = imagePostSoundDurationSeconds(imageCount);
 
     body['sound_id'] = sound.soundId!.trim();
     body['sound_snapshot'] = buildSoundSnapshot(
       sound: sound,
-      videoDurationSeconds: isImageOnly
-          ? photoSoundClipMaxSeconds
-          : videoDuration,
-      maxClipSec: isImageOnly ? photoSoundClipMaxSeconds : 60,
+      videoDurationSeconds: isImageOnly ? imageClipSec : videoDuration,
+      maxClipSec: isImageOnly ? imageClipSec : 60,
     );
   }
 
@@ -197,9 +220,12 @@ abstract final class PostSoundUtil {
 
     if (showLoader) await Utility.showLoader();
     try {
+      final videoDurationSec = await MediaUtil.videoDurationSeconds(videoPath);
       final muxed = await MediaUtil.muxVideoWithMusicFromUrl(
         videoPath: videoPath,
         musicUrlOrPath: musicUrl,
+        maxDurationSeconds:
+            videoDurationSec > 0 ? videoDurationSec : null,
       );
       if (muxed != null &&
           muxed != videoPath &&

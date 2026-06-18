@@ -46,6 +46,8 @@ class _MediaEditViewState extends State<MediaEditView> {
   late final MediaEditBloc _bloc;
   AudioPlayer? _imageSoundPlayer;
   String? _imageSoundPreviewUrl;
+  Timer? _imageSoundClipTimer;
+  int _imageSoundClipGeneration = 0;
 
   @override
   void initState() {
@@ -62,6 +64,8 @@ class _MediaEditViewState extends State<MediaEditView> {
   }
 
   Future<void> _stopImageSoundPreview() async {
+    _imageSoundClipTimer?.cancel();
+    _imageSoundClipTimer = null;
     _imageSoundPreviewUrl = null;
     final player = _imageSoundPlayer;
     _imageSoundPlayer = null;
@@ -73,7 +77,21 @@ class _MediaEditViewState extends State<MediaEditView> {
     }
   }
 
-  Future<void> _syncImageSoundPreview(MediaEditItem item) async {
+  int _imageIndexAmongImages(List<MediaEditItem> items, int currentIndex) {
+    if (currentIndex < 0 || currentIndex >= items.length) return 0;
+    var imageIndex = 0;
+    for (var i = 0; i < currentIndex; i++) {
+      if (items[i].mediaType == EditMediaType.image) {
+        imageIndex++;
+      }
+    }
+    return imageIndex;
+  }
+
+  Future<void> _syncImageSoundPreview(
+    MediaEditItem item,
+    MediaEditLoadedState state,
+  ) async {
     if (item.mediaType != EditMediaType.image) {
       await _stopImageSoundPreview();
       return;
@@ -83,14 +101,39 @@ class _MediaEditViewState extends State<MediaEditView> {
       await _stopImageSoundPreview();
       return;
     }
-    if (_imageSoundPreviewUrl == url) return;
+
+    final imageIndex = _imageIndexAmongImages(
+      state.mediaEditItems,
+      state.currentIndex,
+    );
+    final clipKey = '$url#$imageIndex';
+    if (_imageSoundPreviewUrl == clipKey) return;
+
     await _stopImageSoundPreview();
-    _imageSoundPreviewUrl = url;
+    _imageSoundPreviewUrl = clipKey;
+    final generation = ++_imageSoundClipGeneration;
+
     try {
       final player = AudioPlayer();
       _imageSoundPlayer = player;
-      await player.setReleaseMode(ReleaseMode.loop);
-      await player.play(UrlSource(url));
+      final startOffset = Duration(
+        seconds:
+            imageIndex * PostSoundUtil.imageSoundSecondsPerSlide,
+      );
+      const clipLength = Duration(
+        seconds: PostSoundUtil.imageSoundSecondsPerSlide,
+      );
+      await player.setReleaseMode(ReleaseMode.stop);
+      await player.play(
+        UrlSource(url),
+        position: startOffset,
+      );
+      _imageSoundClipTimer = Timer(clipLength, () async {
+        if (!mounted || generation != _imageSoundClipGeneration) return;
+        try {
+          await player.stop();
+        } catch (_) {}
+      });
     } catch (_) {
       await _stopImageSoundPreview();
     }
@@ -318,8 +361,11 @@ class _MediaEditViewState extends State<MediaEditView> {
                     final previewItem =
                         state.mediaEditItems[state.currentIndex];
                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted)
-                        unawaited(_syncImageSoundPreview(previewItem));
+                      if (mounted) {
+                        unawaited(
+                          _syncImageSoundPreview(previewItem, state),
+                        );
+                      }
                     });
                     return Stack(
                       children: [

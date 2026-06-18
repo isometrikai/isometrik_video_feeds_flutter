@@ -8,6 +8,7 @@ import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/utils/isr_image_sound_registry.dart';
+import 'package:ism_video_reel_player/utils/post_sound_util.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/video_player_widget.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/comment_count_action_widget.dart';
@@ -870,6 +871,18 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     }
   }
 
+  int _imageSoundSlideIndex() {
+    final list = _reel.mediaMetaDataList;
+    final current = _mediaPageIndex.value;
+    var imageIndex = 0;
+    for (var i = 0; i < current && i < list.length; i++) {
+      if (!_isVideoMedia(list[i])) {
+        imageIndex++;
+      }
+    }
+    return imageIndex;
+  }
+
   Future<void> _startImageSoundIfNeeded() async {
     if (!mounted || !_isCurrentMediaImage || !_mayPlayFeedMedia()) return;
     final sound = _reel.sound;
@@ -892,10 +905,16 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     final player = _imageSoundPlayer ??= AudioPlayer();
     IsrImageSoundRegistry.register(player);
     try {
-      if (_imageSoundLoadedUrl != url) {
-        await player.setReleaseMode(ReleaseMode.loop);
+      final slideIndex = _imageSoundSlideIndex();
+      final startOffset = Duration(
+        seconds: slideIndex * PostSoundUtil.imageSoundSecondsPerSlide,
+      );
+      final clipKey = '$url#$slideIndex';
+      if (_imageSoundLoadedUrl != clipKey) {
+        await player.setReleaseMode(ReleaseMode.stop);
         await player.setSource(audioSourceFromUrlOrPath(url));
-        _imageSoundLoadedUrl = url;
+        await player.seek(startOffset);
+        _imageSoundLoadedUrl = clipKey;
       }
       if (!mounted ||
           !_mayPlayFeedMedia() ||

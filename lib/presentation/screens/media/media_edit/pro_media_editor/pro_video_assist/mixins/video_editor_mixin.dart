@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -65,7 +66,7 @@ mixin VideoEditorMixin<T extends StatefulWidget> on State<T> {
   }
 
   /// Generates thumbnails for the given [video].
-  void generateThumbnails() {
+  void generateThumbnails({double trimBarMaxScale = 3}) {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted || (!kIsWeb && (Platform.isLinux || Platform.isWindows))) {
         thumbnails = [];
@@ -77,9 +78,13 @@ mixin VideoEditorMixin<T extends StatefulWidget> on State<T> {
       }
 
       try {
+        final pixelRatio = MediaQuery.devicePixelRatioOf(context);
+        // Trim bar auto-zoom can stretch thumbnails far beyond screen width.
+        final zoomBoost = max(trimBarMaxScale, 4.0);
         final imageWidth = MediaQuery.sizeOf(context).width /
             thumbnailCount *
-            MediaQuery.devicePixelRatioOf(context);
+            pixelRatio *
+            zoomBoost;
 
         /// `getKeyFrames` is faster than `getThumbnails` but the timestamp is
         /// more "random".
