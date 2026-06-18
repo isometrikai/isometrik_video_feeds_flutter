@@ -1780,89 +1780,15 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     }
   }
 
-  Future<bool?> _showDeletePostDialog(BuildContext context) {
-    final dialogConfig = IsrVideoReelConfig.socialConfig.dialogConfig;
-    final borderRadius = dialogConfig?.borderRadius ?? 20.0;
-    final backgroundColor = dialogConfig?.backgroundColor ?? Colors.white;
-    final padding = dialogConfig?.padding ??
-        const EdgeInsets.symmetric(horizontal: 24, vertical: 28);
-    final titleStyle = dialogConfig?.titleTextStyle ??
-        IsrStyles.primaryText18.copyWith(fontWeight: FontWeight.w700);
-    final messageStyle = dialogConfig?.messageTextStyle ??
-        IsrStyles.primaryText14.copyWith(color: '4A4A4A'.toColor());
-
-    return showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(borderRadius),
-        ),
-        backgroundColor: backgroundColor,
-        child: Padding(
-          padding: padding,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                IsrTranslationFile.deletePost,
-                style: titleStyle,
-              ),
-              16.responsiveVerticalSpace,
-              Text(
-                IsrTranslationFile.deletePostConfirmation,
-                style: messageStyle,
-              ),
-              32.responsiveVerticalSpace,
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildDialogButton(
-                    context: context,
-                    title: IsrTranslationFile.delete,
-                    buttonConfig: IsrVideoReelConfig.socialConfig.primaryButton,
-                    onPress: () => Navigator.of(context).pop(true),
-                    defaultBackgroundColor: 'E04755'.toColor(),
-                  ),
-                  _buildDialogButton(
-                    context: context,
-                    title: IsrTranslationFile.cancel,
-                    buttonConfig:
-                        IsrVideoReelConfig.socialConfig.secondaryButton,
-                    buttonType: ButtonType.secondary,
-                    onPress: () => Navigator.of(context).pop(false),
-                    defaultBackgroundColor: 'F6F6F6'.toColor(),
-                    defaultTextColor: Theme.of(context).primaryColor,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDialogButton({
-    required BuildContext context,
-    required String title,
-    ButtonConfig? buttonConfig,
-    ButtonType buttonType = ButtonType.primary,
-    required VoidCallback? onPress,
-    Color? defaultBackgroundColor,
-    Color? defaultTextColor,
-  }) =>
-      AppButton(
-        title: title,
-        width: 102.responsiveDimension,
-        type: buttonType,
-        onPress: onPress,
-        backgroundColor:
-            buttonConfig?.backgroundColor ?? defaultBackgroundColor,
-        textColor: buttonConfig?.textColor ?? defaultTextColor,
-        borderColor: buttonConfig?.borderColor,
-        borderRadius: buttonConfig?.borderRadius,
+  Future<bool?> _showDeletePostDialog(BuildContext context) =>
+      Utility.showAppDialog(
+        dialogContext: context,
+        titleText: IsrTranslationFile.deletePost,
+        message: IsrTranslationFile.deletePostConfirmation,
+        isTwoButtons: true,
+        barrierDismissible: false,
+        positiveButtonText: IsrTranslationFile.delete,
+        negativeButtonText: IsrTranslationFile.cancel,
       );
 
   Future<TimeLineData?> _handleEditPost(TimeLineData postDataModel) async {

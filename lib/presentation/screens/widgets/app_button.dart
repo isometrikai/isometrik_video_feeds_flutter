@@ -92,6 +92,7 @@ class AppButton extends StatelessWidget {
               context,
               buttonConfig: IsrVideoReelConfig.socialConfig.secondaryButton,
               borderColor: borderColor,
+              textStyle: textStyle,
             ),
             child: _buildButtonContent(context, loaderColor: borderColor));
       case ButtonType.tertiary:
@@ -146,6 +147,19 @@ class AppButton extends StatelessWidget {
     }
   }
 
+  ButtonConfig? _buttonConfigForType() {
+    switch (type) {
+      case ButtonType.primary:
+        return IsrVideoReelConfig.socialConfig.primaryButton;
+      case ButtonType.secondary:
+        return IsrVideoReelConfig.socialConfig.secondaryButton;
+      case ButtonType.tertiary:
+        return IsrVideoReelConfig.socialConfig.tertiaryButton;
+      default:
+        return null;
+    }
+  }
+
   ButtonStyle _getPrimaryStyle({
     required BuildContext context,
     ButtonConfig? buttonConfig,
@@ -160,6 +174,7 @@ class AppButton extends StatelessWidget {
     final configTextColor = buttonConfig?.textColor ?? textColor;
     final configBorderColor = buttonConfig?.borderColor ?? borderColor;
     final configBorderRadius = buttonConfig?.borderRadius ?? borderRadius;
+    final configTextStyle = textStyle ?? buttonConfig?.textStyle;
 
     return FilledButton.styleFrom(
       backgroundColor: isDisable
@@ -171,6 +186,7 @@ class AppButton extends StatelessWidget {
       foregroundColor: isDisable
           ? const Color(0xFF999999)
           : configTextColor ?? IsrColors.primaryTextColor,
+      textStyle: configTextStyle,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(
           configBorderRadius ?? IsrDimens.eight,
@@ -189,16 +205,19 @@ class AppButton extends StatelessWidget {
     BuildContext context, {
     ButtonConfig? buttonConfig,
     Color? borderColor,
+    TextStyle? textStyle,
   }) {
     final configTextColor = buttonConfig?.textColor ?? textColor;
     final configBorderColor = buttonConfig?.borderColor ?? borderColor;
     final configBorderRadius = buttonConfig?.borderRadius ?? borderRadius;
+    final configTextStyle = textStyle ?? buttonConfig?.textStyle;
 
     return OutlinedButton.styleFrom(
       backgroundColor: buttonConfig?.backgroundColor ?? Colors.transparent,
       foregroundColor: isDisable
           ? Colors.grey
           : configTextColor ?? Theme.of(context).primaryColor,
+      textStyle: configTextStyle,
       side: BorderSide(
         color: isDisable
             ? Colors.grey
@@ -249,6 +268,7 @@ class AppButton extends StatelessWidget {
     final configTextColor = buttonConfig?.textColor ?? textColor;
     final configBorderColor = buttonConfig?.borderColor ?? borderColor;
     final configBorderRadius = buttonConfig?.borderRadius ?? borderRadius;
+    final configTextStyle = textStyle ?? buttonConfig?.textStyle;
 
     return TextButton.styleFrom(
       backgroundColor: configBgColor ?? Colors.transparent,
@@ -266,7 +286,7 @@ class AppButton extends StatelessWidget {
           width: borderWidth ?? 0.5,
         ),
       ),
-      textStyle: textStyle,
+      textStyle: configTextStyle,
       elevation: buttonConfig?.elevation,
     );
   }
@@ -340,9 +360,19 @@ class AppButton extends StatelessWidget {
   }
 
   TextStyle _getTextStyle(BuildContext context) {
-    // Use provided textStyle if available
+    final buttonConfig = _buttonConfigForType();
+    final configTextStyle = buttonConfig?.textStyle;
+
     if (textStyle != null) {
       return textStyle!;
+    }
+
+    if (configTextStyle != null) {
+      final resolvedColor = textColor ??
+          buttonConfig?.textColor ??
+          configTextStyle.color ??
+          _defaultTextColorForType(context);
+      return configTextStyle.copyWith(color: resolvedColor);
     }
 
     final textSizeConfig = IsrVideoReelConfig.socialConfig.textSizeConfig;
@@ -361,20 +391,20 @@ class AppButton extends StatelessWidget {
       fontFamily: AppConstants.primaryFontFamily,
     );
 
-    if (textColor != null) return baseStyle.copyWith(color: textColor);
-
-    return switch (type) {
-      ButtonType.primary => baseStyle.copyWith(color: IsrColors.white),
-      ButtonType.secondary =>
-        baseStyle.copyWith(color: IsrColors.primaryTextColor),
-      ButtonType.tertiary =>
-        baseStyle.copyWith(color: IsrColors.primaryTextColor),
-      ButtonType.danger => baseStyle.copyWith(color: IsrColors.white),
-      ButtonType.success => baseStyle.copyWith(color: IsrColors.white),
-      ButtonType.disabled => baseStyle.copyWith(color: IsrColors.grey),
-      ButtonType.text => baseStyle.copyWith(color: IsrColors.primaryTextColor),
-    };
+    final resolvedColor =
+        textColor ?? buttonConfig?.textColor ?? _defaultTextColorForType(context);
+    return baseStyle.copyWith(color: resolvedColor);
   }
+
+  Color _defaultTextColorForType(BuildContext context) => switch (type) {
+        ButtonType.primary => IsrColors.white,
+        ButtonType.secondary => IsrColors.primaryTextColor,
+        ButtonType.tertiary => IsrColors.primaryTextColor,
+        ButtonType.danger => IsrColors.white,
+        ButtonType.success => IsrColors.white,
+        ButtonType.disabled => IsrColors.grey,
+        ButtonType.text => IsrColors.primaryTextColor,
+      };
 
   double _getButtonHeight() => switch (size) {
         ButtonSize.small => IsrDimens.twentyEight,

@@ -311,5 +311,6 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
         textColor: buttonConfig?.textColor ?? defaultTextColor,
         borderColor: buttonConfig?.borderColor,
         borderRadius: buttonConfig?.borderRadius,
+        textStyle: buttonConfig?.textStyle,
       );
 }
