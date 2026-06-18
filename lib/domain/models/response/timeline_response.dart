@@ -989,11 +989,11 @@ class MentionData {
         tag: json['tag'] as String? ?? '',
         name: json['name'] as String? ?? '',
         avatarUrl: json['avatarUrl'] as String? ?? '',
-        textPosition: json['text_position'] == null
+        textPosition: json.getMap('text_position').isEmpty
             ? null
             : TaggedPosition.fromJson(
                 json['text_position'] as Map<String, dynamic>),
-        mediaPosition: json['media_position'] == null
+        mediaPosition: json.getMap('media_position').isEmpty
             ? null
             : MediaPosition.fromJson(
                 json['media_position'] as Map<String, dynamic>),

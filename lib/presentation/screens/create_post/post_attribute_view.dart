@@ -910,16 +910,18 @@ class _PostAttributeViewState extends State<PostAttributeView>
                             _descriptionFocusNode.unfocus();
                             final mediaDataList =
                                 _postAttributeClass?.mediaDataList ?? [];
-                            _tagPeopleManagedUserIds = _mentionedUsers
+                            final taggedMentionedUsers = _getTaggedUsers();
+                            _tagPeopleManagedUserIds = taggedMentionedUsers
                                 .map((m) => m.userId ?? '')
                                 .where((id) => id.isNotEmpty)
                                 .toSet();
                             final result =
                                 await IsrAppNavigator.goToTagPeopleScreen(
                                     context,
-                                    mentionDataList: _mentionedUsers,
+                                    mentionDataList: taggedMentionedUsers,
                                     mediaDataList: mediaDataList,
-                                    postId: widget.postData?.id);
+                                    postId: widget.postData?.id,
+                                );
                             if (result != null) {
                               _applyTagPeopleScreenResult(
                                 List<MentionData>.from(result),
@@ -1233,15 +1235,20 @@ class _PostAttributeViewState extends State<PostAttributeView>
       );
 
   /// Count of people tagged on media (excludes caption-only @mentions).
-  int _getTaggedUsersCount() => _mentionedUsers
-      .where((m) => !_isCaptionOnlyMention(m))
-      .map((m) => m.userId)
-      .whereType<String>()
-      .toSet()
-      .length;
+  int _getTaggedUsersCount() => _getTaggedUsers().length;
+
+  /// people tagged on media (excludes caption-only @mentions).
+  List<MentionData> _getTaggedUsers() =>
+      _mentionedUsers
+          .where((m) => !_isCaptionOnlyMention(m))
+          .toList(growable: false);
+
 
   bool _isCaptionOnlyMention(MentionData mention) {
-    if (mention.textPosition != null) return true;
+    final textPosition = mention.textPosition;
+    if (textPosition != null && !(textPosition.start == 0 && textPosition.end == 0)) return true; // has caption position
+    final mediaPosition = mention.mediaPosition;
+    if (mediaPosition != null && !(mediaPosition.x == 0 && mediaPosition.y == 0 && mediaPosition.position == 0)) return false; // has media position
     final username = (mention.username ?? '').replaceFirst('@', '');
     if (username.isEmpty) return false;
     return _descriptionController.text.contains('@$username');
