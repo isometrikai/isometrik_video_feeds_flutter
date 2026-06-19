@@ -174,6 +174,25 @@ class IsmDataProvider {
     );
   }
 
+  Future<void> saveUnsavePost({
+    required String postId,
+    required SocialPostAction saveAction,
+    bool isLoading = false,
+    Function(String, int)? onSuccess,
+    Function(String, int)? onError,
+  }) async {
+    await _executeApiCall(
+      apiCall: () => _savedPostUseCase.executeSavePost(
+        isLoading: isLoading,
+        postId: postId,
+        socialPostAction: saveAction,
+      ),
+      toJson: (data) => data?.toMap() ?? {},
+      onSuccess: onSuccess,
+      onError: onError,
+    );
+  }
+
   /// Create collection
   /// `requestMap` is a `Map` containing the following properties:
   /// - `description`: A description of the collection
