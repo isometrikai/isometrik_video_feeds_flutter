@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:ism_video_reel_player/domain/models/post_config.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/premium_glass_reflection_border.dart';
 import 'package:ism_video_reel_player/presentation/screens/widgets/app_image.dart';
 import 'package:ism_video_reel_player/res/isr_dimens.dart';
 
@@ -109,71 +110,33 @@ class ActionIconContainer extends StatelessWidget {
 
     final glass = config?.glassConfig ?? const ActionIconGlassConfig();
     final size = glass.containerSize;
+    final sigma = glass.blurSigma.clamp(12.0, 20.0);
+    const borderWidth = 0.9;
 
-    // No outer [boxShadow] — it paints outside the 40×40 bounds and bleeds onto
-    // the count label stacked below in the reels action column.
     return SizedBox(
       width: size,
       height: size,
-      child: Container(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                glass.borderColor,
-                glass.borderShadowColor,
-              ],
+      child: ClipOval(
+        child: Stack(
+          fit: StackFit.expand,
+          alignment: Alignment.center,
+          children: [
+            BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
+              child: const SizedBox.expand(),
             ),
-          ),
-          padding: EdgeInsets.all(glass.borderWidth),
-          child: ClipOval(
-            child: Stack(
-              fit: StackFit.expand,
-              alignment: Alignment.center,
-              children: [
-                BackdropFilter(
-                  filter: ImageFilter.blur(
-                    sigmaX: glass.blurSigma,
-                    sigmaY: glass.blurSigma,
-                  ),
-                  child: const ColoredBox(color: Colors.transparent),
-                ),
-                // Light pooling from the north-west, darkening to the south-east.
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      center: const Alignment(-0.6, -0.6),
-                      radius: 1.5,
-                      colors: [
-                        glass.highlightColor,
-                        glass.backgroundColor,
-                        glass.shadowColor,
-                      ],
-                      stops: const [0, 0.6, 1],
-                    ),
-                  ),
-                ),
-                // Smooth top sheen across the upper third (no localized dot).
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.center,
-                      colors: [
-                        glass.innerHighlightColor,
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
-                ),
-                Center(child: child),
-              ],
+            const PremiumGlassFillLayers(
+              borderRadius: BorderRadius.all(Radius.circular(999)),
             ),
-          ),
+            CustomPaint(
+              painter: PremiumGlassReflectionBorderPainter(
+                shape: PremiumGlassBorderShape.circle,
+                borderWidth: borderWidth,
+              ),
+            ),
+            Center(child: child),
+          ],
+        ),
       ),
     );
   }

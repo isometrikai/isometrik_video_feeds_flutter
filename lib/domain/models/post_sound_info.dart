@@ -55,12 +55,49 @@ class PostSoundInfo {
 
   /// `“Title” • Artist` (or fallbacks) suitable for the post sound pill.
   String get displayLabel {
-    final t = (title ?? '').trim();
-    final a = (artist ?? '').trim();
+    final t = resolvedTitle ?? '';
+    final a = resolvedArtist ?? '';
     if (t.isEmpty && a.isEmpty) return 'Original audio';
     if (t.isEmpty) return a;
     if (a.isEmpty) return t;
     return '$t • $a';
+  }
+
+  /// Title + artist for glassy reels marquee (`Titanium · David Guetta ft. Sia`).
+  String get glassyMarqueeLabel {
+    final t = _cleanSoundDisplayText(resolvedTitle);
+    final a = _cleanSoundDisplayText(resolvedArtist);
+    if (t.isNotEmpty && a.isNotEmpty) {
+      if (t.toLowerCase().contains(a.toLowerCase())) return t;
+      return '$t · $a';
+    }
+    if (t.isNotEmpty) return t;
+    if (a.isNotEmpty) return a;
+    return 'Original audio';
+  }
+
+  static String _cleanSoundDisplayText(String? value) {
+    if (value == null) return '';
+    return value
+        .trim()
+        .replaceAll(RegExp(r'["""\u201c\u201d\u2018\u2019]'), '')
+        .replaceAll(RegExp(r'\s+'), ' ');
+  }
+
+  String? get resolvedTitle {
+    final direct = (title ?? '').trim();
+    if (direct.isNotEmpty) return direct;
+    final snap = snapshot?['title'];
+    if (snap is String && snap.trim().isNotEmpty) return snap.trim();
+    return null;
+  }
+
+  String? get resolvedArtist {
+    final direct = (artist ?? '').trim();
+    if (direct.isNotEmpty) return direct;
+    final snap = snapshot?['artist'];
+    if (snap is String && snap.trim().isNotEmpty) return snap.trim();
+    return null;
   }
 
   Map<String, dynamic> toMap() => {

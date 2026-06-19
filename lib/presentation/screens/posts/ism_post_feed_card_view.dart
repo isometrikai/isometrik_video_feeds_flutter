@@ -13,6 +13,7 @@ import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/video_player_widget.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/comment_count_action_widget.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/like_action_widget.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_sound_icon.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_carousel_keep_alive_page.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/sound_selection/sound_track_detail_screen.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_media_carousel.dart';
@@ -1107,7 +1108,11 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
                 ),
               if (_hasPostSound)
                 _buildInstagramMetaMenuTapItem(
-                  icon: Icons.music_note_outlined,
+                  leading: PostSoundIcon(
+                    size: IsrDimens.twenty,
+                    style: PostSoundIconStyle.feed,
+                    color: _feedUi.headerTextColor,
+                  ),
                   label: 'View audio details',
                   onTap: onSelectSound,
                 ),
@@ -1117,7 +1122,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       );
 
   Widget _buildInstagramMetaMenuTapItem({
-    required IconData icon,
+    IconData? icon,
+    Widget? leading,
     required String label,
     required VoidCallback onTap,
   }) =>
@@ -1130,18 +1136,24 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
               horizontal: IsrDimens.sixteen,
               vertical: IsrDimens.twelve,
             ),
-            child: _buildInstagramMetaMenuRow(icon: icon, label: label),
+            child: _buildInstagramMetaMenuRow(
+              icon: icon,
+              leading: leading,
+              label: label,
+            ),
           ),
         ),
       );
 
   Widget _buildInstagramMetaMenuRow({
-    required IconData icon,
+    IconData? icon,
+    Widget? leading,
     required String label,
   }) =>
       Row(
         children: [
-          Icon(icon, size: IsrDimens.twenty, color: _feedUi.headerTextColor),
+          leading ??
+              Icon(icon, size: IsrDimens.twenty, color: _feedUi.headerTextColor),
           IsrDimens.boxWidth(IsrDimens.twelve),
           Expanded(
             child: Text(
@@ -1171,13 +1183,16 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
 
     Widget buildRow({
       required Key key,
-      required IconData icon,
+      IconData? icon,
+      Widget? leading,
       required String label,
     }) =>
         Row(
           key: key,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Icon(icon, size: IsrDimens.twelve, color: iconColor),
+            leading ??
+                Icon(icon, size: IsrDimens.twelve, color: iconColor),
             IsrDimens.boxWidth(IsrDimens.four),
             Flexible(
               child: Text(
@@ -1203,7 +1218,11 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       );
       final soundRow = buildRow(
         key: const ValueKey('instagram_meta_sound'),
-        icon: Icons.music_note_rounded,
+        leading: PostSoundIcon(
+          size: IsrDimens.twelve,
+          style: PostSoundIconStyle.feed,
+          color: iconColor,
+        ),
         label: sound?.displayLabel ?? '',
       );
       content = ValueListenableBuilder<bool>(
@@ -1217,7 +1236,11 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     } else if (_hasPostSound) {
       content = buildRow(
         key: const ValueKey('instagram_meta_sound_only'),
-        icon: Icons.music_note_rounded,
+        leading: PostSoundIcon(
+          size: IsrDimens.twelve,
+          style: PostSoundIconStyle.feed,
+          color: iconColor,
+        ),
         label: sound?.displayLabel ?? '',
       );
     } else {
@@ -2679,7 +2702,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         mentionStyle: _textStyleConfig?.mentionStyle ??
             _feedCaptionBodyStyle.copyWith(fontWeight: FontWeight.w600),
         hashtagStyle: _textStyleConfig?.hashtagStyle ?? _feedHashtagTextStyle,
-        urlStyle: _textStyleConfig?.urlStyle ?? _feedUrlTextStyle,
+        urlStyle: _feedUrlTextStyle,
       );
 
   Color get _feedMetaIconColor =>
@@ -3145,7 +3168,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
                     },
                     mentionStyle: _textStyleConfig?.mentionStyle,
                     hashtagStyle: _textStyleConfig?.hashtagStyle,
-                    urlStyle: _textStyleConfig?.urlStyle,
+                    urlStyle: _feedUrlTextStyle,
                   ),
                 ],
               ),

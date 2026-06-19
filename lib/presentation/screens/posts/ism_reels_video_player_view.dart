@@ -17,6 +17,10 @@ import 'package:ism_video_reel_player/presentation/screens/posts/widgets/instagr
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/like_action_widget.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/feed_text_post_content.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/reels_overlay_text.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_sound_icon.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/glass_pill_container.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/reels_glassy_sound_disc.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/reels_sound_marquee_row.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/isr_image_sound_registry.dart';
 import 'package:ism_video_reel_player/utils/post_sound_util.dart';
@@ -271,6 +275,59 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       height: style.height ?? fallback.height,
       decoration: TextDecoration.none,
       shadows: includeShadow ? (style.shadows ?? _textShadows) : null,
+    );
+  }
+
+  /// Glassy reels: white caption URLs. Default/plain: SDK theme link color.
+  TextStyle? _buildReelsUrlStyle() {
+    if (!_isGlassReelsActionIcons) return null;
+
+    final linkColor = ReelsOverlayText.foreground.withValues(alpha: 0.9);
+    return _overlayTextStyle(
+      IsrStyles.white14,
+      color: linkColor,
+    ).copyWith(
+      decoration: TextDecoration.underline,
+      decorationColor: linkColor,
+      fontWeight: FontWeight.w400,
+    );
+  }
+
+  bool get _hasMentionOrLocation =>
+      _reelData.mentions.isListEmptyOrNull == false ||
+      _reelData.placeDataList?.isListEmptyOrNull == false;
+
+  static const double _glassChipIconSize = 16;
+
+  Widget _buildMentionAndLocationRow() {
+    if (!_hasMentionOrLocation) return const SizedBox.shrink();
+
+    final hasMentions = _reelData.mentions.isListEmptyOrNull == false;
+    final hasPlaces = _reelData.placeDataList?.isListEmptyOrNull == false;
+
+    if (_isGlassReelsActionIcons) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          if (hasMentions) _buildMentionedUsersSection(),
+          if (hasMentions && hasPlaces) IsrDimens.boxWidth(IsrDimens.ten),
+          if (hasPlaces)
+            Flexible(
+              fit: FlexFit.loose,
+              child: _buildLocationSection(),
+            ),
+        ],
+      );
+    }
+
+    return Row(
+      children: [
+        if (hasMentions) ...[
+          Expanded(child: _buildMentionedUsersSection()),
+          if (hasPlaces) IsrDimens.boxWidth(IsrDimens.ten),
+        ],
+        if (hasPlaces) Expanded(child: _buildLocationSection()),
+      ],
     );
   }
 
@@ -1572,48 +1629,129 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       return const SizedBox.shrink();
     }
 
+    final iconSize = _isGlassReelsActionIcons
+        ? _glassChipIconSize
+        : (_mentionConfig?.mentionIconSize ?? IsrDimens.fifteen);
+
+    final iconGap = _isGlassReelsActionIcons
+        ? IsrDimens.four
+        : (_mentionConfig?.mentionIconSpacing ?? IsrDimens.five);
+
+    final mentionLabel = mentionList.length == 1
+        ? mentionList.first.username ?? ''
+        : '${mentionList.length} people';
+
+    final mentionText = Text(
+      mentionLabel,
+      style: _overlayTextStyle(
+        IsrStyles.white14,
+        custom: _textStyleConfig?.mentionStyle,
+        fontWeight:
+            _isGlassReelsActionIcons ? FontWeight.w500 : FontWeight.w600,
+        includeShadow: !_isGlassReelsActionIcons,
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
+
+    final content = Row(
+      mainAxisSize:
+          _isGlassReelsActionIcons ? MainAxisSize.min : MainAxisSize.max,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        if (_mentionConfig?.mentionIcon != null)
+          AppImage.svg(
+            _mentionConfig!.mentionIcon!,
+            width: iconSize,
+            height: iconSize,
+            color: _mentionConfig?.mentionIconColor ?? IsrColors.white,
+          )
+        else
+          Icon(
+            Icons.people,
+            size: iconSize,
+            color: _mentionConfig?.mentionIconColor ?? IsrColors.white,
+            shadows: _isGlassReelsActionIcons ? null : _textShadows,
+          ),
+        IsrDimens.boxWidth(iconGap),
+        if (_isGlassReelsActionIcons)
+          mentionText
+        else
+          Expanded(child: mentionText),
+      ],
+    );
+
+    if (_isGlassReelsActionIcons) {
+      return TapHandler(
+        onTap: () => _callOnTapMentionData(mentionList),
+        child: GlassPillContainer(
+          glassConfig: _actionIconConfig?.glassConfig,
+          child: content,
+        ),
+      );
+    }
+
     return TapHandler(
       onTap: () => _callOnTapMentionData(mentionList),
-      child: Row(
-        children: [
-          if (_mentionConfig?.mentionIcon != null)
-            AppImage.svg(
-              _mentionConfig!.mentionIcon!,
-              width: _mentionConfig?.mentionIconSize ?? IsrDimens.fifteen,
-              height: _mentionConfig?.mentionIconSize ?? IsrDimens.fifteen,
-              color: _mentionConfig?.mentionIconColor ?? IsrColors.white,
-            )
-          else
-            Icon(
-              Icons.people,
-              size: _mentionConfig?.mentionIconSize ?? IsrDimens.fifteen,
-              color: _mentionConfig?.mentionIconColor ?? IsrColors.white,
-              shadows: _textShadows,
-            ),
-          IsrDimens.boxWidth(
-              _mentionConfig?.mentionIconSpacing ?? IsrDimens.five),
-          Expanded(
-            child: Text(
-              mentionList.length == 1
-                  ? mentionList.first.username ?? ''
-                  : '${mentionList.length} people',
-              style: _overlayTextStyle(
-                IsrStyles.white14,
-                custom: _textStyleConfig?.mentionStyle,
-                fontWeight: FontWeight.w600,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
+      child: content,
     );
   }
 
   Widget _buildLocationSection() {
     final placeList = _reelData.placeDataList ?? [];
     if (placeList.isListEmptyOrNull) return const SizedBox.shrink();
+
+    final iconSize = _isGlassReelsActionIcons
+        ? _glassChipIconSize
+        : (_locationConfig?.locationIconSize ?? IsrDimens.fifteen);
+
+    final iconGap = _isGlassReelsActionIcons
+        ? IsrDimens.four
+        : (_locationConfig?.locationIconSpacing ?? IsrDimens.three);
+
+    final locationText = _buildSimpleLocationText(placeList);
+
+    final content = Row(
+      mainAxisSize:
+          _isGlassReelsActionIcons ? MainAxisSize.min : MainAxisSize.max,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        if (_locationConfig?.locationIcon != null)
+          AppImage.svg(
+            _locationConfig!.locationIcon!,
+            width: iconSize,
+            height: iconSize,
+            color: _locationConfig?.locationIconColor ?? IsrColors.white,
+          )
+        else
+          Icon(
+            Icons.location_on,
+            size: iconSize,
+            color: _locationConfig?.locationIconColor ?? IsrColors.white,
+            shadows: _isGlassReelsActionIcons ? null : _textShadows,
+          ),
+        IsrDimens.boxWidth(iconGap),
+        if (_isGlassReelsActionIcons)
+          Flexible(child: locationText)
+        else
+          Expanded(child: locationText),
+      ],
+    );
+
+    if (_isGlassReelsActionIcons) {
+      return GestureDetector(
+        onTap: () async {
+          await widget.reelsConfig.onTapPlace?.call(
+            _reelData,
+            placeList,
+          );
+        },
+        child: GlassPillContainer(
+          glassConfig: _actionIconConfig?.glassConfig,
+          child: content,
+        ),
+      );
+    }
 
     return GestureDetector(
       onTap: () async {
@@ -1622,27 +1760,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           placeList,
         );
       },
-      child: Row(
-        children: [
-          if (_locationConfig?.locationIcon != null)
-            AppImage.svg(
-              _locationConfig!.locationIcon!,
-              width: _locationConfig?.locationIconSize ?? IsrDimens.fifteen,
-              height: _locationConfig?.locationIconSize ?? IsrDimens.fifteen,
-              color: _locationConfig?.locationIconColor ?? IsrColors.white,
-            )
-          else
-            Icon(
-              Icons.location_on,
-              size: _locationConfig?.locationIconSize ?? IsrDimens.fifteen,
-              color: _locationConfig?.locationIconColor ?? IsrColors.white,
-              shadows: _textShadows,
-            ),
-          IsrDimens.boxWidth(
-              _locationConfig?.locationIconSpacing ?? IsrDimens.three),
-          Expanded(child: _buildSimpleLocationText(placeList)),
-        ],
-      ),
+      child: content,
     );
   }
 
@@ -1686,17 +1804,18 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               )
             : ColoredBox(
                 color: IsrColors.black.changeOpacity(0.45),
-                child: Icon(
-                  Icons.music_note,
-                  size: 10.responsiveDimension,
-                  color: IsrColors.white,
+                child: Center(
+                  child: PostSoundIcon(
+                    size: 10.responsiveDimension,
+                    style: PostSoundIconStyle.onDark,
+                  ),
                 ),
               ),
       ),
     );
   }
 
-  /// Song row below caption: note + title + circular artwork (left-aligned).
+  /// Default reels sound row (plain theme): disc + title below comments area.
   Widget _buildPostSoundRow() {
     final sound = _reelData.sound;
     if (sound == null || !sound.hasId) return const SizedBox.shrink();
@@ -1729,6 +1848,119 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     );
   }
 
+  Widget _buildReelsProfileAvatar() {
+    final size = _userProfileConfig?.profileImageSize ?? IsrDimens.thirtyFive;
+    final firstName = _reelData.firstName ?? '';
+    final lastName = _reelData.lastName ?? '';
+    final initials =
+        Utility.getInitials(firstName: firstName, lastName: lastName);
+    final nameSeed = '$firstName $lastName'.trim().isNotEmpty
+        ? '$firstName $lastName'
+        : (_reelData.userName ?? initials);
+
+    return TapHandler(
+      borderRadius: size / 2,
+      onTap: () async {
+        if (widget.reelsConfig.onTapUserProfile == null) return;
+        await widget.reelsConfig.onTapUserProfile!(_reelData);
+      },
+      child: AppImage.network(
+        _reelData.profilePhoto ?? '',
+        width: size,
+        height: size,
+        isProfileImage: true,
+        border: _userProfileConfig?.profileImageBorder ??
+            Border.all(
+              color: IsrColors.white.withValues(alpha: 0.9),
+              width: IsrDimens.one,
+            ),
+        name: '$firstName $lastName',
+        placeHolderWidget: (h, w) => FeedProfileInitialsPlaceholder(
+          initials: initials,
+          size: h ?? w ?? size,
+          seed: nameSeed,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGlassyUsernameLabel() => TapHandler(
+        onTap: () async {
+          if (widget.reelsConfig.onTapUserProfile == null) return;
+          await widget.reelsConfig.onTapUserProfile!(_reelData);
+        },
+        child: Text(
+          _reelData.userName ?? '',
+          style: _overlayTextStyle(
+            IsrStyles.white14,
+            custom: _textStyleConfig?.userNameStyle,
+            fontWeight: FontWeight.w600,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      );
+
+  static const double _glassyHeaderGap = 10;
+
+  /// Glassy reels header — profile [10] username (+ sound) [10] follow.
+  /// Content hugs when short; sound expands until follow reaches overlay inset.
+  Widget _buildGlassyUserHeader() {
+    final hasSound = _reelData.sound?.hasId ?? false;
+
+    final content = hasSound
+        ? Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildGlassyUsernameLabel(),
+              IsrDimens.boxHeight(IsrDimens.four),
+              _buildGlassyUsernameSoundRow(),
+            ],
+          )
+        : _buildGlassyUsernameLabel();
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        if (_reelData.postSetting?.isProfilePicVisible == true) ...[
+          _buildReelsProfileAvatar(),
+          const SizedBox(width: _glassyHeaderGap),
+        ],
+        Expanded(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Flexible(
+                fit: FlexFit.loose,
+                child: content,
+              ),
+              const SizedBox(width: _glassyHeaderGap),
+              _buildFollowButton(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Glassy reels: note + scrolling title/artist below username.
+  Widget _buildGlassyUsernameSoundRow() {
+    final sound = _reelData.sound;
+    if (sound == null || !sound.hasId) return const SizedBox.shrink();
+
+    return ReelsSoundMarqueeRow(
+      sound: sound,
+      textStyle: _overlayTextStyle(
+        IsrStyles.white12,
+        color: IsrColors.white.changeOpacity(0.85),
+        fontWeight: FontWeight.w400,
+        includeShadow: false,
+      ),
+      onTap: _onTapPostSound,
+    );
+  }
+
   Future<void> _onTapPostSound() async {
     final postData = _reelData.postData is TimeLineData
         ? _reelData.postData as TimeLineData
@@ -1756,6 +1988,40 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
   }
 
+  bool get _shouldSpinGlassySoundDisc {
+    if (_isCurrentMediaVideo) return !_isReelsPlaybackPaused;
+    return true;
+  }
+
+  static const double _glassyReelsSoundDiscSize = 24;
+
+  /// Same horizontal inset as the glass action column (16px + centered 24px disc in 40px slot).
+  double _glassySoundDiscRightInset(BuildContext context) {
+    final overlayRight = widget.reelsConfig.overlayPadding
+            ?.resolve(Directionality.of(context))
+            .right ??
+        0;
+    return overlayRight +
+        IsrDimens.sixteen +
+        (_reelsSideActionSlotWidth - _glassyReelsSoundDiscSize) / 2;
+  }
+
+  /// Glassy reels — spinning sound disc beside the comment block (Figma).
+  Widget _buildGlassyBottomRightSoundDisc() {
+    final sound = _reelData.sound;
+    if (sound == null || !sound.hasId) return const SizedBox.shrink();
+
+    return ValueListenableBuilder<int>(
+      valueListenable: _videoOverlayTick,
+      builder: (context, _, __) => ReelsGlassySoundDisc(
+        imageUrl: _soundThumbnailUrl(sound),
+        onTap: _onTapPostSound,
+        spin: _shouldSpinGlassySoundDisc,
+        size: _glassyReelsSoundDiscSize,
+      ),
+    );
+  }
+
   Widget _buildSimpleLocationText(List<PlaceMetaData> placeList) {
     if (placeList.isEmpty) return const SizedBox.shrink();
 
@@ -1766,7 +2032,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       style: _overlayTextStyle(
         IsrStyles.white14,
         custom: _textStyleConfig?.locationStyle,
-        fontWeight: FontWeight.w600,
+        fontWeight:
+            _isGlassReelsActionIcons ? FontWeight.w500 : FontWeight.w600,
+        includeShadow: !_isGlassReelsActionIcons,
       ),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
@@ -1922,22 +2190,38 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       //right action
                       //kept separate so that it does not bloc touch/gesture to underlying widgets
                       if (!_shouldShowPaidLockOverlay)
-                        Positioned(
-                          right: widget.reelsConfig.overlayPadding
-                                  ?.resolve(Directionality.of(context))
-                                  .right ??
-                              0,
-                          bottom: contentBottom,
-                          child: widget.reelsConfig.actionWidget
-                                  ?.call(_reelData)
-                                  .child ??
-                              _buildRightSideActions(),
-                        ),
+                        _isGlassReelsActionIcons
+                            ? Positioned(
+                                top: 0,
+                                bottom: 0,
+                                right: widget.reelsConfig.overlayPadding
+                                        ?.resolve(Directionality.of(context))
+                                        .right ??
+                                    0,
+                                child: Align(
+                                  alignment: Alignment.centerRight,
+                                  child: widget.reelsConfig.actionWidget
+                                          ?.call(_reelData)
+                                          .child ??
+                                      _buildRightSideActions(),
+                                ),
+                              )
+                            : Positioned(
+                                right: widget.reelsConfig.overlayPadding
+                                        ?.resolve(Directionality.of(context))
+                                        .right ??
+                                    0,
+                                bottom: contentBottom,
+                                child: widget.reelsConfig.actionWidget
+                                        ?.call(_reelData)
+                                        .child ??
+                                    _buildRightSideActions(),
+                              ),
 
                       //bottom section
                       //kept separate so that it does not bloc touch/gesture to underlying widgets
                       Positioned(
-                        right: 40,
+                        right: _reelsOverlayRightContentInset,
                         bottom: contentBottom,
                         left: widget.reelsConfig.overlayPadding
                                 ?.resolve(Directionality.of(context))
@@ -1948,6 +2232,16 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                 .child ??
                             _buildBottomSectionWithoutOverlay(),
                       ),
+
+                      // Glassy reels — sound disc aligned with right action column.
+                      if (_isGlassReelsActionIcons &&
+                          (_reelData.sound?.hasId ?? false) &&
+                          !_shouldShowPaidLockOverlay)
+                        Positioned(
+                          right: _glassySoundDiscRightInset(context),
+                          bottom: contentBottom + IsrDimens.sixteen,
+                          child: _buildGlassyBottomRightSoundDisc(),
+                        ),
                     ],
                   ),
                 ),
@@ -2020,8 +2314,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   Widget _buildRightSideActions() => RepaintBoundary(
         child: Padding(
-          padding: IsrDimens.edgeInsets(
-              bottom: IsrDimens.forty, right: IsrDimens.sixteen),
+          padding: _isGlassReelsActionIcons
+              ? IsrDimens.edgeInsets(right: IsrDimens.sixteen)
+              : IsrDimens.edgeInsets(
+                  bottom: IsrDimens.forty,
+                  right: IsrDimens.sixteen,
+                ),
           child: Column(
             spacing: IsrDimens.twenty,
             mainAxisSize: MainAxisSize.min,
@@ -2223,6 +2521,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     return _reelsSideActionSlotWidth + _plainActionIconShadowClipExtension;
   }
 
+  /// Space between bottom-left overlay content and right-side action buttons.
+  double get _reelsOverlayRightContentInset {
+    if (!_isGlassReelsActionIcons) return 40;
+    return _reelsSideActionSlotWidth + IsrDimens.sixteen;
+  }
+
   /// Isolates icon paint from count labels so shadows never bleed onto digits.
   /// Glass uses a 40×40 clip; plain uses icon width + a small shadow margin.
   Widget _buildReelsSideActionColumn({
@@ -2388,13 +2692,21 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   Widget _buildBottomSectionWithoutOverlay() {
     final publishedTimeLabel = _postPublishedTimeLabel();
+
     return Padding(
-      padding: IsrDimens.edgeInsets(
-          left: IsrDimens.sixteen,
-          right: IsrDimens.sixteen,
-          bottom: IsrDimens.fifteen),
+      padding: _isGlassReelsActionIcons
+          ? IsrDimens.edgeInsets(
+              left: IsrDimens.sixteen,
+              right: IsrDimens.sixteen,
+              bottom: IsrDimens.sixteen,
+            )
+          : IsrDimens.edgeInsets(
+              left: IsrDimens.sixteen,
+              right: IsrDimens.sixteen,
+              bottom: IsrDimens.fifteen,
+            ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
           if ((_reelData.productCount ?? 0) > 0) ...[
@@ -2469,95 +2781,52 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: Row(
-                            children: [
-                              if (_reelData.postSetting?.isProfilePicVisible ==
-                                  true) ...[
-                                TapHandler(
-                                  borderRadius: IsrDimens.thirty,
-                                  onTap: () async {
-                                    if (widget.reelsConfig.onTapUserProfile ==
-                                        null) {
-                                      return;
-                                    }
-                                    await widget.reelsConfig
-                                        .onTapUserProfile!(_reelData);
-                                  },
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.transparent,
-                                      borderRadius: BorderRadius.circular(
-                                        _userProfileConfig
-                                                ?.profileImageBorderRadius ??
-                                            IsrDimens.thirty,
+                    if (_isGlassReelsActionIcons)
+                      _buildGlassyUserHeader()
+                    else
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: Row(
+                              children: [
+                                if (_reelData
+                                        .postSetting?.isProfilePicVisible ==
+                                    true) ...[
+                                  _buildReelsProfileAvatar(),
+                                  IsrDimens.boxWidth(IsrDimens.eight),
+                                ],
+                                Flexible(
+                                  child: TapHandler(
+                                    onTap: () async {
+                                      if (widget.reelsConfig.onTapUserProfile ==
+                                          null) {
+                                        return;
+                                      }
+                                      await widget.reelsConfig.onTapUserProfile
+                                          ?.call(_reelData);
+                                    },
+                                    child: Text(
+                                      _reelData.userName ?? '',
+                                      style: _overlayTextStyle(
+                                        IsrStyles.white14,
+                                        custom:
+                                            _textStyleConfig?.userNameStyle,
+                                        fontWeight: FontWeight.w600,
                                       ),
-                                      border: _userProfileConfig
-                                          ?.profileImageBorder,
-                                      boxShadow: _userProfileConfig
-                                              ?.profileImageShadow ??
-                                          [
-                                            BoxShadow(
-                                              color: Colors.black
-                                                  .changeOpacity(0.2),
-                                              spreadRadius: 2,
-                                              blurRadius: 5,
-                                              offset: const Offset(0, 2),
-                                            ),
-                                          ],
-                                    ),
-                                    child: AppImage.network(
-                                      _reelData.profilePhoto ?? '',
-                                      width: _userProfileConfig
-                                              ?.profileImageSize ??
-                                          IsrDimens.thirtyFive,
-                                      height: _userProfileConfig
-                                              ?.profileImageSize ??
-                                          IsrDimens.thirtyFive,
-                                      isProfileImage: true,
-                                      textColor: _userProfileConfig
-                                              ?.profileImagePlaceholderColor ??
-                                          IsrColors.white,
-                                      name:
-                                          '${_reelData.firstName ?? ''} ${_reelData.lastName ?? ''}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                 ),
                                 IsrDimens.boxWidth(IsrDimens.eight),
+                                _buildFollowButton(),
                               ],
-                              Flexible(
-                                child: TapHandler(
-                                  onTap: () async {
-                                    if (widget.reelsConfig.onTapUserProfile ==
-                                        null) {
-                                      return;
-                                    }
-                                    await widget.reelsConfig.onTapUserProfile
-                                        ?.call(_reelData);
-                                  },
-                                  child: Text(
-                                    _reelData.userName ?? '',
-                                    style: _overlayTextStyle(
-                                      IsrStyles.white14,
-                                      custom: _textStyleConfig?.userNameStyle,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ),
-                              IsrDimens.boxWidth(IsrDimens.eight),
-                              _buildFollowButton(),
-                            ],
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
                     if (_postDescription.isStringEmptyOrNull == false) ...[
                       IsrDimens.boxHeight(IsrDimens.eight),
                       ConstrainedBox(
@@ -2637,13 +2906,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                                 fontWeight: FontWeight.w600,
                                               )
                                             : null,
-                                    urlStyle: _textStyleConfig?.urlStyle != null
-                                        ? _overlayTextStyle(
-                                            IsrStyles.white14,
-                                            custom: _textStyleConfig?.urlStyle,
-                                            fontWeight: FontWeight.w600,
-                                          )
-                                        : null,
+                                    urlStyle: _buildReelsUrlStyle(),
                                   );
                                 }
 
@@ -2705,33 +2968,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                         ),
                       ),
                     ],
-                    // Mentioned Users and Location in same row
-                    if (_reelData.mentions.isListEmptyOrNull == false ||
-                        _reelData.placeDataList?.isListEmptyOrNull ==
-                            false) ...[
+                    if (!_isGlassReelsActionIcons && _hasMentionOrLocation) ...[
                       IsrDimens.boxHeight(IsrDimens.eight),
-                      Row(
-                        children: [
-                          // Mentioned Users Section
-                          if (_reelData.mentions.isListEmptyOrNull ==
-                              false) ...[
-                            Expanded(
-                              child: _buildMentionedUsersSection(),
-                            ),
-                            if (_reelData.placeDataList?.isListEmptyOrNull ==
-                                false) ...[
-                              IsrDimens.boxWidth(IsrDimens.ten),
-                            ],
-                          ],
-                          // Location Section
-                          if (_reelData.placeDataList?.isListEmptyOrNull ==
-                              false) ...[
-                            Expanded(
-                              child: _buildLocationSection(),
-                            ),
-                          ],
-                        ],
-                      ),
+                      _buildMentionAndLocationRow(),
                     ],
                   ],
                 ),
@@ -2740,12 +2979,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           ),
           if (publishedTimeLabel != null) ...[
             IsrDimens.boxHeight(IsrDimens.six),
-            Container(
-              child: Text(
-                publishedTimeLabel,
-                style: _overlayTextStyle(IsrStyles.white12),
-              ),
+            Text(
+              publishedTimeLabel,
+              style: _overlayTextStyle(IsrStyles.white12),
             ),
+          ],
+          if (_isGlassReelsActionIcons && _hasMentionOrLocation) ...[
+            IsrDimens.boxHeight(IsrDimens.eight),
+            _buildMentionAndLocationRow(),
           ],
           if (_showFloatingComments) ...[
             IsrDimens.boxHeight(IsrDimens.eight),
@@ -2755,7 +2996,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             IsrDimens.boxHeight(IsrDimens.eight),
             _buildCommissionTag(),
           ],
-          if (_reelData.sound?.hasId == true) ...[
+          if (!_isGlassReelsActionIcons && (_reelData.sound?.hasId ?? false)) ...[
             IsrDimens.boxHeight(IsrDimens.eight),
             _buildPostSoundRow(),
           ],
@@ -2784,30 +3025,40 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     final usernameStyle = _overlayTextStyle(
       IsrStyles.white12,
-      custom: _belowCommentsConfig?.usernameStyle ??
-          _textStyleConfig?.userNameStyle,
-      fontWeight: FontWeight.w700,
+      custom: _isGlassReelsActionIcons
+          ? _belowCommentsConfig?.usernameStyle
+          : (_belowCommentsConfig?.usernameStyle ??
+              _textStyleConfig?.userNameStyle),
+      fontWeight: _isGlassReelsActionIcons ? null : FontWeight.w700,
+      includeShadow: !_isGlassReelsActionIcons,
     );
     final commentStyle = _overlayTextStyle(
       IsrStyles.white12,
       custom: _belowCommentsConfig?.commentTextStyle ??
           _textStyleConfig?.descriptionStyle,
-      color: IsrColors.white.changeOpacity(0.9),
+      color: _isGlassReelsActionIcons
+          ? IsrColors.white.changeOpacity(0.92)
+          : IsrColors.white.changeOpacity(0.9),
+      fontWeight: _isGlassReelsActionIcons ? FontWeight.w400 : null,
+      includeShadow: !_isGlassReelsActionIcons,
     );
     final userTagStyle = _overlayTextStyle(
       IsrStyles.white12,
       custom: _belowCommentsConfig?.userTagTextStyle,
       fontWeight: FontWeight.w600,
+      includeShadow: !_isGlassReelsActionIcons,
     );
     final hashtagStyle = _overlayTextStyle(
       IsrStyles.white12,
       custom: _belowCommentsConfig?.hashtagTextStyle,
       fontWeight: FontWeight.w600,
+      includeShadow: !_isGlassReelsActionIcons,
     );
     final buttonStyle = _overlayTextStyle(
       IsrStyles.white12,
       custom: _belowCommentsConfig?.viewAllCommentsStyle ??
           _descriptionConfig?.expandTextStyle,
+      includeShadow: !_isGlassReelsActionIcons,
     );
 
     final commentSpacing =
@@ -2830,6 +3081,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         duration: animationDuration,
         switchInCurve: Curves.easeOutCubic,
         switchOutCurve: Curves.easeInCubic,
+        layoutBuilder: (currentChild, previousChildren) => Stack(
+          alignment: Alignment.topLeft,
+          clipBehavior: Clip.none,
+          children: [
+            ...previousChildren,
+            if (currentChild != null) currentChild,
+          ],
+        ),
         transitionBuilder: (child, animation) {
           final slideAnimation = Tween<Offset>(
             begin: Offset(0, animationOffsetY),
@@ -2845,7 +3104,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         },
         child: Column(
           key: ValueKey(animationKey),
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
           children: [
             ..._floatingComments.map((comment) {
               final username = comment.fullName?.trim().isNotEmpty == true
@@ -2915,6 +3175,27 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     final timelineUser = _reelData.postData is TimeLineData
         ? (_reelData.postData as TimeLineData).user
         : null;
+    final chipVariant = _isGlassReelsActionIcons
+        ? FollowChipVariant.theme
+        : FollowChipVariant.reelsOverlay;
+    final chipTextShadows = _isGlassReelsActionIcons ? null : _textShadows;
+
+    InstagramFollowChip followChip({
+      required String label,
+      required bool filled,
+      required VoidCallback onTap,
+    }) =>
+        InstagramFollowChip(
+          label: label,
+          filled: filled,
+          variant: chipVariant,
+          followButtonConfig: _followButtonConfig,
+          followButtonTextStyle: _textStyleConfig?.followButtonTextStyle,
+          followingButtonTextStyle: _textStyleConfig?.followingButtonTextStyle,
+          textShadows: chipTextShadows,
+          onTap: onTap,
+        );
+
     return FollowActionWidget(
       postId: _reelData.postId ?? '',
       userId: _reelData.userId ?? '',
@@ -2928,8 +3209,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         // Show loading indicator during API call
         if (isLoading) {
           return SizedBox(
-            width:
-                _followButtonConfig?.followButtonMinWidth ?? IsrDimens.fiftySix,
             height: _followButtonConfig?.followButtonHeight ??
                 IsrDimens.twentyEight,
             child: Center(
@@ -2948,12 +3227,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           );
         } else if (followRequestPending &&
             _reelData.postSetting?.isUnFollowButtonVisible == true) {
-          return InstagramFollowChip(
+          return followChip(
             label: IsrTranslationFile.requested,
             filled: false,
-            variant: FollowChipVariant.reelsOverlay,
-            followButtonConfig: _followButtonConfig,
-            textShadows: _textShadows,
             onTap: () => onTap(
               reelData: _reelData,
               postSectionType: widget.postSectionType,
@@ -2973,14 +3249,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             isRequested: timelineUser?.isRequested,
             followStatus: timelineUser?.followStatus,
           );
-          return InstagramFollowChip(
+          return followChip(
             label: showRequest
                 ? IsrTranslationFile.request
                 : IsrTranslationFile.follow,
             filled: true,
-            variant: FollowChipVariant.reelsOverlay,
-            followButtonConfig: _followButtonConfig,
-            textShadows: _textShadows,
             onTap: () => onTap(
               reelData: _reelData,
               postSectionType: widget.postSectionType,
@@ -2992,12 +3265,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           );
         } else if (isFollowing &&
             _reelData.postSetting?.isFollowButtonVisible == true) {
-          return InstagramFollowChip(
+          return followChip(
             label: IsrTranslationFile.following,
             filled: false,
-            variant: FollowChipVariant.reelsOverlay,
-            followButtonConfig: _followButtonConfig,
-            textShadows: _textShadows,
             onTap: () => onTap(
               reelData: _reelData,
               postSectionType: widget.postSectionType,

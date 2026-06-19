@@ -1,3 +1,5 @@
+export 'premium_glass_reflection_border.dart';
+export 'glass_pill_container.dart';
 export 'action_icon_container.dart';
 export 'comment_tagging_text_field.dart';
 export 'feed_plain_text_post_body.dart';
@@ -18,6 +20,9 @@ export 'mention_list_bottom_sheet.dart';
 export 'more_options_bottom_sheet.dart';
 export 'post_feed_media_placeholder.dart';
 export 'post_shimmer_view.dart';
+export 'post_sound_icon.dart';
+export 'reels_glassy_sound_disc.dart';
+export 'reels_sound_marquee_row.dart';
 export 'report_reason_dialog.dart';
 export 'save_action_widget.dart';
 export 'social_products_bottom_sheet.dart';

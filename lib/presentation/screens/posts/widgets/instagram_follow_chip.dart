@@ -41,32 +41,45 @@ class InstagramFollowChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderRadius = IsrDimens.eight;
     final height =
         followButtonConfig?.followButtonHeight ?? IsrDimens.twentyEight;
+    final decoration = _decoration(context);
+    final borderRadius = _resolveBorderRadius(decoration);
+    final padding = followButtonConfig?.followButtonPadding ??
+        IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.eight);
 
     return Container(
       height: height,
-      decoration: _decoration(context, borderRadius),
-      child: MaterialButton(
-        onPressed: onTap,
-        elevation: 0,
-        highlightElevation: 0,
-        minWidth:
-            followButtonConfig?.followButtonMinWidth ?? IsrDimens.fiftySix,
-        height: height,
-        padding: followButtonConfig?.followButtonPadding ??
-            IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twelve),
-        shape: RoundedRectangleBorder(
+      decoration: decoration,
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(borderRadius),
+          child: Padding(
+            padding: padding,
+            child: Align(
+              alignment: Alignment.center,
+              widthFactor: 1,
+              child: Text(label, style: _textStyle(context)),
+            ),
+          ),
         ),
-        color: Colors.transparent,
-        child: Text(label, style: _textStyle(context)),
       ),
     );
   }
 
-  BoxDecoration _decoration(BuildContext context, double borderRadius) {
+  double _resolveBorderRadius(BoxDecoration decoration) {
+    final radius = decoration.borderRadius;
+    if (radius is BorderRadius) {
+      return radius.topLeft.x;
+    }
+    return IsrDimens.eight;
+  }
+
+  BoxDecoration _decoration(BuildContext context) {
+    final borderRadius = IsrDimens.eight;
+
     switch (variant) {
       case FollowChipVariant.feed:
         if (filled) {
@@ -98,17 +111,11 @@ class InstagramFollowChip extends StatelessWidget {
           ),
         );
       case FollowChipVariant.theme:
-        if (filled) {
-          return followButtonConfig?.followButtonDecoration ??
-              BoxDecoration(
-                color: Theme.of(context).primaryColor,
-                borderRadius: BorderRadius.circular(borderRadius),
-              );
-        }
-        return followButtonConfig?.followingButtonDecoration ??
+        return followButtonConfig?.followButtonDecoration ??
+            followButtonConfig?.followingButtonDecoration ??
             BoxDecoration(
+              color: Theme.of(context).primaryColor,
               borderRadius: BorderRadius.circular(borderRadius),
-              border: Border.all(color: IsrColors.white, width: IsrDimens.one),
             );
     }
   }
@@ -127,11 +134,8 @@ class InstagramFollowChip extends StatelessWidget {
           shadows: textShadows,
         );
       case FollowChipVariant.theme:
-        if (filled) {
-          return followButtonTextStyle ??
-              IsrStyles.white12.copyWith(fontWeight: FontWeight.w600);
-        }
-        return followingButtonTextStyle ??
+        return followButtonTextStyle ??
+            followingButtonTextStyle ??
             IsrStyles.white12.copyWith(fontWeight: FontWeight.w600);
     }
   }

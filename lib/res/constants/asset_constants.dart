@@ -17,6 +17,10 @@ class AssetConstants {
   static const String heartAnimation = '${packageName}assets/loader/heart_animation.json';
   static const String pausedRoundedSvg = '${packageName}assets/icons/ic_pause_rounded.svg';
   static const String reelsPlaySvg = '${packageName}assets/icons/ic_reels_play.svg';
+  static const String icReelsSoundIcon =
+      '${packageName}assets/icons/ic_reels_sound_icon.svg';
+  static const String icGlassyReelsSoundDisc =
+      '${packageName}assets/icons/ic_glassy_reels_sound_disc.png';
   static const String postResponseJson = '${packageName}assets/loader/post_response.json';
   static const String icLikeSelected = '${packageName}assets/icons/ic_like_selected_icon.svg';
   static const String icLikeUnSelected = '${packageName}assets/icons/ic_like_un_selected_icon.svg';

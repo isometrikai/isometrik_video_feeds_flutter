@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_sound_icon.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -459,10 +460,12 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
               else
                 ColoredBox(
                   color: IsrColors.colorF5F5F5,
-                  child: Icon(
-                    Icons.music_note,
-                    color: IsrColors.color9B9B9B,
-                    size: 32.responsiveDimension,
+                  child: Center(
+                    child: PostSoundIcon(
+                      size: 32.responsiveDimension,
+                      style: PostSoundIconStyle.feed,
+                      color: IsrColors.color9B9B9B,
+                    ),
                   ),
                 ),
               ColoredBox(color: Colors.black.applyOpacity(0.25)),
