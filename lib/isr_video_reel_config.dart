@@ -97,6 +97,13 @@ class IsrVideoReelConfig {
   /// clearing [isHostFeedTabVisible] — otherwise profile/explore can bleed audio.
   static int _playbackSuppressionCount = 0;
 
+  /// Blocks vertical reels feed scrolling while the user drags the video seekbar.
+  static int _reelsFeedScrollLockCount = 0;
+  static final ValueNotifier<bool> reelsFeedScrollLocked =
+      ValueNotifier<bool>(false);
+
+  static bool get isReelsFeedScrollLocked => _reelsFeedScrollLockCount > 0;
+
   /// Set while the OS has the app in background — blocks resume without clearing
   /// [isHostFeedTabVisible] (user may still be on the reels shell tab).
   static bool _appInBackground = false;
@@ -279,6 +286,19 @@ class IsrVideoReelConfig {
       _playbackSuppressionCount--;
     }
     _emitPlaybackResume();
+  }
+
+  /// Pair with [unlockReelsFeedScroll] while scrubbing a reel video.
+  static void lockReelsFeedScroll() {
+    _reelsFeedScrollLockCount++;
+    reelsFeedScrollLocked.value = true;
+  }
+
+  static void unlockReelsFeedScroll() {
+    if (_reelsFeedScrollLockCount > 0) {
+      _reelsFeedScrollLockCount--;
+    }
+    reelsFeedScrollLocked.value = _reelsFeedScrollLockCount > 0;
   }
 
   /// Resume after an in-app flow without flipping [isHostFeedTabVisible].

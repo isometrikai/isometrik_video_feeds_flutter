@@ -58,6 +58,9 @@ class PostItemWidget extends StatefulWidget {
 
 class _PostItemWidgetState extends State<PostItemWidget>
     with AutomaticKeepAliveClientMixin {
+  /// [PreloadPageView] applies snap paging when [pageSnapping] is true.
+  static const ScrollPhysics _reelsFeedPagePhysics = ClampingScrollPhysics();
+
   late PreloadPageController _pageController;
   final Set<String> _cachedImages = {};
   late final VideoCacheManager _videoCacheManager;
@@ -575,13 +578,18 @@ class _PostItemWidgetState extends State<PostItemWidget>
               onRefresh: () async {
                 await _refreshPost();
               },
-              child: PreloadPageView.builder(
+              child: ValueListenableBuilder<bool>(
+                valueListenable: IsrVideoReelConfig.reelsFeedScrollLocked,
+                builder: (context, scrollLocked, _) =>
+                    PreloadPageView.builder(
                 preloadPagesCount: _videoCacheManager.currentPlayerType == VideoPlayerType.standardNonPreload ? 2 : 1,
                 // key: _pageStorageKey,
                 // allowImplicitScrolling: widget.allowImplicitScrolling ?? true,
                 controller: _pageController,
-                // physics: const AlwaysScrollableScrollPhysics(
-                //     parent: ClampingScrollPhysics()),
+                pageSnapping: true,
+                physics: scrollLocked
+                    ? const NeverScrollableScrollPhysics()
+                    : _reelsFeedPagePhysics,
                 onPageChanged: (index) {
                   _currentIndex.value = index;
                   _doMediaCaching(index);
@@ -680,6 +688,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
                     ),
                   );
                 },
+              ),
               ),
             ),
           ),

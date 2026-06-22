@@ -22,7 +22,7 @@ class CommentsResponse {
             ? []
             : List<CommentDataItem>.from((json['data'] as List).map(
                 (x) => CommentDataItem.fromJson(x as Map<String, dynamic>))),
-        totalComments: json['totalComments'] as num? ?? 0,
+        totalComments: (json['totalComments'] ?? json['total']) as num? ?? 0,
       );
   String? message;
   List<CommentDataItem>? data;

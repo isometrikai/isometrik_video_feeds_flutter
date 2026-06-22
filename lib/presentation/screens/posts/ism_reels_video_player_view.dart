@@ -15,15 +15,8 @@ import 'package:ism_video_reel_player/presentation/screens/posts/video_player_wi
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/comment_count_action_widget.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/instagram_follow_chip.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/like_action_widget.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/widgets/feed_text_post_content.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/widgets/reels_overlay_text.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_sound_icon.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/widgets/glass_pill_container.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/widgets/reels_glassy_sound_disc.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/widgets/reels_sound_marquee_row.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/isr_image_sound_registry.dart';
-import 'package:ism_video_reel_player/utils/post_sound_util.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:lottie/lottie.dart';
 import 'package:preload_page_view/preload_page_view.dart';
@@ -96,6 +89,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       _uiConfig?.reelsActionIconConfig ?? _uiConfig?.actionIconConfig;
   bool get _isGlassReelsActionIcons =>
       _actionIconConfig?.containerStyle == ActionIconContainerStyle.glass;
+
+  /// Uniform dim above media so glass chrome and white captions stay readable
+  /// on bright and dark backgrounds.
+  static const double _reelsMediaScrimOpacity = 0.25;
   TextStyleConfig? get _textStyleConfig => _uiConfig?.textStyleConfig;
   ShopUIConfig? get _shopUIConfig => _uiConfig?.shopUIConfig;
   PostLinkUIConfig? get _postLinkUIConfig => _uiConfig?.postLinkUIConfig;
@@ -119,6 +116,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   static const double _scrubTouchZoneHeight = 52;
   static const double _scrubBarExpandedHeight = 10;
   static const double _scrubThumbSize = 16;
+  static const double _glassScrubIdleBarHeight = 4;
+  static const double _glassScrubThumbSize = 14;
+  /// Dedicated touch strip for glass seek — shorter than [_scrubTouchZoneHeight]
+  /// so overlay content can sit closer without overlapping tappable rows.
+  static const double _glassScrubTouchZoneHeight = 20;
+  static const double _glassScrubContentGap = 4;
+  static const Color _glassScrubTrackColor = Color(0x59FFFFFF);
   static const Duration _scrubExpandDuration = Duration(milliseconds: 180);
 
   bool get _shouldShowMediaIndicators =>
@@ -128,15 +132,27 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           _reelData.mediaMetaDataList.firstOrNull?.mediaType == kVideoType ||
           widget.onVideoCompleted != null);
 
+  double _glassScrubLayerHeight(double idleBarHeight) {
+    final seekStripHeight = _glassScrubTouchZoneHeight > _glassScrubThumbSize
+        ? _glassScrubTouchZoneHeight
+        : _glassScrubThumbSize;
+    if (!_hasMultipleMedia) return seekStripHeight;
+    return idleBarHeight + IsrDimens.six + seekStripHeight;
+  }
+
   double _mediaIndicatorClearance({required bool expanded}) {
     if (!_shouldShowMediaIndicators) return 0;
-    final idleBarHeight =
-        (_mediaIndicatorConfig?.indicatorHeight ?? IsrDimens.six)
+    final isGlass = _isGlassReelsActionIcons;
+    final idleBarHeight = isGlass
+        ? _glassScrubIdleBarHeight
+        : (_mediaIndicatorConfig?.indicatorHeight ?? IsrDimens.six)
             .clamp(4.0, 8.0);
+    if (isGlass) {
+      return _glassScrubLayerHeight(idleBarHeight) + _glassScrubContentGap;
+    }
     final segmentRowHeight =
         _hasMultipleMedia ? idleBarHeight + IsrDimens.six : 0;
     final barAreaHeight = expanded ? _scrubThumbSize : idleBarHeight;
-    // Reserve only the visible bar area; touch padding extends into nav clearance.
     return segmentRowHeight + barAreaHeight + IsrDimens.ten;
   }
 
@@ -344,6 +360,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   TextSpan? _cachedDescriptionTextSpan;
   String? _lastParsedDescription;
   List<CommentDataItem> _floatingComments = [];
+  int _floatingCommentsTotal = 0;
   bool _hasFetchedFloatingComments = false;
 
   bool _showLikeAnimation = false;
@@ -379,6 +396,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         .map((e) => e.durationSeconds)
         .reduce((a, b) => a + b);
   }
+
   Duration _postWatchDuration = Duration.zero;
   final ValueNotifier<double> _postProgress = ValueNotifier<double>(0.0);
   bool _wasVisiblePost = false;
@@ -701,7 +719,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             isLoading: false,
             refreshPostDetailAfterComments:
                 IsrVideoReelConfig.feedCacheConfig != null,
-            onComplete: (comments) {
+            onComplete: (comments, {total = 0}) {
               if (!mounted) return;
               final sortedComments = comments.toList()
                 ..sort(
@@ -713,6 +731,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                     _belowCommentsConfig?.maxVisibleComments ?? 2;
                 _floatingComments =
                     sortedComments.take(maxVisibleComments).toList();
+                _floatingCommentsTotal = total > 0
+                    ? total
+                    : (_reelData.commentCount ?? sortedComments.length);
+                if (_floatingCommentsTotal > 0) {
+                  _reelData.commentCount = _floatingCommentsTotal;
+                }
               });
             },
           ),
@@ -780,7 +804,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (_currentPageNotifier.value == index) return;
 
     _isSeekBarExpanded.value = false;
-    _isSeeking = false;
+    if (_isSeeking) {
+      IsrVideoReelConfig.unlockReelsFeedScroll();
+      _isSeeking = false;
+    }
 
     // Hide mentions when changing pages
     if (_mentionsVisible) {
@@ -823,6 +850,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     unawaited(_disposeImageSound());
     _currentMediaProgress.dispose();
     _isSeekBarExpanded.dispose();
+    if (_isSeeking) {
+      IsrVideoReelConfig.unlockReelsFeedScroll();
+      _isSeeking = false;
+    }
     _postProgress.dispose();
     _videoOverlayTick.dispose();
     debugPrint(
@@ -882,8 +913,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           listener: (context, state) {
             if (!mounted) return; // Safety check: Widget is disposed
 
-            if (state is PlayPauseVideoState &&
-                _handlesPlayPauseState(state)) {
+            if (state is PlayPauseVideoState && _handlesPlayPauseState(state)) {
               _setPlaybackBlocked(
                 state.play,
                 pausePlayback: state.pausePlayback,
@@ -1098,15 +1128,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         fit: StackFit.expand,
         children: [
           PreloadPageView.builder(
-              preloadPagesCount: 1,
-              controller: _pageController,
-              // padEnds: false,
-              // key: const PageStorageKey('media_pageview'),
-              // Add a key
-              onPageChanged: _onPageChanged,
-              itemCount: _reelData.mediaMetaDataList.length,
-              itemBuilder: (context, index) => _buildPageView(index),
-            ),
+            preloadPagesCount: 1,
+            controller: _pageController,
+            // padEnds: false,
+            // key: const PageStorageKey('media_pageview'),
+            // Add a key
+            onPageChanged: _onPageChanged,
+            itemCount: _reelData.mediaMetaDataList.length,
+            itemBuilder: (context, index) => _buildPageView(index),
+          ),
 
           // Media counter
           Positioned(
@@ -1177,8 +1207,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   Widget _buildMediaIndicators(int currentPage) {
     final primaryColor = Theme.of(context).primaryColor;
-    final mediaCount =
-        _isTextOnlyPost ? 1 : _reelData.mediaMetaDataList.length;
+    final mediaCount = _isTextOnlyPost ? 1 : _reelData.mediaMetaDataList.length;
     if (mediaCount == 0) return const SizedBox.shrink();
 
     return Padding(
@@ -1269,137 +1298,235 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   Widget _buildVideoScrubOverlay(int currentPage) {
+    final isGlass = _isGlassReelsActionIcons;
     final pendingColor = _mediaIndicatorConfig?.pendingColor ??
-        const Color(0x80FFFFFF);
+        (isGlass ? _glassScrubTrackColor : const Color(0x80FFFFFF));
     final progressColor = _mediaIndicatorConfig?.progressColor ??
-        IsrColors.appColor.applyOpacity(0.9);
-    final idleBarHeight =
-        (_mediaIndicatorConfig?.indicatorHeight ?? IsrDimens.six).clamp(4.0, 8.0);
+        (isGlass ? IsrColors.white : IsrColors.appColor.applyOpacity(0.9));
+    final idleBarHeight = isGlass
+        ? _glassScrubIdleBarHeight
+        : (_mediaIndicatorConfig?.indicatorHeight ?? IsrDimens.six)
+            .clamp(4.0, 8.0);
     final borderRadius = _mediaIndicatorConfig?.indicatorBorderRadius ??
         BorderRadius.circular(IsrDimens.two);
 
+    if (isGlass) {
+      return ValueListenableBuilder<double>(
+        valueListenable: _currentMediaProgress,
+        builder: (context, progress, __) =>
+            _buildGlassVideoScrubTrack(
+          currentPage: currentPage,
+          progress: progress.clamp(0.0, 1.0),
+          pendingColor: pendingColor,
+          progressColor: progressColor,
+          borderRadius: borderRadius,
+          barHeight: _glassScrubIdleBarHeight,
+          thumbSize: _glassScrubThumbSize,
+        ),
+      );
+    }
+
     return ValueListenableBuilder<bool>(
       valueListenable: _isSeekBarExpanded,
-      builder: (context, expanded, _) {
-        return ValueListenableBuilder<double>(
-          valueListenable: _currentMediaProgress,
-          builder: (context, progress, __) {
-            final barHeight = expanded ? _scrubBarExpandedHeight : idleBarHeight;
-            final clampedProgress = progress.clamp(0.0, 1.0);
+      builder: (context, expanded, _) => ValueListenableBuilder<double>(
+        valueListenable: _currentMediaProgress,
+        builder: (context, progress, __) {
+          final barHeight =
+              expanded ? _scrubBarExpandedHeight : idleBarHeight;
+          final clampedProgress = progress.clamp(0.0, 1.0);
 
-            return Listener(
-              behavior: HitTestBehavior.opaque,
-              onPointerDown: (event) {
-                _onSeekStart(expand: true);
-                _updateSeekFromGlobalPosition(context, event.position);
-              },
-              onPointerMove: (event) {
-                if (!_isSeeking) return;
-                _updateSeekFromGlobalPosition(context, event.position);
-              },
-              onPointerUp: (_) {
-                if (_isSeeking) _onSeekEnd();
-              },
-              onPointerCancel: (_) {
-                if (_isSeeking) _onSeekEnd();
-              },
-              child: SizedBox(
-                height: _scrubTouchZoneHeight,
-                width: double.infinity,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    if (_hasMultipleMedia) ...[
-                      _buildMultiMediaSegmentRow(
-                        currentPage: currentPage,
-                        indicatorHeight: idleBarHeight,
-                      ),
-                      SizedBox(height: IsrDimens.six),
-                    ],
-                    Padding(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: IsrDimens.eight),
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final trackWidth = constraints.maxWidth;
-                          final thumbLeft =
-                              (trackWidth * clampedProgress) - (_scrubThumbSize / 2);
-
-                          return AnimatedContainer(
-                            duration: _scrubExpandDuration,
-                            curve: Curves.easeOutCubic,
-                            height: expanded ? _scrubThumbSize : idleBarHeight,
-                            alignment: Alignment.centerLeft,
-                            child: Stack(
-                              clipBehavior: Clip.none,
-                              alignment: Alignment.centerLeft,
-                              children: [
-                                AnimatedContainer(
-                                  duration: _scrubExpandDuration,
-                                  curve: Curves.easeOutCubic,
-                                  height: barHeight,
-                                  width: trackWidth,
-                                  decoration: BoxDecoration(
-                                    color: pendingColor,
-                                    borderRadius: expanded
-                                        ? BorderRadius.circular(5)
-                                        : borderRadius,
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: expanded
-                                        ? BorderRadius.circular(5)
-                                        : borderRadius,
-                                    child: Align(
-                                      alignment: Alignment.centerLeft,
-                                      child: FractionallySizedBox(
-                                        widthFactor: clampedProgress,
-                                        heightFactor: 1,
-                                        child: ColoredBox(color: progressColor),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                if (expanded)
-                                  Positioned(
-                                    left: thumbLeft.clamp(
-                                      0.0,
-                                      trackWidth - _scrubThumbSize,
-                                    ),
-                                    child: Container(
-                                      width: _scrubThumbSize,
-                                      height: _scrubThumbSize,
-                                      decoration: BoxDecoration(
-                                        color: progressColor,
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: Colors.white,
-                                          width: 2,
-                                        ),
-                                        boxShadow: const [
-                                          BoxShadow(
-                                            color: Color(0x66000000),
-                                            blurRadius: 4,
-                                            offset: Offset(0, 1),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
+          return _buildScrubTrackListener(
+            currentPage: currentPage,
+            barHeight: barHeight,
+            idleBarHeight: idleBarHeight,
+            clampedProgress: clampedProgress,
+            pendingColor: pendingColor,
+            progressColor: progressColor,
+            borderRadius: borderRadius,
+            expanded: expanded,
+            showThumb: expanded,
+            thumbSize: _scrubThumbSize,
+            expandOnSeekStart: true,
+            isGlass: false,
+          );
+        },
+      ),
     );
   }
+
+  Widget _buildGlassVideoScrubTrack({
+    required int currentPage,
+    required double progress,
+    required Color pendingColor,
+    required Color progressColor,
+    required BorderRadius borderRadius,
+    required double barHeight,
+    required double thumbSize,
+  }) =>
+      _buildScrubTrackListener(
+        currentPage: currentPage,
+        barHeight: barHeight,
+        idleBarHeight: barHeight,
+        clampedProgress: progress,
+        pendingColor: pendingColor,
+        progressColor: progressColor,
+        borderRadius: borderRadius,
+        expanded: false,
+        showThumb: true,
+        thumbSize: thumbSize,
+        expandOnSeekStart: false,
+        isGlass: true,
+      );
+
+  Widget _buildScrubTrackListener({
+    required int currentPage,
+    required double barHeight,
+    required double idleBarHeight,
+    required double clampedProgress,
+    required Color pendingColor,
+    required Color progressColor,
+    required BorderRadius borderRadius,
+    required bool expanded,
+    required bool showThumb,
+    required double thumbSize,
+    required bool expandOnSeekStart,
+    required bool isGlass,
+  }) =>
+      Listener(
+        behavior: HitTestBehavior.opaque,
+        onPointerDown: (event) {
+          _onSeekStart(expand: expandOnSeekStart);
+          _updateSeekFromGlobalPosition(context, event.position);
+        },
+        onPointerMove: (event) {
+          if (!_isSeeking) return;
+          _updateSeekFromGlobalPosition(context, event.position);
+        },
+        onPointerUp: (_) {
+          if (_isSeeking) _onSeekEnd();
+        },
+        onPointerCancel: (_) {
+          if (_isSeeking) _cancelSeekInteraction();
+        },
+        child: SizedBox(
+          height: isGlass
+              ? _glassScrubLayerHeight(idleBarHeight)
+              : _scrubTouchZoneHeight,
+          width: double.infinity,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              if (_hasMultipleMedia) ...[
+                _buildMultiMediaSegmentRow(
+                  currentPage: currentPage,
+                  indicatorHeight: idleBarHeight,
+                ),
+                SizedBox(height: IsrDimens.six),
+              ],
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: IsrDimens.eight),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final trackWidth = constraints.maxWidth;
+                    final thumbLeft =
+                        (trackWidth * clampedProgress) - (thumbSize / 2);
+                    final stackHeight =
+                        isGlass ? thumbSize : (expanded ? thumbSize : idleBarHeight);
+                    final trackRadius =
+                        expanded ? BorderRadius.circular(5) : borderRadius;
+                    final track = Container(
+                      height: barHeight,
+                      width: trackWidth,
+                      decoration: BoxDecoration(
+                        color: pendingColor,
+                        borderRadius: trackRadius,
+                      ),
+                      child: ClipRRect(
+                        borderRadius: trackRadius,
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: FractionallySizedBox(
+                            widthFactor: clampedProgress,
+                            heightFactor: 1,
+                            child: ColoredBox(color: progressColor),
+                          ),
+                        ),
+                      ),
+                    );
+                    final thumb = showThumb
+                        ? Positioned(
+                            left: thumbLeft.clamp(
+                              0.0,
+                              trackWidth - thumbSize,
+                            ),
+                            child: Container(
+                              width: thumbSize,
+                              height: thumbSize,
+                              decoration: BoxDecoration(
+                                color: progressColor,
+                                shape: BoxShape.circle,
+                                border: isGlass
+                                    ? null
+                                    : Border.all(
+                                        color: Colors.white,
+                                        width: 2,
+                                      ),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Color(0x66000000),
+                                    blurRadius: 4,
+                                    offset: Offset(0, 1),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        : null;
+
+                    return SizedBox(
+                      height: stackHeight,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        alignment: Alignment.centerLeft,
+                        children: [
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: isGlass
+                                ? track
+                                : AnimatedContainer(
+                                    duration: _scrubExpandDuration,
+                                    curve: Curves.easeOutCubic,
+                                    height: barHeight,
+                                    width: trackWidth,
+                                    decoration: BoxDecoration(
+                                      color: pendingColor,
+                                      borderRadius: trackRadius,
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: trackRadius,
+                                      child: Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: FractionallySizedBox(
+                                          widthFactor: clampedProgress,
+                                          heightFactor: 1,
+                                          child:
+                                              ColoredBox(color: progressColor),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                          ),
+                          if (thumb != null) thumb,
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
 
   Widget _buildMultiMediaSegmentRow({
     required int currentPage,
@@ -1470,8 +1597,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       return Container(
         height: indicatorHeight,
         decoration: BoxDecoration(
-          color: _mediaIndicatorConfig?.pendingColor ??
-              const Color(0x80FFFFFF),
+          color: _mediaIndicatorConfig?.pendingColor ?? const Color(0x80FFFFFF),
           borderRadius: borderRadius,
         ),
       );
@@ -1480,8 +1606,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     return Container(
       height: indicatorHeight,
       decoration: BoxDecoration(
-        color: _mediaIndicatorConfig?.pendingColor ??
-            const Color(0x80FFFFFF),
+        color: _mediaIndicatorConfig?.pendingColor ?? const Color(0x80FFFFFF),
         borderRadius: borderRadius,
       ),
     );
@@ -1535,6 +1660,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   void _onSeekStart({bool expand = false}) {
     _isSeeking = true;
+    IsrVideoReelConfig.lockReelsFeedScroll();
     if (expand) {
       _isSeekBarExpanded.value = true;
     }
@@ -1563,8 +1689,16 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       if (!mounted) return;
       _isSeeking = false;
       _isSeekBarExpanded.value = false;
+      IsrVideoReelConfig.unlockReelsFeedScroll();
       videoPlayerState?.play();
     });
+  }
+
+  void _cancelSeekInteraction() {
+    if (!_isSeeking) return;
+    _isSeeking = false;
+    _isSeekBarExpanded.value = false;
+    IsrVideoReelConfig.unlockReelsFeedScroll();
   }
 
   void _onSeekVideo(double value) {
@@ -2135,14 +2269,24 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   onTap: _shouldShowPaidLockOverlay
                       ? null
                       : _onReelTapTogglePlayPause,
-                  onDoubleTap: _shouldShowPaidLockOverlay
-                      ? null
-                      : _triggerLikeAnimation,
+                  onDoubleTap:
+                      _shouldShowPaidLockOverlay ? null : _triggerLikeAnimation,
                   child: Stack(
                     fit: StackFit.expand,
                     alignment: Alignment.center,
                     children: [
                       _buildMediaContent(),
+                      if (!_shouldShowPaidLockOverlay &&
+                          _isGlassReelsActionIcons)
+                        Positioned.fill(
+                          child: IgnorePointer(
+                            child: ColoredBox(
+                              color: Colors.black.withValues(
+                                alpha: _reelsMediaScrimOpacity,
+                              ),
+                            ),
+                          ),
+                        ),
                       if (!_shouldShowPaidLockOverlay && _showLikeAnimation)
                         Center(
                           child: Lottie.asset(
@@ -2154,38 +2298,39 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                         ),
                       ValueListenableBuilder<int>(
                         valueListenable: _videoOverlayTick,
-                        builder: (context, _, __) =>
-                            _buildReelsPausedOverlay(),
+                        builder: (context, _, __) => _buildReelsPausedOverlay(),
                       ),
 
-                      // Bottom gradient overlay for text readability
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        child: IgnorePointer(
-                          child: RepaintBoundary(
-                            child: Container(
-                              height:
-                                  IsrDimens.getScreenHeight(context) * 0.45,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    Colors.transparent,
-                                    Colors.black.withValues(alpha: 0.05),
-                                    Colors.black.withValues(alpha: 0.2),
-                                    Colors.black.withValues(alpha: 0.5),
-                                    Colors.black.withValues(alpha: 0.7),
-                                  ],
-                                  stops: const [0.0, 0.2, 0.5, 0.8, 1.0],
+                      // Bottom gradient for plain reels; glass reels use the
+                      // full-screen scrim above media instead.
+                      if (!_isGlassReelsActionIcons)
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          child: IgnorePointer(
+                            child: RepaintBoundary(
+                              child: Container(
+                                height:
+                                    IsrDimens.getScreenHeight(context) * 0.45,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Colors.transparent,
+                                      Colors.black.withValues(alpha: 0.05),
+                                      Colors.black.withValues(alpha: 0.2),
+                                      Colors.black.withValues(alpha: 0.5),
+                                      Colors.black.withValues(alpha: 0.7),
+                                    ],
+                                    stops: const [0.0, 0.2, 0.5, 0.8, 1.0],
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                         ),
-                      ),
 
                       //right action
                       //kept separate so that it does not bloc touch/gesture to underlying widgets
@@ -2448,8 +2593,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 ),
               if (_reelData.postSetting?.isMoreButtonVisible == true)
                 _buildActionButton(
-                  icon: _actionIconConfig?.moreIcon ??
-                      AssetConstants.icMoreIcon,
+                  icon:
+                      _actionIconConfig?.moreIcon ?? AssetConstants.icMoreIcon,
                   label: '',
                   onTap: () async {
                     if (widget.onPressMoreButton == null) return;
@@ -2457,8 +2602,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   },
                 ),
             ],
-            ),
           ),
+        ),
       );
 
   Widget _buildEyeViewAction() => GestureDetector(
@@ -2698,7 +2843,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           ? IsrDimens.edgeInsets(
               left: IsrDimens.sixteen,
               right: IsrDimens.sixteen,
-              bottom: IsrDimens.sixteen,
             )
           : IsrDimens.edgeInsets(
               left: IsrDimens.sixteen,
@@ -2811,8 +2955,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                       _reelData.userName ?? '',
                                       style: _overlayTextStyle(
                                         IsrStyles.white14,
-                                        custom:
-                                            _textStyleConfig?.userNameStyle,
+                                        custom: _textStyleConfig?.userNameStyle,
                                         fontWeight: FontWeight.w600,
                                       ),
                                       maxLines: 1,
@@ -2996,7 +3139,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             IsrDimens.boxHeight(IsrDimens.eight),
             _buildCommissionTag(),
           ],
-          if (!_isGlassReelsActionIcons && (_reelData.sound?.hasId ?? false)) ...[
+          if (!_isGlassReelsActionIcons &&
+              (_reelData.sound?.hasId ?? false)) ...[
             IsrDimens.boxHeight(IsrDimens.eight),
             _buildPostSoundRow(),
           ],
@@ -3019,7 +3163,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   Widget _buildFloatingCommentsSection() {
-    if (_floatingComments.isEmpty) {
+    final total = _resolvedViewAllCommentsCount;
+    if (_floatingComments.isEmpty && total <= 0) {
       return const SizedBox.shrink();
     }
 
@@ -3054,18 +3199,25 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       fontWeight: FontWeight.w600,
       includeShadow: !_isGlassReelsActionIcons,
     );
-    final buttonStyle = _overlayTextStyle(
-      IsrStyles.white12,
-      custom: _belowCommentsConfig?.viewAllCommentsStyle ??
-          _descriptionConfig?.expandTextStyle,
-      includeShadow: !_isGlassReelsActionIcons,
-    );
+    final buttonStyle = _isGlassReelsActionIcons
+        ? _overlayTextStyle(
+            IsrStyles.white12,
+            custom: _belowCommentsConfig?.viewAllCommentsStyle,
+            color: IsrColors.white,
+            fontWeight: FontWeight.w500,
+            includeShadow: false,
+          )
+        : _overlayTextStyle(
+            IsrStyles.white12,
+            custom: _belowCommentsConfig?.viewAllCommentsStyle ??
+                _descriptionConfig?.expandTextStyle,
+            includeShadow: !_isGlassReelsActionIcons,
+          );
 
     final commentSpacing =
         _belowCommentsConfig?.commentSpacing ?? IsrDimens.four;
     final maxLinesPerComment = _belowCommentsConfig?.maxLinesPerComment ?? 2;
-    final viewAllCommentsText =
-        _belowCommentsConfig?.viewAllCommentsText ?? 'View all comments';
+    final viewAllCommentsText = _viewAllCommentsLabel();
     final animationDuration = Duration(
       milliseconds:
           _belowCommentsConfig?.animationDurationInMilliseconds ?? 220,
@@ -3141,17 +3293,37 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 ),
               );
             }),
-            TapHandler(
-              onTap: _handleCommentClick,
-              child: Text(
-                viewAllCommentsText,
-                style: buttonStyle,
+            if (total > 0 || _floatingComments.isNotEmpty)
+              TapHandler(
+                onTap: _handleCommentClick,
+                child: Text(
+                  viewAllCommentsText,
+                  style: buttonStyle,
+                ),
               ),
-            ),
           ],
         ),
       ),
     );
+  }
+
+  int get _resolvedViewAllCommentsCount {
+    if (_floatingCommentsTotal > 0) return _floatingCommentsTotal;
+    final reelCount = _reelData.commentCount ?? 0;
+    if (reelCount > 0) return reelCount;
+    return _floatingComments.length;
+  }
+
+  String _viewAllCommentsLabel() {
+    final fallback =
+        _belowCommentsConfig?.viewAllCommentsText ?? 'View all comments';
+    if (!_isGlassReelsActionIcons) return fallback;
+
+    final total = _resolvedViewAllCommentsCount;
+    if (total <= 0) return fallback;
+
+    final suffix = total == 1 ? 'comment' : 'comments';
+    return 'View all $total $suffix';
   }
 
   Widget _buildCommissionTag() => Container(
@@ -3378,8 +3550,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (_isTextOnlyPost) return;
     final list = _reelData.mediaMetaDataList;
     if (list.isEmpty) return;
-    final isVideo =
-        list[_currentPageNotifier.value].mediaType == kVideoType;
+    final isVideo = list[_currentPageNotifier.value].mediaType == kVideoType;
     final hasImageSound =
         _isCurrentMediaImage && (_reelData.sound?.hasId ?? false);
     if (!isVideo && !hasImageSound) {
@@ -3473,7 +3644,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (_isImagePaused || _isPlaybackBlocked) return;
     if (!_isCurrentReel) return;
     if (!widget.reelsConfig.isTabVisible()) return;
-    if (IsrVideoReelConfig.isAppInBackground || !IsrVideoReelConfig.allowsPlayback) {
+    if (IsrVideoReelConfig.isAppInBackground ||
+        !IsrVideoReelConfig.allowsPlayback) {
       return;
     }
     final sound = _reelData.sound;
@@ -3667,9 +3839,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         unawaited(_stopImageSound());
         return;
       }
-      if (pausePlayback &&
-          tabVisible &&
-          IsrVideoReelConfig.allowsPlayback) {
+      if (pausePlayback && tabVisible && IsrVideoReelConfig.allowsPlayback) {
         _resumePlayback();
         if (_isCurrentMediaImage) {
           unawaited(_startImageSoundIfNeeded());

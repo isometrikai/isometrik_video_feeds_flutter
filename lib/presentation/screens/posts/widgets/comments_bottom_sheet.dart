@@ -284,7 +284,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
           isLoading: false,
           postId: widget.postId,
           isPagination: true,
-          onComplete: (comments) {
+          onComplete: (comments, {total = 0}) {
             if (mounted) {
               setState(() {
                 if (comments.isNotEmpty) {
@@ -414,7 +414,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
         isLoading: false,
         postId: widget.postId,
         isPagination: true,
-        onComplete: (comments) {
+        onComplete: (comments, {total = 0}) {
           if (!mounted) {
             return;
           }

@@ -202,7 +202,7 @@ class GetPostCommentsEvent extends SocialPostEvent {
   final bool? isLoading;
   final bool isPagination;
   final CommentDataItem? createdComment;
-  final Function(List<CommentDataItem>)? onComplete;
+  final Function(List<CommentDataItem> comments, {int total})? onComplete;
   final bool refreshPostDetailAfterComments;
 }
 
