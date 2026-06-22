@@ -125,6 +125,24 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   static const Color _glassScrubTrackColor = Color(0x59FFFFFF);
   static const Duration _scrubExpandDuration = Duration(milliseconds: 180);
 
+  Color get _indicatorCompletedColor =>
+      _mediaIndicatorConfig?.completedColor ??
+      (_isGlassReelsActionIcons
+          ? IsrColors.white
+          : IsrColors.appColor.applyOpacity(0.7));
+
+  Color get _indicatorPendingColor =>
+      _mediaIndicatorConfig?.pendingColor ??
+      (_isGlassReelsActionIcons
+          ? _glassScrubTrackColor
+          : const Color(0x80FFFFFF));
+
+  Color get _indicatorProgressColor =>
+      _mediaIndicatorConfig?.progressColor ??
+      (_isGlassReelsActionIcons
+          ? IsrColors.white
+          : IsrColors.appColor.applyOpacity(0.7));
+
   bool get _shouldShowMediaIndicators =>
       !_shouldShowPaidLockOverlay &&
       (_isTextOnlyPost ||
@@ -136,8 +154,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     final seekStripHeight = _glassScrubTouchZoneHeight > _glassScrubThumbSize
         ? _glassScrubTouchZoneHeight
         : _glassScrubThumbSize;
-    if (!_hasMultipleMedia) return seekStripHeight;
-    return idleBarHeight + IsrDimens.six + seekStripHeight;
+    return seekStripHeight;
   }
 
   double _mediaIndicatorClearance({required bool expanded}) {
@@ -147,13 +164,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         ? _glassScrubIdleBarHeight
         : (_mediaIndicatorConfig?.indicatorHeight ?? IsrDimens.six)
             .clamp(4.0, 8.0);
+    if (_hasMultipleMedia) {
+      return idleBarHeight + IsrDimens.ten;
+    }
     if (isGlass) {
       return _glassScrubLayerHeight(idleBarHeight) + _glassScrubContentGap;
     }
-    final segmentRowHeight =
-        _hasMultipleMedia ? idleBarHeight + IsrDimens.six : 0;
     final barAreaHeight = expanded ? _scrubThumbSize : idleBarHeight;
-    return segmentRowHeight + barAreaHeight + IsrDimens.ten;
+    return barAreaHeight + IsrDimens.ten;
   }
 
   double _contentBottomInset(
@@ -1255,42 +1273,42 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     final indicatorHeight =
         _mediaIndicatorConfig?.indicatorHeight ?? IsrDimens.six;
 
-    // For completed media segments - show solid white (fully progressed)
+    // For completed media segments - show solid fill (fully progressed)
     if (isCompletedMedia) {
       return Container(
         height: indicatorHeight,
         width: double.infinity,
         decoration: BoxDecoration(
-          color: _mediaIndicatorConfig?.completedColor ??
-              IsrColors.appColor.applyOpacity(0.7), // Pure white for completed
+          color: _indicatorCompletedColor,
           borderRadius: borderRadius,
         ),
       );
     }
 
-    // For upcoming media segments - show semi-transparent white (pending)
+    // For upcoming media segments - show semi-transparent (pending)
     if (!isCurrentMedia) {
       return Container(
         height: indicatorHeight,
         width: double.infinity,
         decoration: BoxDecoration(
-          color: _mediaIndicatorConfig?.pendingColor ??
-              const Color(0x80FFFFFF), // 50% white for pending
+          color: _indicatorPendingColor,
           borderRadius: borderRadius,
         ),
       );
     }
 
-    // For current media - show progress bar or seekbar
-    if (isVideo) {
-      // Video scrubbing uses the full-width overlay in [_buildMediaProgressLayer].
+    // For current media - show in-segment progress (carousel) or defer to
+    // the full-width seekbar overlay for a single video post.
+    if (isVideo && !_hasMultipleMedia) {
       return SizedBox(height: indicatorHeight);
-    } else {
-      return _buildImageProgressIndicator(primaryColor, borderRadius);
     }
+    return _buildImageProgressIndicator(primaryColor, borderRadius);
   }
 
   Widget _buildMediaProgressLayer(int currentPage) {
+    if (_hasMultipleMedia) {
+      return _buildMediaIndicators(currentPage);
+    }
     if (_isVideoAtPage(currentPage)) {
       return _buildVideoScrubOverlay(currentPage);
     }
@@ -1416,13 +1434,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              if (_hasMultipleMedia) ...[
-                _buildMultiMediaSegmentRow(
-                  currentPage: currentPage,
-                  indicatorHeight: idleBarHeight,
-                ),
-                SizedBox(height: IsrDimens.six),
-              ],
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: IsrDimens.eight),
                 child: LayoutBuilder(
@@ -1528,90 +1539,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         ),
       );
 
-  Widget _buildMultiMediaSegmentRow({
-    required int currentPage,
-    required double indicatorHeight,
-  }) {
-    final mediaCount = _reelData.mediaMetaDataList.length;
-    final borderRadius = _mediaIndicatorConfig?.indicatorBorderRadius ??
-        BorderRadius.circular(IsrDimens.two);
-
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: IsrDimens.eight),
-      child: Row(
-        children: List.generate(
-          mediaCount,
-          (index) => Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(
-                left: index == 0
-                    ? 0
-                    : (_mediaIndicatorConfig?.indicatorSpacing ??
-                        IsrDimens.two),
-                right: index == mediaCount - 1
-                    ? 0
-                    : (_mediaIndicatorConfig?.indicatorSpacing ??
-                        IsrDimens.two),
-              ),
-              child: _buildStaticMediaIndicator(
-                index: index,
-                currentPage: currentPage,
-                indicatorHeight: indicatorHeight,
-                borderRadius: borderRadius,
-                hideCurrentVideoTrack: true,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStaticMediaIndicator({
-    required int index,
-    required int currentPage,
-    required double indicatorHeight,
-    required BorderRadius borderRadius,
-    bool hideCurrentVideoTrack = false,
-  }) {
-    final isCurrentMedia = index == currentPage;
-    final isCompletedMedia = index < currentPage;
-    final isVideo = _isVideoAtPage(index);
-
-    if (isCurrentMedia && isVideo && hideCurrentVideoTrack) {
-      return SizedBox(height: indicatorHeight);
-    }
-
-    if (isCompletedMedia) {
-      return Container(
-        height: indicatorHeight,
-        decoration: BoxDecoration(
-          color: _mediaIndicatorConfig?.completedColor ??
-              IsrColors.appColor.applyOpacity(0.7),
-          borderRadius: borderRadius,
-        ),
-      );
-    }
-
-    if (!isCurrentMedia) {
-      return Container(
-        height: indicatorHeight,
-        decoration: BoxDecoration(
-          color: _mediaIndicatorConfig?.pendingColor ?? const Color(0x80FFFFFF),
-          borderRadius: borderRadius,
-        ),
-      );
-    }
-
-    return Container(
-      height: indicatorHeight,
-      decoration: BoxDecoration(
-        color: _mediaIndicatorConfig?.pendingColor ?? const Color(0x80FFFFFF),
-        borderRadius: borderRadius,
-      ),
-    );
-  }
-
   void _updateSeekFromGlobalPosition(
     BuildContext context,
     Offset globalPosition,
@@ -1635,9 +1562,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         builder: (context, progress, child) => Container(
           height: _mediaIndicatorConfig?.indicatorHeight ?? IsrDimens.six,
           decoration: BoxDecoration(
-            color: _mediaIndicatorConfig?.pendingColor ??
-                const Color(
-                    0x80FFFFFF), // 50% white for pending - always visible
+            color: _indicatorPendingColor,
             borderRadius: borderRadius,
           ),
           child: ClipRRect(
@@ -1647,9 +1572,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               widthFactor: progress.clamp(0.0, 1.0),
               child: Container(
                 decoration: BoxDecoration(
-                  color: _mediaIndicatorConfig?.progressColor ??
-                      IsrColors.appColor
-                          .applyOpacity(0.7), // Pure white for progressed
+                  color: _indicatorProgressColor,
                   borderRadius: borderRadius,
                 ),
               ),
@@ -3322,8 +3245,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     final total = _resolvedViewAllCommentsCount;
     if (total <= 0) return fallback;
 
-    final suffix = total == 1 ? 'comment' : 'comments';
-    return 'View all $total $suffix';
+    if (total == 1) return 'View 1 comment';
+    return 'View all $total comments';
   }
 
   Widget _buildCommissionTag() => Container(
