@@ -52,3 +52,7 @@ app.*.map.json
 example/assets/json/google_service_json.json
 /lib/data/managers/local_event.g.dart
 /lib/generated/
+/example/windows/flutter/generated_plugin_registrant.cc
+/example/linux/flutter/generated_plugins.cmake
+/example/windows/flutter/generated_plugins.cmake
+/example/macos/Flutter/GeneratedPluginRegistrant.swift

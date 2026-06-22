@@ -151,7 +151,14 @@ class _SchedulePostViewState extends State<SchedulePostView> {
       );
 
   Widget _buildScheduledPostItem(BuildContext context, TimeLineData data) =>
-      Container(
+      TapHandler(
+        onTap: () async {
+          await IsrPostTapHandler.tryHandleTap(
+            context,
+            postData: data,
+            postSectionType: PostSectionType.myPost,
+          );
+        },
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.center,

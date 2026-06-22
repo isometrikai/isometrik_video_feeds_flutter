@@ -45,6 +45,9 @@ class IsmDataProvider {
   DeletePostUseCase get _deletePostUseCase =>
       IsmInjectionUtils.getUseCase<DeletePostUseCase>();
 
+  PostScheduledPostUseCase get _postScheduledPostUseCase =>
+      IsmInjectionUtils.getUseCase<PostScheduledPostUseCase>();
+
   CancelOutgoingFollowRequestUseCase get _cancelOutgoingFollowRequestUseCase =>
       IsmInjectionUtils.getUseCase<CancelOutgoingFollowRequestUseCase>();
 
@@ -323,6 +326,24 @@ class IsmDataProvider {
   }) async {
     await _executeApiCall(
       apiCall: () => _deletePostUseCase.executeDeletePost(
+        isLoading: isLoading,
+        postId: postId,
+      ),
+      toJson: (data) => data?.toMap() ?? {},
+      onSuccess: onSuccess,
+      onError: onError,
+    );
+  }
+
+  /// Publish a scheduled post immediately.
+  Future<void> publishScheduledPost({
+    required String postId,
+    bool isLoading = false,
+    Function(String, int)? onSuccess,
+    Function(String, int)? onError,
+  }) async {
+    await _executeApiCall(
+      apiCall: () => _postScheduledPostUseCase.executePostNow(
         isLoading: isLoading,
         postId: postId,
       ),

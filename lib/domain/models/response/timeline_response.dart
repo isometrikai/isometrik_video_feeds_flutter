@@ -178,6 +178,8 @@ class TimeLineData {
     this.isLocked,
     this.lockReason,
     this.allowDownload,
+    this.rejectionReason,
+    this.rejectedAt,
   });
 
   factory TimeLineData.fromMap(Map<String, dynamic> json) => TimeLineData(
@@ -230,6 +232,10 @@ class TimeLineData {
         allowDownload: Settings._readBool(json['allow_download'],
                 key: 'allow_download') ??
             Settings._readBool(json['allowDownload'], key: 'allowDownload'),
+        rejectionReason: json['rejection_reason'] as String? ??
+            json['rejectionReason'] as String?,
+        rejectedAt:
+            json['rejected_at'] as String? ?? json['rejectedAt'] as String?,
       );
   dynamic textFormatting;
   String? publishedAt;
@@ -257,6 +263,8 @@ class TimeLineData {
   bool? isLocked;
   String? lockReason;
   bool? allowDownload;
+  String? rejectionReason;
+  String? rejectedAt;
 
   Map<String, dynamic> toMap() => {
         'text_formatting': textFormatting,
@@ -291,6 +299,8 @@ class TimeLineData {
         'is_locked': isLocked,
         'lock_reason': lockReason,
         if (allowDownload != null) 'allow_download': allowDownload,
+        'rejection_reason': rejectionReason,
+        'rejected_at': rejectedAt,
       };
 
   TimeLineData copyWith({
@@ -319,6 +329,8 @@ class TimeLineData {
     String? scheduledAt,
     bool? isLocked,
     String? lockReason,
+    String? rejectionReason,
+    String? rejectedAt,
   }) =>
       TimeLineData(
         textFormatting: textFormatting ?? this.textFormatting,
@@ -345,6 +357,8 @@ class TimeLineData {
         scheduledAt: scheduledAt ?? this.scheduledAt,
         isLocked: isLocked ?? this.isLocked,
         lockReason: lockReason ?? this.lockReason,
+        rejectionReason: rejectionReason ?? this.rejectionReason,
+        rejectedAt: rejectedAt ?? this.rejectedAt,
       )..isFromLocal = isFromLocal ?? this.isFromLocal;
 }
 
@@ -481,7 +495,9 @@ class MediaData {
       this.postType,
       this.size,
       this.localPath,
-      this.fileExtension});
+      this.fileExtension,
+      this.moderationStatus,
+      this.rejectionReason});
 
   factory MediaData.fromMap(Map<String, dynamic> json) => MediaData(
         mediaType: json['media_type'] as String? ?? '',
@@ -496,6 +512,14 @@ class MediaData {
         fileName: json['fileName'] as String? ?? '',
         postType: json['postType'] as PostType? ?? PostType.photo,
         size: json['size'] as num? ?? 0,
+        moderationStatus: json['moderation_status'] as String? ??
+            json['moderationStatus'] as String? ??
+            '',
+        rejectionReason: json['rejection_reason'] as String? ??
+            json['rejectionReason'] as String? ??
+            json['moderation_reason'] as String? ??
+            json['moderationReason'] as String? ??
+            '',
       );
   String? mediaType;
   String? assetId;
@@ -516,6 +540,8 @@ class MediaData {
   String? coverFileLocalPath;
   PostType? postType;
   num? size;
+  String? moderationStatus;
+  String? rejectionReason;
   Uint8List? videoThumbnailFileBytes;
   bool isCompressed = false;
 
@@ -529,6 +555,8 @@ class MediaData {
         'height': height,
         'width': width,
         'duration': duration,
+        'moderation_status': moderationStatus,
+        'rejection_reason': rejectionReason,
       }.removeEmptyValues();
 }
 

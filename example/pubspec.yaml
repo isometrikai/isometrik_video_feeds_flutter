@@ -41,6 +41,11 @@ dependencies:
 
 dependency_overrides:
   device_info_plus: ^10.1.0
+  # iOS 26+ simulator: device-only arm64 in stock ffmpeg_kit frameworks (see sk3llo/ffmpeg_kit_flutter#141)
+  ffmpeg_kit_flutter_new:
+    git:
+      url: https://github.com/maickonn/ffmpeg_kit_flutter.git
+      ref: fix/ios-simulator-arm64
   package_info_plus: ^9.0.0
   
 
