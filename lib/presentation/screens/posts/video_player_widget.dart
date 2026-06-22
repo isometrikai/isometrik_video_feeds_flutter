@@ -429,7 +429,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       ]);
 
       // If widget is visible when initialized, start playing only when allowed.
-      if (_mayStartPlayback()) {
+      if (_mayStartPlayback(activeReel: !widget.isPreloaded)) {
         unawaited(_videoPlayerController!.play());
         widget.videoCacheManager.markAsVisible(widget.mediaUrl);
         _startStuckVideoDetection();
@@ -439,6 +439,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         }
         widget.videoCacheManager.markAsNotVisible(widget.mediaUrl);
       }
+      _tryConsumePendingBlocResume();
     } catch (e) {
       debugPrint('❌ VideoPlayerWidget: Error setting up controller: $e');
     }
@@ -840,7 +841,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         !_videoPlayerController!.isPlaying) {
       final shouldPlay = widget.visibilityManagedByParent
           ? _effectiveVisible
-          : _mayStartPlayback();
+          : _mayStartPlayback(activeReel: !widget.isPreloaded);
       if (shouldPlay) {
         unawaited(
           _videoPlayerController!.setVolume(widget.isMuted ? 0.0 : 1.0),

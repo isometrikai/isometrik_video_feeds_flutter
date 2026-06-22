@@ -103,6 +103,15 @@ class _PostItemWidgetState extends State<PostItemWidget>
         _sectionForegroundResumeHandler,
       );
     }
+    if (IsrVideoReelConfig.isOverlayReelsPlayerActive) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !IsrVideoReelConfig.isOverlayReelsPlayerActive) {
+          return;
+        }
+        _isPlaybackBlocked = false;
+        _lifecycleResumeTick.value++;
+      });
+    }
     _initializeContent();
   }
 

@@ -261,8 +261,10 @@ class IsrAppNavigator {
       initialCommentId: initialCommentId,
     );
 
-    final page = BlocProvider<SocialPostBloc>(
-      create: (_) => IsmInjectionUtils.getBloc<SocialPostBloc>(),
+    final socialPostBloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
+
+    final page = BlocProvider<SocialPostBloc>.value(
+      value: socialPostBloc,
       child: IsmPostView(
         tabDataModelList: [tabData],
         startTabIndex: 0,
@@ -275,6 +277,7 @@ class IsrAppNavigator {
 
     IsrVideoReelConfig.enterOverlayReelsPlayer(
       overlaySection: postSectionType,
+      socialPostBloc: socialPostBloc,
     );
     try {
       await Navigator.of(context, rootNavigator: true).push(

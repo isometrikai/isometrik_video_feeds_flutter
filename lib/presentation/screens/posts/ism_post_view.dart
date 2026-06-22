@@ -116,6 +116,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     }
     _socialActionCubit = context.getOrCreateBloc();
     if (!widget.isOverlayPlayer) {
+      IsrVideoReelConfig.registerHostSocialPostBloc(_socialPostBloc);
       IsrVideoReelConfig.onHostFeedTabResumed = _onHostFeedTabResumed;
       IsrVideoReelConfig.getActiveHostPostSection =
           () => _currentPostSectionType;
@@ -146,6 +147,30 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       _tabDataModelList[_currentIndex].isVisible = true;
     }
     VisibilityDetectorController.instance.notifyNow();
+  }
+
+  void _kickOverlayPlaybackWhenReady() {
+    if (!widget.isOverlayPlayer ||
+        _currentIndex < 0 ||
+        _currentIndex >= _tabDataModelList.length) {
+      return;
+    }
+    _tabDataModelList[_currentIndex].isVisible = true;
+    final section =
+        _tabDataModelList[_currentIndex].tabDataModel.postSectionType;
+    IsrVideoReelConfig.notifyOverlayPlayerReady(section: section);
+  }
+
+  void _kickHostPlaybackWhenReady() {
+    if (widget.isOverlayPlayer ||
+        _currentIndex < 0 ||
+        _currentIndex >= _tabDataModelList.length) {
+      return;
+    }
+    _tabDataModelList[_currentIndex].isVisible = true;
+    final section =
+        _tabDataModelList[_currentIndex].tabDataModel.postSectionType;
+    IsrVideoReelConfig.notifyHostFeedPlayerReady(section: section);
   }
 
   @override
@@ -304,6 +329,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         _reelsBodyReady = true;
         _dispatchInitialPostLoad();
         _scheduleInitialCommentOpen();
+        if (widget.isOverlayPlayer) {
+          _kickOverlayPlaybackWhenReady();
+        } else if (IsrVideoReelConfig.isHostFeedTabVisible) {
+          _kickHostPlaybackWhenReady();
+        }
         setState(() {});
       }
 
@@ -341,6 +371,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       return;
     }
     _initialPostLoadDispatched = true;
+    if (widget.isOverlayPlayer &&
+        widget.tabDataModelList.every((tab) => tab.reelsDataList.isNotEmpty)) {
+      return;
+    }
     _socialPostBloc.add(LoadPostData(
         startTabIndex: _currentIndex,
         postSections: widget.tabDataModelList
@@ -689,6 +723,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         key: Key(
             'reels_tab_${tab.tabDataModel.title}_${tab.tabDataModel.postSectionType.name}_${tab.tabDataModel.tagValue}_${tab.tabDataModel.userId}_${tab.tabDataModel.postId}_'),
         onVisibilityChanged: (VisibilityInfo info) {
+          if (widget.isOverlayPlayer) {
+            tab.isVisible = true;
+            return;
+          }
           final tabIndex = _tabDataModelList.indexOf(tab);
           if (tabIndex != _currentIndex) {
             tab.isVisible = false;
@@ -843,7 +881,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     return ReelsConfig(
       postConfig: _postConfig,
       isTabVisible: () {
-        if (widget.isOverlayPlayer) return tabState.isVisible;
+        if (widget.isOverlayPlayer) return true;
         if (!IsrVideoReelConfig.isHostFeedTabVisible) return false;
         if (tabIndex == _currentIndex) return true;
         return tabState.isVisible;
@@ -1277,10 +1315,12 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    if (!widget.isOverlayPlayer &&
-        IsrVideoReelConfig.onHostFeedTabResumed == _onHostFeedTabResumed) {
-      IsrVideoReelConfig.onHostFeedTabResumed = null;
-      IsrVideoReelConfig.getActiveHostPostSection = null;
+    if (!widget.isOverlayPlayer) {
+      IsrVideoReelConfig.unregisterHostSocialPostBloc(_socialPostBloc);
+      if (IsrVideoReelConfig.onHostFeedTabResumed == _onHostFeedTabResumed) {
+        IsrVideoReelConfig.onHostFeedTabResumed = null;
+        IsrVideoReelConfig.getActiveHostPostSection = null;
+      }
     }
     IsrVideoReelConfig.unregisterAppForegroundResumedListener(
       _onAppForegroundResumed,

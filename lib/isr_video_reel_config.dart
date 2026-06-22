@@ -90,6 +90,12 @@ class IsrVideoReelConfig {
 
   static int _overlayReelsPlayerCount = 0;
 
+  /// Bloc instance wired to the visible overlay [IsmPostView] tree.
+  static SocialPostBloc? _overlaySocialPostBloc;
+
+  /// Bloc instance wired to the host home [IsmPostView] tree.
+  static SocialPostBloc? _hostSocialPostBloc;
+
   /// Section for the topmost overlay player (explore/profile grid reels).
   static PostSectionType? _activeOverlaySection;
 
@@ -124,24 +130,66 @@ class IsrVideoReelConfig {
   static bool get allowsPlayback =>
       !_appInBackground &&
       (isHostFeedTabVisible || _overlayReelsPlayerCount > 0) &&
-      _playbackSuppressionCount == 0;
+      (_playbackSuppressionCount == 0 || _overlayReelsPlayerCount > 0);
 
   static bool get isOverlayReelsPlayerActive => _overlayReelsPlayerCount > 0;
 
+  static SocialPostBloc _resolvePlaybackBloc() {
+    if (_overlayReelsPlayerCount > 0 && _overlaySocialPostBloc != null) {
+      return _overlaySocialPostBloc!;
+    }
+    final host = _hostSocialPostBloc;
+    if (host != null && !host.isClosed) {
+      return host;
+    }
+    return IsmInjectionUtils.getBloc<SocialPostBloc>();
+  }
+
+  static void registerHostSocialPostBloc(SocialPostBloc bloc) {
+    _hostSocialPostBloc = bloc;
+  }
+
+  static void unregisterHostSocialPostBloc(SocialPostBloc bloc) {
+    if (identical(_hostSocialPostBloc, bloc)) {
+      _hostSocialPostBloc = null;
+    }
+  }
+
+  /// Clears stale pause/suppression latches after logout or identity switch.
+  static void resetSessionPlaybackState() {
+    _playbackSuppressionCount = 0;
+    _reelsFeedScrollLockCount = 0;
+    reelsFeedScrollLocked.value = false;
+    _appInBackground = false;
+    _lifecyclePlaybackSuspended = false;
+    if (_overlayReelsPlayerCount == 0) {
+      _overlaySocialPostBloc = null;
+      _activeOverlaySection = null;
+    }
+  }
+
   /// Whether [state] should be handled by a player in [section].
-  /// Null scope on the state applies to every section (host-wide pause/resume).
+  /// Null scope on the state applies to every section (host-wide pause/resume),
+  /// except the active overlay section while a profile/explore player is open.
   static bool playPauseAppliesToSection(
     PostSectionType section,
     PlayPauseVideoState state,
   ) {
     final scope = state.scopedPostSection;
-    return scope == null || scope == section;
+    if (scope == null) {
+      if (_overlayReelsPlayerCount > 0 &&
+          _activeOverlaySection != null &&
+          section == _activeOverlaySection) {
+        return false;
+      }
+      return true;
+    }
+    return scope == section;
   }
 
   static void _emitPlayPause({required bool play}) {
     try {
-      final bloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
-      bloc.add(PlayPauseVideoEvent(play: play));
+      _resolvePlaybackBloc().add(PlayPauseVideoEvent(play: play));
     } catch (e) {
       debugPrint('IsrVideoReelConfig._emitPlayPause: $e');
     }
@@ -156,12 +204,18 @@ class IsrVideoReelConfig {
   /// overlay tab section — a global `play: true` was waking background audio.
   static void enterOverlayReelsPlayer({
     PostSectionType? overlaySection,
+    SocialPostBloc? socialPostBloc,
   }) {
-    _emitPlayPause(play: false);
     _overlayReelsPlayerCount++;
+    if (socialPostBloc != null) {
+      _overlaySocialPostBloc = socialPostBloc;
+    }
     if (overlaySection != null) {
       _activeOverlaySection = overlaySection;
     }
+
+    IsrActiveVideoPlayerRegistry.pauseAll();
+    unawaited(IsrImageSoundRegistry.stopAll());
 
     void resumeOverlayOnly() {
       if (_overlayReelsPlayerCount == 0 ||
@@ -170,8 +224,7 @@ class IsrVideoReelConfig {
         return;
       }
       try {
-        final bloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
-        bloc.add(
+        _resolvePlaybackBloc().add(
           PlayPauseVideoEvent(
             play: true,
             scopedPostSection: overlaySection,
@@ -190,10 +243,55 @@ class IsrVideoReelConfig {
     if (_overlayReelsPlayerCount > 0) _overlayReelsPlayerCount--;
     if (_overlayReelsPlayerCount == 0) {
       _activeOverlaySection = null;
+      _overlaySocialPostBloc = null;
       if (!isHostFeedTabVisible) {
         _emitPlayPause(play: false);
       }
     }
+  }
+
+  /// Re-emits scoped play after the overlay [IsmPostView] body mounts.
+  /// Needed when the host left the reels tab (profile/explore) before open —
+  /// the initial [enterOverlayReelsPlayer] play event fires before listeners exist.
+  static void notifyOverlayPlayerReady({PostSectionType? section}) {
+    if (_overlayReelsPlayerCount == 0) return;
+    final target = section ?? _activeOverlaySection;
+
+    void kick() {
+      if (_overlayReelsPlayerCount == 0) return;
+      _emitPlaybackResume(scopedPostSection: target);
+      _invokeSectionForegroundResume(target);
+      VisibilityDetectorController.instance.notifyNow();
+    }
+
+    kick();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      kick();
+      WidgetsBinding.instance.addPostFrameCallback((_) => kick());
+    });
+  }
+
+  /// Re-emits play after the host [IsmPostView] remounts (logout → guest).
+  static void notifyHostFeedPlayerReady({PostSectionType? section}) {
+    if (_overlayReelsPlayerCount > 0) return;
+    if (!isHostFeedTabVisible) return;
+    final target = section ?? getActiveHostPostSection?.call();
+
+    void kick() {
+      if (_overlayReelsPlayerCount > 0 || !isHostFeedTabVisible) return;
+      _emitPlaybackResume(
+        notifyHostTabResumed: true,
+        scopedPostSection: target,
+      );
+      _invokeSectionForegroundResume(target);
+      VisibilityDetectorController.instance.notifyNow();
+    }
+
+    kick();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      kick();
+      WidgetsBinding.instance.addPostFrameCallback((_) => kick());
+    });
   }
 
   /// Optional hook for [IsmPostView] to refresh tab visibility when the host returns to reels.
@@ -407,8 +505,7 @@ class IsrVideoReelConfig {
     void emitResume() {
       if (_appInBackground || !allowsPlayback) return;
       try {
-        final bloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
-        bloc.add(
+        _resolvePlaybackBloc().add(
           PlayPauseVideoEvent(
             play: true,
             scopedPostSection: scopedPostSection,
