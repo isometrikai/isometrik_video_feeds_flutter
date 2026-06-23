@@ -182,6 +182,17 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
 
   void _onTextChanged() => setState(() {});
 
+  void _dismissKeyboard() {
+    if (!_focusNode.hasFocus) return;
+    _focusNode.unfocus();
+  }
+
+  /// Runs a card-formatting action after hiding the keyboard so the toolbar stays usable.
+  void _runCardControl(VoidCallback action) {
+    _dismissKeyboard();
+    setState(action);
+  }
+
   void _onCancel() {
     _focusNode.unfocus();
     Navigator.of(context).maybePop();
@@ -202,6 +213,10 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
         );
       }
     });
+    if (card) {
+      _dismissKeyboard();
+      return;
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _focusNode.requestFocus();
     });
@@ -347,17 +362,23 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _isCard ? _buildCardEditor() : _buildPlainEditor(),
-                      if (_taggedPlaces.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        _buildLocationChip(),
+                child: GestureDetector(
+                  onTap: _dismissKeyboard,
+                  behavior: HitTestBehavior.translucent,
+                  child: SingleChildScrollView(
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _isCard ? _buildCardEditor() : _buildPlainEditor(),
+                        if (_taggedPlaces.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          _buildLocationChip(),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -365,6 +386,10 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
               _buildComposerToolbar(),
               if (_isCard) _buildCardToolbar(),
               _buildBottomBar(),
+              // Scaffold already shrinks the body above the keyboard — pin Done
+              // to the column bottom (do not offset by viewInsets again).
+              if (MediaQuery.viewInsetsOf(context).bottom > 0)
+                _buildKeyboardAccessoryBar(),
             ],
           ),
         ),
@@ -390,6 +415,7 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
               maxLines: null,
               maxLength: CreateTextPostView.plainLimit,
               keyboardType: TextInputType.multiline,
+              textInputAction: TextInputAction.newline,
               textCapitalization: TextCapitalization.sentences,
               textAlign: TextAlign.left,
               cursorColor: IsrColors.appColor,
@@ -476,6 +502,7 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
               maxLines: null,
               maxLength: CreateTextPostView.cardLimit,
               keyboardType: TextInputType.multiline,
+              textInputAction: TextInputAction.newline,
               textCapitalization: TextCapitalization.sentences,
               textAlign: fmt.textAlignValue,
               cursorColor: textStyle.color ?? Colors.white,
@@ -537,6 +564,36 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
       ),
     );
   }
+
+  Widget _buildKeyboardAccessoryBar() => Material(
+        elevation: 2,
+        color: IsrColors.appBarColor,
+        child: Container(
+          height: 44,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          decoration: BoxDecoration(
+            border: Border(
+              top: BorderSide(color: IsrColors.dividerColor),
+            ),
+          ),
+          child: Row(
+            children: [
+              const Spacer(),
+              TextButton(
+                onPressed: _dismissKeyboard,
+                child: Text(
+                  IsrTranslationFile.done,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: IsrColors.appColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
 
   Widget _buildLocationChip() {
     final place = _selectedPlace;
@@ -605,7 +662,10 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
     );
   }
 
-  Widget _buildCardToolbar() => Container(
+  Widget _buildCardToolbar() => GestureDetector(
+        onTap: _dismissKeyboard,
+        behavior: HitTestBehavior.translucent,
+        child: Container(
         color: IsrColors.appBarColor,
         padding: const EdgeInsets.symmetric(vertical: 10),
         child: Column(
@@ -618,6 +678,7 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
             _buildControlsRow(),
           ],
         ),
+      ),
       );
 
   Widget _buildBackgroundRow() => SizedBox(
@@ -632,7 +693,7 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
                 child: _BackgroundSwatch(
                   option: opt,
                   selected: _bgType == opt.type && _bgValue == opt.value,
-                  onTap: () => setState(() {
+                  onTap: () => _runCardControl(() {
                     _bgType = opt.type;
                     _bgValue = opt.value;
                     _textColor = opt.defaultTextColor;
@@ -654,7 +715,7 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
                 padding: const EdgeInsets.only(right: 8),
                 child: _Chip(
                   selected: _fontFamily == family,
-                  onTap: () => setState(() => _fontFamily = family),
+                  onTap: () => _runCardControl(() => _fontFamily = family),
                   child: Text(
                     family,
                     style: GoogleFonts.getFont(
@@ -692,7 +753,7 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
           _IconBtn(
             icon: Icons.remove,
             onTap: _fontSize > CreateTextPostView.minFontSize
-                ? () => setState(() => _fontSize -= 2)
+                ? () => _runCardControl(() => _fontSize -= 2)
                 : null,
           ),
           Padding(
@@ -709,7 +770,7 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
           _IconBtn(
             icon: Icons.add,
             onTap: _fontSize < CreateTextPostView.maxFontSize
-                ? () => setState(() => _fontSize += 2)
+                ? () => _runCardControl(() => _fontSize += 2)
                 : null,
           ),
         ],
@@ -724,7 +785,7 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
           ])
             _SegItem(
               selected: _fontStyle == entry[0],
-              onTap: () => setState(() => _fontStyle = entry[0] as String),
+              onTap: () => _runCardControl(() => _fontStyle = entry[0] as String),
               child: Text(
                 entry[1] as String,
                 style: TextStyle(
@@ -749,7 +810,8 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
           ])
             _SegItem(
               selected: _cardTextAlign == entry[0],
-              onTap: () => setState(() => _cardTextAlign = entry[0] as String),
+              onTap: () =>
+                  _runCardControl(() => _cardTextAlign = entry[0] as String),
               child: Icon(
                 entry[1] as IconData,
                 size: 18,
@@ -769,7 +831,7 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
               child: _ColorDot(
                 hex: hex,
                 selected: _textColor.toUpperCase() == hex.toUpperCase(),
-                onTap: () => setState(() => _textColor = hex),
+                onTap: () => _runCardControl(() => _textColor = hex),
               ),
             ),
         ],
