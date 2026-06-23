@@ -839,13 +839,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   ReelsConfig _getReelsConfig(BuildContext context, TabStateModel tabState) {
     final tabData = tabState.tabDataModel;
-    final tabIndex = _tabDataModelList.indexOf(tabState);
     return ReelsConfig(
       postConfig: _postConfig,
       isTabVisible: () {
         if (widget.isOverlayPlayer) return tabState.isVisible;
         if (!IsrVideoReelConfig.isHostFeedTabVisible) return false;
-        if (tabIndex == _currentIndex) return true;
         return tabState.isVisible;
       },
       overlayPadding: _resolvedReelsOverlayPadding(context),
