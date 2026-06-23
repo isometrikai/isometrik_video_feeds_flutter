@@ -96,6 +96,22 @@ class AssetConstants {
       '${packageName}assets/icons/ic_post_save_icon_selected.svg';
   static const String icPostCommentIcon =
       '${packageName}assets/icons/ic_post_comment_icon.svg';
+  static const String icPostMoreIcon =
+      '${packageName}assets/icons/ic_post_more_icon.svg';
+  static const String reelsGlassLikeIcon =
+      '${packageName}assets/icons/reels/reels_like_icon.svg';
+  static const String reelsGlassLikeFilledIcon =
+      '${packageName}assets/icons/reels/reels_like_filled_icon.svg';
+  static const String reelsGlassCommentIcon =
+      '${packageName}assets/icons/reels/reels_comment_icon.svg';
+  static const String reelsGlassShareIcon =
+      '${packageName}assets/icons/reels/reels_share_icon.svg';
+  static const String reelsGlassSaveIcon =
+      '${packageName}assets/icons/reels/reels_save_icon.svg';
+  static const String reelsGlassSaveFilledIcon =
+      '${packageName}assets/icons/reels/reels_save_filled_icon.svg';
+  static const String reelsGlassMoreIcon =
+      '${packageName}assets/icons/reels/reels_more_icon.svg';
 
   /// Default SVG assets shown in the media editor sticker picker.
   static const List<String> defaultMediaEditorStickerAssets = [

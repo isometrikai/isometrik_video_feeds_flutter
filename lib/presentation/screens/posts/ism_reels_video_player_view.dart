@@ -85,10 +85,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   // Config helper getters
   PostUIConfig? get _uiConfig => _postConfig.postUIConfig;
-  ActionIconConfig? get _actionIconConfig =>
-      _uiConfig?.reelsActionIconConfig ?? _uiConfig?.actionIconConfig;
+  ActionIconConfig get _actionIconConfig =>
+      _uiConfig?.reelsActionIconConfig ?? ActionIconConfig.reels;
   bool get _isGlassReelsActionIcons =>
-      _actionIconConfig?.containerStyle == ActionIconContainerStyle.glass;
+      _actionIconConfig.containerStyle == ActionIconContainerStyle.glass;
 
   /// Uniform dim above media so glass chrome and white captions stay readable
   /// on bright and dark backgrounds.
@@ -456,14 +456,20 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       if (!_hasFetchedFloatingComments) {
         _fetchFloatingCommentsIfNeeded();
       }
-      if (!_isPlaybackBlocked &&
-          widget.reelsConfig.isTabVisible() &&
-          IsrVideoReelConfig.allowsPlayback) {
+      // Defer resume until after the page-view scroll frame settles — matches
+      // comment-sheet close and avoids racing stale play:false from logout/SDK.
+      _isPlaybackBlocked = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !_isCurrentReel) return;
+        if (!widget.reelsConfig.isTabVisible() ||
+            !IsrVideoReelConfig.allowsPlayback) {
+          return;
+        }
         _resumePlayback();
         if (_isCurrentMediaImage) {
           unawaited(_startImageSoundIfNeeded());
         }
-      }
+      });
     }
     debugPrint(
         'IsmReelsVideoPlayerView: _onCurrentIndexChanged {Post index: ${widget.index}, currentIndex: ${widget.currentIndex.value}}');
@@ -516,6 +522,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   /// Merge engagement/caption/follow changes without restarting video or
   /// clearing floating comments (host-cache silent detail refresh).
   void _applySoftReelDataUpdate(ReelsData data) {
+    final wasPaidLocked = _shouldShowPaidLockOverlay;
     _reelData = data;
     _postDescription = data.description ?? '';
     _mentionedDataList = data.mentions;
@@ -530,6 +537,35 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         )
         .toList();
     if (mounted) setState(() {});
+    if (wasPaidLocked &&
+        !_shouldShowPaidLockOverlay &&
+        _isCurrentReel &&
+        widget.reelsConfig.isTabVisible()) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !_isCurrentReel) return;
+        _bootstrapMediaPlaybackAfterPaidUnlock();
+      });
+    }
+  }
+
+  /// Paid-lock init skips preload/timers; run that setup once the post unlocks.
+  void _bootstrapMediaPlaybackAfterPaidUnlock() {
+    _isPlaybackBlocked = false;
+    _preloadNextVideos();
+    _resetPostProgress();
+    _resetMediaProgress();
+    if (_isTextOnlyPost) {
+      _startOrResumeImageProgress();
+    } else {
+      final mediaList = _reelData.mediaMetaDataList;
+      final page = _currentPageNotifier.value;
+      if (mediaList.isNotEmpty &&
+          page < mediaList.length &&
+          mediaList[page].mediaType == kPictureType) {
+        _startOrResumeImageProgress();
+      }
+    }
+    _resumePlayback();
   }
 
   // RouteAware methods for navigation detection
@@ -1875,7 +1911,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       return TapHandler(
         onTap: () => _callOnTapMentionData(mentionList),
         child: GlassPillContainer(
-          glassConfig: _actionIconConfig?.glassConfig,
+          glassConfig: _actionIconConfig.glassConfig,
           child: content,
         ),
       );
@@ -1937,7 +1973,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           );
         },
         child: GlassPillContainer(
-          glassConfig: _actionIconConfig?.glassConfig,
+          glassConfig: _actionIconConfig.glassConfig,
           child: content,
         ),
       );
@@ -2575,9 +2611,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                     _reelData.likesCount = likeCount;
                     _onLikeTap = onTap;
                     final likeIcon = isLiked == true
-                        ? (_actionIconConfig?.likeIconSelected ??
+                        ? (_actionIconConfig.likeIconSelected ??
                             AssetConstants.icLikeSelected)
-                        : (_actionIconConfig?.likeIconUnselected ??
+                        : (_actionIconConfig.likeIconUnselected ??
                             AssetConstants.icLikeUnSelected);
                     return _buildReelsSideActionColumn(
                       icon: ActionIconContainer(
@@ -2613,7 +2649,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   builder: (commentCount) {
                     _reelData.commentCount = commentCount;
                     return _buildActionButton(
-                      icon: _actionIconConfig?.commentIcon ??
+                      icon: _actionIconConfig.commentIcon ??
                           AssetConstants.icCommentIcon,
                       label: commentCount.toString(),
                       onTap: _handleCommentClick,
@@ -2622,7 +2658,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 ),
               if (_reelData.postSetting?.isShareButtonVisible == true)
                 _buildActionButton(
-                  icon: _actionIconConfig?.shareIcon ??
+                  icon: _actionIconConfig.shareIcon ??
                       AssetConstants.icShareIconSvg,
                   label: IsrTranslationFile.share,
                   onTap: () async {
@@ -2638,9 +2674,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                     _reelData.isSavedPost = isSaved;
                     return _buildActionButton(
                       icon: isSaved == true
-                          ? (_actionIconConfig?.saveIconSelected ??
+                          ? (_actionIconConfig.saveIconSelected ??
                               AssetConstants.icSaveSelected)
-                          : (_actionIconConfig?.saveIconUnselected ??
+                          : (_actionIconConfig.saveIconUnselected ??
                               AssetConstants.icSaveUnSelected),
                       label: isSaved == true
                           ? IsrTranslationFile.saved
@@ -2661,7 +2697,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               if (_reelData.postSetting?.isMoreButtonVisible == true)
                 _buildActionButton(
                   icon:
-                      _actionIconConfig?.moreIcon ?? AssetConstants.icMoreIcon,
+                      _actionIconConfig.moreIcon ?? AssetConstants.icMoreIcon,
                   label: '',
                   onTap: () async {
                     if (widget.onPressMoreButton == null) return;
@@ -2683,7 +2719,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               child: Icon(
                 Icons.remove_red_eye_outlined,
                 color: IsrColors.white,
-                size: _actionIconConfig?.iconSize ?? IsrDimens.twentyFive,
+                size: _actionIconConfig.iconSize ?? IsrDimens.twentyFive,
               ),
             ),
             IsrDimens.boxHeight(IsrDimens.four),
@@ -2721,9 +2757,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   double get _reelsSideActionSlotWidth {
     if (_isGlassReelsActionIcons) {
-      return _actionIconConfig?.glassConfig?.containerSize.toDouble() ?? 40;
+      return _actionIconConfig.glassConfig?.containerSize.toDouble() ?? 40;
     }
-    return _actionIconConfig?.iconSize ?? IsrDimens.twentyFive;
+    return _actionIconConfig.iconSize ?? IsrDimens.twentyFive;
   }
 
   double get _reelsSideActionIconSlotHeight {

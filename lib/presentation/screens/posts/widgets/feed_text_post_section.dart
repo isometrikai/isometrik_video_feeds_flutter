@@ -4,11 +4,11 @@ import 'package:ism_video_reel_player/presentation/screens/posts/widgets/feed_pl
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/feed_text_post_formatted_body.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/text_post_formatting.dart';
 
-/// Unified Threads / X style text post card section for plain and formatted posts.
+/// Unified Threads / X style text post section for plain and formatted posts.
 ///
 /// Layout:
 /// [avatar + follow badge]  username · timestamp        [more]
-///                          post content (plain text or background block)
+///                          post content (plain text or gradient card)
 class FeedTextPostSection extends StatelessWidget {
   const FeedTextPostSection({
     super.key,
@@ -22,7 +22,7 @@ class FeedTextPostSection extends StatelessWidget {
     this.isVerified = false,
     this.onUserTap,
     this.moreButton,
-    this.padding = const EdgeInsets.fromLTRB(12, 10, 12, 4),
+    this.padding = const EdgeInsets.fromLTRB(16, 10, 16, 4),
     this.avatarGap = 12,
     this.verifiedBadge,
     this.formattedAspectRatio = 1,
@@ -50,43 +50,50 @@ class FeedTextPostSection extends StatelessWidget {
     applyHeightToLastDescent: false,
   );
 
+  bool get _isCardPost => formatting.hasBackground;
+
   @override
   Widget build(BuildContext context) => Padding(
         padding: padding,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (profileAvatar != null) ...[
-              profileAvatar!,
-              SizedBox(width: avatarGap),
-            ],
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildUserMetaRow(),
-                  if (formatting.hasContent) ...[
-                    SizedBox(height: contentTopSpacing),
-                    _buildContent(),
-                  ],
-                ],
-              ),
-            ),
-            if (moreButton != null)
-              Align(
-                alignment: Alignment.topCenter,
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 4),
-                  child: moreButton!,
-                ),
-              ),
+            ..._leadingAvatarWidgets(),
+            Expanded(child: _buildContentColumn()),
+            if (!_isCardPost && moreButton != null) _buildMoreButtonSlot(),
           ],
         ),
       );
 
+  Widget _buildContentColumn() => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildHeaderRow(),
+          if (formatting.hasContent) ...[
+            SizedBox(height: contentTopSpacing),
+            _buildContent(),
+          ],
+        ],
+      );
+
+  /// Card posts keep [moreButton] on the username row only so the card can
+  /// span the full content column width (16px from the screen edge).
+  Widget _buildHeaderRow() {
+    if (_isCardPost && moreButton != null) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: _buildUserMetaRow()),
+          _buildMoreButtonSlot(),
+        ],
+      );
+    }
+    return _buildUserMetaRow();
+  }
+
   Widget _buildContent() {
-    if (formatting.hasBackground) {
+    if (_isCardPost) {
       return FeedTextPostFormattedBody(
         formatting: formatting,
         aspectRatio: formattedAspectRatio,
@@ -97,6 +104,22 @@ class FeedTextPostSection extends StatelessWidget {
       textColor: textColor,
     );
   }
+
+  List<Widget> _leadingAvatarWidgets() {
+    if (profileAvatar == null) return const [];
+    return [
+      profileAvatar!,
+      SizedBox(width: avatarGap),
+    ];
+  }
+
+  Widget _buildMoreButtonSlot() => Align(
+        alignment: Alignment.topCenter,
+        child: Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: moreButton!,
+        ),
+      );
 
   Widget _buildUserMetaRow() => TapHandler(
         onTap: onUserTap,

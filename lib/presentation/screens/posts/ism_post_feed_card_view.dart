@@ -3,7 +3,9 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
@@ -104,7 +106,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
 
   PostConfig get _postConfig => widget.reelsConfig.postConfig;
   PostUIConfig? get _uiConfig => _postConfig.postUIConfig;
-  ActionIconConfig? get _actionIconConfig => _uiConfig?.actionIconConfig;
+  ActionIconConfig get _actionIconConfig =>
+      _uiConfig?.actionIconConfig ?? ActionIconConfig.feed;
   TextStyleConfig? get _textStyleConfig => _uiConfig?.textStyleConfig;
   UserProfileConfig? get _userProfileConfig => _uiConfig?.userProfileConfig;
   FollowButtonConfig? get _followButtonConfig => _uiConfig?.followButtonConfig;
@@ -172,8 +175,12 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     if (!_isTextOnlyPost) return 0;
     if (_reel.postSetting?.isProfilePicVisible != true) return 0;
     final avatarSize = _userProfileConfig?.profileImageSize ?? IsrDimens.thirtyTwo;
-    return avatarSize + IsrDimens.ten;
+    // Match [FeedTextPostSection.avatarGap] so actions align with content column.
+    return avatarSize + IsrDimens.twelve;
   }
+
+  bool get _useHostAppActionAssets =>
+      _actionIconConfig.useHostAppAssets;
 
   bool _showHeaderAboveMedia(int mediaIndex) {
     if (!_isInstagramStyle) return false;
@@ -1782,6 +1789,12 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
           ? _buildTextPostMoreButton()
           : null,
       formattedAspectRatio: _feedUi.formattedTextPostAspectRatio,
+      padding: EdgeInsets.fromLTRB(
+        _feedUi.textPostHorizontalPadding,
+        IsrDimens.ten,
+        _feedUi.textPostHorizontalPadding,
+        IsrDimens.four,
+      ),
     );
   }
 
@@ -1792,9 +1805,9 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        IsrDimens.twelve + _textPostActionIndent,
+        _feedUi.textPostHorizontalPadding + _textPostActionIndent,
         IsrDimens.four,
-        IsrDimens.twelve,
+        _feedUi.textPostHorizontalPadding,
         IsrDimens.two,
       ),
       child: TapHandler(
@@ -2039,19 +2052,16 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
 
   Widget _buildTextPostMoreButton() => GestureDetector(
         onTap: widget.onPressMoreButton,
-        child: Icon(
-          Icons.more_horiz,
-          size: _postFeedActionIconSize,
-          color: _feedUi.secondaryTextColor,
+        child: _buildFeedActionSvg(
+          _actionIconConfig.moreIcon ?? AssetConstants.icPostMoreIcon,
+          color: _feedUi.actionIconColor,
         ),
       );
 
   Widget _buildHeaderMoreButton() => GestureDetector(
         onTap: widget.onPressMoreButton,
-        child: AppImage.svg(
-          _actionIconConfig?.moreIcon ?? AssetConstants.icMoreIcon,
-          width: _postFeedActionIconSize,
-          height: _postFeedActionIconSize,
+        child: _buildFeedActionSvg(
+          _actionIconConfig.moreIcon ?? AssetConstants.icPostMoreIcon,
           color: _feedUi.actionIconColor,
         ),
       );
@@ -2168,10 +2178,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
 
   Widget _buildMediaMoreButton() => GestureDetector(
         onTap: widget.onPressMoreButton,
-        child: AppImage.svg(
-          _actionIconConfig?.moreIcon ?? AssetConstants.icMoreIcon,
-          width: _postFeedActionIconSize,
-          height: _postFeedActionIconSize,
+        child: _buildFeedActionSvg(
+          _actionIconConfig.moreIcon ?? AssetConstants.icPostMoreIcon,
           color: IsrColors.white,
         ),
       );
@@ -2414,11 +2422,11 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
             postId: _reel.postId ?? '',
             builder: (isLoading, isSaved, onTap) => _iconAction(
               icon: isSaved
-                  ? (_actionIconConfig?.saveIconSelected ??
+                  ? (_actionIconConfig.saveIconSelected ??
                       AssetConstants.icPostSaveIconSelected)
-                  : (_actionIconConfig?.saveIconUnselected ??
+                  : (_actionIconConfig.saveIconUnselected ??
                       AssetConstants.icPostSaveIcon),
-              applyThemeColor: !isSaved,
+              applyThemeColor: true,
               onTap: () => onTap(
                 reelData: _reel,
                 postSectionType: widget.postSectionType,
@@ -2434,8 +2442,10 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     );
 
     return Padding(
-      padding: IsrDimens.edgeInsetsSymmetric(
-        horizontal: IsrDimens.twelve,
+      padding: EdgeInsets.symmetric(
+        horizontal: _isTextOnlyPost
+            ? _feedUi.textPostHorizontalPadding
+            : IsrDimens.twelve,
         vertical: _isTextOnlyPost
             ? IsrDimens.four
             : (_isInstagramStyle ? IsrDimens.four : IsrDimens.eight),
@@ -2477,9 +2487,9 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
           (
             widget: _iconAction(
               icon: liked
-                  ? (_actionIconConfig?.likeIconSelected ??
+                  ? (_actionIconConfig.likeIconSelected ??
                       AssetConstants.icPostLikeIconSelected)
-                  : (_actionIconConfig?.likeIconUnselected ??
+                  : (_actionIconConfig.likeIconUnselected ??
                       AssetConstants.icPostLikeIcon),
               applyThemeColor: !liked,
               iconColor: liked ? _instagramLikeColor : _feedUi.actionIconColor,
@@ -2515,7 +2525,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
                 ? Utility.formatEngagementCount(commentCount)
                 : null;
             return _iconAction(
-              icon: _actionIconConfig?.commentIcon ??
+              icon: _actionIconConfig.commentIcon ??
                   AssetConstants.icPostCommentIcon,
               countLabel: commentCountLabel,
               onTap: _handleCommentTap,
@@ -2529,7 +2539,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     if (_reel.postSetting?.isShareButtonVisible == true) {
       segments.add((
         widget: _iconAction(
-          icon: _actionIconConfig?.shareIcon ?? AssetConstants.icPostShareIcon,
+          icon: _actionIconConfig.shareIcon ?? AssetConstants.icPostShareIcon,
           onTap: () => widget.onTapShare?.call(),
         ),
         showsCount: false,
@@ -2598,41 +2608,61 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              SizedBox(
-                width: _postFeedActionIconSize,
-                height: _postFeedActionIconSize,
-                child: AppImage.svg(
-                  icon,
-                  width: _postFeedActionIconSize,
-                  height: _postFeedActionIconSize,
-                  fit: BoxFit.contain,
-                  color: applyThemeColor
-                      ? (iconColor ?? _feedUi.actionIconColor)
-                      : null,
-                ),
+              _buildFeedActionSvg(
+                icon,
+                color: applyThemeColor
+                    ? (iconColor ?? _feedUi.actionIconColor)
+                    : null,
+                applyColorFilter: applyThemeColor,
               ),
               if (countLabel != null) ...[
                 IsrDimens.boxWidth(IsrDimens.four),
                 Text(
                   countLabel,
                   style: _textStyleConfig?.actionLabelStyle ??
-                      (_isInstagramStyle && _feedUi.actionIconSize != null
-                          ? IsrStyles.primaryText12.copyWith(
-                              fontWeight: FontWeight.w400,
-                              color: _feedUi.secondaryTextColor,
-                              height: 1.1,
-                            )
-                          : IsrStyles.primaryText14.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: _feedUi.headerTextColor,
-                              height: 1.1,
-                            )),
+                      _feedCaptionBodyStyle.copyWith(height: 1.1),
                 ),
               ],
             ],
           ),
         ),
       );
+
+  Widget _buildFeedActionSvg(
+    String icon, {
+    Color? color,
+    bool applyColorFilter = true,
+  }) {
+    final size = _postFeedActionIconSize;
+    if (_useHostAppActionAssets) {
+      return SizedBox(
+        width: size,
+        height: size,
+        child: SvgPicture.asset(
+          icon,
+          width: size,
+          height: size,
+          fit: BoxFit.contain,
+          bundle: rootBundle,
+          colorFilter: applyColorFilter && color != null
+              ? ColorFilter.mode(color, BlendMode.srcIn)
+              : null,
+        ),
+      );
+    }
+
+    return SizedBox(
+      width: size,
+      height: size,
+      child: AppImage.svg(
+        icon,
+        width: size,
+        height: size,
+        fit: BoxFit.contain,
+        color: applyColorFilter ? color : null,
+      ),
+    );
+  }
 
   void _onTapMentionData(List<MentionMetaData> mentionDataList) {
     if (mentionDataList.isListEmptyOrNull) return;

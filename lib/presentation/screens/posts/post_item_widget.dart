@@ -122,6 +122,16 @@ class _PostItemWidgetState extends State<PostItemWidget>
     _lifecycleResumeTick.value++;
   }
 
+  /// Same resume path as comment-sheet close: post-frame + lifecycle tick so
+  /// the newly visible reel starts after vertical scroll settles.
+  void _schedulePlaybackResumeForCurrentPage() {
+    _isPlaybackBlocked = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _lifecycleResumeTick.value++;
+    });
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -334,6 +344,9 @@ class _PostItemWidgetState extends State<PostItemWidget>
                 return;
               }
               _isPlaybackBlocked = !state.play;
+              if (state.play) {
+                _schedulePlaybackResumeForCurrentPage();
+              }
             }
           },
           child: _reelsDataList.isListEmptyOrNull == true
@@ -601,6 +614,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
                     : _reelsFeedPagePhysics,
                 onPageChanged: (index) {
                   _currentIndex.value = index;
+                  _schedulePlaybackResumeForCurrentPage();
                   _doMediaCaching(index);
                   final post = _reelsDataList[index];
 

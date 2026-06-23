@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/res/constants/asset_constants.dart';
 
 class PostConfig {
   const PostConfig({
@@ -125,6 +126,7 @@ class PostFeedUIConfig {
     this.actionIconGapWithCount = 16,
     this.actionIconSize,
     this.formattedTextPostAspectRatio = 1,
+    this.textPostHorizontalPadding = 16,
   });
 
   /// Instagram-style post feed: header above media, counts, timestamps, dividers.
@@ -143,6 +145,7 @@ class PostFeedUIConfig {
     actionIconGapCompact: 12,
     actionIconGapWithCount: 12,
     formattedTextPostAspectRatio: 4 / 5,
+    textPostHorizontalPadding: 16,
   );
 
   /// Header title for post-card feed tabs. Falls back to the active tab title when null or empty.
@@ -224,6 +227,9 @@ class PostFeedUIConfig {
   /// Aspect ratio (width / height) for formatted text-post gradient blocks in feed.
   final double formattedTextPostAspectRatio;
 
+  /// Horizontal inset for text-post header, card body, and action row.
+  final double textPostHorizontalPadding;
+
   PostFeedUIConfig copyWith({
     String? title,
     TextStyle? titleTextStyle,
@@ -256,6 +262,7 @@ class PostFeedUIConfig {
     double? actionIconGapWithCount,
     double? actionIconSize,
     double? formattedTextPostAspectRatio,
+    double? textPostHorizontalPadding,
   }) =>
       PostFeedUIConfig(
         title: title ?? this.title,
@@ -297,6 +304,8 @@ class PostFeedUIConfig {
         actionIconSize: actionIconSize ?? this.actionIconSize,
         formattedTextPostAspectRatio:
             formattedTextPostAspectRatio ?? this.formattedTextPostAspectRatio,
+        textPostHorizontalPadding:
+            textPostHorizontalPadding ?? this.textPostHorizontalPadding,
       );
 }
 
@@ -468,8 +477,40 @@ class ActionIconConfig {
   /// Preset for glassmorphism reels action buttons.
   static const glass = ActionIconConfig(
     containerStyle: ActionIconContainerStyle.glass,
+    likeIconSelected: AssetConstants.reelsGlassLikeFilledIcon,
+    likeIconUnselected: AssetConstants.reelsGlassLikeIcon,
+    commentIcon: AssetConstants.reelsGlassCommentIcon,
+    shareIcon: AssetConstants.reelsGlassShareIcon,
+    saveIconSelected: AssetConstants.reelsGlassSaveFilledIcon,
+    saveIconUnselected: AssetConstants.reelsGlassSaveIcon,
+    moreIcon: AssetConstants.reelsGlassMoreIcon,
     iconSize: 24,
     glassConfig: ActionIconGlassConfig(),
+  );
+
+  /// Default plain reels side-action icons (full-screen player).
+  static const reels = ActionIconConfig(
+    containerStyle: ActionIconContainerStyle.plain,
+    likeIconSelected: AssetConstants.icLikeSelected,
+    likeIconUnselected: AssetConstants.icLikeUnSelected,
+    commentIcon: AssetConstants.icCommentIcon,
+    shareIcon: AssetConstants.icShareIconSvg,
+    saveIconSelected: AssetConstants.icSaveSelected,
+    saveIconUnselected: AssetConstants.icSaveUnSelected,
+    moreIcon: AssetConstants.icMoreIcon,
+    iconSize: 25,
+  );
+
+  /// Default Instagram-style icons for scrollable feed post cards.
+  static const feed = ActionIconConfig(
+    likeIconSelected: AssetConstants.icPostLikeIconSelected,
+    likeIconUnselected: AssetConstants.icPostLikeIcon,
+    commentIcon: AssetConstants.icPostCommentIcon,
+    shareIcon: AssetConstants.icPostShareIcon,
+    saveIconSelected: AssetConstants.icPostSaveIconSelected,
+    saveIconUnselected: AssetConstants.icPostSaveIcon,
+    moreIcon: AssetConstants.icPostMoreIcon,
+    iconSize: 24,
   );
 
   /// Icon path for selected/liked state
