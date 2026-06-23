@@ -231,6 +231,25 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
       oldWidget.lifecycleResumeTick?.removeListener(_onLifecycleResumeTick);
       widget.lifecycleResumeTick?.addListener(_onLifecycleResumeTick);
     }
+    if (widget.reelsDataList.length != oldWidget.reelsDataList.length) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _syncHasMoreFromBloc();
+        _loadMoreIfNearEnd();
+      });
+    }
+  }
+
+  void _syncHasMoreFromBloc() {
+    final section = widget.postSectionType;
+    if (section == null) return;
+    try {
+      final hasMore =
+          IsmInjectionUtils.getBloc<SocialPostBloc>().hasMorePagesForTab(section);
+      if (hasMore != _hasMorePages) {
+        setState(() => _hasMorePages = hasMore);
+      }
+    } catch (_) {}
   }
 
   @override
@@ -394,7 +413,13 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
         _showPaginationLoader = false;
         _hasMorePages = result.hasMore;
       });
-      if (result.hasMore) {
+      if (result.items.isEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _syncHasMoreFromBloc();
+          if (_hasMorePages) _loadMoreIfNearEnd();
+        });
+      } else if (result.hasMore) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _loadMoreIfNearEnd();
         });
@@ -448,6 +473,14 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
     final feedTabVisible = widget.reelsConfig.isTabVisible();
     if (_feedTabWasVisible && !feedTabVisible) {
       _activePlayIndexNotifier.value = null;
+    } else if (!_feedTabWasVisible && feedTabVisible) {
+      // Returning to this tab (e.g. Feed → Following → Feed) re-layouts the list
+      // and is the only time scroll-near-end was being re-evaluated.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _syncHasMoreFromBloc();
+        _loadMoreIfNearEnd();
+      });
     }
     _feedTabWasVisible = feedTabVisible;
 

@@ -236,15 +236,15 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     final totalInt = total?.toInt() ?? 0;
     final pageSize = tabAssistData.pageSize;
 
+    // Prefer grand-total when provided — many APIs return total_pages=1 even when
+    // total=64; checking total_pages first incorrectly stops after page 1.
+    if (totalInt > pageSize) {
+      tabAssistData.hasMorePages = tabAssistData.postList.length < totalInt;
+      return;
+    }
     // Use the page we requested — timeline APIs often echo page=1 on every response.
     if (totalPagesInt > 0) {
       tabAssistData.hasMorePages = fetchedPage < totalPagesInt;
-      return;
-    }
-    // Only treat `total` as a grand-total when it exceeds one page; many APIs return
-    // total == page_size (e.g. 20) which would incorrectly stop pagination early.
-    if (totalInt > pageSize) {
-      tabAssistData.hasMorePages = tabAssistData.postList.length < totalInt;
       return;
     }
     tabAssistData.hasMorePages = pageItems.length >= pageSize;
@@ -464,8 +464,13 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       tabAssistData.currentPage = 1;
       tabAssistData.cursor = null;
     } else if (tabAssistData.isLoadingMore) {
+      // Pagination while the first page is still loading must not hand back the
+      // full list — callers de-dupe against it and treat the page as empty,
+      // which sticks hasMore=false until the user switches tabs (layout retry).
       if (onComplete != null) {
-        onComplete(List<TimeLineData>.from(tabAssistData.postList));
+        onComplete(isFromPagination
+            ? const <TimeLineData>[]
+            : List<TimeLineData>.from(tabAssistData.postList));
       }
       return;
     }

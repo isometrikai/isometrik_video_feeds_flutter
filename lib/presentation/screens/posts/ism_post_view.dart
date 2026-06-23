@@ -1126,11 +1126,13 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       final timeLinePostList = await completer.future;
       final hasMore = _socialPostBloc.hasMorePagesForTab(section);
       if (timeLinePostList.isEmpty) {
+        if (mounted) setState(() {});
         return PostFeedLoadMoreResult(items: const [], hasMore: hasMore);
       }
       final timeLineReelDataList = timeLinePostList
           .map((post) => getReelData(post, loggedInUserId: _loggedInUserId))
           .toList();
+      if (mounted) setState(() {});
       return PostFeedLoadMoreResult(
         items: timeLineReelDataList,
         hasMore: hasMore,
