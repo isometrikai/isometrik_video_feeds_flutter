@@ -157,6 +157,14 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         postTab.postList.add(post);
       } catch (_) {}
     }
+    final meta = IsrFeedCacheRepository.instance.getMeta(section);
+    if (meta != null) {
+      final cachedPage = meta.currentPage;
+      if (cachedPage != null && cachedPage > 0) {
+        postTab.currentPage = cachedPage;
+      }
+      postTab.hasMorePages = meta.hasMore;
+    }
   }
 
   Future<void> _persistFollowSensitiveTabToCache(
@@ -215,9 +223,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   void _syncPageBasedHasMore({
     required PostTabAssistData tabAssistData,
     required List<TimeLineData> pageItems,
+    required int fetchedPage,
     num? total,
     num? totalPages,
-    num? apiPage,
   }) {
     if (pageItems.isEmpty) {
       tabAssistData.hasMorePages = false;
@@ -226,17 +234,20 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
 
     final totalPagesInt = totalPages?.toInt() ?? 0;
     final totalInt = total?.toInt() ?? 0;
-    final apiPageInt = apiPage?.toInt() ?? tabAssistData.currentPage;
+    final pageSize = tabAssistData.pageSize;
 
+    // Use the page we requested — timeline APIs often echo page=1 on every response.
     if (totalPagesInt > 0) {
-      tabAssistData.hasMorePages = apiPageInt < totalPagesInt;
+      tabAssistData.hasMorePages = fetchedPage < totalPagesInt;
       return;
     }
-    if (totalInt > 0) {
+    // Only treat `total` as a grand-total when it exceeds one page; many APIs return
+    // total == page_size (e.g. 20) which would incorrectly stop pagination early.
+    if (totalInt > pageSize) {
       tabAssistData.hasMorePages = tabAssistData.postList.length < totalInt;
       return;
     }
-    tabAssistData.hasMorePages = pageItems.length >= tabAssistData.pageSize;
+    tabAssistData.hasMorePages = pageItems.length >= pageSize;
   }
 
   int currentPage = 0;
@@ -630,9 +641,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         _syncPageBasedHasMore(
           tabAssistData: tabAssistData,
           pageItems: postDataList,
+          fetchedPage: requestedPage,
           total: timelineResponse?.total,
           totalPages: timelineResponse?.totalPages,
-          apiPage: timelineResponse?.page ?? requestedPage,
         );
         unawaited(FeedMediaOrientation.prefetchForPosts(postDataList));
       } else {
@@ -693,9 +704,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         _syncPageBasedHasMore(
           tabAssistData: tabAssistData,
           pageItems: postDataList,
+          fetchedPage: requestedPage,
           total: timelineResponse?.total,
           totalPages: timelineResponse?.totalPages,
-          apiPage: timelineResponse?.page ?? requestedPage,
         );
       }
       unawaited(FeedMediaOrientation.prefetchForPosts(postDataList));
