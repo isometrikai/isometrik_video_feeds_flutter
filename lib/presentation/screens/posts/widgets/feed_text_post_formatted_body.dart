@@ -9,12 +9,14 @@ class FeedTextPostFormattedBody extends StatelessWidget {
     this.aspectRatio = 1,
     this.borderRadius = const BorderRadius.all(Radius.circular(12)),
     this.padding = const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+    this.onTap,
   });
 
   final TextPostFormatting formatting;
   final double aspectRatio;
   final BorderRadius borderRadius;
   final EdgeInsetsGeometry padding;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +25,7 @@ class FeedTextPostFormattedBody extends StatelessWidget {
     }
 
     final gradient = formatting.backgroundGradient;
-    return ClipRRect(
+    final card = ClipRRect(
       borderRadius: borderRadius,
       child: AspectRatio(
         aspectRatio: aspectRatio,
@@ -45,6 +47,14 @@ class FeedTextPostFormattedBody extends StatelessWidget {
           ),
         ),
       ),
+    );
+
+    if (onTap == null) return card;
+
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: card,
     );
   }
 }

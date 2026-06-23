@@ -29,6 +29,7 @@ class FeedTextPostSection extends StatelessWidget {
     this.contentTopSpacing = 4,
     this.plainTextBodyStyle,
     this.plainTextToggleStyle,
+    this.onFormattedCardTap,
   });
 
   final TextPostFormatting formatting;
@@ -48,6 +49,7 @@ class FeedTextPostSection extends StatelessWidget {
   final double contentTopSpacing;
   final TextStyle? plainTextBodyStyle;
   final TextStyle? plainTextToggleStyle;
+  final VoidCallback? onFormattedCardTap;
 
   static const TextHeightBehavior _compactTextHeight = TextHeightBehavior(
     applyHeightToFirstAscent: false,
@@ -101,6 +103,7 @@ class FeedTextPostSection extends StatelessWidget {
       return FeedTextPostFormattedBody(
         formatting: formatting,
         aspectRatio: formattedAspectRatio,
+        onTap: onFormattedCardTap,
       );
     }
     return FeedPlainTextPostBody(

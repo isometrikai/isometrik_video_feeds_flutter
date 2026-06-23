@@ -8,6 +8,7 @@ export 'feed_profile_initials_placeholder.dart';
 export 'feed_text_post_avatar_follow_badge.dart';
 export 'feed_text_post_content.dart';
 export 'feed_text_post_formatted_body.dart';
+export 'feed_text_post_fullscreen_view.dart';
 export 'feed_text_post_section.dart';
 export 'text_post_formatting.dart';
 export 'text_post_thumbnail.dart';

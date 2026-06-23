@@ -19,6 +19,7 @@ import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_so
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_carousel_keep_alive_page.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/sound_selection/sound_track_detail_screen.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_media_carousel.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/feed_text_post_fullscreen_view.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/instagram_follow_chip.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/instagram_meta_vertical_scroll.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_scroll_scope.dart';
@@ -254,6 +255,25 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
 
   Future<void> _handleCommentTap() async {
     await widget.onTapComment?.call();
+  }
+
+  Future<void> _openTextCardFullscreen(TextPostFormatting formatting) async {
+    if (!formatting.hasBackground) return;
+    await FeedTextPostFullscreenView.open(
+      context,
+      formatting: formatting,
+      reelsData: _reel,
+      postSectionType: widget.postSectionType,
+      actionIconConfig: _actionIconConfig,
+      showActionCounts: _showActionCounts,
+      formattedAspectRatio: _feedUi.formattedTextPostAspectRatio,
+      onPressMoreButton: widget.onPressMoreButton,
+      onPressLikeButton: widget.onPressLikeButton,
+      onTapComment: _handleCommentTap,
+      onTapShare: () async {
+        await widget.onTapShare?.call();
+      },
+    );
   }
 
   TimeLineData? get _timelinePost =>
@@ -1795,6 +1815,9 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       formattedAspectRatio: _feedUi.formattedTextPostAspectRatio,
       plainTextBodyStyle: _feedPlainTextBodyStyle,
       plainTextToggleStyle: _feedPlainTextToggleStyle,
+      onFormattedCardTap: formatting.hasBackground
+          ? () => unawaited(_openTextCardFullscreen(formatting))
+          : null,
       padding: EdgeInsets.fromLTRB(
         _feedUi.textPostHorizontalPadding,
         IsrDimens.ten,
