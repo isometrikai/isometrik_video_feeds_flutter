@@ -110,7 +110,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   bool get _parentWantsVisible => widget.isParentVisible?.call() ?? true;
 
   bool get _effectiveVisible =>
-      widget.visibilityManagedByParent ? _parentWantsVisible : _isVisible;
+      widget.visibilityManagedByParent ? _parentWantsVisible : (_isVisible && _parentWantsVisible);
 
   /// Same fit for thumbnail and video so reels do not jump from letterbox to full-bleed.
   BoxFit _resolveDisplayFit({Size? videoSize}) {
@@ -215,6 +215,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   /// Called when the video playing state changes
   void _onPlayingStateChanged() {
+    if (_isDisposed || !mounted) return;
+
+    _syncPlaybackState();
     if (_isDisposed || !mounted) return;
 
     // If video started playing, ensure UI shows the video player
