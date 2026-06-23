@@ -19,7 +19,7 @@ import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_so
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_carousel_keep_alive_page.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/sound_selection/sound_track_detail_screen.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_media_carousel.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/widgets/feed_text_post_fullscreen_view.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/feed_post_fullscreen_view.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/instagram_follow_chip.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/instagram_meta_vertical_scroll.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_scroll_scope.dart';
@@ -257,16 +257,25 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     await widget.onTapComment?.call();
   }
 
-  Future<void> _openTextCardFullscreen(TextPostFormatting formatting) async {
-    if (!formatting.hasBackground) return;
-    await FeedTextPostFullscreenView.open(
+  Future<void> _openPostFullscreen({
+    TextPostFormatting? textFormatting,
+    int initialMediaIndex = 0,
+  }) async {
+    if (textFormatting == null && _reel.mediaMetaDataList.isEmpty) return;
+    if (_shouldShowPaidLockOverlay) return;
+
+    await _stopAllCardMedia();
+    await FeedPostFullscreenView.open(
       context,
-      formatting: formatting,
       reelsData: _reel,
       postSectionType: widget.postSectionType,
       actionIconConfig: _actionIconConfig,
       showActionCounts: _showActionCounts,
+      textFormatting: textFormatting,
       formattedAspectRatio: _feedUi.formattedTextPostAspectRatio,
+      mediaList: textFormatting == null ? _reel.mediaMetaDataList : null,
+      initialMediaIndex: initialMediaIndex,
+      videoCacheManager: _videoCacheManager,
       onPressMoreButton: widget.onPressMoreButton,
       onPressLikeButton: widget.onPressLikeButton,
       onTapComment: _handleCommentTap,
@@ -274,6 +283,15 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         await widget.onTapShare?.call();
       },
     );
+  }
+
+  Future<void> _openTextCardFullscreen(TextPostFormatting formatting) async {
+    if (!formatting.hasBackground) return;
+    await _openPostFullscreen(textFormatting: formatting);
+  }
+
+  Future<void> _openMediaFullscreen(int index) async {
+    await _openPostFullscreen(initialMediaIndex: index);
   }
 
   TimeLineData? get _timelinePost =>
@@ -1665,6 +1683,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       final imageUrl = media.mediaUrl.trim();
       return GestureDetector(
         behavior: HitTestBehavior.translucent,
+        onTap: () => unawaited(_openMediaFullscreen(index)),
         onDoubleTap: _canDoubleTapToLike ? _triggerLikeAnimation : null,
         child: AppImage.network(
           imageUrl,
@@ -1706,7 +1725,12 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     );
 
     if (!_feedUi.enableVideoTapControls) {
-      return video;
+      return GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () => unawaited(_openMediaFullscreen(index)),
+        onDoubleTap: _canDoubleTapToLike ? _triggerLikeAnimation : null,
+        child: video,
+      );
     }
 
     return Stack(
@@ -1716,7 +1740,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         Positioned.fill(
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
-            onTap: () => _toggleVideoPlayPause(playerKey),
+            onTap: () => unawaited(_openMediaFullscreen(index)),
             onDoubleTap: _canDoubleTapToLike ? _triggerLikeAnimation : null,
           ),
         ),
@@ -1733,18 +1757,6 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         ),
       ],
     );
-  }
-
-  void _toggleVideoPlayPause(GlobalKey playerKey) {
-    final playerState = VideoPlayerWidget.of(playerKey);
-    if (playerState == null || !playerState.mounted) return;
-
-    if (playerState.isPlaying) {
-      playerState.pause();
-    } else {
-      playerState.play();
-    }
-    _videoOverlayTick.value++;
   }
 
   void _toggleVideoMute() {
