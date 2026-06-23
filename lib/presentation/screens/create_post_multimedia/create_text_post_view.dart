@@ -23,9 +23,9 @@ class CreateTextPostView extends StatefulWidget {
   const CreateTextPostView({super.key});
 
   /// Character limits, mirroring the backend config:
-  /// `{ plain_text_post_limit: 5000, formatted_text_card_limit: 500,
+  /// `{ plain_text_post_limit: 2000, formatted_text_card_limit: 500,
   ///    recommended_card_limit: 250 }`.
-  static const int plainLimit = 5000;
+  static const int plainLimit = 2000;
   static const int cardLimit = 500;
   static const int recommendedCardLimit = 250;
 
