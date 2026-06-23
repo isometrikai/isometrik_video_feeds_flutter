@@ -108,7 +108,9 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   PostUIConfig? get _uiConfig => _postConfig.postUIConfig;
   ActionIconConfig get _actionIconConfig =>
       _uiConfig?.actionIconConfig ?? ActionIconConfig.feed;
-  TextStyleConfig? get _textStyleConfig => _uiConfig?.textStyleConfig;
+  TextStyleConfig get _textStyleConfig =>
+      _uiConfig?.resolvedTextStyleConfig ??
+      const TextStyleConfig().withFeedPlainTextDefaults();
   UserProfileConfig? get _userProfileConfig => _uiConfig?.userProfileConfig;
   FollowButtonConfig? get _followButtonConfig => _uiConfig?.followButtonConfig;
   LocationConfig? get _locationConfig => _uiConfig?.locationConfig;
@@ -171,12 +173,14 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
 
   bool get _isTextOnlyPost => _timelinePost?.isTextOnlyPost == true;
 
+  double get _feedProfileImageSize =>
+      _userProfileConfig?.profileImageSize ?? _feedUi.textPostProfileImageSize;
+
   double get _textPostActionIndent {
     if (!_isTextOnlyPost) return 0;
     if (_reel.postSetting?.isProfilePicVisible != true) return 0;
-    final avatarSize = _userProfileConfig?.profileImageSize ?? IsrDimens.thirtyTwo;
     // Match [FeedTextPostSection.avatarGap] so actions align with content column.
-    return avatarSize + IsrDimens.twelve;
+    return _feedUi.textPostProfileImageSize + IsrDimens.twelve;
   }
 
   bool get _useHostAppActionAssets =>
@@ -1789,6 +1793,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
           ? _buildTextPostMoreButton()
           : null,
       formattedAspectRatio: _feedUi.formattedTextPostAspectRatio,
+      plainTextBodyStyle: _feedPlainTextBodyStyle,
+      plainTextToggleStyle: _feedPlainTextToggleStyle,
       padding: EdgeInsets.fromLTRB(
         _feedUi.textPostHorizontalPadding,
         IsrDimens.ten,
@@ -1848,17 +1854,23 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       );
 
   Widget _buildTextPostProfileAvatarWithFollowBadge() {
-    final size = _userProfileConfig?.profileImageSize ?? IsrDimens.thirtyTwo;
-    final avatar = _buildHeaderProfileAvatar(enableTap: false);
+    final size = _feedUi.textPostProfileImageSize;
+    final avatar = _buildHeaderProfileAvatar(enableTap: false, size: size);
 
     if (_isViewerPostAuthor) {
-      return _buildHeaderProfileAvatar(avatarKey: _textPostAvatarKey);
+      return _buildHeaderProfileAvatar(
+        avatarKey: _textPostAvatarKey,
+        size: size,
+      );
     }
 
     final showFollowControls = _reel.postSetting?.isUnFollowButtonVisible == true ||
         _reel.postSetting?.isFollowButtonVisible == true;
     if (!showFollowControls) {
-      return _buildHeaderProfileAvatar(avatarKey: _textPostAvatarKey);
+      return _buildHeaderProfileAvatar(
+        avatarKey: _textPostAvatarKey,
+        size: size,
+      );
     }
 
     final timelineUser = _reel.postData is TimeLineData
@@ -1965,8 +1977,9 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     Key? avatarKey,
     VoidCallback? onTap,
     bool enableTap = true,
+    double? size,
   }) {
-    final size = _userProfileConfig?.profileImageSize ?? IsrDimens.thirtyTwo;
+    final avatarSize = size ?? _feedProfileImageSize;
     final firstName = _reel.firstName ?? '';
     final lastName = _reel.lastName ?? '';
     final initials = Utility.getInitials(firstName: firstName, lastName: lastName);
@@ -1975,14 +1988,14 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         : (_reel.userName ?? initials);
     final image = AppImage.network(
       _reel.profilePhoto ?? '',
-      width: size,
-      height: size,
+      width: avatarSize,
+      height: avatarSize,
       isProfileImage: true,
       border: _profileAvatarBorder,
       name: '$firstName $lastName',
       placeHolderWidget: (h, w) => FeedProfileInitialsPlaceholder(
         initials: initials,
-        size: h ?? w ?? size,
+        size: h ?? w ?? avatarSize,
         seed: nameSeed,
       ),
     );
@@ -1991,7 +2004,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
 
     return TapHandler(
       key: avatarKey,
-      borderRadius: size / 2,
+      borderRadius: avatarSize / 2,
       onTap: onTap ?? () => widget.onTapUserProfile?.call(),
       child: image,
     );
@@ -2120,7 +2133,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       );
 
   Widget _buildMediaProfileAvatar() {
-    final size = _userProfileConfig?.profileImageSize ?? IsrDimens.thirtyTwo;
+    final size = _feedProfileImageSize;
     return TapHandler(
       borderRadius: size / 2,
       onTap: () => widget.onTapUserProfile?.call(),
@@ -2672,6 +2685,16 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   TextStyle get _feedCaptionBodyStyle =>
       _textStyleConfig?.descriptionStyle ??
       IsrStyles.primaryText14.copyWith(color: _feedUi.headerTextColor);
+
+  TextStyle get _feedPlainTextBodyStyle =>
+      _textStyleConfig.plainTextPostStyle!.copyWith(
+        color: _feedUi.headerTextColor,
+      );
+
+  TextStyle get _feedPlainTextToggleStyle =>
+      _textStyleConfig.plainTextPostToggleStyle!.copyWith(
+        color: _feedUi.secondaryTextColor,
+      );
 
   /// Shared feed link/hashtag blue (#006CD8).
   TextStyle get _feedLinkTextStyle => _feedCaptionBodyStyle.copyWith(

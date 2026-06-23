@@ -87,6 +87,14 @@ class IsrTranslationFile {
   static const creatorEarnsCommission = 'Creator Earns Commission';
   static const viewMore = 'View More';
   static const viewLess = 'View Less';
+  static const plainTextPostMore = 'more';
+  static const plainTextPostLess = 'less';
+  static const textPostLineLimitReached =
+      'Text posts can have at most %s lines.';
+  static const textPostBlankLineLimitReached =
+      'Use at most %s blank lines in a row.';
+  static const textPostCharacterLimitReached =
+      'Text posts can have at most %s characters.';
 
   /// Shown when a post is locked as paid content (viewer is not the author).
   static const String paidPostLockedTitle = 'Paid content';

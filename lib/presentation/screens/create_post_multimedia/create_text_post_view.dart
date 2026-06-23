@@ -22,11 +22,9 @@ import 'package:ism_video_reel_player/utils/utils.dart';
 class CreateTextPostView extends StatefulWidget {
   const CreateTextPostView({super.key});
 
-  /// Character limits, mirroring the backend config:
-  /// `{ plain_text_post_limit: 2000, formatted_text_card_limit: 500,
-  ///    recommended_card_limit: 250 }`.
-  static const int plainLimit = 2000;
-  static const int cardLimit = 500;
+  /// Character limits — see [TextPostComposerLimits] for line / blank-line rules.
+  static const int plainLimit = TextPostComposerLimits.plainCharLimit;
+  static const int cardLimit = TextPostComposerLimits.cardCharLimit;
   static const int recommendedCardLimit = 250;
 
   /// Plain-post formatting defaults. These mirror the SDK's text-post renderer
@@ -111,10 +109,23 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
           ?.onBackgroundPostOperation !=
       null;
 
-  bool get _canPost => _controller.text.trim().isNotEmpty && !_isPosting;
+  bool get _canPost {
+    if (_controller.text.trim().isEmpty || _isPosting) return false;
+    return TextPostComposerLimits.validate(
+      _controller.text,
+      isCard: _isCard,
+    ).isValid;
+  }
 
-  int get _currentLimit =>
-      _isCard ? CreateTextPostView.cardLimit : CreateTextPostView.plainLimit;
+  TextPostLimitsConfig get _limits =>
+      TextPostComposerLimits.config(isCard: _isCard);
+
+  TextPostValidationResult get _validation =>
+      TextPostComposerLimits.validate(_controller.text, isCard: _isCard);
+
+  List<TextInputFormatter> get _textInputFormatters => [
+        TextPostComposerInputFormatter(isCard: _isCard),
+      ];
 
   /// Selectable backgrounds: every gradient from the palette plus a few solids.
   List<_BgOption> get _backgroundOptions => [
@@ -204,13 +215,17 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
     if (_isCard == card) return;
     setState(() {
       _isCard = card;
-      if (card && _controller.text.length > CreateTextPostView.cardLimit) {
-        final trimmed =
-            _controller.text.substring(0, CreateTextPostView.cardLimit);
-        _controller.value = TextEditingValue(
-          text: trimmed,
-          selection: TextSelection.collapsed(offset: trimmed.length),
+      if (card) {
+        final sanitized = TextPostComposerLimits.sanitize(
+          _controller.text,
+          isCard: true,
         );
+        if (sanitized != _controller.text) {
+          _controller.value = TextEditingValue(
+            text: sanitized,
+            selection: TextSelection.collapsed(offset: sanitized.length),
+          );
+        }
       }
     });
     if (card) {
@@ -223,6 +238,11 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
   }
 
   void _onPost() {
+    final validation = _validation;
+    if (!validation.isValid) {
+      _showValidationMessage(validation);
+      return;
+    }
     final text = _controller.text.trim();
     if (text.isEmpty || _isPosting) return;
     _focusNode.unfocus();
@@ -253,6 +273,26 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
     );
 
     _createPostBloc.add(PostCreateEvent(createPostRequest: request));
+  }
+
+  void _showValidationMessage(TextPostValidationResult validation) {
+    final limit = validation.limit;
+    if (limit == null || validation.issue == null) return;
+    final message = switch (validation.issue!) {
+      TextPostValidationIssue.tooManyCharacters =>
+        IsrTranslationFile.textPostCharacterLimitReached.replaceAll(
+          '%s',
+          '$limit',
+        ),
+      TextPostValidationIssue.tooManyLines =>
+        IsrTranslationFile.textPostLineLimitReached.replaceAll('%s', '$limit'),
+      TextPostValidationIssue.tooManyBlankLines =>
+        IsrTranslationFile.textPostBlankLineLimitReached.replaceAll(
+          '%s',
+          '$limit',
+        ),
+    };
+    Utility.showToastMessage(message);
   }
 
   Future<void> _pickLocation() async {
@@ -413,15 +453,13 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
               focusNode: _focusNode,
               autofocus: true,
               maxLines: null,
-              maxLength: CreateTextPostView.plainLimit,
+              maxLength: _limits.charLimit,
               keyboardType: TextInputType.multiline,
               textInputAction: TextInputAction.newline,
               textCapitalization: TextCapitalization.sentences,
               textAlign: TextAlign.left,
               cursorColor: IsrColors.appColor,
-              inputFormatters: [
-                LengthLimitingTextInputFormatter(CreateTextPostView.plainLimit),
-              ],
+              inputFormatters: _textInputFormatters,
               style: GoogleFonts.getFont(
                 CreateTextPostView.fontFamily,
                 fontSize: CreateTextPostView.fontSize.toDouble(),
@@ -500,15 +538,13 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
               focusNode: _focusNode,
               autofocus: true,
               maxLines: null,
-              maxLength: CreateTextPostView.cardLimit,
+              maxLength: _limits.charLimit,
               keyboardType: TextInputType.multiline,
               textInputAction: TextInputAction.newline,
               textCapitalization: TextCapitalization.sentences,
               textAlign: fmt.textAlignValue,
               cursorColor: textStyle.color ?? Colors.white,
-              inputFormatters: [
-                LengthLimitingTextInputFormatter(CreateTextPostView.cardLimit),
-              ],
+              inputFormatters: _textInputFormatters,
               style: textStyle,
               buildCounter: _emptyCounter,
               decoration: InputDecoration(
@@ -639,20 +675,23 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
 
   Widget _buildBottomBar() {
     final length = _controller.text.length;
+    final limits = _limits;
     final overRecommended =
         _isCard && length > CreateTextPostView.recommendedCardLimit;
-    return Padding(
+    final nearCharLimit = length >= limits.charLimit - 100;
+  return Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 16, 10),
       child: Row(
         children: [
           _ModeToggle(isCard: _isCard, onChanged: _setMode),
           const Spacer(),
           Text(
-            '$length/$_currentLimit',
+            '$length/${limits.charLimit}',
             style: TextStyle(
               fontSize: 13,
-              fontWeight: overRecommended ? FontWeight.w600 : FontWeight.w400,
-              color: overRecommended
+              fontWeight:
+                  overRecommended || nearCharLimit ? FontWeight.w600 : FontWeight.w400,
+              color: overRecommended || nearCharLimit
                   ? const Color(0xFFFF9F0A)
                   : IsrColors.secondaryTextColor.withValues(alpha: 0.7),
             ),

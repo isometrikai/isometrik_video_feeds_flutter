@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/res/constants/asset_constants.dart';
+import 'package:ism_video_reel_player/res/theme/isr_styles.dart';
 
 class PostConfig {
   const PostConfig({
@@ -127,6 +128,7 @@ class PostFeedUIConfig {
     this.actionIconSize,
     this.formattedTextPostAspectRatio = 1,
     this.textPostHorizontalPadding = 16,
+    this.textPostProfileImageSize = 42,
   });
 
   /// Instagram-style post feed: header above media, counts, timestamps, dividers.
@@ -146,6 +148,7 @@ class PostFeedUIConfig {
     actionIconGapWithCount: 12,
     formattedTextPostAspectRatio: 4 / 5,
     textPostHorizontalPadding: 16,
+    textPostProfileImageSize: 42,
   );
 
   /// Header title for post-card feed tabs. Falls back to the active tab title when null or empty.
@@ -230,6 +233,9 @@ class PostFeedUIConfig {
   /// Horizontal inset for text-post header, card body, and action row.
   final double textPostHorizontalPadding;
 
+  /// Profile avatar size for text-only posts in the feed (width and height).
+  final double textPostProfileImageSize;
+
   PostFeedUIConfig copyWith({
     String? title,
     TextStyle? titleTextStyle,
@@ -263,6 +269,7 @@ class PostFeedUIConfig {
     double? actionIconSize,
     double? formattedTextPostAspectRatio,
     double? textPostHorizontalPadding,
+    double? textPostProfileImageSize,
   }) =>
       PostFeedUIConfig(
         title: title ?? this.title,
@@ -306,6 +313,8 @@ class PostFeedUIConfig {
             formattedTextPostAspectRatio ?? this.formattedTextPostAspectRatio,
         textPostHorizontalPadding:
             textPostHorizontalPadding ?? this.textPostHorizontalPadding,
+        textPostProfileImageSize:
+            textPostProfileImageSize ?? this.textPostProfileImageSize,
       );
 }
 
@@ -373,6 +382,10 @@ class PostUIConfig {
         locationConfig: locationConfig ?? this.locationConfig,
         mentionConfig: mentionConfig ?? this.mentionConfig,
       );
+
+  /// [textStyleConfig] with feed plain-text body/toggle defaults applied.
+  TextStyleConfig get resolvedTextStyleConfig =>
+      (textStyleConfig ?? const TextStyleConfig()).withFeedPlainTextDefaults();
 }
 
 /// Visual container style for reels side action icons.
@@ -606,6 +619,8 @@ class TextStyleConfig {
     this.commissionTagStyle,
     this.followButtonTextStyle,
     this.followingButtonTextStyle,
+    this.plainTextPostStyle,
+    this.plainTextPostToggleStyle,
   });
 
   /// Style for action button labels (like count, comment count, etc.)
@@ -647,6 +662,35 @@ class TextStyleConfig {
   /// Style for following button text
   final TextStyle? followingButtonTextStyle;
 
+  /// Plain (no background) text post body in the feed tab.
+  final TextStyle? plainTextPostStyle;
+
+  /// "View More" / "View Less" for plain text posts in the feed tab.
+  final TextStyle? plainTextPostToggleStyle;
+
+  /// Feed plain-text body: regular 14 / 1.3 line height (uses [FontConfig] + [TextSizeConfig]).
+  static TextStyle get defaultPlainTextPostStyle =>
+      IsrStyles.primaryText14.copyWith(
+        fontWeight: FontWeight.w400,
+        height: 1.3,
+      );
+
+  /// Feed plain-text `more` / `less`: bold 14 / 1.3 line height.
+  static TextStyle get defaultPlainTextPostToggleStyle =>
+      IsrStyles.primaryText14.copyWith(
+        fontWeight: FontWeight.w700,
+        height: 1.3,
+      );
+
+  /// Applies [defaultPlainTextPostStyle] and [defaultPlainTextPostToggleStyle]
+  /// when the host has not supplied feed plain-text styles.
+  TextStyleConfig withFeedPlainTextDefaults() => copyWith(
+        plainTextPostStyle:
+            plainTextPostStyle ?? defaultPlainTextPostStyle,
+        plainTextPostToggleStyle:
+            plainTextPostToggleStyle ?? defaultPlainTextPostToggleStyle,
+      );
+
   TextStyleConfig copyWith({
     TextStyle? actionLabelStyle,
     TextStyle? userNameStyle,
@@ -661,6 +705,8 @@ class TextStyleConfig {
     TextStyle? commissionTagStyle,
     TextStyle? followButtonTextStyle,
     TextStyle? followingButtonTextStyle,
+    TextStyle? plainTextPostStyle,
+    TextStyle? plainTextPostToggleStyle,
   }) =>
       TextStyleConfig(
         actionLabelStyle: actionLabelStyle ?? this.actionLabelStyle,
@@ -676,6 +722,9 @@ class TextStyleConfig {
         commissionTagStyle: commissionTagStyle ?? this.commissionTagStyle,
         followButtonTextStyle: followButtonTextStyle ?? this.followButtonTextStyle,
         followingButtonTextStyle: followingButtonTextStyle ?? this.followingButtonTextStyle,
+        plainTextPostStyle: plainTextPostStyle ?? this.plainTextPostStyle,
+        plainTextPostToggleStyle:
+            plainTextPostToggleStyle ?? this.plainTextPostToggleStyle,
       );
 }
 

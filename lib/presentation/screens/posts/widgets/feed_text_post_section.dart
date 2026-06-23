@@ -27,6 +27,8 @@ class FeedTextPostSection extends StatelessWidget {
     this.verifiedBadge,
     this.formattedAspectRatio = 1,
     this.contentTopSpacing = 4,
+    this.plainTextBodyStyle,
+    this.plainTextToggleStyle,
   });
 
   final TextPostFormatting formatting;
@@ -44,6 +46,8 @@ class FeedTextPostSection extends StatelessWidget {
   final Widget? verifiedBadge;
   final double formattedAspectRatio;
   final double contentTopSpacing;
+  final TextStyle? plainTextBodyStyle;
+  final TextStyle? plainTextToggleStyle;
 
   static const TextHeightBehavior _compactTextHeight = TextHeightBehavior(
     applyHeightToFirstAscent: false,
@@ -102,6 +106,8 @@ class FeedTextPostSection extends StatelessWidget {
     return FeedPlainTextPostBody(
       formatting: formatting,
       textColor: textColor,
+      bodyTextStyle: plainTextBodyStyle,
+      moreTextStyle: plainTextToggleStyle,
     );
   }
 
