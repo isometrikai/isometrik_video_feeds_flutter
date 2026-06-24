@@ -19,6 +19,7 @@ import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_so
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_carousel_keep_alive_page.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/sound_selection/sound_track_detail_screen.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_media_carousel.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/feed_post_media_hero.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/feed_post_fullscreen_view.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/instagram_follow_chip.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/instagram_meta_vertical_scroll.dart';
@@ -264,7 +265,38 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     if (textFormatting == null && _reel.mediaMetaDataList.isEmpty) return;
     if (_shouldShowPaidLockOverlay) return;
 
-    await _stopAllCardMedia();
+    FeedVideoPlayerHandoffSnapshot? handoffSnapshot;
+    String? handoffMediaUrl;
+
+    if (textFormatting == null) {
+      final mediaList = _reel.mediaMetaDataList;
+      final safeIndex = initialMediaIndex.clamp(
+        0,
+        mediaList.isEmpty ? 0 : mediaList.length - 1,
+      );
+      if (mediaList.isNotEmpty && _isVideoMedia(mediaList[safeIndex])) {
+        final mediaUrl = mediaList[safeIndex].mediaUrl.trim();
+        final playerKey = _videoPlayerKeys[safeIndex];
+        if (playerKey != null) {
+          handoffSnapshot = await _releaseFeedVideoForFullscreen(playerKey);
+        }
+        handoffSnapshot ??= FeedVideoPlayerHandoff.sessionFor(mediaUrl);
+        if (handoffSnapshot != null) {
+          handoffMediaUrl = mediaUrl;
+        }
+      }
+      for (final entry in _videoPlayerKeys.entries) {
+        if (entry.key == safeIndex) continue;
+        VideoPlayerWidget.of(entry.value)?.pauseForLifecycle();
+      }
+      await _pauseImageSound();
+    } else {
+      await _stopAllCardMedia();
+    }
+
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) return;
+
     await FeedPostFullscreenView.open(
       context,
       reelsData: _reel,
@@ -276,6 +308,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       mediaList: textFormatting == null ? _reel.mediaMetaDataList : null,
       initialMediaIndex: initialMediaIndex,
       videoCacheManager: _videoCacheManager,
+      handoffSnapshot: handoffSnapshot,
       onPressMoreButton: widget.onPressMoreButton,
       onPressLikeButton: widget.onPressLikeButton,
       onTapComment: _handleCommentTap,
@@ -283,6 +316,79 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         await widget.onTapShare?.call();
       },
     );
+
+    if (!mounted) {
+      await FeedVideoPlayerHandoff.disposePendingForUrl(handoffMediaUrl);
+      return;
+    }
+
+    if (handoffMediaUrl != null) {
+      final mediaList = _reel.mediaMetaDataList;
+      final safeIndex = initialMediaIndex.clamp(
+        0,
+        mediaList.isEmpty ? 0 : mediaList.length - 1,
+      );
+      await _restoreVideoFromFullscreenHandoff(
+        mediaUrl: handoffMediaUrl,
+        mediaIndex: safeIndex,
+      );
+      return;
+    }
+
+    _forceResumeVisibleMedia();
+  }
+
+  Future<FeedVideoPlayerHandoffSnapshot?> _releaseFeedVideoForFullscreen(
+    GlobalKey playerKey,
+  ) async {
+    var snapshot =
+        VideoPlayerWidget.of(playerKey)?.releaseForFullscreenHandoff();
+    if (snapshot != null) return snapshot;
+
+    for (var attempt = 0; attempt < 4; attempt++) {
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) return null;
+      snapshot =
+          VideoPlayerWidget.of(playerKey)?.releaseForFullscreenHandoff();
+      if (snapshot != null) return snapshot;
+    }
+    return null;
+  }
+
+  Future<void> _restoreVideoFromFullscreenHandoff({
+    required String mediaUrl,
+    required int mediaIndex,
+  }) async {
+    FeedVideoPlayerHandoffSnapshot? returned =
+        FeedVideoPlayerHandoff.takeForFeed(mediaUrl);
+
+    if (returned == null) {
+      for (var attempt = 0; attempt < 4; attempt++) {
+        await Future<void>.delayed(Duration.zero);
+        await WidgetsBinding.instance.endOfFrame;
+        if (!mounted) {
+          await FeedVideoPlayerHandoff.disposePendingForUrl(mediaUrl);
+          return;
+        }
+        returned = FeedVideoPlayerHandoff.takeForFeed(mediaUrl);
+        if (returned != null) break;
+      }
+    }
+
+    final playerKey = _videoPlayerKeys[mediaIndex];
+    final player = playerKey != null ? VideoPlayerWidget.of(playerKey) : null;
+
+    if (returned != null && player != null) {
+      player.acceptFromHandoff(returned);
+      return;
+    }
+
+    if (player != null) {
+      player.recoverFromFailedHandoff();
+      return;
+    }
+
+    _forceResumeVisibleMedia();
   }
 
   Future<void> _openTextCardFullscreen(TextPostFormatting formatting) async {
@@ -856,10 +962,17 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
 
   void _onGlobalMuteChanged() {
     if (!mounted) return;
+    _syncVideoMuteToPlayers();
     unawaited(
       _imageSoundPlayer?.setVolume(VideoMuteController.isMuted ? 0.0 : 1.0) ??
           Future.value(),
     );
+  }
+
+  void _syncVideoMuteToPlayers() {
+    for (final key in _videoPlayerKeys.values) {
+      VideoPlayerWidget.of(key)?.applyMuteVolume();
+    }
   }
 
   bool get _isCurrentMediaImage {
@@ -1681,21 +1794,25 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   Widget _buildMediaItem(MediaMetaData media, int index) {
     if (media.mediaType == _kPictureType) {
       final imageUrl = media.mediaUrl.trim();
-      return GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onTap: () => unawaited(_openMediaFullscreen(index)),
-        onDoubleTap: _canDoubleTapToLike ? _triggerLikeAnimation : null,
-        child: AppImage.network(
-          imageUrl,
-          fit: BoxFit.cover,
-          width: double.infinity,
-          height: double.infinity,
-          cacheKey: imageUrl,
-          cacheManager: IsrPostFeedImageCacheManager.instance,
-          fadeAnimationEnable: false,
-          placeHolderWidget: (_, __) => PostFeedMediaPlaceholder(
-            baseColor: _feedUi.dividerColor,
-            highlightColor: _feedUi.backgroundColor,
+      return FeedPostMediaHeroScope(
+        postId: _reel.postId ?? '',
+        mediaIndex: index,
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () => unawaited(_openMediaFullscreen(index)),
+          onDoubleTap: _canDoubleTapToLike ? _triggerLikeAnimation : null,
+          child: AppImage.network(
+            imageUrl,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+            cacheKey: imageUrl,
+            cacheManager: IsrPostFeedImageCacheManager.instance,
+            fadeAnimationEnable: false,
+            placeHolderWidget: (_, __) => PostFeedMediaPlaceholder(
+              baseColor: _feedUi.dividerColor,
+              highlightColor: _feedUi.backgroundColor,
+            ),
           ),
         ),
       );
@@ -1704,24 +1821,34 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     final playerKey = _videoPlayerKeys.putIfAbsent(
         index, () => GlobalKey(debugLabel: 'post_feed_video_$index'));
 
-    final video = ClipRect(
-      child: VideoPlayerWidget(
-        key: playerKey,
-        mediaUrl: media.mediaUrl,
-        thumbnailUrl: media.thumbnailUrl,
-        videoCacheManager: _videoCacheManager,
-        isMuted: VideoMuteController.isMuted,
-        aspectRatio: _fixedCardMediaAspectRatio(),
-        videoFitOverride: BoxFit.cover,
-        logIndex: '${widget.logIndex}-$index',
-        visibilityManagedByParent: true,
-        isParentVisible: () => _isCarouselVideoPageActive(index),
-        postSectionType: widget.postSectionType,
-        onVisibilityChanged: (_) {},
-        onPlaybackStateChanged: () {
-          if (mounted) _videoOverlayTick.value++;
-        },
-      ),
+    final video = Stack(
+      fit: StackFit.expand,
+      children: [
+        FeedPostMediaHeroScope(
+          postId: _reel.postId ?? '',
+          mediaIndex: index,
+          child: FeedPostVideoHeroShell(thumbnailUrl: media.thumbnailUrl),
+        ),
+        ClipRect(
+          child: VideoPlayerWidget(
+            key: playerKey,
+            mediaUrl: media.mediaUrl,
+            thumbnailUrl: media.thumbnailUrl,
+            videoCacheManager: _videoCacheManager,
+            isMuted: VideoMuteController.isMuted,
+            aspectRatio: _fixedCardMediaAspectRatio(),
+            videoFitOverride: BoxFit.cover,
+            logIndex: '${widget.logIndex}-$index',
+            visibilityManagedByParent: true,
+            isParentVisible: () => _isCarouselVideoPageActive(index),
+            postSectionType: widget.postSectionType,
+            onVisibilityChanged: (_) {},
+            onPlaybackStateChanged: () {
+              if (mounted) _videoOverlayTick.value++;
+            },
+          ),
+        ),
+      ],
     );
 
     if (!_feedUi.enableVideoTapControls) {
@@ -1761,6 +1888,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
 
   void _toggleVideoMute() {
     VideoMuteController.toggle();
+    _syncVideoMuteToPlayers();
     unawaited(
       _imageSoundPlayer?.setVolume(VideoMuteController.isMuted ? 0.0 : 1.0) ??
           Future.value(),

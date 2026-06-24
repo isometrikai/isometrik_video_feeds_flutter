@@ -7,6 +7,7 @@ export 'feed_plain_text_post_section.dart';
 export 'feed_profile_initials_placeholder.dart';
 export 'feed_text_post_avatar_follow_badge.dart';
 export 'feed_post_fullscreen_view.dart';
+export 'feed_post_media_hero.dart';
 export 'feed_text_post_content.dart';
 export 'feed_text_post_formatted_body.dart';
 export 'feed_text_post_section.dart';

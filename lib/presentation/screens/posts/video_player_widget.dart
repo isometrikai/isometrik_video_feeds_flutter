@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
@@ -39,6 +40,8 @@ class VideoPlayerWidget extends StatefulWidget {
     this.visibilityManagedByParent = false,
     this.postSectionType,
     this.onPlaybackStateChanged,
+    this.initialHandoff,
+    this.isHandoffReceiver = false,
   });
 
   final String mediaUrl;
@@ -62,6 +65,13 @@ class VideoPlayerWidget extends StatefulWidget {
 
   /// Notifies when play/pause state changes (e.g. feed play icon overlay).
   final VoidCallback? onPlaybackStateChanged;
+
+  /// Controller handed off from the feed card when opening fullscreen preview.
+  final FeedVideoPlayerHandoffSnapshot? initialHandoff;
+
+  /// When true, [dispose] returns the controller to the feed instead of
+  /// tearing it down.
+  final bool isHandoffReceiver;
 
   @override
   State<VideoPlayerWidget> createState() => _VideoPlayerWidgetState();
@@ -107,6 +117,21 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   bool _isVideoCompleted = false;
 
+  /// Feed released its controller to fullscreen — do not dispose it here.
+  bool _controllerHandedOff = false;
+
+  /// Skips cache teardown when returning a handoff controller to the feed.
+  bool _skipDisposeTeardown = false;
+
+  bool get isControllerHandedOff => _controllerHandedOff;
+
+  bool get _shouldShowVideoSurface =>
+      _isInitialized &&
+      _videoPlayerController != null &&
+      _videoPlayerController!.isInitialized &&
+      !_videoPlayerController!.isDisposed &&
+      (_hasPlayed || _videoPlayerController!.position.inMilliseconds > 0);
+
   bool get _parentWantsVisible => widget.isParentVisible?.call() ?? true;
 
   bool get _effectiveVisible =>
@@ -135,9 +160,38 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     return BoxFit.contain;
   }
 
+  double get _targetVolume => VideoMuteController.isMuted ? 0.0 : 1.0;
+
+  void _applyMuteVolume() {
+    if (_isDisposed) return;
+
+    void apply() {
+      if (_isDisposed || !mounted) return;
+      final controller = _videoPlayerController;
+      if (controller == null ||
+          !controller.isInitialized ||
+          controller.isDisposed) {
+        return;
+      }
+      unawaited(controller.setVolume(_targetVolume));
+    }
+
+    final phase = WidgetsBinding.instance.schedulerPhase;
+    if (phase == SchedulerPhase.persistentCallbacks ||
+        phase == SchedulerPhase.midFrameMicrotasks) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => apply());
+      return;
+    }
+    apply();
+  }
+
+  /// Applies the current [VideoMuteController] volume to the active controller.
+  void applyMuteVolume() => _applyMuteVolume();
+
   @override
   void initState() {
     super.initState();
+    VideoMuteController.notifier.addListener(_applyMuteVolume);
     _backgroundPauseHandler = () {
       if (!_isDisposed) pauseForLifecycle();
     };
@@ -155,13 +209,29 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       _isVisibilityConfigured = true;
     }
     _hasPlayed = false;
-    _initializeVideoPlayer();
+    final handoff = widget.initialHandoff;
+    if (handoff != null) {
+      _videoPlayerController = handoff.controller;
+      _hasPlayed = handoff.hadPlayed || handoff.position.inMilliseconds > 0;
+      _isManuallyPaused = handoff.wasManuallyPaused;
+      _isInitializing = false;
+      if (handoff.controller.isInitialized && !handoff.controller.isDisposed) {
+        _isInitialized = true;
+        final size = handoff.controller.videoSize;
+        _hasValidVideoSize = size.width > 0 && size.height > 0;
+      }
+      unawaited(_completeHandoffAccept(handoff));
+    } else {
+      _initializeVideoPlayer();
+    }
     // Start checking if controller becomes ready asynchronously
     _startControllerReadyCheck();
   }
 
   /// Sync play/pause with widget state; detach controller when UI is disposed.
   void _syncPlaybackState() {
+    if (_controllerHandedOff) return;
+
     final controller = _videoPlayerController;
 
     if (_isDisposed || !mounted) {
@@ -191,7 +261,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     try {
       if (shouldPlay) {
         if (!controller.isPlaying) {
-          unawaited(controller.setVolume(widget.isMuted ? 0.0 : 1.0));
+          unawaited(controller.setVolume(_targetVolume));
           unawaited(controller.play());
           widget.videoCacheManager.markAsVisible(widget.mediaUrl);
           _startStuckVideoDetection();
@@ -209,8 +279,36 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     _notifyPlaybackStateChanged();
   }
 
+  void _safeSetState(VoidCallback fn) {
+    if (!mounted || _isDisposed) return;
+    final phase = WidgetsBinding.instance.schedulerPhase;
+    if (phase == SchedulerPhase.persistentCallbacks ||
+        phase == SchedulerPhase.midFrameMicrotasks) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _isDisposed) return;
+        setState(fn);
+      });
+      return;
+    }
+    setState(fn);
+  }
+
   void _notifyPlaybackStateChanged() {
-    widget.onPlaybackStateChanged?.call();
+    final callback = widget.onPlaybackStateChanged;
+    if (callback == null) return;
+
+    void fire() {
+      if (_isDisposed || !mounted) return;
+      callback();
+    }
+
+    final phase = WidgetsBinding.instance.schedulerPhase;
+    if (phase == SchedulerPhase.persistentCallbacks ||
+        phase == SchedulerPhase.midFrameMicrotasks) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => fire());
+      return;
+    }
+    fire();
   }
 
   /// Called when the video playing state changes
@@ -233,7 +331,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   }
 
   void _syncVisibilityFromParent() {
-    if (!widget.visibilityManagedByParent || _isDisposed) return;
+    if (!widget.visibilityManagedByParent || _isDisposed || _controllerHandedOff) {
+      return;
+    }
 
     final visible = _parentWantsVisible;
     if (_isVisible == visible) {
@@ -310,7 +410,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   // }
 
   Future<void> _initializeVideoPlayer() async {
-    if (_isInitializing || widget.mediaUrl.isEmpty) return;
+    if (_isInitializing || widget.mediaUrl.isEmpty || _controllerHandedOff) {
+      return;
+    }
 
     _isInitializing = true;
 
@@ -413,36 +515,242 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       _hasLoggedVideoStarted = false;
       _loggedProgressMilestones.clear();
 
-      // Add listener for video completion and playback progress
-      _detachControllerListeners();
-      _videoPlayerController!.addListener(_handlePlaybackProgress);
-
-      // Listen to playing state changes to update UI
-      _videoPlayerController!.playingStateNotifier
-          .addListener(_onPlayingStateChanged);
-      _listenersAttached = true;
-
-      // OPTIMIZATION: Run setup operations in parallel for faster playback start
-      await Future.wait([
-        _videoPlayerController!.setLooping(true),
-        _videoPlayerController!.setVolume(widget.isMuted ? 0.0 : 1.0),
-      ]);
-
-      // If widget is visible when initialized, start playing only when allowed.
-      if (_mayStartPlayback(activeReel: !widget.isPreloaded)) {
-        unawaited(_videoPlayerController!.play());
-        widget.videoCacheManager.markAsVisible(widget.mediaUrl);
-        _startStuckVideoDetection();
-      } else {
-        if (_videoPlayerController!.isPlaying) {
-          unawaited(_videoPlayerController!.pause());
-        }
-        widget.videoCacheManager.markAsNotVisible(widget.mediaUrl);
-      }
+      await _attachControllerAndApplyPlayback(
+        shouldAutoPlay: _mayStartPlayback(activeReel: !widget.isPreloaded),
+      );
       _tryConsumePendingBlocResume();
     } catch (e) {
       debugPrint('❌ VideoPlayerWidget: Error setting up controller: $e');
     }
+  }
+
+  Future<void> _setupVideoControllerFromHandoff(
+    FeedVideoPlayerHandoffSnapshot snapshot,
+  ) async {
+    if (_videoPlayerController == null ||
+        !_videoPlayerController!.isInitialized ||
+        _videoPlayerController!.isDisposed) {
+      return;
+    }
+
+    try {
+      await _attachControllerAndApplyPlayback(
+        shouldAutoPlay: snapshot.shouldResumePlayback,
+        seekTarget: snapshot.position,
+        forceSeek: true,
+        bypassPlaybackGates: true,
+      );
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ VideoPlayerWidget: Error setting up handoff controller: $e');
+    }
+  }
+
+  Future<void> _attachControllerAndApplyPlayback({
+    required bool shouldAutoPlay,
+    Duration? seekTarget,
+    bool forceSeek = false,
+    bool bypassPlaybackGates = false,
+  }) async {
+    if (_videoPlayerController == null ||
+        !_videoPlayerController!.isInitialized ||
+        _videoPlayerController!.isDisposed) {
+      return;
+    }
+
+    _detachControllerListeners();
+    _videoPlayerController!.addListener(_handlePlaybackProgress);
+    _videoPlayerController!.playingStateNotifier
+        .addListener(_onPlayingStateChanged);
+    _listenersAttached = true;
+
+    await Future.wait([
+      _videoPlayerController!.setLooping(true),
+      _videoPlayerController!.setVolume(_targetVolume),
+    ]);
+
+    final target = seekTarget;
+    if (target != null && (forceSeek || target.inMilliseconds > 0)) {
+      final current = _videoPlayerController!.position;
+      if (forceSeek ||
+          (current.inMilliseconds - target.inMilliseconds).abs() > 250) {
+        await _videoPlayerController!.seekTo(target);
+      }
+    }
+
+    if (shouldAutoPlay &&
+        (bypassPlaybackGates || _mayStartPlayback(activeReel: !widget.isPreloaded))) {
+      unawaited(_videoPlayerController!.play());
+      widget.videoCacheManager.markAsVisible(widget.mediaUrl);
+      _startStuckVideoDetection();
+    } else {
+      if (_videoPlayerController!.isPlaying) {
+        unawaited(_videoPlayerController!.pause());
+      }
+      widget.videoCacheManager.markAsNotVisible(widget.mediaUrl);
+    }
+    _notifyPlaybackStateChanged();
+    _applyMuteVolume();
+  }
+
+  /// Transfers the active controller to fullscreen preview without resetting
+  /// playback position.
+  FeedVideoPlayerHandoffSnapshot? releaseForFullscreenHandoff() {
+    if (_isDisposed || _controllerHandedOff) return null;
+
+    final controller = _videoPlayerController;
+    if (controller == null ||
+        !controller.isInitialized ||
+        controller.isDisposed) {
+      return null;
+    }
+
+    final shouldResume = !_isManuallyPaused &&
+        (controller.isPlaying ||
+            _hasPlayed ||
+            controller.position.inMilliseconds > 0);
+    final snapshot = FeedVideoPlayerHandoffSnapshot(
+      mediaUrl: widget.mediaUrl,
+      position: controller.position,
+      shouldResumePlayback: shouldResume,
+      wasManuallyPaused: _isManuallyPaused,
+      controller: controller,
+      hadPlayed: _hasPlayed || controller.position.inMilliseconds > 0,
+    );
+
+    FeedVideoPlayerHandoff.openSession(snapshot);
+
+    _detachControllerListeners();
+    if (controller.isPlaying) {
+      unawaited(controller.pause());
+    }
+
+    _videoPlayerController = null;
+    _isInitialized = false;
+    _controllerHandedOff = true;
+    _notifyPlaybackStateChanged();
+    _safeSetState(() {});
+
+    return snapshot;
+  }
+
+  /// Re-attaches a controller returned from fullscreen preview.
+  void acceptFromHandoff(FeedVideoPlayerHandoffSnapshot snapshot) {
+    if (_isDisposed || snapshot.mediaUrl != widget.mediaUrl) return;
+
+    final controller = snapshot.controller;
+    _controllerHandedOff = false;
+    _skipDisposeTeardown = false;
+    _videoPlayerController = controller;
+    _hasPlayed = snapshot.hadPlayed || snapshot.position.inMilliseconds > 0;
+    _isManuallyPaused = snapshot.wasManuallyPaused;
+    _isInitializing = false;
+    _pendingBlocResume = false;
+
+    if (controller.isInitialized && !controller.isDisposed) {
+      _isInitialized = true;
+      final size = controller.videoSize;
+      _hasValidVideoSize = size.width > 0 && size.height > 0;
+    }
+
+    if (mounted) _safeSetState(() {});
+    unawaited(_completeHandoffAccept(snapshot));
+  }
+
+  Future<void> _completeHandoffAccept(
+    FeedVideoPlayerHandoffSnapshot snapshot,
+  ) async {
+    await _setupVideoControllerFromHandoff(snapshot);
+    if (_isDisposed || !mounted) return;
+    if (!snapshot.shouldResumePlayback && _videoPlayerController != null) {
+      try {
+        if (_videoPlayerController!.isPlaying) {
+          await _videoPlayerController!.pause();
+        }
+      } catch (_) {}
+      _applyMuteVolume();
+      _notifyPlaybackStateChanged();
+      if (mounted) _safeSetState(() {});
+      return;
+    }
+    if (snapshot.shouldResumePlayback && _videoPlayerController != null) {
+      try {
+        await _videoPlayerController!.setVolume(_targetVolume);
+        if (!_videoPlayerController!.isPlaying) {
+          await _videoPlayerController!.play();
+        }
+        _hasPlayed = true;
+      } catch (_) {}
+      _applyMuteVolume();
+      _notifyPlaybackStateChanged();
+      if (mounted) _safeSetState(() {});
+      return;
+    }
+    _applyMuteVolume();
+  }
+
+  /// Restores playback when a handoff return snapshot was lost.
+  void recoverFromFailedHandoff() {
+    if (_isDisposed) return;
+
+    final pending = FeedVideoPlayerHandoff.peekForFeed(widget.mediaUrl);
+    final session = FeedVideoPlayerHandoff.sessionFor(widget.mediaUrl);
+    final snapshot = pending ?? session;
+    if (snapshot != null) {
+      FeedVideoPlayerHandoff.takeForFeed(widget.mediaUrl);
+      acceptFromHandoff(snapshot);
+      return;
+    }
+
+    if (!_controllerHandedOff) return;
+    _controllerHandedOff = false;
+    _isInitializing = false;
+    _isInitialized = false;
+    _videoPlayerController = null;
+    if (mounted) setState(() {});
+    _initializeVideoPlayer();
+  }
+
+  /// Called by fullscreen preview before [Navigator.pop] so feed can restore
+  /// synchronously without waiting for widget dispose.
+  void publishHandoffReturnToFeed() {
+    if (_isDisposed) return;
+    _returnHandoffToFeed();
+  }
+
+  void _returnHandoffToFeed() {
+    final controller = _videoPlayerController;
+    if (controller == null ||
+        !controller.isInitialized ||
+        controller.isDisposed) {
+      return;
+    }
+
+    final shouldResume = !_isManuallyPaused &&
+        (controller.isPlaying ||
+            _hasPlayed ||
+            controller.position.inMilliseconds > 0);
+    final snapshot = FeedVideoPlayerHandoffSnapshot(
+      mediaUrl: widget.mediaUrl,
+      position: controller.position,
+      shouldResumePlayback: shouldResume,
+      wasManuallyPaused: _isManuallyPaused,
+      controller: controller,
+      hadPlayed: _hasPlayed || controller.position.inMilliseconds > 0,
+    );
+
+    _detachControllerListeners();
+    if (controller.isPlaying) {
+      unawaited(controller.pause());
+    }
+
+    FeedVideoPlayerHandoff.publishReturnToFeed(snapshot);
+    _videoPlayerController = null;
+    _skipDisposeTeardown = true;
   }
 
   void _detachControllerListeners() {
@@ -628,7 +936,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
             !_isManuallyPaused) {
           // Ensure volume is set correctly before playing
           unawaited(
-              _videoPlayerController!.setVolume(widget.isMuted ? 0.0 : 1.0));
+              _videoPlayerController!.setVolume(_targetVolume));
           // OPTIMIZATION: Don't await - fire and forget for instant response
           unawaited(_videoPlayerController!.play());
           widget.videoCacheManager.markAsVisible(widget.mediaUrl);
@@ -704,7 +1012,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
         // Set volume and force resume
         unawaited(
-            _videoPlayerController!.setVolume(widget.isMuted ? 0.0 : 1.0));
+            _videoPlayerController!.setVolume(_targetVolume));
         unawaited(_videoPlayerController!.forceResume());
 
         // If too many recovery attempts, try re-initializing the video
@@ -844,7 +1152,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           : _mayStartPlayback(activeReel: !widget.isPreloaded);
       if (shouldPlay) {
         unawaited(
-          _videoPlayerController!.setVolume(widget.isMuted ? 0.0 : 1.0),
+          _videoPlayerController!.setVolume(_targetVolume),
         );
         unawaited(_videoPlayerController!.play());
       }
@@ -864,7 +1172,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         controller.isDisposed) {
       return;
     }
-    unawaited(controller.setVolume(widget.isMuted ? 0.0 : 1.0));
+    unawaited(controller.setVolume(_targetVolume));
     if (!controller.isPlaying) {
       unawaited(controller.play());
     }
@@ -944,17 +1252,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       _syncVisibilityFromParent();
     }
 
-    // Handle mute state changes
-    // Note: Don't check _isDisposed here - didUpdateWidget is only called when widget is active
-    if (oldWidget.isMuted != widget.isMuted &&
-        _videoPlayerController != null &&
-        _videoPlayerController!.isInitialized &&
-        !_videoPlayerController!.isDisposed) {
-      try {
-        _videoPlayerController!.setVolume(widget.isMuted ? 0.0 : 1.0);
-      } catch (e) {
-        debugPrint('⚠️ VideoPlayerWidget: Error updating volume: $e');
-      }
+    // Handle mute state changes from parent rebuilds.
+    if (oldWidget.isMuted != widget.isMuted) {
+      _applyMuteVolume();
     }
 
     // Handle media URL changes
@@ -982,14 +1282,27 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       debugPrint('⚠️ state VideoPlayerWidget: (${widget.logIndex}) dispose');
     }
     _isDisposed = true;
+    VideoMuteController.notifier.removeListener(_applyMuteVolume);
     IsrActiveVideoPlayerRegistry.unregisterPauseHandler(_backgroundPauseHandler);
     // Cancel timers
     _stopStuckVideoDetection();
     _controllerReadyCheckTimer?.cancel();
+
+    if (widget.isHandoffReceiver) {
+      _returnHandoffToFeed();
+    }
+
+    if (_controllerHandedOff || _skipDisposeTeardown) {
+      _detachControllerListeners();
+      super.dispose();
+      return;
+    }
+
     // Safety check: ensure controller is valid and not already disposed
     if (_videoPlayerController != null &&
         _videoPlayerController!.isInitialized &&
-        !_videoPlayerController!.isDisposed) {
+        !_videoPlayerController!.isDisposed &&
+        !FeedVideoPlayerHandoff.isControllerProtected(_videoPlayerController)) {
       try {
         _detachControllerListeners();
         _videoPlayerController!.pause();
@@ -1044,11 +1357,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
             alignment: Alignment.center,
             children: [
               // Note: Don't check _isDisposed here - build() is only called when widget is active
-              if (_isInitialized &&
-                  _videoPlayerController != null &&
-                  _videoPlayerController!.isInitialized &&
-                  !_videoPlayerController!.isDisposed &&
-                  _hasPlayed) ...[
+              if (_shouldShowVideoSurface) ...[
                 // Video is ready, show the player
                 // Use SizedBox.expand to fill available space when video size is 0
                 Builder(
@@ -1120,9 +1429,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                     fit: StackFit.expand,
                     children: [
                       _buildThumbnailWidget(context),
-                      // Show loading indicator when initializing
-                      if (_isInitializing ||
-                          (_effectiveVisible && !_isInitialized))
+                      if (!_controllerHandedOff &&
+                          (_isInitializing ||
+                              (_effectiveVisible && !_isInitialized)))
                         const Center(
                           child: CircularProgressIndicator(
                             color: Colors.white,

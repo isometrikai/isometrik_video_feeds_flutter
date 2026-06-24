@@ -9,6 +9,7 @@ import 'package:ism_video_reel_player/presentation/bloc/posts/social_post_bloc.d
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/video_player_widget.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/comment_count_action_widget.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/feed_post_media_hero.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/feed_text_post_content.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/like_action_widget.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/text_post_formatting.dart';
@@ -36,6 +37,7 @@ class FeedPostFullscreenView extends StatefulWidget {
     this.mediaList,
     this.initialMediaIndex = 0,
     this.videoCacheManager,
+    this.handoffSnapshot,
   }) : assert(
           textFormatting != null ||
               (mediaList != null && mediaList!.isNotEmpty),
@@ -56,6 +58,7 @@ class FeedPostFullscreenView extends StatefulWidget {
   final List<MediaMetaData>? mediaList;
   final int initialMediaIndex;
   final VideoCacheManager? videoCacheManager;
+  final FeedVideoPlayerHandoffSnapshot? handoffSnapshot;
 
   static const Color likeColor = Color(0xFFED4956);
   static const Color iconColor = Colors.white;
@@ -77,6 +80,7 @@ class FeedPostFullscreenView extends StatefulWidget {
     List<MediaMetaData>? mediaList,
     int initialMediaIndex = 0,
     VideoCacheManager? videoCacheManager,
+    FeedVideoPlayerHandoffSnapshot? handoffSnapshot,
   }) {
     final socialPostBloc = context.getOrCreateBloc<SocialPostBloc>();
     final socialActionCubit = context.getOrCreateBloc<IsmSocialActionCubit>();
@@ -84,6 +88,8 @@ class FeedPostFullscreenView extends StatefulWidget {
     return Navigator.of(context, rootNavigator: true).push<void>(
       PageRouteBuilder<void>(
         opaque: true,
+        transitionDuration: const Duration(milliseconds: 280),
+        reverseTransitionDuration: const Duration(milliseconds: 260),
         pageBuilder: (_, __, ___) => MultiBlocProvider(
           providers: [
             BlocProvider<SocialPostBloc>.value(value: socialPostBloc),
@@ -105,12 +111,21 @@ class FeedPostFullscreenView extends StatefulWidget {
             mediaList: mediaList,
             initialMediaIndex: initialMediaIndex,
             videoCacheManager: videoCacheManager,
+            handoffSnapshot: handoffSnapshot,
           ),
         ),
-        transitionsBuilder: (_, animation, __, child) => FadeTransition(
-          opacity: animation,
-          child: child,
-        ),
+        transitionsBuilder: (_, animation, __, child) {
+          // Let [Hero] drive the media flight; only fade chrome overlays.
+          final fade = CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+            reverseCurve: Curves.easeInCubic,
+          );
+          return FadeTransition(
+            opacity: Tween<double>(begin: 0.92, end: 1).animate(fade),
+            child: child,
+          );
+        },
       ),
     );
   }
@@ -152,13 +167,34 @@ class _FeedPostFullscreenViewState extends State<FeedPostFullscreenView> {
 
   bool _isPicture(MediaMetaData media) => media.mediaType == _pictureType;
 
+  void _closePreview() {
+    _commitActiveVideoHandoffToFeed();
+    Navigator.of(context).pop();
+  }
+
+  void _commitActiveVideoHandoffToFeed() {
+    final mediaList = widget.mediaList;
+    if (mediaList == null || mediaList.isEmpty) return;
+    final index = _currentMediaIndex.clamp(0, mediaList.length - 1);
+    final media = mediaList[index];
+    if (_isPicture(media)) return;
+    final playerKey = _videoPlayerKeys[index];
+    if (playerKey == null) return;
+    VideoPlayerWidget.of(playerKey)?.publishHandoffReturnToFeed();
+  }
+
   @override
   Widget build(BuildContext context) {
     final iconSize = widget.actionIconConfig.iconSize ?? IsrDimens.twentyFour;
     final topInset = MediaQuery.paddingOf(context).top;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) _closePreview();
+      },
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
         backgroundColor: Colors.black,
@@ -172,7 +208,7 @@ class _FeedPostFullscreenViewState extends State<FeedPostFullscreenView> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   _ChromeIconButton(
-                    onTap: () => Navigator.of(context).pop(),
+                    onTap: _closePreview,
                     child: Icon(
                       Icons.close,
                       color: FeedPostFullscreenView.iconColor,
@@ -208,6 +244,7 @@ class _FeedPostFullscreenViewState extends State<FeedPostFullscreenView> {
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -267,28 +304,55 @@ class _FeedPostFullscreenViewState extends State<FeedPostFullscreenView> {
   }
 
   Widget _buildMediaPage(MediaMetaData media, int index) {
+    final postId = widget.reelsData.postId ?? '';
     if (_isPicture(media)) {
-      final imageUrl = media.mediaUrl.trim();
-      return ColoredBox(
-        color: Colors.black,
-        child: Center(
-          child: AppImage.network(
-            imageUrl,
-            fit: BoxFit.contain,
-            width: double.infinity,
-            height: double.infinity,
-            cacheKey: imageUrl,
-            cacheManager: IsrPostFeedImageCacheManager.instance,
-            fadeAnimationEnable: false,
-          ),
-        ),
+      return FeedPostMediaHeroScope(
+        postId: postId,
+        mediaIndex: index,
+        child: _buildPicturePageContent(media),
       );
     }
 
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        FeedPostMediaHeroScope(
+          postId: postId,
+          mediaIndex: index,
+          child: FeedPostVideoHeroShell(thumbnailUrl: media.thumbnailUrl),
+        ),
+        _buildVideoPageContent(media, index),
+      ],
+    );
+  }
+
+  Widget _buildPicturePageContent(MediaMetaData media) {
+    final imageUrl = media.mediaUrl.trim();
+    return ColoredBox(
+      color: Colors.black,
+      child: Center(
+        child: AppImage.network(
+          imageUrl,
+          fit: BoxFit.contain,
+          width: double.infinity,
+          height: double.infinity,
+          cacheKey: imageUrl,
+          cacheManager: IsrPostFeedImageCacheManager.instance,
+          fadeAnimationEnable: false,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVideoPageContent(MediaMetaData media, int index) {
     final playerKey = _videoPlayerKeys.putIfAbsent(
       index,
       () => GlobalKey(debugLabel: 'feed_fullscreen_video_$index'),
     );
+    final handoff = index == _currentMediaIndex
+        ? (widget.handoffSnapshot ??
+            FeedVideoPlayerHandoff.sessionFor(media.mediaUrl.trim()))
+        : null;
 
     return Stack(
       fit: StackFit.expand,
@@ -307,6 +371,8 @@ class _FeedPostFullscreenViewState extends State<FeedPostFullscreenView> {
           onPlaybackStateChanged: () {
             if (mounted) _videoOverlayTick.value++;
           },
+          initialHandoff: handoff,
+          isHandoffReceiver: handoff != null,
         ),
         Positioned.fill(
           child: GestureDetector(

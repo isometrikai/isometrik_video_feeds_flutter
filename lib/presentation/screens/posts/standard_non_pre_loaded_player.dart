@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/media_kit_video_player.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/video_player_interface.dart';
+import 'package:ism_video_reel_player/utils/feed_video_player_handoff.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:video_player/video_player.dart';
 
@@ -299,7 +300,13 @@ class StandardVideoNonPreloadedManager implements IVideoCacheManager {
 
   @override
   void detachedFromWidget(String url, IVideoPlayerController? controller) {
+    if (FeedVideoPlayerHandoff.isControllerProtected(controller)) {
+      return;
+    }
     Future.delayed(const Duration(milliseconds: 300), () async {
+      if (FeedVideoPlayerHandoff.isControllerProtected(controller)) {
+        return;
+      }
       await controller?.pause();
       await controller?.seekTo(Duration.zero);
       await controller?.dispose();
