@@ -1,7 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
-import 'package:ism_video_reel_player/utils/navigator/isr_app_navigator.dart';
 import 'package:ism_video_reel_player/utils/post_review_status_util.dart';
 
 /// Default SDK handler for moderated posts (rejected, in review, scheduled).
@@ -10,9 +9,9 @@ class IsrPostModerationTap {
 
   /// Shows [PostDetailsBottomSheet] for moderated posts.
   ///
-  /// Returns `true` when the tap was handled (sheet shown or reels opened when
-  /// [postDataList] is provided). Returns `false` for normal published posts so
-  /// the host app can open its own viewer.
+  /// Returns `true` when a moderated post sheet was shown.
+  /// Returns `false` for published posts so the caller can open reels with its
+  /// own [postConfig] (overlay padding, icons, etc.).
   static Future<bool> handle(
     BuildContext context,
     TimeLineData post, {
@@ -37,20 +36,9 @@ class IsrPostModerationTap {
       return true;
     }
 
-    if (postDataList != null &&
-        postIndex != null &&
-        postIndex >= 0 &&
-        postIndex < postDataList.length) {
-      await IsrAppNavigator.navigateToReelsPlayer(
-        context,
-        postDataList: postDataList,
-        startingPostIndex: postIndex,
-        postSectionType: postSectionType ?? PostSectionType.forYou,
-        skipOnTapPostCallback: true,
-      );
-      return true;
-    }
-
+    // Published posts: let the caller's [navigateToReelsPlayer] proceed so
+    // host-provided [postConfig] (e.g. reduced overlay padding from Explore /
+    // Profile) is not replaced by a nested navigation using global config.
     return false;
   }
 }

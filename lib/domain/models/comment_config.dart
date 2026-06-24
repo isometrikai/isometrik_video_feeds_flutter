@@ -183,6 +183,8 @@ class CommentItemConfig {
     this.moreIconSize,
     this.moreIconColor,
     this.avatarSize,
+    this.avatarBackgroundColor,
+    this.avatarForegroundColor,
     this.showMoreMenu = true,
     this.commentPadding,
     this.commentSpacing,
@@ -229,6 +231,12 @@ class CommentItemConfig {
   /// Diameter for comment author avatar.
   final double? avatarSize;
 
+  /// Background for initials avatar when no profile image is available.
+  final Color? avatarBackgroundColor;
+
+  /// Text color for initials avatar when no profile image is available.
+  final Color? avatarForegroundColor;
+
   /// When false, hides the overflow menu on each comment row.
   final bool showMoreMenu;
 
@@ -258,6 +266,8 @@ class CommentItemConfig {
     double? moreIconSize,
     Color? moreIconColor,
     double? avatarSize,
+    Color? avatarBackgroundColor,
+    Color? avatarForegroundColor,
     bool? showMoreMenu,
     EdgeInsetsGeometry? commentPadding,
     double? commentSpacing,
@@ -278,6 +288,10 @@ class CommentItemConfig {
         moreIconSize: moreIconSize ?? this.moreIconSize,
         moreIconColor: moreIconColor ?? this.moreIconColor,
         avatarSize: avatarSize ?? this.avatarSize,
+        avatarBackgroundColor:
+            avatarBackgroundColor ?? this.avatarBackgroundColor,
+        avatarForegroundColor:
+            avatarForegroundColor ?? this.avatarForegroundColor,
         showMoreMenu: showMoreMenu ?? this.showMoreMenu,
         commentPadding: commentPadding ?? this.commentPadding,
         commentSpacing: commentSpacing ?? this.commentSpacing,
@@ -384,6 +398,7 @@ class ReplyFieldConfig {
     this.quickReactionEmojis,
     this.inputBorderRadius,
     this.inputBorderColor,
+    this.inputBackgroundColor,
     this.sendButtonColor,
     this.sendButtonIconColor,
     this.showEmojiBar = true,
@@ -440,6 +455,9 @@ class ReplyFieldConfig {
 
   final Color? inputBorderColor;
 
+  /// Background fill for the pill-shaped comment composer.
+  final Color? inputBackgroundColor;
+
   final Color? sendButtonColor;
 
   final Color? sendButtonIconColor;
@@ -469,6 +487,7 @@ class ReplyFieldConfig {
     List<String>? quickReactionEmojis,
     double? inputBorderRadius,
     Color? inputBorderColor,
+    Color? inputBackgroundColor,
     Color? sendButtonColor,
     Color? sendButtonIconColor,
     bool? showEmojiBar,
@@ -498,6 +517,7 @@ class ReplyFieldConfig {
             quickReactionEmojis ?? this.quickReactionEmojis,
         inputBorderRadius: inputBorderRadius ?? this.inputBorderRadius,
         inputBorderColor: inputBorderColor ?? this.inputBorderColor,
+        inputBackgroundColor: inputBackgroundColor ?? this.inputBackgroundColor,
         sendButtonColor: sendButtonColor ?? this.sendButtonColor,
         sendButtonIconColor: sendButtonIconColor ?? this.sendButtonIconColor,
         showEmojiBar: showEmojiBar ?? this.showEmojiBar,

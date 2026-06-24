@@ -20,6 +20,7 @@ export 'domain/models/user_info_class.dart';
 export 'cache/isr_feed_cache.dart';
 export 'isr_feed_cache_config.dart';
 export 'isr_video_reel_config.dart';
+export 'res/theme/comment_ui_theme.dart';
 /// Presentation exports.
 export 'presentation/presentation.dart';
 /// Remote/API exports.

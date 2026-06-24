@@ -1219,7 +1219,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           formatting: formatting,
           mentions: _mentionedDataList,
           onMentionTap: (mention) => _callOnTapMentionData([mention]),
-          onMentionsTap: _callOnTapMentionData,
+          // Reels overlay already shows tagged users via the bottom pill row.
           mentionConfig: _mentionConfig,
           scrollable: formatting.hasBackground,
         ),
