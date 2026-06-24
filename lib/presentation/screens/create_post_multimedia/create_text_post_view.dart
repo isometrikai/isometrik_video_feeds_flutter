@@ -20,7 +20,10 @@ import 'package:ism_video_reel_player/utils/utils.dart';
 /// Reuses the shared [CreatePostBloc] to publish a `text` type post through the
 /// SDK create-post pipeline (no media upload step is required for text posts).
 class CreateTextPostView extends StatefulWidget {
-  const CreateTextPostView({super.key});
+  const CreateTextPostView({super.key, this.postData});
+
+  /// When set, the composer opens in edit mode for an existing text post.
+  final TimeLineData? postData;
 
   /// Character limits — see [TextPostComposerLimits] for line / blank-line rules.
   static const int plainLimit = TextPostComposerLimits.plainCharLimit;
@@ -109,6 +112,8 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
           ?.onBackgroundPostOperation !=
       null;
 
+  bool get _isEditMode => widget.postData != null;
+
   bool get _canPost {
     if (_controller.text.trim().isEmpty || _isPosting) return false;
     return TextPostComposerLimits.validate(
@@ -154,13 +159,45 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
   @override
   void initState() {
     super.initState();
-    // Reset any stale state left on the shared (singleton) create-post bloc.
-    _createPostBloc.add(CreatePostInitialEvent());
+    if (_isEditMode) {
+      _createPostBloc.add(EditPostEvent(postData: widget.postData!));
+      _hydrateFromPost(widget.postData!);
+    } else {
+      // Reset any stale state left on the shared (singleton) create-post bloc.
+      _createPostBloc.add(CreatePostInitialEvent());
+    }
     _controller.addListener(_onTextChanged);
     _loadProfile();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _focusNode.requestFocus();
     });
+  }
+
+  void _hydrateFromPost(TimeLineData post) {
+    final formatting = TextPostFormatting.fromTimeline(post);
+    _controller.text = formatting.text;
+    _isCard = formatting.hasBackground;
+    if (_isCard) {
+      _bgType = formatting.backgroundType.isNotEmpty
+          ? formatting.backgroundType
+          : 'gradient';
+      _bgValue = formatting.backgroundValue.isNotEmpty
+          ? formatting.backgroundValue
+          : 'blue_purple';
+      _textColor = formatting.textColor;
+      _fontFamily = formatting.fontFamily;
+      _fontSize = formatting.fontSize
+          .round()
+          .clamp(CreateTextPostView.minFontSize, CreateTextPostView.maxFontSize);
+      _fontStyle = formatting.fontStyle;
+      _cardTextAlign = formatting.textAlign;
+    }
+    final places = post.tags?.places;
+    if (places != null && places.isNotEmpty) {
+      _taggedPlaces
+        ..clear()
+        ..addAll(places);
+    }
   }
 
   @override
@@ -265,14 +302,19 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
 
     final request = CreatePostRequest(
       type: SocialPostType.text,
-      visibility: SocialPostVisibility.public,
+      visibility: widget.postData?.visibility ?? SocialPostVisibility.public,
       textFormatting: textFormatting,
       tags: _taggedPlaces.isEmpty
           ? null
           : Tags(places: List<TaggedPlace>.from(_taggedPlaces)),
     );
 
-    _createPostBloc.add(PostCreateEvent(createPostRequest: request));
+    _createPostBloc.add(
+      PostCreateEvent(
+        isForEdit: _isEditMode,
+        createPostRequest: request,
+      ),
+    );
   }
 
   void _showValidationMessage(TextPostValidationResult validation) {
@@ -357,8 +399,15 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
           return;
         }
         if (state is PostCreatedState) {
-          IsrVideoReelConfig.socialActionCubit
-              .onPostCreated(postId: state.postDataModel?.id);
+          if (_isEditMode) {
+            IsrVideoReelConfig.socialActionCubit.onPostEdited(
+              postId: state.postDataModel?.id ?? widget.postData?.id,
+              postData: state.postDataModel,
+            );
+          } else {
+            IsrVideoReelConfig.socialActionCubit
+                .onPostCreated(postId: state.postDataModel?.id);
+          }
           _closeComposer(result: state.postDataModel);
         }
       },

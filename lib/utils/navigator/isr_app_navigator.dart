@@ -742,6 +742,14 @@ class IsrAppNavigator {
     required TimeLineData postData,
     TransitionType? transitionType,
   }) async {
+    if (TimelinePostTypeUtil.isTextPost(postData)) {
+      return goToEditTextPostView(
+        context,
+        postData: postData,
+        transitionType: transitionType,
+      );
+    }
+
     final page = MultiBlocProvider(
       providers: [
         BlocProvider.value(value: context.getOrCreateBloc<CreatePostBloc>()),
@@ -761,6 +769,17 @@ class IsrAppNavigator {
     );
     return result;
   }
+
+  static Future<dynamic> goToEditTextPostView(
+    BuildContext context, {
+    required TimeLineData postData,
+    TransitionType? transitionType,
+  }) =>
+      CreateTextPostFlowCoordinator.runEdit(
+        context,
+        postData: postData,
+        transitionType: transitionType,
+      );
 
   @Deprecated('Use presentCreatePostFromMedia instead.')
   static Future<dynamic> goToCreatePostAttributionView(

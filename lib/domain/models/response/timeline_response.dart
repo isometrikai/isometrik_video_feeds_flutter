@@ -1284,7 +1284,7 @@ ReelsData getReelData(TimeLineData postData, {String? loggedInUserId}) =>
         isCommentButtonVisible: postData.settings?.commentsEnabled == true,
         isSaveButtonVisible: postData.settings?.saveEnabled == true,
         isLikeButtonVisible: true,
-        isShareButtonVisible: true,
+        isShareButtonVisible: !TimelinePostTypeUtil.isPlainTextPost(postData),
         isMoreButtonVisible: true,
         isFollowButtonVisible: postData.user?.id != loggedInUserId,
         isUnFollowButtonVisible: postData.user?.id != loggedInUserId,

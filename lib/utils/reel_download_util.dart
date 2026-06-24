@@ -3,7 +3,8 @@ import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 import 'package:ism_video_reel_player/domain/domain.dart';
-import 'package:ism_video_reel_player/utils/utils.dart';
+import 'package:ism_video_reel_player/utils/app_log.dart';
+import 'package:ism_video_reel_player/utils/timeline_post_type_util.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -30,6 +31,7 @@ class ReelDownloadUtil {
   }) {
     if (!postConfig.canDownload) return false;
     if (post.isLocked == true) return false;
+    if (post.isTextPost) return false;
     return post.settings?.downloadEnabled ?? true;
   }
 
