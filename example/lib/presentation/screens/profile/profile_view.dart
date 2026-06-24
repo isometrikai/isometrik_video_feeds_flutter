@@ -25,9 +25,7 @@ class _ProfileViewState extends State<ProfileView> {
               ListTile(
                 leading: const Icon(Icons.person),
                 title: const Text('View Profile'),
-                onTap: () {
-                  // Handle view profile action
-                },
+                onTap: () => ProfileScreen.show(context),
               ),
               const Divider(),
 

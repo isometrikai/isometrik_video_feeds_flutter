@@ -201,8 +201,44 @@ class IsrTranslationFile {
   static const String edit = 'Edit';
   static const String delete = 'Delete';
   static const String deletePost = 'Delete Post';
+  static const String deleteThisPost = 'Delete this post?';
+  static const String deleteThisPostMessage =
+      "This can't be undone. The post and all its data will be permanently removed.";
+  static const String confirmDelete = 'Confirm Delete';
   static const String deletePostConfirmation =
       'Are you sure you want to delete this post?';
+
+  // Post details / moderation UI
+  static const String postDetails = 'Post Details';
+  static const String rejected = 'Rejected';
+  static const String scheduled = 'Scheduled';
+  static const String tapForDetails = 'Tap for details';
+  static const String editAndResubmit = 'Edit & Resubmit';
+  static const String withdrawPost = 'Withdraw Post';
+  static const String editSubmission = 'Edit Submission';
+  static const String publishNow = 'Publish Now';
+  static const String postDetailsAwaitingReview = 'Awaiting Review';
+  static const String postDetailsAwaitingReviewMessage =
+      'Your post is in the queue. Reviews usually complete within 24–48 hours. You\'ll be notified as soon as there\'s an update.';
+  static const String postDetailsScheduledPostTitle = 'Scheduled Post';
+  static const String postDetailsScheduledPostMessage =
+      'This post is approved and will publish automatically. You can even publish it now.';
+  static const String postDetailsResubmittedTitle = 'Post Resubmitted!';
+  static String postDetailsResubmittedMessage(int count) =>
+      'Your $count replaced item${count == 1 ? '' : 's'} are now under admin review. The rest of your post is live and unchanged. You\'ll get a notification once the review is complete.';
+  static String postDetailsRejectedItemsCount(int rejected, int total) =>
+      '$rejected of $total items rejected';
+  static String postDetailsRejectedItemsFallback(int count) =>
+      count == 1 ? '1 item rejected' : '$count items rejected';
+  static const String postDetailsDefaultRejectionReason =
+      'This item did not meet our content standards.';
+  static const String postDetailsSubmittedLabel = 'Submitted';
+  static const String postDetailsReviewedLabel = 'Reviewed';
+  static const String postDetailsRejectedOnLabel = 'Rejected';
+  static const String postDetailsScheduledForLabel = 'Scheduled for';
+  static String postReviewImageLabel(int number) => 'Image #$number';
+  static String postReviewVideoLabel(int number) => 'Video #$number';
+
   static const String deleteStory = 'Delete Story?';
   static const String deleteStoryConfirmation =
       'Are you sure you want to delete this story? This action cannot be undone.';

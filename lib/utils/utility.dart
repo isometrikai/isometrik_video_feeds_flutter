@@ -144,16 +144,22 @@ class Utility {
   }
 
   /// shows general dialog for entire app
-  static void showAppDialog({
+  static Future<bool?> showAppDialog({
+    BuildContext? dialogContext,
     String? message,
     String? titleText,
     bool? isSuccess = false,
-    bool? isToShowTitle = true,
+    bool? isToShowTitle,
     bool? isTwoButtons = false,
     String? positiveButtonText,
     String? negativeButtonText,
     Function()? onPressPositiveButton,
     Function()? onPressNegativeButton,
+    bool? barrierDismissible,
+    bool? showCloseButton,
+    Color? positiveButtonBackgroundColor,
+    Color? negativeButtonBackgroundColor,
+    Color? negativeButtonTextColor,
   }) {
     final dialogConfig = IsrVideoReelConfig.socialConfig.dialogConfig;
     final borderRadius = dialogConfig?.borderRadius ?? IsrDimens.twelve;
@@ -165,10 +171,31 @@ class Utility {
         IsrStyles.secondaryText14.copyWith(fontWeight: FontWeight.w700);
     final messageStyle =
         dialogConfig?.messageTextStyle ?? IsrStyles.primaryText14;
+    final titleTextAlign = dialogConfig?.titleTextAlign;
+    final messageTextAlign =
+        dialogConfig?.messageTextAlign;
+    final crossAxisAlignment =
+        dialogConfig?.crossAxisAlignment ?? CrossAxisAlignment.start;
+    final actionsMainAxisAlignment =
+        dialogConfig?.actionsMainAxisAlignment ?? MainAxisAlignment.spaceEvenly;
+    final titleMessageSpacing =
+        dialogConfig?.titleMessageSpacing ?? IsrDimens.eight;
+    final resolvedShowCloseButton =
+        showCloseButton ?? dialogConfig?.showCloseButton ?? false;
+    final resolvedShowTitle =
+        isToShowTitle ?? dialogConfig?.isShowTitle ?? true;
+    final resolvedBarrierDismissible =
+        barrierDismissible ?? dialogConfig?.barrierDismissible ?? true;
+    final hostContext =
+        dialogContext ?? context ?? IsrVideoReelConfig.buildContext!;
 
-    showDialog(
-      context: context ?? IsrVideoReelConfig.buildContext!,
-      builder: (_) => Dialog(
+    return showDialog<bool>(
+      context: hostContext,
+      barrierDismissible: resolvedBarrierDismissible,
+      barrierColor: dialogConfig?.barrierColor,
+      builder: (sheetContext) => Dialog(
+        insetPadding: dialogConfig?.insetPadding,
+        elevation: dialogConfig?.elevation,
         shape: RoundedRectangleBorder(
           borderRadius: IsrDimens.borderRadiusAll(borderRadius),
         ),
@@ -177,67 +204,77 @@ class Utility {
           padding: padding,
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: crossAxisAlignment,
             children: [
-              Align(
-                alignment: Alignment.topRight,
-                child: TapHandler(
-                  padding: IsrDimens.four,
-                  onTap: closeOpenDialog,
-                  child: AppImage.svg(
-                    AssetConstants.icCrossIcon,
-                    height: IsrDimens.twelve,
-                    width: IsrDimens.twelve,
+              if (resolvedShowCloseButton)
+                Align(
+                  alignment: Alignment.topRight,
+                  child: TapHandler(
+                    padding: IsrDimens.four,
+                    onTap: () => Navigator.of(sheetContext).pop(),
+                    child: AppImage.svg(
+                      AssetConstants.icCrossIcon,
+                      height: IsrDimens.twelve,
+                      width: IsrDimens.twelve,
+                    ),
                   ),
                 ),
-              ),
-              IsrDimens.boxHeight(IsrDimens.twenty),
-              if (isToShowTitle == true)
+              if (resolvedShowCloseButton) IsrDimens.boxHeight(IsrDimens.twenty),
+              if (resolvedShowTitle)
                 Text(
                   titleText ?? IsrTranslationFile.alert,
                   style: titleStyle,
+                  textAlign: titleTextAlign,
+                  maxLines: dialogConfig?.titleMaxLines,
+                  overflow: dialogConfig?.titleMaxLines != null
+                      ? TextOverflow.ellipsis
+                      : null,
                 ),
               if (message.isStringEmptyOrNull == false) ...[
-                IsrDimens.boxHeight(IsrDimens.eight),
+                IsrDimens.boxHeight(titleMessageSpacing),
                 Text(
                   message.toString(),
                   style: messageStyle,
-                  textAlign: TextAlign.center,
+                  textAlign: messageTextAlign,
+                  maxLines: dialogConfig?.messageMaxLines,
+                  overflow: dialogConfig?.messageMaxLines != null
+                      ? TextOverflow.ellipsis
+                      : null,
                 ),
               ],
               IsrDimens.boxHeight(IsrDimens.twenty),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                mainAxisAlignment: actionsMainAxisAlignment,
                 children: [
-                  Expanded(
-                    child: _buildDialogButton(
-                      title: positiveButtonText ?? IsrTranslationFile.ok,
-                      buttonConfig:
-                          IsrVideoReelConfig.socialConfig.primaryButton,
-                      onPress: () {
-                        closeOpenDialog();
-                        if (onPressPositiveButton != null) {
-                          onPressPositiveButton.call();
-                        }
-                      },
-                    ),
-                  ),
                   if (isTwoButtons == true) ...[
-                    IsrDimens.boxWidth(IsrDimens.five),
                     Expanded(
                       child: _buildDialogButton(
                         title: negativeButtonText ?? IsrTranslationFile.cancel,
                         buttonConfig:
                             IsrVideoReelConfig.socialConfig.secondaryButton,
                         buttonType: ButtonType.secondary,
+                        defaultBackgroundColor: negativeButtonBackgroundColor,
+                        defaultTextColor: negativeButtonTextColor,
                         onPress: () {
-                          closeOpenDialog();
-                          if (onPressNegativeButton != null) {
-                            onPressNegativeButton.call();
-                          }
+                          Navigator.of(sheetContext).pop(false);
+                          onPressNegativeButton?.call();
                         },
                       ),
                     ),
+                    IsrDimens.boxWidth(IsrDimens.five),
                   ],
+                  Expanded(
+                    child: _buildDialogButton(
+                      title: positiveButtonText ?? IsrTranslationFile.ok,
+                      buttonConfig:
+                      IsrVideoReelConfig.socialConfig.primaryButton,
+                      defaultBackgroundColor: positiveButtonBackgroundColor,
+                      onPress: () {
+                        Navigator.of(sheetContext).pop(true);
+                        onPressPositiveButton?.call();
+                      },
+                    ),
+                  ),
                 ],
               ),
               IsrDimens.boxHeight(IsrDimens.ten),
@@ -245,7 +282,6 @@ class Utility {
           ),
         ),
       ),
-      barrierDismissible: true,
     );
   }
 
@@ -255,16 +291,21 @@ class Utility {
     ButtonConfig? buttonConfig,
     ButtonType buttonType = ButtonType.primary,
     required VoidCallback? onPress,
+    Color? defaultBackgroundColor,
+    Color? defaultTextColor,
   }) =>
       AppButton(
         width: IsrDimens.twoHundredFifty,
         title: title,
         type: buttonType,
         onPress: onPress,
-        backgroundColor: buttonConfig?.backgroundColor,
-        textColor: buttonConfig?.textColor,
+        backgroundColor:
+            buttonConfig?.backgroundColor ?? defaultBackgroundColor,
+        textColor: buttonConfig?.textColor ?? defaultTextColor,
         borderColor: buttonConfig?.borderColor,
         borderRadius: buttonConfig?.borderRadius,
+        textStyle: buttonConfig?.textStyle ??
+            IsrVideoReelConfig.socialConfig.dialogConfig?.buttonTextStyle,
       );
 
   /// shows bottom sheet
@@ -679,9 +720,17 @@ class Utility {
         IsrStyles.primaryText18.copyWith(fontWeight: FontWeight.w700);
     final messageStyle = dialogConfig?.messageTextStyle ??
         IsrStyles.primaryText14.copyWith(color: '4A4A4A'.toColor());
+    final titleTextAlign = dialogConfig?.titleTextAlign;
+    final messageTextAlign = dialogConfig?.messageTextAlign;
+    final crossAxisAlignment =
+        dialogConfig?.crossAxisAlignment ?? CrossAxisAlignment.stretch;
+    final titleMessageSpacing =
+        dialogConfig?.titleMessageSpacing ?? 16.responsiveDimension;
 
     Widget buildDialog(BuildContext dialogContext) => Dialog(
-          insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+          insetPadding: dialogConfig?.insetPadding ??
+              const EdgeInsets.symmetric(horizontal: 28),
+          elevation: dialogConfig?.elevation,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(borderRadius),
           ),
@@ -690,16 +739,26 @@ class Utility {
             padding: padding,
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              crossAxisAlignment: crossAxisAlignment,
               children: [
                 Text(
                   IsrTranslationFile.removeMeFromPostTitle,
                   style: titleStyle,
+                  textAlign: titleTextAlign,
+                  maxLines: dialogConfig?.titleMaxLines,
+                  overflow: dialogConfig?.titleMaxLines != null
+                      ? TextOverflow.ellipsis
+                      : null,
                 ),
-                16.responsiveVerticalSpace,
+                SizedBox(height: titleMessageSpacing),
                 Text(
                   IsrTranslationFile.removeMeFromPostMessage,
                   style: messageStyle,
+                  textAlign: messageTextAlign,
+                  maxLines: dialogConfig?.messageMaxLines,
+                  overflow: dialogConfig?.messageMaxLines != null
+                      ? TextOverflow.ellipsis
+                      : null,
                 ),
                 24.responsiveVerticalSpace,
                 AppButton(
@@ -779,30 +838,39 @@ class Utility {
         dialogConfig?.backgroundColor ?? IsrColors.dialogColor;
     final padding =
         dialogConfig?.padding ?? IsrDimens.edgeInsetsAll(IsrDimens.twelve);
+    final showCloseButton = dialogConfig?.showCloseButton ?? true;
+    final barrierDismissible = dialogConfig?.barrierDismissible ?? true;
 
     return showDialog(
       context: context,
+      barrierDismissible: barrierDismissible,
+      barrierColor: dialogConfig?.barrierColor,
       builder: (context) => AlertDialog(
         contentPadding: padding,
+        insetPadding: dialogConfig?.insetPadding,
+        elevation: dialogConfig?.elevation,
         shape: RoundedRectangleBorder(
           borderRadius: IsrDimens.borderRadiusAll(borderRadius),
         ),
         backgroundColor: backgroundColor,
         content: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment:
+              dialogConfig?.crossAxisAlignment ?? CrossAxisAlignment.center,
           children: [
-            Align(
-              alignment: Alignment.topRight,
-              child: TapHandler(
-                padding: IsrDimens.four,
-                onTap: Utility.closeOpenDialog,
-                child: AppImage.svg(
-                  AssetConstants.icCrossIcon,
-                  height: IsrDimens.twelve,
-                  width: IsrDimens.twelve,
+            if (showCloseButton)
+              Align(
+                alignment: Alignment.topRight,
+                child: TapHandler(
+                  padding: IsrDimens.four,
+                  onTap: Utility.closeOpenDialog,
+                  child: AppImage.svg(
+                    AssetConstants.icCrossIcon,
+                    height: IsrDimens.twelve,
+                    width: IsrDimens.twelve,
+                  ),
                 ),
               ),
-            ),
             child,
           ],
         ),

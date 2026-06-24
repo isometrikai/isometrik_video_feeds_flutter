@@ -248,7 +248,21 @@ class IsrAppNavigator {
     String? initialCommentId,
     Function(String, String, double, double)? onTapPlace,
     TransitionType transitionType = TransitionType.rightToLeft,
+    bool skipOnTapPostCallback = false,
   }) async {
+    if (!skipOnTapPostCallback &&
+        startingPostIndex >= 0 &&
+        startingPostIndex < postDataList.length) {
+      final handled = await IsrPostTapHandler.tryHandleTap(
+        context,
+        postData: postDataList[startingPostIndex],
+        postSectionType: postSectionType,
+        postDataList: postDataList,
+        postIndex: startingPostIndex,
+      );
+      if (handled) return;
+    }
+
     final tabData = TabDataModel(
       title: _getTabTitle(postSectionType),
       postSectionType: postSectionType,

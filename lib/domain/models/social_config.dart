@@ -503,6 +503,8 @@ enum ToastGravityType {
 ///   backgroundColor: Colors.white,                    // Dialog background
 ///   borderRadius: 12.0,                               // Rounded corners
 ///   padding: EdgeInsets.all(24),                      // Internal padding
+///   insetPadding: EdgeInsets.symmetric(horizontal: 28),
+///   elevation: 8.0,
 ///   titleTextStyle: TextStyle(                        // Title text style
 ///     fontSize: 18,
 ///     fontWeight: FontWeight.bold,
@@ -511,17 +513,15 @@ enum ToastGravityType {
 ///     fontSize: 14,
 ///     color: Colors.grey[700],
 ///   ),
-///   primaryButton: ButtonConfig(                      // Primary action button
-///     backgroundColor: Colors.blue,
-///     textColor: Colors.white,
-///     borderRadius: 8.0,
-///   ),
-///   secondaryButton: ButtonConfig(                    // Secondary action button
-///     backgroundColor: Colors.grey[100],
-///     textColor: Colors.blue,
-///     borderColor: Colors.blue,
-///     borderWidth: 1.0,
-///   ),
+///   titleTextAlign: TextAlign.center,
+///   messageTextAlign: TextAlign.center,
+///   crossAxisAlignment: CrossAxisAlignment.stretch,
+///   actionsMainAxisAlignment: MainAxisAlignment.spaceEvenly,
+///   titleMessageSpacing: 8.0,
+///   isShowTitle: true,
+///   showCloseButton: true,
+///   barrierDismissible: true,
+///   barrierColor: Colors.black54,
 /// )
 /// ```
 ///
@@ -537,9 +537,22 @@ class DialogConfig {
     this.backgroundColor,
     this.borderRadius,
     this.padding,
+    this.insetPadding,
+    this.elevation,
     this.titleTextStyle,
     this.messageTextStyle,
     this.buttonTextStyle,
+    this.titleTextAlign,
+    this.messageTextAlign,
+    this.titleMaxLines,
+    this.messageMaxLines,
+    this.crossAxisAlignment,
+    this.actionsMainAxisAlignment,
+    this.titleMessageSpacing,
+    this.isShowTitle,
+    this.showCloseButton,
+    this.barrierDismissible,
+    this.barrierColor,
   });
 
   /// Background color of the dialog.
@@ -554,6 +567,14 @@ class DialogConfig {
   /// Falls back to `EdgeInsets.all(14)` or `EdgeInsets.symmetric(horizontal: 24, vertical: 28)` if not provided.
   final EdgeInsets? padding;
 
+  /// Outer padding between the dialog and the screen edges.
+  /// Falls back to platform defaults if not provided.
+  final EdgeInsets? insetPadding;
+
+  /// Elevation/shadow of the dialog.
+  /// Falls back to `Dialog` default elevation if not provided.
+  final double? elevation;
+
   /// Text style for dialog titles (e.g., "Alert", "Delete Post", "Report").
   /// Falls back to `IsrStyles.secondaryText14.copyWith(fontWeight: FontWeight.w700)` if not provided.
   final TextStyle? titleTextStyle;
@@ -566,21 +587,90 @@ class DialogConfig {
   /// Falls back to default button text styles if not provided.
   final TextStyle? buttonTextStyle;
 
+  /// Horizontal alignment for dialog title text.
+  /// Falls back to Flutter's default (`TextAlign.start`) if not provided.
+  final TextAlign? titleTextAlign;
+
+  /// Horizontal alignment for dialog message/body text.
+  /// Falls back to `TextAlign.center` if not provided.
+  final TextAlign? messageTextAlign;
+
+  /// Maximum number of lines for the title before ellipsis.
+  final int? titleMaxLines;
+
+  /// Maximum number of lines for the message before ellipsis.
+  final int? messageMaxLines;
+
+  /// Cross-axis alignment for dialog content column.
+  /// Falls back to `CrossAxisAlignment.center` if not provided.
+  final CrossAxisAlignment? crossAxisAlignment;
+
+  /// Main-axis alignment for dialog action buttons row.
+  /// Falls back to `MainAxisAlignment.spaceEvenly` if not provided.
+  final MainAxisAlignment? actionsMainAxisAlignment;
+
+  /// Vertical spacing between title and message.
+  /// Falls back to `IsrDimens.eight` if not provided.
+  final double? titleMessageSpacing;
+
+  /// Whether to show the dialog title.
+  /// Falls back to `true` if not provided.
+  final bool? isShowTitle;
+
+  /// Whether to show the close (X) button in the top-right corner.
+  /// Falls back to `true` if not provided.
+  final bool? showCloseButton;
+
+  /// Whether tapping outside the dialog dismisses it.
+  /// Falls back to `true` if not provided.
+  final bool? barrierDismissible;
+
+  /// Color of the scrim behind the dialog.
+  /// Falls back to platform default if not provided.
+  final Color? barrierColor;
+
   DialogConfig copyWith({
     Color? backgroundColor,
     double? borderRadius,
     EdgeInsets? padding,
+    EdgeInsets? insetPadding,
+    double? elevation,
     TextStyle? titleTextStyle,
     TextStyle? messageTextStyle,
     TextStyle? buttonTextStyle,
+    TextAlign? titleTextAlign,
+    TextAlign? messageTextAlign,
+    int? titleMaxLines,
+    int? messageMaxLines,
+    CrossAxisAlignment? crossAxisAlignment,
+    MainAxisAlignment? actionsMainAxisAlignment,
+    double? titleMessageSpacing,
+    bool? isShowTitle,
+    bool? showCloseButton,
+    bool? barrierDismissible,
+    Color? barrierColor,
   }) =>
       DialogConfig(
         backgroundColor: backgroundColor ?? this.backgroundColor,
         borderRadius: borderRadius ?? this.borderRadius,
         padding: padding ?? this.padding,
+        insetPadding: insetPadding ?? this.insetPadding,
+        elevation: elevation ?? this.elevation,
         titleTextStyle: titleTextStyle ?? this.titleTextStyle,
         messageTextStyle: messageTextStyle ?? this.messageTextStyle,
         buttonTextStyle: buttonTextStyle ?? this.buttonTextStyle,
+        titleTextAlign: titleTextAlign ?? this.titleTextAlign,
+        messageTextAlign: messageTextAlign ?? this.messageTextAlign,
+        titleMaxLines: titleMaxLines ?? this.titleMaxLines,
+        messageMaxLines: messageMaxLines ?? this.messageMaxLines,
+        crossAxisAlignment: crossAxisAlignment ?? this.crossAxisAlignment,
+        actionsMainAxisAlignment:
+            actionsMainAxisAlignment ?? this.actionsMainAxisAlignment,
+        titleMessageSpacing: titleMessageSpacing ?? this.titleMessageSpacing,
+        isShowTitle: isShowTitle ?? this.isShowTitle,
+        showCloseButton: showCloseButton ?? this.showCloseButton,
+        barrierDismissible: barrierDismissible ?? this.barrierDismissible,
+        barrierColor: barrierColor ?? this.barrierColor,
       );
 }
 
@@ -602,6 +692,10 @@ class DialogConfig {
 /// ButtonConfig(
 ///   backgroundColor: Colors.blue,      // Button background color
 ///   textColor: Colors.white,            // Button text color
+///   textStyle: TextStyle(              // Button label text style
+///     fontSize: 14,
+///     fontWeight: FontWeight.w600,
+///   ),
 ///   borderColor: Colors.blue,          // Stroke/border color
 ///   borderRadius: 8.0,                  // Corner radius
 ///   elevation: 2.0,                     // Shadow elevation
@@ -614,6 +708,7 @@ class ButtonConfig {
   const ButtonConfig({
     this.backgroundColor,
     this.textColor,
+    this.textStyle,
     this.borderColor,
     this.borderRadius,
     this.elevation,
@@ -626,6 +721,10 @@ class ButtonConfig {
   /// Text color of the button.
   /// Falls back to white for primary buttons, theme color for secondary if not provided.
   final Color? textColor;
+
+  /// Text style for the button label.
+  /// Falls back to size-based SDK defaults if not provided.
+  final TextStyle? textStyle;
 
   /// Stroke/border color of the button.
   /// Used for outlined/secondary button styles.
@@ -643,6 +742,7 @@ class ButtonConfig {
   ButtonConfig copyWith({
     Color? backgroundColor,
     Color? textColor,
+    TextStyle? textStyle,
     Color? borderColor,
     double? borderRadius,
     double? elevation,
@@ -650,6 +750,7 @@ class ButtonConfig {
       ButtonConfig(
         backgroundColor: backgroundColor ?? this.backgroundColor,
         textColor: textColor ?? this.textColor,
+        textStyle: textStyle ?? this.textStyle,
         borderColor: borderColor ?? this.borderColor,
         borderRadius: borderRadius ?? this.borderRadius,
         elevation: elevation ?? this.elevation,
