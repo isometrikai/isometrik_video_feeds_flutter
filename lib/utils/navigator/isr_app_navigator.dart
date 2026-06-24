@@ -390,7 +390,7 @@ class IsrAppNavigator {
     final page = _createPostFlowBlocs(
       child: ms.MediaSelectionView(
         mediaSelectionConfig:
-            config ?? CreatePostFlowCoordinator.defaultMediaSelectionConfig(),
+            config ?? CreatePostFlowCoordinator.resolvedMediaSelectionConfig(),
         onComplete: (_) async => true,
         onCaptureMedia: (mediaType) =>
             CreatePostFlowCoordinator.handleCaptureFromSelector(

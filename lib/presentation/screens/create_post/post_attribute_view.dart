@@ -2274,24 +2274,8 @@ class _PostAttributeViewState extends State<PostAttributeView>
     return res?.firstOrNull?.localPath;
   }
 
-  final mediaSelectionConfig = ms.MediaSelectionConfig(
-    isMultiSelect: true,
-    imageMediaLimit: AppConstants.imageMediaLimit,
-    videoMediaLimit: AppConstants.videoMediaLimit,
-    mediaLimit: AppConstants.totalMediaLimit,
-    singleSelectModeIcon:
-        const AppImage.svg(AssetConstants.icMediaSelectSingle),
-    multiSelectModeIcon:
-        const AppImage.svg(AssetConstants.icMediaSelectMultiple),
-    doneButtonText: IsrTranslationFile.next,
-    selectMediaTitle: IsrTranslationFile.newReel,
-    primaryColor: IsrColors.appColor,
-    primaryTextColor: IsrColors.primaryTextColor,
-    backgroundColor: Colors.white,
-    appBarColor: Colors.white,
-    primaryFontFamily: AppConstants.primaryFontFamily,
-    mediaListType: ms.MediaListType.imageVideo,
-  );
+  ms.MediaSelectionConfig get mediaSelectionConfig =>
+      CreatePostFlowCoordinator.resolvedMediaSelectionConfig();
 
   Future<dynamic> _captureMedia(String? mediaType) async =>
       await Navigator.of(context, rootNavigator: true).push<dynamic>(

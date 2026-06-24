@@ -1497,7 +1497,9 @@ class Utility {
               ? Theme.of(contextToUse).primaryColor
               : (IsrVideoReelConfig
                       .socialConfig.colorsConfig?.bottomSheetBackgroundColor ??
-                  IsrColors.white)),
+                  IsrVideoReelConfig.socialConfig.themeConfig
+                      ?.scaffoldBackgroundColor ??
+                  IsrColors.scaffoldColor)),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(

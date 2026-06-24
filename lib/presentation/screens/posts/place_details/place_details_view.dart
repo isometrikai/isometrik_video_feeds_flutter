@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -137,6 +138,7 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
     final mapHeight = screenHeight * 0.35; // 35% of screen height for map
 
     return Scaffold(
+      backgroundColor: IsrColors.scaffoldColor,
       body: Stack(
         children: [
           // Scrollable Content
@@ -192,7 +194,7 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
                 // Section Header as Sliver
                 SliverToBoxAdapter(
                   child: Container(
-                    color: Colors.white,
+                    color: IsrColors.scaffoldColor,
                     padding: EdgeInsets.symmetric(
                       horizontal: 16.responsiveDimension,
                       vertical: 12.responsiveDimension,
@@ -208,7 +210,7 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
                             style: TextStyle(
                               fontSize: 16.responsiveDimension,
                               fontWeight: FontWeight.w600,
-                              color: Colors.black87,
+                              color: IsrColors.primaryTextColor,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -364,14 +366,14 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
             Icon(
               Icons.location_off,
               size: 64.responsiveDimension,
-              color: Colors.grey[400],
+              color: IsrColors.secondaryTextColor,
             ),
             SizedBox(height: 16.responsiveDimension),
             Text(
               IsrTranslationFile.noPostsFound,
               style: TextStyle(
                 fontSize: 16.responsiveDimension,
-                color: Colors.grey[600],
+                color: IsrColors.primaryTextColor,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -380,7 +382,7 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
               IsrTranslationFile.noPostsDescription,
               style: TextStyle(
                 fontSize: 14.responsiveDimension,
-                color: Colors.grey[500],
+                color: IsrColors.secondaryTextColor,
               ),
               textAlign: TextAlign.center,
             ),
@@ -390,7 +392,8 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
 
   Widget _buildPostCard(TimeLineData post, int index) => Container(
         decoration: BoxDecoration(
-          color: IsrColors.white,
+          color: IsrVideoReelConfig.socialConfig.colorsConfig?.dialogColor ??
+              IsrColors.scaffoldColor,
           borderRadius: BorderRadius.circular(8.responsiveDimension),
         ),
         child: ClipRRect(
@@ -434,10 +437,11 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
 
     if (coverUrl.isStringEmptyOrNull) {
       return Container(
-        color: IsrColors.colorF5F5F5,
+        color: IsrVideoReelConfig.socialConfig.colorsConfig?.grey ??
+            IsrColors.colorF5F5F5,
         child: Icon(
           Icons.image,
-          color: IsrColors.color9B9B9B,
+          color: IsrColors.secondaryTextColor,
           size: IsrDimens.forty,
         ),
       );

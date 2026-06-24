@@ -279,36 +279,36 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     _notifyPlaybackStateChanged();
   }
 
-  void _safeSetState(VoidCallback fn) {
-    if (!mounted || _isDisposed) return;
+  void _runWhenSafeToNotify(VoidCallback action) {
+    if (_isDisposed || !mounted) return;
     final phase = WidgetsBinding.instance.schedulerPhase;
-    if (phase == SchedulerPhase.persistentCallbacks ||
-        phase == SchedulerPhase.midFrameMicrotasks) {
+    // Only run immediately if it's safe for UI updates, otherwise schedule post frame
+    if (phase == SchedulerPhase.idle ||
+        phase == SchedulerPhase.postFrameCallbacks) {
+      action();
+    } else {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted || _isDisposed) return;
-        setState(fn);
+        if (_isDisposed || !mounted) return;
+        action();
       });
-      return;
     }
-    setState(fn);
+  }
+
+  void _safeSetState(VoidCallback fn) {
+    _runWhenSafeToNotify(() {
+      if (_isDisposed || !mounted) return;
+      setState(fn);
+    });
   }
 
   void _notifyPlaybackStateChanged() {
     final callback = widget.onPlaybackStateChanged;
     if (callback == null) return;
 
-    void fire() {
+    _runWhenSafeToNotify(() {
       if (_isDisposed || !mounted) return;
       callback();
-    }
-
-    final phase = WidgetsBinding.instance.schedulerPhase;
-    if (phase == SchedulerPhase.persistentCallbacks ||
-        phase == SchedulerPhase.midFrameMicrotasks) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => fire());
-      return;
-    }
-    fire();
+    });
   }
 
   /// Called when the video playing state changes
@@ -320,15 +320,20 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
     // If video started playing, ensure UI shows the video player
     if (_videoPlayerController != null && _videoPlayerController!.isPlaying) {
-      if (!_isInitialized) {
-        debugPrint(
-            '🎬 VideoPlayerWidget: Video started playing, updating UI...');
-        setState(() {
-          _isInitialized = true;
-        });
-      } else if (!_hasValidVideoSize) {
-        setState(() {});
-      }
+      _runWhenSafeToNotify(() {
+        if (_isDisposed || !mounted) return;
+        if (_videoPlayerController != null && _videoPlayerController!.isPlaying) {
+          if (!_isInitialized) {
+            debugPrint(
+                '🎬 VideoPlayerWidget: Video started playing, updating UI...');
+            setState(() {
+              _isInitialized = true;
+            });
+          } else if (!_hasValidVideoSize) {
+            setState(() {});
+          }
+        }
+      });
     }
     _notifyPlaybackStateChanged();
   }
@@ -769,7 +774,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   }
 
   void _handlePlaybackProgress() {
-    // Safety check: ensure widget and controller are valid and not disposed
     if (_isDisposed ||
         _videoPlayerController == null ||
         !_videoPlayerController!.isInitialized ||
@@ -777,15 +781,25 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       return;
     }
 
+    _runWhenSafeToNotify(_applyPlaybackProgress);
+  }
+
+  void _applyPlaybackProgress() {
+    if (_isDisposed ||
+        !mounted ||
+        _videoPlayerController == null ||
+        !_videoPlayerController!.isInitialized ||
+        _videoPlayerController!.isDisposed) {
+      return;
+    }
+
     // Check if video size became valid - trigger rebuild to update layout
-    if (!_hasValidVideoSize && _videoPlayerController != null) {
+    if (!_hasValidVideoSize) {
       final size = _videoPlayerController!.videoSize;
       if (size.width > 0 && size.height > 0) {
         _hasValidVideoSize = true;
         debugPrint('📐 VideoPlayerWidget: Video size now valid: $size');
-        if (mounted) {
-          setState(() {});
-        }
+        setState(() {});
       }
     }
     final position = _videoPlayerController!.position;
@@ -1272,7 +1286,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         !widget.visibilityManagedByParent) {
       _isVisible = true;
       if (_isInitialized) {
-        forceResume(activeReel: true);
+        _runWhenSafeToNotify(() {
+          if (!mounted || _isDisposed) return;
+          forceResume(activeReel: true);
+        });
       } else {
         _initializeVideoPlayer();
       }

@@ -90,7 +90,10 @@ class IsmCustomAppBarWidget extends StatelessWidget
   Color get _appBarBackground => backgroundColor ?? IsrColors.appBarColor;
 
   Color get _appBarForeground =>
-      iconColor ?? titleColor ?? IsrColors.appBarIconTextColor;
+      iconColor ??
+      titleColor ??
+      titleStyle?.color ??
+      IsrColors.appBarIconTextColor;
 
   SystemUiOverlayStyle get _systemOverlayStyle {
     final base = IsrSystemUi.overlay(
@@ -163,7 +166,10 @@ class IsmCustomAppBarWidget extends StatelessWidget
               : const SizedBox.shrink()
           : Text(
               titleText!,
-              style: TextStyle(color: titleColor ?? IsrColors.appBarIconTextColor),
+              style: titleStyle ??
+                  TextStyle(
+                    color: titleColor ?? IsrColors.appBarIconTextColor,
+                  ),
             ),
       actions:
           showActions == false || actions.isListEmptyOrNull ? null : actions,

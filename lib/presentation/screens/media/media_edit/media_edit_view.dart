@@ -320,8 +320,8 @@ class _MediaEditViewState extends State<MediaEditView> {
     }
   }
 
-  SystemUiOverlayStyle get _systemUiOverlay => IsrSystemUi.lightBarsOverlay(
-        background: widget.mediaEditConfig.whiteColor,
+  SystemUiOverlayStyle get _systemUiOverlay => IsrSystemUi.overlay(
+        background: widget.mediaEditConfig.appBarColor,
       );
 
   @override
@@ -342,7 +342,7 @@ class _MediaEditViewState extends State<MediaEditView> {
           child: AnnotatedRegion<SystemUiOverlayStyle>(
             value: _systemUiOverlay,
             child: Scaffold(
-            backgroundColor: widget.mediaEditConfig.whiteColor,
+            backgroundColor: widget.mediaEditConfig.backgroundColor,
             body: SafeArea(
               child: BlocBuilder<MediaEditBloc, MediaEditState>(
                 buildWhen: (previous, current) =>

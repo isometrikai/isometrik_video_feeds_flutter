@@ -1685,7 +1685,11 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                       );
 
                       return Material(
-                        color: _composerBackgroundColor,
+                        color: _composerBackgroundColor ??
+                            _replyFieldConfig?.replyingToBackgroundColor ??
+                            IsrVideoReelConfig
+                                .socialConfig.colorsConfig?.dialogColor ??
+                            IsrColors.scaffoldColor,
                         elevation: 0,
                         clipBehavior: Clip.antiAlias,
                         shape: RoundedRectangleBorder(

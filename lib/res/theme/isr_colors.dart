@@ -37,9 +37,15 @@ class IsrColors {
       const Color(0xFFFFFFFF);
 
   /// Icon and title color for app bars.
-  static Color get appBarIconTextColor =>
-      IsrVideoReelConfig.socialConfig.themeConfig?.appBarIconTextColor ??
-      Colors.black;
+  static Color get appBarIconTextColor {
+    final config = IsrVideoReelConfig.socialConfig.themeConfig;
+    if (config?.appBarIconTextColor != null) {
+      return config!.appBarIconTextColor!;
+    }
+    return (config?.brightness ?? Brightness.light) == Brightness.dark
+        ? primaryTextColor
+        : Colors.black;
+  }
 
   /// Status bar background color.
   static Color get statusBarColor =>

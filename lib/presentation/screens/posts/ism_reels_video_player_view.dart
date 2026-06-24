@@ -2201,6 +2201,17 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     final sound = _reelData.sound;
     if (sound == null || !sound.hasId) return;
 
+    var isUserLoggedIn =
+        await IsmInjectionUtils.getBloc<SocialPostBloc>().isUserLoggedIn;
+    if (!isUserLoggedIn) {
+      await IsrVideoReelConfig
+          .socialConfig.socialCallBackConfig?.onLoginInvoked
+          ?.call();
+    }
+    isUserLoggedIn =
+        await IsmInjectionUtils.getBloc<SocialPostBloc>().isUserLoggedIn;
+    if (!isUserLoggedIn) return;
+
     final handler = _postConfig.postCallBackConfig?.onUseThisSound;
     if (handler != null && postData != null) {
       await handler(postData, sound);

@@ -1348,7 +1348,42 @@ class _PostListingViewState extends State<PostListingView> {
               ),
       );
 
+  LocationPermissionConfig? _placesLocationPermissionConfig() {
+    final places = _searchScreenUIConfig?.placesListConfig;
+    if (places == null) return null;
+
+    return LocationPermissionConfig(
+      iconColor: places.iconColor,
+      titleStyle: places.titleStyle?.copyWith(
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+      ),
+      subtitleStyle: places.subtitleStyle?.copyWith(
+        fontSize: 16,
+        height: 1.4,
+      ),
+      buttonConfig: LocationPermissionButtonConfig(
+        backgroundColor: _searchScreenUIConfig
+                ?.accountsListConfig?.followButtonConfig?.backgroundColor ??
+            IsrColors.appColor,
+        textStyle: _searchScreenUIConfig
+                ?.accountsListConfig?.followButtonConfig?.textColor !=
+            null
+            ? IsrStyles.primaryText16.copyWith(
+                fontWeight: FontWeight.w600,
+                color: _searchScreenUIConfig!
+                    .accountsListConfig!.followButtonConfig!.textColor,
+              )
+            : IsrStyles.primaryText16.copyWith(
+                fontWeight: FontWeight.w600,
+                color: IsrColors.white,
+              ),
+      ),
+    );
+  }
+
   Widget _buildPlacesPermissionState() => LocationPermissionPlaceholder(
+        config: _placesLocationPermissionConfig(),
         subtitle: _isLocationServiceEnabled
             ? 'To include nearby places, allow location permission'
             : 'To include nearby places, turn on location services',
