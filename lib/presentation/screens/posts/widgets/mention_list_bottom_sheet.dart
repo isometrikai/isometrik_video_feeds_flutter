@@ -31,14 +31,21 @@ class MentionListBottomSheet extends StatefulWidget {
 }
 
 class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
-  // late List<MentionMetaData> _mentionList;
   final List<SocialUserData> _socialUserList = [];
   late SocialPostBloc _socialPostBloc;
-  final ScrollController _scrollController = ScrollController();
+  final ScrollController _listScrollController = ScrollController();
   bool _isLoading = true;
   bool _hasMore = true;
   bool _isLoadingMore = false;
   int _currentPage = 1;
+  bool _isExpanded = false;
+  bool _canExpandSheet = false;
+
+  static const double _collapsedSheetFraction = 0.5;
+  static const double _expandedSheetFraction = 0.9;
+  static const double _swipeVelocityThreshold = 200;
+  static const double _headerSectionHeight = 80;
+  static const double _listItemHeight = 68;
 
   Color get _backgroundColor =>
       IsrVideoReelConfig
@@ -57,23 +64,89 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
   void initState() {
     super.initState();
     _socialPostBloc = context.getOrCreateBloc();
-    _scrollController.addListener(_onScroll);
+    _listScrollController.addListener(_onScroll);
     _fetchMentionedUsers();
-    // If no mentions initially, dismiss the bottom sheet immediately
-    // if (_mentionList.isEmpty) {
-    //   WidgetsBinding.instance.addPostFrameCallback((_) {
-    //     if (mounted) {
-    //       context.pop(_mentionList); // Return empty list
-    //     }
-    //   });
-    // }
   }
 
   @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
+    _listScrollController
+      ..removeListener(_onScroll)
+      ..dispose();
     super.dispose();
+  }
+
+  void _onHeaderSwipe(DragEndDetails details) {
+    if (!_canExpandSheet) {
+      return;
+    }
+    final velocity = details.primaryVelocity ?? 0;
+    if (velocity < -_swipeVelocityThreshold) {
+      setState(() => _isExpanded = true);
+      return;
+    }
+    if (velocity > _swipeVelocityThreshold) {
+      setState(() => _isExpanded = false);
+    }
+  }
+
+  bool _estimateCanExpand(double screenHeight, double bottomInset) {
+    if (_isLoading || _socialUserList.isEmpty) {
+      return false;
+    }
+    if (_hasMore || _isLoadingMore) {
+      return true;
+    }
+    final listViewportHeight =
+        (screenHeight * _collapsedSheetFraction) - _headerSectionHeight;
+    final contentListHeight =
+        (_socialUserList.length * _listItemHeight) + bottomInset;
+    return contentListHeight > listViewportHeight;
+  }
+
+  void _syncExpandAvailability() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final screenHeight = MediaQuery.sizeOf(context).height;
+      final bottomInset = MediaQuery.paddingOf(context).bottom;
+      var canExpand = _estimateCanExpand(screenHeight, bottomInset);
+      if (_listScrollController.hasClients) {
+        canExpand =
+            canExpand || _listScrollController.position.maxScrollExtent > 0;
+      }
+
+      if (canExpand == _canExpandSheet && (canExpand || !_isExpanded)) {
+        return;
+      }
+
+      setState(() {
+        _canExpandSheet = canExpand;
+        if (!canExpand) {
+          _isExpanded = false;
+        }
+      });
+    });
+  }
+
+  double _resolveSheetHeight(double screenHeight, double bottomInset) {
+    final collapsedCap = screenHeight * _collapsedSheetFraction;
+    if (_isExpanded && _canExpandSheet) {
+      return screenHeight * _expandedSheetFraction;
+    }
+    if (!_canExpandSheet &&
+        !_isLoading &&
+        _socialUserList.isNotEmpty) {
+      final fittedHeight = _headerSectionHeight +
+          (_socialUserList.length * _listItemHeight) +
+          bottomInset;
+      return fittedHeight.clamp(
+        _headerSectionHeight + _listItemHeight,
+        collapsedCap,
+      );
+    }
+    return collapsedCap;
   }
 
   void _fetchMentionedUsers({bool loadMore = false}) {
@@ -94,6 +167,8 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
         if (!mounted) {
           return;
         }
+        final screenHeight = MediaQuery.sizeOf(context).height;
+        final bottomInset = MediaQuery.paddingOf(context).bottom;
         setState(() {
           _isLoading = false;
           _isLoadingMore = false;
@@ -106,17 +181,22 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
               ..clear()
               ..addAll(mentionedList);
           }
+          _canExpandSheet = _estimateCanExpand(screenHeight, bottomInset);
+          if (!_canExpandSheet) {
+            _isExpanded = false;
+          }
         });
+        _syncExpandAvailability();
       },
     ));
   }
 
   void _onScroll() {
-    if (!_scrollController.hasClients || _isLoadingMore || !_hasMore) {
+    if (!_listScrollController.hasClients || _isLoadingMore || !_hasMore) {
       return;
     }
 
-    final scrollPosition = _scrollController.position;
+    final scrollPosition = _listScrollController.position;
     final threshold = scrollPosition.maxScrollExtent * 0.6;
 
     if (scrollPosition.pixels >= threshold) {
@@ -125,19 +205,27 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
   }
 
   @override
-  Widget build(BuildContext context) => PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (didPop, _) {
-          if (!didPop) {
-            context.pop();
-          }
-        },
-        child: BlocProvider<SocialPostBloc>(
-          create: (context) => _socialPostBloc,
-          child: Container(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.9,
-            ),
+  Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final sheetHeight = _resolveSheetHeight(screenHeight, bottomInset);
+
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          context.pop();
+        }
+      },
+      child: BlocProvider<SocialPostBloc>(
+        create: (context) => _socialPostBloc,
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 280),
+            curve: Curves.easeOutCubic,
+            height: sheetHeight,
+            width: double.infinity,
             decoration: BoxDecoration(
               color: _backgroundColor,
               borderRadius: BorderRadius.vertical(
@@ -145,102 +233,128 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
               ),
             ),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               children: [
-                // Header
-                Padding(
-                  padding: IsrDimens.edgeInsetsSymmetric(
-                    horizontal: IsrDimens.sixteen,
-                    vertical: IsrDimens.twenty,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onVerticalDragEnd:
+                      _canExpandSheet ? _onHeaderSwipe : null,
+                  child: Column(
                     children: [
-                      Text(
-                        IsrTranslationFile.inThisSocialPost,
-                        style: IsrStyles.primaryText18.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: _primaryTextColor,
-                        ),
-                      ),
-                      TapHandler(
-                        onTap: () {
-                          context.pop();
-                        },
-                        child: Container(
-                          padding: IsrDimens.edgeInsetsAll(IsrDimens.eight),
-                          child: Icon(
-                            Icons.close,
-                            color: _primaryTextColor,
-                            size: IsrDimens.twentyFour,
+                      if (_canExpandSheet)
+                        Padding(
+                          padding: EdgeInsets.only(top: IsrDimens.twelve),
+                          child: Container(
+                            width: IsrDimens.forty,
+                            height: IsrDimens.four,
+                            decoration: BoxDecoration(
+                              color: _dividerColor,
+                              borderRadius:
+                                  BorderRadius.circular(IsrDimens.two),
+                            ),
                           ),
+                        )
+                      else
+                        SizedBox(height: IsrDimens.twelve),
+                      Padding(
+                        padding: IsrDimens.edgeInsetsSymmetric(
+                          horizontal: IsrDimens.sixteen,
+                          vertical: IsrDimens.twelve,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                IsrTranslationFile.inThisSocialPost,
+                                style: IsrStyles.primaryText18.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: _primaryTextColor,
+                                ),
+                              ),
+                            ),
+                            TapHandler(
+                              onTap: context.pop,
+                              child: Container(
+                                padding:
+                                    IsrDimens.edgeInsetsAll(IsrDimens.eight),
+                                child: Icon(
+                                  Icons.close,
+                                  color: _primaryTextColor,
+                                  size: IsrDimens.twentyFour,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
+                      Divider(height: 1, color: _dividerColor),
                     ],
                   ),
                 ),
-                Divider(height: 1, color: _dividerColor),
-                // User List
-                _isLoading
-                    ? Padding(
-                        padding: IsrDimens.edgeInsetsSymmetric(
-                          vertical: IsrDimens.forty,
-                        ),
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            color: IsrColors.appColor,
-                          ),
-                        ),
-                      )
-                    : Flexible(
-                        child: _socialUserList.isEmpty
-                            ? Container(
-                                constraints: BoxConstraints(
-                                  minHeight:
-                                      MediaQuery.of(context).size.height * 0.3,
-                                ),
-                                child: Center(
-                                  child: Padding(
-                                    padding: IsrDimens.edgeInsetsAll(
-                                        IsrDimens.twentyFour),
-                                    child: Text(
-                                      'No mentions found',
-                                      style: IsrStyles.primaryText14.copyWith(
-                                        color: _secondaryTextColor,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              )
-                            : ListView.builder(
-                                controller: _scrollController,
-                                shrinkWrap: true,
-                                itemCount: _socialUserList.length +
-                                    (_isLoadingMore ? 1 : 0),
-                                itemBuilder: (context, index) {
-                                  if (index >= _socialUserList.length) {
-                                    return Padding(
-                                      padding: IsrDimens.edgeInsetsSymmetric(
-                                        vertical: IsrDimens.sixteen,
-                                      ),
-                                      child: Center(
-                                        child: CircularProgressIndicator(
-                                          color: IsrColors.appColor,
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                  final socialUserData = _socialUserList[index];
-                                  return _buildProfileItem(
-                                      socialUserData, index);
-                                },
-                              ),
-                      ),
+                Expanded(
+                  child: _buildBody(bottomInset: bottomInset),
+                ),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildBody({required double bottomInset}) {
+    if (_isLoading) {
+      return Center(
+        child: CircularProgressIndicator(
+          color: IsrColors.appColor,
+        ),
       );
+    }
+
+    if (_socialUserList.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: IsrDimens.edgeInsetsAll(IsrDimens.twentyFour),
+          child: Text(
+            'No mentions found',
+            style: IsrStyles.primaryText14.copyWith(
+              color: _secondaryTextColor,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      controller: _listScrollController,
+      physics: _canExpandSheet
+          ? const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            )
+          : const NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.only(bottom: bottomInset),
+      itemCount: _socialUserList.length + (_isLoadingMore ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index >= _socialUserList.length) {
+          return Padding(
+            padding: IsrDimens.edgeInsetsSymmetric(
+              vertical: IsrDimens.sixteen,
+            ),
+            child: Center(
+              child: CircularProgressIndicator(
+                color: IsrColors.appColor,
+              ),
+            ),
+          );
+        }
+        return _buildProfileItem(
+          _socialUserList[index],
+          index,
+        );
+      },
+    );
+  }
+
+  static const double _actionButtonWidth = 108;
 
   Widget _buildProfileItem(SocialUserData? socialUserData, int index) =>
       Container(
@@ -259,6 +373,7 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
               : null,
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
               child: TapHandler(
@@ -325,9 +440,12 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
               ),
             ),
             IsrDimens.boxWidth(IsrDimens.eight),
-            _buildFollowFollowingButton(
-              socialUserData,
-              widget.postData.id ?? '',
+            SizedBox(
+              width: _actionButtonWidth,
+              child: _buildFollowFollowingButton(
+                socialUserData,
+                widget.postData.id ?? '',
+              ),
             ),
           ],
         ),
@@ -392,12 +510,38 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
     onMentionRemoved?.call();
   }
 
+  Widget _buildActionButton({
+    required VoidCallback? onPress,
+    required String title,
+    required ButtonType type,
+    bool isLoading = false,
+    Color? backgroundColor,
+  }) =>
+      AppButton(
+        onPress: onPress,
+        size: ButtonSize.small,
+        height: 36.responsiveDimension,
+        width: _actionButtonWidth,
+        maxWidth: _actionButtonWidth,
+        borderRadius: 40.responsiveDimension,
+        type: type,
+        borderColor: IsrColors.appColor,
+        backgroundColor: backgroundColor,
+        title: title,
+        isLoading: isLoading,
+        textStyle: IsrStyles.primaryText12.copyWith(
+          color: type == ButtonType.primary
+              ? IsrColors.white
+              : IsrColors.appColor,
+          fontWeight: FontWeight.w600,
+        ),
+      );
+
   Widget _buildFollowFollowingButton(
     SocialUserData? socialUserData,
     String postId,
   ) {
     final userId = socialUserData?.id ?? '';
-    const actionButtonWidth = 96.0;
 
     return StatefulBuilder(
       builder: (context, setState) => userId != widget.myUserId
@@ -410,20 +554,12 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
               builder: (isLoading, isFollowing, followRequestPending, onTap) {
                 socialUserData?.isFollowing = isFollowing;
                 if (followRequestPending) {
-                  return AppButton(
+                  return _buildActionButton(
                     onPress: onTap,
-                    height: 36.responsiveDimension,
-                    width: actionButtonWidth,
-                    borderRadius: 40.responsiveDimension,
                     type: ButtonType.secondary,
-                    borderColor: IsrColors.appColor,
                     backgroundColor: _secondaryButtonBackground,
                     title: IsrTranslationFile.requested,
                     isLoading: isLoading,
-                    textStyle: IsrStyles.primaryText12.copyWith(
-                      color: IsrColors.appColor,
-                      fontWeight: FontWeight.w600,
-                    ),
                   );
                 }
                 if (!isFollowing) {
@@ -434,58 +570,30 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
                     isRequested: socialUserData?.isRequested,
                     followStatus: socialUserData?.followStatus,
                   );
-                  return AppButton(
+                  return _buildActionButton(
                     onPress: onTap,
-                    height: 36.responsiveDimension,
-                    width: actionButtonWidth,
-                    borderRadius: 40.responsiveDimension,
                     type: ButtonType.primary,
-                    borderColor: IsrColors.transparent,
                     backgroundColor: IsrColors.appColor,
                     title: showRequest
                         ? IsrTranslationFile.request
                         : IsrTranslationFile.follow,
                     isLoading: isLoading,
-                    textStyle: IsrStyles.primaryText12.copyWith(
-                      color: IsrColors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
                   );
                 }
-                return AppButton(
+                return _buildActionButton(
                   onPress: onTap,
-                  height: 36.responsiveDimension,
-                  width: actionButtonWidth,
-                  borderRadius: 40.responsiveDimension,
                   type: ButtonType.secondary,
-                  borderColor: IsrColors.appColor,
                   backgroundColor: _secondaryButtonBackground,
                   title: IsrTranslationFile.following,
                   isLoading: isLoading,
-                  textStyle: IsrStyles.primaryText12.copyWith(
-                    color: IsrColors.appColor,
-                    fontWeight: FontWeight.w600,
-                  ),
                 );
               },
             )
-          : SizedBox(
-              width: actionButtonWidth,
-              child: AppButton(
-                onPress: _removeSelfFromPost,
-                height: 36.responsiveDimension,
-                width: actionButtonWidth,
-                borderRadius: 40.responsiveDimension,
-                type: ButtonType.secondary,
-                borderColor: IsrColors.appColor,
-                backgroundColor: _secondaryButtonBackground,
-                title: IsrTranslationFile.removeTag,
-                textStyle: IsrStyles.primaryText12.copyWith(
-                  color: IsrColors.appColor,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 11,
-                ),
-              ),
+          : _buildActionButton(
+              onPress: _removeSelfFromPost,
+              type: ButtonType.secondary,
+              backgroundColor: _secondaryButtonBackground,
+              title: IsrTranslationFile.removeTag,
             ),
     );
   }

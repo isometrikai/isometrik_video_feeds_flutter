@@ -318,6 +318,7 @@ class Utility {
     double? maxHeight,
     bool isRoundedCorners = true,
     bool isSafeArea = true,
+    bool useFullHeight = false,
   }) {
     // Try to get context from multiple sources
     final contextToUse = context ??
@@ -340,34 +341,43 @@ class Utility {
                 .socialConfig.colorsConfig?.bottomSheetBackgroundColor ??
             IsrColors.white);
 
-    return showModalBottomSheet<T>(
-      context: contextToUse,
-      useRootNavigator: true,
-      builder: (_) => isSafeArea
-          ? SafeArea(
-              child: Container(
+    final sheetChild = useFullHeight
+        ? SizedBox(
+            height: MediaQuery.sizeOf(contextToUse).height,
+            child: child,
+          )
+        : isSafeArea
+            ? SafeArea(
+                child: Container(
+                  constraints: BoxConstraints(
+                    maxHeight: maxHeight ?? 84.percentHeight,
+                  ),
+                  child: child,
+                ),
+              )
+            : Container(
                 constraints: BoxConstraints(
                   maxHeight: maxHeight ?? 84.percentHeight,
                 ),
                 child: child,
-              ),
-            )
-          : Container(
-              constraints: BoxConstraints(
-                maxHeight: maxHeight ?? 84.percentHeight,
-              ),
-              child: child,
-            ),
+              );
+
+    return showModalBottomSheet<T>(
+      context: contextToUse,
+      useRootNavigator: true,
+      builder: (_) => sheetChild,
       enableDrag: false,
       showDragHandle: false,
       isDismissible: isDismissible,
       isScrollControlled: isScrollControlled,
       backgroundColor: backgroundColor ?? defaultBackgroundColor,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(IsrDimens.sixteen),
-        ),
-      ),
+      shape: isRoundedCorners
+          ? RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(IsrDimens.sixteen),
+              ),
+            )
+          : null,
     );
   }
 
