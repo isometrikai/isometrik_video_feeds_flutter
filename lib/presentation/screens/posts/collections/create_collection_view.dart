@@ -443,6 +443,7 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
                             AssetConstants.icEmptyImageVector,
                             height: 32.responsiveDimension,
                             width: 32.responsiveDimension,
+                            color: CollectionThemeResolver.textSecondary,
                           ),
                         ),
                       );
@@ -460,7 +461,7 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
         child: Text(
           label,
           style: IsrStyles.primaryText12.copyWith(
-            color: CollectionThemeResolver.textSecondary,
+            color: CollectionThemeResolver.labelText,
           ),
         ),
       );
@@ -499,6 +500,9 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
       maxLength: maxCharacterLimit,
       maxlines: maxLines,
       showCountBuilder: showCountBuilder,
+      counterStyle: IsrStyles.primaryText12.copyWith(
+        color: CollectionThemeResolver.textSecondary,
+      ),
     );
   }
 }

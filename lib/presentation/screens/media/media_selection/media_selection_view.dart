@@ -136,9 +136,9 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: widget.mediaSelectionConfig.backgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -148,7 +148,8 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
               height: 4,
               margin: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: widget.mediaSelectionConfig.primaryTextColor
+                    .withValues(alpha: 0.25),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -322,13 +323,14 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
               _getAlbumDisplayIcon(album),
               width: 24.responsiveDimension,
               height: 24.responsiveDimension,
+              color: widget.mediaSelectionConfig.primaryTextColor,
             ),
             10.horizontalSpace,
             Expanded(
               child: Text(
                 displayName,
                 style: TextStyle(
-                  color: Colors.black,
+                  color: widget.mediaSelectionConfig.primaryTextColor,
                   fontSize: 14.responsiveDimension,
                   fontFamily: widget.mediaSelectionConfig.primaryFontFamily,
                   fontWeight: FontWeight.w600,
@@ -347,7 +349,7 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
     );
   }
 
-  SystemUiOverlayStyle get _systemUiOverlay => IsrSystemUi.lightBarsOverlay(
+  SystemUiOverlayStyle get _systemUiOverlay => IsrSystemUi.overlay(
         background: widget.mediaSelectionConfig.appBarColor,
       );
 
@@ -470,7 +472,7 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
       Container(
         height: 100.responsiveDimension,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.6),
+          color: widget.mediaSelectionConfig.appBarColor.withValues(alpha: 0.95),
         ),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -575,14 +577,14 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
           // Album selector and controls
           Container(
             height: 50.responsiveDimension,
-            color: Colors.white,
+            color: widget.mediaSelectionConfig.appBarColor,
             child: Row(
               children: [
                 Expanded(
                   child: PopupMenuButton<pm.AssetPathEntity>(
                     onSelected: _onAlbumSelected,
                     position: PopupMenuPosition.under,
-                    color: Colors.white,
+                    color: widget.mediaSelectionConfig.backgroundColor,
                     itemBuilder: (context) => state.albums
                         .map((album) =>
                             _buildAlbumMenuItem(album, state.currentAlbum))
@@ -608,8 +610,10 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
                             ),
                           ),
                           const SizedBox(width: 8),
-                          const Icon(Icons.keyboard_arrow_down,
-                              color: Colors.black),
+                          Icon(
+                            Icons.keyboard_arrow_down,
+                            color: widget.mediaSelectionConfig.primaryTextColor,
+                          ),
                         ],
                       ),
                     ),

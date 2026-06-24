@@ -12,15 +12,21 @@ class GalleryVideoTrimUtil {
 
   static const int defaultMaxSeconds = 60;
 
-  static MediaEditConfig defaultMediaEditConfig() => MediaEditConfig(
-    primaryColor: IsrColors.appColor,
-    primaryTextColor: IsrColors.primaryTextColor,
-    backgroundColor: Colors.white,
-    appBarColor: Colors.white,
-    primaryFontFamily: AppConstants.primaryFontFamily,
-    mediaEditorStickersConfig:
-    IsrVideoReelConfig.createEditPostConfig.mediaEditorStickersConfig,
-  );
+  static MediaEditConfig defaultMediaEditConfig() {
+    final hostConfig = IsrVideoReelConfig
+        .createEditPostConfig.createEditPostUIConfig?.mediaEditConfig;
+    if (hostConfig != null) return hostConfig;
+
+    return MediaEditConfig(
+      primaryColor: IsrColors.appColor,
+      primaryTextColor: IsrColors.primaryTextColor,
+      backgroundColor: IsrColors.scaffoldColor,
+      appBarColor: IsrColors.appBarColor,
+      primaryFontFamily: AppConstants.primaryFontFamily,
+      mediaEditorStickersConfig:
+          IsrVideoReelConfig.createEditPostConfig.mediaEditorStickersConfig,
+    );
+  }
 
   static Future<int?> durationSeconds(String videoPath) async {
     try {

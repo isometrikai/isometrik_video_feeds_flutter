@@ -127,96 +127,107 @@ class _StoryComposeViewState extends State<StoryComposeView> {
                 ),
               ),
             ),
-            SafeArea(
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Row(
-                      children: [
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: SafeArea(
+                bottom: false,
+                minimum: const EdgeInsets.only(top: 8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Row(
+                    children: [
+                      _CircleIconButton(
+                        onTap: () => Navigator.of(context).pop(),
+                      ),
+                      if (!_isVideo) ...[
+                        const SizedBox(width: 8),
                         _CircleIconButton(
-                          onTap: () => Navigator.of(context).pop(),
-                        ),
-                        if (!_isVideo) ...[
-                          const SizedBox(width: 8),
-                          _CircleIconButton(
-                            icon: Icons.crop_rounded,
-                            onTap: _isSubmitting ? () {} : _recropImage,
-                          ),
-                        ],
-                        const Spacer(),
-                        FilledButton(
-                          onPressed:
-                              _isSubmitting ? null : () => _submit(context),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: theme.primary,
-                            foregroundColor: theme.onPrimary,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 22,
-                              vertical: 10,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(24),
-                            ),
-                          ),
-                          child: _isSubmitting
-                              ? SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: theme.onPrimary,
-                                  ),
-                                )
-                              : Text(
-                                  IsrTranslationFile.shareStory,
-                                  style: IsrStyles.white14.copyWith(
-                                    color: theme.onPrimary,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
+                          icon: Icons.crop_rounded,
+                          onTap: _isSubmitting ? () {} : _recropImage,
                         ),
                       ],
-                    ),
+                      const Spacer(),
+                      FilledButton(
+                        onPressed:
+                            _isSubmitting ? null : () => _submit(context),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: theme.primary,
+                          foregroundColor: theme.onPrimary,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 22,
+                            vertical: 10,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                        ),
+                        child: _isSubmitting
+                            ? SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: theme.onPrimary,
+                                ),
+                              )
+                            : Text(
+                                IsrTranslationFile.shareStory,
+                                style: IsrStyles.white14.copyWith(
+                                  color: theme.onPrimary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                      ),
+                    ],
                   ),
-                  const Spacer(),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    child: TextField(
-                      controller: _captionController,
-                      enabled: !_isSubmitting,
-                      style: IsrStyles.white14,
-                      decoration: InputDecoration(
-                        hintText: IsrTranslationFile.writeToAddToStory,
-                        hintStyle: IsrStyles.white14.copyWith(
-                          color: Colors.white.withValues(alpha: 0.65),
+                ),
+              ),
+            ),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: SafeArea(
+                top: false,
+                minimum: const EdgeInsets.only(bottom: 16),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: TextField(
+                    controller: _captionController,
+                    enabled: !_isSubmitting,
+                    style: IsrStyles.white14,
+                    decoration: InputDecoration(
+                      hintText: IsrTranslationFile.writeToAddToStory,
+                      hintStyle: IsrStyles.white14.copyWith(
+                        color: Colors.white.withValues(alpha: 0.65),
+                      ),
+                      filled: true,
+                      fillColor: Colors.black.withValues(alpha: 0.35),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 14,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(28),
+                        borderSide: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.25),
                         ),
-                        filled: true,
-                        fillColor: Colors.black.withValues(alpha: 0.35),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 14,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(28),
+                        borderSide: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.25),
                         ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(28),
-                          borderSide: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.25),
-                          ),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(28),
-                          borderSide: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.25),
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(28),
-                          borderSide: BorderSide(color: theme.primary),
-                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(28),
+                        borderSide: BorderSide(color: theme.primary),
                       ),
                     ),
                   ),
-                ],
+                ),
               ),
             ),
           ],

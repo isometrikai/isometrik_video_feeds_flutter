@@ -244,11 +244,36 @@ abstract final class CreatePostFlowCoordinator {
         selectMediaTitle: selectMediaTitle ?? IsrTranslationFile.newReel,
         primaryColor: IsrColors.appColor,
         primaryTextColor: IsrColors.primaryTextColor,
-        backgroundColor: Colors.white,
-        appBarColor: Colors.white,
+        backgroundColor: IsrColors.scaffoldColor,
+        appBarColor: IsrColors.appBarColor,
         primaryFontFamily: AppConstants.primaryFontFamily,
         mediaListType: mediaListType ?? ms.MediaListType.imageVideo,
       );
+
+  /// Host [CreateEditPostUIConfig.mediaSelectionConfig] when set, otherwise
+  /// [defaultMediaSelectionConfig] with optional overrides.
+  static ms.MediaSelectionConfig resolvedMediaSelectionConfig({
+    String? selectMediaTitle,
+    String? doneButtonText,
+    ms.MediaListType? mediaListType,
+    bool? isMultiSelect,
+    int? imageMediaLimit,
+    int? videoMediaLimit,
+    int? mediaLimit,
+  }) {
+    final hostConfig = IsrVideoReelConfig
+        .createEditPostConfig.createEditPostUIConfig?.mediaSelectionConfig;
+    final base = hostConfig ?? defaultMediaSelectionConfig();
+    return base.copyWith(
+      selectMediaTitle: selectMediaTitle ?? base.selectMediaTitle,
+      doneButtonText: doneButtonText ?? base.doneButtonText,
+      mediaListType: mediaListType ?? base.mediaListType,
+      isMultiSelect: isMultiSelect ?? base.isMultiSelect,
+      imageMediaLimit: imageMediaLimit ?? base.imageMediaLimit,
+      videoMediaLimit: videoMediaLimit ?? base.videoMediaLimit,
+      mediaLimit: mediaLimit ?? base.mediaLimit,
+    );
+  }
 
   static Future<List<ms.MediaAssetData>> captureToMediaAssets(
     BuildContext context, {
@@ -402,7 +427,7 @@ abstract final class CreatePostFlowCoordinator {
     final res = await IsrAppNavigator.presentCreatePostMediaSelector(
       context,
       initialSound: selectedSound,
-      config: defaultMediaSelectionConfig(
+      config: resolvedMediaSelectionConfig(
         mediaListType: (videoLimit > 0 && imageLimit > 0)
             ? ms.MediaListType.imageVideo
             : (videoLimit > 0)
@@ -428,7 +453,7 @@ abstract final class CreatePostFlowCoordinator {
   static Future<String?> pickCoverPic(BuildContext context) async {
     final res = await IsrAppNavigator.presentCreatePostMediaSelector(
       context,
-      config: defaultMediaSelectionConfig(
+      config: resolvedMediaSelectionConfig(
         mediaListType: ms.MediaListType.image,
         isMultiSelect: false,
         selectMediaTitle: IsrTranslationFile.addCover,
@@ -536,7 +561,7 @@ class _StackedCreatePostFlowHost extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ms.MediaSelectionView(
         mediaSelectionConfig:
-            CreatePostFlowCoordinator.defaultMediaSelectionConfig(),
+            CreatePostFlowCoordinator.resolvedMediaSelectionConfig(),
         onComplete: (selectedMedia) => CreatePostFlowCoordinator.onMediaSelectorComplete(
           context,
           selectedMedia: selectedMedia,

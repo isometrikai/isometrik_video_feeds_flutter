@@ -787,6 +787,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
             return result;
           },
           startingPostIndex: tabState.tabDataModel.startingPostIndex,
+          anchorPostId: tabState.tabDataModel.postId,
           postSectionType: tabState.tabDataModel.postSectionType,
           feedLayoutType: tabState.tabDataModel.feedLayoutType,
           postFeedListTopInset:

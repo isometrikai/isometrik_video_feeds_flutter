@@ -18,27 +18,39 @@ class CollectionThemeResolver {
 
   static Color get surfaceCard =>
       IsrVideoReelConfig.socialConfig.colorsConfig?.dialogColor ??
-      IsrColors.white;
+      (isDark ? const Color(0xFF252525) : IsrColors.white);
 
-  static Color get inputFill => surfaceCard;
+  /// Input fields sit on [scaffoldBackground]; use a raised surface in dark mode.
+  static Color get inputFill {
+    if (!isDark) return surfaceCard;
+    return IsrVideoReelConfig.socialConfig.colorsConfig?.dialogColor ??
+        IsrVideoReelConfig.socialConfig.themeConfig?.appBarColor ??
+        surfaceCard;
+  }
 
   static Color get textPrimary => IsrColors.primaryTextColor;
 
   static Color get textSecondary => IsrColors.secondaryTextColor;
 
+  /// Field labels — lighter in dark mode for legibility on dark surfaces.
+  static Color get labelText => isDark
+      ? textPrimary.withValues(alpha: 0.75)
+      : textSecondary;
+
   static Color get divider => IsrColors.dividerColor;
 
-  static Color get border => divider;
+  static Color get border =>
+      isDark ? textPrimary.withValues(alpha: 0.22) : const Color(0xFFE5E7EB);
 
   static Color get mutedSurface => isDark
       ? textSecondary.withValues(alpha: 0.15)
       : const Color(0xFFF8F9FA);
 
   static Color get mutedBorder =>
-      isDark ? divider : const Color(0xFFE5E7EB);
+      isDark ? border : const Color(0xFFE5E7EB);
 
   static Color get imagePickerBackground => isDark
-      ? textSecondary.withValues(alpha: 0.12)
+      ? textPrimary.withValues(alpha: 0.08)
       : const Color(0xFFF4F4F4);
 
   static Color get destructive => IsrColors.error;

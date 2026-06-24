@@ -1030,13 +1030,13 @@ class SocialApiServiceProvider extends SocialApiService {
         (headers) => networkClient.makeRequest(
           SocialApiEndPoints.postMoveToCollection,
           NetworkRequestType.post,
+          null,
           {
             'post_id': postId,
-            if (collectionIds.isNotEmpty) 'collection_ids': collectionIds,
+            if (collectionIds.isNotEmpty) 'collection_id': collectionIds,
             if (removeCollectionIds.isNotEmpty)
               'removeCollectionIds': removeCollectionIds,
           },
-          null,
           headers,
           isLoading,
         ),

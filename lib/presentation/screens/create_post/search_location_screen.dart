@@ -627,6 +627,7 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
 
   /// Build the location permission UI (matches the design)
   Widget _buildLocationPermissionUI() => LocationPermissionPlaceholder(
+    config: _searchLocationConfig?.locationPermissionConfig,
     subtitle: _getLocationSubtitle(),
     buttonText: _getLocationButtonText(),
     isLoading: _isCheckingLocation,

@@ -23,6 +23,7 @@ class PostItemWidget extends StatefulWidget {
     this.postFeedListBottomInset,
     this.onTapPlaceHolder,
     this.startingPostIndex = 0,
+    this.anchorPostId,
     this.loggedInUserId,
     this.allowImplicitScrolling = true,
     required this.reelsDataList,
@@ -46,6 +47,9 @@ class PostItemWidget extends StatefulWidget {
 
   final VoidCallback? onTapPlaceHolder;
   final int? startingPostIndex;
+
+  /// When the reels list is merged/refreshed, keep the page on this post id.
+  final String? anchorPostId;
   final String? loggedInUserId;
   final bool? allowImplicitScrolling;
   final List<ReelsData> reelsDataList;
@@ -138,7 +142,25 @@ class _PostItemWidgetState extends State<PostItemWidget>
     }
 
     _reelsDataList = List<ReelsData>.from(widget.reelsDataList);
+    _realignToAnchorPostIfNeeded();
     _updateState();
+  }
+
+  void _realignToAnchorPostIfNeeded() {
+    final anchorId = widget.anchorPostId?.trim();
+    if (anchorId == null || anchorId.isEmpty || _reelsDataList.isEmpty) {
+      return;
+    }
+    final newIndex = _reelsDataList.indexWhere((reel) => reel.postId == anchorId);
+    if (newIndex < 0) return;
+
+    _currentIndex.value = newIndex;
+    if (_pageController.hasClients) {
+      final currentPage = _pageController.page?.round() ?? _currentIndex.value;
+      if (currentPage != newIndex) {
+        _pageController.jumpToPage(newIndex);
+      }
+    }
   }
 
   bool _sameReelsList(List<ReelsData> previous, List<ReelsData> next) {

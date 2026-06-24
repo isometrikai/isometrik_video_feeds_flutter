@@ -101,8 +101,22 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
     });
   }
 
+  Future<bool> _ensureUserLoggedIn() async {
+    var isUserLoggedIn =
+        await IsmInjectionUtils.getBloc<SocialPostBloc>().isUserLoggedIn;
+    if (!isUserLoggedIn) {
+      await IsrVideoReelConfig
+          .socialConfig.socialCallBackConfig?.onLoginInvoked
+          ?.call();
+    }
+    isUserLoggedIn =
+        await IsmInjectionUtils.getBloc<SocialPostBloc>().isUserLoggedIn;
+    return isUserLoggedIn;
+  }
+
   Future<void> _toggleSaved() async {
     if (_saveLoading || !_apiSoundsMode) return;
+    if (!await _ensureUserLoggedIn()) return;
     setState(() => _saveLoading = true);
     final result = await _soundUseCase!.toggleSaved(
       isLoading: true,
@@ -187,6 +201,7 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
 
   Future<void> _onUseAudio() async {
     if (_useAudioLoading) return;
+    if (!await _ensureUserLoggedIn()) return;
     setState(() => _useAudioLoading = true);
     await _previewPlayer.pause();
     IsrVideoReelConfig.suppressPlayback();
@@ -578,7 +593,9 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
           : media.url?.toString() ?? '';
     }
 
-    final isVideo = post.media?.first.mediaType?.mediaType == MediaType.video;
+    final isVideo = post.type == 'video' ||
+        (post.media.isEmptyOrNull == false &&
+            post.media!.first.mediaType?.mediaType == MediaType.video);
 
     return Stack(
       fit: StackFit.expand,

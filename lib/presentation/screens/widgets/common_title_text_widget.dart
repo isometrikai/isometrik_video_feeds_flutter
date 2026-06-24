@@ -57,6 +57,7 @@ class CommonTitleTextWidget extends StatelessWidget {
                 AssetConstants.icClose,
                 height: IsrDimens.twentyEight,
                 width: IsrDimens.twentyEight,
+                color: titleColor ?? IsrColors.primaryTextColor,
               ),
             ),
         ],
