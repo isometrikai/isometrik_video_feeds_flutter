@@ -1257,15 +1257,16 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             itemBuilder: (context, index) => _buildPageView(index),
           ),
 
-          // Media counter
-          Positioned(
-            top: IsrDimens.sixty,
-            right: IsrDimens.sixteen,
-            child: ValueListenableBuilder<int>(
-              valueListenable: _currentPageNotifier,
-              builder: (context, value, child) => _buildMediaCounter(value),
+          // Media counter — hidden in glass reels theme (segment bar is enough).
+          if (!_isGlassReelsActionIcons)
+            Positioned(
+              top: IsrDimens.sixty,
+              right: IsrDimens.sixteen,
+              child: ValueListenableBuilder<int>(
+                valueListenable: _currentPageNotifier,
+                builder: (context, value, child) => _buildMediaCounter(value),
+              ),
             ),
-          ),
         ],
       );
 
