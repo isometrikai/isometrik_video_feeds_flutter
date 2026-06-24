@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/feed_plain_text_post_body.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/feed_text_post_formatted_body.dart';
@@ -30,6 +31,11 @@ class FeedTextPostSection extends StatelessWidget {
     this.plainTextBodyStyle,
     this.plainTextToggleStyle,
     this.onFormattedCardTap,
+    this.mentions = const [],
+    this.onMentionTap,
+    this.onMentionsTap,
+    this.mentionStyle,
+    this.mentionConfig,
   });
 
   final TextPostFormatting formatting;
@@ -50,6 +56,11 @@ class FeedTextPostSection extends StatelessWidget {
   final TextStyle? plainTextBodyStyle;
   final TextStyle? plainTextToggleStyle;
   final VoidCallback? onFormattedCardTap;
+  final List<MentionMetaData> mentions;
+  final void Function(MentionMetaData mention)? onMentionTap;
+  final void Function(List<MentionMetaData> mentions)? onMentionsTap;
+  final TextStyle? mentionStyle;
+  final MentionConfig? mentionConfig;
 
   static const TextHeightBehavior _compactTextHeight = TextHeightBehavior(
     applyHeightToFirstAscent: false,
@@ -104,6 +115,11 @@ class FeedTextPostSection extends StatelessWidget {
         formatting: formatting,
         aspectRatio: formattedAspectRatio,
         onTap: onFormattedCardTap,
+        mentions: mentions,
+        onMentionsTap: onMentionsTap,
+        onMentionTap: onMentionTap,
+        mentionConfig: mentionConfig,
+        scrollable: false,
       );
     }
     return FeedPlainTextPostBody(
@@ -111,6 +127,9 @@ class FeedTextPostSection extends StatelessWidget {
       textColor: textColor,
       bodyTextStyle: plainTextBodyStyle,
       moreTextStyle: plainTextToggleStyle,
+      mentions: mentions,
+      onMentionTap: onMentionTap,
+      mentionStyle: mentionStyle,
     );
   }
 

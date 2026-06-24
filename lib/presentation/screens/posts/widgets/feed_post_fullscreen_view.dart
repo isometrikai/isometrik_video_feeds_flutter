@@ -10,7 +10,7 @@ import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/video_player_widget.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/comment_count_action_widget.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/feed_post_media_hero.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/widgets/feed_text_post_content.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/feed_text_post_fullscreen_view.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/like_action_widget.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/text_post_formatting.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -38,6 +38,8 @@ class FeedPostFullscreenView extends StatefulWidget {
     this.initialMediaIndex = 0,
     this.videoCacheManager,
     this.handoffSnapshot,
+    this.onTapMentionTag,
+    this.mentionConfig,
   }) : assert(
           textFormatting != null ||
               (mediaList != null && mediaList!.isNotEmpty),
@@ -59,6 +61,8 @@ class FeedPostFullscreenView extends StatefulWidget {
   final int initialMediaIndex;
   final VideoCacheManager? videoCacheManager;
   final FeedVideoPlayerHandoffSnapshot? handoffSnapshot;
+  final void Function(List<MentionMetaData> mentions)? onTapMentionTag;
+  final MentionConfig? mentionConfig;
 
   static const Color likeColor = Color(0xFFED4956);
   static const Color iconColor = Colors.white;
@@ -81,6 +85,8 @@ class FeedPostFullscreenView extends StatefulWidget {
     int initialMediaIndex = 0,
     VideoCacheManager? videoCacheManager,
     FeedVideoPlayerHandoffSnapshot? handoffSnapshot,
+    void Function(List<MentionMetaData> mentions)? onTapMentionTag,
+    MentionConfig? mentionConfig,
   }) {
     final socialPostBloc = context.getOrCreateBloc<SocialPostBloc>();
     final socialActionCubit = context.getOrCreateBloc<IsmSocialActionCubit>();
@@ -112,6 +118,8 @@ class FeedPostFullscreenView extends StatefulWidget {
             initialMediaIndex: initialMediaIndex,
             videoCacheManager: videoCacheManager,
             handoffSnapshot: handoffSnapshot,
+            onTapMentionTag: onTapMentionTag,
+            mentionConfig: mentionConfig,
           ),
         ),
         transitionsBuilder: (_, animation, __, child) {
@@ -136,6 +144,9 @@ class FeedPostFullscreenView extends StatefulWidget {
 
 class _FeedPostFullscreenViewState extends State<FeedPostFullscreenView> {
   static const int _pictureType = FeedPostFullscreenView._pictureType;
+  static const double _chromeIconSize = 20;
+  static const double _chromeButtonPadding = 6;
+  static const double _chromeEdgePadding = 16;
 
   late final PageController? _pageController;
   late int _currentMediaIndex;
@@ -186,8 +197,6 @@ class _FeedPostFullscreenViewState extends State<FeedPostFullscreenView> {
   @override
   Widget build(BuildContext context) {
     final iconSize = widget.actionIconConfig.iconSize ?? IsrDimens.twentyFour;
-    final topInset = MediaQuery.paddingOf(context).top;
-    final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return PopScope(
       canPop: false,
@@ -198,90 +207,85 @@ class _FeedPostFullscreenViewState extends State<FeedPostFullscreenView> {
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
         backgroundColor: Colors.black,
-        body: Column(
-          children: [
-            SizedBox(height: topInset + IsrDimens.eight),
-            Padding(
-              padding:
-                  IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twelve),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _ChromeIconButton(
-                    onTap: _closePreview,
-                    child: Icon(
-                      Icons.close,
-                      color: FeedPostFullscreenView.iconColor,
-                      size: iconSize,
-                    ),
-                  ),
-                  if (widget.reelsData.postSetting?.isMoreButtonVisible == true)
-                    _ChromeIconButton(
-                      onTap: widget.onPressMoreButton,
-                      child: _buildActionSvg(
-                        widget.actionIconConfig.moreIcon ??
-                            AssetConstants.icPostMoreIcon,
-                        size: iconSize,
-                        color: FeedPostFullscreenView.iconColor,
-                      ),
-                    )
-                  else
-                    SizedBox(width: iconSize + IsrDimens.twenty),
-                ],
+        body: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  _chromeEdgePadding,
+                  _chromeEdgePadding,
+                  _chromeEdgePadding,
+                  0,
+                ),
+                child: _buildTopChrome(),
               ),
-            ),
-            SizedBox(height: IsrDimens.sixteen),
-            Expanded(child: _buildContentArea()),
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                IsrDimens.sixteen,
-                IsrDimens.twelve,
-                IsrDimens.sixteen,
-                bottomInset + IsrDimens.twelve,
+              SizedBox(height: _isTextCard ? 0 : IsrDimens.sixteen),
+              Expanded(child: _buildContentArea()),
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  IsrDimens.sixteen,
+                  _isTextCard ? 0 : IsrDimens.twelve,
+                  IsrDimens.sixteen,
+                  IsrDimens.twelve,
+                ),
+                child: _buildBottomActions(iconSize),
               ),
-              child: _buildBottomActions(iconSize),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     ),
     );
   }
 
+  Widget _buildTopChrome() => Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _ChromeIconButton(
+            onTap: _closePreview,
+            padding: _chromeButtonPadding,
+            child: Icon(
+              Icons.close,
+              color: FeedPostFullscreenView.iconColor,
+              size: _chromeIconSize,
+            ),
+          ),
+          if (widget.reelsData.postSetting?.isMoreButtonVisible == true)
+            _ChromeIconButton(
+              onTap: widget.onPressMoreButton,
+              padding: _chromeButtonPadding,
+              child: _buildActionSvg(
+                widget.actionIconConfig.moreIcon ??
+                    AssetConstants.icPostMoreIcon,
+                size: _chromeIconSize,
+                color: FeedPostFullscreenView.iconColor,
+              ),
+            )
+          else
+            SizedBox(
+              width: _chromeIconSize + (_chromeButtonPadding * 2),
+            ),
+        ],
+      );
+
   Widget _buildContentArea() {
     if (_isTextCard) {
-      return Center(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(
-            IsrDimens.twentyFour,
-            0,
-            IsrDimens.twentyFour,
-            IsrDimens.eight,
-          ),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final maxWidth = constraints.maxWidth;
-              final maxHeight = constraints.maxHeight;
-              final minHeight = math.min(
-                maxHeight,
-                maxWidth / widget.formattedAspectRatio,
-              );
-
-              return ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: maxWidth,
-                  maxHeight: maxHeight,
-                  minHeight: minHeight,
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(IsrDimens.twelve),
-                  child: FeedTextPostContent(
-                    formatting: widget.textFormatting!,
-                  ),
-                ),
-              );
-            },
-          ),
+      return Padding(
+        padding: EdgeInsets.fromLTRB(
+          IsrDimens.twentyFour,
+          IsrDimens.sixteen,
+          IsrDimens.twentyFour,
+          IsrDimens.sixteen,
+        ),
+        child: FeedTextPostFullscreenCard(
+          formatting: widget.textFormatting!,
+          formattedAspectRatio: widget.formattedAspectRatio,
+          mentions: resolveTextPostMentions(widget.reelsData),
+          onMentionTap: widget.onTapMentionTag == null
+              ? null
+              : (mention) => widget.onTapMentionTag!([mention]),
+          onMentionsTap: widget.onTapMentionTag,
+          mentionConfig: widget.mentionConfig,
         ),
       );
     }
@@ -305,42 +309,48 @@ class _FeedPostFullscreenViewState extends State<FeedPostFullscreenView> {
 
   Widget _buildMediaPage(MediaMetaData media, int index) {
     final postId = widget.reelsData.postId ?? '';
-    if (_isPicture(media)) {
-      return FeedPostMediaHeroScope(
-        postId: postId,
-        mediaIndex: index,
-        child: _buildPicturePageContent(media),
-      );
-    }
-
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        FeedPostMediaHeroScope(
-          postId: postId,
-          mediaIndex: index,
-          child: FeedPostVideoHeroShell(thumbnailUrl: media.thumbnailUrl),
+    return LayoutBuilder(
+      builder: (context, constraints) => ColoredBox(
+        color: Colors.black,
+        child: Center(
+          child: SizedBox(
+            width: constraints.maxWidth,
+            height: constraints.maxHeight,
+            child: _isPicture(media)
+                ? FeedPostMediaHeroScope(
+                    postId: postId,
+                    mediaIndex: index,
+                    child: _buildPicturePageContent(media),
+                  )
+                : Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      FeedPostMediaHeroScope(
+                        postId: postId,
+                        mediaIndex: index,
+                        child: FeedPostVideoHeroShell(
+                          thumbnailUrl: media.thumbnailUrl,
+                        ),
+                      ),
+                      _buildVideoPageContent(media, index),
+                    ],
+                  ),
+          ),
         ),
-        _buildVideoPageContent(media, index),
-      ],
+      ),
     );
   }
 
   Widget _buildPicturePageContent(MediaMetaData media) {
     final imageUrl = media.mediaUrl.trim();
-    return ColoredBox(
-      color: Colors.black,
-      child: Center(
-        child: AppImage.network(
-          imageUrl,
-          fit: BoxFit.contain,
-          width: double.infinity,
-          height: double.infinity,
-          cacheKey: imageUrl,
-          cacheManager: IsrPostFeedImageCacheManager.instance,
-          fadeAnimationEnable: false,
-        ),
-      ),
+    return AppImage.network(
+      imageUrl,
+      fit: BoxFit.contain,
+      width: double.infinity,
+      height: double.infinity,
+      cacheKey: imageUrl,
+      cacheManager: IsrPostFeedImageCacheManager.instance,
+      fadeAnimationEnable: false,
     );
   }
 
@@ -597,10 +607,12 @@ class _ChromeIconButton extends StatelessWidget {
   const _ChromeIconButton({
     required this.onTap,
     required this.child,
+    this.padding = 6,
   });
 
   final VoidCallback? onTap;
   final Widget child;
+  final double padding;
 
   @override
   Widget build(BuildContext context) => Material(
@@ -611,7 +623,7 @@ class _ChromeIconButton extends StatelessWidget {
           onTap: onTap,
           customBorder: const CircleBorder(),
           child: Padding(
-            padding: IsrDimens.edgeInsetsAll(IsrDimens.ten),
+            padding: EdgeInsets.all(padding),
             child: child,
           ),
         ),

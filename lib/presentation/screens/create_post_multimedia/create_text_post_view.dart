@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:fluttertagger/fluttertagger.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
@@ -30,11 +30,8 @@ class CreateTextPostView extends StatefulWidget {
   static const int cardLimit = TextPostComposerLimits.cardCharLimit;
   static const int recommendedCardLimit = 250;
 
-  /// Plain-post formatting defaults. These mirror the SDK's text-post renderer
-  /// (`TextPostFormatting` uses [GoogleFonts] so the family must be a Google
-  /// font) so the composer is WYSIWYG with the feed.
-  static const String fontFamily = 'Roboto';
-  static const int fontSize = 17;
+  /// Plain-post formatting defaults for the composer and feed payload.
+  static const int fontSize = 16;
   static const String fontStyle = 'normal';
   static const String textAlign = 'left';
 
@@ -83,7 +80,7 @@ class _BgOption {
 }
 
 class _CreateTextPostViewState extends State<CreateTextPostView> {
-  final _controller = TextEditingController();
+  late FlutterTaggerController _controller;
   final _focusNode = FocusNode();
 
   String _avatarUrl = '';
@@ -103,6 +100,7 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
   String _fontStyle = 'normal';
   String _cardTextAlign = 'center';
   final List<TaggedPlace> _taggedPlaces = [];
+  final List<MentionData> _mentionedUsers = [];
 
   CreatePostBloc get _createPostBloc =>
       IsmInjectionUtils.getBloc<CreatePostBloc>();
@@ -127,10 +125,6 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
 
   TextPostValidationResult get _validation =>
       TextPostComposerLimits.validate(_controller.text, isCard: _isCard);
-
-  List<TextInputFormatter> get _textInputFormatters => [
-        TextPostComposerInputFormatter(isCard: _isCard),
-      ];
 
   /// Selectable backgrounds: every gradient from the palette plus a few solids.
   List<_BgOption> get _backgroundOptions => [
@@ -159,6 +153,7 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
   @override
   void initState() {
     super.initState();
+    _controller = FlutterTaggerController();
     if (_isEditMode) {
       _createPostBloc.add(EditPostEvent(postData: widget.postData!));
       _hydrateFromPost(widget.postData!);
@@ -175,7 +170,7 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
 
   void _hydrateFromPost(TimeLineData post) {
     final formatting = TextPostFormatting.fromTimeline(post);
-    _controller.text = formatting.text;
+    final text = formatting.text;
     _isCard = formatting.hasBackground;
     if (_isCard) {
       _bgType = formatting.backgroundType.isNotEmpty
@@ -197,6 +192,19 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
       _taggedPlaces
         ..clear()
         ..addAll(places);
+    }
+    final mentions = post.tags?.mentions;
+    if (mentions != null && mentions.isNotEmpty) {
+      _mentionedUsers
+        ..clear()
+        ..addAll(mentions);
+    }
+    if (text.contains('@') || text.contains('#')) {
+      _controller.dispose();
+      _controller = FlutterTaggerController(text: text);
+      CommentTaggingTextField.applyPlainTextTagHighlights(_controller);
+    } else {
+      _controller.text = text;
     }
   }
 
@@ -287,7 +295,7 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
 
     final textFormatting = <String, dynamic>{
       'text': text,
-      'font_family': _isCard ? _fontFamily : CreateTextPostView.fontFamily,
+      'font_family': _isCard ? _fontFamily : AppConstants.primaryFontFamily,
       'font_size': _isCard ? _fontSize : CreateTextPostView.fontSize,
       'font_style': _isCard ? _fontStyle : CreateTextPostView.fontStyle,
       'text_align': _isCard ? _cardTextAlign : CreateTextPostView.textAlign,
@@ -304,9 +312,7 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
       type: SocialPostType.text,
       visibility: widget.postData?.visibility ?? SocialPostVisibility.public,
       textFormatting: textFormatting,
-      tags: _taggedPlaces.isEmpty
-          ? null
-          : Tags(places: List<TaggedPlace>.from(_taggedPlaces)),
+      tags: _buildPostTags(),
     );
 
     _createPostBloc.add(
@@ -316,6 +322,140 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
       ),
     );
   }
+
+  Tags? _buildPostTags() {
+    if (_taggedPlaces.isEmpty && _mentionedUsers.isEmpty) return null;
+    return Tags(
+      places: _taggedPlaces.isEmpty
+          ? null
+          : List<TaggedPlace>.from(_taggedPlaces),
+      mentions: _mentionedUsers.isEmpty
+          ? null
+          : List<MentionData>.from(_mentionedUsers),
+    );
+  }
+
+  MentionData _mentionDataFromComment(CommentMentionData c) => MentionData(
+        userId: c.userId,
+        username: c.username,
+        tag: c.tag,
+        name: c.name,
+        avatarUrl: c.avatarUrl,
+        textPosition: c.textPosition == null
+            ? null
+            : TaggedPosition(
+                start: c.textPosition!.start,
+                end: c.textPosition!.end,
+              ),
+      );
+
+  void _insertMentionTrigger() {
+    if (_isPosting) return;
+    final text = _controller.text;
+    final selection = _controller.selection;
+    final offset = selection.isValid ? selection.baseOffset : text.length;
+    final safeOffset = offset.clamp(0, text.length);
+    final needsLeadingSpace = safeOffset > 0 &&
+        !RegExp(r'\s').hasMatch(text[safeOffset - 1]);
+    final insertion = needsLeadingSpace ? ' @' : '@';
+    final newText =
+        text.substring(0, safeOffset) + insertion + text.substring(safeOffset);
+    _controller.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: safeOffset + insertion.length),
+    );
+    _focusNode.requestFocus();
+  }
+
+  void _onMentionAdded(CommentMentionData mentionData) {
+    final md = _mentionDataFromComment(mentionData);
+    if (!_mentionedUsers.any((u) => u.userId == md.userId)) {
+      setState(() => _mentionedUsers.add(md));
+    }
+  }
+
+  void _onMentionRemoved(CommentMentionData mentionData) {
+    final md = _mentionDataFromComment(mentionData);
+    setState(() => _mentionedUsers.removeWhere((u) => u.userId == md.userId));
+  }
+
+  TextStyle get _plainTextStyle => TextStyle(
+        fontFamily: AppConstants.primaryFontFamily,
+        fontSize: CreateTextPostView.fontSize.toDouble(),
+        fontWeight: FontWeight.w400,
+        height: 1.4,
+        color: IsrColors.primaryTextColor,
+      );
+
+  TextStyle get _plainHintStyle => TextStyle(
+        fontFamily: AppConstants.primaryFontFamily,
+        fontSize: CreateTextPostView.fontSize.toDouble(),
+        fontWeight: FontWeight.w400,
+        height: 1.4,
+        color: IsrColors.secondaryTextColor.withValues(alpha: 0.6),
+      );
+
+  TextStyle get _usernameStyle => TextStyle(
+        fontFamily: AppConstants.primaryFontFamily,
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: IsrColors.primaryTextColor,
+      );
+
+  TextStyle get _plainMentionStyle => _plainTextStyle.copyWith(
+        color: IsrColors.appColor,
+        fontWeight: FontWeight.w600,
+      );
+
+  InputDecoration get _plainInputDecoration => InputDecoration(
+        isCollapsed: true,
+        filled: false,
+        contentPadding: EdgeInsets.zero,
+        border: InputBorder.none,
+        enabledBorder: InputBorder.none,
+        focusedBorder: InputBorder.none,
+        disabledBorder: InputBorder.none,
+        errorBorder: InputBorder.none,
+        focusedErrorBorder: InputBorder.none,
+        counterText: '',
+        hintText: IsrTranslationFile.whatsHappening,
+        hintStyle: _plainHintStyle,
+      );
+
+  Widget _buildTaggingTextField({
+    required TextStyle style,
+    required TextStyle hintStyle,
+    TextStyle? mentionStyle,
+    TextAlign textAlign = TextAlign.start,
+  }) =>
+      CommentTaggingTextField(
+        controller: _controller,
+        focusNode: _focusNode,
+        autoFocus: true,
+        maxLines: null,
+        maxLength: _limits.charLimit,
+        inlineSuggestionsBelow: true,
+        wrapFieldInScrollView: false,
+        enableSuggestions: true,
+        minSearchQueryLength: 2,
+        textAlign: textAlign,
+        textStyle: style,
+        userTagTextStyle: mentionStyle ?? _plainMentionStyle,
+        hintStyle: hintStyle,
+        decoration: _plainInputDecoration.copyWith(hintStyle: hintStyle),
+        onChanged: (_) => setState(() {}),
+        buildCounter: _hiddenLengthCounter,
+        onAddMentionData: _onMentionAdded,
+        onRemoveMentionData: _onMentionRemoved,
+      );
+
+  Widget? _hiddenLengthCounter(
+    BuildContext context, {
+    required int currentLength,
+    required bool isFocused,
+    int? maxLength,
+  }) =>
+      null;
 
   void _showValidationMessage(TextPostValidationResult validation) {
     final limit = validation.limit;
@@ -414,37 +554,50 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
       child: Scaffold(
         backgroundColor: IsrColors.scaffoldColor,
         appBar: AppBar(
-          backgroundColor: IsrColors.appBarColor,
+          backgroundColor: IsrColors.scaffoldColor,
+          surfaceTintColor: Colors.transparent,
           elevation: 0,
           scrolledUnderElevation: 0,
           automaticallyImplyLeading: false,
           leadingWidth: 90,
+          toolbarHeight: 44,
           leading: Center(
-            child: TextButton(
-              onPressed: _isPosting ? null : _onCancel,
-              child: Text(
-                IsrTranslationFile.cancel,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: IsrColors.primaryTextColor,
+            child: SizedBox(
+              height: 26,
+              child: TextButton(
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                onPressed: _isPosting ? null : _onCancel,
+                child: Text(
+                  IsrTranslationFile.cancel,
+                  style: TextStyle(
+                    fontFamily: AppConstants.primaryFontFamily,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                    color: IsrColors.primaryTextColor,
+                  ),
                 ),
               ),
             ),
           ),
           actions: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: _PostButton(
-                enabled: _canPost,
-                isLoading: _isPosting,
-                onPressed: _onPost,
+              padding: const EdgeInsets.only(right: 12),
+              child: Center(
+                child: SizedBox(
+                  height: 26,
+                  child: _PostButton(
+                    enabled: _canPost,
+                    isLoading: _isPosting,
+                    onPressed: _onPost,
+                  ),
+                ),
               ),
             ),
           ],
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(1),
-            child: Container(height: 1, color: dividerColor),
-          ),
         ),
         body: SafeArea(
           child: Column(
@@ -472,7 +625,6 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
                 ),
               ),
               Container(height: 1, color: dividerColor),
-              _buildComposerToolbar(),
               if (_isCard) _buildCardToolbar(),
               _buildBottomBar(),
               // Scaffold already shrinks the body above the keyboard — pin Done
@@ -486,58 +638,42 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
     );
   }
 
-  Widget _buildPlainEditor() => Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _Avatar(
-            url: _avatarUrl,
-            firstName: _firstName,
-            lastName: _lastName,
-            userName: _userName,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: TextField(
-              controller: _controller,
-              focusNode: _focusNode,
-              autofocus: true,
-              maxLines: null,
-              maxLength: _limits.charLimit,
-              keyboardType: TextInputType.multiline,
-              textInputAction: TextInputAction.newline,
-              textCapitalization: TextCapitalization.sentences,
-              textAlign: TextAlign.left,
-              cursorColor: IsrColors.appColor,
-              inputFormatters: _textInputFormatters,
-              style: GoogleFonts.getFont(
-                CreateTextPostView.fontFamily,
-                fontSize: CreateTextPostView.fontSize.toDouble(),
-                height: 1.35,
-                color: IsrColors.primaryTextColor,
-              ),
-              buildCounter: _emptyCounter,
-              decoration: InputDecoration(
-                isCollapsed: true,
-                filled: false,
-                contentPadding: EdgeInsets.zero,
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                disabledBorder: InputBorder.none,
-                errorBorder: InputBorder.none,
-                focusedErrorBorder: InputBorder.none,
-                hintText: IsrTranslationFile.whatsHappening,
-                hintStyle: GoogleFonts.getFont(
-                  CreateTextPostView.fontFamily,
-                  fontSize: CreateTextPostView.fontSize.toDouble(),
-                  height: 1.35,
-                  color: IsrColors.secondaryTextColor.withValues(alpha: 0.6),
+  Widget _buildPlainEditor() {
+    final fullName = '$_firstName $_lastName'.trim();
+    final displayName = _userName.isNotEmpty ? _userName : fullName;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _Avatar(
+          url: _avatarUrl,
+          firstName: _firstName,
+          lastName: _lastName,
+          userName: _userName,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (displayName.isNotEmpty)
+                Text(
+                  displayName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: _usernameStyle,
                 ),
+              if (displayName.isNotEmpty) const SizedBox(height: 8),
+              _buildTaggingTextField(
+                style: _plainTextStyle,
+                hintStyle: _plainHintStyle,
               ),
-            ),
+            ],
           ),
-        ],
-      );
+        ),
+      ],
+    );
+  }
 
   Widget _buildCardEditor() {
     final fmt = _cardFormatting;
@@ -561,11 +697,7 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
                 _userName.isNotEmpty ? _userName : fullName,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: IsrColors.primaryTextColor,
-                ),
+                style: _usernameStyle,
               ),
             ),
           ],
@@ -582,35 +714,16 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
               gradient: gradient,
               color: gradient == null ? fmt.fallbackBackgroundColor : null,
             ),
-            child: TextField(
-              controller: _controller,
-              focusNode: _focusNode,
-              autofocus: true,
-              maxLines: null,
-              maxLength: _limits.charLimit,
-              keyboardType: TextInputType.multiline,
-              textInputAction: TextInputAction.newline,
-              textCapitalization: TextCapitalization.sentences,
-              textAlign: fmt.textAlignValue,
-              cursorColor: textStyle.color ?? Colors.white,
-              inputFormatters: _textInputFormatters,
-              style: textStyle,
-              buildCounter: _emptyCounter,
-              decoration: InputDecoration(
-                isCollapsed: true,
-                filled: false,
-                contentPadding: EdgeInsets.zero,
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                disabledBorder: InputBorder.none,
-                errorBorder: InputBorder.none,
-                focusedErrorBorder: InputBorder.none,
-                hintText: IsrTranslationFile.whatsHappening,
+            child: SizedBox(
+              width: double.infinity,
+              child: _buildTaggingTextField(
+                style: textStyle,
                 hintStyle: textStyle.copyWith(
-                  color: (textStyle.color ?? Colors.white)
-                      .withValues(alpha: 0.55),
+                  color:
+                      (textStyle.color ?? Colors.white).withValues(alpha: 0.55),
                 ),
+                mentionStyle: textStyle,
+                textAlign: fmt.textAlignValue,
               ),
             ),
           ),
@@ -619,31 +732,49 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
     );
   }
 
-  Widget? _emptyCounter(
-    BuildContext context, {
-    required int currentLength,
-    required bool isFocused,
-    int? maxLength,
-  }) =>
-      null;
-
-  Widget _buildComposerToolbar() {
+  Widget _buildBottomBar() {
+    final length = _controller.text.length;
+    final limits = _limits;
+    final overRecommended =
+        _isCard && length > CreateTextPostView.recommendedCardLimit;
+    final nearCharLimit = length >= limits.charLimit - 100;
     final hasLocation = _taggedPlaces.isNotEmpty;
-    final locationIconColor = _isPosting
+    final iconColor = _isPosting
+        ? IsrColors.secondaryTextColor.withValues(alpha: 0.35)
+        : IsrColors.primaryTextColor;
+    final activeIconColor = _isPosting
         ? IsrColors.secondaryTextColor.withValues(alpha: 0.35)
         : IsrColors.appColor;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
+      padding: const EdgeInsets.fromLTRB(12, 8, 16, 10),
       child: Row(
         children: [
-          IconButton(
+          _ModeToggle(isCard: _isCard, onChanged: _setMode),
+          const SizedBox(width: 8),
+          _ComposerActionIcon(
+            asset: AssetConstants.icPostLocation,
+            color: hasLocation ? activeIconColor : iconColor,
             onPressed: _isPosting ? null : _pickLocation,
-            icon: Icon(
-              hasLocation ? Icons.location_on : Icons.location_on_outlined,
-              color: locationIconColor,
-            ),
             tooltip: IsrTranslationFile.addLocation,
+          ),
+          _ComposerActionIcon(
+            asset: AssetConstants.icTagUser,
+            color: iconColor,
+            onPressed: _isPosting ? null : _insertMentionTrigger,
+            tooltip: IsrTranslationFile.tagPeople,
+          ),
+          const Spacer(),
+          Text(
+            '$length/${limits.charLimit}',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight:
+                  overRecommended || nearCharLimit ? FontWeight.w600 : FontWeight.w400,
+              color: overRecommended || nearCharLimit
+                  ? const Color(0xFFFF9F0A)
+                  : IsrColors.secondaryTextColor.withValues(alpha: 0.7),
+            ),
           ),
         ],
       ),
@@ -715,34 +846,6 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
               Icons.close,
               size: 16,
               color: IsrColors.appColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBottomBar() {
-    final length = _controller.text.length;
-    final limits = _limits;
-    final overRecommended =
-        _isCard && length > CreateTextPostView.recommendedCardLimit;
-    final nearCharLimit = length >= limits.charLimit - 100;
-  return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 8, 16, 10),
-      child: Row(
-        children: [
-          _ModeToggle(isCard: _isCard, onChanged: _setMode),
-          const Spacer(),
-          Text(
-            '$length/${limits.charLimit}',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight:
-                  overRecommended || nearCharLimit ? FontWeight.w600 : FontWeight.w400,
-              color: overRecommended || nearCharLimit
-                  ? const Color(0xFFFF9F0A)
-                  : IsrColors.secondaryTextColor.withValues(alpha: 0.7),
             ),
           ),
         ],
@@ -926,6 +1029,34 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
       );
 }
 
+class _ComposerActionIcon extends StatelessWidget {
+  const _ComposerActionIcon({
+    required this.asset,
+    required this.color,
+    required this.onPressed,
+    required this.tooltip,
+  });
+
+  final String asset;
+  final Color color;
+  final VoidCallback? onPressed;
+  final String tooltip;
+
+  @override
+  Widget build(BuildContext context) => IconButton(
+        onPressed: onPressed,
+        tooltip: tooltip,
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+        icon: AppImage.svg(
+          asset,
+          width: 24,
+          height: 24,
+          color: color,
+        ),
+      );
+}
+
 class _PostButton extends StatelessWidget {
   const _PostButton({
     required this.enabled,
@@ -944,31 +1075,35 @@ class _PostButton extends StatelessWidget {
         : IsrColors.buttonDisabledBackgroundColor;
     return Material(
       color: backgroundColor,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(4),
       child: InkWell(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(4),
         onTap: enabled ? onPressed : null,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-          child: isLoading
-              ? SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      IsrColors.buttonTextColor,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Center(
+            child: isLoading
+                ? SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        IsrColors.buttonTextColor,
+                      ),
+                    ),
+                  )
+                : Text(
+                    IsrTranslationFile.post,
+                    style: TextStyle(
+                      fontFamily: AppConstants.primaryFontFamily,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      height: 1,
+                      color: IsrColors.buttonTextColor,
                     ),
                   ),
-                )
-              : Text(
-                  IsrTranslationFile.post,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: IsrColors.buttonTextColor,
-                  ),
-                ),
+          ),
         ),
       ),
     );
@@ -1042,24 +1177,41 @@ class _Avatar extends StatelessWidget {
 class _ModeToggle extends StatelessWidget {
   const _ModeToggle({required this.isCard, required this.onChanged});
 
+  static const double _toggleHeight = 32;
+  static const double _tapHeight = 44;
+
   final bool isCard;
   final ValueChanged<bool> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final base = IsrColors.dividerColor;
-    return Container(
-      decoration: BoxDecoration(
-        color: base.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      padding: const EdgeInsets.all(3),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _segment(label: IsrTranslationFile.text, selected: !isCard, onTap: () => onChanged(false)),
-          _segment(label: IsrTranslationFile.card, selected: isCard, onTap: () => onChanged(true)),
-        ],
+    return SizedBox(
+      height: _tapHeight,
+      child: Center(
+        child: Container(
+          height: _toggleHeight,
+          clipBehavior: Clip.none,
+          decoration: BoxDecoration(
+            color: IsrColors.appColor,
+            borderRadius: BorderRadius.circular(_toggleHeight / 2),
+          ),
+          padding: const EdgeInsets.all(2),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _segment(
+                label: IsrTranslationFile.text,
+                selected: !isCard,
+                onTap: () => onChanged(false),
+              ),
+              _segment(
+                label: IsrTranslationFile.card,
+                selected: isCard,
+                onTap: () => onChanged(true),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1072,19 +1224,28 @@ class _ModeToggle extends StatelessWidget {
       GestureDetector(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          decoration: BoxDecoration(
-            color: selected ? IsrColors.appColor : Colors.transparent,
-            borderRadius: BorderRadius.circular(18),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: selected ? Colors.white : IsrColors.primaryTextColor,
+        child: Container(
+          constraints: const BoxConstraints(minWidth: 52, minHeight: _tapHeight),
+          alignment: Alignment.center,
+          color: Colors.transparent,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            height: 28,
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(
+              color: selected ? Colors.white : Colors.transparent,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontFamily: AppConstants.primaryFontFamily,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                height: 1,
+                color: selected ? IsrColors.appColor : Colors.white,
+              ),
             ),
           ),
         ),

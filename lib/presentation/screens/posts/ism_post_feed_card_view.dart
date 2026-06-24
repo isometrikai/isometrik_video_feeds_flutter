@@ -315,6 +315,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       onTapShare: () async {
         await widget.onTapShare?.call();
       },
+      onTapMentionTag: (mentions) => _onTapMentionData(mentions),
+      mentionConfig: _mentionConfig,
     );
 
     if (!mounted) {
@@ -1955,6 +1957,17 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       formattedAspectRatio: _feedUi.formattedTextPostAspectRatio,
       plainTextBodyStyle: _feedPlainTextBodyStyle,
       plainTextToggleStyle: _feedPlainTextToggleStyle,
+      mentions: _allPostMentions,
+      onMentionTap: (mention) => _onTapMentionData([mention]),
+      onMentionsTap: _onTapMentionData,
+      mentionStyle: formatting.hasBackground
+          ? null
+          : (_textStyleConfig?.mentionStyle ??
+              _feedPlainTextBodyStyle.copyWith(
+                fontWeight: FontWeight.w600,
+                color: IsrColors.appColor,
+              )),
+      mentionConfig: _mentionConfig,
       onFormattedCardTap: formatting.hasBackground
           ? () => unawaited(_openTextCardFullscreen(formatting))
           : null,

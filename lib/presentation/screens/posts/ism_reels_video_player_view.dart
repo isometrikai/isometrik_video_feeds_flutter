@@ -1213,9 +1213,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     Widget mediaWidget;
 
     if (_isTextOnlyPost) {
+      final formatting = _timelinePost!.textPostFormatting;
       mediaWidget = SizedBox.expand(
         child: FeedTextPostContent(
-          formatting: _timelinePost!.textPostFormatting,
+          formatting: formatting,
+          mentions: _mentionedDataList,
+          onMentionTap: (mention) => _callOnTapMentionData([mention]),
+          onMentionsTap: _callOnTapMentionData,
+          mentionConfig: _mentionConfig,
+          scrollable: formatting.hasBackground,
         ),
       );
     } else if (_reelData.showBlur == true) {

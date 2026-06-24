@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/text_post_formatting.dart';
 
@@ -17,6 +18,21 @@ void main() {
       expect(formatting.backgroundGradient, isNull);
       expect(formatting.text, 'text test post');
       expect(formatting.textAlignValue.name, 'left');
+    });
+
+    test('plain text uses bundled font without GoogleFonts', () {
+      final formatting = TextPostFormatting.fromDynamic({
+        'text': 'Hello @user',
+        'font_family': 'Product Sans',
+        'font_size': 16,
+        'font_style': 'normal',
+        'text_align': 'left',
+      });
+
+      expect(TextPostFormatting.usesGoogleFont('Product Sans'), isFalse);
+      final style = formatting.buildPlainTextStyle(const Color(0xFFFFFFFF));
+      expect(style.fontFamily, 'Product Sans');
+      expect(style.fontSize, 16);
     });
 
     test('gradient background remains supported', () {

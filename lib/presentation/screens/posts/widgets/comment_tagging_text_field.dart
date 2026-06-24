@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fluttertagger/fluttertagger.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -65,6 +65,12 @@ class CommentTaggingTextField extends StatefulWidget {
 
     /// Enables keyboard autocorrect and word suggestions (caption field).
     this.enableSuggestions = false,
+
+    /// Hides the default [TextField] character counter when set to return null.
+    this.buildCounter,
+
+    /// Text alignment inside the field (e.g. center for card posts).
+    this.textAlign = TextAlign.start,
   }) : super(key: key);
 
   final FlutterTaggerController controller;
@@ -98,6 +104,8 @@ class CommentTaggingTextField extends StatefulWidget {
   final bool wrapFieldInScrollView;
   final double inlineSuggestionMaxHeightFactor;
   final bool enableSuggestions;
+  final InputCounterWidgetBuilder? buildCounter;
+  final TextAlign textAlign;
 
   /// Registers plain `@name` / `#tag` segments in the tagger trie so they render with tag styling.
   ///
@@ -147,6 +155,25 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
 
   double? get _effectiveMaxOuterHeight =>
       _useInlineSuggestions ? null : (widget.maxOuterHeight ?? 150);
+
+  Color get _inlineSuggestionBackground =>
+      IsrVideoReelConfig.socialConfig.colorsConfig?.bottomSheetBackgroundColor ??
+      IsrColors.scaffoldColor;
+
+  Color get _inlineSuggestionBorder => IsrColors.dividerColor;
+
+  BoxDecoration get _inlineSuggestionDecoration => BoxDecoration(
+        color: _inlineSuggestionBackground,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: _inlineSuggestionBorder),
+        boxShadow: [
+          BoxShadow(
+            color: IsrColors.black.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      );
 
   @override
   void initState() {
@@ -677,23 +704,25 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
         _searchResults.isEmpty) {
       return const SizedBox.shrink();
     }
-    return Column(
-      children: [
-        const Divider(height: 1, thickness: 1),
-        Container(
-          margin: const EdgeInsets.only(top: 8),
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height *
-                widget.inlineSuggestionMaxHeightFactor,
-          ),
-          child: ListView.separated(
-            shrinkWrap: true,
-            padding: const EdgeInsets.all(8),
-            itemCount: _searchResults.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 4),
-            itemBuilder: (context, index) {
-              final user = _searchResults[index];
-              return InkWell(
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      decoration: _inlineSuggestionDecoration,
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height *
+            widget.inlineSuggestionMaxHeightFactor,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: ListView.separated(
+          shrinkWrap: true,
+          padding: const EdgeInsets.all(8),
+          itemCount: _searchResults.length,
+          separatorBuilder: (context, index) => const SizedBox(height: 4),
+          itemBuilder: (context, index) {
+            final user = _searchResults[index];
+            return Material(
+              color: Colors.transparent,
+              child: InkWell(
                 onTap: () => _selectUser(user),
                 borderRadius: BorderRadius.circular(8),
                 child: Padding(
@@ -706,14 +735,15 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
                           isProfileImage: true,
                           height: 25.responsiveDimension,
                           width: 25.responsiveDimension,
-                          border: Border.all(color: '979797'.toColor()),
+                          border: Border.all(color: _inlineSuggestionBorder),
                           name: user.username?.substring(0, 1).toUpperCase() ??
                               '',
                         )
                       else
                         CircleAvatar(
                           radius: IsrDimens.twelve,
-                          backgroundColor: IsrColors.white,
+                          backgroundColor:
+                              IsrColors.appColor.withValues(alpha: 0.12),
                           child: Text(
                             Utility.getInitials(
                               firstName:
@@ -738,9 +768,9 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
                                 Flexible(
                                   child: Text(
                                     user.displayName ?? '',
-                                    style: const TextStyle(
+                                    style: IsrStyles.primaryText14.copyWith(
                                       fontWeight: FontWeight.w600,
-                                      fontSize: 14,
+                                      color: IsrColors.primaryTextColor,
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -751,9 +781,8 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
                               const SizedBox(height: 1),
                               Text(
                                 user.username ?? '',
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 12,
+                                style: IsrStyles.primaryText12.copyWith(
+                                  color: IsrColors.secondaryTextColor,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -764,11 +793,11 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
                     ],
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
-      ],
+      ),
     );
   }
 
@@ -785,65 +814,32 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
     }
     final itemCount = _hashTagResults.length + (showAddTagOption ? 1 : 0);
 
-    return Column(
-      children: [
-        const Divider(height: 1, thickness: 1),
-        Container(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height *
-                widget.inlineSuggestionMaxHeightFactor,
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      decoration: _inlineSuggestionDecoration,
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height *
+            widget.inlineSuggestionMaxHeightFactor,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: ListView.separated(
+          shrinkWrap: true,
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          itemCount: itemCount,
+          separatorBuilder: (context, index) => Divider(
+            height: 1,
+            color: _inlineSuggestionBorder,
+            indent: 16,
+            endIndent: 16,
           ),
-          child: ListView.separated(
-            shrinkWrap: true,
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            itemCount: itemCount,
-            separatorBuilder: (context, index) => const Divider(
-              height: 1,
-              color: Colors.white,
-              indent: 16,
-              endIndent: 16,
-            ),
-            itemBuilder: (context, index) {
-              if (index < _hashTagResults.length) {
-                final hasTag = _hashTagResults[index];
-                return Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () => _selectHashTag(hasTag),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 12,
-                        horizontal: 16,
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              '#${hasTag.hashtag ?? ''}',
-                              style: IsrStyles.primaryText14
-                                  .copyWith(fontWeight: FontWeight.w600),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (hasTag.usageCount != null &&
-                              hasTag.usageCount! > 0)
-                            Text(
-                              '${hasTag.usageCount} Posts',
-                              style: IsrStyles.primaryText14
-                                  .copyWith(color: '868686'.toColor()),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }
+          itemBuilder: (context, index) {
+            if (index < _hashTagResults.length) {
+              final hasTag = _hashTagResults[index];
               return Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: () => _selectHashTag(
-                    HashTagData(hashtag: query),
-                  ),
+                  onTap: () => _selectHashTag(hasTag),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
                       vertical: 12,
@@ -851,31 +847,67 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
                     ),
                     child: Row(
                       children: [
-                        Icon(
-                          Icons.add_circle_outline,
-                          size: 20,
-                          color: IsrColors.appColor,
-                        ),
-                        const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            'Add tag #$query',
+                            '#${hasTag.hashtag ?? ''}',
                             style: IsrStyles.primaryText14.copyWith(
                               fontWeight: FontWeight.w600,
-                              color: IsrColors.appColor,
+                              color: IsrColors.primaryTextColor,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        if (hasTag.usageCount != null &&
+                            hasTag.usageCount! > 0)
+                          Text(
+                            '${hasTag.usageCount} Posts',
+                            style: IsrStyles.primaryText12.copyWith(
+                              color: IsrColors.secondaryTextColor,
+                            ),
+                          ),
                       ],
                     ),
                   ),
                 ),
               );
-            },
-          ),
+            }
+            return Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => _selectHashTag(
+                  HashTagData(hashtag: query),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 16,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.add_circle_outline,
+                        size: 20,
+                        color: IsrColors.appColor,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Add tag #$query',
+                          style: IsrStyles.primaryText14.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: IsrColors.appColor,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
         ),
-      ],
+      ),
     );
   }
 
@@ -1051,7 +1083,9 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
         enableSuggestions: widget.enableSuggestions,
         keyboardType: TextInputType.multiline,
         textInputAction: TextInputAction.newline,
+        textAlign: widget.textAlign,
         style: fieldStyle,
+        buildCounter: widget.buildCounter,
         decoration: widget.decoration ??
             InputDecoration(
               hintText: widget.hintText,
@@ -1102,15 +1136,12 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
           ),
           _buildInlineUserSuggestions(),
           _buildInlineHashtagSuggestions(),
-          10.verticalSpace,
           if (_showLoading)
             const LinearProgressIndicator(
               minHeight: 2,
               backgroundColor: Colors.transparent,
               color: Colors.blue,
-            )
-          else
-            const Divider(),
+            ),
         ],
       );
     }

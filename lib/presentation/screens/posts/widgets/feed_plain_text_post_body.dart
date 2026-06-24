@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/text_post_formatting.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/text_post_mention_text.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/text_post_composer_limits.dart';
 
@@ -15,6 +17,9 @@ class FeedPlainTextPostBody extends StatefulWidget {
     this.bodyTextStyle,
     this.collapsedMaxLines = TextPostComposerLimits.feedDisplayMaxLines,
     this.moreTextStyle,
+    this.mentions = const [],
+    this.onMentionTap,
+    this.mentionStyle,
   });
 
   final TextPostFormatting formatting;
@@ -22,6 +27,9 @@ class FeedPlainTextPostBody extends StatefulWidget {
   final TextStyle? bodyTextStyle;
   final int collapsedMaxLines;
   final TextStyle? moreTextStyle;
+  final List<MentionMetaData> mentions;
+  final void Function(MentionMetaData mention)? onMentionTap;
+  final TextStyle? mentionStyle;
 
   static const String collapsedEllipsis = '...';
 
@@ -50,6 +58,24 @@ class _FeedPlainTextPostBodyState extends State<FeedPlainTextPostBody> {
         ),
       );
 
+  TextSpan _buildBodySpan(
+    String value,
+    TextStyle textStyle,
+  ) =>
+      TextPostMentionText.buildDescriptionSpan(
+        text: value,
+        style: textStyle,
+        mentions: widget.mentions,
+        onMentionTap: widget.onMentionTap ?? (_) {},
+        mentionStyle: widget.onMentionTap == null
+            ? null
+            : (widget.mentionStyle ??
+                textStyle.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: IsrColors.appColor,
+                )),
+      );
+
   @override
   Widget build(BuildContext context) {
     if (!widget.formatting.hasContent) return const SizedBox.shrink();
@@ -63,6 +89,8 @@ class _FeedPlainTextPostBodyState extends State<FeedPlainTextPostBody> {
     final toggleStyle = widget.moreTextStyle ??
         textStyle.copyWith(fontWeight: FontWeight.w700);
     final textAlign = widget.formatting.textAlignValue;
+    final canTapMentions =
+        widget.onMentionTap != null && widget.mentions.isNotEmpty;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -77,10 +105,16 @@ class _FeedPlainTextPostBodyState extends State<FeedPlainTextPostBody> {
             );
 
         if (!showToggle) {
-          return Text(
-            text,
+          if (!canTapMentions) {
+            return Text(
+              text,
+              textAlign: textAlign,
+              style: textStyle,
+            );
+          }
+          return RichText(
             textAlign: textAlign,
-            style: textStyle,
+            text: _buildBodySpan(text, textStyle),
           );
         }
 
@@ -89,7 +123,10 @@ class _FeedPlainTextPostBodyState extends State<FeedPlainTextPostBody> {
             TextSpan(
               style: textStyle,
               children: [
-                TextSpan(text: text),
+                if (canTapMentions)
+                  _buildBodySpan(text, textStyle)
+                else
+                  TextSpan(text: text),
                 _toggleSpan(_lessToggleLabel, toggleStyle),
               ],
             ),
@@ -108,11 +145,16 @@ class _FeedPlainTextPostBodyState extends State<FeedPlainTextPostBody> {
           textAlign: textAlign,
         );
 
+        final collapsedText = text.substring(0, trimAt);
+
         return Text.rich(
           TextSpan(
             style: textStyle,
             children: [
-              TextSpan(text: text.substring(0, trimAt)),
+              if (canTapMentions)
+                _buildBodySpan(collapsedText, textStyle)
+              else
+                TextSpan(text: collapsedText),
               const TextSpan(text: FeedPlainTextPostBody.collapsedEllipsis),
               _toggleSpan(_moreToggleLabel, toggleStyle),
             ],

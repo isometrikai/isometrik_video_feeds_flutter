@@ -6,7 +6,7 @@ import 'package:ism_video_reel_player/presentation/bloc/create_post/create_post_
 import 'package:ism_video_reel_player/presentation/screens/create_post_multimedia/create_text_post_view.dart';
 import 'package:ism_video_reel_player/utils/navigator/ism_page_transition.dart';
 
-/// Coordinates the text post creation flow (plain/card text + optional location).
+/// Coordinates the text post creation flow (plain/card text + location + mentions).
 abstract final class CreateTextPostFlowCoordinator {
   CreateTextPostFlowCoordinator._();
 

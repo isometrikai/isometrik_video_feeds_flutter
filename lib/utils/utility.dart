@@ -947,6 +947,31 @@ class Utility {
 
   /// Builds a [TextSpan] for post/reel descriptions with @mentions, #hashtags,
   /// clickable URLs, and clickable phone numbers / email addresses.
+  static MentionMetaData? findMentionForAtToken(
+    String matchedText,
+    List<MentionMetaData> mentions,
+  ) {
+    final token = matchedText.startsWith('@')
+        ? matchedText.substring(1).trim()
+        : matchedText.trim();
+    if (token.isEmpty) return null;
+
+    for (final mention in mentions) {
+      final candidates = <String>{
+        if (mention.username?.trim().isNotEmpty == true) mention.username!.trim(),
+        if (mention.tag?.trim().isNotEmpty == true) mention.tag!.trim(),
+        if (mention.name?.trim().isNotEmpty == true) mention.name!.trim(),
+      };
+      for (final candidate in candidates) {
+        final normalized = candidate.replaceFirst(RegExp(r'^@'), '');
+        if (normalized.toLowerCase() == token.toLowerCase()) {
+          return mention;
+        }
+      }
+    }
+    return null;
+  }
+
   static TextSpan buildPostDescriptionTextSpan(
     String description,
     List<MentionMetaData> mentions,
@@ -959,7 +984,7 @@ class Utility {
   }) {
     final spans = <InlineSpan>[];
     final pattern = RegExp(
-      r'((?<![a-zA-Z0-9._%+-])@[a-zA-Z0-9_]+)|(#[a-zA-Z0-9_]+)|(https?:\/\/\S+|www\.\S+)',
+      r'((?<![a-zA-Z0-9._%+-])@[^\s,]+)|(#[a-zA-Z0-9_]+)|(https?:\/\/\S+|www\.\S+)',
       caseSensitive: false,
     );
     final matches = pattern.allMatches(description).toList();
@@ -983,11 +1008,9 @@ class Utility {
       }
 
       if (matchedText.startsWith('@') && mentions.isNotEmpty) {
-        final matchingMentions =
-            mentions.where((m) => '@${m.username}' == matchedText);
+        final mention = findMentionForAtToken(matchedText, mentions);
 
-        if (matchingMentions.isNotEmpty) {
-          final mention = matchingMentions.first;
+        if (mention != null) {
           spans.add(TextSpan(
             text: matchedText,
             style: mentionStyle ??

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/res/res.dart';
 
 /// Parsed `text_formatting` payload for `type: text` posts.
 class TextPostFormatting {
@@ -14,6 +15,21 @@ class TextPostFormatting {
     this.backgroundValue = 'blue_purple',
     this.textColor = '#FFFFFF',
   });
+
+  /// Card-post composer fonts resolved via [GoogleFonts].
+  static const Set<String> googleFontFamilies = {
+    'Roboto',
+    'Open Sans',
+    'Lato',
+    'Montserrat',
+    'Poppins',
+    'Oswald',
+    'Playfair Display',
+    'Pacifico',
+  };
+
+  static bool usesGoogleFont(String family) =>
+      googleFontFamilies.contains(family.trim());
 
   factory TextPostFormatting.fromDynamic(dynamic raw) {
     if (raw is! Map) {
@@ -87,8 +103,24 @@ class TextPostFormatting {
     final resolvedColor = textColorOverride ??
         (hasBackground ? _parseHexColor(textColor) : null);
 
+    final resolvedFamily = fontFamily.trim().isNotEmpty
+        ? fontFamily.trim()
+        : AppConstants.primaryFontFamily;
+
+    final base = TextStyle(
+      fontSize: fontSize,
+      fontWeight: weight,
+      fontStyle: style,
+      color: resolvedColor,
+      height: 1.35,
+    );
+
+    if (!usesGoogleFont(resolvedFamily)) {
+      return base.copyWith(fontFamily: resolvedFamily);
+    }
+
     return GoogleFonts.getFont(
-      fontFamily,
+      resolvedFamily,
       fontSize: fontSize,
       fontWeight: weight,
       fontStyle: style,
