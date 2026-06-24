@@ -46,18 +46,13 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
 
   Color get _textColor => IsrColors.primaryTextColor;
 
-  // Color get _secondaryTextColor => IsrColors.secondaryTextColor;
-
   Color get _deleteTextColor => IsrColors.error;
 
   Color get _dividerColor => IsrColors.dividerColor;
 
   @override
-  Widget build(BuildContext context) => Container(
-        decoration: BoxDecoration(
-          color: _backgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-        ),
+  Widget build(BuildContext context) => Material(
+        color: _backgroundColor,
         child: SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -71,7 +66,7 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
                       MoreOptionsSheetResult.dubWithAudio,
                     ),
                   ),
-                  const Divider(height: 1),
+                  Divider(height: 1, color: _dividerColor),
                 ],
                 if (widget.showRemoveMeFromPost) ...[
                   _buildOption(
@@ -81,7 +76,7 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
                       MoreOptionsSheetResult.removeMeFromPost,
                     ),
                   ),
-                  const Divider(height: 1),
+                  Divider(height: 1, color: _dividerColor),
                 ],
                 if (widget.showDownload) ...[
                   _buildOption(
@@ -91,7 +86,7 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
                       MoreOptionsSheetResult.download,
                     ),
                   ),
-                  const Divider(height: 1),
+                  Divider(height: 1, color: _dividerColor),
                 ],
                 _buildOption(
                   title: IsrTranslationFile.report,
@@ -134,7 +129,7 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
                     context,
                     MoreOptionsSheetResult.delete,
                   ),
-                )
+                ),
               ],
               Divider(height: 1, color: _dividerColor),
               _buildOption(
@@ -152,16 +147,23 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
     required VoidCallback onTap,
     Color? textColor,
   }) =>
-      ListTile(
-        titleAlignment: ListTileTitleAlignment.center,
-        title: Text(
-          title,
-          textAlign: TextAlign.center,
-          style: IsrStyles.primaryText16.copyWith(
-            fontWeight: FontWeight.w500,
-            color: textColor ?? _textColor,
+      Material(
+        color: _backgroundColor,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            child: Center(
+              child: Text(
+                title,
+                textAlign: TextAlign.center,
+                style: IsrStyles.primaryText16.copyWith(
+                  fontWeight: FontWeight.w500,
+                  color: textColor ?? _textColor,
+                ),
+              ),
+            ),
           ),
         ),
-        onTap: onTap,
       );
 }
