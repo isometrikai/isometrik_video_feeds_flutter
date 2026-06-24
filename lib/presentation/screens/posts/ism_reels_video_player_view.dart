@@ -2603,8 +2603,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           return InstagramFollowChip(
             label: IsrTranslationFile.requested,
             filled: false,
-            variant: FollowChipVariant.reelsOverlay,
+            variant: _followButtonConfig != null ? FollowChipVariant.theme : FollowChipVariant.reelsOverlay,
             followButtonConfig: _followButtonConfig,
+            followButtonTextStyle: _textStyleConfig?.followButtonTextStyle,
+            followingButtonTextStyle: _textStyleConfig?.followingButtonTextStyle,
             textShadows: _textShadows,
             onTap: () => onTap(
               reelData: _reelData,
@@ -2630,8 +2632,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 ? IsrTranslationFile.request
                 : IsrTranslationFile.follow,
             filled: true,
-            variant: FollowChipVariant.reelsOverlay,
+            variant: _followButtonConfig != null ? FollowChipVariant.theme : FollowChipVariant.reelsOverlay,
             followButtonConfig: _followButtonConfig,
+            followButtonTextStyle: _textStyleConfig?.followButtonTextStyle,
+            followingButtonTextStyle: _textStyleConfig?.followingButtonTextStyle,
             textShadows: _textShadows,
             onTap: () => onTap(
               reelData: _reelData,
@@ -2647,8 +2651,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           return InstagramFollowChip(
             label: IsrTranslationFile.following,
             filled: false,
-            variant: FollowChipVariant.reelsOverlay,
+            variant: _followButtonConfig != null ? FollowChipVariant.theme : FollowChipVariant.reelsOverlay,
             followButtonConfig: _followButtonConfig,
+            followButtonTextStyle: _textStyleConfig?.followButtonTextStyle,
+            followingButtonTextStyle: _textStyleConfig?.followingButtonTextStyle,
             textShadows: _textShadows,
             onTap: () => onTap(
               reelData: _reelData,

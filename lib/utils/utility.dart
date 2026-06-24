@@ -162,6 +162,8 @@ class Utility {
     Color? negativeButtonTextColor,
   }) {
     final dialogConfig = IsrVideoReelConfig.socialConfig.dialogConfig;
+    final resolvedShowTitle =
+        isToShowTitle ?? dialogConfig?.isShowTitle ?? true;
     final borderRadius = dialogConfig?.borderRadius ?? IsrDimens.twelve;
     final backgroundColor =
         dialogConfig?.backgroundColor ?? IsrColors.dialogColor;
@@ -169,8 +171,13 @@ class Utility {
         dialogConfig?.padding ?? IsrDimens.edgeInsetsAll(IsrDimens.fourteen);
     final titleStyle = dialogConfig?.titleTextStyle ??
         IsrStyles.secondaryText14.copyWith(fontWeight: FontWeight.w700);
-    final messageStyle =
+    var messageStyle =
         dialogConfig?.messageTextStyle ?? IsrStyles.primaryText14;
+    if (resolvedShowTitle && messageStyle.fontWeight == FontWeight.w700) {
+      messageStyle = messageStyle.copyWith(
+        fontWeight: FontWeight.w500
+      );
+    }
     final titleTextAlign = dialogConfig?.titleTextAlign;
     final messageTextAlign =
         dialogConfig?.messageTextAlign;
@@ -182,8 +189,6 @@ class Utility {
         dialogConfig?.titleMessageSpacing ?? IsrDimens.eight;
     final resolvedShowCloseButton =
         showCloseButton ?? dialogConfig?.showCloseButton ?? false;
-    final resolvedShowTitle =
-        isToShowTitle ?? dialogConfig?.isShowTitle ?? true;
     final resolvedBarrierDismissible =
         barrierDismissible ?? dialogConfig?.barrierDismissible ?? true;
     final hostContext =
@@ -718,7 +723,7 @@ class Utility {
         const EdgeInsets.symmetric(horizontal: 24, vertical: 28);
     final titleStyle = dialogConfig?.titleTextStyle ??
         IsrStyles.primaryText18.copyWith(fontWeight: FontWeight.w700);
-    final messageStyle = dialogConfig?.messageTextStyle ??
+    final messageStyle = dialogConfig?.messageTextStyle?.copyWith(fontWeight: FontWeight.w500) ??
         IsrStyles.primaryText14.copyWith(color: '4A4A4A'.toColor());
     final titleTextAlign = dialogConfig?.titleTextAlign;
     final messageTextAlign = dialogConfig?.messageTextAlign;
