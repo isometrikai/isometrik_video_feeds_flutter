@@ -96,6 +96,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   var _tags = Tags();
   var _isForEdit = false;
   var _isRejectedResubmit = false;
+  var _isRejectedResubmitSuccessUi = false;
   String? _rejectedPostIdToDelete;
 
   var mentionedUserData = <MentionData>[];
@@ -268,6 +269,29 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     _isRejectedResubmit = false;
   }
 
+  bool get _useEditSuccessMessaging =>
+      _isForEdit || _isRejectedResubmitSuccessUi;
+
+  String _postSuccessMessage() {
+    if (_useEditSuccessMessaging) {
+      return IsrTranslationFile.postUpdatedSuccessfully;
+    }
+    if (_createPostRequest.scheduleTime != null) {
+      return IsrTranslationFile.postScheduledSuccessfully;
+    }
+    return IsrTranslationFile.socialPostCreatedSuccessfully;
+  }
+
+  String _postSuccessTitle() {
+    if (_useEditSuccessMessaging) {
+      return IsrTranslationFile.successfullyEdited;
+    }
+    if (_createPostRequest.scheduleTime != null) {
+      return IsrTranslationFile.successfullyScheduled;
+    }
+    return IsrTranslationFile.successfullyPosted;
+  }
+
   FutureOr<void> _initState(CreatePostInitialEvent event, Emitter<CreatePostState> emit) async {
     _resetData();
     _selectedPostSound = event.selectedSound;
@@ -303,6 +327,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     _selectedMediaIndex = 0;
     _isForEdit = false;
     _isRejectedResubmit = false;
+    _isRejectedResubmitSuccessUi = false;
     _rejectedPostIdToDelete = null;
     descriptionText = '';
     linkedProducts.clear();
@@ -785,12 +810,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
           }
           final createdState = PostCreatedState(
             postDataModel: _postData,
-            postSuccessMessage: _createPostRequest.scheduleTime != null
-                ? IsrTranslationFile.postScheduledSuccessfully
-                : IsrTranslationFile.socialPostCreatedSuccessfully,
-            postSuccessTitle: _createPostRequest.scheduleTime != null
-                ? IsrTranslationFile.successfullyScheduled
-                : IsrTranslationFile.successfullyPosted,
+            postSuccessMessage: _postSuccessMessage(),
+            postSuccessTitle: _postSuccessTitle(),
             mediaDataList: _createPostRequest.media,
           );
           emit(createdState);
@@ -834,16 +855,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
         }
         final editCreatedState = PostCreatedState(
           postDataModel: _isForEdit ? _postData : null,
-          postSuccessMessage: _isForEdit
-              ? IsrTranslationFile.postUpdatedSuccessfully
-              : _createPostRequest.scheduleTime != null
-                  ? IsrTranslationFile.postScheduledSuccessfully
-                  : IsrTranslationFile.socialPostCreatedSuccessfully,
-          postSuccessTitle: _isForEdit
-              ? IsrTranslationFile.successfullyEdited
-              : _createPostRequest.scheduleTime != null
-                  ? IsrTranslationFile.successfullyScheduled
-                  : IsrTranslationFile.successfullyPosted,
+          postSuccessMessage: _postSuccessMessage(),
+          postSuccessTitle: _postSuccessTitle(),
           mediaDataList: _createPostRequest.media,
         );
         emit(editCreatedState);
@@ -1065,6 +1078,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     );
     _isForEdit = true;
     _isRejectedResubmit = event.isRejectedResubmit;
+    _isRejectedResubmitSuccessUi = event.isRejectedResubmit;
     _rejectedPostIdToDelete =
         event.isRejectedResubmit ? event.postData.id : null;
     _makePostRequest();
@@ -1691,16 +1705,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       }
       final uploadDoneState = PostCreatedState(
         postDataModel: _postData,
-        postSuccessMessage: _isForEdit
-            ? IsrTranslationFile.postUpdatedSuccessfully
-            : _createPostRequest.scheduleTime != null
-                ? IsrTranslationFile.postScheduledSuccessfully
-                : IsrTranslationFile.socialPostCreatedSuccessfully,
-        postSuccessTitle: _isForEdit
-            ? IsrTranslationFile.successfullyEdited
-            : _createPostRequest.scheduleTime != null
-                ? IsrTranslationFile.successfullyScheduled
-                : IsrTranslationFile.successfullyPosted,
+        postSuccessMessage: _postSuccessMessage(),
+        postSuccessTitle: _postSuccessTitle(),
         mediaDataList: _createPostRequest.media,
       );
       emit(uploadDoneState);
@@ -1738,16 +1744,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       }
       final processedState = PostCreatedState(
         postDataModel: _postData,
-        postSuccessMessage: _isForEdit
-            ? IsrTranslationFile.postUpdatedSuccessfully
-            : _createPostRequest.scheduleTime != null
-                ? IsrTranslationFile.postScheduledSuccessfully
-                : IsrTranslationFile.socialPostCreatedSuccessfully,
-        postSuccessTitle: _isForEdit
-            ? IsrTranslationFile.successfullyEdited
-            : _createPostRequest.scheduleTime != null
-                ? IsrTranslationFile.successfullyScheduled
-                : IsrTranslationFile.successfullyPosted,
+        postSuccessMessage: _postSuccessMessage(),
+        postSuccessTitle: _postSuccessTitle(),
         mediaDataList: _createPostRequest.media,
       );
       emit(processedState);
