@@ -307,6 +307,7 @@ class PostDetailsBottomSheet extends StatelessWidget {
                 AssetConstants.icRejectedPostIcon,
                 width: 24,
                 height: 24,
+                color: Color(0xFFDC2626),
               ),
               const SizedBox(width: 8),
               Expanded(
