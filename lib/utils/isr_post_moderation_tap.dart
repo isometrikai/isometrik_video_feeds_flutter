@@ -46,7 +46,6 @@ class IsrPostModerationTap {
         postDataList: postDataList,
         startingPostIndex: postIndex,
         postSectionType: postSectionType ?? PostSectionType.forYou,
-        skipOnTapPostCallback: true,
       );
       return true;
     }
