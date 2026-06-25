@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
@@ -85,12 +84,17 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
                       decoration: TextDecoration.none,
                     ),
                   ),
-                  TapHandler(
-                    padding: 5.responsiveDimension,
-                    onTap: () {
-                      context.pop();
-                    },
-                    child: AppImage.svg(
+                  IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    style: IconButton.styleFrom(
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      splashFactory: NoSplash.splashFactory,
+                      highlightColor: Colors.transparent,
+                      hoverColor: Colors.transparent,
+                    ),
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: AppImage.svg(
                       AssetConstants.icCrossIcon,
                       height: IsrDimens.sixteen,
                       width: IsrDimens.sixteen,
@@ -144,8 +148,12 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
                                               border: Border.all(
                                                 color: _selectedReason ==
                                                         _reportReasons[index]
-                                                    ? Theme.of(context)
-                                                        .primaryColor
+                                                    ? (IsrVideoReelConfig
+                                                            .socialConfig
+                                                            .themeConfig
+                                                            ?.primaryColor ??
+                                                        IsrColors
+                                                            .buttonBackgroundColor)
                                                     : '838383'.toColor(),
                                                 width: 2.responsiveDimension,
                                               ),
@@ -160,8 +168,12 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
                                                           .responsiveDimension,
                                                       decoration: BoxDecoration(
                                                         shape: BoxShape.circle,
-                                                        color: Theme.of(context)
-                                                            .primaryColor,
+                                                        color: IsrVideoReelConfig
+                                                                .socialConfig
+                                                                .themeConfig
+                                                                ?.primaryColor ??
+                                                            IsrColors
+                                                                .buttonBackgroundColor,
                                                       ),
                                                     ),
                                                   )
@@ -190,33 +202,35 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
                   24.responsiveVerticalSpace,
                   AppButton(
                     title: IsrTranslationFile.confirm,
+                    backgroundColor: IsrVideoReelConfig
+                            .socialConfig.primaryButton?.backgroundColor ??
+                        IsrColors.buttonBackgroundColor,
                     onPress: _selectedReason == null
                         ? null
                         : () async {
-                            Navigator.pop(context, true);
+                            final selectedReason = _selectedReason!;
+                            final reasonType = selectedReason.type ??
+                                widget.reasonFor.reasonsForString;
+                            final hostContext =
+                                IsrVideoReelConfig.getBuildContext?.call() ??
+                                    context;
+                            Navigator.of(context).pop(true);
                             final confirmation = await _showReportPostDialog(
-                              context,
-                              _selectedReason?.type ??
-                                  widget.reasonFor.reasonsForString,
+                              hostContext,
+                              reasonType,
                             );
                             if (confirmation == true) {
-                              widget.onReportInvoked?.call(_selectedReason!);
-                              // if (widget.reasonFor == ReasonsFor.story) {
-                              //   Utility.showToastMessage(
-                              //       ' report story not added from backend coming soon');
-                              //   return;
-                              // }
+                              widget.onReportInvoked?.call(selectedReason);
                               _socialPostBloc.add(ReportEvent(
                                 contentId: widget.contentId,
-                                reportReason: _selectedReason!,
+                                reportReason: selectedReason,
                                 showToastOnSuccess: widget.showToastOnSuccess,
                                 onComplete: (success) {
-                                  widget.onReportSuccess
-                                      ?.call(_selectedReason!);
+                                  widget.onReportSuccess?.call(selectedReason);
                                 },
                               ));
                             } else {
-                              widget.onReportCanceled?.call(_selectedReason!);
+                              widget.onReportCanceled?.call(selectedReason);
                             }
                           },
                     isDisable: _selectedReason == null,

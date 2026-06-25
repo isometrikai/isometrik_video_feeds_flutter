@@ -750,7 +750,11 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
         ),
       );
 
-  Widget _buildMoreOptionUI(CommentDataItem comment) => Center(
+  Widget _buildMoreOptionUI(
+    CommentDataItem comment,
+    BuildContext dialogContext,
+  ) =>
+      Center(
         child: Stack(
           clipBehavior: Clip.none, // Allows button to overflow
           children: [
@@ -781,7 +785,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                   if (_myUserId == comment.commentedByUserId) ...[
                     TapHandler(
                       onTap: () {
-                        context.pop();
+                        Navigator.of(dialogContext, rootNavigator: true).pop();
                         _socialBloc.add(
                           CommentActionEvent(
                             userId: comment.commentedByUserId,
@@ -810,16 +814,25 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                   ] else ...[
                     TapHandler(
                       onTap: () async {
-                        context.pop();
-                        var isUserLoggedIn = await _socialActionCubit.isUserLoggedIn;
+                        Navigator.of(dialogContext, rootNavigator: true).pop();
+                        var isUserLoggedIn =
+                            await _socialActionCubit.isUserLoggedIn;
                         if (!isUserLoggedIn) {
-                          await IsrVideoReelConfig.socialConfig.socialCallBackConfig?.onLoginInvoked
+                          await IsrVideoReelConfig
+                              .socialConfig
+                              .socialCallBackConfig
+                              ?.onLoginInvoked
                               ?.call();
                         }
-                        isUserLoggedIn = await _socialActionCubit.isUserLoggedIn;
+                        isUserLoggedIn =
+                            await _socialActionCubit.isUserLoggedIn;
                         if (!isUserLoggedIn) return;
+                        final hostContext =
+                            IsrVideoReelConfig.getBuildContext?.call() ??
+                                context;
+                        if (!hostContext.mounted) return;
                         await showDialog<dynamic>(
-                          context: context,
+                          context: hostContext,
                           barrierDismissible: true,
                           builder: (_) => ReportReasonDialog(
                             reasonFor: ReasonsFor.comment,
@@ -841,7 +854,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                   ],
                   TapHandler(
                     onTap: () {
-                      Navigator.pop(context);
+                      Navigator.of(dialogContext, rootNavigator: true).pop();
                     },
                     child: Text(
                       IsrTranslationFile.cancel,
@@ -885,7 +898,10 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
         ),
       );
 
-  Widget _buildDialogWrapper({required Widget child}) {
+  Widget _buildDialogWrapper({
+    required Widget child,
+    required BuildContext dialogContext,
+  }) {
     final dialogConfig = IsrVideoReelConfig.socialConfig.dialogConfig;
     final borderRadius = dialogConfig?.borderRadius ?? IsrDimens.twenty;
 
@@ -901,16 +917,12 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
           Positioned.fill(
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: () => Navigator.of(context, rootNavigator: true).pop(),
+              onTap: () =>
+                  Navigator.of(dialogContext, rootNavigator: true).pop(),
               child: const SizedBox.expand(),
             ),
           ),
-          Center(
-            child: GestureDetector(
-              onTap: () {},
-              child: child,
-            ),
-          ),
+          Center(child: child),
         ],
       ),
     );
@@ -1319,8 +1331,10 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
               onTap: () async {
                 await showDialog(
                   context: context,
-                  builder: (context) => _buildDialogWrapper(
-                    child: _buildMoreOptionUI(comment),
+                  useRootNavigator: true,
+                  builder: (dialogContext) => _buildDialogWrapper(
+                    dialogContext: dialogContext,
+                    child: _buildMoreOptionUI(comment, dialogContext),
                   ),
                 );
               },
