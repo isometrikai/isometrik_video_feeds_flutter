@@ -141,7 +141,11 @@ class PostReviewStatusUtil {
           : null,
       rejectedCount: rejectedItems.isNotEmpty
           ? rejectedItems.length
-          : (status == PostReviewStatus.rejected && totalMediaCount > 0 ? totalMediaCount : null),
+          : (status == PostReviewStatus.rejected &&
+                  !_hasModerationResults(post) &&
+                  totalMediaCount > 0
+              ? totalMediaCount
+              : null),
       totalMediaCount: totalMediaCount > 0 ? totalMediaCount : null,
       rejectedItems: rejectedItems,
       rejectionReason: postRejectionReason.isNotEmpty ? postRejectionReason : null,
@@ -169,6 +173,12 @@ class PostReviewStatusUtil {
     return _isRejectedModerationStatus(post.status);
   }
 
+  static bool _hasModerationResults(TimeLineData post) =>
+      post.media?.any((m) => m.moderationResult != null) == true;
+
+  static bool _isMediaFlagged(MediaData item) =>
+      (item.moderationResult?.result ?? '').toLowerCase().trim() == 'flagged';
+
   static List<PostReviewRejectedItem> _rejectedItemsFromPost(
     TimeLineData post, {
     PostReviewStatus? sheetStatus,
@@ -178,6 +188,16 @@ class PostReviewStatusUtil {
     final postReason = _postRejectionReason(post);
 
     if (media.isNotEmpty) {
+      if (_hasModerationResults(post)) {
+        final items = <PostReviewRejectedItem>[];
+        for (var i = 0; i < media.length; i++) {
+          final item = media[i];
+          if (!_isMediaFlagged(item)) continue;
+          items.add(_mediaToRejectedItem(item, i, fallbackReason: postReason));
+        }
+        return items;
+      }
+
       final items = <PostReviewRejectedItem>[];
       for (var i = 0; i < media.length; i++) {
         final item = media[i];
@@ -233,15 +253,18 @@ class PostReviewStatusUtil {
         : IsrTranslationFile.postReviewImageLabel(mediaNumber);
     final thumbnail =
         isVideo ? (media.previewUrl?.isNotEmpty == true ? media.previewUrl : media.url) : media.url;
+    final moderationDetails = (media.moderationResult?.details ?? '').trim();
     final reason = (media.rejectionReason ?? '').trim();
 
     return PostReviewRejectedItem(
       label: label,
-      reason: reason.isNotEmpty
-          ? reason
-          : (fallbackReason.isNotEmpty
-              ? fallbackReason
-              : IsrTranslationFile.postDetailsDefaultRejectionReason),
+      reason: moderationDetails.isNotEmpty
+          ? moderationDetails
+          : reason.isNotEmpty
+              ? reason
+              : (fallbackReason.isNotEmpty
+                  ? fallbackReason
+                  : IsrTranslationFile.postDetailsDefaultRejectionReason),
       thumbnailUrl: thumbnail,
       isVideo: isVideo,
     );
@@ -279,5 +302,36 @@ class PostReviewStatusUtil {
     } catch (_) {
       return null;
     }
+  }
+
+  /// Whether this media item should be included when resubmitting a rejected post.
+  static bool isMediaApprovedForResubmit(MediaData item, TimeLineData post) {
+    if (_hasModerationResults(post)) {
+      if (_isMediaFlagged(item)) return false;
+      final result = (item.moderationResult?.result ?? '').toLowerCase().trim();
+      if (item.moderationResult != null && result.isNotEmpty) {
+        return result == 'approved';
+      }
+      return true;
+    }
+    final postRejected = _isPostRejected(post);
+    final moderation = (item.moderationStatus ?? '').toLowerCase().trim();
+    if (_isRejectedModerationStatus(moderation)) return false;
+    if (postRejected && moderation.isEmpty) return false;
+    return true;
+  }
+
+  /// Maps original 1-based carousel positions to new positions after excluding flagged media.
+  static Map<int, int> approvedMediaPositionMap(TimeLineData post) {
+    final media = post.media ?? [];
+    final map = <int, int>{};
+    var newPos = 1;
+    for (var i = 0; i < media.length; i++) {
+      final item = media[i];
+      if (!isMediaApprovedForResubmit(item, post)) continue;
+      final oldPos = (item.position ?? i + 1).toInt();
+      map[oldPos] = newPos++;
+    }
+    return map;
   }
 }

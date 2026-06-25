@@ -18,7 +18,8 @@ class IsrPostDetailsActions {
   }) =>
       PostDetailsSheetDelegate(
         onDeletePost: (data) => _deletePost(context, data, onPostUpdated),
-        onEditAndResubmit: (data) => _editPost(context, data, onPostUpdated),
+        onEditAndResubmit: (data) =>
+            _editPost(context, data, onPostUpdated, isRejectedResubmit: true),
         onEditSubmission: (data) => _editPost(context, data, onPostUpdated),
         onWithdrawPost: (data) => _deletePost(context, data, onPostUpdated),
         onPublishNow: (data) => _publishNow(context, data, onPostUpdated),
@@ -42,18 +43,20 @@ class IsrPostDetailsActions {
   static Future<void> _editPost(
     BuildContext context,
     PostDetailsSheetData data,
-    VoidCallback? onPostUpdated,
-  ) async {
+    VoidCallback? onPostUpdated, {
+    bool isRejectedResubmit = false,
+  }) async {
     final post = data.sourcePost;
     if (post == null || !context.mounted) return;
 
     final result = await IsrAppNavigator.goToEditPostView(
       context,
       postData: post,
+      isRejectedResubmit: isRejectedResubmit,
     );
-    if (result != null) {
-      onPostUpdated?.call();
-    }
+    if (result == null || !context.mounted) return;
+
+    onPostUpdated?.call();
   }
 
   static Future<void> _deletePost(

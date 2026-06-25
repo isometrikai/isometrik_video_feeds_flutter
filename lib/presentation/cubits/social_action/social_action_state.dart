@@ -327,6 +327,16 @@ class IsmDeletedPostActionListenerState extends IsmSocialActionState {
       );
 }
 
+class IsmUserPostsRefreshedActionListenerState extends IsmSocialActionState {
+  IsmUserPostsRefreshedActionListenerState({
+    required this.userId,
+    required this.posts,
+  });
+
+  final String userId;
+  final List<TimeLineData> posts;
+}
+
 class IsmMentionRemovedActionListenerState extends IsmSocialActionState {
   IsmMentionRemovedActionListenerState({
     required this.postId,
