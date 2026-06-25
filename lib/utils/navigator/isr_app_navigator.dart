@@ -711,6 +711,7 @@ class IsrAppNavigator {
     BuildContext context, {
     required TimeLineData postData,
     TransitionType? transitionType,
+    bool isRejectedResubmit = false,
   }) async {
     final page = MultiBlocProvider(
       providers: [
@@ -721,6 +722,7 @@ class IsrAppNavigator {
       child: PostAttributeView(
         postData: postData,
         isEditMode: true,
+        isRejectedResubmit: isRejectedResubmit,
       ),
     );
 

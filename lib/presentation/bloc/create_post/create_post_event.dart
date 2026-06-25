@@ -63,9 +63,13 @@ class GetSocialPostDetailsEvent extends CreatePostEvent {
 }
 
 class EditPostEvent extends CreatePostEvent {
-  EditPostEvent({required this.postData});
+  EditPostEvent({
+    required this.postData,
+    this.isRejectedResubmit = false,
+  });
 
   final TimeLineData postData;
+  final bool isRejectedResubmit;
 }
 
 class MediaUploadEvent extends CreatePostEvent {

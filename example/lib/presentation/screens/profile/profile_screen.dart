@@ -172,7 +172,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) => BlocProvider<isr.PostListingBloc>(
         create: (_) => _postListingBloc,
-        child: Scaffold(
+        child: BlocListener<isr.IsmSocialActionCubit, isr.IsmSocialActionState>(
+          bloc: isr.IsmSocialActionCubit.instance(),
+          listener: (context, state) {
+            if (state is isr.IsmUserPostsRefreshedActionListenerState) {
+              setState(() {
+                _posts
+                  ..clear()
+                  ..addAll(state.posts);
+                _currentPage = 1;
+                _hasMoreData = state.posts.length >= _pageSize;
+              });
+            }
+          },
+          child: Scaffold(
           backgroundColor: Colors.white,
           appBar: AppBar(
             backgroundColor: Colors.white,
@@ -226,6 +239,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ],
             ),
           ),
+        ),
         ),
       );
 
