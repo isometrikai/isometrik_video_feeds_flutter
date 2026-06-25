@@ -10,7 +10,6 @@ export 'feed_text_post_fullscreen_view.dart';
 export 'feed_post_fullscreen_view.dart';
 export 'feed_post_media_hero.dart';
 export 'feed_text_post_content.dart';
-export 'feed_text_post_formatted_body.dart';
 export 'feed_text_post_section.dart';
 export 'text_post_formatting.dart';
 export 'text_post_thumbnail.dart';

@@ -154,6 +154,10 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     for (final map in IsrFeedCacheRepository.instance.getPosts(section)) {
       try {
         final post = TimeLineData.fromMap(map);
+        if (!TimelinePostTypeUtil.shouldShowTextPosts(postTab.postSectionType) &&
+            TimelinePostTypeUtil.isTextPost(post)) {
+          continue;
+        }
         postTab.postList.add(post);
       } catch (_) {}
     }
@@ -634,6 +638,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       apiPostResult?.forEach((_) => _.isFollowing = true);
     }
     postDataList.addAll(apiPostResult ?? []);
+    if (!TimelinePostTypeUtil.shouldShowTextPosts(tabAssistData.postSectionType)) {
+      postDataList = TimelinePostTypeUtil.withoutTextPosts(postDataList);
+    }
     final apiSucceeded = apiError == null;
 
     if (followSensitive && !isFromPagination && apiSucceeded) {

@@ -21,11 +21,18 @@ abstract final class TimelinePostTypeUtil {
   static List<TimeLineData> withoutTextPosts(Iterable<TimeLineData> posts) =>
       posts.where((p) => !isTextPost(p)).toList();
 
+  /// Media-only timeline `post_types` (no text posts).
+  static const mediaOnlyPostTypes = 'image,video,carousel,reel';
+
   /// Timeline API `post_types` for the Feed tab (media + text).
   static const feedPostTypes = 'image,video,carousel,reel,text';
 
-  /// Timeline API `post_types` for Following (media + text).
-  static const followingPostTypes = 'image,video,carousel,reel,text';
+  /// Timeline API `post_types` for Following (media only).
+  static const followingPostTypes = mediaOnlyPostTypes;
+
+  /// Only the scrollable Feed tab shows text posts; reels-style tabs do not.
+  static bool shouldShowTextPosts(PostSectionType section) =>
+      section == PostSectionType.feeds;
 }
 
 extension TimeLineDataTextPostX on TimeLineData {

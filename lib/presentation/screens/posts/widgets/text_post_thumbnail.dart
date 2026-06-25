@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/text_post_formatting.dart';
 
-/// Compact grid thumbnail for `type: text` posts using API `text_formatting`.
+/// Compact grid thumbnail for `type: text` posts (plain text only).
 class TextPostThumbnail extends StatelessWidget {
   const TextPostThumbnail({
     super.key,
@@ -19,7 +19,7 @@ class TextPostThumbnail extends StatelessWidget {
     double fontSizeDivisor = 2.3,
   }) =>
       TextPostThumbnail(
-        formatting: post.textPostFormatting,
+        formatting: post.plainTextPostFormatting,
         padding: padding,
         maxLines: maxLines,
         fontSizeDivisor: fontSizeDivisor,
@@ -34,49 +34,25 @@ class TextPostThumbnail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!formatting.hasContent) {
-      return ColoredBox(color: formatting.fallbackBackgroundColor);
+    final plainFormatting = formatting.asPlainText();
+    if (!plainFormatting.hasContent) {
+      return const ColoredBox(color: Color(0xFF000000));
     }
 
-    if (!formatting.hasBackground) {
-      return ColoredBox(
-        color: const Color(0xFF000000),
-        child: Padding(
-          padding: padding,
-          child: Align(
-            alignment: Alignment.topLeft,
-            child: Text(
-              formatting.text,
-              textAlign: formatting.textAlignValue,
-              maxLines: maxLines,
-              overflow: TextOverflow.ellipsis,
-              style: formatting.buildThumbnailTextStyle(
-                fontSizeDivisor: fontSizeDivisor,
-                textColorOverride: Colors.white,
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    final gradient = formatting.backgroundGradient;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: gradient,
-        color: gradient == null ? formatting.fallbackBackgroundColor : null,
-      ),
+    return ColoredBox(
+      color: const Color(0xFF000000),
       child: Padding(
         padding: padding,
         child: Align(
-          alignment: formatting.alignment,
+          alignment: Alignment.topLeft,
           child: Text(
-            formatting.text,
-            textAlign: formatting.textAlignValue,
+            plainFormatting.text,
+            textAlign: plainFormatting.textAlignValue,
             maxLines: maxLines,
             overflow: TextOverflow.ellipsis,
-            style: formatting.buildThumbnailTextStyle(
+            style: plainFormatting.buildThumbnailTextStyle(
               fontSizeDivisor: fontSizeDivisor,
+              textColorOverride: Colors.white,
             ),
           ),
         ),

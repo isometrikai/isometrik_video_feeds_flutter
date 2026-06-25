@@ -69,8 +69,25 @@ class TextPostFormatting {
 
   bool get hasContent => text.trim().isNotEmpty;
 
+  /// Default plain-text feed/composer styling (ignores legacy card formatting).
+  static const double plainFontSize = 16;
+  static const String plainFontStyle = 'normal';
+  static const String plainTextAlign = 'left';
+
   /// `true` when API `background` includes a non-empty `type` (gradient/color).
   bool get hasBackground => backgroundType.trim().isNotEmpty;
+
+  /// Strips card background and custom typography so legacy posts render as plain text.
+  TextPostFormatting asPlainText() => TextPostFormatting(
+        text: text,
+        fontFamily: AppConstants.primaryFontFamily,
+        fontSize: plainFontSize,
+        fontStyle: plainFontStyle,
+        textAlign: plainTextAlign,
+        backgroundType: '',
+        backgroundValue: '',
+        textColor: '',
+      );
 
   Alignment get alignment {
     switch (textAlign.toLowerCase()) {
@@ -228,4 +245,8 @@ class TextPostGradientPalette {
 extension TimeLineDataTextFormattingX on TimeLineData {
   TextPostFormatting get textPostFormatting =>
       TextPostFormatting.fromTimeline(this);
+
+  /// Feed/grid display: text only, default theme (no card background).
+  TextPostFormatting get plainTextPostFormatting =>
+      textPostFormatting.asPlainText();
 }

@@ -35,9 +35,13 @@ void main() {
       expect(style.fontSize, 16);
     });
 
-    test('gradient background remains supported', () {
+    test('asPlainText strips card background and resets typography', () {
       final formatting = TextPostFormatting.fromDynamic({
         'text': 'Stay focused.',
+        'font_family': 'Pacifico',
+        'font_size': 32,
+        'font_style': 'bold',
+        'text_align': 'center',
         'background': {
           'type': 'gradient',
           'value': 'purple_pink',
@@ -46,7 +50,11 @@ void main() {
       });
 
       expect(formatting.hasBackground, isTrue);
-      expect(formatting.backgroundGradient, isNotNull);
+      final plain = formatting.asPlainText();
+      expect(plain.hasBackground, isFalse);
+      expect(plain.text, 'Stay focused.');
+      expect(plain.fontSize, TextPostFormatting.plainFontSize);
+      expect(plain.textAlign, TextPostFormatting.plainTextAlign);
     });
   });
 }

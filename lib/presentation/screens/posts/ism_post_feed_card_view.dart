@@ -393,11 +393,6 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     _forceResumeVisibleMedia();
   }
 
-  Future<void> _openTextCardFullscreen(TextPostFormatting formatting) async {
-    if (!formatting.hasBackground) return;
-    await _openPostFullscreen(textFormatting: formatting);
-  }
-
   Future<void> _openMediaFullscreen(int index) async {
     await _openPostFullscreen(initialMediaIndex: index);
   }
@@ -1932,7 +1927,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   }
 
   Widget _buildTextPostSection(BuildContext context) {
-    final formatting = _timelinePost!.textPostFormatting;
+    final formatting = _timelinePost!.plainTextPostFormatting;
 
     return FeedTextPostSection(
       formatting: formatting,
@@ -1954,23 +1949,17 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       moreButton: _reel.postSetting?.isMoreButtonVisible == true
           ? _buildTextPostMoreButton()
           : null,
-      formattedAspectRatio: _feedUi.formattedTextPostAspectRatio,
       plainTextBodyStyle: _feedPlainTextBodyStyle,
       plainTextToggleStyle: _feedPlainTextToggleStyle,
       mentions: _allPostMentions,
       onMentionTap: (mention) => _onTapMentionData([mention]),
       onMentionsTap: _onTapMentionData,
-      mentionStyle: formatting.hasBackground
-          ? null
-          : (_textStyleConfig?.mentionStyle ??
-              _feedPlainTextBodyStyle.copyWith(
-                fontWeight: FontWeight.w600,
-                color: IsrColors.appColor,
-              )),
+      mentionStyle: _textStyleConfig?.mentionStyle ??
+          _feedPlainTextBodyStyle.copyWith(
+            fontWeight: FontWeight.w600,
+            color: IsrColors.appColor,
+          ),
       mentionConfig: _mentionConfig,
-      onFormattedCardTap: formatting.hasBackground
-          ? () => unawaited(_openTextCardFullscreen(formatting))
-          : null,
       padding: EdgeInsets.fromLTRB(
         _feedUi.textPostHorizontalPadding,
         IsrDimens.ten,

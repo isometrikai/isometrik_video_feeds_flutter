@@ -1213,7 +1213,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     Widget mediaWidget;
 
     if (_isTextOnlyPost) {
-      final formatting = _timelinePost!.textPostFormatting;
+      final formatting = _timelinePost!.plainTextPostFormatting;
       mediaWidget = SizedBox.expand(
         child: FeedTextPostContent(
           formatting: formatting,
@@ -1221,7 +1221,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           onMentionTap: (mention) => _callOnTapMentionData([mention]),
           // Reels overlay already shows tagged users via the bottom pill row.
           mentionConfig: _mentionConfig,
-          scrollable: formatting.hasBackground,
+          scrollable: true,
         ),
       );
     } else if (_reelData.showBlur == true) {

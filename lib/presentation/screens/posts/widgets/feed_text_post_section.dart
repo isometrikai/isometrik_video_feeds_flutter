@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/feed_plain_text_post_body.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/widgets/feed_text_post_formatted_body.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/text_post_formatting.dart';
 
-/// Unified Threads / X style text post section for plain and formatted posts.
+/// Threads / X style text post section — plain text only.
 ///
 /// Layout:
 /// [avatar + follow badge]  username · timestamp        [more]
-///                          post content (plain text or gradient card)
+///                          post content
 class FeedTextPostSection extends StatelessWidget {
   const FeedTextPostSection({
     super.key,
@@ -26,11 +25,9 @@ class FeedTextPostSection extends StatelessWidget {
     this.padding = const EdgeInsets.fromLTRB(16, 10, 16, 4),
     this.avatarGap = 12,
     this.verifiedBadge,
-    this.formattedAspectRatio = 1,
     this.contentTopSpacing = 4,
     this.plainTextBodyStyle,
     this.plainTextToggleStyle,
-    this.onFormattedCardTap,
     this.mentions = const [],
     this.onMentionTap,
     this.onMentionsTap,
@@ -51,11 +48,9 @@ class FeedTextPostSection extends StatelessWidget {
   final EdgeInsetsGeometry padding;
   final double avatarGap;
   final Widget? verifiedBadge;
-  final double formattedAspectRatio;
   final double contentTopSpacing;
   final TextStyle? plainTextBodyStyle;
   final TextStyle? plainTextToggleStyle;
-  final VoidCallback? onFormattedCardTap;
   final List<MentionMetaData> mentions;
   final void Function(MentionMetaData mention)? onMentionTap;
   final void Function(List<MentionMetaData> mentions)? onMentionsTap;
@@ -67,7 +62,7 @@ class FeedTextPostSection extends StatelessWidget {
     applyHeightToLastDescent: false,
   );
 
-  bool get _isCardPost => formatting.hasBackground;
+  TextPostFormatting get _plainFormatting => formatting.asPlainText();
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -77,7 +72,7 @@ class FeedTextPostSection extends StatelessWidget {
           children: [
             ..._leadingAvatarWidgets(),
             Expanded(child: _buildContentColumn()),
-            if (!_isCardPost && moreButton != null) _buildMoreButtonSlot(),
+            if (moreButton != null) _buildMoreButtonSlot(),
           ],
         ),
       );
@@ -86,52 +81,21 @@ class FeedTextPostSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          _buildHeaderRow(),
-          if (formatting.hasContent) ...[
+          _buildUserMetaRow(),
+          if (_plainFormatting.hasContent) ...[
             SizedBox(height: contentTopSpacing),
-            _buildContent(),
+            FeedPlainTextPostBody(
+              formatting: _plainFormatting,
+              textColor: textColor,
+              bodyTextStyle: plainTextBodyStyle,
+              moreTextStyle: plainTextToggleStyle,
+              mentions: mentions,
+              onMentionTap: onMentionTap,
+              mentionStyle: mentionStyle,
+            ),
           ],
         ],
       );
-
-  /// Card posts keep [moreButton] on the username row only so the card can
-  /// span the full content column width (16px from the screen edge).
-  Widget _buildHeaderRow() {
-    if (_isCardPost && moreButton != null) {
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(child: _buildUserMetaRow()),
-          _buildMoreButtonSlot(),
-        ],
-      );
-    }
-    return _buildUserMetaRow();
-  }
-
-  Widget _buildContent() {
-    if (_isCardPost) {
-      return FeedTextPostFormattedBody(
-        formatting: formatting,
-        aspectRatio: formattedAspectRatio,
-        onTap: onFormattedCardTap,
-        mentions: mentions,
-        onMentionsTap: onMentionsTap,
-        onMentionTap: onMentionTap,
-        mentionConfig: mentionConfig,
-        scrollable: false,
-      );
-    }
-    return FeedPlainTextPostBody(
-      formatting: formatting,
-      textColor: textColor,
-      bodyTextStyle: plainTextBodyStyle,
-      moreTextStyle: plainTextToggleStyle,
-      mentions: mentions,
-      onMentionTap: onMentionTap,
-      mentionStyle: mentionStyle,
-    );
-  }
 
   List<Widget> _leadingAvatarWidgets() {
     if (profileAvatar == null) return const [];

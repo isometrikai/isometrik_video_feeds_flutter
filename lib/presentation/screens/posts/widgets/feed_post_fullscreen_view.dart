@@ -278,8 +278,7 @@ class _FeedPostFullscreenViewState extends State<FeedPostFullscreenView> {
           IsrDimens.sixteen,
         ),
         child: FeedTextPostFullscreenCard(
-          formatting: widget.textFormatting!,
-          formattedAspectRatio: widget.formattedAspectRatio,
+          formatting: widget.textFormatting!.asPlainText(),
           mentions: resolveTextPostMentions(widget.reelsData),
           onMentionTap: widget.onTapMentionTag == null
               ? null

@@ -12,7 +12,7 @@ abstract final class TextPostComposerLimits {
   /// Collapsed plain-text feed body shows this many rendered lines before "View More".
   static const int feedDisplayMaxLines = 5;
 
-  static TextPostLimitsConfig config({required bool isCard}) => isCard
+  static TextPostLimitsConfig config({bool isCard = false}) => isCard
       ? const TextPostLimitsConfig(
           charLimit: cardCharLimit,
           maxLines: cardMaxLines,
@@ -44,7 +44,7 @@ abstract final class TextPostComposerLimits {
 
   static TextPostValidationResult validate(
     String text, {
-    required bool isCard,
+    bool isCard = false,
   }) {
     final limits = config(isCard: isCard);
     if (text.length > limits.charLimit) {
@@ -64,7 +64,7 @@ abstract final class TextPostComposerLimits {
   }
 
   /// Truncates pasted / imported text to fit compose limits.
-  static String sanitize(String text, {required bool isCard}) {
+  static String sanitize(String text, {bool isCard = false}) {
     final limits = config(isCard: isCard);
     var next = text;
     if (next.length > limits.charLimit) {
