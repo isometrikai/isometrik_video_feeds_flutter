@@ -13,6 +13,9 @@ enum PostReviewStatus {
 
   /// User resubmitted replaced items; confirmation screen.
   resubmitted,
+
+  /// Post media is still being processed server-side.
+  processing,
 }
 
 /// A single rejected image or video inside a post.

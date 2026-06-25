@@ -147,6 +147,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _onPostTap(int index) async {
     final post = _posts[index];
+
     final handled = await isr.IsrPostTapHandler.tryHandleTap(
       context,
       postData: post,
@@ -165,7 +166,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       postDataList: _posts,
       startingPostIndex: index,
       postSectionType: isr.PostSectionType.myPost,
-      skipOnTapPostCallback: true,
     );
   }
 
@@ -324,10 +324,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
             childAspectRatio: 0.75,
           ),
           delegate: SliverChildBuilderDelegate(
-            (context, index) => isr.TapHandler(
-              onTap: () => _onPostTap(index),
-              child: isr.PostGridThumbnailTile(post: _posts[index]),
-            ),
+            (context, index) {
+              final post = _posts[index];
+              final isTappable = isr.IsrPostTapHandler.isTappable(post);
+              return isr.TapHandler(
+                onTap: isTappable ? () => _onPostTap(index) : null,
+                child: isr.PostGridThumbnailTile(post: post),
+              );
+            },
             childCount: _posts.length,
           ),
         ),

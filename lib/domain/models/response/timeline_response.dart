@@ -155,6 +155,7 @@ class TimeLineData {
   TimeLineData({
     this.textFormatting,
     this.publishedAt,
+    this.createdAt,
     this.media,
     this.soundId,
     this.caption,
@@ -185,6 +186,7 @@ class TimeLineData {
   factory TimeLineData.fromMap(Map<String, dynamic> json) => TimeLineData(
         textFormatting: json['text_formatting'],
         publishedAt: json['published_at'] as String? ?? '',
+        createdAt: json['created_at'] as String? ?? json['createdAt'] as String? ?? '',
         media: json['media'] == null
             ? []
             : List<MediaData>.from((json['media'] as List)
@@ -239,6 +241,7 @@ class TimeLineData {
       );
   dynamic textFormatting;
   String? publishedAt;
+  String? createdAt;
   List<MediaData>? media;
   String? soundId;
   String? caption;
@@ -269,6 +272,7 @@ class TimeLineData {
   Map<String, dynamic> toMap() => {
         'text_formatting': textFormatting,
         'published_at': publishedAt,
+        'created_at': createdAt,
         'media': media == null
             ? []
             : List<dynamic>.from(media!.map((x) => x.toMap())),
@@ -306,6 +310,7 @@ class TimeLineData {
   TimeLineData copyWith({
     dynamic textFormatting,
     String? publishedAt,
+    String? createdAt,
     List<MediaData>? media,
     String? soundId,
     String? caption,
@@ -335,6 +340,7 @@ class TimeLineData {
       TimeLineData(
         textFormatting: textFormatting ?? this.textFormatting,
         publishedAt: publishedAt ?? this.publishedAt,
+        createdAt: createdAt ?? this.createdAt,
         media: media ?? this.media,
         soundId: soundId ?? this.soundId,
         caption: caption ?? this.caption,
