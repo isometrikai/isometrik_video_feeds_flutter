@@ -5,12 +5,16 @@ class VideoMuteController {
   VideoMuteController._();
 
   static bool _isMuted = false;
+  static bool _userHasOverridden = false;
   static final ValueNotifier<bool> notifier = ValueNotifier<bool>(false);
 
   static bool get isMuted => _isMuted;
 
   /// Applies the default mute flag from post feed UI config at startup.
+  /// Skipped after the user toggles mute so config re-applies (theme, login
+  /// sheet, session clear) do not reset their choice.
   static void applyDefaultMuted(bool defaultMuted) {
+    if (_userHasOverridden) return;
     setMuted(defaultMuted);
   }
 
@@ -20,5 +24,8 @@ class VideoMuteController {
     notifier.value = muted;
   }
 
-  static void toggle() => setMuted(!_isMuted);
+  static void toggle() {
+    _userHasOverridden = true;
+    setMuted(!_isMuted);
+  }
 }
