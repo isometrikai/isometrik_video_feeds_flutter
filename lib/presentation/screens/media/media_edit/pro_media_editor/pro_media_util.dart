@@ -139,8 +139,17 @@ MainEditorWidgets buildMainEditorWidgets(
 }) =>
     MainEditorWidgets(
       removeLayerArea: removeLayerArea,
-      wrapBody: (editor, rebuildStream, content) =>
-          wrapMainEditorBody(mediaEditConfig, content),
+      // Use a recorded overlay instead of [wrapBody]. Wrapping the interactive
+      // body with padding changes the rendered size without updating the
+      // editor's internal [SizesManager.bodySize], which can trigger resize
+      // handling and reset edits when layers are added.
+      // bodyItemsRecorded: (editor, rebuildStream) => [
+      //   buildMainEditorBodyFrameOverlay(
+      //     mediaEditConfig: mediaEditConfig,
+      //     editor: editor,
+      //     rebuildStream: rebuildStream,
+      //   ),
+      // ],
       bottomBar: hideBottomBar
           ? (_, __, ___) => null
           : (editor, rebuildStream, key) => ReactiveWidget(
@@ -160,25 +169,71 @@ MainEditorWidgets buildMainEditorWidgets(
           : null,
     );
 
-Widget wrapMainEditorBody(MediaEditConfig mediaEditConfig, Widget content) {
-  final borderRadius = BorderRadius.circular(20.responsiveDimension);
-  return Padding(
-    padding: const EdgeInsets.all(12),
-    child: DecoratedBox(
-      decoration: BoxDecoration(
-        color: mediaEditConfig.blackColor,
-        borderRadius: borderRadius,
-        border: Border.all(
-          color: mediaEditConfig.blackColor,
-          width: 0,
-        ),
-      ),
-      child: ClipRRect(
-        borderRadius: borderRadius,
-        child: content,
-      ),
-    ),
-  );
+const EdgeInsets _mainEditorBodyFramePadding = EdgeInsets.all(12);
+
+/// Decorative frame drawn inside the content recorder so it does not affect
+/// layer coordinates or resize calculations.
+ReactiveWidget buildMainEditorBodyFrameOverlay({
+  required MediaEditConfig mediaEditConfig,
+  required ProImageEditorState editor,
+  required Stream<void> rebuildStream,
+}) =>
+    ReactiveWidget(
+      stream: rebuildStream,
+      builder: (_) {
+        final bodySize = editor.sizesManager.bodySize;
+        if (bodySize == Size.zero) {
+          return const SizedBox.shrink();
+        }
+
+        return IgnorePointer(
+          child: CustomPaint(
+            size: bodySize,
+            painter: _MainEditorBodyFramePainter(
+              padding: _mainEditorBodyFramePadding,
+              borderRadius: BorderRadius.circular(20.responsiveDimension),
+              color: mediaEditConfig.whiteColor,
+            ),
+          ),
+        );
+      },
+    );
+
+class _MainEditorBodyFramePainter extends CustomPainter {
+  const _MainEditorBodyFramePainter({
+    required this.padding,
+    required this.borderRadius,
+    required this.color,
+  });
+
+  final EdgeInsets padding;
+  final BorderRadius borderRadius;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final outer = Path()..addRect(Offset.zero & size);
+    final innerRect = Rect.fromLTWH(
+      padding.left,
+      padding.top,
+      size.width - padding.horizontal,
+      size.height - padding.vertical,
+    );
+    if (innerRect.width <= 0 || innerRect.height <= 0) {
+      return;
+    }
+
+    final inner = Path()
+      ..addRRect(borderRadius.toRRect(innerRect));
+    final frame = Path.combine(PathOperation.difference, outer, inner);
+    canvas.drawPath(frame, Paint()..color = color);
+  }
+
+  @override
+  bool shouldRepaint(covariant _MainEditorBodyFramePainter oldDelegate) =>
+      oldDelegate.padding != padding ||
+      oldDelegate.borderRadius != borderRadius ||
+      oldDelegate.color != color;
 }
 
 ReactiveAppbar buildMainEditorAppBarWithoutUndoRedo({

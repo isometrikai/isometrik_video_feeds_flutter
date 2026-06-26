@@ -44,6 +44,7 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
   late VideoPlayerController _videoController;
   Map<String, dynamic>? _pendingNavigationResult;
   bool _isExportingVideo = false;
+  ProImageEditorConfigs? _editorConfigs;
 
   @override
   void initState() {
@@ -121,6 +122,7 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
 
     _videoController.addListener(_onDurationChange);
 
+    _editorConfigs = _createEditorConfigs();
     setState(() {});
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _applySystemUiOverlay();
@@ -202,12 +204,12 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
             onTrimSpanEnd: _seekToPosition,
           ),
         ),
-        configs: _getEditorConfigs(),
+        configs: _editorConfigs!,
       );
 
   /// Get editor configuration based on editing mode
-  ProImageEditorConfigs _getEditorConfigs() {
-    var _mainEditorConfig = mainEditorConfig(widget.mediaEditConfig).copyWith(
+  ProImageEditorConfigs _createEditorConfigs() {
+    var mainEditor = mainEditorConfig(widget.mediaEditConfig).copyWith(
       widgets: buildMainEditorWidgets(
         widget.mediaEditConfig,
         removeLayerArea: (
@@ -234,7 +236,7 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
       ],
     );
 
-    final _paintEditorConfig =
+    final paintEditorConfig =
         paintEditorConfigs(widget.mediaEditConfig).copyWith(tools: const [
       PaintMode.moveAndZoom,
       PaintMode.freeStyle,
@@ -247,17 +249,17 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
       PaintMode.polygon,
       PaintMode.eraser,
     ]);
-    var _videoConfig = videoConfigs.copyWith(
+    var videoConfig = videoConfigs.copyWith(
       playTimeSmoothingDuration: const Duration(milliseconds: 600),
       enableTrimBar: false,
     );
 
-    var _proConfig = proImageEditorConfigs(widget.mediaEditConfig);
+    var proConfig = proImageEditorConfigs(widget.mediaEditConfig);
 
     // Configure based on editing mode
     switch (widget.editingMode) {
       case 'Trim':
-        _mainEditorConfig = _mainEditorConfig.copyWith(
+        mainEditor = mainEditor.copyWith(
           tools: [],
           captureImageOnDone: false,
           captureLayersOnDone: false,
@@ -265,21 +267,21 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
             widget.mediaEditConfig,
             hideBottomBar: true,
             hideUndoRedoActions: true,
-            removeLayerArea: _mainEditorConfig.widgets.removeLayerArea,
+            removeLayerArea: mainEditor.widgets.removeLayerArea,
           ),
         );
-        _proConfig = _proConfig.copyWith(
+        proConfig = proConfig.copyWith(
           layerInteraction: const LayerInteractionConfigs(
             hideToolbarOnInteraction: true,
           ),
         );
-        _videoConfig = _videoConfig.copyWith(
+        videoConfig = videoConfig.copyWith(
           enableTrimBar: true,
         );
         break;
 
       case 'filter':
-        _mainEditorConfig = _mainEditorConfig.copyWith(
+        mainEditor = mainEditor.copyWith(
           tools: [
             SubEditorMode.tune,
             SubEditorMode.filter,
@@ -288,10 +290,10 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
         );
         break;
     }
-    return _proConfig.copyWith(
-      mainEditor: _mainEditorConfig,
-      paintEditor: _paintEditorConfig,
-      videoEditor: _videoConfig,
+    return proConfig.copyWith(
+      mainEditor: mainEditor,
+      paintEditor: paintEditorConfig,
+      videoEditor: videoConfig,
     );
   }
 
