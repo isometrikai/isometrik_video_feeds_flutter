@@ -139,15 +139,19 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     } else if (IsrVideoReelConfig.isOverlayReelsPlayerActive) {
       return;
     }
-    _markCurrentTabVisibleForPlayback();
+    // Foreground resume uses [_invokeSectionForegroundResume] for playback;
+    // only flip tab visibility here — notifyNow would double-start audio.
+    _markCurrentTabVisibleForPlayback(notifyVisibility: false);
   }
 
-  void _markCurrentTabVisibleForPlayback() {
+  void _markCurrentTabVisibleForPlayback({bool notifyVisibility = true}) {
     if (!mounted) return;
     if (_currentIndex >= 0 && _currentIndex < _tabDataModelList.length) {
       _tabDataModelList[_currentIndex].isVisible = true;
     }
-    VisibilityDetectorController.instance.notifyNow();
+    if (notifyVisibility) {
+      VisibilityDetectorController.instance.notifyNow();
+    }
   }
 
   void _kickOverlayPlaybackWhenReady() {

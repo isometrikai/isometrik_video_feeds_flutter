@@ -129,6 +129,7 @@ class IsrVideoReelConfig {
   /// suppressing playback.
   static bool get allowsPlayback =>
       !_appInBackground &&
+      !_lifecyclePlaybackSuspended &&
       (isHostFeedTabVisible || _overlayReelsPlayerCount > 0) &&
       (_playbackSuppressionCount == 0 || _overlayReelsPlayerCount > 0);
 
@@ -427,40 +428,52 @@ class IsrVideoReelConfig {
   /// player is active regardless.
   static void resumeFromAppForeground({required bool hostReelsTabVisible}) {
     final shouldResume = _appInBackground || _lifecyclePlaybackSuspended;
-    _appInBackground = false;
-    _lifecyclePlaybackSuspended = false;
     if (!shouldResume) return;
 
-    if (!hostReelsTabVisible && _overlayReelsPlayerCount == 0) return;
+    if (!hostReelsTabVisible && _overlayReelsPlayerCount == 0) {
+      _appInBackground = false;
+      _lifecyclePlaybackSuspended = false;
+      return;
+    }
 
     PostSectionType? resumeSection;
     if (hostReelsTabVisible) {
       isHostFeedTabVisible = true;
       resumeSection = getActiveHostPostSection?.call();
-      onHostFeedTabResumed?.call();
     } else if (_overlayReelsPlayerCount > 0) {
       resumeSection = _activeOverlaySection;
     }
 
-    _notifyAppForegroundResumed();
-    _resumeOnlyCurrentReelAfterForeground(resumeSection);
-  }
-
-  /// Silence everything, then nudge only the active section's current reel once.
-  static void _resumeOnlyCurrentReelAfterForeground(
-    PostSectionType? section,
-  ) {
-    if (_appInBackground || !allowsPlayback) return;
-
+    // Hard stop while [_lifecyclePlaybackSuspended] still blocks [allowsPlayback]
+    // — prevents visibility callbacks from restarting audio during the handoff
+    // (e.g. iOS inactive → TestFlight / app-switcher before paused fires).
     IsrActiveVideoPlayerRegistry.pauseAll();
     _emitPlayPause(play: false);
     unawaited(IsrImageSoundRegistry.stopAll());
 
+    _appInBackground = false;
+    _lifecyclePlaybackSuspended = false;
+
+    _resumeOnlyCurrentReelAfterForeground(resumeSection);
+  }
+
+  /// Marks tab visibility, then nudges only the active section's current reel once.
+  ///
+  /// Does not call [VisibilityDetectorController.notifyNow] — that was racing
+  /// [_invokeSectionForegroundResume] and starting duplicate audio on foreground.
+  static void _resumeOnlyCurrentReelAfterForeground(
+    PostSectionType? section,
+  ) {
+    if (_appInBackground || !allowsPlayback) return;
     if (section == null) return;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_appInBackground || !allowsPlayback) return;
-      _invokeSectionForegroundResume(section);
+      _notifyAppForegroundResumed();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_appInBackground || !allowsPlayback) return;
+        _invokeSectionForegroundResume(section);
+      });
     });
   }
 
