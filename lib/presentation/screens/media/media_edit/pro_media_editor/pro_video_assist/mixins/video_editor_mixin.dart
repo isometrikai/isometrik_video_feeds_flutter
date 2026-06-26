@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:ism_video_reel_player/utils/media_util.dart';
 import 'package:path_provider/path_provider.dart';
 // import '../../../../custom_pro_image_editor/pro_image_editor.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
@@ -125,12 +126,31 @@ mixin VideoEditorMixin<T extends StatefulWidget> on State<T> {
     });
   }
 
+  /// Returns a safe bitrate for export, or `null` to let the native encoder
+  /// choose a preset (required on iOS when metadata bitrate is missing/invalid).
+  int? resolveExportBitrate() => MediaUtil.resolveVideoExportBitrate(
+        metadataBitrate: videoMetadata.bitrate,
+        resolution: videoMetadata.resolution,
+      );
+
   /// Generates the final video based on the given [parameters].
   ///
   /// Applies blur, color filters, cropping, rotation, flipping, and trimming
   /// before exporting. Measures and stores the generation time.
   Future<String?> generateVideo(CompleteParameters parameters) async {
     final stopwatch = Stopwatch()..start();
+
+    final startTime = parameters.startTime;
+    final endTime = parameters.endTime;
+    if (startTime != null &&
+        endTime != null &&
+        startTime >= endTime) {
+      debugPrint(
+        'Video export skipped: invalid trim range '
+        '($startTime -> $endTime)',
+      );
+      return null;
+    }
 
     final exportModel = pve.VideoRenderData(
       id: taskId,
@@ -142,8 +162,8 @@ mixin VideoEditorMixin<T extends StatefulWidget> on State<T> {
       colorFilters: [
         pve.ColorFilter(matrix: parameters.colorFiltersCombined),
       ],
-      startTime: parameters.startTime,
-      endTime: parameters.endTime,
+      startTime: startTime,
+      endTime: endTime,
       transform: parameters.isTransformed
           ? pve.ExportTransform(
               width: parameters.cropWidth,
@@ -157,7 +177,8 @@ mixin VideoEditorMixin<T extends StatefulWidget> on State<T> {
           : null,
       enableAudio: proVideoController?.isAudioEnabled ?? true,
       outputFormat: outputFormat,
-      bitrate: videoMetadata.bitrate,
+      bitrate: resolveExportBitrate(),
+      shouldOptimizeForNetworkUse: true,
     );
     final directory = await getTemporaryDirectory();
 

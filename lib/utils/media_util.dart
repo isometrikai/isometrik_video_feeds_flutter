@@ -15,6 +15,59 @@ import 'package:uuid/uuid.dart';
 import 'package:video_compress/video_compress.dart';
 
 class MediaUtil {
+  /// Headroom applied on top of source/floor bitrate to offset generation loss
+  /// when re-encoding (each export is a lossy pass).
+  static const double _exportBitrateHeadroom = 1.25;
+
+  /// Resolves export bitrate that preserves quality across re-encodes.
+  ///
+  /// iOS reports bitrate as an average derived from file size, which drops
+  /// after prior transcodes and maps to lower AVAssetExportSession presets.
+  static int? resolveVideoExportBitrate({
+    int? metadataBitrate,
+    Size? resolution,
+  }) {
+    final floor = _minimumBitrateForResolution(resolution);
+    final int? target;
+    if (metadataBitrate != null && metadataBitrate > 0) {
+      target = math.max(metadataBitrate, floor);
+    } else if (floor > 0) {
+      target = floor;
+    } else {
+      return null;
+    }
+    return (target * _exportBitrateHeadroom).round();
+  }
+
+  static int _minimumBitrateForResolution(Size? resolution) {
+    if (resolution == null ||
+        resolution.width <= 0 ||
+        resolution.height <= 0) {
+      return 8000000;
+    }
+    final pixels = resolution.width * resolution.height;
+    if (pixels >= 3840 * 2160) return 35000000;
+    if (pixels >= 1920 * 1080) return 16000000;
+    if (pixels >= 1280 * 720) return 5000000;
+    if (pixels >= 854 * 480) return 2500000;
+    return 1000000;
+  }
+
+  static Future<int?> _exportBitrateForVideoPath(String videoPath) async {
+    try {
+      final video = EditorVideo.file(File(videoPath));
+      await video.safeFilePath();
+      final meta = await ProVideoEditor.instance.getMetadata(video);
+      return resolveVideoExportBitrate(
+        metadataBitrate: meta.bitrate,
+        resolution: meta.resolution,
+      );
+    } catch (e, st) {
+      AppLog.error('_exportBitrateForVideoPath: $e\n$st');
+      return null;
+    }
+  }
+
   static Future<void> _deleteIfExists(File? f) async {
     if (f == null || !await f.exists()) return;
     try {
@@ -50,6 +103,7 @@ class MediaUtil {
     required String audioPath,
     required String outputPath,
   }) async {
+    final bitrate = await _exportBitrateForVideoPath(videoPath);
     final renderData = VideoRenderData(
       id: 'mux_${const Uuid().v4()}',
       videoSegments: [
@@ -60,6 +114,7 @@ class MediaUtil {
         VideoAudioTrack(path: audioPath, loop: true),
       ],
       outputFormat: VideoOutputFormat.mp4,
+      bitrate: bitrate,
       shouldOptimizeForNetworkUse: true,
     );
     return _renderVideoToFile(outputPath, renderData);
@@ -200,6 +255,7 @@ class MediaUtil {
     String outputPath,
   ) async {
     try {
+      final bitrate = await _exportBitrateForVideoPath(videoPaths.first);
       final segments = videoPaths
           .map((p) => VideoSegment(video: EditorVideo.file(File(p))))
           .toList();
@@ -207,6 +263,7 @@ class MediaUtil {
         id: 'merge_${const Uuid().v4()}',
         videoSegments: segments,
         outputFormat: VideoOutputFormat.mp4,
+        bitrate: bitrate,
         shouldOptimizeForNetworkUse: true,
       );
       return _renderVideoToFile(outputPath, renderData);
